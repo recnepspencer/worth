@@ -17,14 +17,32 @@ mod domain_computation_authorization_admission_resource_observation {
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         #[allow(clippy::too_many_arguments)]
-        pub(crate) fn observe_resource_authorization<Binding>(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity, relational: &worth_relational::facade::runtime::RelationalRuntime, snapshot: worth_relational::facade::snapshots::SnapshotHandle, resource: &WorthQueryInstalledApplicationResource<Schema, Binding>, action: ApplicationResourceAction, access: &WorthQueryApplicationQueryAccessContext<'_, Schema,
+        pub(crate) fn observe_resource_authorization<Binding>(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'_, '_>,
+            session_identity: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+            relational: &worth_relational::facade::runtime::RelationalRuntime,
+            snapshot: worth_relational::facade::snapshots::SnapshotHandle,
+            resource: &WorthQueryInstalledApplicationResource<Schema, Binding>,
+            action: ApplicationResourceAction,
+            access: &WorthQueryApplicationQueryAccessContext<'_, Schema,
                 <Binding::Access as ApplicationQueryBinding<Schema>>::Principal,
                 <Binding::Access as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
                 <<Binding::Access as ApplicationQueryBinding<Schema>>::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope,
-            >) -> Result<Vec<WorthQueryAuthorizationDecisionFact>, WorthQueryOperationAuthorizationDenial>
+            >,
+        ) -> Result<Vec<WorthQueryAuthorizationDecisionFact>, WorthQueryOperationAuthorizationDenial>
         where
-            Binding: ApplicationResourceBinding<Schema>, {
-            self.inner.observe_resource_authorization::<Binding>(execution, session_identity, relational, snapshot, resource, action, access)
+            Binding: ApplicationResourceBinding<Schema>,
+        {
+            self.inner.observe_resource_authorization::<Binding>(
+                execution,
+                session_identity,
+                relational,
+                snapshot,
+                resource,
+                action,
+                access,
+            )
         }
     }
 }

@@ -68,11 +68,7 @@ where
         )
     }
 
-    pub fn replay_elevation_approval_after_fresh_denial_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+    pub fn replay_elevation_approval_after_fresh_denial_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         requested: WorthQueryRequestedElevation,

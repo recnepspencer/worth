@@ -56,9 +56,7 @@ impl WorthQueryManagedRelationalObservation {
         self
     }
 
-    pub fn owner_identity(
-        &self,
-    ) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
+    pub fn owner_identity(&self) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
         self.owner_identity
     }
 

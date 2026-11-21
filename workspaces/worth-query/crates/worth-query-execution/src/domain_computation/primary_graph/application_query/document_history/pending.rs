@@ -1,9 +1,9 @@
-use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::*;
 use crate::basis::{
     WorthQueryProductBranch, WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease,
 };
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryModelIdentity;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 
 pub(super) struct PendingDocumentRead {
     product: WorthQueryProductObservationLease,

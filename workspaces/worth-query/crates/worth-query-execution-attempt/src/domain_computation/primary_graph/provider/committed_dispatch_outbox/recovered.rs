@@ -23,10 +23,7 @@ pub struct RecoveredDispatchSelector {
     record: WorthQueryDispatchOutboxRecord,
 }
 impl RecoveredDispatchSelector {
-    pub fn same_source(
-        &self,
-        other: &Self,
-    ) -> bool {
+    pub fn same_source(&self, other: &Self) -> bool {
         self.subject.receipt() == other.subject.receipt()
             && self.subject.position() == other.subject.position()
             && self.subject.artifact_digest() == other.subject.artifact_digest()
@@ -289,9 +286,7 @@ pub fn idempotency_denial(
     }
 }
 
-pub fn native_denial(
-    cause: RelationalAssociatedEffectRefusal,
-) -> Denial {
+pub fn native_denial(cause: RelationalAssociatedEffectRefusal) -> Denial {
     idempotency_denial(super::super::idempotency::snapshot_resolution::source_denial::native(cause))
 }
 pub fn world_denial(

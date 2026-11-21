@@ -5,9 +5,7 @@ use crate::domain_computation::authorization::{
     WorthQueryRuntimeTimeSample,
 };
 
-pub struct WorthQueryCurrentCapabilityObservation<
-    'observation,
-> {
+pub struct WorthQueryCurrentCapabilityObservation<'observation> {
     session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     relational: &'observation worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'observation worth_relational::facade::snapshots::SnapshotHandle,
@@ -37,34 +35,22 @@ impl WorthQueryCurrentCapabilityObservation<'_> {
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
         self.session
     }
-    pub const fn relational(
-        &self,
-    ) -> &worth_relational::facade::runtime::RelationalRuntime {
+    pub const fn relational(&self) -> &worth_relational::facade::runtime::RelationalRuntime {
         self.relational
     }
-    pub const fn snapshot(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+    pub const fn snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
         self.snapshot
     }
-    pub const fn bridge(
-        &self,
-    ) -> &worth_runtime_bridge::facade::BridgeAuthorizationRuntime {
+    pub const fn bridge(&self) -> &worth_runtime_bridge::facade::BridgeAuthorizationRuntime {
         self.bridge
     }
-    pub const fn installed(
-        &self,
-    ) -> &WorthQueryInstalledCapabilityPlan {
+    pub const fn installed(&self) -> &WorthQueryInstalledCapabilityPlan {
         self.installed
     }
-    pub const fn request(
-        &self,
-    ) -> &WorthQueryRetainedCapabilityRequest {
+    pub const fn request(&self) -> &WorthQueryRetainedCapabilityRequest {
         self.request
     }
-    pub const fn sample(
-        &self,
-    ) -> &WorthQueryRuntimeTimeSample {
+    pub const fn sample(&self) -> &WorthQueryRuntimeTimeSample {
         self.sample
     }
 }

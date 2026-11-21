@@ -104,17 +104,13 @@ impl CancelledLineageSlot {
 
 /// What filling a prepared slot hands its publication.
 pub struct RecordedLineageSlot {
-    pub computation_registration:
-        Option<super::invalidation::ComputationRegistration>,
-    pub computation_source:
-        super::ComputationSourceEvidence,
+    pub computation_registration: Option<super::invalidation::ComputationRegistration>,
+    pub computation_source: super::ComputationSourceEvidence,
     pub identity: Arc<RecordedSettlementIdentity>,
-    pub output_witness:
-        Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
+    pub output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
     /// The settlement of the generation this record displaced as the latest
     /// output of its partition. Its row is this publication's to retire.
-    pub displaced:
-        Option<Arc<RecordedSettlementIdentity>>,
+    pub displaced: Option<Arc<RecordedSettlementIdentity>>,
 }
 
 impl PreparedOutputLineageSlot {
@@ -143,17 +139,11 @@ impl PreparedOutputLineageSlot {
         self.prior_computation = prior;
     }
 
-    pub fn retain_completed_decision_reuse(
-        &mut self,
-        proof: super::CompletedDecisionReuseProof,
-    ) {
+    pub fn retain_completed_decision_reuse(&mut self, proof: super::CompletedDecisionReuseProof) {
         assert!(self.completed_decision_reuse.replace(proof).is_none());
     }
 
-    pub fn retain_prepared_input_reuse_key(
-        &mut self,
-        key: super::PreparedInputReuseKey,
-    ) {
+    pub fn retain_prepared_input_reuse_key(&mut self, key: super::PreparedInputReuseKey) {
         assert!(self.prepared_input_reuse_key.is_none());
         self.prepared_input_reuse_key = Some(key);
     }
@@ -166,10 +156,7 @@ impl PreparedOutputLineageSlot {
         self.native_output_witness = Some(witness);
     }
 
-    pub fn retain_coupled_completion(
-        &mut self,
-        completion: super::CoupledOutputCompletion,
-    ) {
+    pub fn retain_coupled_completion(&mut self, completion: super::CoupledOutputCompletion) {
         assert!(self.coupled_completion.replace(completion).is_none());
     }
     pub fn seal_published_source(
@@ -185,9 +172,7 @@ impl PreparedOutputLineageSlot {
         }
         Ok(())
     }
-    pub fn identity(
-        &self,
-    ) -> &Arc<RecordedSettlementIdentity> {
+    pub fn identity(&self) -> &Arc<RecordedSettlementIdentity> {
         &self.identity
     }
 

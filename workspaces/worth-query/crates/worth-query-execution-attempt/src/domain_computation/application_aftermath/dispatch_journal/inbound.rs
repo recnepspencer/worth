@@ -74,9 +74,7 @@ pub struct QueryInboundMessageKey {
     pub message: [u8; 32],
 }
 impl QueryInboundMessageKey {
-    pub fn from_claims(
-        claims: &WorthQueryInboundOccurrenceClaims,
-    ) -> Self {
+    pub fn from_claims(claims: &WorthQueryInboundOccurrenceClaims) -> Self {
         Self {
             audience: claims.audience.clone(),
             protocol: claims.protocol_identity.as_str().to_owned(),

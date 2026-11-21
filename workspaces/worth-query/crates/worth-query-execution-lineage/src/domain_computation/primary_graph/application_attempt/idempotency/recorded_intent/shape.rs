@@ -1,8 +1,6 @@
 //! The borrowed grammar shared by durable recovery and request comparison.
 use super::{is_hex, MALFORMED};
-pub fn validate(
-    input: &str,
-) -> Result<(), &'static str> {
+pub fn validate(input: &str) -> Result<(), &'static str> {
     let (input, scope_digits) = match input.strip_prefix("v2:") {
         Some(input) => (input, 192),
         None => (input, 240),

@@ -117,9 +117,7 @@ impl WorthQueryDirectProviderWorkRebinding {
         self.yielded == *current
     }
 
-    pub fn into_fresh(
-        self,
-    ) -> super::super::WorthQueryExecutionProviderSessionIdentity {
+    pub fn into_fresh(self) -> super::super::WorthQueryExecutionProviderSessionIdentity {
         self.fresh
     }
 }

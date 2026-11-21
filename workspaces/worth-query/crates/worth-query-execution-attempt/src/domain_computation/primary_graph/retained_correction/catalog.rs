@@ -38,9 +38,7 @@ pub struct MaterialEntry {
     pub body: MaterialBody,
 }
 impl MaterialEntry {
-    pub fn available(
-        &self,
-    ) -> Result<(&Arc<MaterialCapture>, &Arc<MaterialReady>), Denial> {
+    pub fn available(&self) -> Result<(&Arc<MaterialCapture>, &Arc<MaterialReady>), Denial> {
         match &self.body {
             MaterialBody::Ready { capture, ready } => Ok((capture, ready)),
             MaterialBody::Captured(_) => Err(Denial::MaterialNotReady),
@@ -61,9 +59,7 @@ enum MaterialPinPurpose {
     Recovery,
 }
 impl MaterialPinRow {
-    pub fn prepared(
-        &self,
-    ) -> Result<&Arc<PreparedCorrectionSnapshot>, Denial> {
+    pub fn prepared(&self) -> Result<&Arc<PreparedCorrectionSnapshot>, Denial> {
         match &self.purpose {
             MaterialPinPurpose::Prepared(value) => Ok(value),
             MaterialPinPurpose::Recovery => Err(Denial::PinOwnerMismatch),
@@ -78,8 +74,7 @@ pub struct MaterialCatalog {
     pub payload_digest: [u8; 32],
     pub generation: u64,
     pub material: BTreeMap<Original, MaterialEntry>,
-    pub pins:
-        BTreeMap<CorrectionMaterialPinIdentity, MaterialPinRow>,
+    pub pins: BTreeMap<CorrectionMaterialPinIdentity, MaterialPinRow>,
     pub(super) discharged: BTreeMap<[u8; 32], (Original, [u8; 32])>,
     pub(super) released: BTreeMap<CorrectionMaterialPinIdentity, CorrectionMaterialPinOwner>,
 }
@@ -246,10 +241,7 @@ impl MaterialCatalog {
         self.generation = frame.publication_generation().get();
         Ok(change)
     }
-    pub fn pin_count(
-        &self,
-        original: Original,
-    ) -> usize {
+    pub fn pin_count(&self, original: Original) -> usize {
         self.pins
             .values()
             .filter(|pin| pin.original == original || matches!(pin.owner,

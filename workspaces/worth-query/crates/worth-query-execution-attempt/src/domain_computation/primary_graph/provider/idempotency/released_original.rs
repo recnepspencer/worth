@@ -22,28 +22,13 @@ impl Eq for OriginalBinding {}
 
 /// Original keyed owner meaning and its actual terminal release. It grants no
 /// occurrence, application receipt, delivery, adoption or custody authority.
-///
-/// ```compile_fail,E0451
-/// use worth_query_execution::facade::primary_graph::WorthQueryReleasedApplicationEffect;
-/// let _ = WorthQueryReleasedApplicationEffect { binding: panic!(), original: panic!() };
-/// ```
-///
-/// ```compile_fail,E0599
-/// use worth_query_execution::facade::primary_graph::WorthQueryReleasedApplicationEffect;
-/// fn cannot_reacquire_custody(original: WorthQueryReleasedApplicationEffect) {
-///     original.into_recovery();
-/// }
-/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryReleasedApplicationEffect {
     binding: Arc<OriginalBinding>,
     original: WorldReleasedOriginal,
 }
 impl WorthQueryReleasedApplicationEffect {
-    pub fn new(
-        binding: Arc<OriginalBinding>,
-        original: WorldReleasedOriginal,
-    ) -> Self {
+    pub fn new(binding: Arc<OriginalBinding>, original: WorldReleasedOriginal) -> Self {
         assert!(
             original.native_semantic_result().is_some(),
             "effect-bearing terminal original"

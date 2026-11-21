@@ -40,7 +40,7 @@ where
 {
     fn attach<O, I, Scope>(
         program: WorthQueryApplicationEffectProgram<S, O, I, Scope>,
-        access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &dyn crate::ports::ApplicationRuntimeRef<S>,
         recipe: std::sync::Arc<<<Self::RootConnection as ApplicationConnectionShape<S>>::Binding as WorthQueryApplicationDiscoveredOutputConnection<S>>::Discovery>,
@@ -163,7 +163,7 @@ where
 {
     fn attach<O, I, Scope>(
         mut program: WorthQueryApplicationEffectProgram<S, O, I, Scope>,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &dyn crate::ports::ApplicationRuntimeRef<S>,
         recipe: std::sync::Arc<Recipe<S, C>>,
@@ -184,9 +184,9 @@ where
         if let CapturedSynchronousOutputs::Prepared { source_recipe, .. } = &mut captured {
             *source_recipe = recording;
         }
-        program
-            .synchronous_outputs
-            .push(worth_query_execution_attempt::facade::ports::OpaqueSynchronousOutputs::new(captured));
+        program.synchronous_outputs.push(
+            worth_query_execution_attempt::facade::ports::OpaqueSynchronousOutputs::new(captured),
+        );
         program
     }
 

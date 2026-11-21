@@ -39,9 +39,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             let inspection = selected
                 .inspect_selected_program()
                 .map_err(|_| unavailable())?;
-            let support = self
-                .installed_program_support()
-                .ok_or_else(unavailable)?;
+            let support = self.installed_program_support().ok_or_else(unavailable)?;
             let program_revision = support
                 .native_program(inspection.revision())
                 .ok_or_else(unavailable)?

@@ -47,9 +47,7 @@ impl ManagedCleanupPublication {
         self.pending_denial = None;
         Ok(())
     }
-    pub fn identity(
-        &self,
-    ) -> ManagedCleanupObligationIdentity {
+    pub fn identity(&self) -> ManagedCleanupObligationIdentity {
         self.identity
     }
     pub fn record_failure(
@@ -183,9 +181,7 @@ impl QueryObligationHistory {
         }))
     }
 
-    pub fn managed_cleanup_obligations(
-        &self,
-    ) -> Vec<QueryManagedCleanupObligation> {
+    pub fn managed_cleanup_obligations(&self) -> Vec<QueryManagedCleanupObligation> {
         self.state()
             .journal
             .as_ref()

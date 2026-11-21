@@ -105,10 +105,7 @@ impl WorthQueryPreparedApplicationGovernance {
         }
     }
 
-    pub fn is_disclosed(
-        &self,
-        slot: &ApplicationQueryResultSlotKey,
-    ) -> bool {
+    pub fn is_disclosed(&self, slot: &ApplicationQueryResultSlotKey) -> bool {
         match &self.decision {
             PreparedDecision::Public => true,
             PreparedDecision::Governed { disclosure, .. } => {
@@ -117,9 +114,7 @@ impl WorthQueryPreparedApplicationGovernance {
         }
     }
 
-    pub fn authorization_mut(
-        &mut self,
-    ) -> Option<&mut WorthQueryRetainedCapabilityAuthorization> {
+    pub fn authorization_mut(&mut self) -> Option<&mut WorthQueryRetainedCapabilityAuthorization> {
         match &mut self.decision {
             PreparedDecision::Public => None,
             PreparedDecision::Governed { pending, .. } => Some(&mut pending.authorization),

@@ -1,7 +1,7 @@
 //! Retention at the exact records an authored correction anchors.
-use crate::domain_computation::primary_graph::RetainedPreImageExt;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::RetainedPreImageExt;
 
 /// An optional field or aspect the attempt read at one record and found absent.
 struct ObservedAbsence<'fact> {

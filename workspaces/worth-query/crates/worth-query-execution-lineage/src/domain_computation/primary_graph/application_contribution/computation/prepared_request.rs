@@ -38,10 +38,7 @@ impl PreparedCompute {
         }
     }
 
-    pub fn run(
-        self,
-        member: WorthQueryMemberExecution<'_>,
-    ) -> ComputedSlot {
+    pub fn run(self, member: WorthQueryMemberExecution<'_>) -> ComputedSlot {
         let _custody = super::worker_custody::MemberComputeCustody::enter();
         (self.run)(member)
     }
@@ -60,10 +57,7 @@ impl ComputedSlot {
 }
 
 impl PreparedCompute {
-    pub fn declared_test_request(
-        rank: usize,
-        fails: bool,
-    ) -> Self {
+    pub fn declared_test_request(rank: usize, fails: bool) -> Self {
         Self::new(move |member| {
             let (_, poll) = member.into_parts();
             poll().unwrap();

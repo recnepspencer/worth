@@ -139,12 +139,11 @@ impl ResourceRowLease {
         // The remaining fields, including result-slot and original input
         // funding, release after the shared free-list locks are gone.
         drop(occurrence.result.take());
-        Ok(super::super::closed::WorthQueryClosedResource {
-            native,
-            clock_only,
-            action,
-            detail: None,
-        })
+        Ok(
+            super::super::closed::WorthQueryClosedResource::from_completed_action(
+                native, clock_only, action,
+            ),
+        )
     }
 }
 

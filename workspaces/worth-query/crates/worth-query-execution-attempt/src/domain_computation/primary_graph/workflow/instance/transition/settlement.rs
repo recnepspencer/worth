@@ -11,13 +11,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
-pub fn visit_terminal_transition_facts<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-    Error,
->(
+pub fn visit_terminal_transition_facts<Schema, Operation, Input, Scope, Error>(
     layout: &WorthQueryWorkflowLayout,
     admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
     emit: impl FnMut(WorthQueryApplicationRealizedEffect) -> Result<(), Error>,
@@ -31,13 +25,7 @@ pub fn visit_terminal_transition_facts<
     )
 }
 
-pub fn visit_workflow_transition_facts<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-    Error,
->(
+pub fn visit_workflow_transition_facts<Schema, Operation, Input, Scope, Error>(
     layout: &WorthQueryWorkflowLayout,
     admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
     outcome: worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome,
@@ -47,9 +35,7 @@ pub fn visit_workflow_transition_facts<
     visit_transition_facts(layout, admitted, outcome, state, None, None, emit)
 }
 
-pub fn visit_workflow_operation_settlement_facts<
-    Error,
->(
+pub fn visit_workflow_operation_settlement_facts<Error>(
     layout: &WorthQueryWorkflowLayout,
     basis: &WorkflowOperationSettlementBasis,
     operation_receipt_identity: &[u8; 32],

@@ -13,9 +13,7 @@ pub enum WorkflowInstanceState {
 
 impl WorkflowInstanceState {
     /// Current native record decoding, shared by read projections and command applicability.
-    pub fn from_persisted_tag(
-        tag: u64,
-    ) -> Option<Self> {
+    pub fn from_persisted_tag(tag: u64) -> Option<Self> {
         [
             Self::Ready,
             Self::Completed,

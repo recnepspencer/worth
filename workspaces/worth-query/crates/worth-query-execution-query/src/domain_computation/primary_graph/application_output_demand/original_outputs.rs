@@ -25,8 +25,8 @@ pub struct WorthQueryCompletedOriginalReadOutputs {
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl WorthQueryCompletedOriginalReadOutputs {
-    pub fn from_parts(
-        _seal: crate::ports::WorthQueryQueryCrateSeal,
+    pub fn from_qualified_endpoint(
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         source: Arc<WorthQueryApplicationReadObservation>,
         root: Arc<WorthQueryApplicationReadObservation>,
         posture: WorthQueryOutputSettlementPosture,

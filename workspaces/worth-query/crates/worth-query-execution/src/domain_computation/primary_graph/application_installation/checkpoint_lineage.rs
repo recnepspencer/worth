@@ -11,7 +11,8 @@ pub(super) fn restore<Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let checkpoint_observation = application
-        .inner.runtime
+        .inner
+        .runtime
         .product_runtime
         .recovered_root_authority
         .as_ref()
@@ -21,7 +22,8 @@ pub(super) fn restore<Schema: ApplicationSchema>(
             .into_installation_denial()
     })?;
     let mut lineage = application
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -89,7 +91,8 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
         return Ok(());
     };
     let branches = application
-        .inner.runtime
+        .inner
+        .runtime
         .product_runtime
         .owner
         .observation_port()
@@ -135,7 +138,8 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
             return Err(Denial::ObligationSubjectMismatch);
         }
         let correspondence = application
-            .inner.installed_producers
+            .inner
+            .installed_producers
             .readmit_checkpoint_output(&application.inner.installed_schema, &checkpoint, execution)
             .map_err(|_| Denial::ObligationSubjectMismatch)?;
         accepted.push(
@@ -157,7 +161,8 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
         );
     }
     application
-        .inner.runtime
+        .inner
+        .runtime
         .recovered_outputs
         .readmit_journal(accepted, execution)
         .map_err(|_| Denial::MalformedFrame)?;

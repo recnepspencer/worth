@@ -13,9 +13,7 @@ pub enum InstalledConditionalRoute {
     Authored(BridgeAuthoredConditionalDeclaration),
 }
 impl InstalledConditionalRoute {
-    pub fn from_installation(
-        lowering: Arc<BridgeInstalledConditionalLowering>,
-    ) -> Self {
+    pub fn from_installation(lowering: Arc<BridgeInstalledConditionalLowering>) -> Self {
         Self::Memory(lowering)
     }
     pub fn admit_authored_declaration(
@@ -51,9 +49,7 @@ impl InstalledConditionalRoute {
     pub fn is_authored(&self) -> bool {
         matches!(self, Self::Authored(_))
     }
-    pub fn memory_anchor(
-        &self,
-    ) -> Option<&Arc<BridgeInstalledConditionalLowering>> {
+    pub fn memory_anchor(&self) -> Option<&Arc<BridgeInstalledConditionalLowering>> {
         match self {
             Self::Memory(anchor) => Some(anchor),
             Self::Authored(_) => None,

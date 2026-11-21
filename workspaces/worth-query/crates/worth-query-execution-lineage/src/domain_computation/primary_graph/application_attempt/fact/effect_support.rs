@@ -220,9 +220,7 @@ fn field_stop(cause: FieldStop) -> Denial {
         ),
     }
 }
-pub fn source_stop(
-    cause: super::WorthQuerySourceCurrentnessFailure,
-) -> Denial {
+pub fn source_stop(cause: super::WorthQuerySourceCurrentnessFailure) -> Denial {
     use super::WorthQuerySourceCurrentnessFailure as Stop;
     match cause {
         Stop::Execution(cause) => {

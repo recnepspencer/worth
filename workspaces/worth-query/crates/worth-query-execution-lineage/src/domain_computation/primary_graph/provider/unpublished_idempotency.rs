@@ -1,8 +1,8 @@
 //! Lineage handle to provider unpublished-idempotency disposition custody.
 
+use crate::ports::UnpublishedIdempotencyPort;
 use std::sync::Arc;
 use worth_runtime_world::facade::ProductUnpublishedRecoveryHandle;
-use crate::ports::UnpublishedIdempotencyPort;
 
 #[derive(Clone)]
 pub struct WorthQueryUnpublishedIdempotencyDisposition {

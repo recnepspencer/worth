@@ -5,9 +5,7 @@ use crate::domain_computation::primary_graph::application_query::{
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 
-pub fn admit_application_query_basis<
-    Schema,
->(
+pub fn admit_application_query_basis<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     basis: WorthQueryApplicationQueryBasis,
@@ -28,9 +26,7 @@ where
 
 /// Keep the same selected Product and native snapshot for Query permission.
 /// Graph index currency is admitted later only when disclosure needs a read.
-pub fn admit_application_query_permission_basis<
-    Schema,
->(
+pub fn admit_application_query_permission_basis<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     basis: WorthQueryApplicationQueryBasis,
@@ -46,9 +42,7 @@ where
     )
 }
 
-pub fn admit_application_query_permission_basis_with_native_access<
-    Schema,
->(
+pub fn admit_application_query_permission_basis_with_native_access<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     basis: WorthQueryApplicationQueryBasis,

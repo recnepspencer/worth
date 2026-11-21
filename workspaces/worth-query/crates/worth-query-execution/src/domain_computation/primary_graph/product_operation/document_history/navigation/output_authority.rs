@@ -1,11 +1,11 @@
 //! Current control custody is lent only within the freshly admitted advancement.
-use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::super::authority_lifetime::{HistoryAuthorityLifetime, OwnedHistoryAuthorityLifetime};
 use super::*;
 use crate::basis::{WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease};
 use crate::domain_computation::authorization::{
     admitted_request::AdmittedRequestCurrentness, WorthQueryOperationAuthorizationDenial,
 };
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::{
     application_query::CompletedMetadataRead, WorthQueryAdmittedApplicationOperation,
     WorthQueryAdvancementPhase, WorthQueryApplicationReadObservation,
@@ -15,6 +15,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_history::{
     ApplicationHistoryBinding, ApplicationHistoryModel, ApplicationHistoryNavigationBinding,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaBindingIdentity, WorthQueryInstalledDocumentHistory,
 };
@@ -215,8 +216,10 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         self.validate_navigation::<N>(phase, read, installed, admission)?;
         let original = restored.observation();
         if profile.model != self.model
-            || !original
-                .belongs_to_selected_occurrence(self.application().inner(), original.product_observation())
+            || !original.belongs_to_selected_occurrence(
+                self.application().inner(),
+                original.product_observation(),
+            )
         {
             return Err(Denial::ForeignDocument);
         }
@@ -244,7 +247,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             })?;
         let authority = WorthQueryHistoryOutputAuthority {
             phase,
-            runtime: self.application().inner.runtime.authority_identity().as_u64(),
+            runtime: self
+                .application()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64(),
             binding: self.binding.clone(),
             profile: profile.clone(),
             current: read.current_product().retained_clone(),

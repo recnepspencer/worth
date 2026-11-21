@@ -38,25 +38,18 @@ impl WorthQueryProgramActivationCell {
 
     // Only invariant evaluation may consult this pre-publication binding.
     // Installation never exposes a World until native settlement confirms it.
-    pub fn candidate_identity(
-        &self,
-    ) -> Option<EntityId> {
+    pub fn candidate_identity(&self) -> Option<EntityId> {
         self.published().or_else(|| self.candidate.get().copied())
     }
 
-    pub fn bind_checkpoint_candidate(
-        &self,
-        identity: EntityId,
-    ) -> Result<(), EntityId> {
+    pub fn bind_checkpoint_candidate(&self, identity: EntityId) -> Result<(), EntityId> {
         if let Some(published) = self.published() {
             return Err(published);
         }
         self.candidate.set(identity)
     }
 
-    pub fn confirm_checkpoint_candidate(
-        &self,
-    ) -> Result<(), EntityId> {
+    pub fn confirm_checkpoint_candidate(&self) -> Result<(), EntityId> {
         let identity = self
             .candidate
             .get()

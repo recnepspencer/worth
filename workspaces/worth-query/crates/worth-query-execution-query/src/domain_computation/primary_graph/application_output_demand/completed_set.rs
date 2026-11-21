@@ -4,21 +4,19 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationReadObservation, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind as Kind, WorthQuerySelectedProductOperation,
 };
-use crate::publication_boundary::{
-    discovery_currentness::{
-        WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
-    },
+use crate::publication_boundary::discovery_currentness::{
+    WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
 };
 use std::sync::Arc;
-use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     pub fn qualify_completed_output_set<'s>(
         self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        access: &dyn WorthQueryProgramPublicationAccessPort,
+        access: &WorthQueryProgramPublicationAccess,
         scope: &WorthQueryRequestScope,
         root: &'s WorthQueryOutputDemandSettlement,
         dependents: impl IntoIterator<Item = &'s WorthQueryOutputDemandSettlement>,

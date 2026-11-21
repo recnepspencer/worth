@@ -27,8 +27,7 @@ pub struct WorthQueryOutputDemandDenial {
     pub subject: std::borrow::Cow<'static, str>,
     domain: Option<Box<producer_value::ProducerDomainDenial>>,
     pub readmission_failure: Option<&'static str>,
-    pub recovery_posture:
-        WorthQueryOutputDemandRecoveryPosture,
+    pub recovery_posture: WorthQueryOutputDemandRecoveryPosture,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -144,10 +143,7 @@ impl WorthQueryOutputDemandDenial {
     pub fn has_read_cleanup(&self) -> bool {
         self.cleanup.is_some()
     }
-    pub fn with_read_cleanup(
-        mut self,
-        cleanup: super::WorthQueryOutputReadCleanup,
-    ) -> Self {
+    pub fn with_read_cleanup(mut self, cleanup: super::WorthQueryOutputReadCleanup) -> Self {
         self.cleanup = Some(cleanup.custody);
         self
     }

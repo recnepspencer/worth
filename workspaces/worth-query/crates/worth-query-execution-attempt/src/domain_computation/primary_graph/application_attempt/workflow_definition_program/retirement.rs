@@ -5,8 +5,11 @@
 //! completes under the retained revision.
 
 pub mod outcome;
-pub use outcome::{PerformedWorkflowDefinitionRetirement, PreparedWorkflowDefinitionRetirement, WorkflowDefinitionRetirementOutcome};
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+pub use outcome::{
+    PerformedWorkflowDefinitionRetirement, PreparedWorkflowDefinitionRetirement,
+    WorkflowDefinitionRetirementOutcome,
+};
 
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
@@ -30,8 +33,6 @@ use super::{denial, intent_identity, PublishedWorkflowDefinitionRef};
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
 
-
-
 const LINEAGE_WORK_LIMIT: usize = 2;
 
 impl<Schema, Operation, Input, Scope>
@@ -46,10 +47,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub fn materialize_workflow_definition_retirement<
-        Capability,
-        Spec,
-    >(
+    pub fn materialize_workflow_definition_retirement<Capability, Spec>(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

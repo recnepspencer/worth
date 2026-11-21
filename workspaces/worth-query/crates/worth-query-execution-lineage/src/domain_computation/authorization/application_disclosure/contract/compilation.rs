@@ -4,13 +4,7 @@ use super::field_masks::admit_field_masks;
 use super::result_rules::{admit_result_rule, require_complete_result_shape};
 use super::*;
 
-pub fn compile_disclosure_contract<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Scope,
->(
+pub fn compile_disclosure_contract<Schema, Query, Parameters, QueryResult, Scope>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     layout: &WorthQueryPrimaryGraphLayout,
 ) -> Result<

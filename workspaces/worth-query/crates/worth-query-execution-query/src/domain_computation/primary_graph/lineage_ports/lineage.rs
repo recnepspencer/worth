@@ -16,9 +16,7 @@ use crate::domain_computation::primary_graph::application_query::derived_view::r
 use crate::domain_computation::primary_graph::application_query::managed_index::applied_read::support::AppliedManagedSourceSupport;
 use crate::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryReadClosure;
 
-pub fn downcast_managed_views(
-    port: &dyn ManagedDerivedViewPort,
-) -> &ManagedDerivedViewRegistry {
+pub fn downcast_managed_views(port: &dyn ManagedDerivedViewPort) -> &ManagedDerivedViewRegistry {
     port.as_any()
         .downcast_ref::<ManagedDerivedViewRegistry>()
         .expect("primary graph carries ManagedDerivedViewRegistry")
@@ -165,7 +163,7 @@ impl SourceReadClosurePort for SourceQueryReadClosure {
     ) -> Result<
         (),
         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop,
-    > {
+    >{
         self.validate_for_publication(execution, runtime, snapshot)
     }
 

@@ -13,9 +13,7 @@ pub struct WorthQueryYieldCleanupCheckpointInspection {
 }
 
 impl WorthQueryYieldCleanupCheckpointInspection {
-    pub fn capture(
-        release: &WorthQueryProviderCheckpointReleaseEvidence,
-    ) -> Self {
+    pub fn capture(release: &WorthQueryProviderCheckpointReleaseEvidence) -> Self {
         Self {
             identity: Arc::from(release.checkpoint().identity()),
             provider_generation: release.checkpoint().provider_generation(),

@@ -1,8 +1,8 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::payload::sequence::FactSequence;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
 };
-use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 
 pub fn bind_currentness_facts<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

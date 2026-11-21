@@ -3,8 +3,7 @@ use super::*;
 /// Already validated recorded identities; data only, never authority.
 pub struct WorkflowInstanceRoles {
     pub start: EntityId,
-    pub end:
-        Option<worth_foundational::facade::WorkflowEndingActorProvenance>,
+    pub end: Option<worth_foundational::facade::WorkflowEndingActorProvenance>,
 }
 pub fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

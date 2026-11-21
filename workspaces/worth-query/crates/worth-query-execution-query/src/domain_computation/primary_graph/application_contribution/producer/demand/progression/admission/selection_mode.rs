@@ -12,8 +12,7 @@ use super::super::denial;
 use super::super::WorthQueryOutputDemandDenial;
 use super::super::WorthQueryOutputDemandDenialKind;
 
-pub
-enum SourceAdmissionSelection<'selected, 'runtime, Schema>
+pub enum SourceAdmissionSelection<'selected, 'runtime, Schema>
 where
     Schema: ApplicationSchema,
 {

@@ -1,5 +1,5 @@
-use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use super::*;
+use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn require_current_settlements_in<'s>(
         &self,
@@ -22,9 +22,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         )
     }
 
-    pub fn require_current_settlements_in_extent<
-        's,
-    >(
+    pub fn require_current_settlements_in_extent<'s>(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         relational: &worth_relational::facade::runtime::RelationalRuntime,

@@ -51,8 +51,9 @@ pub struct WorthQueryResourceRecoveryCloseStop {
 
 impl WorthQueryResourceRecoveryCloseStop {
     pub fn from_parts(
-        _seal: crate::ports::WorthQueryQueryCrateSeal,
-        recovery: Option<crate::domain_computation::application_aftermath::WorthQueryRecoveryHandle>,
+        recovery: Option<
+            crate::domain_computation::application_aftermath::WorthQueryRecoveryHandle,
+        >,
         denial: WorthQueryResourceActionDenial,
     ) -> Self {
         Self { recovery, denial }
@@ -77,18 +78,13 @@ pub struct WorthQueryResourceActionDenial {
 
 impl WorthQueryResourceActionDenial {
     pub fn from_cause_port(
-        _seal: crate::ports::WorthQueryQueryCrateSeal,
         cause: Box<dyn ResourceCausePort>,
         closed: Option<super::closed::WorthQueryClosedResource>,
     ) -> Self {
         Self { cause, closed }
     }
 
-    pub fn with_closed(
-        mut self,
-        _seal: crate::ports::WorthQueryQueryCrateSeal,
-        closed: Option<super::closed::WorthQueryClosedResource>,
-    ) -> Self {
+    pub fn with_closed(mut self, closed: Option<super::closed::WorthQueryClosedResource>) -> Self {
         self.closed = closed;
         self
     }
@@ -130,7 +126,7 @@ impl WorthQueryResourceActionDenial {
     pub fn advancement_denial(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial>
-    {
+{
         self.cause.advancement_denial()
     }
 

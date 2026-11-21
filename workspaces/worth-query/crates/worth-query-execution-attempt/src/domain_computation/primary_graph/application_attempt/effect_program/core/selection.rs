@@ -5,9 +5,7 @@ use crate::domain_computation::{
     execution_runtime::WorthQueryRuntimeAuthorityIdentity,
 };
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
-pub struct EffectSelection<
-    'a,
-> {
+pub struct EffectSelection<'a> {
     layout:
         &'a crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
     program: &'a Arc<()>,
@@ -20,9 +18,7 @@ pub struct EffectSelection<
 }
 impl<S, O, I, Scope> WorthQueryApplicationEffectProgramBuilder<S, O, I, Scope> {
     #[inline(always)]
-    pub fn native_selection(
-        &self,
-    ) -> EffectSelection<'_> {
+    pub fn native_selection(&self) -> EffectSelection<'_> {
         EffectSelection {
             layout: &self.layout,
             program: &self.program,

@@ -11,8 +11,7 @@ use worth_relational::facade::mvcc::PublicationCompanionPreflight;
 pub struct SourceInvalidationOwner {
     pub runtime_instance_id: u64,
     pub resources: WorthQueryInvalidationResources,
-    pub managed_views:
-        Arc<dyn crate::ports::ManagedDerivedViewPort>,
+    pub managed_views: Arc<dyn crate::ports::ManagedDerivedViewPort>,
     pub branches: Mutex<BranchCells>,
     pub released: Mutex<Vec<Arc<super::super::RecordedSettlementIdentity>>>,
 }
@@ -28,7 +27,11 @@ impl fmt::Debug for SourceInvalidationOwner {
 }
 impl SourceInvalidationOwner {
     pub fn new(resources: WorthQueryInvalidationResources, runtime_instance_id: u64) -> Self {
-        Self::with_managed_views(resources, runtime_instance_id, Arc::new(crate::ports::EmptyManagedDerivedViewPort))
+        Self::with_managed_views(
+            resources,
+            runtime_instance_id,
+            Arc::new(crate::ports::EmptyManagedDerivedViewPort),
+        )
     }
     pub fn with_managed_views(
         resources: WorthQueryInvalidationResources,
@@ -126,7 +129,9 @@ impl worth_query_execution_runtime::facade::ports::RelationalSourceInvalidationP
         limit: usize,
         interest: super::commit_touches::CommitTouchInterest<'_>,
     ) -> super::commit_touches::TouchedCommits {
-        SourceInvalidationOwner::touched_commits_after(self, branch, cursor, ceiling, limit, interest)
+        SourceInvalidationOwner::touched_commits_after(
+            self, branch, cursor, ceiling, limit, interest,
+        )
     }
 }
 

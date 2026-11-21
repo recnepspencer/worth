@@ -48,10 +48,7 @@ impl<'a> WorthQueryApplicationInternalProjectionAdmission<'a> {
         self.field
     }
 
-    pub fn admits_locator(
-        &self,
-        locator: &AspectFieldLocator,
-    ) -> bool {
+    pub fn admits_locator(&self, locator: &AspectFieldLocator) -> bool {
         locator.field_path().fields() == std::slice::from_ref(self.field)
     }
 }

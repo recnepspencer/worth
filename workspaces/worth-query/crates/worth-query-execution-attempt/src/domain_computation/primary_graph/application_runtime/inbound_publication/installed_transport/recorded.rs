@@ -45,9 +45,7 @@ impl InstalledTransportCompletion {
         }
     }
 
-    pub fn attempt_identity(
-        &self,
-    ) -> &CanonicalDigestId {
+    pub fn attempt_identity(&self) -> &CanonicalDigestId {
         match &self.observation {
             TransportCompletionObservation::Live(dispatch) => {
                 dispatch.causal_ladder().attempt().identity().digest()
@@ -56,9 +54,7 @@ impl InstalledTransportCompletion {
         }
     }
 
-    pub fn observation_identity(
-        &self,
-    ) -> Option<&CanonicalDigestId> {
+    pub fn observation_identity(&self) -> Option<&CanonicalDigestId> {
         match &self.observation {
             TransportCompletionObservation::Live(dispatch) => dispatch
                 .causal_ladder()

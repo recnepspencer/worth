@@ -63,9 +63,7 @@ impl WorthQueryAdmittedOperation {
     > {
         self.data.original_scope.as_ref()
     }
-    pub fn original_mutation_binding(
-        &self,
-    ) -> Option<std::any::TypeId> {
+    pub fn original_mutation_binding(&self) -> Option<std::any::TypeId> {
         self.data
             .original_input
             .as_ref()

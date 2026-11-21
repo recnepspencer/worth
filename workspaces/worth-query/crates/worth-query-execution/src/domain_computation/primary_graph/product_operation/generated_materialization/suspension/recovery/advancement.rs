@@ -21,17 +21,18 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let mut attempted = None;
         let result = self.with_application_advancement(request, |phase| {
             attempted = Some((|| {
-                let execution = match phase.execution_request_for(&self.inner.runtime.product_runtime) {
-                    Ok(execution) => execution,
-                    Err(cause) => {
-                        return Err(failure(
-                            WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
-                                cause.into(),
-                            ),
-                            retained.take().expect("one refused recovery").state,
-                        ));
-                    }
-                };
+                let execution =
+                    match phase.execution_request_for(&self.inner.runtime.product_runtime) {
+                        Ok(execution) => execution,
+                        Err(cause) => {
+                            return Err(failure(
+                                WorthQueryGeneratedOutputSuspensionRecoveryStage::ExecutionDenied(
+                                    cause.into(),
+                                ),
+                                retained.take().expect("one refused recovery").state,
+                            ));
+                        }
+                    };
                 let execution = &execution;
                 let recovery = retained.take().expect("one admitted recovery");
 

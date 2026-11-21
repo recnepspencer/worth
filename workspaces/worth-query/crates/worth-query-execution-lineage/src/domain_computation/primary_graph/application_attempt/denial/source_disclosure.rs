@@ -19,9 +19,7 @@ impl Denial {
         };
         Self::new(kind, "original source disclosure")
     }
-    pub fn source_disclosure_parameters(
-        cause: WorthQueryApplicationQueryParameterDenial,
-    ) -> Self {
+    pub fn source_disclosure_parameters(cause: WorthQueryApplicationQueryParameterDenial) -> Self {
         Self::from_cause(
             Kind::SourceDisclosureCaptureDenied,
             "original source disclosure parameters".to_owned(),

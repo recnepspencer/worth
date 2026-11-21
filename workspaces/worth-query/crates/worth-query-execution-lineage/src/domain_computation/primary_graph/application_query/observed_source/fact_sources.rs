@@ -54,9 +54,7 @@ impl<'a> FactSource<'a> {
     }
 }
 impl WorthQueryObservedSourceFootprint {
-    pub fn fact_count(
-        &self,
-    ) -> Option<usize> {
+    pub fn fact_count(&self) -> Option<usize> {
         let base = FactSource::row(self).count()?;
         let selected = self.root_selection.as_ref().map_or(Some(0), |selection| {
             FactSource::selection(selection).count()
@@ -64,9 +62,7 @@ impl WorthQueryObservedSourceFootprint {
         base.checked_add(selected)?
             .checked_add(self.managed_counts().0)
     }
-    pub fn field_count(
-        &self,
-    ) -> Option<usize> {
+    pub fn field_count(&self) -> Option<usize> {
         self.aspects
             .len()
             .checked_add(

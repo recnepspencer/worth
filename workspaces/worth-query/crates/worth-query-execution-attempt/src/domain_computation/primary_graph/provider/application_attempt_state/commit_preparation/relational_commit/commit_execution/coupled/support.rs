@@ -232,9 +232,9 @@ fn superseded_parent(
         return false;
     };
     is_stage(writer)
-        && !members
-            .iter()
-            .any(|member| member.position > writer.position && derives_parent(member, parent.as_ref()))
+        && !members.iter().any(|member| {
+            member.position > writer.position && derives_parent(member, parent.as_ref())
+        })
 }
 
 /// The open issue a refused change to an authored stage's read support is

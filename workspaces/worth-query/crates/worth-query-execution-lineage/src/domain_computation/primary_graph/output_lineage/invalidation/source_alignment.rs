@@ -225,10 +225,7 @@ impl<'selected> SnapshotAlignedMarkState<'selected> {
         SettlementCurrentness::Clean
     }
 
-    pub fn computation_payload_bytes(
-        &self,
-        identity: &RecordedSettlementIdentity,
-    ) -> Option<u64> {
+    pub fn computation_payload_bytes(&self, identity: &RecordedSettlementIdentity) -> Option<u64> {
         let row = self.state.settlements.get(identity)?;
         row.facts
             .postconditions()

@@ -58,8 +58,7 @@ pub struct WorthQueryExecutionBoundOperationAuthority {
 
 #[derive(Clone, Copy)]
 pub struct WorthQueryApplicationGraphWorkAffinity {
-    pub session:
-        crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    pub session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     pub managed_run:
         crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity,
 }
@@ -87,9 +86,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
         self.runtime_authority
     }
 
-    pub const fn graph_work_affinity(
-        &self,
-    ) -> Option<WorthQueryApplicationGraphWorkAffinity> {
+    pub const fn graph_work_affinity(&self) -> Option<WorthQueryApplicationGraphWorkAffinity> {
         self.graph_work_affinity
     }
 
@@ -174,10 +171,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
         self.runtime_authority == runtime.authority_identity()
     }
 
-    pub fn belongs_to_current_installation(
-        &self,
-        runtime: &WorthQueryExecutionRuntime,
-    ) -> bool {
+    pub fn belongs_to_current_installation(&self, runtime: &WorthQueryExecutionRuntime) -> bool {
         self.belongs_to(runtime) && self.installed_domain.is_current_installation_generation()
     }
 
@@ -228,10 +222,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
         self.workflow_stage_resources.is_some()
     }
 
-    pub fn admits_direct_plan(
-        &self,
-        plan: &WorthQueryAdmittedExecutionResourcePlan,
-    ) -> bool {
+    pub fn admits_direct_plan(&self, plan: &WorthQueryAdmittedExecutionResourcePlan) -> bool {
         self.workflow_stage_resources.is_none()
             && self.admits_operation_plan(plan)
             && self
@@ -244,10 +235,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
             && plan.support_snapshot().parallel_admission().is_none()
     }
 
-    pub fn admits_workflow_plan(
-        &self,
-        plan: &WorthQueryAdmittedWorkflowResourcePlan,
-    ) -> bool {
+    pub fn admits_workflow_plan(&self, plan: &WorthQueryAdmittedWorkflowResourcePlan) -> bool {
         let Some(expected_stages) = &self.workflow_stage_resources else {
             return false;
         };
@@ -378,11 +366,7 @@ impl WorthQueryExecutionBoundOperationAuthority {
             .map(|stage| &stage.artifact_contracts)
     }
 
-    pub fn admits_workflow_edge(
-        &self,
-        predecessor_stage: &str,
-        consumer_stage: &str,
-    ) -> bool {
+    pub fn admits_workflow_edge(&self, predecessor_stage: &str, consumer_stage: &str) -> bool {
         self.workflow_stage_resources
             .as_ref()
             .and_then(|stages| stages.get(consumer_stage))

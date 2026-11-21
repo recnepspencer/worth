@@ -34,13 +34,12 @@ pub enum WorthQueryAttemptHomeRetirementDenial {
     Execution(worth_execution::WorkCeilingDenial),
 }
 
-
-
-
 impl From<worth_query_execution_runtime::facade::ports::RuntimeHomeRetirementDenial>
     for WorthQueryAttemptHomeRetirementDenial
 {
-    fn from(value: worth_query_execution_runtime::facade::ports::RuntimeHomeRetirementDenial) -> Self {
+    fn from(
+        value: worth_query_execution_runtime::facade::ports::RuntimeHomeRetirementDenial,
+    ) -> Self {
         use worth_query_execution_runtime::facade::ports::RuntimeHomeRetirementDenial as R;
         match value {
             R::Busy(owner) => Self::Busy(owner),
@@ -59,7 +58,9 @@ impl From<worth_query_execution_runtime::facade::ports::RuntimeHomeRetirementDen
 impl From<worth_query_execution_lineage::facade::ports::LineageHomeRetirementDenial>
     for WorthQueryAttemptHomeRetirementDenial
 {
-    fn from(value: worth_query_execution_lineage::facade::ports::LineageHomeRetirementDenial) -> Self {
+    fn from(
+        value: worth_query_execution_lineage::facade::ports::LineageHomeRetirementDenial,
+    ) -> Self {
         use worth_query_execution_lineage::facade::ports::LineageHomeRetirementDenial as L;
         match value {
             L::Busy(owner) => Self::Busy(owner),
@@ -90,13 +91,17 @@ impl From<worth_execution::WorkCeilingDenial> for WorthQueryAttemptHomeRetiremen
     }
 }
 
-impl From<super::super::WorthQueryCorrectionRetentionDenial> for WorthQueryAttemptHomeRetirementDenial {
+impl From<super::super::WorthQueryCorrectionRetentionDenial>
+    for WorthQueryAttemptHomeRetirementDenial
+{
     fn from(value: super::super::WorthQueryCorrectionRetentionDenial) -> Self {
         Self::CorrectionRetention(value)
     }
 }
 
-impl From<super::super::query_obligations::QueryObligationDenial> for WorthQueryAttemptHomeRetirementDenial {
+impl From<super::super::query_obligations::QueryObligationDenial>
+    for WorthQueryAttemptHomeRetirementDenial
+{
     fn from(value: super::super::query_obligations::QueryObligationDenial) -> Self {
         Self::ManagedCleanup(value)
     }
@@ -105,7 +110,9 @@ impl From<super::super::query_obligations::QueryObligationDenial> for WorthQuery
 impl From<crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial>
     for WorthQueryAttemptHomeRetirementDenial
 {
-    fn from(value: crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial) -> Self {
+    fn from(
+        value: crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial,
+    ) -> Self {
         Self::RecoveryCustody(value)
     }
 }

@@ -43,15 +43,7 @@ pub fn validate_current_read_at_basis<S: ApplicationSchema, Q, P, R, A, I, C>(
 
 /// No payload or Query completion proof is manufactured by this preflight.
 /// All Native/security borrows end before the pure provider can run.
-pub fn validate_before_callback<
-    S: ApplicationSchema,
-    Q,
-    P,
-    R,
-    A,
-    I,
-    C,
->(
+pub fn validate_before_callback<S: ApplicationSchema, Q, P, R, A, I, C>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     plan: &WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,

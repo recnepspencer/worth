@@ -24,6 +24,10 @@ pub mod root_selection;
 pub mod scope_selector;
 pub mod source_identity;
 
+pub use super::super::entity_resolution::WorthQueryObservedScopeSelector;
+pub use super::super::source_facts::{
+    WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision,
+};
 pub use applied_publication::AppliedSourcePublication;
 pub use denial::{WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind};
 pub use expression_context::{ObservedQueryExpressionContext, RetainedExpressionContext};
@@ -35,10 +39,6 @@ pub use root_selection::{
 pub use source_identity::{
     WorthQueryCheckpointSourceIdentity, WorthQueryObservedSourceEpoch,
     WorthQueryObservedSourceSelection, WorthQueryRuntimeSourceIdentity,
-};
-pub use super::super::entity_resolution::WorthQueryObservedScopeSelector;
-pub use super::super::source_facts::{
-    WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision,
 };
 
 #[derive(Clone, Copy)]

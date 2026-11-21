@@ -30,7 +30,9 @@ pub(super) struct WorthQueryInvariantWorkMint {
     _private: (),
 }
 
-impl WorthQueryInvariantExecutionProvider for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc {
+impl WorthQueryInvariantExecutionProvider
+    for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc
+{
     fn load_invariant_state(
         &self,
         session: WorthQueryProviderSessionView<'_>,

@@ -13,11 +13,11 @@ mod workflow_progression;
 mod workflow_recovery;
 pub use workflow_progression::workflow_cleanup_owner as workflow_recovery_cleanup;
 pub use workflow_progression::WorthQueryWorkflowReadmissionCommitState;
+pub(in crate::domain_computation::managed_run) use workflow_progression::WorthQueryWorkflowYieldRestoredOwner;
 pub use workflow_progression::{
     WorthQueryWorkflowReadmissionProgressionPermit, WorthQueryWorkflowReadmissionRestoreMint,
     WorthQueryWorkflowYieldedAssociation,
 };
-pub(in crate::domain_computation::managed_run) use workflow_progression::WorthQueryWorkflowYieldRestoredOwner;
 pub use workflow_recovery::WorthQueryWorkflowReadmissionRecoveryPermit;
 pub use workflow_recovery_cleanup::WorthQueryWorkflowReadmissionCleanupPermit;
 

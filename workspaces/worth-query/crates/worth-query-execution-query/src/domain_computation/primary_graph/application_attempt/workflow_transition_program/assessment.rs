@@ -1,6 +1,7 @@
-use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
 use crate::domain_computation::primary_graph::application_checkpoint::facts::FactSequence;
+use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -11,9 +12,8 @@ use crate::domain_computation::primary_graph::workflow::{
     visit_workflow_assessment_facts, WorkflowAssessmentEvidenceMeaning,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEffectProgram,
-    WorthQueryObservedSource, WorthQueryOutputDemandSettlement,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationEffectProgram, WorthQueryObservedSource, WorthQueryOutputDemandSettlement,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryWorkflowAssessmentPosture,
 };
 
@@ -42,7 +42,9 @@ where
     >;
 }
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessmentRuntimeExt<Schema, Operation, Input, Scope> for PreparedWorkflowAssessment<Schema, Operation, Input, Scope>
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowAssessmentRuntimeExt<Schema, Operation, Input, Scope>
+    for PreparedWorkflowAssessment<Schema, Operation, Input, Scope>
 where
     Schema: ApplicationSchema,
     Operation: 'static,

@@ -1,7 +1,7 @@
 //! Installed original operation custody on Query's existing obligation history.
 use super::{query_obligations::*, WorthQueryAdvancementDenial, WorthQueryAdvancementPhase};
 use worth_foundational::facade::ProgramSupportObligationIdentity;
-use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort;
+use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
 use worth_query_installation::facade::ApplicationSchema;
 
 #[derive(Debug)]
@@ -25,12 +25,15 @@ pub struct WorthQueryOriginalOperationOwner {
 }
 
 impl WorthQueryOriginalOperationOwner {
-    pub fn from_parts(
-        _seal: crate::ports::WorthQueryQueryCrateSeal,
+    pub fn from_retained_obligation<S: ApplicationSchema>(
+        _: &WorthQueryProgramPublicationAccess,
+        runtime: &super::WorthQueryPrimaryGraphApplicationRuntime<S>,
         identity: ProgramSupportObligationIdentity,
-        owner: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Self {
-        Self { identity, owner }
+        Self {
+            identity,
+            owner: runtime.runtime.product_runtime.owner.owner_identity(),
+        }
     }
 
     pub fn identity(&self) -> ProgramSupportObligationIdentity {
@@ -52,7 +55,7 @@ impl<S: ApplicationSchema> super::WorthQueryPrimaryGraphApplicationRuntime<S> {
 
     pub fn original_operation_requires_record(
         &self,
-        _: &dyn WorthQueryProgramPublicationAccessPort,
+        _: &WorthQueryProgramPublicationAccess,
     ) -> bool {
         self.runtime.product_runtime.is_directory_home()
     }
@@ -60,7 +63,7 @@ impl<S: ApplicationSchema> super::WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn admit_original_operation_retention(
         &self,
         owner: Option<&WorthQueryOriginalOperationOwner>,
-        access: &dyn WorthQueryProgramPublicationAccessPort,
+        access: &WorthQueryProgramPublicationAccess,
     ) -> Result<(), WorthQueryOriginalOperationDenial> {
         match owner {
             Some(owner) => self.admit_original_operation_owner(owner, access),
@@ -74,7 +77,7 @@ impl<S: ApplicationSchema> super::WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn admit_original_operation_owner(
         &self,
         owner: &WorthQueryOriginalOperationOwner,
-        _: &dyn WorthQueryProgramPublicationAccessPort,
+        _: &WorthQueryProgramPublicationAccess,
     ) -> Result<(), WorthQueryOriginalOperationDenial> {
         use WorthQueryOriginalOperationDenial as D;
         self.runtime
@@ -91,7 +94,7 @@ impl<S: ApplicationSchema> super::WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn progress_original_operation_in_advancement(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        access: &dyn WorthQueryProgramPublicationAccessPort,
+        access: &WorthQueryProgramPublicationAccess,
         owner: &WorthQueryOriginalOperationOwner,
         position: Option<QueryOriginalOperationPosition>,
     ) -> Result<(), WorthQueryOriginalOperationDenial> {

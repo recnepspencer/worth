@@ -12,8 +12,7 @@ pub enum SealedReadLayout {
 
 pub struct CheckedReadLayout {
     pub contracts: Arc<WorthQueryCompiledApplicationOperationContracts>,
-    pub scopes:
-        crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    pub scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
     pub handlers: Arc<BTreeMap<WorthQueryApplicationFactKey, usize>>,
     pub root: EntityId,
     pub decision_count: usize,
@@ -69,8 +68,7 @@ impl SealedReadLayout {
 /// alone has no source/snapshot authority; this also holds its checked layout.
 #[derive(Clone)]
 pub struct CheckedCallShape {
-    pub shape:
-        Arc<crate::domain_computation::primary_graph::invariant_projection::CallShape>,
+    pub shape: Arc<crate::domain_computation::primary_graph::invariant_projection::CallShape>,
     layout: Arc<CheckedReadLayout>,
 }
 impl CheckedCallShape {
@@ -118,10 +116,7 @@ impl SealedComputationFacts {
             layout: Arc::clone(layout),
         })
     }
-    pub fn has_call_shape(
-        &self,
-        binding: &CheckedCallShape,
-    ) -> bool {
+    pub fn has_call_shape(&self, binding: &CheckedCallShape) -> bool {
         self.layout
             .checked()
             .is_some_and(|layout| Arc::ptr_eq(layout, &binding.layout))

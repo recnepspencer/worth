@@ -222,9 +222,7 @@ impl WorthQueryLiveDeliverySource {
     }
 }
 impl WorthQueryLivePredicateSubscription {
-    pub fn subscription(
-        &self,
-    ) -> &WorthQueryLiveSubscription {
+    pub fn subscription(&self) -> &WorthQueryLiveSubscription {
         &self.subscription
     }
 }

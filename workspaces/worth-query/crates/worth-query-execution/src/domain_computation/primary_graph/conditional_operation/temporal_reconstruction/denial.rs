@@ -4,6 +4,7 @@ use super::super::{
 };
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) fn bridge_reconstruction_denial(
     detail: impl Into<String>,

@@ -184,8 +184,7 @@ pub struct DirectReadmissionCleanupLifecycleEvent {
     kind: DirectReadmissionCleanupLifecycleEventKind,
 }
 
-pub enum DirectReadmissionCleanupLifecycleEventKind
-{
+pub enum DirectReadmissionCleanupLifecycleEventKind {
     Attempted,
     Completed,
 }
@@ -203,9 +202,7 @@ impl DirectReadmissionCleanupLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> DirectReadmissionCleanupLifecycleEventKind {
+    pub fn into_kind(self) -> DirectReadmissionCleanupLifecycleEventKind {
         self.kind
     }
 }

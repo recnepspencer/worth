@@ -18,8 +18,7 @@ pub struct StructuralWalkQuery<'a> {
     pub relation_kind: KindId,
     pub direction: RelationDirection,
     pub maximum_work: Option<usize>,
-    pub control:
-        Option<&'a dyn Fn() -> Result<(), Cause>>,
+    pub control: Option<&'a dyn Fn() -> Result<(), Cause>>,
 }
 
 impl StructuralWalkObservation {

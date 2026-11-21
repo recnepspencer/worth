@@ -28,16 +28,11 @@ pub struct WorthQueryAcceptedOutputCheckpointIdentity {
 }
 
 impl WorthQueryAcceptedOutputCheckpointIdentity {
-    pub fn output_slot(
-        &self,
-    ) -> CheckpointOutputSlot<'_> {
+    pub fn output_slot(&self) -> CheckpointOutputSlot<'_> {
         CheckpointOutputSlot::new(&self.producer, self.scope, self.source_partition)
     }
 
-    pub fn canonical_cmp(
-        &self,
-        other: &Self,
-    ) -> std::cmp::Ordering {
+    pub fn canonical_cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.producer
             .cmp(&other.producer)
             .then_with(|| self.implementation.cmp(&other.implementation))

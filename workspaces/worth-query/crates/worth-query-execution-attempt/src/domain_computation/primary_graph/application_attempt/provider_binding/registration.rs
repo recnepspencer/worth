@@ -42,14 +42,11 @@ pub struct WorthQueryProviderEffectRegistrationSeal {
     _owner_mint: (),
 }
 
-pub struct WorthQueryRegisteredProviderAttemptSeal
-{
+pub struct WorthQueryRegisteredProviderAttemptSeal {
     _owner_mint: (),
 }
 
-pub struct WorthQueryProviderRegistrationInspectionPermit(
-    (),
-);
+pub struct WorthQueryProviderRegistrationInspectionPermit(());
 
 impl WorthQueryProviderRegistrationInspectionPermit {
     fn mint() -> Self {

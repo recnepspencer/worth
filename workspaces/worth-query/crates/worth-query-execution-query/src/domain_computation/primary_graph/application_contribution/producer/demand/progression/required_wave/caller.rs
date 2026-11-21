@@ -16,10 +16,7 @@ use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 /// Check actual selected required work before the caller's ordinary Ready
 /// result can be accepted. The caller keeps the successors its own chain
 /// mints; a queue frame's successors belong to their own occurrence.
-pub fn advance_required_before_caller<
-    Schema,
-    Family,
->(
+pub fn advance_required_before_caller<Schema, Family>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 

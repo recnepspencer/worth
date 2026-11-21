@@ -13,9 +13,7 @@ pub struct WorthQueryProductIdempotencyAffinity {
 }
 
 impl WorthQueryProductIdempotencyAffinity {
-    pub fn from_released(
-        original: &worth_runtime_world::facade::WorldReleasedOriginal,
-    ) -> Self {
+    pub fn from_released(original: &worth_runtime_world::facade::WorldReleasedOriginal) -> Self {
         Self::new(
             original.product_branch().clone(),
             original.product_incarnation(),
@@ -24,9 +22,7 @@ impl WorthQueryProductIdempotencyAffinity {
     pub(super) fn branch(&self) -> &ProductBranchIdentity {
         &self.branch
     }
-    pub const fn incarnation(
-        &self,
-    ) -> ProductBranchIncarnation {
+    pub const fn incarnation(&self) -> ProductBranchIncarnation {
         self.incarnation
     }
 

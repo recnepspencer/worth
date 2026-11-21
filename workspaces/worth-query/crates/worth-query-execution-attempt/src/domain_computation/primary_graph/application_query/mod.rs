@@ -1,11 +1,11 @@
-pub use worth_query_execution_lineage::facade::primary_graph::application_query::*;
 pub use crate::ports::WatchSlot;
+pub use worth_query_execution_lineage::facade::primary_graph::application_query::*;
 pub mod derived_view {
-    pub use worth_query_execution_lineage::facade::primary_graph::application_query::derived_view::*;
     pub use crate::ports::{
         PredicateNoticeDisposition, PredicatePreparationOwner, PredicatePreparationRetirement,
         PreparedPredicateNotices, PreparedPredicatePublication, ViewPublicationBasis,
     };
+    pub use worth_query_execution_lineage::facade::primary_graph::application_query::derived_view::*;
 }
 pub mod admission {
     pub use worth_query_execution_lineage::facade::primary_graph::application_query::admission::*;

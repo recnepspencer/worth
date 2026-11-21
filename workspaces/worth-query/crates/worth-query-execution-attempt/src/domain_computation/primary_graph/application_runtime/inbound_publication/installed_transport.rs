@@ -76,9 +76,7 @@ impl InstalledTransportCompletion {
         })
     }
 
-    pub fn committed(
-        &self,
-    ) -> &WorthQueryCommittedDispatchOutboxObservation {
+    pub fn committed(&self) -> &WorthQueryCommittedDispatchOutboxObservation {
         &self.committed
     }
 }
@@ -127,24 +125,16 @@ impl PerformedInstalledTransportCompletion {
         true
     }
 
-    pub fn evidence(
-        &self,
-    ) -> &InstalledTransportCompletion {
+    pub fn evidence(&self) -> &InstalledTransportCompletion {
         &self.evidence
     }
-    pub fn binding(
-        &self,
-    ) -> &WorthQueryInstalledTransportCompletionBinding {
+    pub fn binding(&self) -> &WorthQueryInstalledTransportCompletionBinding {
         &self.binding
     }
-    pub fn original_incarnation(
-        &self,
-    ) -> ProductBranchIncarnation {
+    pub fn original_incarnation(&self) -> ProductBranchIncarnation {
         self.original_incarnation
     }
-    pub fn publication(
-        &self,
-    ) -> &WorthQueryProductPublicationReceipt {
+    pub fn publication(&self) -> &WorthQueryProductPublicationReceipt {
         &self.publication
     }
 

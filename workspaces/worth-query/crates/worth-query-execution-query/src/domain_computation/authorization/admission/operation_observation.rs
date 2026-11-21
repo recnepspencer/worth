@@ -186,19 +186,14 @@ where
     }
 }
 
-pub trait ObservedConventionalOperationRuntimeExt: Sized
-
-{
+pub trait ObservedConventionalOperationRuntimeExt: Sized {
     fn retain_for(
         self,
         operation: worth_query_installation::facade::InstalledOperationView<'_>,
-    ) -> Result<WorthQueryRetainedAuthorizationDecisionFacts, WorthQueryOperationAuthorizationDenial>
-;
+    ) -> Result<WorthQueryRetainedAuthorizationDecisionFacts, WorthQueryOperationAuthorizationDenial>;
 }
 
-impl ObservedConventionalOperationRuntimeExt for WorthQueryObservedConventionalOperation
-
-{
+impl ObservedConventionalOperationRuntimeExt for WorthQueryObservedConventionalOperation {
     fn retain_for(
         self,
         operation: worth_query_installation::facade::InstalledOperationView<'_>,

@@ -216,9 +216,7 @@ impl WorthQueryInstalledAuthorizationRegistry {
             .elevation_lifecycle_operation::<Schema, Operation>(operation, input_type)
     }
 
-    pub const fn capability_compilation(
-        &self,
-    ) -> WorthQueryCapabilityPlanCompilationEvidence {
+    pub const fn capability_compilation(&self) -> WorthQueryCapabilityPlanCompilationEvidence {
         self.capabilities.compilation()
     }
 }

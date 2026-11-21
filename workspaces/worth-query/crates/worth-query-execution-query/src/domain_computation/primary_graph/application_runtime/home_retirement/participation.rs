@@ -21,9 +21,7 @@ pub struct PrimaryGraphParticipationCustody {
     retired_anchor: Option<RetiredPrimaryProviderAnchor>,
 }
 impl PrimaryGraphParticipationCustody {
-    pub fn new(
-        original: WorthQueryInstalledGraphParticipationAuthority,
-    ) -> Self {
+    pub fn new(original: WorthQueryInstalledGraphParticipationAuthority) -> Self {
         Self {
             original: Some(original),
             anchor_share: None,
@@ -46,9 +44,8 @@ impl PrimaryGraphParticipationCustody {
         let anchor = original
             .retain_provider_anchor::<WorthQueryGraphProviderAnchor>()
             .ok_or(Denial::Unsupported(Owner::GraphProvider))?;
-        let expected = crate::domain_computation::runtime_ports::PrimaryGraphProviderArc(
-            Arc::clone(expected),
-        );
+        let expected =
+            crate::domain_computation::runtime_ports::PrimaryGraphProviderArc(Arc::clone(expected));
         anchor
             .preflight_home_retirement::<
                 crate::domain_computation::primary_graph::WorthQueryPrimaryLogicalGraph,
@@ -88,9 +85,8 @@ impl PrimaryGraphParticipationCustody {
             }
             return Ok(Progress::Advanced);
         }
-        let expected = crate::domain_computation::runtime_ports::PrimaryGraphProviderArc(
-            Arc::clone(expected),
-        );
+        let expected =
+            crate::domain_computation::runtime_ports::PrimaryGraphProviderArc(Arc::clone(expected));
         match self
             .anchor
             .take()

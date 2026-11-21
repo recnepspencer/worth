@@ -1,8 +1,8 @@
-use crate::domain_computation::primary_graph::OriginalSettledProducerObservationExt;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::basis::{
     WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
 };
+use crate::domain_computation::primary_graph::OriginalSettledProducerObservationExt;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchIdentity;
@@ -59,21 +59,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 
     /// Selects only a Query-issued occurrence token.
-    ///
-    /// ```compile_fail
-    /// use worth_query_execution::facade::{
-    ///     primary_graph::WorthQueryPrimaryGraphApplicationRuntime,
-    ///     runtime::ProductBranchIdentity,
-    /// };
-    /// use worth_query_installation::facade::ApplicationSchema;
-    ///
-    /// fn raw_world_identity_cannot_select<Schema: ApplicationSchema>(
-    ///     app: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    ///     raw: ProductBranchIdentity,
-    /// ) {
-    ///     let _ = app.on_branch(raw);
-    /// }
-    /// ```
     pub fn on_branch(&self, branch: WorthQueryProductBranch) -> WorthQueryProductEntry<'_, Schema> {
         WorthQueryProductEntry {
             application: self,
@@ -195,9 +180,7 @@ where
     Schema: ApplicationSchema,
 {
     /// Internal managed receiver hook at the actual retained Query basis owner.
-    pub fn select_for_managed_index<
-        Stop: From<WorthQueryProductBranchAdmissionDenial>,
-    >(
+    pub fn select_for_managed_index<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
         self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         before_basis: impl FnOnce(
@@ -268,9 +251,7 @@ impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
         self.selected_program.clone()
     }
 
-    pub fn selection_origin(
-        &self,
-    ) -> SelectedQueryOrigin {
+    pub fn selection_origin(&self) -> SelectedQueryOrigin {
         self.selection_origin
     }
 

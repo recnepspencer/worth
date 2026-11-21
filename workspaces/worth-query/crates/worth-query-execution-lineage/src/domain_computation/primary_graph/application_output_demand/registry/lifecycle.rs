@@ -121,9 +121,7 @@ impl WorthQueryOutputDemandRegistry {
             .count()
     }
 
-    pub fn output_checkpoint_snapshot_state(
-        &self,
-    ) -> (usize, usize) {
+    pub fn output_checkpoint_snapshot_state(&self) -> (usize, usize) {
         let state = self
             .state
             .lock()
@@ -194,15 +192,11 @@ impl Drop for WorthQueryOutputDemandInterest {
 }
 
 impl WorthQueryOutputDemandInterest {
-    pub fn notifications(
-        &self,
-    ) -> WorthQueryOutputDemandNotifications {
+    pub fn notifications(&self) -> WorthQueryOutputDemandNotifications {
         self.notifications.clone()
     }
 
-    pub const fn key(
-        &self,
-    ) -> &WorthQueryOutputDemandKey {
+    pub const fn key(&self) -> &WorthQueryOutputDemandKey {
         &self.key
     }
 

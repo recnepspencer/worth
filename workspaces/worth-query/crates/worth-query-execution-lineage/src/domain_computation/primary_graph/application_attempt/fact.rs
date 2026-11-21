@@ -27,20 +27,14 @@ pub use workflow_history_basis::WorkflowHistoryRequirement;
 pub mod workflow_instance_capacity;
 pub use adjacency::observe_adjacency_with_work;
 pub use adjacency::observe_audit_outgoing_adjacency;
-pub use adjacency::{
-    observe_adjacency, observe_adjacency_in_pin,
-};
-pub use adjacency::{
-    observe_adjacency_checked, AdjacencyObservationDenial,
-};
+pub use adjacency::{observe_adjacency, observe_adjacency_in_pin};
+pub use adjacency::{observe_adjacency_checked, AdjacencyObservationDenial};
 pub use indexed_entity_selection::reobserve as reobserve_indexed_entity_selection;
 pub use indexed_entity_selection::IndexedSelectionReobserveDenial;
 pub use indexed_entity_selection::{
     observe_indexed_candidates, observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal,
 };
-pub use movement::{
-    FactMovement, Movement, ObservedRetained,
-};
+pub use movement::{FactMovement, Movement, ObservedRetained};
 pub use source_currentness::WorthQuerySourceCurrentnessFailure;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -262,19 +256,13 @@ impl WorthQueryApplicationObservedFact {
         locator_identity::encode(self)
     }
 
-    pub fn touches_entity(
-        &self,
-        candidate: EntityId,
-    ) -> bool {
+    pub fn touches_entity(&self, candidate: EntityId) -> bool {
         entity_touch::evaluate(self, candidate)
     }
 }
 
 impl WorthQueryApplicationObservedFact {
-    pub fn write_dependency_locator(
-        &self,
-        output: &mut dyn std::fmt::Write,
-    ) -> std::fmt::Result {
+    pub fn write_dependency_locator(&self, output: &mut dyn std::fmt::Write) -> std::fmt::Result {
         locator_identity::write(self, output)
     }
 }

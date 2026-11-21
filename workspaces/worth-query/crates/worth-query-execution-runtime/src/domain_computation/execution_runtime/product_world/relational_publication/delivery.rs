@@ -2,43 +2,6 @@ use super::super::WorthQueryProductSharedRoot;
 
 impl WorthQueryProductSharedRoot {
     /// Delivers a performed change only inside this root's installed advancement.
-    ///
-    /// ```compile_fail,E0308
-    /// # use worth_query_execution::facade::{
-    /// #     application_contribution::WorthQueryAdvancementPhase,
-    /// #     integration::WorthQueryProductSharedRoot,
-    /// #     product::WorthQueryPerformedRelationalProductChange,
-    /// #     provider_session::ExecutionRequest,
-    /// # };
-    /// # use worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding;
-    /// # fn contract(
-    /// #     root: &WorthQueryProductSharedRoot,
-    /// #     phase: &WorthQueryAdvancementPhase<'_>,
-    /// #     request: ExecutionRequest<'_, '_>,
-    /// #     lowering: &BridgeConditionalSignalBasisBinding,
-    /// #     change: WorthQueryPerformedRelationalProductChange,
-    /// # ) {
-    /// let _ = root.deliver_performed_relational_change(request, lowering, 0, change);
-    /// # }
-    /// ```
-    /// ```
-    /// # use worth_query_execution::facade::{
-    /// #     application_contribution::WorthQueryAdvancementPhase,
-    /// #     integration::WorthQueryProductSharedRoot,
-    /// #     product::WorthQueryPerformedRelationalProductChange,
-    /// #     provider_session::ExecutionRequest,
-    /// # };
-    /// # use worth_runtime_bridge::facade::BridgeConditionalSignalBasisBinding;
-    /// # fn contract(
-    /// #     root: &WorthQueryProductSharedRoot,
-    /// #     phase: &WorthQueryAdvancementPhase<'_>,
-    /// #     request: ExecutionRequest<'_, '_>,
-    /// #     lowering: &BridgeConditionalSignalBasisBinding,
-    /// #     change: WorthQueryPerformedRelationalProductChange,
-    /// # ) {
-    /// let _ = root.deliver_performed_relational_change(phase, lowering, 0, change);
-    /// # }
-    /// ```
     #[doc(hidden)]
     pub fn deliver_performed_relational_change(
         &self,

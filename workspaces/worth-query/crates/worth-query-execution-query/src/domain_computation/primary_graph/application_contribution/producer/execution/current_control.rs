@@ -3,10 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
 
-pub fn select_invocation_control<
-    'runtime,
-    Schema: ApplicationSchema,
->(
+pub fn select_invocation_control<'runtime, Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     invocation: &ProducerInvocationAuthority<'_>,
@@ -14,10 +11,7 @@ pub fn select_invocation_control<
     select_history_control(execution, runtime, invocation.history_control())
 }
 
-pub fn select_history_control<
-    'runtime,
-    Schema: ApplicationSchema,
->(
+pub fn select_history_control<'runtime, Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     history: Option<HistoryProducerInvocation<'_>>,

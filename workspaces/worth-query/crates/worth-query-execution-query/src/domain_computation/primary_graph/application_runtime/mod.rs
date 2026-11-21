@@ -56,9 +56,7 @@ pub use external_dispatch_attempt::{
     WorthQueryExternalDispatchAdmissionDenial, WorthQueryExternalDispatchAttemptOrdinal,
     WorthQueryTerminalEffectRefusal,
 };
-pub use home_retirement_denial::{
-    WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner,
-};
+pub use home_retirement_denial::{WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner};
 pub use inbound_occurrence::{
     WorthQueryAdmittedInboundOccurrence, WorthQueryAuthenticatedInboundOccurrence,
     WorthQueryCorrelatedInboundOccurrence, WorthQueryInboundAdmissionDenial,
@@ -71,11 +69,10 @@ pub use inbound_occurrence::{
     WorthQueryInstalledTransportCompletionBinding,
 };
 pub use inbound_publication::{
-    InstalledTransportCompletion, InstalledTransportPendingReason,
-    InstalledTransportResumeOutcome, PerformedInstalledTransportCompletion,
-    WorthQueryInboundPublicationDenial, WorthQueryInboundPublicationOutcome,
-    WorthQueryPerformedInboundCompletion, WorthQueryRecordedCompletionDenial,
-    WorthQueryUnpublishedInboundCompletion,
+    InstalledTransportCompletion, InstalledTransportPendingReason, InstalledTransportResumeOutcome,
+    PerformedInstalledTransportCompletion, WorthQueryInboundPublicationDenial,
+    WorthQueryInboundPublicationOutcome, WorthQueryPerformedInboundCompletion,
+    WorthQueryRecordedCompletionDenial, WorthQueryUnpublishedInboundCompletion,
 };
 pub use operation_control::{
     WorthQueryApplicationAttemptOperationControl, WorthQuerySourcePublicationHeadForTest,
@@ -260,7 +257,7 @@ where
     pub fn graph_work_resource_support_ref(
         &self,
     ) -> &worth_query_admission::facade::resource_admission::WorthQueryExecutionResourceSupportSnapshot
-    {
+{
         self.runtime.graph_work_resource_support_ref()
     }
 

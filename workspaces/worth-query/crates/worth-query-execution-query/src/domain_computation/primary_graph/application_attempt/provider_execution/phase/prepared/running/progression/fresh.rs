@@ -15,6 +15,7 @@ use graph::application_attempt::{
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
 use graph::provider::{WorthQueryPrimaryGraphProvider, WorthQueryProviderIdempotencyResolution};
 use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use graph::application_attempt::WorthQueryApplicationCommitDenialStage as DenialStage;

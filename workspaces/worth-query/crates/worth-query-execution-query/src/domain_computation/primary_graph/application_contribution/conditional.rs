@@ -51,14 +51,37 @@ impl<Schema> Default for WorthQueryInstalledApplicationConditionalRegistry<Schem
 }
 
 impl<Schema> WorthQueryInstalledApplicationConditionalRegistry<Schema> {
-    pub fn from_entries(
-        _seal: crate::ports::WorthQueryQueryCrateSeal,
-        entries: BTreeMap<String, InstalledConditionalBinding>,
-    ) -> Self {
-        Self {
-            entries: Arc::new(entries),
-            marker: PhantomData,
+    pub fn install_declared_entries<Config, Err>(
+        declared: &BTreeMap<String, DeclaredConditionalBinding>,
+        mut configured: BTreeMap<String, Config>,
+        mut install_one: impl FnMut(
+            &DeclaredConditionalBinding,
+            Config,
+        ) -> Result<InstalledConditionalBinding, Err>,
+    ) -> Result<
+        Self,
+        (
+            BTreeMap<String, Config>,
+            BTreeMap<String, InstalledConditionalBinding>,
+            Err,
+        ),
+    > {
+        let mut completed = BTreeMap::new();
+        while let Some((identity, configuration)) = configured.pop_first() {
+            let declaration = declared
+                .get(&identity)
+                .expect("configured identity came from the declaration");
+            match install_one(declaration, configuration) {
+                Ok(installed) => {
+                    completed.insert(identity, installed);
+                }
+                Err(err) => return Err((configured, completed, err)),
+            }
         }
+        Ok(Self {
+            entries: Arc::new(completed),
+            marker: PhantomData,
+        })
     }
 
     pub fn entry_value(

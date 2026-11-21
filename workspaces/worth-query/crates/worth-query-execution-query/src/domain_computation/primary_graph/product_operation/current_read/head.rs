@@ -6,10 +6,7 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
 
 /// Internal callers carry the execution already checked by their advancement.
-pub fn confirm_in_execution<
-    S: ApplicationSchema,
-    Value,
->(
+pub fn confirm_in_execution<S: ApplicationSchema, Value>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     product: &WorthQueryProductObservationLease,
@@ -28,10 +25,7 @@ pub fn confirm_in_execution<
 }
 
 /// Only the document owner supplies this platform metadata transition.
-pub fn confirm_in_execution_with_effect<
-    S: ApplicationSchema,
-    Value,
->(
+pub fn confirm_in_execution_with_effect<S: ApplicationSchema, Value>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     product: &WorthQueryProductObservationLease,
@@ -77,10 +71,7 @@ pub fn confirm_in_execution_with_effect<
 
 /// The caller holds this occurrence's lane, and supplies the actual Native owner.
 /// This core never acquires Query's Native transport or an earlier-order seal.
-pub fn confirm_in_native<
-    S: ApplicationSchema,
-    Value,
->(
+pub fn confirm_in_native<S: ApplicationSchema, Value>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     product: &WorthQueryProductObservationLease,

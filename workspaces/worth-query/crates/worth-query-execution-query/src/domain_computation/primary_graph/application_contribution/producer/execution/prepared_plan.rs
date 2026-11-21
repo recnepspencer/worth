@@ -4,9 +4,8 @@ use super::*;
 use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot;
 use crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::PreparedCompute;
 
-pub type ProducerExecutionPlan<
-    'owner,
-> = OwnerPlan<'owner, ProducerExecutionOutcome, ProducerExecutionStop>;
+pub type ProducerExecutionPlan<'owner> =
+    OwnerPlan<'owner, ProducerExecutionOutcome, ProducerExecutionStop>;
 
 type OwnerCallback<'owner, Value, Stop> =
     Box<dyn FnOnce(Vec<ComputedSlot>) -> Result<Value, Stop> + 'owner>;
@@ -22,12 +21,7 @@ pub struct OwnerPlan<'owner, Value, Stop> {
 
 /// The consuming cursor owns completion before successor custody. Discarding
 /// a suffix closes its running claim before releasing the successor interest.
-pub struct OwnerCompletion<
-    'owner,
-    Value,
-    Stop,
-    Custody,
-> {
+pub struct OwnerCompletion<'owner, Value, Stop, Custody> {
     slots: Vec<ComputedSlot>,
     complete: Option<OwnerCallback<'owner, Value, Stop>>,
     custody: Custody,
@@ -39,9 +33,7 @@ impl<Value, Stop, Custody> OwnerCompletion<'_, Value, Stop, Custody> {
         self
     }
 
-    pub fn finish(
-        mut self,
-    ) -> (Result<Value, Stop>, Custody) {
+    pub fn finish(mut self) -> (Result<Value, Stop>, Custody) {
         // Keep custody in self while completion runs: on an unwind the running
         // claim in the callback closes before self releases its interest.
         let complete = self.complete.take().expect("completion is consumed once");
@@ -51,9 +43,7 @@ impl<Value, Stop, Custody> OwnerCompletion<'_, Value, Stop, Custody> {
 }
 
 impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
-    pub fn immediate(
-        outcome: Result<Value, Stop>,
-    ) -> Self {
+    pub fn immediate(outcome: Result<Value, Stop>) -> Self {
         Self::new(Vec::new(), move |slots| {
             assert!(
                 slots.is_empty(),
@@ -91,11 +81,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
 
     /// Align owner completion with its successor custody until canonical apply.
     /// Discarding a plan closes its invocation before releasing its replacement.
-    pub fn complete_with<
-        Next: 'owner,
-        NextStop: 'owner,
-        Custody: 'owner,
-    >(
+    pub fn complete_with<Next: 'owner, NextStop: 'owner, Custody: 'owner>(
         self,
         custody: Custody,
         apply: impl FnOnce(OwnerCompletion<'owner, Value, Stop, Custody>) -> Result<Next, NextStop>
@@ -117,10 +103,7 @@ impl<'owner, Value: 'owner, Stop: 'owner> OwnerPlan<'owner, Value, Stop> {
         plan
     }
 
-    pub fn map_result<
-        Next: 'owner,
-        NextStop: 'owner,
-    >(
+    pub fn map_result<Next: 'owner, NextStop: 'owner>(
         self,
         finish: impl FnOnce(Result<Value, Stop>) -> Result<Next, NextStop> + 'owner,
     ) -> OwnerPlan<'owner, Next, NextStop> {

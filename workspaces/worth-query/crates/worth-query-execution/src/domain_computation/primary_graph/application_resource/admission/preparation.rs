@@ -74,12 +74,16 @@ where
     }
     let reserved = WorthQueryPreparedProductReadSessionIdentity::reserve()
         .map_err(ResourceAdmissionDenial::Session)?;
-    let principal_currentness =
-        capture_principal_currentness_admitted(runtime.inner(), principal.principal(), reserved.identity())
-            .map_err(|_| ResourceAdmissionDenial::MissingPrincipalBinding)?;
+    let principal_currentness = capture_principal_currentness_admitted(
+        runtime.inner(),
+        principal.principal(),
+        reserved.identity(),
+    )
+    .map_err(|_| ResourceAdmissionDenial::MissingPrincipalBinding)?;
     let (plan, admission) = plan::admit(runtime, execution, resource, purpose, prepared)?;
     let graph = runtime
-        .inner.runtime
+        .inner
+        .runtime
         .primary_graph()
         .ok_or(ResourceAdmissionDenial::MissingGraph)?;
     let basis = selected.application_basis().identity().clone();

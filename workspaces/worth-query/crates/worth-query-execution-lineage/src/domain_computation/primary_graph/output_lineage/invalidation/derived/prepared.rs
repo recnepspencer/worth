@@ -50,9 +50,7 @@ impl StoppedSettlementRegistration {
         self.native.reason()
     }
 
-    pub fn into_parts(
-        self,
-    ) -> (CompanionCellEditStop, PreparedSettlementRegistration) {
+    pub fn into_parts(self) -> (CompanionCellEditStop, PreparedSettlementRegistration) {
         let (reason, native) = self.native.into_parts();
         (
             reason,
@@ -87,9 +85,7 @@ impl PreparedSettlementRegistration {
             .is_none());
     }
 
-    pub fn install(
-        self,
-    ) -> Result<SettlementRegistrationCleanup, StoppedSettlementRegistration> {
+    pub fn install(self) -> Result<SettlementRegistrationCleanup, StoppedSettlementRegistration> {
         let PreparedSettlementRegistration {
             native,
             work_cue,

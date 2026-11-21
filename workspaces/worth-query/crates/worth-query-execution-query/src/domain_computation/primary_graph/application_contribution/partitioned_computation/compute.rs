@@ -27,10 +27,9 @@ use super::{
     WorthQueryPartitionedComputationDenial, WorthQueryPartitionedComputationOwner,
 };
 
-pub type Denial<Schema, Feature, Computation, Owner> =
-    WorthQueryPartitionedComputationDenial<
-        <Owner as WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>>::Stopped,
-    >;
+pub type Denial<Schema, Feature, Computation, Owner> = WorthQueryPartitionedComputationDenial<
+    <Owner as WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>>::Stopped,
+>;
 
 /// One gathered partition of `Owner`'s computation.
 pub type Gathered<Schema, Feature, Computation, Owner> = GatheredComputationPartition<

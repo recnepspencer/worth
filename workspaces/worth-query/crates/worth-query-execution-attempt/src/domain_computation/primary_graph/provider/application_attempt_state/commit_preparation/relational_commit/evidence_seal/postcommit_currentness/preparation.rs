@@ -26,23 +26,16 @@ impl PreparedSourceFactRebase {
         self
     }
 
-    pub fn retaining_output_field_evidence(
-        mut self,
-        requested: bool,
-    ) -> Self {
+    pub fn retaining_output_field_evidence(mut self, requested: bool) -> Self {
         self.retain_output_field_evidence = requested;
         self
     }
-    pub fn retains_output_field_evidence(
-        &self,
-    ) -> bool {
+    pub fn retains_output_field_evidence(&self) -> bool {
         self.retain_output_field_evidence
     }
 
     /// Immutable pre-effect field copies retain their original producer funding.
-    pub fn performed_input_facts(
-        &self,
-    ) -> Option<FactPayload> {
+    pub fn performed_input_facts(&self) -> Option<FactPayload> {
         self.performed_input_facts.clone()
     }
 

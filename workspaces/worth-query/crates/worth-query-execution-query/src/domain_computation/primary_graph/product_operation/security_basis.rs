@@ -56,16 +56,12 @@ enum SecurityApplicationBasis<'basis> {
 /// Selected Product security custody before graph-index preparation. Query
 /// permission may inspect this exact snapshot; a graph-read session cannot
 /// accept it as an indexed security basis.
-pub struct WorthQuerySelectedPermissionSecurityBasis<
-    'basis,
-> {
+pub struct WorthQuerySelectedPermissionSecurityBasis<'basis> {
     basis: WorthQueryProductSecurityBasis<'basis>,
 }
 
 impl WorthQuerySelectedPermissionSecurityBasis<'_> {
-    pub fn snapshot_handle(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+    pub fn snapshot_handle(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
         self.basis.snapshot_handle()
     }
 }
@@ -77,9 +73,7 @@ enum SecurityIndexCurrency<'a> {
 }
 
 impl WorthQueryProductSecurityBasis<'_> {
-    pub fn snapshot_handle(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+    pub fn snapshot_handle(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
         match &self.application_basis {
             SecurityApplicationBasis::Owned(basis) => basis.snapshot_handle(),
             SecurityApplicationBasis::Reused(snapshot) => snapshot,
@@ -170,9 +164,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
 
-    pub fn admit_query_product_security_basis<
-        'basis,
-    >(
+    pub fn admit_query_product_security_basis<'basis>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &impl WorthQueryProductObservationSource,
@@ -190,9 +182,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// Reobserve Product security with the ordinary graph-read program and
     /// snapshot path after the exact selected native indexes were prepared.
     /// A newer native basis refuses this proof before using its old currency.
-    pub fn admit_query_prepared_read_security_basis<
-        'basis,
-    >(
+    pub fn admit_query_prepared_read_security_basis<'basis>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &impl WorthQueryProductObservationSource,

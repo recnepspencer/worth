@@ -1,10 +1,7 @@
 //! Exact owner/occurrence join; data equality grants no delivery authority.
 use super::*;
 impl RecoveredProducerOutputFacts {
-    pub fn matches_original(
-        &self,
-        original: &WorthQueryRecoveredApplicationCommitReceipt,
-    ) -> bool {
+    pub fn matches_original(&self, original: &WorthQueryRecoveredApplicationCommitReceipt) -> bool {
         use worth_foundational::facade::{
             RecordedCompositePublicationAttemptIdentity, RecordedProductBranchReference,
         };

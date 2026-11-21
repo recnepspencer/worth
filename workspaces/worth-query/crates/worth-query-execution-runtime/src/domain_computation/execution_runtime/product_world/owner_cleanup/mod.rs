@@ -309,9 +309,7 @@ impl WorthQueryProductRuntime {
             .collect()
     }
 
-    pub fn pending_workspace_owner_cleanup(
-        &self,
-    ) -> Vec<WorthQueryProductBranchOwnerCleanup> {
+    pub fn pending_workspace_owner_cleanup(&self) -> Vec<WorthQueryProductBranchOwnerCleanup> {
         self.owner_cleanup
             .pending_workspace_identities()
             .into_iter()

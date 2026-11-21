@@ -1,6 +1,6 @@
 //! Deliver an already prepared result through the original C and lifetime owners.
-use crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControlRuntimeExt as _;
 use super::*;
+use crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControlRuntimeExt as _;
 
 impl HistoryProducerInvocation<'_> {
     pub fn confirm_read<S: ApplicationSchema, T>(
@@ -16,10 +16,7 @@ impl HistoryProducerInvocation<'_> {
         self.confirm_in_execution(&execution, runtime, value)
     }
 
-    pub fn confirm_in_execution<
-        S: ApplicationSchema,
-        T,
-    >(
+    pub fn confirm_in_execution<S: ApplicationSchema, T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -29,10 +26,7 @@ impl HistoryProducerInvocation<'_> {
             .map_err(|(_value, cause)| cause)
     }
 
-    pub fn confirm_in_execution_preserving<
-        S: ApplicationSchema,
-        T,
-    >(
+    pub fn confirm_in_execution_preserving<S: ApplicationSchema, T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,

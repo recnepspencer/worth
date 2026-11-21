@@ -2,9 +2,7 @@
 use super::*;
 
 impl BoundCurrentAcceptedOutput<'_> {
-    pub fn retain_consumed(
-        self,
-    ) -> Result<ConsumedOutputEvidence, ConsumedOutputVerificationStop> {
+    pub fn retain_consumed(self) -> Result<ConsumedOutputEvidence, ConsumedOutputVerificationStop> {
         ConsumedOutputEvidence::retain_bound(self)
     }
 
@@ -18,14 +16,10 @@ impl BoundCurrentAcceptedOutput<'_> {
             .recorded()
             .settlement_identity
     }
-    pub fn consumed_facts(
-        &self,
-    ) -> &super::super::super::ComparableSourceFacts {
+    pub fn consumed_facts(&self) -> &super::super::super::ComparableSourceFacts {
         &self._proof.facts
     }
-    pub fn consumed_upstream(
-        &self,
-    ) -> &std::sync::Arc<[ConsumedOutputEvidence]> {
+    pub fn consumed_upstream(&self) -> &std::sync::Arc<[ConsumedOutputEvidence]> {
         &self._proof.candidate.selected.recorded().consumed_outputs
     }
     pub fn consumed_witness(
@@ -34,9 +28,7 @@ impl BoundCurrentAcceptedOutput<'_> {
     {
         self._proof.candidate.selected.native_output_witness_cell()
     }
-    pub fn consumed_root(
-        &self,
-    ) -> &PositionedRelationalSnapshot {
+    pub fn consumed_root(&self) -> &PositionedRelationalSnapshot {
         self._proof._selected
     }
 }

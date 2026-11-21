@@ -27,16 +27,13 @@ use crate::domain_computation::{
 };
 
 /// Kept beside, never substituted for, the actual SubjectRead governance.
-pub struct HistoryMetadataAdmission
-{
+pub struct HistoryMetadataAdmission {
     governance: WorthQueryApplicationQueryGovernance,
     history: worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity,
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn admit_application_history_metadata<
-        History: ApplicationHistoryQueryBinding<Schema>,
-    >(
+    pub fn admit_application_history_metadata<History: ApplicationHistoryQueryBinding<Schema>>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         history: &WorthQueryInstalledApplicationHistoryQuery<Schema, History>,
@@ -67,16 +64,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
-pub fn admit_metadata<
-    History,
-    Schema,
-    Q,
-    P,
-    R,
-    A,
-    I,
-    E,
->(
+pub fn admit_metadata<History, Schema, Q, P, R, A, I, E>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     plan: &mut WorthQueryAdmittedApplicationQueryPlan<'_, Schema, Q, P, R, A, I, E>,
@@ -174,15 +162,7 @@ impl HistoryMetadataAdmission {
     }
     /// Revalidate the independent decision at the same current security root
     /// used by the real SubjectRead, before protected traversal or publication.
-    pub fn validate<
-        Schema: ApplicationSchema,
-        Q,
-        P,
-        R,
-        A,
-        I,
-        E,
-    >(
+    pub fn validate<Schema: ApplicationSchema, Q, P, R, A, I, E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

@@ -80,7 +80,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             return Err(Admission(unavailable()));
         }
         let security = application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .security_observation_for(execution, self.product())
             .map_err(|stop| Admission(super::selection_denial(stop, query.name())))?;

@@ -38,8 +38,7 @@ pub enum WorthQueryProviderIdempotencyResolution {
     },
 }
 
-pub enum WorthQueryProviderGuardedWorkflowOperationCustody
-{
+pub enum WorthQueryProviderGuardedWorkflowOperationCustody {
     ReleasedOriginal(WorthQueryReleasedApplicationEffect),
     Unseen,
     Readmitted(WorthQueryRecoveredApplicationCommitReceipt),

@@ -39,11 +39,7 @@ use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 use worth_relational::facade::{identity::EntityId, runtime::ManagedIndexAppliedSourceRead};
 
 /// Candidate rows cannot impersonate the positioned SelectionRows contract.
-pub struct AppliedManagedSelectionLease<
-    'a,
-    'request,
-    'authority,
-> {
+pub struct AppliedManagedSelectionLease<'a, 'request, 'authority> {
     proof: WorthQueryManagedIndexSelectionProof<'a, 'request, 'authority>,
     source: Arc<WorthQueryAppliedSourceRead>,
     association: WorthQueryInstalledManagedIndexParent,
@@ -54,15 +50,11 @@ pub struct AppliedManagedSelectionLease<
     _allocation: Arc<SourceFactsAllocation>,
 }
 /// A borrow of the actual applied selection. It cannot satisfy positioned rows.
-pub struct AppliedSelectionRows<'a>
-{
-    pub association:
-        &'a WorthQueryInstalledManagedIndexParent,
+pub struct AppliedSelectionRows<'a> {
+    pub association: &'a WorthQueryInstalledManagedIndexParent,
     pub roots: &'a [EntityId],
-    pub coverage:
-        Option<&'a Arc<RetainedCoverage>>,
-    pub dependencies:
-        &'a Arc<super::super::observed_source::ManagedSourceDependencies>,
+    pub coverage: Option<&'a Arc<RetainedCoverage>>,
+    pub dependencies: &'a Arc<super::super::observed_source::ManagedSourceDependencies>,
     candidate: &'a worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
     parent: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     scope: EntityId,

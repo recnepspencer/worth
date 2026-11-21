@@ -118,8 +118,8 @@ fn advance_original<Schema: worth_query_installation::facade::ApplicationSchema>
         world,
         entity: continuation.entity,
     };
-    let bound = std::num::NonZeroUsize::new(usize::MAX)
-        .expect("cold request controls source traversal");
+    let bound =
+        std::num::NonZeroUsize::new(usize::MAX).expect("cold request controls source traversal");
     let terminal = runtime
         .rebuild_terminal_from_source(execution, &source, bound, bound)
         .map_err(Denial::Terminal)?;

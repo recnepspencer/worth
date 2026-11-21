@@ -108,7 +108,11 @@ where
             pin,
             source,
             intent,
-            |s| crate::domain_computation::primary_graph::provider::CandidateReadSupport::Query(Box::new(s)),
+            |s| {
+                crate::domain_computation::primary_graph::provider::CandidateReadSupport::Query(
+                    Box::new(s),
+                )
+            },
         )?;
         for row in rows.0 {
             let parent = Binding::<S, C>::parent_from_prerequisite(&row).map_err(|cause| {

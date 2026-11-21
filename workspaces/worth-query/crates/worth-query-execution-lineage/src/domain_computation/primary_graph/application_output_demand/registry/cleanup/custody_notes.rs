@@ -25,10 +25,7 @@ impl DemandRegistryState {
         self.custody_cleanup.note(&mut self.source_custody, commit);
     }
 
-    pub fn note_record_custody(
-        &mut self,
-        key: &super::super::WorthQueryOutputDemandKey,
-    ) {
+    pub fn note_record_custody(&mut self, key: &super::super::WorthQueryOutputDemandKey) {
         if let Some(record) = self.records.get(key) {
             for commit in &record.source_commits {
                 self.custody_cleanup.note(&mut self.source_custody, commit);

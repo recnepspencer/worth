@@ -38,8 +38,7 @@ pub enum WorthQueryManagedIndexLifecycle {
 
 /// Why the retained association could not perform a requested lifecycle step.
 #[derive(Debug)]
-pub enum WorthQueryManagedIndexLifecycleDenial
-{
+pub enum WorthQueryManagedIndexLifecycleDenial {
     Execution(RelationalExecutionDenialCause),
     ForeignAssociation,
     RegistrationCapacityExceeded,
@@ -58,10 +57,7 @@ impl From<RelationalExecutionDenialCause> for WorthQueryManagedIndexLifecycleDen
     }
 }
 
-pub struct ReadyIndex<
-    S: ApplicationSchema,
-    I: ApplicationManagedIndexBinding<S>,
-> {
+pub struct ReadyIndex<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
     pub source: Arc<SourceImage<S, I>>,
     pub cache: worth_relational::facade::mvcc::ManagedIndexPublicCache,
     // The header follows every independent root share, including eviction.
@@ -102,20 +98,15 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> RetainedIndexIm
     }
 }
 
-pub struct ManagedIndexState<
-    S: ApplicationSchema,
-    I: ApplicationManagedIndexBinding<S>,
-> {
-    pub association:
-        WorthQueryInstalledManagedIndexParent,
+pub struct ManagedIndexState<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
+    pub association: WorthQueryInstalledManagedIndexParent,
     pub adapter: Arc<dyn InstalledIndexProvider<S, I>>,
     runtime: WorthQueryRuntimeAuthorityIdentity,
     principal: EntityId,
     scope: EntityId,
     incarnation: ProductBranchIncarnation,
     retained: Mutex<Retained<S, I>>,
-    pub allocation:
-        Arc<SourceFactsAllocation>,
+    pub allocation: Arc<SourceFactsAllocation>,
 }
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexState<S, I> {
     pub fn new(
@@ -168,10 +159,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
             allocation,
         }))
     }
-    pub fn same_association(
-        &self,
-        other: &Self,
-    ) -> bool {
+    pub fn same_association(&self, other: &Self) -> bool {
         self.runtime == other.runtime
             && self.principal == other.principal
             && self.scope == other.scope
@@ -179,9 +167,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
             && self.association.same_association(&other.association)
             && Arc::ptr_eq(&self.adapter, &other.adapter)
     }
-    pub fn lifecycle(
-        &self,
-    ) -> WorthQueryManagedIndexLifecycle {
+    pub fn lifecycle(&self) -> WorthQueryManagedIndexLifecycle {
         let (status, cache) = {
             let retained = self
                 .retained
@@ -202,9 +188,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         }
     }
 
-    pub fn is_disposed(
-        &self,
-    ) -> bool {
+    pub fn is_disposed(&self) -> bool {
         self.retained
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

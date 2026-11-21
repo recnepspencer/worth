@@ -10,18 +10,15 @@ use worth_query_installation::facade::{
 use super::{Operation, SourceBinding};
 use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryApplicationProducerBinding;
 
-pub struct TypedInstalledProducer<
-    Schema,
-    Binding,
-> where
+pub struct TypedInstalledProducer<Schema, Binding>
+where
     Schema: ApplicationSchema,
     Binding: WorthQueryApplicationProducerBinding<Schema>,
 {
     pub provider: Arc<Binding::Provider>,
     /// Compiled once while installing this declared producer; final executor
     /// custody owns the cold proof until producer retirement.
-    pub mutation:
-        WorthQueryInstalledApplicationMutationBinding<Schema, Operation<Schema, Binding>>,
+    pub mutation: WorthQueryInstalledApplicationMutationBinding<Schema, Operation<Schema, Binding>>,
     /// The same installed source Query authority checked during producer
     /// setup, moved into this executor instead of reissued on every Ready.
     pub source_query:
@@ -30,8 +27,7 @@ pub struct TypedInstalledProducer<
     /// Static graph/resource decisions compiled against final provider support.
     pub prepared_graph:
         worth_query_admission::integration::WorthQueryPreparedApplicationOperationGraphWork,
-    pub input_capture:
-        Option<super::super::input_capture::InputCaptureOwner<Schema, Binding>>,
+    pub input_capture: Option<super::super::input_capture::InputCaptureOwner<Schema, Binding>>,
     marker: PhantomData<fn() -> Schema>,
 }
 

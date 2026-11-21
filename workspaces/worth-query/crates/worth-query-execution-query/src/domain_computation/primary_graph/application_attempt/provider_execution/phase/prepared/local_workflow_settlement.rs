@@ -1,7 +1,6 @@
 //! Join a locally performed mutation and its Query-owned settlement before
 //! either effect is lowered into the Relational candidate.
 
-use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 use super::WorthQueryProviderAttemptPreparation;
 use crate::domain_computation::primary_graph::application_attempt::{
     workflow_transition_program::{receipt_identity_from_outcome, transition_entity_in_receipt},
@@ -9,7 +8,9 @@ use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationRealizedEffect,
 };
 use crate::domain_computation::primary_graph::workflow::instance::visit_workflow_operation_settlement_facts;
+use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 pub struct LocalWorkflowSettlementPublication {
     progress_update:
@@ -19,9 +20,7 @@ pub struct LocalWorkflowSettlementPublication {
 }
 
 impl LocalWorkflowSettlementPublication {
-    pub fn maintain<
-        Schema,
-    >(
+    pub fn maintain<Schema>(
         self,
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         receipt: &crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitReceipt,

@@ -9,23 +9,14 @@ use worth_relational::facade::{
     transactions::WorkerIntentBatch,
 };
 
-pub struct PreparedCoupledWriter<
-    'run,
-> {
-    pub writer:
-        InspectedCoupledWriter<'run>,
-    pub publication:
-        RelationalCoupledProducerPosture,
-    pub batch:
-        WorkerIntentBatch,
-    pub content:
-        worth_relational::facade::content::RelationalContentAttachments,
+pub struct PreparedCoupledWriter<'run> {
+    pub writer: InspectedCoupledWriter<'run>,
+    pub publication: RelationalCoupledProducerPosture,
+    pub batch: WorkerIntentBatch,
+    pub content: worth_relational::facade::content::RelationalContentAttachments,
 }
 
-pub trait InstalledCoupledProducerExecutor<
-    Schema,
->
-{
+pub trait InstalledCoupledProducerExecutor<Schema> {
     fn prepare_coupled_commit<'run>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

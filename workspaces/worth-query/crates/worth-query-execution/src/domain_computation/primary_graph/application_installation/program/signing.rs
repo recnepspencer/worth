@@ -26,7 +26,8 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
         owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
     ) -> Result<(), WorthQuerySigningOwnerInstallationDenial> {
         validate(self.runtime(), &revision, &owner)?;
-        AdmittedSigningOwner::admit(&self.runtime().inner.signing_owners, revision, owner)?.install();
+        AdmittedSigningOwner::admit(&self.runtime().inner.signing_owners, revision, owner)?
+            .install();
         Ok(())
     }
 }

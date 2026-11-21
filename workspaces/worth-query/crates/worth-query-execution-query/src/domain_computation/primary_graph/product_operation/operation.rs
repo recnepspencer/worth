@@ -1,5 +1,5 @@
-use crate::domain_computation::primary_graph::SnapshotLeaseRuntimeExt;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::primary_graph::SnapshotLeaseRuntimeExt;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,
@@ -9,6 +9,7 @@ use worth_query_declaration::facade::{
         TypedMutationPreconditions,
     },
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationCapability,
     WorthQueryInstalledApplicationOperation,
@@ -185,7 +186,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     >(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        publication_access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        publication_access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
         input: ApplicationEncodedInput<Operation::InputBinding>,
@@ -222,7 +223,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
         capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
         input: ApplicationEncodedInput<Operation::InputBinding>,

@@ -3,10 +3,7 @@ use worth_query_declaration::facade::application_program::{
     ApplicationProgramRevision, ApplicationWorkflowDefinitionContentIdentity,
 };
 
-use super::super::{
-    WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationUncommitted,
-};
+use super::super::{WorthQueryApplicationEffectProgram, WorthQueryApplicationUncommitted};
 
 #[must_use = "prepared workflow instance start owns a live application attempt"]
 pub struct PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope> {
@@ -73,10 +70,7 @@ impl PublishedWorkflowInstanceRef {
 
     /// The same instance as `fork` copied it: read on the fork, still
     /// recording the branch it was started on.
-    pub fn copied_onto(
-        &self,
-        fork: crate::basis::WorthQueryProductBranch,
-    ) -> Self {
+    pub fn copied_onto(&self, fork: crate::basis::WorthQueryProductBranch) -> Self {
         Self {
             branch: fork,
             ..self.clone()
@@ -220,7 +214,7 @@ impl<Schema, Operation, Input, Scope>
 }
 
 #[doc(hidden)]
-pub struct PreparedWorkflowInstanceStartAttemptParts<Schema, Operation, Input, Scope> {
+pub struct PreparedWorkflowInstanceStartCommitParts<Schema, Operation, Input, Scope> {
     pub program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
     pub program_revision: ApplicationProgramRevision,
     pub definition: worth_relational::facade::identity::EntityId,
@@ -231,30 +225,15 @@ pub struct PreparedWorkflowInstanceStartAttemptParts<Schema, Operation, Input, S
     pub supersession: Option<super::supersession::WorkflowStartSupersession>,
 }
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope> {
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>
+{
     #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: PreparedWorkflowInstanceStartAttemptParts<Schema, Operation, Input, Scope>,
-    ) -> Self {
-        Self {
-            program: parts.program,
-            program_revision: parts.program_revision,
-            definition: parts.definition,
-            definition_content_identity: parts.definition_content_identity,
-            discovery_intent: parts.discovery_intent,
-            instance_identity_locator: parts.instance_identity_locator,
-            start_path: parts.start_path,
-            supersession: parts.supersession,
-        }
-    }
-
-    #[doc(hidden)]
-    pub fn into_attempt_parts(
+    pub fn into_commit_parts(
         self,
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-    ) -> PreparedWorkflowInstanceStartAttemptParts<Schema, Operation, Input, Scope> {
-        PreparedWorkflowInstanceStartAttemptParts {
+        _: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> PreparedWorkflowInstanceStartCommitParts<Schema, Operation, Input, Scope> {
+        PreparedWorkflowInstanceStartCommitParts {
             program: self.program,
             program_revision: self.program_revision,
             definition: self.definition,

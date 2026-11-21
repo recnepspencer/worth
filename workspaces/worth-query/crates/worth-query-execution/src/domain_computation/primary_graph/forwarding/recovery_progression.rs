@@ -11,13 +11,27 @@ mod domain_computation_application_aftermath_recovery_progression_authority {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub fn admit_recovery_effect_authority<Operation, Input, Scope>(&self, handle: &WorthQueryRecoveryHandle, admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>) -> Result<WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryHandleDenial> {
-            self.inner.admit_recovery_effect_authority::<Operation, Input, Scope>(handle, admission)
+    where
+        Schema: ApplicationSchema,
+    {
+        pub fn admit_recovery_effect_authority<Operation, Input, Scope>(
+            &self,
+            handle: &WorthQueryRecoveryHandle,
+            admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        ) -> Result<WorthQueryRecoveryEffectAuthority, WorthQueryRecoveryHandleDenial> {
+            self.inner
+                .admit_recovery_effect_authority::<Operation, Input, Scope>(handle, admission)
         }
-        pub fn admit_recovery_inspect_authority<Operation, Input, Scope>(&self, handle: &WorthQueryRecoveryHandle, admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>, disclosure: &WorthQueryRecoveryDisclosureAdmission) -> Result<WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryHandleDenial> {
-            self.inner.admit_recovery_inspect_authority::<Operation, Input, Scope>(handle, admission, disclosure)
+        pub fn admit_recovery_inspect_authority<Operation, Input, Scope>(
+            &self,
+            handle: &WorthQueryRecoveryHandle,
+            admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+            disclosure: &WorthQueryRecoveryDisclosureAdmission,
+        ) -> Result<WorthQueryRecoveryInspectAuthority, WorthQueryRecoveryHandleDenial> {
+            self.inner
+                .admit_recovery_inspect_authority::<Operation, Input, Scope>(
+                    handle, admission, disclosure,
+                )
         }
     }
 }
@@ -32,17 +46,23 @@ mod domain_computation_application_aftermath_recovery_progression_disclose {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub fn admit_recovery_inspection_disclosure<Capability, Operation, Input>(&self, access: &WorthQueryAdmittedApplicationCapabilityAccess<
+    where
+        Schema: ApplicationSchema,
+    {
+        pub fn admit_recovery_inspection_disclosure<Capability, Operation, Input>(
+            &self,
+            access: &WorthQueryAdmittedApplicationCapabilityAccess<
                 Schema,
                 Capability,
                 Operation,
                 Input,
-            >) -> Result<WorthQueryRecoveryDisclosureAdmission, WorthQueryRecoveryHandleDenial>
+            >,
+        ) -> Result<WorthQueryRecoveryDisclosureAdmission, WorthQueryRecoveryHandleDenial>
         where
-            Input: ApplicationCapabilityRequest<Schema, Capability>, {
-            self.inner.admit_recovery_inspection_disclosure::<Capability, Operation, Input>(access)
+            Input: ApplicationCapabilityRequest<Schema, Capability>,
+        {
+            self.inner
+                .admit_recovery_inspection_disclosure::<Capability, Operation, Input>(access)
         }
     }
 }
@@ -56,9 +76,13 @@ mod domain_computation_application_aftermath_recovery_progression_expiry {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub fn evaluate_recovery_expiry(&self, handle: &WorthQueryRecoveryHandle) -> Result<WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandleDenial> {
+    where
+        Schema: ApplicationSchema,
+    {
+        pub fn evaluate_recovery_expiry(
+            &self,
+            handle: &WorthQueryRecoveryHandle,
+        ) -> Result<WorthQueryRecoveryExpiryEvaluation, WorthQueryRecoveryHandleDenial> {
             self.inner.evaluate_recovery_expiry(handle)
         }
     }

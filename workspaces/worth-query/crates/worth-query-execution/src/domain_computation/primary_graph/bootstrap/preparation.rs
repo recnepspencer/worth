@@ -191,7 +191,9 @@ impl WorthQueryExecutionInstallationAuthority {
             graph.bind_application_publication(&invariant_installation_receipt);
         }
         let recovered_publication = checkpoint
-            .map(|checkpoint| super::checkpoint::recover_publication(checkpoint, &execution, &graph))
+            .map(|checkpoint| {
+                super::checkpoint::recover_publication(checkpoint, &execution, &graph)
+            })
             .transpose()?;
         Ok(super::prepared_native::PreparedPrimaryGraphInstallation {
             graph,

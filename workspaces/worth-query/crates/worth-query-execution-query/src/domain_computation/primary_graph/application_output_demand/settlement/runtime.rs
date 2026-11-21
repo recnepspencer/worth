@@ -8,9 +8,7 @@ use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 
-pub trait OriginalSettledProducerObservationExt:
-    Sized
-{
+pub trait OriginalSettledProducerObservationExt: Sized {
     fn ready<Schema: worth_query_installation::facade::ApplicationSchema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -38,10 +36,8 @@ pub trait OriginalSettledProducerObservationExt:
         product: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> bool;
 
-    fn matches_read(
-        &self,
-        product: &worth_runtime_world::facade::ProductBranchObservation,
-    ) -> bool;
+    fn matches_read(&self, product: &worth_runtime_world::facade::ProductBranchObservation)
+        -> bool;
 }
 
 impl OriginalSettledProducerObservationExt for OriginalSettledProducerObservation {
@@ -225,9 +221,7 @@ fn restored_source(
     }
 }
 
-pub trait OutputDemandSettlementRuntimeExt:
-    Sized
-{
+pub trait OutputDemandSettlementRuntimeExt: Sized {
     fn belongs_to<Schema: worth_query_installation::facade::ApplicationSchema>(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

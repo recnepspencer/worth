@@ -13,9 +13,7 @@ impl WorthQueryAdmittedOperation {
         self.data.graph_work.managed_run_identity()
     }
 
-    pub fn graph_work_branch(
-        &self,
-    ) -> &worth_relational::facade::history::BranchId {
+    pub fn graph_work_branch(&self) -> &worth_relational::facade::history::BranchId {
         self.data.graph_work.branch().relational()
     }
 

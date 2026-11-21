@@ -6,8 +6,7 @@ use std::sync::Arc;
 use worth_relational::facade::transactions::EntityReference;
 
 pub struct ErasedObserved {
-    pub identity:
-        WorthQueryInvariantEntityIdentity<(), ()>,
+    pub identity: WorthQueryInvariantEntityIdentity<(), ()>,
 }
 pub struct ErasedCandidate {
     pub reference: EntityReference,
@@ -25,7 +24,6 @@ pub struct CandidateEntity<E> {
     pub marker: PhantomData<fn() -> E>,
 }
 pub struct ObservedTarget<E> {
-    pub erased:
-        WorthQueryInvariantMutationTarget<(), ()>,
+    pub erased: WorthQueryInvariantMutationTarget<(), ()>,
     pub marker: PhantomData<fn() -> E>,
 }

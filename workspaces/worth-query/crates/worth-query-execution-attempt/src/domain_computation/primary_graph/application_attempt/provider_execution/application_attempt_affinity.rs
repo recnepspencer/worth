@@ -189,7 +189,11 @@ impl WorthQueryApplicationAttemptBasis {
         original_completion: Option<super::super::super::provider::OriginalCompletionReceiver>,
         product: crate::basis::WorthQueryProductBranchLease,
     ) -> Self {
-        Self { core, original_completion, product }
+        Self {
+            core,
+            original_completion,
+            product,
+        }
     }
 
     pub fn retained_product(&self) -> crate::basis::WorthQueryProductBranchLease {
@@ -281,17 +285,11 @@ impl WorthQueryApplicationAttemptAffinity {
         self.basis.completion.take()
     }
 
-    pub fn owns_original_read(
-        &self,
-        read: &super::super::CompletedOriginalRead,
-    ) -> bool {
+    pub fn owns_original_read(&self, read: &super::super::CompletedOriginalRead) -> bool {
         read.belongs_to_admission(self.basis.operation_attempt)
     }
 
-    pub fn binds_original_read(
-        &self,
-        read: &super::super::CompletedOriginalRead,
-    ) -> bool {
+    pub fn binds_original_read(&self, read: &super::super::CompletedOriginalRead) -> bool {
         self.owns_original_read(read) && read.belongs_to_graph_work(self.basis.graph_work_session)
     }
     pub fn admitted_request(
@@ -309,15 +307,11 @@ impl WorthQueryApplicationAttemptAffinity {
         &self.product
     }
 
-    pub fn lookup_identity(
-        &self,
-    ) -> WorthQueryProviderSessionAffinityIdentity {
+    pub fn lookup_identity(&self) -> WorthQueryProviderSessionAffinityIdentity {
         self.provider_session.affinity_identity()
     }
 
-    pub const fn provider_session(
-        &self,
-    ) -> &WorthQueryProviderSessionTerminalBinding {
+    pub const fn provider_session(&self) -> &WorthQueryProviderSessionTerminalBinding {
         &self.provider_session
     }
 
@@ -341,9 +335,7 @@ impl WorthQueryApplicationAttemptAffinity {
         &self.basis.operation_scope
     }
 
-    pub const fn graph_work_session(
-        &self,
-    ) -> WorthQueryGraphWorkSessionIdentity {
+    pub const fn graph_work_session(&self) -> WorthQueryGraphWorkSessionIdentity {
         self.basis.graph_work_session
     }
 
@@ -351,17 +343,11 @@ impl WorthQueryApplicationAttemptAffinity {
         &self.basis.branch
     }
 
-    pub fn admits_session(
-        &self,
-        session: WorthQueryProviderSessionView<'_>,
-    ) -> bool {
+    pub fn admits_session(&self, session: WorthQueryProviderSessionView<'_>) -> bool {
         self.provider_session.admits_session_view(session)
     }
 
-    pub fn same_session(
-        &self,
-        binding: &WorthQueryProviderSessionTerminalBinding,
-    ) -> bool {
+    pub fn same_session(&self, binding: &WorthQueryProviderSessionTerminalBinding) -> bool {
         self.provider_session.same_session(binding)
     }
 

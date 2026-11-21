@@ -3,6 +3,7 @@ use worth_query_declaration::facade::{
     application_operation::ApplicationMutationBinding,
     application_schema::ApplicationOperationMarkerIdentity,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -61,7 +62,8 @@ where
     >;
 }
 
-impl<Schema, Operation, Input, Scope> ReadSetWorkflowOperationExt<Schema, Operation, Input, Scope> for WorthQueryCompleteApplicationReadSet<
+impl<Schema, Operation, Input, Scope> ReadSetWorkflowOperationExt<Schema, Operation, Input, Scope>
+    for WorthQueryCompleteApplicationReadSet<
         Schema,
         Operation,
         Input,

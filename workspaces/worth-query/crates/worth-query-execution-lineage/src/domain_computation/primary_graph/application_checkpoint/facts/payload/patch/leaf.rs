@@ -13,10 +13,7 @@ pub struct PreparedLeaf {
     pub replacement_heaps: ExecutionArray<OnceLock<ExecutionMemoryReservation>>,
 }
 impl PreparedLeaf {
-    pub fn finish(
-        mut self,
-        control: StorageControl<'_, '_>,
-    ) -> Result<FactPayload, StoreDenial> {
+    pub fn finish(mut self, control: StorageControl<'_, '_>) -> Result<FactPayload, StoreDenial> {
         if self.changed != self.filled {
             return Err(StoreDenial::ConflictingBody);
         }

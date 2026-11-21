@@ -74,9 +74,7 @@ impl WorthQueryAdmittedApplicationConditionalDefinition {
         &self.identity
     }
 
-    pub fn into_parts(
-        self,
-    ) -> WorthQueryApplicationConditionalDefinitionParts {
+    pub fn into_parts(self) -> WorthQueryApplicationConditionalDefinitionParts {
         WorthQueryApplicationConditionalDefinitionParts {
             expected_product: self.expected_product,
             predecessor: self.predecessor,

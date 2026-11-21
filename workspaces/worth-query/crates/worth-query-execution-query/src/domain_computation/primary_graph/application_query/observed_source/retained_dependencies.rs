@@ -5,9 +5,9 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandS
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
-use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort;
 use worth_execution::ExecutionArray;
 use worth_execution::ExecutionArrayBuilder;
+use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
 use worth_query_installation::facade::ApplicationSchema;
 
 mod comparison;
@@ -21,25 +21,6 @@ mod storage_court;
 /// separately funded descriptor slots. No consumer can construct a subset.
 ///
 /// Capture borrows the complete native pairing and requires no row cloning:
-/// ```no_run
-/// use worth_query_execution::{publication_boundary::{WorthQueryProgramPublicationAccess,
-///     discovery_currentness::{WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial}},
-///     facade::primary_graph::{WorthQuerySelectedProductOperation, WorthQueryApplicationOutputDemandSource},
-///     facade::application_contribution::WorthQueryAdvancementPhase};
-/// use worth_query_installation::facade::ApplicationSchema;
-/// fn retain<S: ApplicationSchema, Q, V>(selected: &WorthQuerySelectedProductOperation<'_, S>,
-///     phase: &WorthQueryAdvancementPhase<'_>, access: &dyn WorthQueryProgramPublicationAccessPort,
-///     original: &WorthQueryApplicationOutputDemandSource<Q,V>)
-///     -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial> {
-///     selected.retain_query_dependencies(phase, access, original)
-/// }
-/// ```
-/// ```compile_fail,E0599
-/// use worth_query_execution::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies;
-/// fn duplicate(original: WorthQueryRetainedQueryDependencies) -> WorthQueryRetainedQueryDependencies {
-///     original.clone()
-/// }
-/// ```
 pub struct WorthQueryRetainedQueryDependencies {
     sources: ExecutionArray<RetainedQuerySource>,
 }
@@ -89,7 +70,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn retain_query_dependencies<Query, Value>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        _: &dyn WorthQueryProgramPublicationAccessPort,
+        _: &WorthQueryProgramPublicationAccess,
         source: &WorthQueryApplicationOutputDemandSource<Query, Value>,
     ) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial> {
         let execution = phase
@@ -149,7 +130,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn combine_query_dependencies<'a, I>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        _: &dyn WorthQueryProgramPublicationAccessPort,
+        _: &WorthQueryProgramPublicationAccess,
         parts: I,
     ) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial>
     where

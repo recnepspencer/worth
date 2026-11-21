@@ -17,8 +17,7 @@ use crate::domain_computation::{
 };
 use crate::execution_digest::hash_parts;
 
-pub enum WorthQueryConvergenceReportAdmissionFailure
-{
+pub enum WorthQueryConvergenceReportAdmissionFailure {
     Epoch(WorthQueryConvergenceEpochDenial),
 }
 

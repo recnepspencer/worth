@@ -11,9 +11,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     /// proves at the selected step and unchanged since the restoring commit.
     /// A row that was stale at the selected step therefore fails here. The
     /// ordinary fence never sees this evidence; any failure selects Preserve.
-    pub fn restored_output_is_current<
-        Family,
-    >(
+    pub fn restored_output_is_current<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,

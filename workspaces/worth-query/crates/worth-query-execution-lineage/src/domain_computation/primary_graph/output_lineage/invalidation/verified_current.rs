@@ -56,9 +56,7 @@ impl StoppedVerifiedCurrent {
 }
 
 impl PreparedVerifiedCurrent {
-    pub fn install(
-        self,
-    ) -> Result<VerifiedCurrentCleanup, StoppedVerifiedCurrent> {
+    pub fn install(self) -> Result<VerifiedCurrentCleanup, StoppedVerifiedCurrent> {
         match self {
             Self::AlreadyCurrent { cell, image } => {
                 let current = cell.read_image();

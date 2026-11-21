@@ -48,9 +48,7 @@ pub fn source_storage(
 ) -> Denial {
     Denial::Source(worth_relational::facade::runtime::DerivedRelationReadDenial::Request(cause))
 }
-pub fn retain_failure<
-    E: std::error::Error + Send + Sync + 'static,
->(
+pub fn retain_failure<E: std::error::Error + Send + Sync + 'static>(
     execution: &ExecutionRequest<'_, '_>,
     cause: E,
 ) -> Denial {

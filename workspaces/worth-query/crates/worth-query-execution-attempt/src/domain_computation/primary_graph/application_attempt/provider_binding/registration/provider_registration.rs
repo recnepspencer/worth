@@ -81,15 +81,11 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.required_output_demand.take()
     }
 
-    pub const fn affinity(
-        &self,
-    ) -> &WorthQueryApplicationAttemptAffinity {
+    pub const fn affinity(&self) -> &WorthQueryApplicationAttemptAffinity {
         &self.affinity
     }
 
-    pub fn facts(
-        &self,
-    ) -> &crate::domain_computation::primary_graph::ApplicationFactTable {
+    pub fn facts(&self) -> &crate::domain_computation::primary_graph::ApplicationFactTable {
         self.decision_facts.facts()
     }
 
@@ -121,9 +117,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         std::sync::Arc::clone(&self.consumed_outputs)
     }
 
-    pub fn expected_steps(
-        &self,
-    ) -> &[crate::domain_computation::WorthQueryProvisionalEffectStep] {
+    pub fn expected_steps(&self) -> &[crate::domain_computation::WorthQueryProvisionalEffectStep] {
         self.effects.expected_steps()
     }
 
@@ -133,21 +127,15 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.effects.expected_step_preparation_work()
     }
 
-    pub const fn batch(
-        &self,
-    ) -> &worth_relational::facade::transactions::WorkerIntentBatch {
+    pub const fn batch(&self) -> &worth_relational::facade::transactions::WorkerIntentBatch {
         self.effects.batch()
     }
 
-    pub const fn idempotency(
-        &self,
-    ) -> WorthQueryApplicationIdempotencyBinding {
+    pub const fn idempotency(&self) -> WorthQueryApplicationIdempotencyBinding {
         self.idempotency
     }
 
-    pub const fn outcome_identity(
-        &self,
-    ) -> WorthQueryApplicationCommitOutcomeIdentity {
+    pub const fn outcome_identity(&self) -> WorthQueryApplicationCommitOutcomeIdentity {
         self.outcome_identity
     }
 
@@ -271,8 +259,7 @@ struct WorthQueryPreparedApplicationAttempt {
     dispatch_outbox: Option<WorthQueryDispatchOutboxRecord>,
 }
 
-pub struct WorthQueryApplicationAttemptRegistrationCompletion
-{
+pub struct WorthQueryApplicationAttemptRegistrationCompletion {
     dispatch_outbox: Option<WorthQueryDispatchOutboxRecord>,
 }
 

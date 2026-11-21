@@ -75,9 +75,7 @@ impl RootPathReadEvidence {
             _memory: memory,
         }
     }
-    pub fn values(
-        &self,
-    ) -> &[WorthQueryApplicationQueryRootPathStepRead] {
+    pub fn values(&self) -> &[WorthQueryApplicationQueryRootPathStepRead] {
         &self.values
     }
 }

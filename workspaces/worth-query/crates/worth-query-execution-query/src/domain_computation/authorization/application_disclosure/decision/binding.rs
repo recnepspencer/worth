@@ -69,9 +69,7 @@ impl WorthQueryApplicationGovernanceBinding {
         ))
     }
 
-    pub fn inspection_backing_bytes(
-        graph_work: &WorthQueryManagedGraphWorkSession,
-    ) -> Option<u64> {
+    pub fn inspection_backing_bytes(graph_work: &WorthQueryManagedGraphWorkSession) -> Option<u64> {
         let (_, basis) = graph_work.inspection_binding()?;
         let names = graph_work
             .branch()

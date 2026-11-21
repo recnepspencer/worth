@@ -1,6 +1,7 @@
 //! Runtime constructors on `SourceReadAuthorization` bridging `SourceReadSupport`.
 
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 use sha2::{Digest, Sha256};
 use worth_relational::facade::identity::EntityId;

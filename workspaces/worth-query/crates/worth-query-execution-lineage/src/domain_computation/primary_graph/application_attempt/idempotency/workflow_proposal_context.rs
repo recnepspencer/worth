@@ -23,10 +23,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         self.workflow_proposal.context = Some(*identity);
         self
     }
-    pub const fn bind_workflow_captured_inputs(
-        mut self,
-        identity: Option<[u8; 32]>,
-    ) -> Self {
+    pub const fn bind_workflow_captured_inputs(mut self, identity: Option<[u8; 32]>) -> Self {
         self.workflow_proposal.inputs = identity;
         self
     }

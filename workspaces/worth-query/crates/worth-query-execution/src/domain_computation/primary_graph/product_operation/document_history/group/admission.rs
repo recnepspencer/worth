@@ -238,7 +238,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         drop(scopes);
         Ok(WorthQueryDocumentHistoryGroupAborting {
             reservation,
-            runtime_authority: self.application().inner.runtime.authority_identity().as_u64(),
+            runtime_authority: self
+                .application()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64(),
             candidate: candidate.map(|(branch, _)| branch),
             _allocation,
         })

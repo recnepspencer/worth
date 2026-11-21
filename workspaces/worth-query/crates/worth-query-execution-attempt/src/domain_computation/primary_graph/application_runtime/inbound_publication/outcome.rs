@@ -14,9 +14,7 @@ pub struct WorthQueryPerformedInboundCompletion {
 }
 
 impl WorthQueryPerformedInboundCompletion {
-    pub fn publication_mut(
-        &mut self,
-    ) -> &mut WorthQueryProductPublicationReceipt {
+    pub fn publication_mut(&mut self) -> &mut WorthQueryProductPublicationReceipt {
         &mut self.publication
     }
     pub fn new(
@@ -31,9 +29,7 @@ impl WorthQueryPerformedInboundCompletion {
         }
     }
 
-    pub fn accepted(
-        &self,
-    ) -> &Arc<WorthQueryAcceptedInboundOccurrence> {
+    pub fn accepted(&self) -> &Arc<WorthQueryAcceptedInboundOccurrence> {
         &self.accepted
     }
 
@@ -41,9 +37,7 @@ impl WorthQueryPerformedInboundCompletion {
         self.original_incarnation
     }
 
-    pub fn publication(
-        &self,
-    ) -> &WorthQueryProductPublicationReceipt {
+    pub fn publication(&self) -> &WorthQueryProductPublicationReceipt {
         &self.publication
     }
 }

@@ -104,11 +104,7 @@ where
     Ok(())
 }
 
-pub fn validate_authentication_lifetime<
-    Schema,
-    Principal,
-    PrincipalIdentity,
->(
+pub fn validate_authentication_lifetime<Schema, Principal, PrincipalIdentity>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     subject: &str,

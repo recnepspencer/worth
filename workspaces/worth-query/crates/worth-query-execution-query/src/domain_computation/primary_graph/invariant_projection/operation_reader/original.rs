@@ -1,6 +1,7 @@
 //! Original admitted C supplies readonly numerical DATA; actual execution stays D.
 use super::predecessor::BeforeDecisionReader;
 use super::*;
+use crate::domain_computation::primary_graph::invariant_projection::WorthQueryApplicationInvariantProjectionAuthority;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact as Fact,
     application_contribution::producer::observation_reads::{
@@ -13,12 +14,8 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationSchema, WorthQueryInstalledPackageIndex,
 };
-use crate::domain_computation::primary_graph::invariant_projection::WorthQueryApplicationInvariantProjectionAuthority;
 
-pub trait OperationReaderOriginalExt<
-    S: ApplicationSchema + 'static,
->
-{
+pub trait OperationReaderOriginalExt<S: ApplicationSchema + 'static> {
     fn observe_original<R, I, T>(
         &mut self,
         operation: ApplicationOperationRef<S, R, I>,

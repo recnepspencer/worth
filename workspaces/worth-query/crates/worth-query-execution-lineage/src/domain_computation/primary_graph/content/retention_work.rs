@@ -1,8 +1,6 @@
 //! Original-request iteration work for retaining content custody.
 use worth_relational::facade::content::RelationalContentDenial as Denial;
-pub fn checkpoint(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<(), Denial> {
+pub fn checkpoint(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Result<(), Denial> {
     let mut result = None;
     let handoff = execution.run_native_with_checkpoint(|context| {
         result = Some(if context.has_accounting() {

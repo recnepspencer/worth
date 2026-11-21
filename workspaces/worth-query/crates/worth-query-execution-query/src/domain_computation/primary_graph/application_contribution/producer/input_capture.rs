@@ -87,12 +87,9 @@ pub struct CapturedParent {
 
 /// Binding and candidate affinity come from the actual admitted projection.
 #[derive(Clone, Copy, Eq, PartialEq)]
-pub struct InputCaptureAffinity
-{
-    pub admission:
-        crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
-    pub candidate:
-        worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification,
+pub struct InputCaptureAffinity {
+    pub admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+    pub candidate: worth_relational::facade::runtime::RelationalAppliedCandidateReadQualification,
     pub source: worth_relational::facade::identity::EntityId,
     pub component: std::any::TypeId,
 }

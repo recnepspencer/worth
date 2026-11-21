@@ -84,12 +84,8 @@ pub fn mutation_work_from_commit_seal(
         counters
             .installed_touch_admission
             .validated_application_touches(),
-        counters
-            .installed_touch_admission
-            .installed_touch_scopes(),
-        counters
-            .installed_touch_admission
-            .read_touch_overlaps(),
+        counters.installed_touch_admission.installed_touch_scopes(),
+        counters.installed_touch_admission.read_touch_overlaps(),
         touched_records,
     )
 }

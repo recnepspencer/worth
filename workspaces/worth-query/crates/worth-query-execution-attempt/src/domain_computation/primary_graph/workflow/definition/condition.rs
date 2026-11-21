@@ -51,8 +51,7 @@ impl WorkflowConditionOperand {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CompiledWorkflowCondition {
-    pub expression:
-        CompiledWorkflowConditionExpression,
+    pub expression: CompiledWorkflowConditionExpression,
     /// Name-ordered; names are unique.
     pub operands: Box<[WorkflowConditionOperand]>,
 }

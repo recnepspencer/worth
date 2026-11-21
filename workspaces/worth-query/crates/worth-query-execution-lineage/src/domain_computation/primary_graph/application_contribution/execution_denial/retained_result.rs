@@ -12,9 +12,7 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
             crate::domain_computation::primary_graph::invariant_projection::CallSequenceDenial::Storage(cause)=>Self::from_ordered(cause),
         }
     }
-    pub fn from_shape_cost(
-        cause: worth_execution::ReductionShapeCostDenial,
-    ) -> Self {
+    pub fn from_shape_cost(cause: worth_execution::ReductionShapeCostDenial) -> Self {
         match cause {
             worth_execution::ReductionShapeCostDenial::Allocation(cause) => {
                 Self::from_retained_map(RetainedMapDenial::Allocation(cause))
@@ -27,9 +25,7 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
             }
         }
     }
-    pub fn from_ordered(
-        denial: worth_execution::ExecutionOrderedMapDenial,
-    ) -> Self {
+    pub fn from_ordered(denial: worth_execution::ExecutionOrderedMapDenial) -> Self {
         match denial {
             worth_execution::ExecutionOrderedMapDenial::Request(cause) => {
                 Self::from_work_ceiling(cause, Self::ReducerPanicked)
@@ -87,9 +83,7 @@ impl<Stopped> WorthQueryPartitionedComputationDenial<Stopped> {
             }
         }
     }
-    pub fn from_retained_reduce(
-        denial: RetainedReduceDenial<PartitionRefusal<Stopped>>,
-    ) -> Self {
+    pub fn from_retained_reduce(denial: RetainedReduceDenial<PartitionRefusal<Stopped>>) -> Self {
         match denial {
             RetainedReduceDenial::Retention(cause) => Self::from_retained_map(cause),
             RetainedReduceDenial::Reduction(cause) => Self::from_reduce(cause),

@@ -165,15 +165,11 @@ impl CompiledWorkflowDefinition {
         self.publication.definition
     }
 
-    pub const fn content_identity(
-        &self,
-    ) -> &ApplicationWorkflowDefinitionContentIdentity {
+    pub const fn content_identity(&self) -> &ApplicationWorkflowDefinitionContentIdentity {
         &self.content_identity
     }
 
-    pub const fn program_revision(
-        &self,
-    ) -> &ApplicationProgramRevision {
+    pub const fn program_revision(&self) -> &ApplicationProgramRevision {
         &self.program_revision
     }
 
@@ -189,18 +185,12 @@ impl CompiledWorkflowDefinition {
         &self.publication.nodes[self.resume.unwrap_or(self.publication.start)]
     }
 
-    pub fn node(
-        &self,
-        entity: EntityId,
-    ) -> Option<&CompiledWorkflowNode> {
+    pub fn node(&self, entity: EntityId) -> Option<&CompiledWorkflowNode> {
         self.node_ordinal(entity)
             .map(|ordinal| &self.publication.nodes[ordinal])
     }
 
-    pub fn nodes_with_path(
-        &self,
-        path: &str,
-    ) -> &[CompiledWorkflowNode] {
+    pub fn nodes_with_path(&self, path: &str) -> &[CompiledWorkflowNode] {
         let first = self
             .publication
             .nodes
@@ -391,9 +381,7 @@ impl CompiledWorkflowConnection {
     pub fn target(&self) -> EntityId {
         self.target
     }
-    pub fn kind(
-        &self,
-    ) -> &CompiledWorkflowConnectionKind {
+    pub fn kind(&self) -> &CompiledWorkflowConnectionKind {
         &self.kind
     }
 }

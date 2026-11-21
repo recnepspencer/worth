@@ -1,5 +1,8 @@
 pub mod operation;
-pub use operation::{PreparedWorkflowOperation, RequiredWorkflowOperation, WorkflowOperationAuthority, WorkflowOperationAuthoritySlot};
+pub use operation::{
+    PreparedWorkflowOperation, RequiredWorkflowOperation, WorkflowOperationAuthority,
+    WorkflowOperationAuthoritySlot,
+};
 pub mod transition_replay {
     pub mod descriptor_retention;
     pub use descriptor_retention::PreparedWorkflowTransitionReplays;
@@ -15,20 +18,17 @@ use super::super::{WorthQueryApplicationEffectProgram, WorthQueryApplicationUnco
 pub mod actor;
 #[path = "publication/approval.rs"]
 pub mod approval;
-#[path = "publication/assessment_evidence.rs"]
-pub mod assessment_evidence;
 #[path = "publication/evidence_readiness.rs"]
 pub mod evidence_readiness;
 #[path = "publication/required_assessment.rs"]
 pub mod required_assessment;
 #[path = "publication/required_proposal.rs"]
 pub mod required_proposal;
-pub use required_proposal::RequiredWorkflowProposal;
-pub use approval::{RequiredWorkflowApproval, WorkflowApprovalDecision};
 pub use actor::RequiredWorkflowActor;
-pub use assessment_evidence::PerformedWorkflowAssessmentEvidence;
+pub use approval::{RequiredWorkflowApproval, WorkflowApprovalDecision};
 pub use evidence_readiness::RequiredWorkflowEvidence;
 pub use required_assessment::RequiredWorkflowAssessment;
+pub use required_proposal::RequiredWorkflowProposal;
 
 #[must_use = "prepared workflow advance owns a live application attempt"]
 pub enum PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
@@ -187,45 +187,8 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAssessment<Schema, Operati
     }
 }
 
-#[path = "publication/performed.rs"]
-pub mod performed;
-pub use performed::{PerformedWorkflowApproval, PerformedWorkflowApprovalAttemptParts, PerformedWorkflowTransition, PerformedWorkflowTransitionAttemptParts};
-
-/// What advancing a workflow instance produced. The `Awaiting*` variants name what the
-/// instance needs next; `Completed` is a landed transition. The remaining variants say why
-/// nothing landed, or why a landed commit could not be projected.
-#[derive(Debug)]
-pub enum WorkflowProgressOutcome {
-    RecoveredCommitted(crate::domain_computation::primary_graph::provider::WorthQueryRecoveredApplicationCommitReceipt),
-    AwaitingProposal(RequiredWorkflowProposal),
-    AwaitingActor(RequiredWorkflowActor),
-    AwaitingAssessment(RequiredWorkflowAssessment),
-    AwaitingCondition(RequiredWorkflowCondition),
-    AwaitingOperation(RequiredWorkflowOperation),
-    AwaitingEvidence(RequiredWorkflowEvidence),
-    AwaitingApproval(RequiredWorkflowApproval),
-    Completed(PerformedWorkflowTransition),
-    /// The commit did not land. Fresh completion retains its actual performed
-    /// transition; a later keyed call exposes only `RecoveredCommitted` data.
-    Application(WorthQueryApplicationUncommitted),
-    ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
-    /// A landed receipt is retained when its required projection read stops.
-    ProjectionReadStopped {
-        receipt: super::super::WorthQueryApplicationCommitReceipt,
-        cause: worth_relational::facade::transactions::RelationalExecutionDenialCause,
-    },
-    PreparationDenied(super::super::WorthQueryApplicationAttemptDenial),
-    AuthenticationDenied(
-        worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventDenial,
-    ),
-    IdempotencyDenied(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial),
-}
-
 impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
-    pub fn with_replays(
-        self,
-        replays: PreparedWorkflowTransitionReplays,
-    ) -> Self {
+    pub fn with_replays(self, replays: PreparedWorkflowTransitionReplays) -> Self {
         match self {
             Self::Transition {
                 program,

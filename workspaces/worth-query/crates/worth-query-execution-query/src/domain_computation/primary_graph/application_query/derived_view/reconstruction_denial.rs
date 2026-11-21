@@ -2,14 +2,11 @@
 
 use super::WorthQueryManagedDerivedViewDenial as Denial;
 use worth_execution::{
-    LeaseDenial, MapKernelFailure, MapKernelStop, MapStop, MemoryLimitLevel,
-    WorkCeilingDenial,
+    LeaseDenial, MapKernelFailure, MapKernelStop, MapStop, MemoryLimitLevel, WorkCeilingDenial,
 };
 use worth_relational::facade::identity::EntityId;
 
-pub fn lease(
-    denial: LeaseDenial,
-) -> Denial {
+pub fn lease(denial: LeaseDenial) -> Denial {
     match denial {
         LeaseDenial::WorkerLimitExceedsParent => Denial::WorkerLimitExceedsParent,
         LeaseDenial::MemoryLimitExceedsParent => Denial::MemoryLimitExceedsParent,
@@ -31,10 +28,7 @@ pub fn lease(
     }
 }
 
-pub fn kernel(
-    stop: MapKernelStop,
-    root: Option<EntityId>,
-) -> Denial {
+pub fn kernel(stop: MapKernelStop, root: Option<EntityId>) -> Denial {
     match stop {
         MapKernelStop::Cancelled => Denial::Cancelled,
         MapKernelStop::DeadlineElapsed => Denial::DeadlineElapsed,
@@ -45,9 +39,7 @@ pub fn kernel(
     }
 }
 
-pub fn scope(
-    stop: WorkCeilingDenial,
-) -> Denial {
+pub fn scope(stop: WorkCeilingDenial) -> Denial {
     match stop {
         WorkCeilingDenial::Admission(cause) => lease(cause),
         WorkCeilingDenial::Stopped(cause) => kernel(cause, None),
@@ -55,10 +47,7 @@ pub fn scope(
     }
 }
 
-pub fn map(
-    stop: MapStop<Denial>,
-    roots: &[EntityId],
-) -> Denial {
+pub fn map(stop: MapStop<Denial>, roots: &[EntityId]) -> Denial {
     let root_at =
         |identity: worth_foundational::PartitionIdentity| roots[(identity.value() - 1) as usize];
     match stop {
@@ -80,18 +69,14 @@ pub fn map(
     }
 }
 
-pub fn rounds(
-    cause: worth_execution::RoundsDenial,
-) -> Denial {
+pub fn rounds(cause: worth_execution::RoundsDenial) -> Denial {
     match cause {
         worth_execution::RoundsDenial::RoundCountOverflow => Denial::CapacityOverflow,
         worth_execution::RoundsDenial::MemoryUnavailable => Denial::AllocationUnavailable,
     }
 }
 
-pub fn owner(
-    cause: MapKernelFailure<Denial>,
-) -> Denial {
+pub fn owner(cause: MapKernelFailure<Denial>) -> Denial {
     match cause {
         MapKernelFailure::Domain(cause) => cause,
         MapKernelFailure::Stop(cause) => kernel(cause, None),

@@ -8,9 +8,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         self
     }
 
-    pub fn correction_identity(
-        &self,
-    ) -> Option<&[u8; 32]> {
+    pub fn correction_identity(&self) -> Option<&[u8; 32]> {
         self.correction_identity.as_ref()
     }
 }

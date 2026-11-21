@@ -58,8 +58,7 @@ impl WorthQueryApplicationIdempotencyBasis {
     }
 }
 
-pub struct WorthQueryAdmittedApplicationOverlay
-{
+pub struct WorthQueryAdmittedApplicationOverlay {
     identity: String,
     facts: Vec<WorthQueryProposedFact>,
 }

@@ -113,10 +113,7 @@ impl ApplicationFactTable {
         }
         Ok(table)
     }
-    pub fn insert_fresh(
-        &mut self,
-        fact: Decision,
-    ) -> Result<(), &'static str> {
+    pub fn insert_fresh(&mut self, fact: Decision) -> Result<(), &'static str> {
         let key = fact.locator_identity();
         validate_locator(&key)?;
         if self.contains_key(&key) {

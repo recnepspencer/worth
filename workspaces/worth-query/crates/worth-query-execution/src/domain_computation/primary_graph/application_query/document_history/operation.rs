@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 type Model<S, M> =
     <<M as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;
@@ -88,7 +89,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::ForeignRuntime);
         }
         let ownership = self
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .graph
             .layout
@@ -98,7 +100,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .checked_execution_request_for(&self.inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let owner = self
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |native| {

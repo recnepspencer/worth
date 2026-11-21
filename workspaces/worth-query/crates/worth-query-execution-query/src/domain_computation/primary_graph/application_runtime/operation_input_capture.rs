@@ -4,7 +4,6 @@ use crate::domain_computation::primary_graph::{
     request_allocation_control::RequestAllocationControl, WorthQueryAdvancementDenial,
     WorthQueryAdvancementPhase,
 };
-use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort;
 use worth_execution::{ExecutionAllocationDenial, ExecutionArray, ExecutionArrayBuilder};
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::{
@@ -14,6 +13,7 @@ use worth_query_declaration::facade::{
     },
 };
 use worth_query_declaration::native_input_capture::{encode_native_input, NativeImmutableInput};
+use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
 /// Capture refusal before original builder fields or workflow authority transfer.
 #[derive(Debug)]
 pub enum WorthQueryOperationInputCaptureDenial {
@@ -56,7 +56,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     pub fn capture_operation_input_in_advancement<InputBinding>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        _: &dyn WorthQueryProgramPublicationAccessPort,
+        _: &WorthQueryProgramPublicationAccess,
         request: &WorthQueryRequestScope,
         original: &InputBinding::Value,
     ) -> Result<ApplicationEncodedInput<InputBinding>, WorthQueryOperationInputCaptureDenial>

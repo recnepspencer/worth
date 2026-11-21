@@ -108,9 +108,7 @@ impl WorthQueryRetainedGovernedInput {
         self.governed_identity
     }
 
-    pub fn original_scope(
-        &self,
-    ) -> Option<&Arc<super::super::WorthQueryObservedScopeSelector>> {
+    pub fn original_scope(&self) -> Option<&Arc<super::super::WorthQueryObservedScopeSelector>> {
         self.original_scope.as_ref()
     }
     pub fn correction(
@@ -271,9 +269,7 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     }
 
     /// Exact compiled aftermath retained from the admitted installed operation.
-    pub const fn installed_aftermath(
-        &self,
-    ) -> Option<&WorthQueryInstalledAftermathContract> {
+    pub const fn installed_aftermath(&self) -> Option<&WorthQueryInstalledAftermathContract> {
         self.installed_aftermath.as_ref()
     }
 
@@ -289,7 +285,7 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     ///
     /// A mismatched type yields no value; the caller never supplies replacement
     /// bytes or a fallback value.
-    pub fn retained_governed_input<Input: 'static>(&self) -> Option<&Input> {
+    pub(crate) fn retained_governed_input<Input: 'static>(&self) -> Option<&Input> {
         self.retained_governed_input.as_ref()?.downcast_ref()
     }
 

@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 mod admission;
 mod affinity;
 mod applied;
@@ -42,9 +43,7 @@ pub struct BoundStableObservedSourceFacts {
 impl PreparedObservedSourceExpectation {
     /// Descriptive partition coordinate for selecting the existing owner
     /// candidate before this move-only source is consumed.
-    pub const fn partition_identity(
-        &self,
-    ) -> [u8; 32] {
+    pub const fn partition_identity(&self) -> [u8; 32] {
         self.bound.partition_identity
     }
 
@@ -62,12 +61,7 @@ impl PreparedObservedSourceExpectation {
                 })
     }
 
-    pub fn consume_into<
-        Schema,
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn consume_into<Schema, Operation, Input, Scope>(
         self,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial> {
@@ -83,12 +77,7 @@ impl PreparedObservedSourceExpectation {
         Ok(self.bound)
     }
 
-    pub fn consume_stable<
-        Schema,
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn consume_stable<Schema, Operation, Input, Scope>(
         self,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<BoundStableObservedSourceFacts, WorthQuerySourceExpectationDenial> {
@@ -131,12 +120,7 @@ impl PreparedObservedSourceExpectation {
 impl BoundStableObservedSourceFacts {
     /// Consume the exact operation binding after the publisher retained its
     /// newly funded suffix. No descriptive payload can issue this binding.
-    pub fn finish_stable<
-        Schema,
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn finish_stable<Schema, Operation, Input, Scope>(
         self,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial> {
@@ -149,12 +133,7 @@ impl BoundStableObservedSourceFacts {
         Ok(self.bound)
     }
 
-    pub fn matches_operation<
-        Schema,
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn matches_operation<Schema, Operation, Input, Scope>(
         &self,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> bool {
@@ -186,15 +165,11 @@ impl BoundStableObservedSourceFacts {
             })
     }
 
-    pub const fn bound_source(
-        &self,
-    ) -> WorthQueryBoundSourceExpectation {
+    pub const fn bound_source(&self) -> WorthQueryBoundSourceExpectation {
         self.bound
     }
 
-    pub fn source_facts(
-        &self,
-    ) -> &[WorthQueryApplicationObservedFact] {
+    pub fn source_facts(&self) -> &[WorthQueryApplicationObservedFact] {
         &self.facts
     }
 }
@@ -266,10 +241,7 @@ where
 
     /// The installed producer calls this before handler contact. Both fresh
     /// execution and stable output use its checked fact construction.
-    pub fn prepare_application_source_expectation<
-        Binding,
-        Scope,
-    >(
+    pub fn prepare_application_source_expectation<Binding, Scope>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &WorthQueryAdmittedApplicationOperation<

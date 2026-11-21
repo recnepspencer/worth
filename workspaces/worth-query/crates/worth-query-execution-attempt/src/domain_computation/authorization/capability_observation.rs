@@ -1,17 +1,16 @@
 //! Capability observation across Relational and Runtime Bridge authority.
 
-
 pub mod recorded_actor;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use worth_relational::facade::authorization::RelationalAuthorizationObservationPlan;
-use worth_runtime_bridge::facade::BridgeAuthorizationRuntime;
 use super::capability_registry::WorthQueryInstalledCapabilityPlan;
 use super::retained_capability_request::WorthQueryRetainedCapabilityRequest;
 use super::{
     WorthQueryAuthorizationDecisionFact, WorthQueryOperationAuthorizationDenial,
     WorthQueryOperationAuthorizationDenialKind,
 };
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use crate::domain_computation::authorization::WorthQueryRuntimeTimeSample;
+use worth_relational::facade::authorization::RelationalAuthorizationObservationPlan;
+use worth_runtime_bridge::facade::BridgeAuthorizationRuntime;
 
 pub mod bridge_observation;
 pub mod decision_denial;

@@ -130,7 +130,8 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             ) || body.artifact.request().requests_producer_evidence()
             {
                 self.runtime
-                    .inner.runtime
+                    .inner
+                    .runtime
                     .primary_provider
                     .inspection_materialization_prepared();
             }

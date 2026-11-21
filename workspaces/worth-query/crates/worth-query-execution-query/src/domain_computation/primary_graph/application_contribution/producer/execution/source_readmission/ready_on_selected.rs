@@ -1,6 +1,5 @@
 //! Clean certification for a required cue on the wave's one selected Product.
 
-use crate::domain_computation::primary_graph::OutputDemandSettlementCurrentExt;
 use super::super::ProducerInvocationAuthority;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::MatchedRequiredPredecessors;
@@ -9,6 +8,7 @@ use crate::domain_computation::primary_graph::application_query::FreshQueryPermi
 use crate::domain_computation::primary_graph::application_query::PreparedApplicationQueryPermission;
 use crate::domain_computation::primary_graph::product_operation::SelectedQueryBasisRetentionStop;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
+use crate::domain_computation::primary_graph::OutputDemandSettlementCurrentExt;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
@@ -24,12 +24,7 @@ type BoundResult<Schema, Binding> = <<SourceBinding<Schema, Binding> as Applicat
 /// permission only when the current-output proof needs disclosure. Current
 /// and pending paths keep the same short authority path and do not invoke it.
 #[allow(clippy::too_many_arguments)]
-pub fn certify_ready_on_selected_with_disclosure<
-    'basis,
-    Outcome,
-    Schema,
-    Binding,
->(
+pub fn certify_ready_on_selected_with_disclosure<'basis, Outcome, Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     installed: &WorthQueryInstalledApplicationQueryBinding<Schema, SourceBinding<Schema, Binding>>,

@@ -21,9 +21,7 @@ pub struct WorthQueryObservedSourceSelection {
 }
 
 impl<Query> WorthQueryObservedSource<Query> {
-    pub fn retain_selected_membership(
-        &self,
-    ) -> Option<WorthQueryObservedSourceSelection> {
+    pub fn retain_selected_membership(&self) -> Option<WorthQueryObservedSourceSelection> {
         WorthQueryObservedSourceSelection::complete(
             self.runtime_authority,
             self.schema_binding.clone(),

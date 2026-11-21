@@ -256,8 +256,7 @@ pub struct WorkflowTerminalCleanupLifecycleEvent {
     kind: WorkflowTerminalCleanupLifecycleEventKind,
 }
 
-pub enum WorkflowTerminalCleanupLifecycleEventKind
-{
+pub enum WorkflowTerminalCleanupLifecycleEventKind {
     Attempted,
     Completed,
 }
@@ -275,9 +274,7 @@ impl WorkflowTerminalCleanupLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> WorkflowTerminalCleanupLifecycleEventKind {
+    pub fn into_kind(self) -> WorkflowTerminalCleanupLifecycleEventKind {
         self.kind
     }
 }

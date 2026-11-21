@@ -42,7 +42,9 @@ fn attempt_owned_carriers_stay_within_declared_inline_ceilings() {
     };
     crate::domain_computation::application_aftermath::inline_type_budget::collect(&mut census);
     crate::domain_computation::authorization::inline_type_budget::collect(&mut census);
-    crate::domain_computation::primary_graph::application_attempt::inline_type_budget::collect(&mut census);
+    crate::domain_computation::primary_graph::application_attempt::inline_type_budget::collect(
+        &mut census,
+    );
     crate::domain_computation::primary_graph::provider::inline_type_budget::collect(&mut census);
     assert!(
         census.exceeded.is_empty(),

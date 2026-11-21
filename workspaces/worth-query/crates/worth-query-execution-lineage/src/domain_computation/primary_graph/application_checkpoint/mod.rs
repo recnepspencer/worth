@@ -1,13 +1,13 @@
 pub mod capture {
     pub mod output_facts;
 }
-pub mod interim_transport;
 pub mod accepted_output;
 pub mod decode;
 pub mod denial;
 pub mod encode;
 pub mod facts;
 pub mod header;
+pub mod interim_transport;
 pub mod metadata_funding;
 pub mod producer_computation;
 pub mod section_bytes;
@@ -201,9 +201,7 @@ pub use denial::WorthQueryCheckpointCaptureDenial;
 pub use facts::FactDecodeDenial;
 pub use header::CheckpointDecodeDenial;
 pub use metadata_funding::CheckpointMetadataFunding;
-pub use producer_computation::{
-    decode as decode_checkpoint_computation, CheckpointProducerFacts,
-};
+pub use producer_computation::{decode as decode_checkpoint_computation, CheckpointProducerFacts};
 pub use section_bytes::{
     WorthQueryApplicationCheckpointSectionBytes, WorthQueryNativeCheckpointSectionBytes,
 };

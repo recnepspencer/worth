@@ -28,11 +28,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             None,
         )
     }
-    pub fn compare_and_commit_application_in_edit_envelope<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_application_in_edit_envelope<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -60,11 +56,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         )
     }
     #[allow(clippy::too_many_arguments)]
-    pub fn compare_and_commit_application_in_edit_envelope_with_outer<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_application_in_edit_envelope_with_outer<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

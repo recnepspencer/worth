@@ -112,9 +112,7 @@ impl WorthQueryApplicationInspectionTarget {
                 .as_ref()
                 .is_some_and(|source| Arc::ptr_eq(source, target))
     }
-    pub fn original_subject(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub fn original_subject(&self) -> worth_relational::facade::identity::EntityId {
         match &self.original {
             InspectionOriginal::Query { original, .. } => {
                 original.source.retained_scope_selector().subject()
@@ -138,9 +136,7 @@ impl WorthQueryApplicationInspectionTarget {
     ) {
         Arc::get_mut(target).expect("unpublished rich target").rich = Some(request);
     }
-    pub fn rich_request(
-        &self,
-    ) -> Option<super::rich::WorthQueryApplicationMaterializationRequest> {
+    pub fn rich_request(&self) -> Option<super::rich::WorthQueryApplicationMaterializationRequest> {
         self.rich
     }
     pub fn needs_diagnostic(&self) -> bool {
@@ -163,9 +159,7 @@ impl WorthQueryApplicationInspectionTarget {
         }
     }
 
-    pub fn contract(
-        &self,
-    ) -> &WorthQueryInstalledApplicationInspectionContract {
+    pub fn contract(&self) -> &WorthQueryInstalledApplicationInspectionContract {
         &self.contract
     }
 
@@ -185,10 +179,7 @@ impl WorthQueryApplicationInspectionTarget {
         }
     }
 
-    pub fn matches_original(
-        &self,
-        original: &WorthQueryApplicationQueryObservation,
-    ) -> bool {
+    pub fn matches_original(&self, original: &WorthQueryApplicationQueryObservation) -> bool {
         self.original()
             .is_some_and(|actual| same_original(actual, original))
     }

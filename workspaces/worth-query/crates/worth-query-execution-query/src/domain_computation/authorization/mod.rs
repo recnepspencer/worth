@@ -14,19 +14,19 @@ pub mod operation_admission;
 
 pub use admission::borrowed_read::BorrowedReadOperationAdmission;
 
+pub use graph_work_session::start_selected_operation_graph_work_admitted;
 pub use operation_admission::{
     authorize_applied_control_mutation_on_selected, authorize_current_control_mutation_on_selected,
     authorize_historical_control_mutation_on_selected, authorize_public_mutation_on_selected,
     SelectedConventionalAdmissionStop,
 };
-pub use graph_work_session::start_selected_operation_graph_work_admitted;
-pub use operation_progression::{
-    admit_capability_access, admit_encoded_capability_access,
-};
+pub use operation_progression::{admit_capability_access, admit_encoded_capability_access};
 
 pub use graph_work_session::SelectedOperationGraphWorkStop;
 
-pub use operation_progression::progress_conventional_operation;
 pub use delegation_progression::WorthQueryDelegationActivationEffect;
+pub use operation_progression::progress_conventional_operation;
 
-pub use operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt;
+pub use operation_admission::capability_admission::preparation::observation::admitted_access::{
+    AdmittedCapabilityAccessRuntimeExt, WorthQueryAdmittedApplicationCapabilityAccess,
+};

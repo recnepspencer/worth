@@ -35,21 +35,15 @@ type Prepare<S, P> = fn(
     DecisionReader<'_, '_, '_, S, Operation<S, P>>,
 ) -> WorthQueryDecisionPlan<Decision<S, P>, Denial<S, P>>;
 
-pub struct InputCaptureOwner<
-    S,
-    P,
-> where
+pub struct InputCaptureOwner<S, P>
+where
     S: ApplicationSchema,
     P: WorthQueryApplicationProducerBinding<S>,
 {
-    pub definition:
-        EqualityTypeId,
-    pub capture:
-        Capture<S, P>,
-    pub prepare:
-        Prepare<S, P>,
-    pub admit:
-        super::super::execution::CaptureAdmission<S, P>,
+    pub definition: EqualityTypeId,
+    pub capture: Capture<S, P>,
+    pub prepare: Prepare<S, P>,
+    pub admit: super::super::execution::CaptureAdmission<S, P>,
 }
 impl<S, P> Copy for InputCaptureOwner<S, P>
 where
@@ -67,19 +61,15 @@ where
     }
 }
 
-pub struct ErasedCapturedInputs
-{
-    pub affinity:
-        InputCaptureAffinity,
+pub struct ErasedCapturedInputs {
+    pub affinity: InputCaptureAffinity,
     value: Box<dyn Any>,
     parents: fn(&dyn Any) -> &[CapturedParent],
     memory: Option<super::super::super::request_execution::QueryMemoryReservation>,
     context_use: crate::domain_computation::primary_graph::handler::DecisionContextUse,
 }
 impl ErasedCapturedInputs {
-    pub fn parents(
-        &self,
-    ) -> &[CapturedParent] {
+    pub fn parents(&self) -> &[CapturedParent] {
         (self.parents)(self.value.as_ref())
     }
     pub fn into_parts(
@@ -194,7 +184,9 @@ where
         original.downcast_ref::<H>(),
         captured.downcast::<WorthQueryCapturedProducerInputs<S, C, H::Captured>>(),
     ) {
-        (Some(handler), Ok(inputs)) => handler.prepare_captured_decision_owned(input, *inputs, reader),
+        (Some(handler), Ok(inputs)) => {
+            handler.prepare_captured_decision_owned(input, *inputs, reader)
+        }
         _ => WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(foreign())),
     }
 }

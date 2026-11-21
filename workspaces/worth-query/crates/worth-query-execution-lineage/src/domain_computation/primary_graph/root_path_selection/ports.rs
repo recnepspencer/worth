@@ -59,10 +59,8 @@ type RootPathGuardRead<'a, E> = dyn FnMut(
 /// and before its physical equality read. No protected revision precedes admission.
 pub struct RootPathReadPorts<'a, E> {
     pub checkpoint: &'a dyn Fn(&str) -> Result<(), E>,
-    pub read_guard_with_sources:
-        &'a mut RootPathGuardRead<'a, E>,
-    pub observation:
-        &'a mut dyn FnMut(RootPathReadObservation<'_>) -> Result<(), E>,
+    pub read_guard_with_sources: &'a mut RootPathGuardRead<'a, E>,
+    pub observation: &'a mut dyn FnMut(RootPathReadObservation<'_>) -> Result<(), E>,
 }
 impl<E> RootPathReadPorts<'_, E> {
     pub fn check(&self, subject: &str) -> Result<(), RootPathReadDenial<E>> {

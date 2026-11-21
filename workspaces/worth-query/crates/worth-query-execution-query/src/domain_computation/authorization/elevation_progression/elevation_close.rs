@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 pub use worth_query_execution_attempt::facade::domain_computation::authorization::elevation_progression::elevation_close::*;
 
@@ -8,8 +9,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, TypedMutationPreconditions,
 };
 use worth_query_installation::facade::{
-    ApplicationSchema,
-    WorthQueryInstalledApplicationOperation,
+    ApplicationSchema, WorthQueryInstalledApplicationOperation,
 };
 
 use super::super::capability_registry::{
@@ -29,8 +29,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApprovedElevation, WorthQueryElevationClosureKind,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
-
-
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -77,11 +75,7 @@ where
         )
     }
 
-    pub fn authorize_elevation_close_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+    pub fn authorize_elevation_close_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         approved: WorthQueryApprovedElevation,
@@ -230,13 +224,7 @@ fn close_denial(
     approved: WorthQueryApprovedElevation,
     denial: WorthQueryOperationAuthorizationDenial,
 ) -> WorthQueryElevationCloseAuthorizationDenial {
-    WorthQueryElevationCloseAuthorizationDenial::from_attempt_parts(
-        worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(),
-        worth_query_execution_attempt::facade::domain_computation::authorization::elevation_progression::elevation_close::WorthQueryElevationCloseAuthorizationDenialAttemptParts {
-            denial,
-            approved,
-        },
-    )
+    WorthQueryElevationCloseAuthorizationDenial::new(denial, approved)
 }
 
 fn close_rejected(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {

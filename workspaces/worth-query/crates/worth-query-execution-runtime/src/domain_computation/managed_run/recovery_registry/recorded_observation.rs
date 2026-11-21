@@ -7,7 +7,10 @@ impl WorthQueryRecoveryHandleRegistry {
         &self,
         provider_runtime_instance_id: u64,
         original: &RecordedProductBranchReference,
-    ) -> Result<(bool, Option<RecoveryClaimDisposition>), worth_query_execution_contracts::facade::QueryDispatchJournalDenial>{
+    ) -> Result<
+        (bool, Option<RecoveryClaimDisposition>),
+        worth_query_execution_contracts::facade::QueryDispatchJournalDenial,
+    > {
         let claim = match original {
             RecordedProductBranchReference::Home(head) => {
                 WorthQueryRecoveryMintClaim::Home(head.selected_commit())

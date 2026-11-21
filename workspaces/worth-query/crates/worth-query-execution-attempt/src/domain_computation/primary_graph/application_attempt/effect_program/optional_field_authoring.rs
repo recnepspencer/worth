@@ -1,6 +1,6 @@
 //! Typed optional field shell; concrete patch semantics belong to the effect core.
-use crate::domain_computation::primary_graph::application_attempt::effect_program::EffectEntityBorrowedExt;
 use super::{WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgramBuilder};
+use crate::domain_computation::primary_graph::application_attempt::effect_program::EffectEntityBorrowedExt;
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial;
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>

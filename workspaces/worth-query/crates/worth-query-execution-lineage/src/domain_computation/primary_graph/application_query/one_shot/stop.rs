@@ -1,7 +1,7 @@
 //! Pure one-shot read stop enum.
 
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 use super::WorthQueryApplicationOneShotDenial;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum WorthQueryAdmittedOneShotStop {

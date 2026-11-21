@@ -1,5 +1,5 @@
-use crate::domain_computation::primary_graph::OriginalSettledProducerObservationExt;
 use super::super::application_output_demand::OriginalSettledProducerObservation;
+use crate::domain_computation::primary_graph::OriginalSettledProducerObservationExt;
 use std::marker::PhantomData;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
@@ -320,9 +320,7 @@ impl<'a> WorthQueryApplicationQueryResumeControls<'a> {
 }
 
 impl WorthQueryAdmittedApplicationQueryControls<'_> {
-    pub fn is_current_product_one_shot(
-        &self,
-    ) -> bool {
+    pub fn is_current_product_one_shot(&self) -> bool {
         self.current_product_one_shot
     }
     pub fn original_settled_producer_for(

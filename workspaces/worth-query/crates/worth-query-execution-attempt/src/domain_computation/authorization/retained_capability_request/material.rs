@@ -73,10 +73,7 @@ impl<'a, E> Material<'a, E> {
             overflow,
         }
     }
-    pub fn bytes(
-        &mut self,
-        bytes: &[u8],
-    ) -> Result<(), E> {
+    pub fn bytes(&mut self, bytes: &[u8]) -> Result<(), E> {
         (self.admit)(8)?;
         self.digest.update((bytes.len() as u64).to_be_bytes());
         for chunk in bytes.chunks(4096) {
@@ -107,10 +104,7 @@ impl<'a, E> Material<'a, E> {
         }
         Ok(())
     }
-    pub fn value(
-        &mut self,
-        value: &AspectValue,
-    ) -> Result<(), E> {
+    pub fn value(&mut self, value: &AspectValue) -> Result<(), E> {
         let digest = {
             let mut scalar = Material::new(self.admit, self.overflow);
             write_aspect_value_identity_material(value, &mut scalar)?;

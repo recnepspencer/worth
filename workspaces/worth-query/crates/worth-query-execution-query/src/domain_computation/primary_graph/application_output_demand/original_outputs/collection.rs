@@ -1,17 +1,17 @@
 //! Complete original trees share one receipt-derived endpoint and currentness owner.
+use super::*;
+use crate::domain_computation::primary_graph::{
+    structural_walk::memory, WorthQueryPrimaryGraphApplicationRuntime,
+};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandSettlement,
 };
 use crate::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies;
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort;
-use worth_query_installation::facade::ApplicationSchema;
-use super::*;
-use crate::domain_computation::primary_graph::{
-    structural_walk::memory, WorthQueryPrimaryGraphApplicationRuntime,
-};
 use worth_execution::ExecutionRequest;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
+use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 type Settlement = WorthQueryOutputDemandSettlement;
@@ -72,7 +72,7 @@ impl OriginalOutputTree {
             S,
         >,
         phase: &WorthQueryAdvancementPhase<'_>,
-        access: &dyn WorthQueryProgramPublicationAccessPort,
+        access: &WorthQueryProgramPublicationAccess,
         scope: &WorthQueryRequestScope,
     ) -> Result<(), Denial> {
         selected
@@ -89,22 +89,17 @@ impl OriginalOutputTree {
             .map_err(Denial::Currentness)
     }
 
-    pub fn settlements(
-        &self,
-    ) -> impl Iterator<Item = &Settlement> + Clone {
+    pub fn settlements(&self) -> impl Iterator<Item = &Settlement> + Clone {
         std::iter::once(self.root.as_ref()).chain(self.dependents.iter().map(Arc::as_ref))
     }
 }
 
 /// Whole collection verification is performed only after deriving the endpoint
 /// from all original publication movements. No intermediate sibling qualifies E.
-pub fn qualify_output_collection<
-    'a,
-    S: ApplicationSchema,
->(
+pub fn qualify_output_collection<'a, S: ApplicationSchema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     phase: &WorthQueryAdvancementPhase<'_>,
-    access: &dyn WorthQueryProgramPublicationAccessPort,
+    access: &WorthQueryProgramPublicationAccess,
     scope: &WorthQueryRequestScope,
     trees: impl Iterator<Item = &'a OriginalOutputTree> + Clone,
 ) -> Result<WorthQueryCompletedOriginalReadOutputs, Denial> {

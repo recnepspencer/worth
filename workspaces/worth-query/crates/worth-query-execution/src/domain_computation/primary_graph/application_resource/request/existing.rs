@@ -112,12 +112,13 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
                             if purpose == Purpose::CloseDetail {
                                 // These facts follow actual provider/queue/Native
                                 // cleanup and this exact admitted CloseDetail leaf.
-                                evidence.detail =
-                                    Some(super::super::WorthQueryResourceCleanupDetail {
+                                evidence = evidence.with_cleanup_detail(Some(
+                                    super::super::WorthQueryResourceCleanupDetail {
                                         provider_closed: true,
                                         queue_drained: true,
                                         native_released: true,
-                                    });
+                                    },
+                                ));
                             }
                             handle.closed();
                             closed = Some(evidence);
@@ -134,7 +135,6 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
         match result {
             Ok(()) => Ok(closed.expect("successful Close retains actual cleanup evidence")),
             Err(cause) => Err(WorthQueryResourceActionDenial::from_cause_port(
-                worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
                 Box::new(cause),
                 closed,
             )),

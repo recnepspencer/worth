@@ -55,10 +55,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .candidates(operation, maximum_work)
     }
 
-    pub fn pending_transport_maintenance_count(
-        &self,
-        operation: &str,
-    ) -> usize {
+    pub fn pending_transport_maintenance_count(&self, operation: &str) -> usize {
         self.runtime
             .transport_completion_custody
             .lock()

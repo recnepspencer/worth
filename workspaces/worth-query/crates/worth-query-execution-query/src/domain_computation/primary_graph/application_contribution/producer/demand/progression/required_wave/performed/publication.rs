@@ -8,9 +8,7 @@ pub struct PublishedMember<'record> {
     performed: &'record mut bool,
 }
 impl PublishedMember<'_> {
-    pub fn performed(
-        self,
-    ) {
+    pub fn performed(self) {
         *self.performed = true;
     }
 }
@@ -21,17 +19,13 @@ pub struct PublicationHandoff<'record> {
     recorded: &'record bool,
 }
 impl<'record> PublicationHandoff<'record> {
-    pub fn into_parts(
-        self,
-    ) -> (ProducerCommitReceipt, &'record bool) {
+    pub fn into_parts(self) -> (ProducerCommitReceipt, &'record bool) {
         (self.receipt, self.recorded)
     }
 }
 
 impl PerformedMembers {
-    pub fn publication<
-        'record,
-    >(
+    pub fn publication<'record>(
         &'record mut self,
         readiness: PublicationReadiness,
         receipt: ProducerCommitReceipt,

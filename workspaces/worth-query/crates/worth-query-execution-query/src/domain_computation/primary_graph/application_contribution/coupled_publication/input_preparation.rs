@@ -3,8 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand;
 use worth_relational::facade::runtime::RelationalPinnedRead;
 
-pub enum PreparedCoupledInputs
-{
+pub enum PreparedCoupledInputs {
     Ready(SelectedCoupledSource),
     Captured(Box<dyn execution::CapturedProducerInputRead>),
 }

@@ -56,7 +56,8 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
             .map_err(|_| Denial::ForeignPhase)?;
         let fact = self
             .application()
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .reversal_of_source_at_basis(&execution, self.product().relational_basis(), &source)
             .map_err(Denial::History)?

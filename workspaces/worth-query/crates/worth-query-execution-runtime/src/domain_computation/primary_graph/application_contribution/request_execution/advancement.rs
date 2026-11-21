@@ -142,9 +142,7 @@ impl QueryRequestExecution<'_> {
     }
 }
 
-pub fn advancement_denial(
-    denial: WorkCeilingDenial,
-) -> WorthQueryAdvancementDenial {
+pub fn advancement_denial(denial: WorkCeilingDenial) -> WorthQueryAdvancementDenial {
     use WorthQueryAdvancementDenial as Denial;
     match denial {
         WorkCeilingDenial::Admission(cause) => {
@@ -164,7 +162,6 @@ pub fn advancement_denial(
         WorkCeilingDenial::Panicked => Denial::Panicked,
     }
 }
-
 
 /// Installation runs serially under the host's memory and aggregate work bounds.
 /// Custody is per thread; another thread's public call owns its own request.
@@ -253,9 +250,8 @@ pub mod observation;
 
 pub use observation::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
-    WorthQueryAdvancementEventForTest,
-    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
-    WorthQueryAdvancementObservationForTest,
+    WorthQueryAdvancementEventForTest, WorthQueryAdvancementEventKindForTest,
+    WorthQueryAdvancementIdentityForTest, WorthQueryAdvancementObservationForTest,
 };
 
 pub fn with_test_advancement<R>(

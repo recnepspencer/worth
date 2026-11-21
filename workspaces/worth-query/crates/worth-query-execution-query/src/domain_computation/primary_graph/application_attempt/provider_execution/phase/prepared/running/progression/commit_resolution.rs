@@ -41,8 +41,7 @@ pub struct WorthQueryAuthorizedCompareContext<'a> {
 
 /// One-shot permission for the receipt owner to join a fresh provider commit
 /// to the exact current terminal session.
-pub struct WorthQueryFreshCommitReceiptPermit
-{
+pub struct WorthQueryFreshCommitReceiptPermit {
     provider_session:
         crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
 }

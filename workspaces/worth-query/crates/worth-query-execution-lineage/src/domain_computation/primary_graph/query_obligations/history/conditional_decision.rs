@@ -14,9 +14,7 @@ impl QueryObligationHistory {
             .as_ref()
             .and_then(|journal| ledger_inspect::conditional_decision(&journal.ledger, key).cloned())
     }
-    pub fn conditional_decisions(
-        &self,
-    ) -> Vec<QueryConditionalDecision> {
+    pub fn conditional_decisions(&self) -> Vec<QueryConditionalDecision> {
         self.state()
             .journal
             .as_ref()

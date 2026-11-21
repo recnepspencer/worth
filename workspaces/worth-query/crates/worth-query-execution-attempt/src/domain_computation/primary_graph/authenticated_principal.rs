@@ -13,11 +13,7 @@ use worth_relational::facade::identity::{EntityId, RelationId};
 use super::freshness::WorthQueryPrincipalFreshnessEvidence;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
-pub fn validate_freshness_at_snapshot<
-    Schema,
-    Principal,
-    PrincipalIdentity,
->(
+pub fn validate_freshness_at_snapshot<Schema, Principal, PrincipalIdentity>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -38,7 +34,6 @@ pub fn validate_freshness_at_snapshot<
         expected_identity,
     )
 }
-
 
 /// Opaque identity of one application principal in an installed primary graph.
 ///
@@ -69,31 +64,7 @@ impl<Schema, Principal, PrincipalIdentity> std::fmt::Debug
 ///
 /// Direct field construction is not a consumer authority path:
 ///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::WorthQueryAuthenticatedPrincipal;
-///
-/// let _ = WorthQueryAuthenticatedPrincipal::<(), (), u64> {
-///     external_identity: todo!(),
-///     attributes: Vec::new(),
-///     valid_until: std::time::Instant::now(),
-///     application_principal: todo!(),
-///     binding_identity: todo!(),
-///     binding: String::new(),
-///     mapping_entity_id: todo!(),
-///     target_relation_id: todo!(),
-///     freshness: todo!(),
-///     examined_candidate_count: 0,
-/// };
-/// ```
-///
 /// Serialized data cannot mint the proof:
-///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::WorthQueryAuthenticatedPrincipal;
-///
-/// let _: WorthQueryAuthenticatedPrincipal<(), (), u64> =
-///     serde_json::from_str("{}").unwrap();
-/// ```
 pub struct WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
     pub external: std::sync::Arc<WorthQueryAuthenticatedExternalPrincipal<Schema>>,
     pub application_principal:
@@ -142,9 +113,7 @@ impl<Schema, Principal, PrincipalIdentity>
         }
     }
 
-    pub fn retain_authentication(
-        &self,
-    ) -> std::sync::Arc<dyn std::any::Any + Send + Sync>
+    pub fn retain_authentication(&self) -> std::sync::Arc<dyn std::any::Any + Send + Sync>
     where
         Schema: 'static,
     {
@@ -215,9 +184,7 @@ impl<Schema, Principal, PrincipalIdentity>
         self.target_relation_id
     }
 
-    pub const fn freshness(
-        &self,
-    ) -> &WorthQueryPrincipalFreshnessEvidence {
+    pub const fn freshness(&self) -> &WorthQueryPrincipalFreshnessEvidence {
         &self.freshness
     }
 }

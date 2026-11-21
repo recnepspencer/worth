@@ -1,9 +1,9 @@
-use crate::domain_computation::primary_graph::OutputDemandSettlementReusedExt;
-use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement as Settlement;
+use crate::domain_computation::primary_graph::OutputDemandSettlementReusedExt;
+use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 
 /// What a Ready row proves on the branch as it stands.
 #[derive(Clone, Copy)]

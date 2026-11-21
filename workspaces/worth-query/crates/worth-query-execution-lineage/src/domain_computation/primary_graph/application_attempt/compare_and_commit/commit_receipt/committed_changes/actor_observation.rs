@@ -60,8 +60,9 @@ impl WorthQueryApplicationCommittedChanges {
             Executor => ("workflow-transition", "executor"),
             Approver => ("workflow-approval", "approver"),
         };
-        let fields = worth_query_execution_layout::facade::WorkflowActorFields::planned(aspect, role)
-            .map_err(|_| actor_record_corruption())?;
+        let fields =
+            worth_query_execution_layout::facade::WorkflowActorFields::planned(aspect, role)
+                .map_err(|_| actor_record_corruption())?;
         let values = [&fields.partition, &fields.slot, &fields.generation]
             .map(|locator| self.committed_field_value(entity, locator));
         let mut components = [None; 3];
@@ -78,7 +79,9 @@ impl WorthQueryApplicationCommittedChanges {
     /// Rehydrates the actual committed native actor evidence under the caller's lease.
     /// No bytes, decoded proof or permission leaves this closed certification door.
     #[doc(hidden)]
-    pub fn retain_workflow_actor_evidence_for_test<R: crate::ports::WorkflowActorEvidenceRuntimePort>(
+    pub fn retain_workflow_actor_evidence_for_test<
+        R: crate::ports::WorkflowActorEvidenceRuntimePort,
+    >(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &R,

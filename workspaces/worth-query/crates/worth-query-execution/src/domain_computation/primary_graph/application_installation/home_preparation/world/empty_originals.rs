@@ -15,11 +15,17 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     ) -> Result<(), Denial> {
         let application = self.runtime.runtime();
         let reservation = application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .reserve_owner_cleanup_for_application()
             .map_err(|_| Denial::OriginalMemoryAdmission)?;
-        let recovery = application.inner.runtime.product_runtime.owner.recovery_port();
+        let recovery = application
+            .inner
+            .runtime
+            .product_runtime
+            .owner
+            .recovery_port();
         match crate::domain_computation::primary_graph::home_original_progression::release_original(
             &recovery, execution, effects,
         ) {

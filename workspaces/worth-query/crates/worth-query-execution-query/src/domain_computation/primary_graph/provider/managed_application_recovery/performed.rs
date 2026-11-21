@@ -25,7 +25,7 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
     /// receipt or publication witness is constructed by this comparison.
     pub fn matches_original_receipt(
         &self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         receipt: &super::super::WorthQueryRecoveredApplicationCommitReceipt,
     ) -> bool {
         use worth_foundational::facade::RecordedProductBranchReference;
@@ -50,7 +50,7 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
     /// Every other fresh component, and any explicit definition, stays intact.
     pub fn bind_performed_definition(
         &self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         fresh: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationIdempotencyBinding {
         self.bind_original_definition(fresh)
@@ -70,20 +70,18 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
     /// Transfers the actual old record's cleanup custody without claiming refusal or completion.
     pub fn take_pending_cleanup(
         &mut self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
     ) -> Option<WorthQueryProductUnpublishedRecovery> {
         self.take_original_cleanup()
     }
 
-    pub fn take_original_cleanup(
-        &mut self,
-    ) -> Option<WorthQueryProductUnpublishedRecovery> {
+    pub fn take_original_cleanup(&mut self) -> Option<WorthQueryProductUnpublishedRecovery> {
         self.pending_cleanup.take()
     }
 
     pub fn take_prior_cleanup_failure(
         &mut self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
     ) -> Option<WorthQueryProductUnpublishedRecoveryReleaseFailure> {
         self.take_original_cleanup_failure()
     }

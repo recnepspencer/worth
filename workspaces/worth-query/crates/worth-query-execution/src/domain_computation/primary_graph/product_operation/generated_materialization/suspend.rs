@@ -119,7 +119,8 @@ where
         let execution = &execution_request;
         drop(application_basis);
         if application
-            .inner.installed_producers
+            .inner
+            .installed_producers
             .provider::<Producer>()
             .is_none()
         {
@@ -129,7 +130,8 @@ where
         }
         let branch = product.product_branch();
         let gate = application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .activations
             .gate(product.branch_identity())
@@ -150,7 +152,8 @@ where
         let output_occurrence = observation.lifecycle_incarnation();
         let output_generation = observation.reference_generation().get();
         let lineage = application
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .graph
             .output_lineage
@@ -202,21 +205,21 @@ where
                 WorthQueryGeneratedOutputSuspensionDenial::NoGeneratedPayload,
             ));
         }
-        let prepared =
-            application
-                .inner.runtime
-                .primary_provider
-                .graph
-                .with_runtime(execution, |runtime| {
-                    runtime
-                        .owner_component_services()
-                        .materialization_port()
-                        .prepare_generated_materialization_suspension(
-                            execution,
-                            product.relational_basis(),
-                            &generated_entities,
-                        )
-                });
+        let prepared = application
+            .inner
+            .runtime
+            .primary_provider
+            .graph
+            .with_runtime(execution, |runtime| {
+                runtime
+                    .owner_component_services()
+                    .materialization_port()
+                    .prepare_generated_materialization_suspension(
+                        execution,
+                        product.relational_basis(),
+                        &generated_entities,
+                    )
+            });
         let prepared = prepared.map_err(WorthQueryGeneratedOutputSuspensionFailure::Preparation)?;
         let (candidate, completion) = prepared.into_parts();
         let prepared = product

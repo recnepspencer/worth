@@ -1,7 +1,7 @@
 //! Durable retirement reservation and acknowledged terminal posture.
+use super::journal::*;
 use super::*;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryProgramSupportRetirementFailure as Failure;
-use super::journal::*;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::CanonicalDigestId;
 

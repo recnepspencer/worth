@@ -5,9 +5,7 @@ mod authored;
 mod authorization;
 mod preparation;
 mod registration;
-pub use authored::{
-    inspect_authored_application, InspectedAuthoredApplication,
-};
+pub use authored::{inspect_authored_application, InspectedAuthoredApplication};
 pub use preparation::CommitPreparedCoupledWriter;
 
 struct CoupledWriterCustody {
@@ -124,9 +122,7 @@ where
 }
 
 impl<'run> InspectedCoupledWriter<'run> {
-    pub fn session(
-        &self,
-    ) -> crate::domain_computation::WorthQueryProviderSessionView<'_> {
+    pub fn session(&self) -> crate::domain_computation::WorthQueryProviderSessionView<'_> {
         self.inspection.provider_session_view()
     }
     pub fn approve<S: ApplicationSchema>(

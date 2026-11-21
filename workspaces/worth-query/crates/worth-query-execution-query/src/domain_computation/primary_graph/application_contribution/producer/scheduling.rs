@@ -27,8 +27,7 @@ use crate::domain_computation::primary_graph::{
 
 pub struct WorthQueryInstalledOutputProducerRoute {
     pub scheduling: InstalledConditionalRoute,
-    pub output_comparison:
-        Option<super::output_evaluation::InstalledOutputComparison>,
+    pub output_comparison: Option<super::output_evaluation::InstalledOutputComparison>,
 }
 pub type WorthQueryInstalledOutputProducerRoutes =
     BTreeMap<String, WorthQueryInstalledOutputProducerRoute>;

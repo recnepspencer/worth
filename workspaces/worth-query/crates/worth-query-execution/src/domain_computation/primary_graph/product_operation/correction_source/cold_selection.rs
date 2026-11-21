@@ -34,7 +34,8 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
             return Err(D::SourcePublicationMismatch);
         }
         let material = application
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .observe_correction_material(coordinates.relational())
             .map_err(D::Material)?;
@@ -72,7 +73,8 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
             .ok_or(D::SourceNotCorrectable)?
             .binding_type();
         let fact = application
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .observe_correction_original_fact(&execution, &original, &material.ready.commit)
             .map_err(D::Material)?;
@@ -163,7 +165,8 @@ pub(super) fn read_lineage<S: ApplicationSchema>(
     use WorthQueryCorrectionSelectionDenial as D;
     let observation = target
         .application()
-        .inner.runtime
+        .inner
+        .runtime
         .product_runtime
         .owner
         .observation_port();

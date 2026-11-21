@@ -160,9 +160,7 @@ impl RetainedQueryDurablePreparation {
         self.query.is_unprepared()
     }
 
-    pub fn stage(
-        &self,
-    ) -> crate::domain_computation::WorthQueryProductPreparationStage {
+    pub fn stage(&self) -> crate::domain_computation::WorthQueryProductPreparationStage {
         use crate::domain_computation::WorthQueryProductPreparationStage as Stage;
         match &self.world {
             QueryDurableWorldCustody::OwnerCallInProgress(call) => match call {
@@ -182,9 +180,7 @@ impl RetainedQueryDurablePreparation {
             _ => self.stage,
         }
     }
-    pub fn abandon_world_phase(
-        &mut self,
-    ) -> QueryDurableWorldCustody {
+    pub fn abandon_world_phase(&mut self) -> QueryDurableWorldCustody {
         std::mem::replace(&mut self.world, QueryDurableWorldCustody::RecoveryOnly)
     }
 }

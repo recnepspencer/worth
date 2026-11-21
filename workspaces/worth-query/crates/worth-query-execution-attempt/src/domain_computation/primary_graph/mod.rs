@@ -12,9 +12,8 @@ pub use worth_query_execution_lineage::facade::primary_graph::{
     fact_verification_observation, fragment_view, freshness, handler, home_original_progression,
     index_currency, index_refresh, initial_schema_denial, invariant_projection,
     merge_unique_values, observations, ordinary_read, output_lineage, output_reuse,
-    read_observation, resolution, resolution_denial, root,
-    root_path_selection, source_facts, source_read_equivalence,
-    source_read_verification, structural_walk,
+    read_observation, resolution, resolution_denial, root, root_path_selection, source_facts,
+    source_read_equivalence, source_read_verification, structural_walk,
 };
 pub mod source_disclosure;
 pub use worth_query_execution_lineage::facade::primary_graph::{
@@ -60,7 +59,9 @@ pub use application_attempt::precondition_binding::{
     EmptyMutationPreconditionAdmissionStop, WorthQueryBoundMutationPreconditions,
 };
 pub use application_branch::{primary_relational_branch_id, primary_truth_branch_identity};
-pub use application_contribution::{ComputationPrior, SealedComputationRetention, SealedComputationRun};
+pub use application_contribution::{
+    ComputationPrior, SealedComputationRetention, SealedComputationRun,
+};
 pub use application_output_demand::{
     PreparedPrerequisiteClaims, RequiredOutputDemandContext, RequiredOutputExecution,
 };
@@ -88,14 +89,6 @@ pub use retained_correction::WorthQueryCorrectionRetentionDenial;
 pub use schema_layout::{WorthQueryPrimaryGraphLayout, WorthQueryPrimaryPrincipalBindingLayout};
 pub use source_facts::{validate_source_principal_facts, SourceFactsAllocation};
 
-pub use worth_query_execution_foundation::facade::primary_graph::value_decode::WorthQueryValueDecodeDenial;
-pub use worth_query_execution_lineage::facade::primary_graph::entity_key::WorthQueryApplicationEntityKey;
-pub use worth_query_execution_lineage::facade::primary_graph::entity_resolution::WorthQueryApplicationEntityIdentity;
-pub use worth_query_execution_lineage::facade::primary_graph::invariant_projection::WorthQueryInvariantMutationTarget;
-pub use worth_query_execution_lineage::facade::primary_graph::workflow::WorthQueryWorkflowInstanceProgressCounters;
-pub use worth_query_execution_lineage::facade::primary_graph::{
-    WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
-};
 pub use application_attempt::effect_program::{
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationRealizedEffect,
@@ -110,10 +103,19 @@ pub use provider::{
     WorthQueryAftermathCausalityReadDenial, WorthQueryCommittedDispatchOutboxObservation,
     WorthQueryPrimaryMutationWorkEvidence,
 };
-
+pub use worth_query_execution_foundation::facade::primary_graph::value_decode::WorthQueryValueDecodeDenial;
+pub use worth_query_execution_lineage::facade::primary_graph::entity_key::WorthQueryApplicationEntityKey;
+pub use worth_query_execution_lineage::facade::primary_graph::entity_resolution::WorthQueryApplicationEntityIdentity;
+pub use worth_query_execution_lineage::facade::primary_graph::invariant_projection::WorthQueryInvariantMutationTarget;
+pub use worth_query_execution_lineage::facade::primary_graph::workflow::WorthQueryWorkflowInstanceProgressCounters;
+pub use worth_query_execution_lineage::facade::primary_graph::{
+    WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
+};
 
 pub mod authenticated_principal;
-pub use authenticated_principal::{validate_freshness_at_snapshot, WorthQueryAuthenticatedPrincipal};
+pub use authenticated_principal::{
+    validate_freshness_at_snapshot, WorthQueryAuthenticatedPrincipal,
+};
 
 pub use worth_query_execution_lineage::facade::primary_graph::application_entry::mutation::execution::MutationHandlerExecutionDenial;
 
@@ -126,8 +128,8 @@ pub use crate::lineage_ports::{
 pub use application_attempt::{
     WorthQueryApprovedElevation, WorthQueryElevationApprovalOutcome,
     WorthQueryElevationCloseOutcome, WorthQueryElevationClosureKind,
-    WorthQueryElevationRequestOutcome, WorthQueryMandatoryReview,
-    WorthQueryMandatoryReviewOutcome, WorthQueryRequestedElevation,
+    WorthQueryElevationRequestOutcome, WorthQueryMandatoryReview, WorthQueryMandatoryReviewOutcome,
+    WorthQueryRequestedElevation,
 };
 pub use application_runtime::{
     InstalledTransportCloseCustody, InstalledTransportCompletion,
@@ -171,11 +173,17 @@ pub mod bootstrap {
     pub use worth_query_execution_lineage::facade::primary_graph::bootstrap::*;
     pub mod request_read_denial;
 }
+pub use crate::domain_computation::application_aftermath::recovery_progression::WorthQueryAdmittedIdempotencyRead;
+pub use application_attempt::WorthQueryApplicationSourceAdjacencyEndpoints;
+pub use product_operation::conditional_definition::{
+    WorthQueryAdmittedApplicationConditionalDefinition,
+    WorthQueryApplicationConditionalDefinitionParts,
+};
+pub use workflow::captured_input::{WorkflowCapturedInputContract, WorkflowCapturedInputs};
+pub use worth_query_execution_contracts::facade::WorthQueryManagedComputationResourceDenial;
 pub use worth_query_execution_contracts::facade::{
     relational_execution_kind, VerificationCapacityStop, WorthQueryEntityResolutionDenialKind,
 };
-pub use worth_query_execution_runtime::facade::basis_identities::WorthQueryApplicationBasisIdentity;
-pub use worth_query_execution_contracts::facade::WorthQueryManagedComputationResourceDenial;
 pub use worth_query_execution_lineage::facade::primary_graph::{
     application_attempt::compare_and_commit::commit_receipt::committed_changes::WorthQueryApplicationCommittedChanges,
     application_attempt::idempotency_resolution::denial::WorthQueryApplicationIdempotencyResolutionDenialKind,
@@ -185,23 +193,16 @@ pub use worth_query_execution_lineage::facade::primary_graph::{
     handler::decision_context_use::DecisionContextUse,
     resolution_denial::WorthQueryPrincipalResolutionDenial,
 };
-pub use application_attempt::WorthQueryApplicationSourceAdjacencyEndpoints;
-pub use product_operation::conditional_definition::{
-    WorthQueryAdmittedApplicationConditionalDefinition,
-    WorthQueryApplicationConditionalDefinitionParts,
+pub use worth_query_execution_runtime::facade::basis_identities::WorthQueryApplicationBasisIdentity;
+
+pub use application_attempt::idempotency_resolution_types::{
+    WorthQueryApplicationIdempotencyResolution, WorthQueryGuardedWorkflowOperationCustody,
 };
-pub use workflow::captured_input::{WorkflowCapturedInputContract, WorkflowCapturedInputs};
-pub use crate::domain_computation::application_aftermath::recovery_progression::WorthQueryAdmittedIdempotencyRead;
-
-
 pub use application_attempt::provider_execution::outcome::{
     progression_denied, WorthQueryProviderProgressionOutcome,
 };
 pub use application_attempt::provider_execution::registered::{
     WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
-};
-pub use application_attempt::idempotency_resolution_types::{
-    WorthQueryApplicationIdempotencyResolution, WorthQueryGuardedWorkflowOperationCustody,
 };
 pub use product_activation_types::WorthQuerySelectedProgramInspectionDenial;
 pub mod program_occurrence;
@@ -209,12 +210,11 @@ pub use program_occurrence::{OriginalProgramMeaning, WorthQueryProgramSupportInt
 
 pub mod product_activation_types;
 
-pub use provider::WorthQueryReleasedApplicationEffect;
-pub use worth_query_execution_lineage::facade::primary_graph::program_occurrence::program_revision_rendering;
 pub use application_attempt::provider_execution::external_dispatch::durable_attempt;
 pub use application_runtime::external_dispatch_attempt_ordinal::WorthQueryExternalDispatchAttemptOrdinal;
 pub use application_runtime::recorded_completion_denial::WorthQueryRecordedCompletionDenial;
-
+pub use provider::WorthQueryReleasedApplicationEffect;
+pub use worth_query_execution_lineage::facade::primary_graph::program_occurrence::program_revision_rendering;
 
 pub mod application_installation;
 

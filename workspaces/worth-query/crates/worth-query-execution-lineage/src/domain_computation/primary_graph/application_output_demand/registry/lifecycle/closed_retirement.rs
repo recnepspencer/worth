@@ -217,10 +217,7 @@ pub fn newest_ready(records: &Records, key: &WorthQueryOutputDemandKey) -> bool 
     ready_at_newest(records, newest_of_occurrence(records, key))
 }
 
-pub fn ready_at_newest(
-    records: &Records,
-    newest: Option<WorthQueryOutputDemandKey>,
-) -> bool {
+pub fn ready_at_newest(records: &Records, newest: Option<WorthQueryOutputDemandKey>) -> bool {
     newest
         .and_then(|newest| records.get(&newest))
         .is_some_and(|newest| newest.has_cached_ready() && !superseded(newest))

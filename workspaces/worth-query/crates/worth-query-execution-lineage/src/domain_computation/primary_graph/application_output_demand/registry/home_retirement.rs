@@ -43,9 +43,7 @@ impl WorthQueryOutputDemandRegistry {
         }
     }
 
-    pub fn preflight_home_retirement(
-        &mut self,
-    ) -> Result<(), Denial> {
+    pub fn preflight_home_retirement(&mut self) -> Result<(), Denial> {
         let state = Arc::get_mut(&mut self.state)
             .ok_or(Denial::Busy(Owner::InstalledProducers))?
             .get_mut()

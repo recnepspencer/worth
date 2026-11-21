@@ -22,12 +22,7 @@ impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
     /// Shared unique-selection admission for decision and readonly input owners.
-    pub fn resolve_optional_decision_entity<
-        Entity,
-        Aspect,
-        Field,
-        Value,
-    >(
+    pub fn resolve_optional_decision_entity<Entity, Aspect, Field, Value>(
         &mut self,
         field: Field,
         value: Value,
@@ -331,10 +326,7 @@ pub fn selection_denial(
     HandlerExecutionDenial::new(WorthQueryEntityResolutionDenial::new(kind, subject))
 }
 
-pub fn resolution_denial(
-    denial: HandlerExecutionDenial,
-    subject: &str,
-) -> HandlerExecutionDenial {
+pub fn resolution_denial(denial: HandlerExecutionDenial, subject: &str) -> HandlerExecutionDenial {
     match denial.downcast::<WorthQueryEntityResolutionDenial>() {
         Ok(denial)
             if matches!(

@@ -78,7 +78,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             HistoryModelIdentity::from_resolved(access.scope()),
         )?;
         let security = runtime
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .security_observation_for(execution, self.product())
             .map_err(|cause| super::selection_denial(cause, query.name()))?;

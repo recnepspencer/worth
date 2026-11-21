@@ -41,11 +41,14 @@ impl<S: ApplicationSchema + 'static> SourceQueryReaderPort for SourceQueryReader
                 outputs: Vec::new(),
             });
         };
-        let found = self
-            .application
-            .runtime
-            .primary_provider
-            .applied_outputs(execution, binding_identity, family, producer, participants, pin)?;
+        let found = self.application.runtime.primary_provider.applied_outputs(
+            execution,
+            binding_identity,
+            family,
+            producer,
+            participants,
+            pin,
+        )?;
         Ok(AppliedOutputsSelection {
             replaced: found.replaced,
             outputs: found.outputs,
@@ -103,13 +106,25 @@ impl<S: ApplicationSchema + 'static> SourceQueryReaderPort for SourceQueryReader
         native: &RelationalRuntime,
         scope: EntityId,
         partition: [u8; 32],
-    ) -> Result<(RelationalRequiredOutputPublication, RelationalPredecessorInput), Denial> {
+    ) -> Result<
+        (
+            RelationalRequiredOutputPublication,
+            RelationalPredecessorInput,
+        ),
+        Denial,
+    > {
         self.select_predecessor_input(execution, native, scope, partition)
     }
 
     fn observation_components_any(
         &self,
-    ) -> (&dyn Any, &dyn Any, &dyn Any, Option<&dyn Any>, Option<&dyn Any>) {
+    ) -> (
+        &dyn Any,
+        &dyn Any,
+        &dyn Any,
+        Option<&dyn Any>,
+        Option<&dyn Any>,
+    ) {
         self.observation_components_any()
     }
 }

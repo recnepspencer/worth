@@ -1,6 +1,6 @@
 //! A complete discovered tree can retain a verified root without minting a settlement.
-use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use super::*;
+use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryVerifiedHistoryParent;
 
 pub(super) struct VerifiedHistoryOutputTree {
@@ -163,7 +163,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         >,
         profile: &WorthQueryHistoryOutputProfile,
     ) -> Result<(), ReadDenial> {
-        self.inner.runtime
+        self.inner
+            .runtime
             .primary_provider
             .graph
             .with_runtime(execution, |native| {

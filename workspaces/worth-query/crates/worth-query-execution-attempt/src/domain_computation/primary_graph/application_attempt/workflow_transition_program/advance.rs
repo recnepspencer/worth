@@ -1,6 +1,6 @@
-pub mod proposal;
 pub mod admission;
 pub mod navigation;
+pub mod proposal;
 use super::*;
 
 impl<Schema, Operation, Input, Scope>
@@ -15,9 +15,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub fn materialize_admitted_workflow_transition<
-        Spec,
-    >(
+    pub fn materialize_admitted_workflow_transition<Spec>(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

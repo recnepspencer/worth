@@ -1,42 +1,24 @@
 //! One genuine retained basis qualified against the completed original output set.
-use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::{
     WorthQueryFulfilledRequiredRoot, WorthQueryOutputDemandSettlement,
     WorthQueryOutputSettlementPosture,
 };
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationReadObservation, WorthQuerySelectedProductOperation,
 };
-use crate::publication_boundary::{
-    discovery_currentness::{
-        WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
-    },
+use crate::publication_boundary::discovery_currentness::{
+    WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
 };
 use std::sync::Arc;
-use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
 /// Retrospective complete-output qualification at one immutable source. This
 /// retains no current permission and has no query or mutation conversion.
-/// ```
-/// use worth_query_execution::facade::primary_graph::WorthQueryCompletedRequiredOutputs;
-/// fn inspect(completed:&WorthQueryCompletedRequiredOutputs){
-///     let _=(completed.source_commit(),completed.root_output_commit(),completed.output_commit(),completed.root_posture());
-/// }
-/// ```
-/// ```compile_fail,E0451
-/// use worth_query_execution::facade::primary_graph::WorthQueryCompletedRequiredOutputs;
-/// fn forge()->WorthQueryCompletedRequiredOutputs {
-///     WorthQueryCompletedRequiredOutputs {source:panic!(),intent:panic!(),root:panic!(),posture:panic!(),output:panic!(),_memory:None}
-/// }
-/// ```
-/// ```compile_fail,E0599
-/// use worth_query_execution::facade::primary_graph::WorthQueryCompletedRequiredOutputs;
-/// fn select(completed:&WorthQueryCompletedRequiredOutputs){completed.select();}
-/// ```
 pub struct WorthQueryCompletedRequiredOutputs {
     source: CompositeCommitIdentity,
     intent: WorthQueryApplicationIdempotencyBinding,
@@ -62,9 +44,7 @@ impl WorthQueryCompletedRequiredOutputs {
         source.idempotency_binding() == self.intent
             && source.committed_product_publication().composite_commit() == &self.source
     }
-    pub fn retained_output(
-        &self,
-    ) -> &Arc<WorthQueryApplicationReadObservation> {
+    pub fn retained_output(&self) -> &Arc<WorthQueryApplicationReadObservation> {
         &self.output
     }
 }
@@ -76,7 +56,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     pub fn qualify_completed_required_outputs<'s>(
         self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        access: &dyn WorthQueryProgramPublicationAccessPort,
+        access: &WorthQueryProgramPublicationAccess,
         scope: &WorthQueryRequestScope,
         source: &WorthQueryApplicationCommitReceipt,
         fulfilled: &WorthQueryFulfilledRequiredRoot,

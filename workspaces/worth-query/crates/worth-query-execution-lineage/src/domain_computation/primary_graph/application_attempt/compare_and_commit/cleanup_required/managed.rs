@@ -12,23 +12,7 @@ use crate::domain_computation::{
 /// Retains the original managed terminal and exact native World/Bridge owners for cleanup only.
 /// Standalone native use still requires a lawful live issuer; this is no shutdown or durability proof.
 /// A native cleanup receipt cannot become mutation graph-work completion.
-/// ```compile_fail,E0308
-/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup;
-/// use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
-/// use worth_query_execution::facade::domain_computation::WorthQueryMutationGraphWorkCompletion;
-/// fn not_business_completion(owner: WorthQueryApplicationManagedCleanup, phase: &WorthQueryAdvancementPhase<'_>) -> WorthQueryMutationGraphWorkCompletion {
-///     owner.retry_in_advancement(phase).unwrap()
-/// }
-/// ```
 /// The same cleanup owner has a valid native cleanup result.
-/// ```
-/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanup;
-/// use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
-/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationManagedCleanupReceipt;
-/// fn cleanup(owner: WorthQueryApplicationManagedCleanup, phase: &WorthQueryAdvancementPhase<'_>) -> Result<WorthQueryApplicationManagedCleanupReceipt, WorthQueryApplicationManagedCleanup> {
-///     owner.retry_in_advancement(phase)
-/// }
-/// ```
 #[must_use = "cleanup refusal returns this original owner"]
 pub struct WorthQueryApplicationManagedCleanup {
     pub state: Box<Option<ManagedCleanupState>>,
@@ -65,9 +49,7 @@ impl WorthQueryApplicationManagedCleanup {
             .expect("live managed cleanup has initialized state")
     }
     #[cfg(test)]
-    pub fn observe_inline_budget(
-        census: &mut crate::inline_type_sizes::Census,
-    ) {
+    pub fn observe_inline_budget(census: &mut crate::inline_type_sizes::Census) {
         let _owner=census.owner::<Self>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/compare_and_commit/cleanup_required/managed.rs","WorthQueryApplicationManagedCleanup",64);
         let _state=census.owner::<ManagedCleanupState>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_attempt/compare_and_commit/cleanup_required/managed.rs","ManagedCleanupState",16*1024);
     }

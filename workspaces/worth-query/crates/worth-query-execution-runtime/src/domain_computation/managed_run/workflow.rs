@@ -28,12 +28,12 @@ mod terminal;
 pub mod yield_freeze;
 
 pub use provider_plan_admission::WorthQueryWorkflowProviderPlanPermit;
-pub use run_affinity::{WorthQueryWorkflowRunAffinity, WorthQueryWorkflowRunTransitionPermit};
 pub(super) use run_affinity::{
-    WorthQueryWorkflowAffinityCleanupReceipt,
-    WorthQueryWorkflowRunProviderRestoreOutcome, WorthQueryWorkflowRunReadmissionPending,
-    WorthQueryWorkflowRunRestoredPending, WorthQueryWorkflowYieldReleasePending,
+    WorthQueryWorkflowAffinityCleanupReceipt, WorthQueryWorkflowRunProviderRestoreOutcome,
+    WorthQueryWorkflowRunReadmissionPending, WorthQueryWorkflowRunRestoredPending,
+    WorthQueryWorkflowYieldReleasePending,
 };
+pub use run_affinity::{WorthQueryWorkflowRunAffinity, WorthQueryWorkflowRunTransitionPermit};
 pub use terminal::{
     WorthQueryWorkflowRunCleanupFailure, WorthQueryWorkflowRunCleanupInspection,
     WorthQueryWorkflowRunCleanupOutcome, WorthQueryWorkflowRunCleanupPending,

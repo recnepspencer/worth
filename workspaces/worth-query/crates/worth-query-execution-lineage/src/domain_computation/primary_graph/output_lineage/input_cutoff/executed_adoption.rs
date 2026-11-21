@@ -7,9 +7,8 @@ use super::super::{
 use super::{stable_publication::prepare_address, RetainedInputCutoffCandidate};
 use crate::domain_computation::primary_graph::{
     application_checkpoint::facts::FactPayload,
-    provider::WorthQueryApplicationBranchCommitCoordination,
-    PreparedPrerequisiteClaims, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind as Kind,
+    provider::WorthQueryApplicationBranchCommitCoordination, PreparedPrerequisiteClaims,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind as Kind,
 };
 use crate::ports::ApplicationAttemptPort;
 use std::sync::{Arc, Mutex, OnceLock};
@@ -34,9 +33,7 @@ pub struct ExecutedAdoptionSelection {
     product: crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
 }
 impl ExecutedAdoptionSelection {
-    pub fn native_branch_id(
-        &self,
-    ) -> &worth_relational::facade::history::BranchId {
+    pub fn native_branch_id(&self) -> &worth_relational::facade::history::BranchId {
         self.product
             .observation()
             .basis()
@@ -44,9 +41,7 @@ impl ExecutedAdoptionSelection {
             .descriptor()
             .branch_id()
     }
-    pub fn from_attempt(
-        attempt: &dyn ApplicationAttemptPort,
-    ) -> Option<Self> {
+    pub fn from_attempt(attempt: &dyn ApplicationAttemptPort) -> Option<Self> {
         Some(Self {
             binding: attempt.output_binding_type()?,
             partition: attempt.idempotency().source_partition_identity()?,

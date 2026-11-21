@@ -129,21 +129,15 @@ impl WorthQueryApplicationIdempotencyBinding {
         &self.intent_identity
     }
 
-    pub const fn source_identity(
-        &self,
-    ) -> Option<[u8; 32]> {
+    pub const fn source_identity(&self) -> Option<[u8; 32]> {
         self.source_identity
     }
 
-    pub const fn source_partition_identity(
-        &self,
-    ) -> Option<[u8; 32]> {
+    pub const fn source_partition_identity(&self) -> Option<[u8; 32]> {
         self.source_partition_identity
     }
 
-    pub const fn producer_dependency_identity(
-        &self,
-    ) -> Option<[u8; 32]> {
+    pub const fn producer_dependency_identity(&self) -> Option<[u8; 32]> {
         self.producer_dependency_identity
     }
 
@@ -344,16 +338,11 @@ impl WorthQueryApplicationIdempotencyBinding {
         }
     }
 
-    pub const fn conditional_definition_identity(
-        &self,
-    ) -> Option<[u8; 32]> {
+    pub const fn conditional_definition_identity(&self) -> Option<[u8; 32]> {
         self.conditional_definition_identity
     }
 
-    pub const fn bind_conditional_definition(
-        self,
-        identity: Option<&[u8; 32]>,
-    ) -> Self {
+    pub const fn bind_conditional_definition(self, identity: Option<&[u8; 32]>) -> Self {
         Self {
             key_identity: self.key_identity,
             intent_identity: self.intent_identity,

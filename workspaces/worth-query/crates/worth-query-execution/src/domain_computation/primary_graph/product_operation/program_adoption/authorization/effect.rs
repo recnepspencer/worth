@@ -63,7 +63,8 @@ impl AdoptionEffect<'_> {
                 let prepared = (|| {
                     let gate = selected
                         .application()
-                        .inner.runtime
+                        .inner
+                        .runtime
                         .product_runtime
                         .activations
                         .gate(selected.product().branch_identity())

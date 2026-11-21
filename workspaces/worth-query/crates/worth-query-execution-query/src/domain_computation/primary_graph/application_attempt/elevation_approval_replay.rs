@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -67,11 +68,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Ok(Some(approved_outcome(outcome, binding)))
     }
 
-    pub fn resolve_admitted_elevation_approval_replay_with_request<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn resolve_admitted_elevation_approval_replay_with_request<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,

@@ -263,9 +263,7 @@ impl WorthQueryApplicationSnapshotLease {
         true
     }
 
-    pub fn selection_origin(
-        &self,
-    ) -> super::super::product_operation::SelectedQueryOrigin {
+    pub fn selection_origin(&self) -> super::super::product_operation::SelectedQueryOrigin {
         self.selection_origin
     }
 

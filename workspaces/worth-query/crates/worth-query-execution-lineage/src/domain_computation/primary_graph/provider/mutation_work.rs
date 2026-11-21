@@ -16,9 +16,7 @@ pub struct WorthQueryTouchedRecordIdentity {
 }
 
 impl WorthQueryTouchedRecordIdentity {
-    pub const fn from_commit_record(
-        record: RecordRef,
-    ) -> Self {
+    pub const fn from_commit_record(record: RecordRef) -> Self {
         Self { record }
     }
 
@@ -84,7 +82,9 @@ impl WorthQueryPrimaryMutationWorkEvidence {
         performed_application_touches_admitted: usize,
         installed_touch_scopes_compared: usize,
         installed_read_touch_overlaps_observed: usize,
-        touched_records: std::sync::Arc<worth_execution::ExecutionArray<WorthQueryTouchedRecordIdentity>>,
+        touched_records: std::sync::Arc<
+            worth_execution::ExecutionArray<WorthQueryTouchedRecordIdentity>,
+        >,
     ) -> Self {
         Self {
             index_maintenance_work,

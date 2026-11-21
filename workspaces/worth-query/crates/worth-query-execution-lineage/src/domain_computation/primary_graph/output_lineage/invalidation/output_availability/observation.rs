@@ -97,10 +97,7 @@ impl ObservedSourcePublication {
     ) -> crate::domain_computation::primary_graph::invariant_projection::ObservedOutputPosture {
         self.candidate.as_ref().map_or(crate::domain_computation::primary_graph::invariant_projection::ObservedOutputPosture::Pending, |c| c.expected())
     }
-    pub fn touches_entity(
-        &self,
-        entity: worth_relational::facade::identity::EntityId,
-    ) -> bool {
+    pub fn touches_entity(&self, entity: worth_relational::facade::identity::EntityId) -> bool {
         self.source_facts()
             .iter()
             .any(|fact| fact.touches_entity(entity))

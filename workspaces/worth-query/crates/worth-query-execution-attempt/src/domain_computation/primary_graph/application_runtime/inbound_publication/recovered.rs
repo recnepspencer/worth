@@ -1,10 +1,8 @@
 //! Continue one actual unpublished completion without synthesizing a Performed carrier.
 use crate::domain_computation::primary_graph::provider::WorthQueryCanonicalInboundCompletion;
 use worth_runtime_world::facade::{
-    CompositeCommitIdentity, ProductUnpublishedRecoveryHandle,
-    WorldRecoveredUnpublishedEffects,
+    CompositeCommitIdentity, ProductUnpublishedRecoveryHandle, WorldRecoveredUnpublishedEffects,
 };
-
 
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup;
 
@@ -33,8 +31,6 @@ pub struct RecordedCompletionContinuation {
     pub last_denial: Option<std::sync::Arc<WorthQueryRecordedCompletionDenial>>,
 }
 
-
-
 impl RecordedCompletionContinuation {
     pub fn same_original(&self, other: &Self) -> bool {
         self.handle == other.handle
@@ -56,13 +52,9 @@ impl RecordedCompletionContinuation {
         })
     }
 
-
-    pub fn last_denial(
-        &self,
-    ) -> Option<std::sync::Arc<WorthQueryRecordedCompletionDenial>> {
+    pub fn last_denial(&self) -> Option<std::sync::Arc<WorthQueryRecordedCompletionDenial>> {
         self.last_denial.clone()
     }
-
 }
 
 pub mod denial;

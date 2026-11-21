@@ -30,8 +30,7 @@ fn copy_text(value: &str) -> Result<String, Denial> {
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct OutputFamilyRole {
-    pub family:
-        super::super::super::output_family_identity::OutputFamilyIdentity,
+    pub family: super::super::super::output_family_identity::OutputFamilyIdentity,
     pub role: String,
 }
 
@@ -39,16 +38,14 @@ pub struct OutputFamilyRole {
 /// exact performed lineage retained one before its effect.
 pub struct NativePriorCheckpointOutput<'a> {
     pub family_role: OutputFamilyRole,
-    pub scope:
-        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+    pub scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
     pub binding: TypeId,
     pub idempotency_key: [u8; 32],
     producing_implementation:
         Option<worth_relational::facade::mvcc::RequiredOutputProducingImplementation>,
     pub partition: Option<[u8; 32]>,
     pub entity: Option<EntityId>,
-    pub identity:
-        Option<NativePriorCheckpointIdentity<'a>>,
+    pub identity: Option<NativePriorCheckpointIdentity<'a>>,
 }
 
 pub struct NativePriorCheckpointIdentity<'a> {

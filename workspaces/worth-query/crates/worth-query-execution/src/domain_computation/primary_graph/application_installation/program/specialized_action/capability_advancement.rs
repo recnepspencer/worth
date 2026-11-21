@@ -1,5 +1,5 @@
-use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 impl<Schema, Program, Operation> WorthQueryAdmittedProgramOperation<'_, Schema, Program, Operation>

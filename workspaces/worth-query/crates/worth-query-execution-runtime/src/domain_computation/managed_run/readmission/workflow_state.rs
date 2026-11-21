@@ -53,23 +53,20 @@ pub(super) struct WorthQueryWorkflowProvisionalAssociation {
     execution: WorthQueryRetainedManagedGraphExecution,
 }
 
-pub struct WorthQueryWorkflowBridgePendingAssociation
-{
+pub struct WorthQueryWorkflowBridgePendingAssociation {
     state: WorthQueryWorkflowYieldedState,
     resource: WorthQueryWorkflowRunReadmissionPending,
     bridge: BridgeExecutionBasisReadmissionPending,
     execution: WorthQueryRetainedManagedGraphExecution,
 }
 
-pub struct WorthQueryWorkflowRestoredAssociation
-{
+pub struct WorthQueryWorkflowRestoredAssociation {
     state: WorthQueryWorkflowYieldedState,
     resource: WorthQueryWorkflowRunRestoredPending,
     bridge: BridgeExecutionBasisReadmissionPending,
 }
 
-pub struct WorthQueryWorkflowBridgeRecoveryAssociation
-{
+pub struct WorthQueryWorkflowBridgeRecoveryAssociation {
     state: WorthQueryWorkflowYieldedState,
     affinity: WorthQueryWorkflowRunAffinity,
     bridge: BridgeExecutionBasisReadmissionRecoveryRequired,

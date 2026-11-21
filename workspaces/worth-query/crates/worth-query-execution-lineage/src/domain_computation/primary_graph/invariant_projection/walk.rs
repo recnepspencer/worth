@@ -66,11 +66,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'
         )
     }
 
-    pub fn walk_stop(
-        &mut self,
-        cause: Cause,
-        subject: &str,
-    ) -> Denial {
+    pub fn walk_stop(&mut self, cause: Cause, subject: &str) -> Denial {
         self.native_read().walk_stop(cause, subject)
     }
 }

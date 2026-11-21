@@ -15,8 +15,7 @@ pub mod initialization;
 /// This lookup is mutated only under the registry mutex; it has no persistent
 /// map clones. Its dedicated grant covers the actual key and conservative node.
 pub struct SourceBranchSlot {
-    pub slot:
-        worth_relational::facade::mvcc::CompanionBranchCellSlot<ManagedIndexBranchImage>,
+    pub slot: worth_relational::facade::mvcc::CompanionBranchCellSlot<ManagedIndexBranchImage>,
     allocation: Arc<crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation>,
 }
 impl SourceBranchSlot {

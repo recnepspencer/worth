@@ -15,23 +15,17 @@ impl PreparedPrerequisiteClaims {
     ) -> Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication> {
         self.context.selected_read_predecessor()
     }
-    pub fn native_publication_family(
-        &self,
-    ) -> &'static str {
+    pub fn native_publication_family(&self) -> &'static str {
         self.context.publication_family()
     }
 
     /// Borrow the exact managed producer key; publication pays for its own copy.
-    pub fn native_prior_checkpoint_input(
-        &self,
-    ) -> (&str, [u8; 32]) {
+    pub fn native_prior_checkpoint_input(&self) -> (&str, [u8; 32]) {
         let key = self.context.key();
         (&key.producer, key.source.checkpoint_identity().bytes())
     }
 
-    pub fn take_completed_handler_facts(
-        &mut self,
-    ) -> Option<CompletedHandlerFactBoundary> {
+    pub fn take_completed_handler_facts(&mut self) -> Option<CompletedHandlerFactBoundary> {
         self.context.take_completed_handler_facts()
     }
 
@@ -44,15 +38,11 @@ impl PreparedPrerequisiteClaims {
         self.context.take_sealed_computation()
     }
 
-    pub fn take_completed_decision_reuse(
-        &mut self,
-    ) -> Option<CompletedDecisionReuseProof> {
+    pub fn take_completed_decision_reuse(&mut self) -> Option<CompletedDecisionReuseProof> {
         self.context.take_completed_decision_reuse()
     }
 
-    pub fn take_prepared_input_reuse_key(
-        &mut self,
-    ) -> Option<PreparedInputReuseKey> {
+    pub fn take_prepared_input_reuse_key(&mut self) -> Option<PreparedInputReuseKey> {
         self.context.take_prepared_input_reuse_key()
     }
 }

@@ -30,9 +30,7 @@ pub struct WorthQueryOccurrenceProgram<'support> {
 }
 
 impl<'support> WorthQueryOccurrenceProgram<'support> {
-    pub const fn entry(
-        &self,
-    ) -> &'support WorthQueryProgramSupportEntry {
+    pub const fn entry(&self) -> &'support WorthQueryProgramSupportEntry {
         self.entry
     }
 

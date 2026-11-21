@@ -12,13 +12,10 @@ pub struct WorthQueryDirectRunTerminal {
     pub affinity: WorthQueryDirectRunTerminalAffinity,
     pub kind: WorthQueryManagedRunTerminalKind,
     pub bridge_basis: BridgeBoundExecutionBasis,
-    pub relational_basis:
-        WorthQueryManagedRelationalObservation,
+    pub relational_basis: WorthQueryManagedRelationalObservation,
     pub counters: WorthQueryManagedRunCounters,
-    pub provider_work:
-        WorthQueryManagedProviderWorkEvidence,
-    pub provider_cleanup:
-        WorthQueryManagedProviderCleanupAuthority,
+    pub provider_work: WorthQueryManagedProviderWorkEvidence,
+    pub provider_cleanup: WorthQueryManagedProviderCleanupAuthority,
 }
 
 impl WorthQueryDirectRunTerminal {

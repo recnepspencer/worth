@@ -4,9 +4,7 @@ use crate::domain_computation::primary_graph::{
     OriginalSettledProducerObservationExt, ReadObservationRuntimeExt,
 };
 
-pub trait OutputDemandSettlementReusedExt:
-    Sized
-{
+pub trait OutputDemandSettlementReusedExt: Sized {
     fn from_restoration<Schema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

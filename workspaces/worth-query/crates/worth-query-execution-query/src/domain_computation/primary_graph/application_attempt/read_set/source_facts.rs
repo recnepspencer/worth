@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::read_set::source_facts::*;
 use super::*;
 use crate::domain_computation::primary_graph::StorageControl;
@@ -5,11 +6,7 @@ use crate::domain_computation::primary_graph::StorageControl;
 impl<Schema: worth_query_installation::facade::ApplicationSchema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
-    pub fn validate_projected_source_facts<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn validate_projected_source_facts<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -22,11 +19,11 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .graph_work()
             .mutation_lease_typed()
             .ok_or_else(|| {
-            denial(
-                WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
-                admission.operation(),
-            )
-        })?;
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::CurrentAuthorityDenied,
+                    admission.operation(),
+                )
+            })?;
         compare_source_facts(execution, admission, lease)
     }
 }

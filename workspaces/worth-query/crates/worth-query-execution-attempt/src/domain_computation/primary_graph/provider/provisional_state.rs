@@ -1,4 +1,3 @@
-
 use crate::domain_computation::{
     WorthQueryProposedFact, WorthQueryProposedFactOrigin, WorthQueryProviderSessionView,
     WorthQueryProvisionalEffectAction, WorthQueryProvisionalEffectProgramView,
@@ -7,7 +6,9 @@ use crate::domain_computation::{
     WorthQueryProvisionalOverlayEvidenceView,
 };
 
-impl WorthQueryProvisionalGraphProvider for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc {
+impl WorthQueryProvisionalGraphProvider
+    for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc
+{
     fn stage_provisional_overlay(
         &self,
         session: WorthQueryProviderSessionView<'_>,

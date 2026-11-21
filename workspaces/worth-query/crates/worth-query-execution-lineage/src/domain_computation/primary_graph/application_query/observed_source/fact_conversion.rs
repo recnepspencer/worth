@@ -11,11 +11,7 @@ pub mod retention_validation;
 pub mod source_fact_locator;
 use source_fact_locator::SourceFactLocator;
 
-pub struct PreparedSourceFactMaterialization<
-    'source,
-    'request,
-    'authority,
-> {
+pub struct PreparedSourceFactMaterialization<'source, 'request, 'authority> {
     footprint: &'source WorthQueryObservedSourceFootprint,
     subject: &'source str,
     managed: Option<

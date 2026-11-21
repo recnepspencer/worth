@@ -2,42 +2,29 @@
 use super::*;
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::indexes::*;
-pub struct ProjectionEntitySelection
-{
+pub struct ProjectionEntitySelection {
     definition: RetainedDerivedIndexDefinition,
     candidates: Vec<EntityId>,
     examined: usize,
     overflowed: bool,
 }
 impl ProjectionEntitySelection {
-    pub fn retain_definition(
-        &self,
-    ) -> RetainedDerivedIndexDefinition {
+    pub fn retain_definition(&self) -> RetainedDerivedIndexDefinition {
         self.definition.clone()
     }
-    pub fn candidate_entity_ids(
-        &self,
-    ) -> &[EntityId] {
+    pub fn candidate_entity_ids(&self) -> &[EntityId] {
         &self.candidates
     }
-    pub fn into_candidate_entity_ids(
-        self,
-    ) -> Vec<EntityId> {
+    pub fn into_candidate_entity_ids(self) -> Vec<EntityId> {
         self.candidates
     }
-    pub fn examined_entry_count(
-        &self,
-    ) -> usize {
+    pub fn examined_entry_count(&self) -> usize {
         self.examined
     }
-    pub fn overflowed(
-        &self,
-    ) -> bool {
+    pub fn overflowed(&self) -> bool {
         self.overflowed
     }
-    pub fn committed(
-        value: BoundedEntityFieldLookupOutcome,
-    ) -> Self {
+    pub fn committed(value: BoundedEntityFieldLookupOutcome) -> Self {
         Self {
             definition: value.retain_definition(),
             examined: value.examined_entry_count(),
@@ -46,15 +33,12 @@ impl ProjectionEntitySelection {
         }
     }
 }
-pub enum ProjectionSelectionStop
-{
+pub enum ProjectionSelectionStop {
     Committed(BoundedEntityFieldLookupDenial),
     Applied(AppliedEntityFieldLookupDenial),
 }
 impl ProjectionSelectionStop {
-    pub fn examined_entry_count(
-        &self,
-    ) -> usize {
+    pub fn examined_entry_count(&self) -> usize {
         match self {
             Self::Committed(e) => e.examined_entry_count(),
             Self::Applied(AppliedEntityFieldLookupDenial::PredecessorIndex(e)) => {
@@ -63,9 +47,7 @@ impl ProjectionSelectionStop {
             _ => 0,
         }
     }
-    pub fn kind(
-        &self,
-    ) -> BoundedEntityFieldLookupDenialKind {
+    pub fn kind(&self) -> BoundedEntityFieldLookupDenialKind {
         use BoundedEntityFieldLookupDenialKind as K;
         match self {
             Self::Committed(e) => e.kind(),

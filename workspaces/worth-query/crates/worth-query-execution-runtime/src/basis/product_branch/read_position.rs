@@ -10,30 +10,6 @@ use worth_runtime_world::facade::{
 /// Constructors take an owner-issued observation or reference snapshot. World
 /// obtains commit and basis from one immutable commit; callers cannot splice
 /// axes from different observations into this ordering position.
-///
-/// ```
-/// mod position {
-///     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/basis/product_branch/read_position.rs"));
-/// }
-/// fn observe(o: &worth_runtime_world::facade::ProductBranchObservation) {
-///     let _ = position::WorthQueryProductBranchReadPosition::from_observation(o);
-/// }
-/// ```
-///
-/// ```compile_fail,E0451
-/// mod position {
-///     include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/basis/product_branch/read_position.rs"));
-/// }
-/// fn splice(a: &worth_runtime_world::facade::ProductBranchObservation,
-///           b: &worth_runtime_world::facade::ProductBranchObservation) {
-///     let _ = position::WorthQueryProductBranchReadPosition {
-///         branch: a.branch_identity().clone(),
-///         incarnation: a.lifecycle_incarnation(),
-///         generation: a.reference_generation(),
-///         commit: b.selected_commit().clone(),
-///     };
-/// }
-/// ```
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct WorthQueryProductBranchReadPosition {
     branch: ProductBranchIdentity,

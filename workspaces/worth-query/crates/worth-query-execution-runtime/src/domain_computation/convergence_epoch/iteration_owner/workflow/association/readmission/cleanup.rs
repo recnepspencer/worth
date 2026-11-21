@@ -182,13 +182,11 @@ fn admit_cleanup_outcome(
     }
 }
 
-pub struct WorkflowReadmissionCleanupLifecycleEvent
-{
+pub struct WorkflowReadmissionCleanupLifecycleEvent {
     kind: WorkflowReadmissionCleanupLifecycleEventKind,
 }
 
-pub enum WorkflowReadmissionCleanupLifecycleEventKind
-{
+pub enum WorkflowReadmissionCleanupLifecycleEventKind {
     Attempted,
     Completed,
 }
@@ -206,9 +204,7 @@ impl WorkflowReadmissionCleanupLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> WorkflowReadmissionCleanupLifecycleEventKind {
+    pub fn into_kind(self) -> WorkflowReadmissionCleanupLifecycleEventKind {
         self.kind
     }
 }

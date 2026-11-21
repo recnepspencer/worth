@@ -18,21 +18,9 @@
 //! use worth_query_execution::facade::primary_graph::WorthQueryCapabilityWorkflowIdempotency;
 //! ```
 
-/// Compiler-visible access to program-output progression owned by the
-/// publication crate. The host facade intentionally does not re-export this
-/// type or its issuer.
-pub struct WorthQueryProgramPublicationAccess {
-    _private: (),
-}
-
-impl worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort
-    for WorthQueryProgramPublicationAccess
-{
-}
-
-pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
-    WorthQueryProgramPublicationAccess { _private: () }
-}
+pub use worth_query_execution_contracts::facade::{
+    program_publication_access, WorthQueryProgramPublicationAccess,
+};
 
 pub use worth_query_execution_lineage::facade::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::advancement::WorthQueryAdvancementDenialCommitExt;
 pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::capture::EffectProgramSynchronousOutputsExt;

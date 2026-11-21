@@ -1,12 +1,11 @@
-pub mod managed_application_recovery;
 pub use worth_query_execution_lineage::facade::primary_graph::provider::{
-    branch_commit_coordination, invariant_execution_failure,
-    native_publication_roles, relational_execution_denial,
+    branch_commit_coordination, invariant_execution_failure, native_publication_roles,
+    relational_execution_denial,
 };
 pub mod aftermath_causality;
+pub mod authored_retirement_selection;
 pub mod mutation_work;
 pub mod original_attempt_completion;
-pub mod authored_retirement_selection;
 pub mod publication_posture;
 pub use aftermath_causality::WorthQueryAftermathCausalityReadDenial;
 pub use aftermath_causality::{
@@ -37,9 +36,7 @@ pub use original_attempt_completion::{
     OriginalCompletionPublisher, OriginalCompletionReceiver, OriginalCompletionSlot,
 };
 pub mod correction_witness;
-pub use correction_witness::{
-    CorrectionPerformedWitness, CorrectionWitnessDenial,
-};
+pub use correction_witness::{CorrectionPerformedWitness, CorrectionWitnessDenial};
 pub mod correction_idempotency;
 pub use correction_idempotency::CorrectionIdempotencyObservation;
 pub mod decision_facts;
@@ -75,10 +72,6 @@ pub mod installation;
 pub mod invariant_execution;
 pub use invariant_execution::ClosedCoupledInvariantReceipts;
 pub use invariant_execution::CoupledProducerAssembly;
-pub use managed_application_recovery::ProducerRecoveryCustody;
-pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryDenial;
-pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryOutcome;
-pub use managed_application_recovery::WorthQueryManagedApplicationRecoveryPerformed;
 pub mod inspection_fault;
 pub mod output_readiness_fault;
 pub mod outstanding_dispatch;
@@ -122,9 +115,7 @@ pub use mutation_work::WorthQueryTouchedRecordIdentity;
 pub use session_commit::WorthQueryCommittedDispatchOutboxBinding;
 pub use session_commit::WorthQueryCommittedDispatchOutboxBindingDenial;
 pub use session_commit::WorthQueryCommittedDispatchOutboxReceiptSeal;
-pub use session_commit::{
-    WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal,
-};
+pub use session_commit::{WorthQueryRetainedPreImageSeal, WorthQueryRetainedRelationPreImageSeal};
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -332,15 +323,11 @@ impl WorthQueryPrimaryGraphProvider {
         self.live_delivery.active_subscriber_count()
     }
 
-    pub fn application_attempt_work_for_test(
-        &self,
-    ) -> WorthQueryApplicationAttemptWorkSnapshot {
+    pub fn application_attempt_work_for_test(&self) -> WorthQueryApplicationAttemptWorkSnapshot {
         self.application_attempt_work.snapshot()
     }
 
-    pub fn observe_managed_application_bridge_plan(
-        &self,
-    ) {
+    pub fn observe_managed_application_bridge_plan(&self) {
         self.application_attempt_work.observe_managed_bridge_plan();
     }
 

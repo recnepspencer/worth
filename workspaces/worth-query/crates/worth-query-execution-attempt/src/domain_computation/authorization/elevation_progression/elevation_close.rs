@@ -53,21 +53,11 @@ impl WorthQueryElevationCloseAuthorizationDenial {
     }
 }
 
-#[doc(hidden)]
-pub struct WorthQueryElevationCloseAuthorizationDenialAttemptParts {
-    pub denial: WorthQueryOperationAuthorizationDenial,
-    pub approved: WorthQueryApprovedElevation,
-}
-
 impl WorthQueryElevationCloseAuthorizationDenial {
-    #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: WorthQueryElevationCloseAuthorizationDenialAttemptParts,
+    pub fn new(
+        denial: WorthQueryOperationAuthorizationDenial,
+        approved: WorthQueryApprovedElevation,
     ) -> Self {
-        Self {
-            denial: parts.denial,
-            approved: parts.approved,
-        }
+        Self { denial, approved }
     }
 }

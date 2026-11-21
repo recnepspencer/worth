@@ -37,9 +37,7 @@ impl<D> WorthQueryOutputDiscoveryRecipe<D> {
             Original::Recorded(_) => None,
         }
     }
-    pub fn readmitted(
-        bytes: &[u8],
-    ) -> Result<Self, Denial> {
+    pub fn readmitted(bytes: &[u8]) -> Result<Self, Denial> {
         Ok(Self {
             original: Original::Recorded(rmp_serde::from_slice(bytes).map_err(|_| unavailable())?),
         })

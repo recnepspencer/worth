@@ -185,10 +185,7 @@ impl QueryMemoryReservation {
     }
 
     /// Holds `bytes` in place of what was held; a refusal keeps what was.
-    pub fn resize(
-        &mut self,
-        bytes: u64,
-    ) -> Result<(), Resource> {
+    pub fn resize(&mut self, bytes: u64) -> Result<(), Resource> {
         if let Some(held) = &mut self.held {
             held.resize(bytes).map_err(memory_denial)?;
         }
@@ -197,10 +194,7 @@ impl QueryMemoryReservation {
     }
 
     /// Holds `bytes` more.
-    pub fn grow(
-        &mut self,
-        bytes: u64,
-    ) -> Result<(), Resource> {
+    pub fn grow(&mut self, bytes: u64) -> Result<(), Resource> {
         let total = self
             .bytes
             .checked_add(bytes)
@@ -254,9 +248,8 @@ impl QueryDispatch<'_> {
 
 pub use advancement::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
-    WorthQueryAdvancementEventForTest,
-    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
-    WorthQueryAdvancementObservationForTest,
+    WorthQueryAdvancementEventForTest, WorthQueryAdvancementEventKindForTest,
+    WorthQueryAdvancementIdentityForTest, WorthQueryAdvancementObservationForTest,
 };
 
 pub use advancement::with_test_advancement;
@@ -268,9 +261,7 @@ pub use advancement::WorthQueryBootstrapAdvancementPhase;
 
 pub use advancement::observation::record_event;
 
-pub fn certified_wave_seed_for_test(
-    request: &QueryRequestExecution<'_>,
-) -> Option<u64> {
+pub fn certified_wave_seed_for_test(request: &QueryRequestExecution<'_>) -> Option<u64> {
     request.certified_seed
 }
 

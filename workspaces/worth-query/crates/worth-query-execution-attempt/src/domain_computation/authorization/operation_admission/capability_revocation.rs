@@ -27,9 +27,7 @@ impl WorthQueryAdmittedOperation {
         Ok(self)
     }
 
-    pub fn capability_revocation_binding(
-        &self,
-    ) -> Option<&WorthQueryCapabilityRevocationBinding> {
+    pub fn capability_revocation_binding(&self) -> Option<&WorthQueryCapabilityRevocationBinding> {
         match &self.data.authorization_basis {
             ErasedAuthorizationBasis::CapabilityRevocation { binding } => Some(binding),
             _ => None,

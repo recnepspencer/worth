@@ -2,9 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 impl WorthQueryApplicationCommitDenial {
-    pub fn coupled_producer(
-        denial: WorthQueryOutputDemandDenial,
-    ) -> Self {
+    pub fn coupled_producer(denial: WorthQueryOutputDemandDenial) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
             stage: WorthQueryApplicationCommitDenialStage::InvariantExecution,

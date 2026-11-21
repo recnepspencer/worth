@@ -17,7 +17,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn close_owned_product_publication_recovery(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        _access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         recovery: Recovery,
     ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, Failure> {
         self.close_product_publication_recovery_in_advancement(phase, recovery)

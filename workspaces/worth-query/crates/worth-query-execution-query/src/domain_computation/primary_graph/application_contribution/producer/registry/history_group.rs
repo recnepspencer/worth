@@ -2,9 +2,7 @@
 use super::*;
 
 impl<S: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<S> {
-    pub fn supports_history_group<Family>(
-        &self,
-    ) -> bool
+    pub fn supports_history_group<Family>(&self) -> bool
     where
         Family: WorthQueryProducerOutputFamily<S>,
     {

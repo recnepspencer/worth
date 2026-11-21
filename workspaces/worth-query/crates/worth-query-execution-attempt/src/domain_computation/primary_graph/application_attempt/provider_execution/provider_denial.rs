@@ -5,9 +5,7 @@ use super::super::{
     WorthQueryApplicationCommitOutcome,
 };
 
-pub fn denied(
-    stage: WorthQueryApplicationCommitDenialStage,
-) -> WorthQueryApplicationCommitOutcome {
+pub fn denied(stage: WorthQueryApplicationCommitDenialStage) -> WorthQueryApplicationCommitOutcome {
     WorthQueryApplicationCommitOutcome::Denied(
         WorthQueryApplicationCommitDenial::provider_rejected(stage),
     )

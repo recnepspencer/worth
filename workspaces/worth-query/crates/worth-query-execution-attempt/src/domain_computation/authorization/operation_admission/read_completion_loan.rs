@@ -27,10 +27,7 @@ impl ReadCompletionAdmission<'_> {
             .record_completed_handler_facts(boundary, computation);
     }
 
-    pub fn retain_execution_canonical_work(
-        &mut self,
-        work: WorthQueryCanonicalWorkEvidence,
-    ) {
+    pub fn retain_execution_canonical_work(&mut self, work: WorthQueryCanonicalWorkEvidence) {
         self.core.retain_execution_canonical_work(work);
     }
 }
@@ -39,9 +36,7 @@ impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
     #[inline]
-    pub fn read_completion_loan(
-        &mut self,
-    ) -> ReadCompletionAdmission<'_> {
+    pub(crate) fn read_completion_loan(&mut self) -> ReadCompletionAdmission<'_> {
         ReadCompletionAdmission {
             core: &mut self.core,
         }

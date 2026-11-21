@@ -18,11 +18,15 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
         let revision = *workflow.program_revision();
         signing::validate(runtime, &revision, authentication)
             .map_err(WorthQueryWorkflowRuntimeBindingDenial::SigningOwner)?;
-        let signing =
-            AdmittedSigningOwner::admit(&runtime.inner.signing_owners, revision, authentication.clone())
-                .map_err(WorthQueryWorkflowRuntimeBindingDenial::SigningOwner)?;
+        let signing = AdmittedSigningOwner::admit(
+            &runtime.inner.signing_owners,
+            revision,
+            authentication.clone(),
+        )
+        .map_err(WorthQueryWorkflowRuntimeBindingDenial::SigningOwner)?;
         let coverage = runtime
-            .inner.runtime
+            .inner
+            .runtime
             .workflow_coverage
             .admit(workflow.adoption_coverage())
             .map_err(|_| WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage)?;

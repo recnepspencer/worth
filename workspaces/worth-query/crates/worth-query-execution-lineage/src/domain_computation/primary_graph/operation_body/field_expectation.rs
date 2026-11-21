@@ -8,10 +8,7 @@ pub enum BodyFieldExpectation<'a> {
 }
 
 impl BodyFieldExpectation<'_> {
-    pub fn matches(
-        &self,
-        observed: Option<&AspectValue>,
-    ) -> bool {
+    pub fn matches(&self, observed: Option<&AspectValue>) -> bool {
         match self {
             Self::Any => true,
             Self::Equals(expected) => observed == Some(*expected),

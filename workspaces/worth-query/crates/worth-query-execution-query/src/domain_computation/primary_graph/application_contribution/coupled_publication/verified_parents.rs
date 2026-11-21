@@ -3,9 +3,7 @@
 use super::*;
 impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
     /// A fresh identity for an output this assembly retains or derives.
-    pub fn next_read(
-        &self,
-    ) -> crate::domain_computation::primary_graph::provider::ParentRead {
+    pub fn next_read(&self) -> crate::domain_computation::primary_graph::provider::ParentRead {
         let read =
             crate::domain_computation::primary_graph::provider::ParentRead(self.parent_reads.get());
         self.parent_reads.set(read.0 + 1);
@@ -18,9 +16,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
     ) {
         *self.consuming.borrow_mut() = reads;
     }
-    pub fn consuming(
-        &self,
-    ) -> Vec<crate::domain_computation::primary_graph::provider::ParentRead> {
+    pub fn consuming(&self) -> Vec<crate::domain_computation::primary_graph::provider::ParentRead> {
         self.consuming.borrow().clone()
     }
     pub fn retain_verified_parent(
@@ -49,7 +45,9 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
                 &self.root_session,
                 parent.source(),
                 self.applied_position(),
-                crate::domain_computation::primary_graph::provider::CandidateReadSupport::Parent(Box::new(parent)),
+                crate::domain_computation::primary_graph::provider::CandidateReadSupport::Parent(
+                    Box::new(parent),
+                ),
             )
             .map_err(execution::denial::candidate_support_denied)?;
         Ok(applied)

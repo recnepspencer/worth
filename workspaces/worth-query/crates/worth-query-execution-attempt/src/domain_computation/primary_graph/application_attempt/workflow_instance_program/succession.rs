@@ -23,9 +23,7 @@ pub mod basis;
 pub mod binding;
 pub mod publication;
 pub mod target;
-pub use binding::{
-    guard as guard_succession, WorkflowSuccessionBindingProof,
-};
+pub use binding::{guard as guard_succession, WorkflowSuccessionBindingProof};
 pub use target::WorkflowSuccessionTarget;
 type SubjectSelector = fn(&super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate) -> Result<EntityId, WorthQueryApplicationAttemptDenial>;
 
@@ -132,111 +130,106 @@ pub fn mismatch(subject: &str) -> WorthQueryApplicationAttemptDenial {
     )
 }
 
-#[doc(hidden)]
-pub struct WorkflowSuccessionAuthorityAttemptParts {
-    pub branch: crate::basis::WorthQueryProductBranch,
-    pub scope: WorthQueryOperationScopeBinding,
-    pub predecessor: EntityId,
-    pub binding: &'static str,
-    pub role: &'static str,
-    pub input_identity: [u8; 32],
-    pub key_identity: [u8; 32],
-    pub identity: [u8; 32],
-    pub instance_identity: String,
-    pub capability: [u8; 32],
-    pub facts: Vec<WorthQueryApplicationObservedFact>,
-    pub compiled: CompiledWorkflowDefinition,
-    pub carry: WorkflowLineageCarry,
-    pub refusal: Option<WorthQueryApplicationAttemptDenial>,
-    pub subject: SubjectSelector,
-    pub output_match: Option<CompletedOutputExpectation>,
-}
-
-impl WorkflowSuccessionAuthority {
-    #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: WorkflowSuccessionAuthorityAttemptParts,
-    ) -> Self {
-        Self {
-            branch: parts.branch,
-            scope: parts.scope,
-            predecessor: parts.predecessor,
-            binding: parts.binding,
-            role: parts.role,
-            input_identity: parts.input_identity,
-            key_identity: parts.key_identity,
-            identity: parts.identity,
-            instance_identity: parts.instance_identity,
-            capability: parts.capability,
-            facts: parts.facts,
-            compiled: parts.compiled,
-            carry: parts.carry,
-            refusal: parts.refusal,
-            subject: parts.subject,
-            output_match: parts.output_match,
+impl<Schema, Operation, Input, Scope>
+    super::super::WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        super::super::WorthQueryProjectedApplicationMutation,
+    >
+where
+    Schema: ApplicationSchema,
+    Operation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+{
+    pub fn into_required_workflow_succession<Binding, Role, Spec>(
+        mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
+            Schema,
+            Spec,
+        >,
+        predecessor: WorkflowSuccessionTarget<Schema>,
+        identities: &worth_query_declaration::facade::application_operation::ApplicationMutationIdentities<
+            '_,
+            Schema,
+            Binding,
+        >,
+        support: &crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport<Schema>,
+        clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
+    ) -> Result<RequiredWorkflowSuccession, WorthQueryApplicationAttemptDenial>
+    where
+        Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
+        Role: WorthQueryApplicationOutputRole<
+            Schema = Schema,
+            Contract = Binding::Output,
+            Action = worth_query_declaration::facade::application_operation::WorthQueryPreserveOutput,
+        >,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+{
+        let capability = installed
+            .succession_capability_identity_bytes::<Binding, Role>()
+            .copied()
+            .ok_or_else(|| mismatch("succession binding is not installed"))?;
+        if self.admission.installed_capability_identity() != Some(capability)
+            || self.admission.governed_input_identity() != Some(identities.input_identity())
+        {
+            return Err(mismatch(
+                "succession requires its exact fresh capability and input",
+            ));
         }
-    }
-}
-
-#[doc(hidden)]
-pub struct RequiredWorkflowSuccessionAttemptParts {
-    pub branch: crate::basis::WorthQueryProductBranch,
-    pub binding_type: TypeId,
-    pub role_type: TypeId,
-    pub spec_type: TypeId,
-    pub binding: &'static str,
-    pub input_identity: [u8; 32],
-    pub key_identity: [u8; 32],
-    pub identity: [u8; 32],
-    pub instance_identity: String,
-    pub scope: WorthQueryOperationScopeBinding,
-    pub compiled: CompiledWorkflowDefinition,
-    pub identity_locator: worth_foundational::facade::AspectFieldLocator,
-    pub authority: Arc<WorkflowSuccessionAuthoritySlot>,
-    pub subject_in_receipt: fn(
-        &super::super::WorthQueryApplicationCommitReceipt,
-    ) -> Result<EntityId, WorthQueryApplicationAttemptDenial>,
-}
-
-impl RequiredWorkflowSuccession {
-    #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: RequiredWorkflowSuccessionAttemptParts,
-    ) -> Self {
-        Self {
-            branch: parts.branch,
-            binding_type: parts.binding_type,
-            role_type: parts.role_type,
-            spec_type: parts.spec_type,
-            binding: parts.binding,
-            input_identity: parts.input_identity,
-            key_identity: parts.key_identity,
-            identity: parts.identity,
-            instance_identity: parts.instance_identity,
-            scope: parts.scope,
-            compiled: parts.compiled,
-            identity_locator: parts.identity_locator,
-            authority: parts.authority,
-            subject_in_receipt: parts.subject_in_receipt,
-        }
-    }
-}
-
-#[doc(hidden)]
-pub struct WorkflowSuccessionAuthoritySlotAttemptParts {
-    pub authority: Mutex<Option<WorkflowSuccessionAuthority>>,
-}
-
-impl WorkflowSuccessionAuthoritySlot {
-    #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: WorkflowSuccessionAuthoritySlotAttemptParts,
-    ) -> Self {
-        Self {
-            authority: parts.authority,
-        }
+        let (compiled, carry, output_match, predecessor) =
+            self.observe_succession_basis(execution, installed, predecessor, support, clock)?;
+        let (instance_identity, identity) = super::intent_identity::succession_identity(
+            &compiled,
+            predecessor.entity_id(),
+            self.admission.scope_entity_id(),
+            *identities.key_identity(),
+            *identities.input_identity(),
+            Binding::IDENTITY,
+            Role::NAME,
+        )
+        .map_err(|()| mismatch("succession intent identity unavailable"))?;
+        let branch = self.lease.product().product_branch();
+        let scope = self.admission.operation_scope_binding().clone();
+        let authority = WorkflowSuccessionAuthority {
+            branch,
+            scope: scope.clone(),
+            predecessor: predecessor.entity_id(),
+            binding: Binding::IDENTITY,
+            role: Role::NAME,
+            input_identity: *identities.input_identity(),
+            key_identity: *identities.key_identity(),
+            identity,
+            instance_identity: instance_identity.clone(),
+            capability,
+            facts: self.facts.iter().cloned().collect(),
+            compiled: compiled.clone(),
+            carry,
+            refusal: self.new_commit_refusal,
+            subject: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::succession_subject::<Schema, Binding, Role>,
+            output_match,
+        };
+        Ok(RequiredWorkflowSuccession {
+            branch,
+            binding_type: TypeId::of::<Binding>(),
+            role_type: TypeId::of::<Role>(),
+            spec_type: TypeId::of::<Spec>(),
+            binding: Binding::IDENTITY,
+            input_identity: *identities.input_identity(),
+            key_identity: *identities.key_identity(),
+            identity,
+            instance_identity,
+            scope,
+            compiled,
+            identity_locator: self.lease.layout.workflow().instance.identity.clone(),
+            authority: Arc::new(WorkflowSuccessionAuthoritySlot {
+                authority: Mutex::new(Some(authority)),
+            }),
+            subject_in_receipt: publication::subject_in_receipt::<Schema, Binding, Role>,
+        })
     }
 }

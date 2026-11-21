@@ -4,9 +4,7 @@ use worth_relational::facade::mvcc::{
     RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
 };
 
-pub trait CoupledProducerAssembly:
-    RelationalAuthoredCoupledProducerAssembly
-{
+pub trait CoupledProducerAssembly: RelationalAuthoredCoupledProducerAssembly {
     fn is_authored_edit(&self) -> bool;
     fn authored_stage_sources(&self) -> Vec<worth_relational::facade::identity::EntityId>;
     fn prepared_members(&self) -> Vec<super::super::CoupledApplicationMember>;

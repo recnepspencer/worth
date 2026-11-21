@@ -19,7 +19,7 @@ impl<Schema, Operation, Input, Scope>
 {
     pub fn requires_original_input_retention(
         &self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
     ) -> bool {
         self.captures_original_input()
     }
@@ -36,7 +36,7 @@ impl<Schema, Operation, Input, Scope>
 
     pub fn requires_original_source_capture(
         &self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
     ) -> bool {
         self.captures_original_source()
     }
@@ -56,7 +56,7 @@ impl<Schema, Operation, Input, Scope>
     /// The sealed handler proof prevents substitution of another input or binding.
     pub fn retain_original_mutation_input<Binding>(
         self,
-        _access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &dyn crate::ports::EffectProgramOriginalInputRuntimePort<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,
@@ -92,7 +92,7 @@ impl<Schema, Operation, Input, Scope>
     /// This does not change its installed correction or disclosure contract.
     pub fn retain_performed_correction_input<Binding>(
         self,
-        _access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &dyn crate::ports::EffectProgramOriginalInputRuntimePort<Schema>,
         input: ApplicationEncodedInput<Binding::InputBinding>,

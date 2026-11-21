@@ -24,10 +24,7 @@ use worth_query_declaration::facade::{
 };
 
 #[allow(clippy::too_many_arguments)]
-pub fn rebuild<
-    S: ApplicationSchema,
-    I: ApplicationManagedIndexBinding<S>,
->(
+pub fn rebuild<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
     execution: &ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     state: &Arc<ManagedIndexState<S, I>>,

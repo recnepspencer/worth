@@ -15,7 +15,9 @@ pub mod installation;
 /// It stores no retained old basis. Only an observation's synchronous loan pins it.
 #[derive(Default)]
 pub struct ProducerPredecessorReadState {
-    pub selected: std::sync::Mutex<Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>>,
+    pub selected: std::sync::Mutex<
+        Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
+    >,
     pub historical: std::sync::Mutex<Vec<WorthQueryHistoricalProducerRead>>,
 }
 

@@ -9,19 +9,14 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 };
 
 impl ObservedWorkflowInstance {
-    pub fn lineage_evidence_bytes(
-        &self,
-    ) -> u64 {
+    pub fn lineage_evidence_bytes(&self) -> u64 {
         self.inherited_evidence_bytes
             .saturating_add(self.progress_basis.progress().retained_evidence_bytes())
     }
 
     /// The evidence bytes a further assessment may still retain under the
     /// installed ceiling.
-    pub fn evidence_allowance(
-        &self,
-        maximum_evidence_bytes: u64,
-    ) -> u64 {
+    pub fn evidence_allowance(&self, maximum_evidence_bytes: u64) -> u64 {
         maximum_evidence_bytes.saturating_sub(self.lineage_evidence_bytes())
     }
 }

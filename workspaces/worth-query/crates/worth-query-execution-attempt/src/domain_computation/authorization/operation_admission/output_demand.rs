@@ -17,11 +17,7 @@ impl WorthQueryAdmittedOperation {
         }
     }
 
-    pub fn insert_input_facts(
-        &mut self,
-        expected: usize,
-        count: usize,
-    ) -> bool {
+    pub fn insert_input_facts(&mut self, expected: usize, count: usize) -> bool {
         if let Some(context) = &mut self.data.required_output_demand {
             context.insert_input_facts(expected, count)
         } else {
@@ -45,10 +41,7 @@ impl WorthQueryAdmittedOperation {
 
     /// Framework execution custody follows the admitted operation through its
     /// handler and sealed read set. It grants no operation authority.
-    pub fn bind_required_output_demand(
-        &mut self,
-        context: RequiredOutputDemandContext,
-    ) {
+    pub fn bind_required_output_demand(&mut self, context: RequiredOutputDemandContext) {
         assert!(
             self.data.required_output_demand.is_none(),
             "one operation carries one output demand"
@@ -56,9 +49,7 @@ impl WorthQueryAdmittedOperation {
         self.data.required_output_demand = Some(context);
     }
 
-    pub fn take_required_output_demand(
-        &mut self,
-    ) -> Option<RequiredOutputDemandContext> {
+    pub fn take_required_output_demand(&mut self) -> Option<RequiredOutputDemandContext> {
         self.data.required_output_demand.take()
     }
 

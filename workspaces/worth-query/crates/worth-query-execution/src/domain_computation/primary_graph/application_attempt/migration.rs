@@ -23,7 +23,14 @@ where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
 {
     program
-        .refuse_stale_home_authority(application.inner.runtime.product_runtime.owner.owner_identity())
+        .refuse_stale_home_authority(
+            application
+                .inner
+                .runtime
+                .product_runtime
+                .owner
+                .owner_identity(),
+        )
         .map_err(|cause| {
             WorthQueryProgramMigrationPreparationDenial::Candidate(
                 super::WorthQueryApplicationAttemptDenial::request_authority_lost(cause),

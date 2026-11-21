@@ -135,9 +135,7 @@ fn foreign_denial() -> WorthQueryOutputDemandDenial {
     )
 }
 
-pub fn admission_denial(
-    stop: CompanionPreflightStop,
-) -> WorthQueryOutputDemandDenial {
+pub fn admission_denial(stop: CompanionPreflightStop) -> WorthQueryOutputDemandDenial {
     use CompanionPreflightStop as Stop;
     match stop {
         Stop::WorkCounterOverflow => work_denial(),

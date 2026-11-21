@@ -1,5 +1,6 @@
 //! Fresh installed Query permission before any graph plan or source read.
 
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_declaration::facade::application_query::ApplicationQueryDisclosurePosture;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryAuthorization;
 

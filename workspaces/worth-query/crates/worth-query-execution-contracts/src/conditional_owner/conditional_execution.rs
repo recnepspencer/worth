@@ -33,9 +33,7 @@ impl ConditionalExecutionOwner<'_> {
         }
     }
 
-    pub fn memory(
-        &self,
-    ) -> Result<&BridgeSealedRuntimeAssembly, BridgeConditionalDenial> {
+    pub fn memory(&self) -> Result<&BridgeSealedRuntimeAssembly, BridgeConditionalDenial> {
         match self {
             Self::Memory(owner) => Ok(owner),
             Self::Authored(_) => Err(unavailable(
@@ -64,18 +62,14 @@ impl ConditionalExecutionOwner<'_> {
             Self::Stopped => 0,
         }
     }
-    pub fn installed_conditional_target_reference_count(
-        &self,
-    ) -> usize {
+    pub fn installed_conditional_target_reference_count(&self) -> usize {
         match self {
             Self::Memory(owner) => owner.installed_conditional_target_reference_count(),
             Self::Authored(owner) => owner.installed_conditional_target_reference_count(),
             Self::Stopped => 0,
         }
     }
-    pub fn owned_signal_active_node_count(
-        &self,
-    ) -> Result<usize, BridgeConditionalDenial> {
+    pub fn owned_signal_active_node_count(&self) -> Result<usize, BridgeConditionalDenial> {
         match self {
             Self::Memory(owner) => owner.owned_signal_active_node_count(),
             Self::Authored(owner) => owner.owned_signal_active_node_count(),
@@ -96,11 +90,7 @@ impl ConditionalExecutionOwner<'_> {
             Self::Stopped => Err(BridgeConditionalDenial::owner_stopped()),
         }
     }
-    pub fn configure_conditional_history_for_test(
-        &self,
-        enabled: bool,
-        limit: usize,
-    ) -> bool {
+    pub fn configure_conditional_history_for_test(&self, enabled: bool, limit: usize) -> bool {
         match self {
             Self::Memory(owner) => owner.configure_conditional_history_for_test(enabled, limit),
             Self::Authored(owner) => owner.configure_conditional_history_for_test(enabled, limit),

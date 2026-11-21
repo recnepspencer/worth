@@ -60,11 +60,7 @@ pub struct PreparedWorkflowApprovalAuthentication<Schema> {
 }
 
 impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
-    pub fn pending<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn pending<Operation, Input, Scope>(
         owner: WorthQueryAuthenticationEventSigningOwner<Schema>,
         intent: WorthQueryAuthenticationEventIntent,
         basis: FactPayload,
@@ -237,9 +233,7 @@ impl<Schema> PreparedWorkflowApprovalAuthentication<Schema> {
 }
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation, Input, Scope> {
-    pub fn validate_approval_descriptor(
-        &self,
-    ) -> Result<(), WorthQueryAuthenticationEventDenial> {
+    pub fn validate_approval_descriptor(&self) -> Result<(), WorthQueryAuthenticationEventDenial> {
         match self {
             Self::Transition {
                 approval: Some(_),
@@ -284,8 +278,8 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                 let pending = approval_authentication
                     .take()
                     .ok_or(WorthQueryAuthenticationEventDenial::MissingSigningProof)?;
-                *approval_authentication = Some(
-                    if pending.mode == ApprovalAuthenticationMode::SignedBody {
+                *approval_authentication =
+                    Some(if pending.mode == ApprovalAuthenticationMode::SignedBody {
                         let state = program
                             .read_set
                             .signed_creation
@@ -310,15 +304,13 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvance<Schema, Operation,
                         pending
                     } else {
                         pending.sign(event, principal, scope)?
-                    },
-                );
+                    });
             }
             Self::ReplayOnly { .. } => {}
             _ => return Err(WorthQueryAuthenticationEventDenial::MissingSigningProof),
         }
         Ok(self)
     }
-
 }
 
 #[cfg(test)]

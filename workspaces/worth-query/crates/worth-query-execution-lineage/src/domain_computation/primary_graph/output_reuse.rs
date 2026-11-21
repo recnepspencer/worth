@@ -12,6 +12,4 @@ pub use selection::{
     retained_output_settlement_is_verified, OutputDependencySelection, RetainedFactStop,
 };
 
-pub use selection::{
-    owner_read, preflight_stop, retained_fact_denial,
-};
+pub use selection::{owner_read, preflight_stop, retained_fact_denial};

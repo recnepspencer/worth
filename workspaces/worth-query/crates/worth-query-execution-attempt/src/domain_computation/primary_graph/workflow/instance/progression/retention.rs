@@ -33,11 +33,7 @@ pub struct WorkflowInstanceProgressKey {
 }
 
 impl WorkflowInstanceProgressKey {
-    pub const fn new(
-        branch_occurrence: u64,
-        instance: EntityId,
-        definition: EntityId,
-    ) -> Self {
+    pub const fn new(branch_occurrence: u64, instance: EntityId, definition: EntityId) -> Self {
         Self {
             branch_occurrence,
             instance,
@@ -168,10 +164,7 @@ impl WorkflowInstanceProgressRetention {
     pub fn observe_warm_core(&mut self) {
         self.counters.warm_core_hits = self.counters.warm_core_hits.saturating_add(1);
     }
-    pub fn observe_history_reconstruction_charge(
-        &mut self,
-        bytes: usize,
-    ) {
+    pub fn observe_history_reconstruction_charge(&mut self, bytes: usize) {
         self.counters.history_reconstruction_charge_bytes = self
             .counters
             .history_reconstruction_charge_bytes
@@ -182,10 +175,7 @@ impl WorkflowInstanceProgressRetention {
             .max(bytes);
     }
 
-    pub fn observe_warm_history(
-        &mut self,
-        transition_visits: usize,
-    ) {
+    pub fn observe_warm_history(&mut self, transition_visits: usize) {
         self.counters.warm_history_transition_visits = self
             .counters
             .warm_history_transition_visits
@@ -314,10 +304,7 @@ impl WorkflowInstanceProgressRetention {
         self.counters.retained_charge_bytes = 0;
     }
 
-    pub fn release_branch(
-        &mut self,
-        branch_occurrence: u64,
-    ) {
+    pub fn release_branch(&mut self, branch_occurrence: u64) {
         let keys = self
             .entries
             .keys()
@@ -363,9 +350,7 @@ impl WorkflowInstanceProgressRetention {
         self.use_sequence
     }
 
-    pub const fn counters(
-        &self,
-    ) -> WorthQueryWorkflowInstanceProgressCounters {
+    pub const fn counters(&self) -> WorthQueryWorkflowInstanceProgressCounters {
         self.counters
     }
 }

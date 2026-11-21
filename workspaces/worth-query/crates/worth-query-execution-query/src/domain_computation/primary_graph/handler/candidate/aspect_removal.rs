@@ -14,22 +14,6 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
 {
     /// Removes one explicitly Optional parent only after all installed children were read.
     /// Field-write markers alone cannot invoke this operation.
-    ///
-    /// ```compile_fail
-    /// use worth_query_execution::facade::primary_graph::*;
-    /// use worth_query_declaration::facade::{application_schema::*, application_operation::*};
-    /// use worth_query_installation::facade::ApplicationSchema;
-    /// fn field_authority_is_insufficient<S, B, F, E, A>(
-    ///     writer: &mut CandidateWriter<'_, S, B>,
-    ///     target: &WorthQueryApplicationEffectEntity<S, E>,
-    ///     aspect: fragment::AspectSelection<F, E, A>,
-    /// ) where S: ApplicationSchema, B: ApplicationMutationBinding<S>,
-    ///     F: fragment::Fragment, E: fragment::Entity,
-    ///     A: fragment::Aspect + OperationWrites<B::Operation>
-    /// {
-    ///     writer.remove_aspect(target, aspect).unwrap();
-    /// }
-    /// ```
     pub fn remove_aspect<F, E, A>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, E>,

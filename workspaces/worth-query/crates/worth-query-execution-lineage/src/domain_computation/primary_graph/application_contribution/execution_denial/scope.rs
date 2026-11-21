@@ -6,9 +6,7 @@ use crate::domain_computation::{
 };
 use worth_execution::{MapKernelFailure, ScopeStop, WorkCeilingDenial};
 
-pub fn scope_stop_kind<E>(
-    stop: ScopeStop<E>,
-) -> Result<E, Result<Kind, Control>> {
+pub fn scope_stop_kind<E>(stop: ScopeStop<E>) -> Result<E, Result<Kind, Control>> {
     Err(match stop {
         ScopeStop::Failure(MapKernelFailure::Domain(cause)) => return Ok(cause),
         ScopeStop::Admission(cause) => publication_execution_kind(WorkCeilingDenial::Admission(cause)),

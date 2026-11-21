@@ -11,10 +11,7 @@ pub struct RequiredWorkflowActor {
 }
 
 impl RequiredWorkflowActor {
-    pub fn new(
-        instance: EntityId,
-        denial: WorthQueryOperationAuthorizationDenial,
-    ) -> Self {
+    pub fn new(instance: EntityId, denial: WorthQueryOperationAuthorizationDenial) -> Self {
         Self { instance, denial }
     }
 

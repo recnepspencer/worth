@@ -8,12 +8,7 @@ pub enum ConventionalPreflightEntrance {
     TypedOperation,
     BorrowedRead,
 }
-pub fn validate_conventional_preflight<
-    S: ApplicationSchema,
-    P,
-    I,
-    E,
->(
+pub fn validate_conventional_preflight<S: ApplicationSchema, P, I, E>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     principal: &WorthQueryAuthenticatedPrincipal<S, P, I>,
     scope: &WorthQueryApplicationEntityIdentity<S, E>,

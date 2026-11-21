@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 pub use worth_query_execution_attempt::facade::domain_computation::authorization::elevation_progression::approval::*;
 mod replay;
@@ -9,8 +10,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, TypedMutationPreconditions,
 };
 use worth_query_installation::facade::{
-    ApplicationSchema,
-    WorthQueryInstalledApplicationOperation,
+    ApplicationSchema, WorthQueryInstalledApplicationOperation,
 };
 use worth_relational::facade::identity::EntityId;
 
@@ -82,11 +82,7 @@ where
         )
     }
 
-    pub fn authorize_elevation_approval_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+    pub fn authorize_elevation_approval_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut requested: WorthQueryRequestedElevation,
@@ -291,13 +287,7 @@ fn approval_denial(
     requested: WorthQueryRequestedElevation,
     denial: WorthQueryOperationAuthorizationDenial,
 ) -> WorthQueryElevationApprovalAuthorizationDenial {
-    WorthQueryElevationApprovalAuthorizationDenial::from_attempt_parts(
-        worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(),
-        worth_query_execution_attempt::facade::domain_computation::authorization::elevation_progression::approval::WorthQueryElevationApprovalAuthorizationDenialAttemptParts {
-            denial,
-            requested,
-        },
-    )
+    WorthQueryElevationApprovalAuthorizationDenial::new(denial, requested)
 }
 
 fn approval_rejected(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {

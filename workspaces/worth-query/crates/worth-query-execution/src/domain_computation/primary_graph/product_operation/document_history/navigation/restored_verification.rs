@@ -90,7 +90,8 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         let historical = self.source.as_ref().ok_or(Denial::IntentDrift)?;
         let current = self
             .application
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |native| {

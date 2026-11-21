@@ -317,7 +317,7 @@ impl WorthQueryApplicationCommitReceipt {
         self.authority_binding.idempotency_binding()
     }
 
-    pub const fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
+    pub(crate) const fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
         self.retained_preimage.as_ref()
     }
 
@@ -341,10 +341,7 @@ impl WorthQueryApplicationCommitReceipt {
         self.performed_product_change.take()
     }
 
-    pub fn with_external_dispatch(
-        mut self,
-        dispatch: WorthQueryExternalEffectDispatch,
-    ) -> Self {
+    pub fn with_external_dispatch(mut self, dispatch: WorthQueryExternalEffectDispatch) -> Self {
         self.canonical_work = self
             .canonical_work
             .with_external_dispatch_work(dispatch.canonical_work());
@@ -373,6 +370,13 @@ pub use committed_changes::MaterializedCommittedField;
 mod court_doors_for_test;
 
 pub use pending::WorthQueryPendingApplicationCommitReceipt;
+
+impl crate::ports::CommitReceiptPreimagePort for WorthQueryApplicationCommitReceipt {
+    fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
+        Self::retained_preimage(self)
+    }
+}
+
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub mod inline_type_budget;

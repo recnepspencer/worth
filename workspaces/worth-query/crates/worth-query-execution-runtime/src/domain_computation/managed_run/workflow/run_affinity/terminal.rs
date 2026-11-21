@@ -4,8 +4,7 @@ use crate::domain_computation::{
     WorthQueryWorkflowExecutionAttemptReleaseReceipt, WorthQueryWorkflowExecutionResourceAttempt,
 };
 
-pub struct WorthQueryWorkflowRunTerminalAffinity
-{
+pub struct WorthQueryWorkflowRunTerminalAffinity {
     logical: Arc<str>,
     attempt: WorthQueryWorkflowExecutionResourceAttempt,
 }
@@ -26,9 +25,7 @@ impl WorthQueryWorkflowRunTerminalAffinity {
         self.attempt.attempt_identity().as_str()
     }
 
-    pub fn release(
-        self,
-    ) -> WorthQueryWorkflowExecutionAttemptReleaseReceipt {
+    pub fn release(self) -> WorthQueryWorkflowExecutionAttemptReleaseReceipt {
         self.attempt.release()
     }
 }

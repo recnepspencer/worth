@@ -1,18 +1,15 @@
 //! Bounded owner custody for authenticated, exactly correlated occurrences.
 
-
-
-
 pub mod recovery;
+use super::super::ExternalEffectCorrelationIdentity;
+use super::WorthQueryInboundOccurrenceClaims;
+use super::WorthQueryInboundTerminalOwnerResult;
+use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 pub use recovery::WorthQueryInboundRecoveryState;
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex};
 use worth_query_installation::facade::InstalledInboundOccurrenceContract;
 use worth_runtime_world::facade::CompositeCommitIdentity;
-use super::super::ExternalEffectCorrelationIdentity;
-use super::WorthQueryInboundOccurrenceClaims;
-use super::WorthQueryInboundTerminalOwnerResult;
-use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 pub mod acceptance;
 pub mod publication_permit;
 pub mod recorded_terminal;
@@ -215,10 +212,7 @@ impl WorthQueryInboundCustody {
             .flatten()
     }
 
-    pub fn retains_unpublished(
-        &self,
-        accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
-    ) -> bool {
+    pub fn retains_unpublished(&self, accepted: &Arc<WorthQueryAcceptedInboundOccurrence>) -> bool {
         self.by_message
             .get(&MessageKey::from_claims(accepted.claims()))
             .is_some_and(|entry| {

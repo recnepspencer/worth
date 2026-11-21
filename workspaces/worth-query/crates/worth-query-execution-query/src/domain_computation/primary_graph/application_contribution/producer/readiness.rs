@@ -132,15 +132,7 @@ pub fn install_output_readiness_routes<Schema>(
     Ok(installed)
 }
 
-pub struct TypedPendingOutputReadiness<
-    Schema,
-    ApplicationOperation,
-    Input,
-    D,
-    O,
-    F,
-    Node,
-> {
+pub struct TypedPendingOutputReadiness<Schema, ApplicationOperation, Input, D, O, F, Node> {
     producer_identity: String,
     delivery_dependency_ordinal: usize,
     definition: Option<(

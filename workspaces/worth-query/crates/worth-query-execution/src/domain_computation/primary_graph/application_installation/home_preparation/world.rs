@@ -252,7 +252,8 @@ where
             ),
         );
         application
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .graph
             .output_lineage

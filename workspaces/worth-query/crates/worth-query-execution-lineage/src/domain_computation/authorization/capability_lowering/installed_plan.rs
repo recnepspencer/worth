@@ -49,62 +49,40 @@ impl WorthQueryInstalledCapabilityPlan {
     ) -> worth_runtime_bridge::facade::BridgeAuthorizationCorrespondenceIdentity {
         self.correspondence
     }
-    pub const fn capability_authority_identity(
-        &self,
-    ) -> &Arc<str> {
+    pub const fn capability_authority_identity(&self) -> &Arc<str> {
         &self.capability_authority_identity
     }
-    pub const fn contract(
-        &self,
-    ) -> &ErasedApplicationCapabilityContract {
+    pub const fn contract(&self) -> &ErasedApplicationCapabilityContract {
         &self.contract
     }
-    pub const fn principal_kind(
-        &self,
-    ) -> worth_relational::facade::identity::KindId {
+    pub const fn principal_kind(&self) -> worth_relational::facade::identity::KindId {
         self.principal_kind
     }
-    pub const fn grant_kind(
-        &self,
-    ) -> worth_relational::facade::identity::KindId {
+    pub const fn grant_kind(&self) -> worth_relational::facade::identity::KindId {
         self.grant_kind
     }
-    pub const fn scope_kind(
-        &self,
-    ) -> worth_relational::facade::identity::KindId {
+    pub const fn scope_kind(&self) -> worth_relational::facade::identity::KindId {
         self.scope_kind
     }
-    pub const fn grant_join_index_id(
-        &self,
-    ) -> worth_relational::facade::indexes::DerivedIndexId {
+    pub const fn grant_join_index_id(&self) -> worth_relational::facade::indexes::DerivedIndexId {
         self.grant_join_index_id
     }
-    pub const fn grant_witness(
-        &self,
-    ) -> WorthQueryCapabilityGrantWitnessBinding {
+    pub const fn grant_witness(&self) -> WorthQueryCapabilityGrantWitnessBinding {
         self.grant_witness
     }
     pub const fn decision_rules(&self) -> &WorthQueryCapabilityDecisionRuleBindings {
         &self.decision_rules
     }
-    pub const fn request(
-        &self,
-    ) -> &WorthQueryCapabilityRequestBindings {
+    pub const fn request(&self) -> &WorthQueryCapabilityRequestBindings {
         &self.request
     }
-    pub const fn delegation(
-        &self,
-    ) -> &WorthQueryCapabilityDelegationBindings {
+    pub const fn delegation(&self) -> &WorthQueryCapabilityDelegationBindings {
         &self.delegation
     }
-    pub const fn elevation(
-        &self,
-    ) -> &Option<WorthQueryCapabilityElevationBindings> {
+    pub const fn elevation(&self) -> &Option<WorthQueryCapabilityElevationBindings> {
         &self.elevation
     }
-    pub const fn upper_bound(
-        &self,
-    ) -> &Option<WorthQueryCapabilityUpperBoundBindings> {
+    pub const fn upper_bound(&self) -> &Option<WorthQueryCapabilityUpperBoundBindings> {
         &self.upper_bound
     }
     pub fn paths(&self) -> &[WorthQueryCapabilityPathTemplate] {

@@ -97,7 +97,7 @@ pub fn project_approval(
     if actual_evidence != expected_evidence {
         return Ok(None);
     }
-    Ok(Some(PerformedWorkflowApproval::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::performed::PerformedWorkflowApprovalAttemptParts {
+    Ok(Some(PerformedWorkflowApproval {
         entity: *entity,
         identity: approval.identity,
         decision: approval.decision,
@@ -106,5 +106,5 @@ pub fn project_approval(
         approver: approval.approver,
         purpose: approval.purpose,
         expiry: approval.expiry,
-    })))
+    }))
 }

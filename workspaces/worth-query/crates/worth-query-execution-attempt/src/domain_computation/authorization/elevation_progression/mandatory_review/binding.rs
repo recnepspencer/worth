@@ -14,10 +14,7 @@ pub struct WorthQueryMandatoryReviewBinding {
 }
 
 impl WorthQueryMandatoryReviewDraft {
-    pub fn bind(
-        self,
-        mandatory: WorthQueryMandatoryReview,
-    ) -> WorthQueryMandatoryReviewBinding {
+    pub fn bind(self, mandatory: WorthQueryMandatoryReview) -> WorthQueryMandatoryReviewBinding {
         WorthQueryMandatoryReviewBinding {
             mandatory,
             draft: self,
@@ -62,14 +59,10 @@ impl WorthQueryMandatoryReviewBinding {
     pub const fn reviewer_relation(&self) -> KindId {
         self.draft.reviewer_relation
     }
-    pub fn required_decision_reads(
-        &self,
-    ) -> &[ApplicationOperationDecisionReadTarget] {
+    pub fn required_decision_reads(&self) -> &[ApplicationOperationDecisionReadTarget] {
         &self.draft.required_decision_reads
     }
-    pub fn required_program_targets(
-        &self,
-    ) -> &[ApplicationOperationProgramTarget] {
+    pub fn required_program_targets(&self) -> &[ApplicationOperationProgramTarget] {
         &self.draft.required_program_targets
     }
     pub const fn lifecycle_effect(&self) -> Option<&worth_query_declaration::lifecycle_effect_derivation_authority::DerivedApplicationCapabilityLifecycleEffect>{

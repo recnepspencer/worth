@@ -30,9 +30,7 @@ where
     /// The exact owned claim used by this prepared slot is borrowed for the
     /// successor's registry admission and predecessor transfer. It cannot be
     /// exchanged for a later claim before `finish`.
-    pub fn claim(
-        &self,
-    ) -> &SelectedRequiredRefreshClaim {
+    pub fn claim(&self) -> &SelectedRequiredRefreshClaim {
         self.successor
             .pending_claim
             .as_ref()
@@ -41,10 +39,7 @@ where
 
     /// Bind the actual issued mode to the newly admitted demand before the
     /// registry replacement, scheduling, or producer effect can run.
-    pub fn bind_admitted(
-        &mut self,
-        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
-    ) {
+    pub fn bind_admitted(&mut self, demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>) {
         assert!(demand.progression_provenance.required().is_none());
         let mut provenance = self
             .successor

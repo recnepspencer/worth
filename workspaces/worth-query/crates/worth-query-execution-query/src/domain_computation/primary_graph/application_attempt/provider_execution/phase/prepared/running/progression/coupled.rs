@@ -23,10 +23,7 @@ type Scope<S, B> = <<B as ApplicationMutationBinding<S>>::ScopeBinding as Applic
 
 /// Erasure retains this nominal typed owner, including the complete admission
 /// brand. Only the installed executor for the same binding can recover it.
-pub struct CoupledMutationAttempt<
-    S: ApplicationSchema,
-    B: ApplicationMutationBinding<S>,
-> {
+pub struct CoupledMutationAttempt<S: ApplicationSchema, B: ApplicationMutationBinding<S>> {
     commit: WorthQueryRunningApplicationCommit<S, Operation<S, B>, Input<S, B>, Scope<S, B>>,
     source: Option<
         crate::domain_computation::primary_graph::application_query::AppliedSourcePublication,

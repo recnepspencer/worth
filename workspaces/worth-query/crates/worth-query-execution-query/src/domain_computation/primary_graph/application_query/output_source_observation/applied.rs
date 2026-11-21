@@ -10,8 +10,7 @@ use worth_relational::facade::runtime::{
 pub struct AppliedSourcePublicationLoan {
     pub source:
         crate::domain_computation::primary_graph::application_contribution::QualifiedOutputSource,
-    pub selected:
-        worth_relational::facade::runtime::PositionedRelationalSnapshot,
+    pub selected: worth_relational::facade::runtime::PositionedRelationalSnapshot,
 }
 impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
     pub fn with_applied_source_publication(

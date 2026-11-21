@@ -39,7 +39,7 @@ impl WorkflowOperationOrigin {
     ) -> Result<
         crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
         crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
-    > {
+    >{
         let authority = self.authority_fact_range.clone();
         if authority.start > authority.end || authority.end > facts.len() {
             return Err(

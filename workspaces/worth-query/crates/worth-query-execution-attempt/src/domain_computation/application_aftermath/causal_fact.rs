@@ -15,16 +15,12 @@ pub struct WorthQueryPendingAftermathCausality {
     target_branch: worth_relational::facade::history::BranchId,
     source: WorthQueryRecordedCorrectionSource,
     lineage: WorthQueryCorrectionLineageBinding,
-    correction: std::sync::Arc<
-        dyn crate::ports::PreparedCorrectionSourcePort,
-    >,
+    correction: std::sync::Arc<dyn crate::ports::PreparedCorrectionSourcePort>,
 }
 
 impl WorthQueryPendingAftermathCausality {
     pub fn recorded_correction(
-        correction: std::sync::Arc<
-            dyn crate::ports::PreparedCorrectionSourcePort,
-        >,
+        correction: std::sync::Arc<dyn crate::ports::PreparedCorrectionSourcePort>,
     ) -> Self {
         Self {
             role: correction.lineage_binding().role(),
@@ -59,9 +55,7 @@ impl WorthQueryPendingAftermathCausality {
         &self.lineage
     }
 
-    pub fn prepared_correction(
-        &self,
-    ) -> &dyn crate::ports::PreparedCorrectionSourcePort {
+    pub fn prepared_correction(&self) -> &dyn crate::ports::PreparedCorrectionSourcePort {
         self.correction.as_ref()
     }
 

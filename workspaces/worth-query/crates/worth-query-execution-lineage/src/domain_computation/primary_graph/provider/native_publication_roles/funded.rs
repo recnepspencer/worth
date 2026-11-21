@@ -6,8 +6,7 @@ use worth_execution::{
 };
 
 pub struct FundedPublicationRoles {
-    pub roles:
-        ExecutionArray<RequiredOutputRoleTarget>,
+    pub roles: ExecutionArray<RequiredOutputRoleTarget>,
     // The array and its deep strings drop before their deep-heap reservation.
     _names: Option<ExecutionMemoryReservation>,
 }

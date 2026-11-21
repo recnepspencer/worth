@@ -5,12 +5,10 @@ use std::sync::Arc;
 
 #[must_use = "retain this historical source or close its holder"]
 pub struct WorthQueryHistoryPreview {
-    pub discovery_recipes:
-        Option<Arc<super::discovery_recipes::HistoryDiscoveryRecipes>>,
+    pub discovery_recipes: Option<Arc<super::discovery_recipes::HistoryDiscoveryRecipes>>,
     pub step: WorthQueryHistoryStep,
     pub model: HistoryModelIdentity,
-    pub source:
-        Arc<WorthQueryApplicationReadObservation>,
+    pub source: Arc<WorthQueryApplicationReadObservation>,
     pub root_posture:
         Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture>,
 }
@@ -19,7 +17,7 @@ impl WorthQueryHistoryPreview {
     /// Retained root posture from the admitted opening, never current readiness.
     pub fn required_root_posture(
         &self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
     ) -> Option<crate::domain_computation::primary_graph::WorthQueryOutputSettlementPosture> {
         self.root_posture
     }

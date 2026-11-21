@@ -18,16 +18,13 @@ impl<'request> WorthQueryManagedComputationExecution<'request> {
     }
 
     /// The request's cancellation or elapsed deadline, if either has happened.
-    pub fn interruption(
-        &self,
-    ) -> Option<WorthQueryManagedComputationInterruption> {
+    pub fn interruption(&self) -> Option<WorthQueryManagedComputationInterruption> {
         self.request.interruption()
     }
 }
 
 pub struct WorthQueryManagedComputationCheckpoint<'request> {
-    pub charge:
-        Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
+    pub charge: Option<&'request mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>>,
     pub poll: &'request mut dyn FnMut() -> Result<(), worth_execution::MapKernelStop>,
     pub refused: Option<WorthQueryManagedComputationCheckpointDenial>,
     pub native: Option<&'request worth_execution::ExecutionResourceLease<'request>>,
@@ -60,9 +57,7 @@ impl<'request> WorthQueryManagedComputationCheckpoint<'request> {
     }
 
     /// The refusal a partition checkpoint kept, if any charge was refused.
-    pub const fn refused(
-        &self,
-    ) -> Option<WorthQueryManagedComputationCheckpointDenial> {
+    pub const fn refused(&self) -> Option<WorthQueryManagedComputationCheckpointDenial> {
         self.refused
     }
 

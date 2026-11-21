@@ -59,9 +59,7 @@ fn insertion_bytes<T>(len: usize) -> Option<u64> {
     )
 }
 impl DecisionReads {
-    pub fn fail_walk(
-        &mut self,
-    ) {
+    pub fn fail_walk(&mut self) {
         self.failed_walk = true;
     }
     pub fn record_walk<Schema, Relation, Entity>(

@@ -1,9 +1,9 @@
 //! Structural cold workflow DATA admission on an actual selected owner source.
-pub mod transitions;
 pub mod definitions;
 pub mod instances;
 pub mod population;
 pub mod proposals;
+pub mod transitions;
 use super::schema::WorthQueryWorkflowLayout;
 use crate::domain_computation::primary_graph::{
     application_attempt::workflow_instance_observation::read_fields::ReadFields,

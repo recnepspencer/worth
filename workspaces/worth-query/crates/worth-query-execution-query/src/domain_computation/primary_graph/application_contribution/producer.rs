@@ -38,9 +38,7 @@ pub mod output_evaluation;
 pub use output_equivalence_contract::WorthQueryProducerOutputEquivalence;
 pub use output_evaluation::ProducerOutputEvaluation;
 pub use output_evaluation::WorthQueryProducerEvaluationIneligibility;
-pub use output_evaluation::{
-    ComparedProducerOutput, ProducerOutputEvaluationState,
-};
+pub use output_evaluation::{ComparedProducerOutput, ProducerOutputEvaluationState};
 pub mod observation_reads;
 pub use observation_reads::{
     WorthQueryProducerObservationReadContract, WorthQueryProducerObservationReadDenial,
@@ -75,10 +73,16 @@ pub use worth_query_declaration::facade::application_program::{
 
 pub type ProducerSourceBinding<Schema, Binding> =
     <<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source;
-pub type ProducerSourceQuery<Schema, Binding> =
-    <<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::Query;
-pub type ProducerSourceValue<Schema, Binding> =
-    <<<<Binding as WorthQueryApplicationProducerBinding<Schema>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+pub type ProducerSourceQuery<Schema, Binding> = <<<Binding as WorthQueryApplicationProducerBinding<
+    Schema,
+>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<
+    Schema,
+>>::Query;
+pub type ProducerSourceValue<Schema, Binding> = <<<<Binding as WorthQueryApplicationProducerBinding<
+    Schema,
+>>::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source as ApplicationQueryBinding<
+    Schema,
+>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_contribution::producer::WorthQueryWorkflowAssessmentPosture;
 

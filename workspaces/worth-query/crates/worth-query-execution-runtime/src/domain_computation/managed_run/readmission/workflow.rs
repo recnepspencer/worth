@@ -34,8 +34,7 @@ pub(super) use workflow_state::{
     WorthQueryWorkflowRestoredAssociation,
 };
 
-pub struct WorthQueryWorkflowReadmissionProgressionPermit
-{
+pub struct WorthQueryWorkflowReadmissionProgressionPermit {
     _owner: (),
 }
 

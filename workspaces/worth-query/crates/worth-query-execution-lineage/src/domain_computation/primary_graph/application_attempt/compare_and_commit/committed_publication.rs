@@ -62,10 +62,7 @@ impl WorthQueryCommittedProductPublication {
             },
         }
     }
-    pub fn co_committed_at(
-        &self,
-        observation: &ProductBranchObservation,
-    ) -> bool {
+    pub fn co_committed_at(&self, observation: &ProductBranchObservation) -> bool {
         matches!(&self.custody,PublicationCustody::CoCommitted{endpoint,..} if endpoint.matches_observation(observation))
     }
     pub fn preflight_home_retirement(
@@ -73,9 +70,9 @@ impl WorthQueryCommittedProductPublication {
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
         match &mut self.custody {
-            PublicationCustody::Performed(receipt) => {
-                receipt.preflight_home_retirement(request).map_err(Into::into)
-            }
+            PublicationCustody::Performed(receipt) => receipt
+                .preflight_home_retirement(request)
+                .map_err(Into::into),
             PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. } => Ok(()),
         }
     }
@@ -103,10 +100,7 @@ impl WorthQueryCommittedProductPublication {
     }
 
     /// Join metadata to the real performed predecessor, including its admission.
-    pub fn follows_observation(
-        &self,
-        observation: &ProductBranchObservation,
-    ) -> bool {
+    pub fn follows_observation(&self, observation: &ProductBranchObservation) -> bool {
         self.performed().is_some_and(|receipt| {
             let before = receipt.publication().old_product_head();
             before.branch_identity() == observation.branch_identity()
@@ -128,9 +122,7 @@ impl WorthQueryCommittedProductPublication {
         })
     }
 
-    pub fn from_receipt(
-        receipt: WorthQueryProductPublicationReceipt,
-    ) -> Self {
+    pub fn from_receipt(receipt: WorthQueryProductPublicationReceipt) -> Self {
         Self {
             custody: PublicationCustody::Performed(receipt),
         }
@@ -238,10 +230,7 @@ impl WorthQueryCommittedProductPublication {
     /// Whether `observation` still selects this publication: nothing has been
     /// published on its branch since, so the effect it committed is current
     /// with nothing to compare.
-    pub fn is_selected_at(
-        &self,
-        observation: &ProductBranchObservation,
-    ) -> bool {
+    pub fn is_selected_at(&self, observation: &ProductBranchObservation) -> bool {
         observation.lifecycle_incarnation() == self.product_incarnation()
             && observation.reference_generation() == self.product_generation()
             && observation.selected_commit() == self.composite_commit()
@@ -350,9 +339,7 @@ impl WorthQueryCommittedProductPublication {
         self.performed()?.take_client_observation()
     }
 
-    pub fn has_output_demand_observation_for_test(
-        &self,
-    ) -> bool {
+    pub fn has_output_demand_observation_for_test(&self) -> bool {
         self.performed().is_some_and(
             WorthQueryProductPublicationReceipt::has_output_demand_observation_for_test,
         )

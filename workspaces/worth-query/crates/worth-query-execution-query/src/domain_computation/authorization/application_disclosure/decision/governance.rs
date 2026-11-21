@@ -21,9 +21,7 @@ use crate::domain_computation::provider_session::{
 impl WorthQueryApplicationQueryGovernance {
     /// Return the genuine capability request to admission. Session-bound
     /// computation and disclosure decisions must be issued again by that owner.
-    pub fn into_readmission(
-        self,
-    ) -> Option<WorthQueryPendingApplicationQueryGovernance> {
+    pub fn into_readmission(self) -> Option<WorthQueryPendingApplicationQueryGovernance> {
         match self {
             Self::Public => None,
             Self::Governed {
@@ -43,9 +41,7 @@ impl WorthQueryApplicationQueryGovernance {
         }
     }
 
-    pub fn into_pending(
-        self,
-    ) -> Option<WorthQueryPendingApplicationQueryGovernance> {
+    pub fn into_pending(self) -> Option<WorthQueryPendingApplicationQueryGovernance> {
         match self {
             Self::Public => None,
             Self::Governed {
@@ -65,20 +61,14 @@ impl WorthQueryApplicationQueryGovernance {
         }
     }
 
-    pub fn is_disclosed(
-        &self,
-        slot: &ApplicationQueryResultSlotKey,
-    ) -> bool {
+    pub fn is_disclosed(&self, slot: &ApplicationQueryResultSlotKey) -> bool {
         match self {
             Self::Public => true,
             Self::Governed { disclosure, .. } => disclosure.disclosed.contains_key(slot),
         }
     }
 
-    pub fn omission(
-        &self,
-        slot: &ApplicationQueryResultSlotKey,
-    ) -> Option<(&str, &AspectValue)> {
+    pub fn omission(&self, slot: &ApplicationQueryResultSlotKey) -> Option<(&str, &AspectValue)> {
         match self {
             Self::Public => None,
             Self::Governed { disclosure, .. } => disclosure
@@ -132,27 +122,21 @@ impl WorthQueryApplicationQueryGovernance {
         }
     }
 
-    pub fn authorization_mut(
-        &mut self,
-    ) -> Option<&mut WorthQueryRetainedCapabilityAuthorization> {
+    pub fn authorization_mut(&mut self) -> Option<&mut WorthQueryRetainedCapabilityAuthorization> {
         match self {
             Self::Public => None,
             Self::Governed { authorization, .. } => Some(authorization),
         }
     }
 
-    pub fn authorization(
-        &self,
-    ) -> Option<&WorthQueryRetainedCapabilityAuthorization> {
+    pub fn authorization(&self) -> Option<&WorthQueryRetainedCapabilityAuthorization> {
         match self {
             Self::Public => None,
             Self::Governed { authorization, .. } => Some(authorization),
         }
     }
 
-    pub const fn authorization_canonical_work(
-        &self,
-    ) -> WorthQueryCanonicalWorkEvidence {
+    pub const fn authorization_canonical_work(&self) -> WorthQueryCanonicalWorkEvidence {
         match self {
             Self::Public => WorthQueryCanonicalWorkEvidence::zero(),
             Self::Governed {

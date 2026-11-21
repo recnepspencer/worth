@@ -7,7 +7,9 @@ pub use root::AdmittedReadRoot;
 pub struct SourceAccess<'access> {
     pub source_query: Option<&'access dyn SourceQueryReaderPort>,
     pub source_context_use: Option<
-        &'access std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>,
+        &'access std::cell::Cell<
+            crate::domain_computation::primary_graph::handler::DecisionContextUse,
+        >,
     >,
 }
 

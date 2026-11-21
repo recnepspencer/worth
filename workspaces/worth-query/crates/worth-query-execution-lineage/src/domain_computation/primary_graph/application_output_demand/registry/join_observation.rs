@@ -98,9 +98,7 @@ pub fn joined(root: Root) {
         JOINED.with(|rows| rows.borrow_mut().push(root));
     }
 }
-pub fn observe_stable_join_admission(
-    pause: Option<JoinLatch>,
-) {
+pub fn observe_stable_join_admission(pause: Option<JoinLatch>) {
     let Some(latch) = pause else {
         return;
     };
@@ -116,11 +114,7 @@ pub fn observe_stable_join_admission(
             .unwrap_or_else(std::sync::PoisonError::into_inner);
     }
 }
-pub fn observe_retained_source_selection(
-    root: Root,
-    recorded: Commit,
-    selected: Commit,
-) {
+pub fn observe_retained_source_selection(root: Root, recorded: Commit, selected: Commit) {
     if !crate::domain_computation::execution_observation::is_installed() {
         return;
     }
@@ -129,7 +123,6 @@ pub fn observe_retained_source_selection(
     }
     READS.with(|reads| reads.borrow_mut().push((root, recorded, selected)));
 }
-
 
 pub fn observe_required_refresh_stop(
     root: Root,
@@ -192,7 +185,9 @@ pub fn take_retained_source_selections_for_test() -> Vec<(Root, Commit, Commit)>
     READS.with(|reads| std::mem::take(&mut *reads.borrow_mut()))
 }
 
-pub fn take_required_refresh_stops_for_test(
-) -> Vec<(Root, crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind)> {
+pub fn take_required_refresh_stops_for_test() -> Vec<(
+    Root,
+    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind,
+)> {
     REFRESH_STOPS.with(|stops| std::mem::take(&mut *stops.borrow_mut()))
 }

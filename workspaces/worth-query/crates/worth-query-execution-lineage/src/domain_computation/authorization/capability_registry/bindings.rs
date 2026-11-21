@@ -81,10 +81,7 @@ pub struct WorthQueryCapabilityGrantWitnessBinding {
 }
 
 impl WorthQueryCapabilityGrantWitnessBinding {
-    pub const fn new(
-        path_index: usize,
-        entity_ordinal: usize,
-    ) -> Self {
+    pub const fn new(path_index: usize, entity_ordinal: usize) -> Self {
         Self {
             path_index,
             entity_ordinal,
@@ -107,8 +104,7 @@ pub struct WorthQueryCapabilityPathTemplate {
     pub grant_ordinal: Option<usize>,
     pub elevation_ordinals: Vec<usize>,
     pub elevation_resource_ordinal: Option<usize>,
-    pub context_anchors:
-        Vec<WorthQueryCapabilityContextAnchor>,
+    pub context_anchors: Vec<WorthQueryCapabilityContextAnchor>,
 }
 
 pub enum WorthQueryCapabilityRequestGuard {
@@ -141,14 +137,11 @@ pub struct WorthQueryCapabilityRequestBindings {
     pub action: AspectValue,
     pub purpose: AspectValue,
     pub resource_entity: String,
-    pub related_relation:
-        Option<RelationalAuthorizationTraversal>,
+    pub related_relation: Option<RelationalAuthorizationTraversal>,
     pub field: Option<AspectFieldLocator>,
     pub magnitude: Option<AspectFieldLocator>,
-    pub cardinality:
-        ApplicationCapabilityCardinalityDimension,
-    pub timeline:
-        ApplicationCapabilityValidityTimeline,
+    pub cardinality: ApplicationCapabilityCardinalityDimension,
+    pub timeline: ApplicationCapabilityValidityTimeline,
     pub not_before: AspectFieldLocator,
     pub not_after: AspectFieldLocator,
     pub context: String,

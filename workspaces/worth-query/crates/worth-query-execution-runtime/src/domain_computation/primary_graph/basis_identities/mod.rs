@@ -58,9 +58,7 @@ impl WorthQueryApplicationBasisIdentity {
     }
 
     /// Price the actual selected descriptor before constructing its Query identity.
-    pub fn retained_basis_clone_heap_bytes(
-        basis: &AdmittedRelationalBranchBasis,
-    ) -> Option<u64> {
+    pub fn retained_basis_clone_heap_bytes(basis: &AdmittedRelationalBranchBasis) -> Option<u64> {
         Self::clone_heap_bytes(basis.identity().branch_id(), basis.descriptor())
     }
 

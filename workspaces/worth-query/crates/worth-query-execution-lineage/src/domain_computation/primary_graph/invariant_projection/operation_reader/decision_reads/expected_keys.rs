@@ -111,9 +111,7 @@ impl ExpectedFactKeys {
     }
     /// Read-only predecessor projection has no computations or query witnesses.
     /// Only its already recorded keys leave the read; no snapshot/root is retained.
-    pub fn into_historical_keys(
-        self,
-    ) -> Arc<ComputationFactAttribution> {
+    pub fn into_historical_keys(self) -> Arc<ComputationFactAttribution> {
         // The attribution already retains this same handler-key Arc and the
         // original normalization/walk authoring payment. Moving only handler
         // would release that payment while the historical keys remain alive.
@@ -122,9 +120,7 @@ impl ExpectedFactKeys {
     pub fn iter(&self) -> impl Iterator<Item = &Key> {
         union(self.refresh_keys(), self.computation.carried_keys())
     }
-    pub fn refresh_keys(
-        &self,
-    ) -> impl Iterator<Item = &Key> {
+    pub fn refresh_keys(&self) -> impl Iterator<Item = &Key> {
         // Comparator-issued structural bodies must patch native completion too,
         // without reclassifying a carried owner call as a fresh call or handler.
         union(

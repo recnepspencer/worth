@@ -21,8 +21,7 @@ impl ComputationRegistration {
 }
 #[derive(Clone)]
 pub struct ComputationChanges {
-    pub identity:
-        Arc<RecordedSettlementIdentity>,
+    pub identity: Arc<RecordedSettlementIdentity>,
     selected: worth_relational::facade::runtime::PositionedRelationalSnapshot,
     _image: Arc<super::source_alignment::BranchMarkRoot>,
     ordinals: OrdSet<usize>,

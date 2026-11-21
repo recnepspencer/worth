@@ -38,9 +38,7 @@ pub struct OperationBodyHandler<Schema, Binding> {
 }
 
 impl<Schema, Binding> OperationBodyHandler<Schema, Binding> {
-    pub fn body(
-        &self,
-    ) -> &ApplicationOperationBodyProgram {
+    pub fn body(&self) -> &ApplicationOperationBodyProgram {
         &self.body
     }
 }

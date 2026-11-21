@@ -73,16 +73,15 @@ impl WorthQueryCommittedAftermathCausality {
         child: RelationalCommitReceipt,
         fact_record: RecordRef,
     ) -> Option<Self> {
-        (child.branch_id == target_branch
-            && child.parents.as_slice() == [parent.commit_id])
-        .then_some(Self {
-            role,
-            parent,
-            child,
-            fact_record,
-            source,
-            lineage,
-        })
+        (child.branch_id == target_branch && child.parents.as_slice() == [parent.commit_id])
+            .then_some(Self {
+                role,
+                parent,
+                child,
+                fact_record,
+                source,
+                lineage,
+            })
     }
 
     pub const fn role(&self) -> WorthQueryAftermathCausalRole {

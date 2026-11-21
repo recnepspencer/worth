@@ -13,10 +13,7 @@ use crate::domain_computation::primary_graph::output_family_identity::OutputFami
 impl<Schema: ApplicationSchema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
-    pub fn qualify_applied_output_source<
-        Family,
-        Value,
-    >(
+    pub fn qualify_applied_output_source<Family, Value>(
         &self,
         source: &crate::domain_computation::primary_graph::application_query::AppliedQuerySource<
             <Family::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,

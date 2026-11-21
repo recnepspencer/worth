@@ -14,17 +14,13 @@ use worth_query_declaration::facade::application_schema::{
 };
 use worth_relational::facade::identity::EntityId;
 
-pub struct ObservedRequirementItems
-{
+pub struct ObservedRequirementItems {
     pub ids: Vec<EntityId>,
-    pub reservation:
-        QueryMemoryReservation,
+    pub reservation: QueryMemoryReservation,
 }
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionReader<'_, Schema> {
-    pub fn body_related_items<
-        Entity,
-    >(
+    pub fn body_related_items<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         source: &Source,

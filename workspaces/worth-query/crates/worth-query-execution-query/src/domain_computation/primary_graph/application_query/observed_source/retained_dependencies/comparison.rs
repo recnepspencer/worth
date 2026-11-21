@@ -15,7 +15,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn require_current_required_set<'s>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        _: &dyn WorthQueryProgramPublicationAccessPort,
+        _: &WorthQueryProgramPublicationAccess,
         request: &WorthQueryRequestScope,
         settlements: impl IntoIterator<Item = &'s WorthQueryOutputDemandSettlement>,
         dependencies: &WorthQueryRetainedQueryDependencies,

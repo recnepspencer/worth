@@ -52,10 +52,7 @@ pub struct WorthQueryCommitHistoryHold {
 }
 
 impl WorthQueryReservedProductPublicationReceipt {
-    pub fn matches_recovery_handle(
-        &self,
-        handle: &ProductUnpublishedRecoveryHandle,
-    ) -> bool {
+    pub fn matches_recovery_handle(&self, handle: &ProductUnpublishedRecoveryHandle) -> bool {
         &self.custody._recovery_handle == handle
     }
 

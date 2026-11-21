@@ -17,14 +17,10 @@ impl<Schema> RefusedProducerSeal<Schema> {
             cause,
         }
     }
-    pub fn reason(
-        &self,
-    ) -> &WorthQueryPrimaryGraphInstallationDenial {
+    pub fn reason(&self) -> &WorthQueryPrimaryGraphInstallationDenial {
         &self.cause
     }
-    pub fn into_cause(
-        self,
-    ) -> WorthQueryPrimaryGraphInstallationDenial {
+    pub fn into_cause(self) -> WorthQueryPrimaryGraphInstallationDenial {
         self.cause
     }
 }

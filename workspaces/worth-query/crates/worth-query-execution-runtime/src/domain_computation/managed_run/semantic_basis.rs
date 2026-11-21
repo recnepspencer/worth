@@ -14,8 +14,7 @@ pub struct WorthQueryManagedSemanticBasisObservation<'a> {
     pub bridge_kind: BridgeAsyncRequestTruthViewBasisKind,
     pub bridge_authority_basis_digest: &'a str,
     pub relational_current_at_admission: bool,
-    pub product_observation:
-        Option<&'a worth_runtime_world::facade::ProductBranchObservation>,
+    pub product_observation: Option<&'a worth_runtime_world::facade::ProductBranchObservation>,
 }
 
 pub fn validate_managed_semantic_basis(

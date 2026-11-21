@@ -37,10 +37,7 @@ pub struct WorthQueryRestoredAcceptedOutput {
 }
 
 impl WorthQueryRestoredAcceptedOutput {
-    pub fn same_authority(
-        &self,
-        other: &Self,
-    ) -> bool {
+    pub fn same_authority(&self, other: &Self) -> bool {
         self.origin.same_owner(&other.origin)
             && std::sync::Arc::ptr_eq(&self.correspondence, &other.correspondence)
             && self.observation == other.observation

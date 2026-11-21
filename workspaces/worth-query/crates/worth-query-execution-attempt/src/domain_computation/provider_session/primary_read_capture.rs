@@ -2,14 +2,12 @@
 use std::sync::Arc;
 use worth_query_execution_runtime::facade::ports::PrimaryReadCustody;
 use worth_query_execution_runtime::facade::provider_session::{
-    WorthQueryCompleteDecisionReadSetReceipt,
-    WorthQueryDecisionReadSetDenialKind, WorthQueryDecisionReadSetFailure,
-    WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryFreshDecisionReadSet,
-    WorthQuerySessionReadAuthority,
+    WorthQueryCompleteDecisionReadSetReceipt, WorthQueryDecisionReadSetDenialKind,
+    WorthQueryDecisionReadSetFailure, WorthQueryDecisionReadSetFreshnessOutcome,
+    WorthQueryFreshDecisionReadSet, WorthQuerySessionReadAuthority,
 };
 use worth_query_installation::facade::{
-    WorthQueryDecisionFactCardinality, WorthQueryDecisionFactKind,
-    APPLICATION_DECISION_FACT_FAMILY,
+    WorthQueryDecisionFactCardinality, WorthQueryDecisionFactKind, APPLICATION_DECISION_FACT_FAMILY,
 };
 
 use crate::domain_computation::primary_graph::{
@@ -21,7 +19,9 @@ fn denial(kind: WorthQueryDecisionReadSetDenialKind) -> WorthQueryDecisionReadSe
 }
 
 fn check_request(
-    request: Option<&worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope>,
+    request: Option<
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    >,
 ) -> Result<(), WorthQueryDecisionReadSetFailure> {
     match request.and_then(
         worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope::interruption,

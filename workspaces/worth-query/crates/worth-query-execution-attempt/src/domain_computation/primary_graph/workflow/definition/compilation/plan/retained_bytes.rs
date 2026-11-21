@@ -5,9 +5,7 @@ use super::{
 use crate::domain_computation::primary_graph::workflow::definition::codec::WorkflowConnectionTag;
 
 impl CompiledWorkflowNodeKind {
-    pub fn retained_string_bytes(
-        &self,
-    ) -> usize {
+    pub fn retained_string_bytes(&self) -> usize {
         match self {
             Self::Operation {
                 operation,
@@ -77,9 +75,7 @@ impl CompiledWorkflowNodeKind {
 }
 
 impl CompiledWorkflowConnectionKind {
-    pub fn retained_string_bytes(
-        &self,
-    ) -> usize {
+    pub fn retained_string_bytes(&self) -> usize {
         match self {
             Self::Retry { reason, .. } => reason.len(),
             Self::BackAction {
@@ -95,9 +91,7 @@ impl CompiledWorkflowConnectionKind {
         }
     }
 
-    pub fn semantic_identity_material(
-        &self,
-    ) -> String {
+    pub fn semantic_identity_material(&self) -> String {
         match self {
             Self::BackAction {
                 operation,

@@ -6,9 +6,7 @@ pub trait Heap {
     fn compare(&mut self, left: usize, right: usize) -> Result<Ordering, Self::Error>;
     fn swap(&mut self, left: usize, right: usize) -> Result<(), Self::Error>;
 }
-pub fn sort<H: Heap>(
-    heap: &mut H,
-) -> Result<(), H::Error> {
+pub fn sort<H: Heap>(heap: &mut H) -> Result<(), H::Error> {
     let len = heap.len();
     for root in (0..len / 2).rev() {
         sift(heap, root, len)?;

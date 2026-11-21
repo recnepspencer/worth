@@ -3,8 +3,8 @@ use worth_foundational::facade::CanonicalDigestId;
 use worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventIntent;
 
 use crate::domain_computation::primary_graph::application_attempt::{
-    PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
     workflow_transition_program::{RequiredWorkflowApproval, WorkflowApprovalDecision},
+    PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
 };
 
 /// Stable signing meaning survives navigation to another occurrence, while a

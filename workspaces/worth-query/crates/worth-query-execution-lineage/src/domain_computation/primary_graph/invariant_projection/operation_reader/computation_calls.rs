@@ -66,17 +66,11 @@ pub struct ComputationRunStart {
 impl<Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn computation_has_accounting(
-        &self,
-        _: &Comparator,
-    ) -> bool {
+    pub fn computation_has_accounting(&self, _: &Comparator) -> bool {
         self.reader.execution.has_accounting()
     }
     /// Where a computation's run begins.
-    pub const fn run_start(
-        &self,
-        _: &Comparator,
-    ) -> ComputationRunStart {
+    pub const fn run_start(&self, _: &Comparator) -> ComputationRunStart {
         ComputationRunStart {
             work_budget: self.reader.work_budget,
         }
@@ -84,11 +78,7 @@ impl<Schema, Operation>
 
     /// Restores the private charge policy so the full retry has a fresh run's
     /// bill. Diagnostic observations retain reads already performed before retry.
-    pub fn restart(
-        &mut self,
-        _: &Comparator,
-        start: ComputationRunStart,
-    ) {
+    pub fn restart(&mut self, _: &Comparator, start: ComputationRunStart) {
         self.reader.work_budget = start.work_budget;
         self.decision_facts.materialize_carried();
     }
@@ -127,11 +117,7 @@ impl<Schema, Operation>
     /// Charges a call an earlier run made over the same facts, as if it were
     /// made now. Returns false, charging nothing, when the call would not
     /// pass here: the caller makes it instead.
-    pub fn carry(
-        &mut self,
-        _: &Comparator,
-        charge: &ComputationCallCharge,
-    ) -> bool {
+    pub fn carry(&mut self, _: &Comparator, charge: &ComputationCallCharge) -> bool {
         if self.reader.execution.has_accounting() {
             let Some(accounting) = charge.accounting else {
                 return false;

@@ -104,9 +104,7 @@ impl HistoryRestoredOutputBasis {
     pub fn owns_domain(&self) -> bool {
         self.owned.is_some() || self.recording_model.is_some()
     }
-    pub fn observation(
-        &self,
-    ) -> &Arc<WorthQueryApplicationReadObservation> {
+    pub fn observation(&self) -> &Arc<WorthQueryApplicationReadObservation> {
         &self.observation
     }
     pub fn selected(&self) -> Option<&RelationalBranchObservation> {

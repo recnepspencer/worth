@@ -125,8 +125,7 @@ impl WorthQueryWorkflowRestoredAssociation {
     }
 }
 
-pub struct WorthQueryWorkflowBridgeAbortTransition
-{
+pub struct WorthQueryWorkflowBridgeAbortTransition {
     outcome: WorthQueryWorkflowBridgeAbortOutcome,
 }
 
@@ -185,8 +184,7 @@ impl WorthQueryWorkflowBridgeAbortTransition {
     }
 }
 
-pub struct WorthQueryWorkflowProviderRestoreTransition
-{
+pub struct WorthQueryWorkflowProviderRestoreTransition {
     outcome: WorthQueryWorkflowProviderRestoreOutcome,
 }
 

@@ -112,9 +112,7 @@ impl WorthQueryProductPublicationRequestControl {
         &self.cancellation
     }
 
-    pub const fn deadline(
-        &self,
-    ) -> Option<worth_runtime_world::facade::RuntimeWorldInstant> {
+    pub const fn deadline(&self) -> Option<worth_runtime_world::facade::RuntimeWorldInstant> {
         self.deadline
     }
 }
@@ -147,8 +145,8 @@ impl WorthQueryProductPublicationBinding {
     > {
         let control = self.request_control(request).ok_or(Denial::ClockMismatch)?;
         self.adoption_preparation.reached();
-        let prepared = prepare(control.cancellation(), control.deadline())
-            .map_err(Denial::adoption)?;
+        let prepared =
+            prepare(control.cancellation(), control.deadline()).map_err(Denial::adoption)?;
         Ok(WorthQueryPreparedProductPublication {
             publication: self.publication().clone(),
             prepared,

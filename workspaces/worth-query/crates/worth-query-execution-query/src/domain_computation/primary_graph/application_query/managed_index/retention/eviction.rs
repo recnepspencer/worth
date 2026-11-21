@@ -3,9 +3,7 @@ use super::*;
 use WorthQueryManagedIndexLifecycle as Status;
 use WorthQueryManagedIndexLifecycleDenial as Denial;
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexState<S, I> {
-    pub fn admit_eviction(
-        &self,
-    ) -> Result<(u64, u64), Denial> {
+    pub fn admit_eviction(&self) -> Result<(u64, u64), Denial> {
         let state = self
             .retained
             .lock()
@@ -19,11 +17,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         let next = state.epoch.checked_add(1).ok_or(Denial::EpochExhausted)?;
         Ok((state.epoch, next))
     }
-    pub fn finish_eviction(
-        &self,
-        epoch: u64,
-        next: u64,
-    ) {
+    pub fn finish_eviction(&self, epoch: u64, next: u64) {
         let mut state = self
             .retained
             .lock()

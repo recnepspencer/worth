@@ -10,12 +10,9 @@ use worth_query_declaration::facade::{
         ApplicationQueryBinding, ApplicationQueryIntent, ApplicationQueryScopeResolution,
     },
 };
-pub type Family<S, D> =
-    <D as WorthQueryApplicationOutputDemand<S>>::OutputFamily;
-pub type Source<S, D> =
-    <Family<S, D> as WorthQueryProducerOutputFamily<S>>::Source;
-pub type SourceInput<S, D> =
-    <Source<S, D> as ApplicationQueryBinding<S>>::Input;
+pub type Family<S, D> = <D as WorthQueryApplicationOutputDemand<S>>::OutputFamily;
+pub type Source<S, D> = <Family<S, D> as WorthQueryProducerOutputFamily<S>>::Source;
+pub type SourceInput<S, D> = <Source<S, D> as ApplicationQueryBinding<S>>::Input;
 pub fn capture<S, D>(connection: &'static str, demand: D) -> DeclaredCoupledOutputDemand
 where
     S: ApplicationSchema,

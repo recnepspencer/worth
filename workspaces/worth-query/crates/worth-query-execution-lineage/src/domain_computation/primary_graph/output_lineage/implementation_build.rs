@@ -2,10 +2,7 @@
 use super::{RecordedOutput, WorthQueryApplicationOutputLineage};
 use worth_foundational::facade::ApplicationBuildIdentity;
 impl WorthQueryApplicationOutputLineage {
-    pub fn bind_implementation_build(
-        &mut self,
-        build: ApplicationBuildIdentity,
-    ) {
+    pub fn bind_implementation_build(&mut self, build: ApplicationBuildIdentity) {
         assert!(
             self.by_source.is_empty() && self.implementation_build.replace(build).is_none(),
             "one build identity before output publication or recovery"

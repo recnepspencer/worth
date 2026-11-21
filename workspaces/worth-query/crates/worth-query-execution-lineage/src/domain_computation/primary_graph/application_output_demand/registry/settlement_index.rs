@@ -145,10 +145,7 @@ impl SettlementIndex {
 }
 
 impl DemandRegistryState {
-    pub fn defer_cancelled_settlement_vacancy(
-        &mut self,
-        mut cleanup: Box<PendingVacancyCleanup>,
-    ) {
+    pub fn defer_cancelled_settlement_vacancy(&mut self, mut cleanup: Box<PendingVacancyCleanup>) {
         cleanup.next = self.settlement_keys.cancelled_head.take();
         self.settlement_keys.cancelled_head = Some(cleanup);
     }

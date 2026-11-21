@@ -15,10 +15,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// The original selector and parameters have passed fresh installed-query,
 /// principal, scope, request and parent-meter admission. The selected basis
 /// remains owned here until Query read permission and graph work are admitted.
-pub struct PreparedApplicationQuerySourceReadmission<
-    'a,
-    Schema,
-> {
+pub struct PreparedApplicationQuerySourceReadmission<'a, Schema> {
     query_identity: WorthQueryInstalledApplicationQueryIdentity,
     parameters: WorthQueryAdmittedApplicationQueryParameters,
     controls: WorthQueryApplicationQueryControls<'a, Schema>,

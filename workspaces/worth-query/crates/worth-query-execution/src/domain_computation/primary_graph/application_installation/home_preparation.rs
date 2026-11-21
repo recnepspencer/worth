@@ -24,7 +24,8 @@ pub fn retain_home_invariant_projection<Schema: ApplicationSchemaComposition, Pr
 ) -> super::super::WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     runtime
         .runtime()
-        .inner.mutation_projection
+        .inner
+        .mutation_projection
         .retain_for_installation()
 }
 mod transition;

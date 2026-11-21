@@ -35,9 +35,7 @@ impl IssuedComponentValues {
     }
 }
 impl DecisionReads {
-    pub fn fail_component(
-        &mut self,
-    ) {
+    pub fn fail_component(&mut self) {
         self.failed_component = true;
     }
     pub fn record_component(

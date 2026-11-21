@@ -62,10 +62,7 @@ where
             .map(|resolved| resolved.entity_id())
     }
 
-    pub fn resolve_elevation_upper_bound<
-        Scope,
-        Context,
-    >(
+    pub fn resolve_elevation_upper_bound<Scope, Context>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         capability_identity: [u8; 32],

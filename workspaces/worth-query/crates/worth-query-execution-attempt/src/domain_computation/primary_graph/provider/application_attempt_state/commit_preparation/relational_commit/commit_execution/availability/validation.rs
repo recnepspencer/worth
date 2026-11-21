@@ -73,7 +73,7 @@ fn source_publication_validation_image_for_test(
 ) -> Result<
     crate::domain_computation::primary_graph::application_runtime::WorthQuerySourcePublicationImageForTest,
     worth_relational::facade::mvcc::CompanionPreflightStop,
-> {
+>{
     use crate::domain_computation::primary_graph::application_runtime::{
         WorthQuerySourcePublicationHeadForTest as Head,
         WorthQuerySourcePublicationImageForTest as View,

@@ -94,13 +94,15 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 header_bytes,
             )
             .map_err(Denial::Currentness)?;
-        Ok(WorthQueryCompletedOriginalReadOutputs::from_parts(
-            worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
-            Arc::clone(source),
-            Arc::clone(root.retained_read_ref()),
-            root.posture(),
-            output,
-            memory,
-        ))
+        Ok(
+            WorthQueryCompletedOriginalReadOutputs::from_qualified_endpoint(
+                access,
+                Arc::clone(source),
+                Arc::clone(root.retained_read_ref()),
+                root.posture(),
+                output,
+                memory,
+            ),
+        )
     }
 }

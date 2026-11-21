@@ -14,13 +14,25 @@ mod domain_computation_authorization_operation_admission_capability_admission_pr
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub fn authorize_capability_operation<Capability, Operation, Input>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>, operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>, preconditions: TypedMutationPreconditions<
+    where
+        Schema: ApplicationSchema,
+    {
+        pub fn authorize_capability_operation<Capability, Operation, Input>(
+            &self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            access: WorthQueryAdmittedApplicationCapabilityAccess<
+                Schema,
+                Capability,
+                Operation,
+                Input,
+            >,
+            operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+            preconditions: TypedMutationPreconditions<
                 Schema,
                 Operation,
                 <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-            >) -> Result<
+            >,
+        ) -> Result<
             WorthQueryAdmittedApplicationOperation<
                 Schema,
                 Operation,
@@ -31,20 +43,34 @@ where
         >
         where
             Operation: ApplicationOperationMarkerIdentity<Schema>,
-            Input: ApplicationCapabilityRequest<Schema, Capability>, {
-            self.inner.authorize_capability_operation::<Capability, Operation, Input>(phase, access, operation, preconditions)
+            Input: ApplicationCapabilityRequest<Schema, Capability>,
+        {
+            self.inner
+                .authorize_capability_operation::<Capability, Operation, Input>(
+                    phase,
+                    access,
+                    operation,
+                    preconditions,
+                )
         }
-        pub(crate) fn authorize_capability_operation_with_request<
-            Capability,
-            Operation,
-            Input,
-        >(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>, operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>, preconditions: impl std::borrow::Borrow<
+        pub(crate) fn authorize_capability_operation_with_request<Capability, Operation, Input>(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'_, '_>,
+            access: WorthQueryAdmittedApplicationCapabilityAccess<
+                Schema,
+                Capability,
+                Operation,
+                Input,
+            >,
+            operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+            preconditions: impl std::borrow::Borrow<
                 TypedMutationPreconditions<
                     Schema,
                     Operation,
                     <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
                 >,
-            >) -> Result<
+            >,
+        ) -> Result<
             WorthQueryAdmittedApplicationOperation<
                 Schema,
                 Operation,
@@ -55,8 +81,15 @@ where
         >
         where
             Operation: ApplicationOperationMarkerIdentity<Schema>,
-            Input: ApplicationCapabilityRequest<Schema, Capability>, {
-            self.inner.authorize_capability_operation_with_request::<Capability, Operation, Input>(execution, access, operation, preconditions)
+            Input: ApplicationCapabilityRequest<Schema, Capability>,
+        {
+            self.inner
+                .authorize_capability_operation_with_request::<Capability, Operation, Input>(
+                    execution,
+                    access,
+                    operation,
+                    preconditions,
+                )
         }
     }
 }
@@ -75,11 +108,22 @@ mod domain_computation_authorization_operation_admission_capability_admission_pr
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        pub fn authorize_borrowed_capability_operation<Capability, Operation, Input>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>, operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>, preconditions: &TypedMutationPreconditions<
+        pub fn authorize_borrowed_capability_operation<Capability, Operation, Input>(
+            &self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            access: WorthQueryAdmittedApplicationCapabilityAccess<
+                Schema,
+                Capability,
+                Operation,
+                Input,
+            >,
+            operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+            preconditions: &TypedMutationPreconditions<
                 Schema,
                 Operation,
                 <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-            >) -> Result<
+            >,
+        ) -> Result<
             WorthQueryAdmittedApplicationOperation<
                 Schema,
                 Operation,
@@ -90,8 +134,15 @@ mod domain_computation_authorization_operation_admission_capability_admission_pr
         >
         where
             Operation: ApplicationOperationMarkerIdentity<Schema>,
-            Input: ApplicationCapabilityRequest<Schema, Capability>, {
-            self.inner.authorize_borrowed_capability_operation::<Capability, Operation, Input>(phase, access, operation, preconditions)
+            Input: ApplicationCapabilityRequest<Schema, Capability>,
+        {
+            self.inner
+                .authorize_borrowed_capability_operation::<Capability, Operation, Input>(
+                    phase,
+                    access,
+                    operation,
+                    preconditions,
+                )
         }
     }
 }

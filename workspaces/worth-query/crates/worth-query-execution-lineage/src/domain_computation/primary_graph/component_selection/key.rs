@@ -72,15 +72,10 @@ impl ComponentSelectionKey {
             subject,
         }
     }
-    pub fn subject(
-        &self,
-    ) -> ComponentSelectionSubject {
+    pub fn subject(&self) -> ComponentSelectionSubject {
         self.subject.clone()
     }
-    pub fn checkpoint_subject<E>(
-        &self,
-        poll: &mut impl FnMut() -> Result<(), E>,
-    ) -> Result<(), E> {
+    pub fn checkpoint_subject<E>(&self, poll: &mut impl FnMut() -> Result<(), E>) -> Result<(), E> {
         if let ComponentSelectionSubject::DerivedOf(member) = &self.subject {
             crate::domain_computation::primary_graph::aggregate_observation::member_work::checkpoint_names(member,poll)?;
         }
@@ -89,16 +84,10 @@ impl ComponentSelectionKey {
     pub fn root(&self) -> EntityId {
         self.root
     }
-    pub fn matches_scope(
-        &self,
-        scope: &WorthQueryOperationComponentReadScope,
-    ) -> bool {
+    pub fn matches_scope(&self, scope: &WorthQueryOperationComponentReadScope) -> bool {
         !self.query && !self.derived && self.scope == scope.meaning_identity()
     }
-    pub fn write_locator(
-        &self,
-        output: &mut dyn std::fmt::Write,
-    ) -> std::fmt::Result {
+    pub fn write_locator(&self, output: &mut dyn std::fmt::Write) -> std::fmt::Result {
         write!(
             output,
             "{}",

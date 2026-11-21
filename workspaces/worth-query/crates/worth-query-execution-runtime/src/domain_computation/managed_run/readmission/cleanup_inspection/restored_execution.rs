@@ -13,9 +13,7 @@ pub struct WorthQueryReadmissionRestoredExecutionCleanupInspection {
 }
 
 impl WorthQueryReadmissionRestoredExecutionCleanupInspection {
-    pub fn capture(
-        release: &WorthQueryProviderExecutionReleaseEvidence,
-    ) -> Self {
+    pub fn capture(release: &WorthQueryProviderExecutionReleaseEvidence) -> Self {
         Self {
             disposal: release.disposal(),
             disposal_failure_detail: release.disposal_failure_detail().map(Arc::from),

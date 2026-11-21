@@ -166,10 +166,7 @@ impl<Value: 'static, Denial: 'static> WorthQueryDecisionPlan<Value, Denial> {
         }
     }
 
-    pub fn run(
-        self,
-        execution: &QueryRequestExecution<'_>,
-    ) -> HandlerResult<Value, Denial> {
+    pub fn run(self, execution: &QueryRequestExecution<'_>) -> HandlerResult<Value, Denial> {
         let (requests, completion) = self.into_parts();
         let mut settled = crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::dispatch(
             execution, vec![crate::domain_computation::primary_graph::application_contribution::computation::wave_dispatch::PreparedMember {
@@ -182,9 +179,7 @@ impl<Value: 'static, Denial: 'static> WorthQueryDecisionPlan<Value, Denial> {
         }
     }
 
-    pub fn into_parts(
-        self,
-    ) -> (Vec<PreparedCompute>, DecisionCompletion<Value, Denial>) {
+    pub fn into_parts(self) -> (Vec<PreparedCompute>, DecisionCompletion<Value, Denial>) {
         let Self { requests, complete } = self;
         (requests, DecisionCompletion { complete })
     }

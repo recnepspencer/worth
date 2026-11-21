@@ -6,13 +6,12 @@ mod identity;
 pub use identity::{BeforeEntity, BeforeRelation};
 
 pub struct BeforeDecisionReader<'borrow, 'reader, 'runtime, S, O> {
-    pub(crate) reader:
-        &'borrow mut WorthQueryApplicationOperationInvariantProjectionReader<
-            'reader,
-            'runtime,
-            S,
-            O,
-        >,
+    pub(crate) reader: &'borrow mut WorthQueryApplicationOperationInvariantProjectionReader<
+        'reader,
+        'runtime,
+        S,
+        O,
+    >,
 }
 impl<S: ApplicationSchema, O> BeforeDecisionReader<'_, '_, '_, S, O> {
     /// Descriptive version of this actual data basis, never a Current certificate.

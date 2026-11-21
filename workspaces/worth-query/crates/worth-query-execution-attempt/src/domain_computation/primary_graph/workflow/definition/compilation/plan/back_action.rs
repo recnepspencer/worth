@@ -2,10 +2,7 @@
 use super::{CompiledWorkflowConnectionKind, CompiledWorkflowDefinition};
 use worth_relational::facade::identity::EntityId;
 impl CompiledWorkflowDefinition {
-    pub fn has_back_action(
-        &self,
-        source: EntityId,
-    ) -> bool {
+    pub fn has_back_action(&self, source: EntityId) -> bool {
         self.outgoing(source).any(|edge| {
             matches!(
                 self.publication.connections[edge.connection].kind.as_ref(),

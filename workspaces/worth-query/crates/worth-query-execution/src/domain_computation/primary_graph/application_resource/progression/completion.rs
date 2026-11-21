@@ -61,7 +61,8 @@ where
     };
     if matches!(candidate.queue, ResourceCandidateQueue::Unadmitted) {
         let admitted = runtime
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .with_view(
@@ -137,7 +138,8 @@ where
             let issued = witness.effects_indeterminate_issuer().certify(bytes);
             candidate.admission = Some(
                 runtime
-                    .inner.runtime
+                    .inner
+                    .runtime
                     .bridge
                     .conditional()
                     .with_view(
@@ -158,7 +160,8 @@ where
             .expect("actual indeterminate admission retained");
         if admission.report().denied_completion().is_some() {
             runtime
-                .inner.runtime
+                .inner
+                .runtime
                 .bridge
                 .conditional()
                 .with_view(
@@ -208,7 +211,8 @@ where
             u64::try_from(candidate.frame.length()).map_err(|_| ResourceCause::Unavailable)?,
         );
         let validated = runtime
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .with_view(
@@ -222,7 +226,8 @@ where
             .map_err(ResourceCause::Bridge)?
             .map_err(ResourceCause::Completion)?;
         let admitted = runtime
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .with_view(
@@ -243,7 +248,8 @@ where
         .expect("actual Native admission retained before handoff");
     if admission.report().denied_completion().is_some() {
         runtime
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .with_view(
@@ -264,7 +270,8 @@ where
     }
     execution.consult().map_err(ResourceCause::Request)?;
     let committed = runtime
-        .inner.runtime
+        .inner
+        .runtime
         .bridge
         .conditional()
         .with_view(

@@ -10,9 +10,7 @@ pub struct WorthQueryPublishedApplicationCausality {
 }
 
 impl WorthQueryPublishedApplicationCausality {
-    pub const fn outcome_identity(
-        &self,
-    ) -> WorthQueryApplicationCommitOutcomeIdentity {
+    pub const fn outcome_identity(&self) -> WorthQueryApplicationCommitOutcomeIdentity {
         self.outcome_identity
     }
 

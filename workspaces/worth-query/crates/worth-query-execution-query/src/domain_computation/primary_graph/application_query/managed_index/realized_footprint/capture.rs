@@ -39,10 +39,7 @@ pub struct CaptureInput<
     pub allocation: &'a Arc<SourceFactsAllocation>,
 }
 
-pub fn capture<
-    S,
-    I,
->(
+pub fn capture<S, I>(
     execution: &ExecutionRequest<'_, '_>,
     proof: &WorthQueryManagedIndexSelectionProof<'_, '_, '_>,
     input: CaptureInput<'_, S, I>,

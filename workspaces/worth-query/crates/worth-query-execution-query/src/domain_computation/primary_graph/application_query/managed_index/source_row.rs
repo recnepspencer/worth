@@ -44,7 +44,6 @@ impl From<WorthQueryApplicationProjectionDenial> for WorthQueryManagedIndexTextR
 /// A row selected and admitted from one actual immutable Source image.
 /// Construction and the memo are private; ordinary projection methods remain
 /// available. Text is lent only for the duration of a controlled callback.
-#[doc = include_str!("source_row.md")]
 pub struct WorthQueryManagedIndexSourceRow<
     'a,
     S: ApplicationSchema,

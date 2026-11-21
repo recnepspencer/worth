@@ -105,11 +105,7 @@ impl CapturedCandidateRows {
         }
         checkpoint(0)
     }
-    pub fn same_membership(
-        &self,
-        other: &Self,
-        checkpoint: &mut dyn FnMut(u64) -> bool,
-    ) -> bool {
+    pub fn same_membership(&self, other: &Self, checkpoint: &mut dyn FnMut(u64) -> bool) -> bool {
         if self.owner != other.owner || self.entries.len() != other.entries.len() {
             return false;
         }

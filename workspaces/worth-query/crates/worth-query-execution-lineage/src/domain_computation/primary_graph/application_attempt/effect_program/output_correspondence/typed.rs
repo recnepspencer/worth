@@ -146,9 +146,7 @@ pub struct WorthQueryApplicationTypedClosureEvidence<'a, Contract> {
     _contract: PhantomData<fn() -> Contract>,
 }
 impl<'a, Contract: 'static> WorthQueryApplicationTypedClosureEvidence<'a, Contract> {
-    pub fn new(
-        correspondence: &'a WorthQueryApplicationOutputCorrespondence,
-    ) -> Self {
+    pub fn new(correspondence: &'a WorthQueryApplicationOutputCorrespondence) -> Self {
         Self {
             correspondence,
             _contract: PhantomData,

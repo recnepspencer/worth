@@ -18,9 +18,7 @@ pub struct AppliedQuerySupport {
     >,
 }
 impl<Q, V> AppliedQuerySource<Q, V> {
-    pub fn retain_candidate_support<
-        S: worth_query_installation::facade::ApplicationSchema,
-    >(
+    pub fn retain_candidate_support<S: worth_query_installation::facade::ApplicationSchema>(
         &self,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -59,9 +57,7 @@ impl AppliedQuerySupport {
         &self.query
     }
     /// The candidate image this support observed.
-    pub fn pin(
-        &self,
-    ) -> &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
+    pub fn pin(&self) -> &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         &self.pin
     }
     pub fn changed_fact(

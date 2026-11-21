@@ -118,11 +118,7 @@ impl MaterialPublication<'_> {
         }
         Ok(())
     }
-    pub fn expired_membership(
-        &self,
-        original: Original,
-        revision: CanonicalDigestId,
-    ) -> bool {
+    pub fn expired_membership(&self, original: Original, revision: CanonicalDigestId) -> bool {
         let state = self.owner.state();
         state.pending.is_none()
             && state.catalog.material.get(&original).is_some_and(|entry| {

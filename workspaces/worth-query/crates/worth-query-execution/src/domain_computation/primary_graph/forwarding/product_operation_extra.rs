@@ -84,7 +84,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 Value = Input,
             >,
         Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
-    {
+{
         self.inner
             .admit_capability_access_with_request(execution, principal, capability, input, request)
     }

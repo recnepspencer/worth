@@ -14,8 +14,7 @@ pub struct NextPartitioning<Item> {
     /// `None` when the membership or an item's key was made again and its
     /// charge did not measure: the run cannot be carried again.
     pub membership: Option<RetainedCall>,
-    pub item_keys:
-        Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
+    pub item_keys: Arc<worth_execution::ExecutionOrderedMap<PartitionItemId, RetainedCall>>,
     pub routing: Arc<ComputationPartitionRouting>,
     pub carried_membership: bool,
     pub carried_items: super::super::retained::CarriedItems,

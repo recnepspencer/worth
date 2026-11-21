@@ -59,9 +59,7 @@ pub struct QueryObligationHistory {
 }
 
 impl QueryObligationHistory {
-    pub fn installed<Schema>(
-        roster: &WorthQueryProgramSupportRoster<Schema>,
-    ) -> Self {
+    pub fn installed<Schema>(roster: &WorthQueryProgramSupportRoster<Schema>) -> Self {
         let entries = roster
             .entries()
             .iter()
@@ -107,10 +105,7 @@ impl QueryObligationHistory {
         })
     }
 
-    pub fn is_active(
-        &self,
-        revision: &ApplicationProgramRevision,
-    ) -> bool {
+    pub fn is_active(&self, revision: &ApplicationProgramRevision) -> bool {
         self.state.lock().ok().is_some_and(|state| {
             !Self::pending_affects(&state, revision)
                 && state.entries.get(revision).is_some_and(|entry| {
@@ -254,9 +249,7 @@ pub struct WorthQueryProgramSupportInterpretation {
 }
 
 impl WorthQueryProgramSupportInterpretation {
-    pub const fn revision(
-        &self,
-    ) -> &ApplicationProgramRevision {
+    pub const fn revision(&self) -> &ApplicationProgramRevision {
         &self.revision
     }
     pub fn same_support_as(&self, other: &Self) -> bool {

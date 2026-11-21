@@ -148,7 +148,7 @@ impl<Schema, Operation, Input, Scope>
 
     pub fn with_authored_edit_stages<Stage: Into<crate::ports::OpaqueAuthoredEditStage>>(
         mut self,
-        _access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         stages: Vec<Stage>,
     ) -> Self {
         self.authored_stages = stages.into_iter().map(Into::into).collect();

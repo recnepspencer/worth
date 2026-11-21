@@ -7,6 +7,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationAdmissionBinding, ApplicationMutationIdentities,
 };
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 impl WorthQueryWorkflowAdvanceAdapter {
     #[allow(clippy::too_many_arguments)]

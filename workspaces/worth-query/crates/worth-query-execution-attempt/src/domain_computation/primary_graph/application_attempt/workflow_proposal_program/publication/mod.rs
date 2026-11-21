@@ -3,7 +3,8 @@ use worth_query_declaration::facade::application_program::ApplicationProgramRevi
 use worth_relational::facade::identity::EntityId;
 
 use super::super::{
-    PublishedWorkflowInstanceRef, WorthQueryApplicationEffectProgram, WorthQueryApplicationUncommitted,
+    PublishedWorkflowInstanceRef, WorthQueryApplicationEffectProgram,
+    WorthQueryApplicationUncommitted,
 };
 #[must_use = "prepared workflow proposal owns a live application attempt"]
 pub struct PreparedWorkflowProposal<Schema, Operation, Input, Scope> {
@@ -63,7 +64,6 @@ pub enum WorkflowProposalOutcome {
     Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(super::super::WorthQueryApplicationCommitReceipt),
 }
-
 
 struct ProjectionContext {
     pub transition_identity_locator: AspectFieldLocator,

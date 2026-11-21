@@ -47,7 +47,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             bool,
         ),
         crate::domain_computation::primary_graph::WorthQueryApplicationConditionalDefinitionAdmissionDenial,
-    > {
+    >{
         use crate::domain_computation::primary_graph::WorthQueryApplicationConditionalDefinitionAdmissionDenial as Denial;
         let bridge = bridge_root
             .read()
@@ -220,9 +220,15 @@ impl<Schema> Drop for WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         // The local owner drops first even if cleanup unwinds. Move later
         // custody into its original field positions before cleanup can panic.
         let execution = self.inner.runtime.execution.take();
-        self.inner.post_conditional_teardown.take_from(&mut self.inner.runtime);
-        self.inner.output_teardown.take_from(&mut self.inner.runtime);
-        self.inner.workflow_teardown.take_from(&mut self.inner.runtime);
+        self.inner
+            .post_conditional_teardown
+            .take_from(&mut self.inner.runtime);
+        self.inner
+            .output_teardown
+            .take_from(&mut self.inner.runtime);
+        self.inner
+            .workflow_teardown
+            .take_from(&mut self.inner.runtime);
         if let Some(owner) = &mut self.conditional_cleanup.owner {
             owner.close();
         }

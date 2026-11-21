@@ -38,11 +38,10 @@ impl ManagedGraphWorkSessionPrimaryExt for WorthQueryManagedGraphWorkSession {
     }
 
     fn coupled_handler_typed(&self) -> Option<&ProducerHandlerPreparation> {
-        self.coupled_handler()
-            .map(|any| {
-                any.downcast_ref::<ProducerHandlerPreparation>()
-                    .expect("coupled handler is ProducerHandlerPreparation")
-            })
+        self.coupled_handler().map(|any| {
+            any.downcast_ref::<ProducerHandlerPreparation>()
+                .expect("coupled handler is ProducerHandlerPreparation")
+        })
     }
 
     fn coupled_handler_typed_mut(&mut self) -> Option<&mut ProducerHandlerPreparation> {

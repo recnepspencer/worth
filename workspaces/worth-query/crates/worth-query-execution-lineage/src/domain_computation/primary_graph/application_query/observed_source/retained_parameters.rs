@@ -46,9 +46,7 @@ impl WorthQueryRetainedObservedParameters {
         }
     }
 
-    pub fn row_meanings(
-        &self,
-    ) -> &[Arc<WorthQueryObservedSourceMeaning>] {
+    pub fn row_meanings(&self) -> &[Arc<WorthQueryObservedSourceMeaning>] {
         self.rows.elements()
     }
 

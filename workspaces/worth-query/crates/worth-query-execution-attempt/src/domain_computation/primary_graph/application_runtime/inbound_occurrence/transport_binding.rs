@@ -40,10 +40,11 @@ pub enum WorthQueryTransportCompletionBindingDenial {
     RecordedBindingUnavailable,
 }
 
-
 impl WorthQueryInstalledTransportCompletionBinding {
     #[doc(hidden)]
-    pub fn runtime_for_test(&self) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+    pub fn runtime_for_test(
+        &self,
+    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.runtime()
     }
 }

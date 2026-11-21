@@ -12,9 +12,7 @@ pub use admission::{
     SelectedWorkflowOperation, SelectedWorkflowProposal, SelectedWorkflowTransition,
     SelectedWorkflowTransitionKind, WorkflowOperationSettlementBasis,
 };
-pub use outcome::{
-    decode_transition_outcome, encode_transition_outcome,
-};
+pub use outcome::{decode_transition_outcome, encode_transition_outcome};
 pub use settlement::{
     visit_terminal_transition_facts, visit_workflow_operation_settlement_facts,
     visit_workflow_transition_facts,

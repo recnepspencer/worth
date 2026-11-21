@@ -50,7 +50,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         let product = application
             .admit_with_observation_room(|| {
                 application
-                    .inner.runtime
+                    .inner
+                    .runtime
                     .product_runtime
                     .readmit_product_reference(description.world())
             })
@@ -58,7 +59,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         // Native readmission also admits retained history. Currentness must
         // therefore be checked by that same owner before composing the selection.
         let (native, currentness) = application
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {

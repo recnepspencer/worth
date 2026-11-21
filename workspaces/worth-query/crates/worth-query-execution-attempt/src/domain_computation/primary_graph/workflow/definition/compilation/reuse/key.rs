@@ -21,23 +21,17 @@ impl WorkflowDefinitionCompilationReuse {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorkflowDefinitionCompilationReuseDenial
-{
+pub enum WorkflowDefinitionCompilationReuseDenial {
     SemanticCollision,
     ByteBudgetExceeded,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorkflowDefinitionSemanticReuseKey
-{
-    pub content_identity:
-        String,
-    pub program_revision:
-        String,
-    pub vocabulary_identity:
-        String,
-    pub support_identity:
-        [u8; 32],
+pub struct WorkflowDefinitionSemanticReuseKey {
+    pub content_identity: String,
+    pub program_revision: String,
+    pub vocabulary_identity: String,
+    pub support_identity: [u8; 32],
 }
 
 impl WorkflowDefinitionSemanticReuseKey {
@@ -64,19 +58,13 @@ impl WorkflowDefinitionSemanticReuseKey {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct WorkflowDefinitionPublicationReuseKey
-{
-    pub branch_occurrence:
-        u64,
-    pub definition:
-        EntityId,
+pub struct WorkflowDefinitionPublicationReuseKey {
+    pub branch_occurrence: u64,
+    pub definition: EntityId,
 }
 
 impl WorkflowDefinitionPublicationReuseKey {
-    pub const fn new(
-        branch: crate::basis::WorthQueryProductBranch,
-        definition: EntityId,
-    ) -> Self {
+    pub const fn new(branch: crate::basis::WorthQueryProductBranch, definition: EntityId) -> Self {
         Self {
             branch_occurrence: branch.occurrence_ordinal(),
             definition,

@@ -22,14 +22,10 @@ impl HistoricalAcceptedOrigin {
             .as_ref()
             .expect("historical acceptance retains its committed publication")
     }
-    pub fn settlement(
-        &self,
-    ) -> &Arc<RecordedSettlementIdentity> {
+    pub fn settlement(&self) -> &Arc<RecordedSettlementIdentity> {
         &self.row().settlement_identity
     }
-    pub fn source_identity(
-        &self,
-    ) -> Option<RecordedSourceIdentity> {
+    pub fn source_identity(&self) -> Option<RecordedSourceIdentity> {
         self.row().source_identity
     }
     pub fn key(&self) -> [u8; 32] {
@@ -42,9 +38,7 @@ impl HistoricalAcceptedOrigin {
             .producing_implementation
             .expect("verified historical row has a producing build")
     }
-    pub fn computation_source(
-        &self,
-    ) -> ComputationSourceEvidence {
+    pub fn computation_source(&self) -> ComputationSourceEvidence {
         self.row().computation_source
     }
     pub fn dependency(&self) -> Option<[u8; 32]> {

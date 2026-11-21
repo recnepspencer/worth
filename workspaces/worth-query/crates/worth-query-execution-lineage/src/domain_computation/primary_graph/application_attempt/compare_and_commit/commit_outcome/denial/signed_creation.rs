@@ -13,8 +13,7 @@ impl WorthQueryApplicationCommitDenial {
             cause: None,
         }
     }
-    pub fn signed_entity_immutable(
-    ) -> Self {
+    pub fn signed_entity_immutable() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::SignedEntityImmutable,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,

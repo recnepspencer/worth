@@ -15,10 +15,7 @@ pub struct RetiredPrimaryProviderAnchor {
 }
 
 impl WorthQueryGraphProviderAnchor {
-    pub fn preflight_home_retirement<
-        G: Any + Send + Sync,
-        P: Any + Send + Sync + PartialEq,
-    >(
+    pub fn preflight_home_retirement<G: Any + Send + Sync, P: Any + Send + Sync + PartialEq>(
         &self,
         expected: &P,
     ) -> Result<(), Denial> {

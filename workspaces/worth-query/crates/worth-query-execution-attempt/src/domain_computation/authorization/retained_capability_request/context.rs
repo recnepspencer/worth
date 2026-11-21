@@ -40,10 +40,7 @@ impl RetainedContext {
                 .map(|index| &entries[index].1),
         }
     }
-    pub fn contains_key(
-        &self,
-        key: &WorthQueryCapabilityContextKey,
-    ) -> bool {
+    pub fn contains_key(&self, key: &WorthQueryCapabilityContextKey) -> bool {
         self.get(key).is_some()
     }
 }

@@ -114,10 +114,7 @@ impl ManagedSourceInstallation {
             }
         }
     }
-    pub fn service(
-        &self,
-        program: &ManagedIndexSourceProgram,
-    ) -> Option<&Arc<dyn SourceService>> {
+    pub fn service(&self, program: &ManagedIndexSourceProgram) -> Option<&Arc<dyn SourceService>> {
         self.sources
             .get(program)
             .map(|index| &self.ordered_sources[*index])

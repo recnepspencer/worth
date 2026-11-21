@@ -14,17 +14,16 @@ use worth_query_installation::facade::ApplicationSchema;
 use crate::domain_computation::primary_graph::{
     HandlerResult, WorthQueryAdvancementPhase, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryCompletedMutationCandidate, WorthQueryCorrectionIntent,
-    WorthQueryMutationHandlerWork, WorthQueryOutputDemandDenial,
-    WorthQueryOutputDemandDenialKind, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryMutationHandlerWork, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 pub use inner::{
-    stage_admission_refusal, AuthoredEditStageAdmission,
-    AuthoredEnvelopeResolution, AuthoredEnvelopeResolutionPurpose, AuthoredStageDomainDenial,
-    AuthoredStageExecutionCause, AuthoredStageExecutionDenial, DeclaredEditDependency,
-    DeclaredEditOrderRefusal, DeclaredEditParticipant, DeclaredEditReadScope,
-    DeclaredEditScopeCycle, DeclaredEditStage, DeclaredQueryRead, RetainedAuthoredStageResult,
-    UnseenAuthoredEnvelope,
+    stage_admission_refusal, AuthoredEditStageAdmission, AuthoredEnvelopeResolution,
+    AuthoredEnvelopeResolutionPurpose, AuthoredStageDomainDenial, AuthoredStageExecutionCause,
+    AuthoredStageExecutionDenial, DeclaredEditDependency, DeclaredEditOrderRefusal,
+    DeclaredEditParticipant, DeclaredEditReadScope, DeclaredEditScopeCycle, DeclaredEditStage,
+    DeclaredQueryRead, RetainedAuthoredStageResult, UnseenAuthoredEnvelope,
 };
 
 pub struct AuthoredEditStageContext<'a, 'run, 'phase, S> {
@@ -226,7 +225,7 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
                 S,
                 <super::producer::synchronous_outputs::source::Source<S, D> as worth_query_declaration::facade::application_query::ApplicationQueryBinding<S>>::PrincipalIdentity,
             >,
-    {
+{
         self.0
             .with_required_output_dependencies::<B, D, E>(application, demand, position, order)
             .map(Self)
@@ -280,13 +279,8 @@ pub fn order_authored_stages<S: ApplicationSchema>(
     unseen: &UnseenAuthoredEnvelope<'_>,
 ) -> Result<Vec<usize>, DeclaredEditOrderRefusal> {
     let mut inner_stages: Vec<_> = stages.iter().map(|stage| stage.0.clone()).collect();
-    let result = inner::order_authored_stages(
-        execution,
-        &mut inner_stages,
-        phase,
-        application,
-        unseen,
-    );
+    let result =
+        inner::order_authored_stages(execution, &mut inner_stages, phase, application, unseen);
     for (outer, updated) in stages.iter_mut().zip(inner_stages) {
         outer.0 = updated;
     }

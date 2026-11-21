@@ -28,7 +28,12 @@ pub(super) fn publish<
         .prepare_conditional_definition_publication(&execution, branch, predecessor, request)
         .map_err(D::AuthoredBridgePreparation)?;
     let product_binding = product.publication_binding();
-    let publication = application.inner.runtime.product_runtime.owner.publication_port();
+    let publication = application
+        .inner
+        .runtime
+        .product_runtime
+        .owner
+        .publication_port();
     let mut pending = publication
         .prepare_query_publication_with_signal(
             &execution,

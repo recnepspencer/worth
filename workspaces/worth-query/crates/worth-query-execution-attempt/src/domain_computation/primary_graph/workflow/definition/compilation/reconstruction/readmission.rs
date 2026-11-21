@@ -28,30 +28,21 @@ pub struct RecordedWorkflowDefinition {
     captured: BTreeMap<EntityId, Vec<EntityId>>,
 }
 impl RecordedWorkflowDefinition {
-    pub fn content(
-        &self,
-    ) -> &ApplicationWorkflowDefinitionContentIdentity {
+    pub fn content(&self) -> &ApplicationWorkflowDefinitionContentIdentity {
         &self.header.content
     }
     pub const fn lineage(&self) -> EntityId {
         self.header.lineage
     }
-    pub const fn published_under(
-        &self,
-    ) -> CanonicalDigestId {
+    pub const fn published_under(&self) -> CanonicalDigestId {
         self.header.published_under
     }
-    pub fn effective_revision(
-        &self,
-    ) -> CanonicalDigestId {
+    pub fn effective_revision(&self) -> CanonicalDigestId {
         self.header
             .carried_to
             .unwrap_or(self.header.published_under)
     }
-    pub fn node(
-        &self,
-        id: EntityId,
-    ) -> Option<&CompiledWorkflowNode> {
+    pub fn node(&self, id: EntityId) -> Option<&CompiledWorkflowNode> {
         self.nodes
             .get(&id)
             .map(|ordinal| &self.members.nodes[*ordinal])

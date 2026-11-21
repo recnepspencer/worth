@@ -35,9 +35,7 @@ pub struct AppliedQuerySource<Query, Value> {
     marker: PhantomData<fn() -> Query>,
 }
 impl<Query, Value> AppliedQuerySource<Query, Value> {
-    pub fn retain_selected_membership(
-        &self,
-    ) -> Option<super::WorthQueryObservedSourceSelection> {
+    pub fn retain_selected_membership(&self) -> Option<super::WorthQueryObservedSourceSelection> {
         if self.managed.is_some() {
             return None;
         }
@@ -49,9 +47,7 @@ impl<Query, Value> AppliedQuerySource<Query, Value> {
         )
     }
 
-    pub fn has_complete_output_dependencies(
-        &self,
-    ) -> bool {
+    pub fn has_complete_output_dependencies(&self) -> bool {
         let footprint = self.meaning.footprint();
         footprint.complete && footprint.root_selection.is_some()
     }
@@ -60,24 +56,27 @@ impl<Query, Value> AppliedQuerySource<Query, Value> {
         lifecycle: crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerLifecyclePosture,
     ) -> AppliedSourcePublication {
         AppliedSourcePublication {
-            managed: self.managed.map(|m| m as std::sync::Arc<dyn worth_query_execution_lineage::facade::ports::AppliedManagedSourcePort>),
+            managed: self.managed.map(|m| {
+                m as std::sync::Arc<
+                    dyn worth_query_execution_lineage::facade::ports::AppliedManagedSourcePort,
+                >
+            }),
             meaning: self.meaning,
-            closure: self.closure as std::sync::Arc<dyn worth_query_execution_lineage::facade::ports::SourceReadClosurePort>,
+            closure: self.closure
+                as std::sync::Arc<
+                    dyn worth_query_execution_lineage::facade::ports::SourceReadClosurePort,
+                >,
             lifecycle,
         }
     }
 
-    pub fn runtime_source_identity(
-        &self,
-    ) -> WorthQueryRuntimeSourceIdentity {
+    pub fn runtime_source_identity(&self) -> WorthQueryRuntimeSourceIdentity {
         self.meaning.runtime_idempotency_identity()
     }
     pub fn root(&self) -> EntityId {
         self.meaning.footprint().root
     }
-    pub fn binding_order(
-        &self,
-    ) -> ([u8; 32], [u8; 32], EntityId) {
+    pub fn binding_order(&self) -> ([u8; 32], [u8; 32], EntityId) {
         (self.query, self.parameters, self.root())
     }
     pub fn partition(&self) -> [u8; 32] {

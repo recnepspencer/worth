@@ -7,8 +7,7 @@ use std::sync::Arc;
 use worth_relational::facade::history::{BranchId, CommitId};
 use worth_runtime_world::facade::ProductBranchIncarnation;
 #[derive(Default)]
-pub struct DiscontinuityCursors
-{
+pub struct DiscontinuityCursors {
     occurrences: BTreeMap<ProductBranchIncarnation, BranchCursors>,
 }
 pub enum DiscontinuityPage {
@@ -25,8 +24,7 @@ struct DiscontinuityCursor {
     complete: bool,
 }
 /// Detached under the registry lock; its actual branch/key backing drops after it.
-pub struct RetiredDiscontinuityCursors
-{
+pub struct RetiredDiscontinuityCursors {
     _row: BranchCursors,
 }
 impl DemandRegistryState {

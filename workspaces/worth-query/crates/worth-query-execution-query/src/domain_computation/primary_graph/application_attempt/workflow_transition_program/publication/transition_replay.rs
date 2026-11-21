@@ -14,8 +14,8 @@ pub mod condition;
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::transition_replay::descriptor_retention;
 pub use descriptor_retention::PreparedWorkflowTransitionReplays;
 
-pub trait PreparedWorkflowAdvanceTransitionReplayExt<Schema, Operation, Input, Scope>: Sized
-
+pub trait PreparedWorkflowAdvanceTransitionReplayExt<Schema, Operation, Input, Scope>:
+    Sized
 {
     fn resolve_transition_replay(
         &self,
@@ -26,11 +26,8 @@ pub trait PreparedWorkflowAdvanceTransitionReplayExt<Schema, Operation, Input, S
     where
         Schema: ApplicationSchema,
         Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-;
-    fn resolve_operation_replay<
-        Binding,
-    >(
+        Input: Clone + Send + Sync + 'static;
+    fn resolve_operation_replay<Binding>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -47,12 +44,12 @@ pub trait PreparedWorkflowAdvanceTransitionReplayExt<Schema, Operation, Input, S
         Input: Clone + Send + Sync + 'static,
         Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
             Schema,
-        >,
-;
+        >;
 }
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvanceTransitionReplayExt<Schema, Operation, Input, Scope> for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
-
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowAdvanceTransitionReplayExt<Schema, Operation, Input, Scope>
+    for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
 {
     fn resolve_transition_replay(
         &self,
@@ -186,9 +183,7 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvanceTransitionReplayExt
 
     /// Projects exact prior operation settlement; an unseen confirmation key is sufficient
     /// only for installed local effects whose original receipt created that transition.
-    fn resolve_operation_replay<
-        Binding,
-    >(
+    fn resolve_operation_replay<Binding>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

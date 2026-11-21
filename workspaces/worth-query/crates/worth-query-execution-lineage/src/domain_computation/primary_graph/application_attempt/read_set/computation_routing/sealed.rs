@@ -23,10 +23,7 @@ impl SealedComputationFacts {
     pub fn has_structural_walk(&self) -> bool {
         self.index.structural_walk
     }
-    pub fn retain_projection(
-        &mut self,
-        projection: Arc<super::super::CompletedFactProjection>,
-    ) {
+    pub fn retain_projection(&mut self, projection: Arc<super::super::CompletedFactProjection>) {
         self.projection = Some(projection);
     }
 

@@ -2,11 +2,7 @@
 use super::*;
 
 #[allow(clippy::too_many_arguments)]
-pub fn authorize_current_control_mutation_on_selected<
-    Schema,
-    Binding,
-    Scope,
->(
+pub fn authorize_current_control_mutation_on_selected<Schema, Binding, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     mutation: &SharedSelectedProductOperation<'_, Schema>,
@@ -62,11 +58,7 @@ where
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn authorize_historical_control_mutation_on_selected<
-    Schema,
-    Binding,
-    Scope,
->(
+pub fn authorize_historical_control_mutation_on_selected<Schema, Binding, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     mutation: &SharedSelectedProductOperation<'_, Schema>,

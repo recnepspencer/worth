@@ -86,7 +86,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         let coverage = WorthQueryProgramAdoptionCoverage::issue(branches, maximum_targets)?;
         let unadmitted = self
             .application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .activations
             .first_unadmitted_live_occurrence(
@@ -122,16 +123,19 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
 
     pub fn fork(self, source: WorthQueryProductBranch) -> WorthQueryProductBranchFork<'runtime> {
         self.branches.fork(source).with_application_lifecycle(
-            std::sync::Arc::new(crate::domain_computation::runtime_ports::OutputLineageForkAdapter(
-                std::sync::Arc::clone(
-                    &self
-                        .application
-                        .inner.runtime
-                        .primary_provider
-                        .graph
-                        .output_lineage,
+            std::sync::Arc::new(
+                crate::domain_computation::runtime_ports::OutputLineageForkAdapter(
+                    std::sync::Arc::clone(
+                        &self
+                            .application
+                            .inner
+                            .runtime
+                            .primary_provider
+                            .graph
+                            .output_lineage,
+                    ),
                 ),
-            )),
+            ),
             self.application.inner.runtime.primary_provider.as_ref(),
             self.application,
         )
@@ -159,25 +163,34 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
     pub fn pending_cleanup(&self) -> Vec<WorthQueryApplicationProductBranchCleanup> {
         for occurrence in self
             .application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .pending_application_retired_product_occurrences()
         {
             self.application
-                .inner.runtime
+                .inner
+                .runtime
                 .output_demands
                 .release_product_occurrence(occurrence.incarnation());
             self.application
-                .inner.runtime
+                .inner
+                .runtime
                 .primary_provider
                 .release_product_occurrence_retention(
                     occurrence.branch(),
                     occurrence.incarnation(),
                 );
         }
-        let conditional = self.application.inner.runtime.bridge.conditional_operations();
+        let conditional = self
+            .application
+            .inner
+            .runtime
+            .bridge
+            .conditional_operations();
         self.application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .pending_owner_cleanup()
             .into_iter()

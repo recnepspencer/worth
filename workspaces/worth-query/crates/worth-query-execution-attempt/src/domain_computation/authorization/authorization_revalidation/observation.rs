@@ -1,8 +1,6 @@
 //! Exact observation context for retained-authorization revalidation.
 
-pub struct WorthQueryAuthorizationRevalidationObservation<
-    'observation,
-> {
+pub struct WorthQueryAuthorizationRevalidationObservation<'observation> {
     session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
     relational: &'observation worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'observation worth_relational::facade::snapshots::SnapshotHandle,
@@ -32,19 +30,13 @@ impl WorthQueryAuthorizationRevalidationObservation<'_> {
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
         self.session
     }
-    pub const fn relational(
-        &self,
-    ) -> &worth_relational::facade::runtime::RelationalRuntime {
+    pub const fn relational(&self) -> &worth_relational::facade::runtime::RelationalRuntime {
         self.relational
     }
-    pub const fn snapshot(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+    pub const fn snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
         self.snapshot
     }
-    pub const fn bridge(
-        &self,
-    ) -> &worth_runtime_bridge::facade::BridgeAuthorizationRuntime {
+    pub const fn bridge(&self) -> &worth_runtime_bridge::facade::BridgeAuthorizationRuntime {
         self.bridge
     }
     pub const fn installed(
@@ -52,14 +44,10 @@ impl WorthQueryAuthorizationRevalidationObservation<'_> {
     ) -> &super::super::capability_registry::WorthQueryInstalledCapabilityPlan {
         self.installed
     }
-    pub const fn request(
-        &self,
-    ) -> &super::super::WorthQueryRetainedCapabilityRequest {
+    pub const fn request(&self) -> &super::super::WorthQueryRetainedCapabilityRequest {
         self.request
     }
-    pub const fn sample(
-        &self,
-    ) -> &super::super::WorthQueryRuntimeTimeSample {
+    pub const fn sample(&self) -> &super::super::WorthQueryRuntimeTimeSample {
         self.sample
     }
 }

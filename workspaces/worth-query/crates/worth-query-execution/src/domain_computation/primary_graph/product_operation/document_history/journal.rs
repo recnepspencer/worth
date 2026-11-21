@@ -189,11 +189,9 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             0,
             HistoryNode {
                 binding: NodeBinding::Completed(RecordedNode {
-                    step: WorthQueryHistoryStep {
-                        id: current,
-                        parent: None,
-                        label: None,
-                        endpoint,
+                    step: {
+                        use worth_query_execution_query::facade::ports::HistoryStepConstructionPort as _;
+                        WorthQueryHistoryStep::new_history_step(current, None, None, endpoint)
                     },
                     root_posture: None,
                 }),
@@ -278,12 +276,13 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         else {
             unreachable!("only the original pending node can complete")
         };
-        WorthQueryHistoryStep {
-            id: reserved.node,
-            parent: Some(*parent),
-            label: Some(Arc::clone(label)),
+        use worth_query_execution_query::facade::ports::HistoryStepConstructionPort as _;
+        WorthQueryHistoryStep::new_history_step(
+            reserved.node,
+            Some(*parent),
+            Some(Arc::clone(label)),
             endpoint,
-        }
+        )
     }
 
     pub(super) fn current_step(&self) -> &WorthQueryHistoryStep {

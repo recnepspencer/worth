@@ -45,9 +45,7 @@ impl WorthQueryApplicationReadExecutionDenial {
         &self.subject
     }
 
-    pub fn into_subject(
-        self,
-    ) -> String {
+    pub fn into_subject(self) -> String {
         self.subject
     }
 }

@@ -21,12 +21,7 @@ fn observing() -> bool {
 /// Passive custody observation of the actual canonical owner output. It changes
 /// no key or product decision. One last key per actual coupled route survives
 /// abandoned cold candidates, and the existing owned observer clears it.
-pub fn record_coupled_key(
-    runtime: u64,
-    producer: &'static str,
-    root: EntityId,
-    key: [u8; 32],
-) {
+pub fn record_coupled_key(runtime: u64, producer: &'static str, root: EntityId, key: [u8; 32]) {
     if observing() {
         COUPLED_KEYS.with(|keys| {
             keys.borrow_mut().insert((runtime, producer, root), key);
@@ -36,9 +31,7 @@ pub fn record_coupled_key(
 /// D1699: copy scalars only from the actual performing writer's Live path.
 /// No receipt, publication, source custody or authority survives this call.
 /// Current and prior observations come from the real owner, never an inferred ID.
-pub fn record_live_completion<
-    S: worth_query_installation::facade::ApplicationSchema,
->(
+pub fn record_live_completion<S: worth_query_installation::facade::ApplicationSchema>(
     application: &super::WorthQueryPrimaryGraphApplicationRuntime<S>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     producer: &str,

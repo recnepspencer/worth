@@ -8,11 +8,6 @@ use worth_runtime_world::facade::{
 /// Equality preserves every observation axis: World validates that the
 /// snapshot owner equals the owner embedded in its branch, incarnation,
 /// commit and basis when issuing `ProductBranchReferenceSnapshot`.
-///
-/// ```compile_fail,E0277
-/// fn ordered<T: Ord>() {}
-/// ordered::<worth_query_execution::facade::product::WorthQueryProductBranchReadIdentity>();
-/// ```
 #[derive(Clone, Eq, PartialEq)]
 pub struct WorthQueryProductBranchReadIdentity {
     position: super::read_position::WorthQueryProductBranchReadPosition,

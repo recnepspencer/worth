@@ -23,18 +23,14 @@ pub use locator::{
     WorkflowTransitionProgressObservation,
 };
 use navigation::unique_successor;
-pub use replay::{
-    WorkflowTransitionReplayProjection, WorkflowTransitionReplayRetention,
-};
+pub use replay::{WorkflowTransitionReplayProjection, WorkflowTransitionReplayRetention};
 pub use retention::WorthQueryWorkflowInstanceProgressCounters;
 pub use retention::{
     default_progress_retention_shards, RetainedWorkflowInstanceProgressProjection,
     WorkflowInstanceProgressKey, WorkflowInstanceProgressRetention,
     WorkflowInstanceProgressRetentionDenial,
 };
-pub use update::{
-    PreparedWorkflowProgressUpdate, WorkflowTransitionProgressBasis,
-};
+pub use update::{PreparedWorkflowProgressUpdate, WorkflowTransitionProgressBasis};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct SettledWorkflowTransition {
@@ -67,15 +63,11 @@ impl SettledWorkflowTransition {
         self.node
     }
 
-    pub const fn outcome(
-        self,
-    ) -> ApplicationWorkflowControlOutcome {
+    pub const fn outcome(self) -> ApplicationWorkflowControlOutcome {
         self.outcome
     }
 
-    pub const fn operation_receipt_identity(
-        self,
-    ) -> Option<[u8; 32]> {
+    pub const fn operation_receipt_identity(self) -> Option<[u8; 32]> {
         self.operation_receipt_identity
     }
 }
@@ -109,9 +101,7 @@ pub struct WorkflowPathFrame {
 }
 
 impl WorkflowInstanceProgress {
-    pub fn start(
-        compiled: &CompiledWorkflowDefinition,
-    ) -> Self {
+    pub fn start(compiled: &CompiledWorkflowDefinition) -> Self {
         Self {
             head: compiled.start().entity(),
             captured_inputs: None,
@@ -182,22 +172,15 @@ impl WorkflowInstanceProgress {
         self.next_occurrence
     }
 
-    pub const fn retained_evidence_bytes(
-        &self,
-    ) -> u64 {
+    pub const fn retained_evidence_bytes(&self) -> u64 {
         self.retained_evidence_bytes
     }
 
-    pub const fn back_edge_iterations(
-        &self,
-    ) -> &OrdMap<(EntityId, EntityId), u64> {
+    pub const fn back_edge_iterations(&self) -> &OrdMap<(EntityId, EntityId), u64> {
         &self.back_edge_iterations
     }
 
-    pub fn latest_transition_identity(
-        &self,
-        node: EntityId,
-    ) -> Option<&str> {
+    pub fn latest_transition_identity(&self, node: EntityId) -> Option<&str> {
         self.latest_transition_identities
             .get(&node)
             .map(|(_, identity)| identity.as_str())
@@ -219,9 +202,7 @@ impl WorkflowInstanceProgress {
         }
     }
 
-    pub fn back_target(
-        &self,
-    ) -> Result<EntityId, WorthQueryApplicationAttemptDenial> {
+    pub fn back_target(&self) -> Result<EntityId, WorthQueryApplicationAttemptDenial> {
         let depth = self.path_depth.checked_sub(1).ok_or_else(|| {
             if self.back_blocked_by_operation {
                 WorthQueryApplicationAttemptDenial::new(

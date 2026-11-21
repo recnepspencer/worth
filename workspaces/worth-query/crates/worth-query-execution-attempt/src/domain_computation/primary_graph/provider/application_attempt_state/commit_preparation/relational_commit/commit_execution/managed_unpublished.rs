@@ -44,15 +44,11 @@ pub(super) enum ManagedUnpublishedPublicationMode {
 }
 
 impl ManagedUnpublishedAttempt {
-    pub fn ordinary_adoption_supported(
-        &self,
-    ) -> bool {
+    pub fn ordinary_adoption_supported(&self) -> bool {
         self.publication_mode == ManagedUnpublishedPublicationMode::Ordinary
     }
 
-    pub fn conditional_definition_identity(
-        &self,
-    ) -> Option<[u8; 32]> {
+    pub fn conditional_definition_identity(&self) -> Option<[u8; 32]> {
         if self.ordinary_adoption_supported() {
             None
         } else {

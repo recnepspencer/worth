@@ -29,4 +29,7 @@ pub use safe_retry::{
 };
 
 pub mod expiry;
-pub use expiry::{deny_if_expired, evaluate_expiry, WorthQueryRecoveryCurrentDecision, WorthQueryRecoveryExpiryDecision, WorthQueryRecoveryExpiryEvaluation};
+pub use expiry::{
+    deny_if_expired, evaluate_expiry, WorthQueryRecoveryCurrentDecision,
+    WorthQueryRecoveryExpiryDecision, WorthQueryRecoveryExpiryEvaluation,
+};

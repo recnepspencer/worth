@@ -9,8 +9,7 @@ pub struct OpeningCustody {
 impl OpeningCustody {
     pub(super) fn enter() -> Result<Self, WorthQueryAdvancementDenial> {
         ACTIVE.with(|active| {
-            if worth_execution::ExecutionOwnerContext::is_active()
-                || active.replace(true) {
+            if worth_execution::ExecutionOwnerContext::is_active() || active.replace(true) {
                 let denial = WorthQueryAdvancementDenial::NestedOpening;
                 Err(denial)
             } else {

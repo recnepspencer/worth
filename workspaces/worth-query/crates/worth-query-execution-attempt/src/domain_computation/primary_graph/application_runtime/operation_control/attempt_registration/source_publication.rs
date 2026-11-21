@@ -32,10 +32,7 @@ impl WorthQueryApplicationAttemptOperationControl {
     pub fn source_validation_observed(&self) -> bool {
         self.pending_source_validation.armed.load(Ordering::Acquire)
     }
-    pub fn record_source_validation_image(
-        &self,
-        image: WorthQuerySourcePublicationImageForTest,
-    ) {
+    pub fn record_source_validation_image(&self, image: WorthQuerySourcePublicationImageForTest) {
         self.source_validation_observations
             .lock()
             .unwrap_or_else(|e| e.into_inner())

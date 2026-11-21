@@ -23,7 +23,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) fn ma
     application: &dyn crate::ports::ApplicationRuntimeRef<S>,
     references: worth_query_installation::facade::WorthQueryOperationManagedIndexReadView<'_>,
 ) -> Result<Vec<DeclaredQueryRead>, WorthQueryOutputDemandDenial> {
-        let application = application.runtime_inner();
+    let application = application.runtime_inner();
 
     references
         .iter()

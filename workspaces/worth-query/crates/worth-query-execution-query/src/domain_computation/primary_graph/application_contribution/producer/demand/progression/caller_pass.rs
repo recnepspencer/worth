@@ -52,9 +52,7 @@ where
     /// disclose in this call. A caller that reads its retained source again
     /// retries after source replacement or upstream completion; one that handed over its
     /// only disclosure reports `Progressed` after a native move and discloses on its next advance.
-    pub fn advance_output_demand_with_prepared_source<
-        Family,
-    >(
+    pub fn advance_output_demand_with_prepared_source<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

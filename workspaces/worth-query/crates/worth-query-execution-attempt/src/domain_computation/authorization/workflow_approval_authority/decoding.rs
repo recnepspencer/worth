@@ -21,9 +21,7 @@ pub struct DecodedApprovalLineage {
 }
 
 impl DecodedApprovalLineage {
-    pub fn value(
-        &self,
-    ) -> &super::super::WorthQueryDurableCapabilityLineage {
+    pub fn value(&self) -> &super::super::WorthQueryDurableCapabilityLineage {
         &self.value
     }
 }

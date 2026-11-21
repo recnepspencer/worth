@@ -1,17 +1,14 @@
 //! Admission refusals recover lifecycle facts from unconsumed candidates.
-use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use super::super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn refuse_elevation_request<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn refuse_elevation_request<Operation, Input, Scope>(
         &self,
         candidate: WorthQueryElevationRequestProgram<Schema, Operation, Input, Scope>,
         denial: WorthQueryAdvancementDenial,
@@ -29,11 +26,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         requested_outcome(denial.into_commit_outcome(), binding)
     }
 
-    pub fn refuse_elevation_approval<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn refuse_elevation_approval<Operation, Input, Scope>(
         &self,
         candidate: WorthQueryElevationApprovalProgram<Schema, Operation, Input, Scope>,
         denial: WorthQueryAdvancementDenial,
@@ -49,11 +42,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         approved_outcome(denial.into_commit_outcome(), binding)
     }
 
-    pub fn refuse_elevation_close<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn refuse_elevation_close<Operation, Input, Scope>(
         &self,
         candidate: WorthQueryElevationCloseProgram<Schema, Operation, Input, Scope>,
         denial: WorthQueryAdvancementDenial,
@@ -65,11 +54,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         closed_outcome(denial.into_commit_outcome(), binding)
     }
 
-    pub fn refuse_mandatory_review<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn refuse_mandatory_review<Operation, Input, Scope>(
         &self,
         candidate: WorthQueryMandatoryReviewProgram<Schema, Operation, Input, Scope>,
         denial: WorthQueryAdvancementDenial,

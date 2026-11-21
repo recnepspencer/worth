@@ -66,10 +66,7 @@ impl HistoryAuthorityLifetime {
 
     /// Keep only the short original-owner handoff under this seal. Do not
     /// reacquire the selection/core or execute application/producer code here.
-    pub fn while_live<T>(
-        &self,
-        handoff: impl FnOnce() -> T,
-    ) -> Result<T, HistoryAuthorityExpired> {
+    pub fn while_live<T>(&self, handoff: impl FnOnce() -> T) -> Result<T, HistoryAuthorityExpired> {
         let live = self
             .backing
             .live

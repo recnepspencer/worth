@@ -18,8 +18,7 @@ pub struct WorthQueryExpectedEffectSteps {
 /// equality check per repeated identity. These are not map-comparison counts
 /// or, by themselves, proof of the lookup algorithm's complexity.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryExpectedEffectStepPreparationWork
-{
+pub struct WorthQueryExpectedEffectStepPreparationWork {
     key_lookups: usize,
     duplicate_equalities: usize,
 }
@@ -67,21 +66,15 @@ impl WorthQueryExpectedEffectSteps {
         })
     }
 
-    pub fn steps(
-        &self,
-    ) -> &[WorthQueryProvisionalEffectStep] {
+    pub fn steps(&self) -> &[WorthQueryProvisionalEffectStep] {
         &self.steps
     }
 
-    pub fn shared_steps(
-        &self,
-    ) -> Arc<[WorthQueryProvisionalEffectStep]> {
+    pub fn shared_steps(&self) -> Arc<[WorthQueryProvisionalEffectStep]> {
         Arc::clone(&self.steps)
     }
 
-    pub const fn preparation_work(
-        &self,
-    ) -> WorthQueryExpectedEffectStepPreparationWork {
+    pub const fn preparation_work(&self) -> WorthQueryExpectedEffectStepPreparationWork {
         self.preparation_work
     }
 }

@@ -8,12 +8,9 @@ use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DeclaredOrbitSelection {
-    pub meaning:
-        Arc<ApplicationQueryOrbitMeaning>,
-    pub aggregate:
-        Arc<AggregateObservation>,
-    pub binding:
-        ApplicationSchemaBindingIdentity,
+    pub meaning: Arc<ApplicationQueryOrbitMeaning>,
+    pub aggregate: Arc<AggregateObservation>,
+    pub binding: ApplicationSchemaBindingIdentity,
 }
 impl DeclaredOrbitSelection {
     pub fn append_descriptor(&self, digest: &mut Sha256) {

@@ -10,11 +10,11 @@ use crate::domain_computation::primary_graph::{
     live_delivery::WorthQueryLivePredicatePreparation,
     source_facts::SourceFactsAllocation,
 };
+use std::sync::{Arc, Mutex};
+use worth_execution::ExecutionRequest;
 pub use worth_query_execution_attempt::facade::ports::{
     PredicateNoticeDisposition, PreparedPredicateNotices,
 };
-use std::sync::{Arc, Mutex};
-use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis,
     runtime::{
@@ -78,10 +78,7 @@ pub struct PredicatePreparationRetirement {
     owner: Option<PredicatePreparationOwner>,
 }
 impl PredicatePreparationRetirement {
-    pub fn retire(
-        &mut self,
-        owner: &mut Option<PredicatePreparationOwner>,
-    ) {
+    pub fn retire(&mut self, owner: &mut Option<PredicatePreparationOwner>) {
         if owner.is_some() {
             assert!(
                 self.owner.is_none(),

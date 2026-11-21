@@ -47,10 +47,7 @@ where
     /// custody on its own row, so a later advance can finish that row; the
     /// registry drops one whose row is already Ready, which outlives it for
     /// the owners that rejoin it.
-    pub fn hold_unfinished(
-        mut self,
-        registry: &WorthQueryOutputDemandRegistry,
-    ) {
+    pub fn hold_unfinished(mut self, registry: &WorthQueryOutputDemandRegistry) {
         for progress in std::mem::take(&mut self.entries) {
             let held: HeldRequiredSuccessor = Box::new(HeldFrameSuccessor { progress });
             drop(registry.hold_required_successor(held, held_key::<Schema>));
@@ -69,10 +66,7 @@ pub enum HeldUpstream {
     GaveBack,
 }
 
-pub enum ContinuationCustody<
-    'a,
-    Schema: ApplicationSchema,
-> {
+pub enum ContinuationCustody<'a, Schema: ApplicationSchema> {
     Caller(&'a mut RequiredContinuations<Schema>, &'a mut usize),
     Queue(&'a mut RequiredContinuations<Schema>),
 }
@@ -82,9 +76,7 @@ pub enum ContinuationCustody<
 /// `custody`'s newest entry: the predecessor edge its dependents still name
 /// resolves through it. One whose source moved before it published is
 /// dropped, and its occurrence goes back to the Ready it replaced.
-pub fn resume_held_upstream<
-    Schema,
->(
+pub fn resume_held_upstream<Schema>(
     phase: &WorthQueryAdvancementPhase<'_>,
 
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

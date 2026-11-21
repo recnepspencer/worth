@@ -8,14 +8,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// Ordinary and governed reads share actual principal/scope resolution and
     /// original source preparation. No caller can replace these issued guards.
     #[allow(clippy::too_many_arguments)]
-    pub fn with_fresh_retained_query_access<
-        'a,
-        'selected,
-        'runtime,
-        Binding,
-        R,
-        E,
-    >(
+    pub fn with_fresh_retained_query_access<'a, 'selected, 'runtime, Binding, R, E>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &'a WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
@@ -79,14 +72,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// Resolve current issued identities without preparing Query payload
     /// permission. The continuation must separately admit its actual intent.
     #[allow(clippy::too_many_arguments)]
-    pub fn with_fresh_retained_query_identities<
-        'a,
-        'selected,
-        'runtime,
-        Binding,
-        R,
-        E,
-    >(
+    pub fn with_fresh_retained_query_identities<'a, 'selected, 'runtime, Binding, R, E>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &'a WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
@@ -138,14 +124,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// Resolve current issued identities without preparing Query payload
     /// permission. The continuation must separately admit its actual intent.
     #[allow(clippy::too_many_arguments)]
-    pub fn with_fresh_inspection_scope_identities<
-        'a,
-        'selected,
-        'runtime,
-        Binding,
-        R,
-        E,
-    >(
+    pub fn with_fresh_inspection_scope_identities<'a, 'selected, 'runtime, Binding, R, E>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &'a WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,

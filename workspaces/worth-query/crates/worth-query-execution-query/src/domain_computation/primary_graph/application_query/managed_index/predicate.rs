@@ -9,9 +9,7 @@ use super::{
 };
 pub use probe::RetainedPredicateProbe;
 pub use root::TypedPredicateFactory;
-pub use root::{
-    PredicateFactory, PredicateRoot,
-};
+pub use root::{PredicateFactory, PredicateRoot};
 use std::cmp::Ordering;
 pub use tree::WatchSlot;
 use worth_query_declaration::facade::{

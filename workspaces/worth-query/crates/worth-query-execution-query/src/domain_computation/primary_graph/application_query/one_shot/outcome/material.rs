@@ -4,11 +4,7 @@ use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
-pub struct MaterialCompletion<
-    'a,
-    'request,
-    'authority,
-> {
+pub struct MaterialCompletion<'a, 'request, 'authority> {
     execution: &'a ExecutionRequest<'request, 'authority>,
     allocation: &'a Arc<SourceFactsAllocation>,
 }
@@ -26,10 +22,7 @@ impl<'a, 'request, 'authority> MaterialCompletion<'a, 'request, 'authority> {
     pub fn bytes(&self, bytes: u64) -> Result<(), Cause> {
         self.allocation.claim(self.execution, bytes)
     }
-    pub fn work(
-        &self,
-        units: u64,
-    ) -> Result<(), Cause> {
+    pub fn work(&self, units: u64) -> Result<(), Cause> {
         SourceFactsAllocation::work(self.execution, units)
     }
     pub fn slots<T>(&self, count: usize) -> Result<(), Cause> {
@@ -57,9 +50,7 @@ impl<'a, 'request, 'authority> MaterialCompletion<'a, 'request, 'authority> {
             .map_err(|_| Cause::AllocationFailed)?;
         Ok(sources)
     }
-    pub fn arc<T>(
-        &self,
-    ) -> Result<(), Cause> {
+    pub fn arc<T>(&self) -> Result<(), Cause> {
         self.allocation.claim_arc::<T>(self.execution)
     }
     pub fn text(&self, text: &str) -> Result<(), Cause> {

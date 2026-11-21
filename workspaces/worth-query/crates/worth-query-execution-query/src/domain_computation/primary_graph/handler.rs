@@ -8,9 +8,9 @@ pub mod registry;
 
 pub use candidate::CandidateWriter;
 pub use invariant::DecisionReader;
-pub use worth_query_execution_lineage::facade::primary_graph::handler::{
-    decision_context_use, DecisionContextUse, HandlerInterruption,
-};
 pub use registry::{
     HandlerRetirementCursor, InstalledMutationHandlerRegistry, PendingMutationHandlerRegistry,
+};
+pub use worth_query_execution_lineage::facade::primary_graph::handler::{
+    decision_context_use, DecisionContextUse, HandlerInterruption,
 };

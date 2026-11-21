@@ -24,9 +24,7 @@ impl WorthQueryPendingApplicationCommitReceipt {
     pub fn original_runtime_instance_id(&self) -> u64 {
         self.provider.runtime_instance_id()
     }
-    pub fn original_commit(
-        &self,
-    ) -> &worth_relational::facade::history::RelationalCommitReceipt {
+    pub fn original_commit(&self) -> &worth_relational::facade::history::RelationalCommitReceipt {
         self.provider.commit_reference()
     }
     pub fn original_publication(
@@ -41,17 +39,13 @@ impl WorthQueryPendingApplicationCommitReceipt {
     > {
         self.provider.mutation_work()
     }
-    pub fn original_preimage(
-        &self,
-    ) -> Option<&WorthQueryRetainedPreImage> {
+    pub fn original_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
         self.retained_preimage.as_ref()
     }
     pub fn original_outbox_binding(&self) -> Option<&crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxBinding>{
         self.committed_dispatch_outbox.as_ref()
     }
-    pub fn original_authority(
-        &self,
-    ) -> &super::WorthQueryApplicationCommitAuthorityBinding {
+    pub fn original_authority(&self) -> &super::WorthQueryApplicationCommitAuthorityBinding {
         &self.authority_binding
     }
     pub fn canonical_work(

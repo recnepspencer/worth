@@ -9,10 +9,7 @@ impl RequiredWorkMembership {
             .current_basis = Some(basis);
         Arc::clone(self)
     }
-    pub fn certified_at(
-        &self,
-        basis: &CurrentBasis,
-    ) -> bool {
+    pub fn certified_at(&self, basis: &CurrentBasis) -> bool {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -22,10 +19,7 @@ impl RequiredWorkMembership {
     }
 }
 impl SelectedReadyReadmission {
-    pub fn certify_current_record(
-        &self,
-        basis: CurrentBasis,
-    ) -> Arc<RequiredWorkMembership> {
+    pub fn certify_current_record(&self, basis: CurrentBasis) -> Arc<RequiredWorkMembership> {
         self.membership.certify_current_basis(basis)
     }
 }

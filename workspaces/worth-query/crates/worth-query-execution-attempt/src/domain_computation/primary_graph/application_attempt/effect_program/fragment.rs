@@ -1,14 +1,16 @@
 //! Prepared field encoding for fragment record writes.
 
-use std::sync::Arc;
-use worth_query_declaration::facade::application_schema::fragment::RelationDefinition;
-use crate::domain_computation::primary_graph::fragment_view::{ErasedCandidate, FragmentDenial, WritePort};
 use super::{
     WorthQueryApplicationCreationPartition as Partition,
     WorthQueryApplicationEffectEntity as EffectEntity,
     WorthQueryApplicationEffectProgramBuilder as Builder,
 };
+use crate::domain_computation::primary_graph::fragment_view::{
+    ErasedCandidate, FragmentDenial, WritePort,
+};
 use std::collections::BTreeMap;
+use std::sync::Arc;
+use worth_query_declaration::facade::application_schema::fragment::RelationDefinition;
 
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::fragment::{
@@ -16,8 +18,7 @@ use worth_query_declaration::facade::application_schema::fragment::{
 };
 
 use super::{
-    WorthQueryApplicationAttemptDenial as Denial,
-    WorthQueryApplicationAttemptDenialKind as Kind,
+    WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
 };
 
 pub fn prepare_fields(

@@ -30,10 +30,7 @@ impl SourcePublicationRead {
     ) -> bool {
         self.admits(admission) && Arc::ptr_eq(&self.address, &observation.address())
     }
-    pub fn admits(
-        &self,
-        admission: WorthQueryOperationAdmissionIdentity,
-    ) -> bool {
+    pub fn admits(&self, admission: WorthQueryOperationAdmissionIdentity) -> bool {
         self.admission == admission
     }
 }

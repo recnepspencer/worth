@@ -31,11 +31,7 @@ impl InterpretationMembership {
             | Self::Disposed => Err(QueryObligationDenial::ObligationSubjectMismatch),
         }
     }
-    pub fn committed(
-        &mut self,
-        local: &mut usize,
-        identity: ProgramSupportObligationIdentity,
-    ) {
+    pub fn committed(&mut self, local: &mut usize, identity: ProgramSupportObligationIdentity) {
         // Called only under the owner lock after validation and authenticated fold.
         *local = local.checked_sub(1).expect("validated local transfer");
         *self = Self::Durable(identity);

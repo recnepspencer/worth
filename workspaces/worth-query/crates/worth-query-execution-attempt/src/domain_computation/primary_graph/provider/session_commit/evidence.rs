@@ -95,10 +95,7 @@ impl WorthQueryCompletedCommitEvidenceStore {
     /// Keeps a retired occurrence's evidence for a commit World history still
     /// retains, so a fork that reaches it can still correct it. Only the
     /// publication's identities stay, so it pins nothing the close released.
-    pub fn inherit(
-        &mut self,
-        commit: CommitId,
-    ) {
+    pub fn inherit(&mut self, commit: CommitId) {
         let Some(evidence) = self.by_commit.get_mut(&commit) else {
             return;
         };
@@ -114,9 +111,7 @@ impl WorthQueryCompletedCommitEvidenceStore {
     }
 
     /// World commits that inherited evidence is waiting on.
-    pub fn inherited_commits(
-        &self,
-    ) -> Vec<CompositeCommitIdentity> {
+    pub fn inherited_commits(&self) -> Vec<CompositeCommitIdentity> {
         self.inherited.keys().cloned().collect()
     }
 
@@ -172,10 +167,7 @@ impl WorthQueryCompletedCommitEvidenceStore {
     /// nothing in World or its owners stays pinned. Returns the Relational
     /// commits whose evidence retired. Inherited evidence goes entirely: its
     /// occurrence is closed and its commit can no longer be corrected.
-    pub fn retire(
-        &mut self,
-        retired: &[CompositeCommitIdentity],
-    ) -> Vec<CommitId> {
+    pub fn retire(&mut self, retired: &[CompositeCommitIdentity]) -> Vec<CommitId> {
         retired
             .iter()
             .filter_map(|world| {
@@ -190,10 +182,7 @@ impl WorthQueryCompletedCommitEvidenceStore {
             .collect()
     }
 
-    pub fn record(
-        &mut self,
-        evidence: WorthQueryPrimaryGraphCommittedApplication,
-    ) {
+    pub fn record(&mut self, evidence: WorthQueryPrimaryGraphCommittedApplication) {
         // Derived evidence never retains the original caller's World history.
         let mut evidence = evidence;
         drop(evidence.take_history());

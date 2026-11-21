@@ -7,9 +7,7 @@ pub struct RegisteredPrimaryRead {
     facts: Arc<crate::domain_computation::primary_graph::ApplicationFactTable>,
 }
 impl RegisteredPrimaryRead {
-    pub fn facts(
-        &self,
-    ) -> &Arc<crate::domain_computation::primary_graph::ApplicationFactTable> {
+    pub fn facts(&self) -> &Arc<crate::domain_computation::primary_graph::ApplicationFactTable> {
         &self.facts
     }
 }

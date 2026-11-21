@@ -8,8 +8,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 
-pub struct InitializationSession
-{
+pub struct InitializationSession {
     basis: AdmittedRelationalBranchBasis,
     pub request: SourceInitializationRequest,
     _allocation: Arc<SourceFactsAllocation>,
@@ -20,10 +19,7 @@ pub struct SourceInitializationGuard {
     session: Arc<InitializationSession>,
 }
 impl InitializationSession {
-    pub fn applies_to(
-        &self,
-        source: &ManagedIndexSourcePreparation<'_>,
-    ) -> Result<bool, Denial> {
+    pub fn applies_to(&self, source: &ManagedIndexSourcePreparation<'_>) -> Result<bool, Denial> {
         if !self.request.selected.programs.contains(source.program()) {
             return Ok(false);
         }

@@ -26,10 +26,7 @@ thread_local! {
     static PUBLISHED: std::cell::RefCell<Vec<WorthQueryPublishedComputationStateForTest>> = const { std::cell::RefCell::new(Vec::new()) };
 }
 
-pub fn observe_published(
-    state: Option<&Arc<RetainedComputation>>,
-    absence: Option<Cause>,
-) {
+pub fn observe_published(state: Option<&Arc<RetainedComputation>>, absence: Option<Cause>) {
     if !crate::domain_computation::execution_observation::is_installed() {
         return;
     }
@@ -59,9 +56,7 @@ pub fn discarded_computation_retention_on_this_thread_for_test() -> Vec<Option<C
     DISCARDED.with(|discarded| std::mem::take(&mut *discarded.borrow_mut()))
 }
 
-pub fn observe_discarded(
-    computation: &super::SealedComputationRetention,
-) {
+pub fn observe_discarded(computation: &super::SealedComputationRetention) {
     if !crate::domain_computation::execution_observation::is_installed() {
         return;
     }

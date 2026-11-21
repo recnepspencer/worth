@@ -96,21 +96,15 @@ impl<'selected> StableEqualityConsequence<'selected> {
         }
     }
 
-    pub fn predecessor(
-        &self,
-    ) -> &Arc<RecordedSettlementIdentity> {
+    pub fn predecessor(&self) -> &Arc<RecordedSettlementIdentity> {
         &self.predecessor
     }
 
-    pub fn partition(
-        &self,
-    ) -> Option<[u8; 32]> {
+    pub fn partition(&self) -> Option<[u8; 32]> {
         self.partition
     }
 
-    pub fn successor(
-        &self,
-    ) -> &Arc<RecordedSettlementIdentity> {
+    pub fn successor(&self) -> &Arc<RecordedSettlementIdentity> {
         &self.successor
     }
 

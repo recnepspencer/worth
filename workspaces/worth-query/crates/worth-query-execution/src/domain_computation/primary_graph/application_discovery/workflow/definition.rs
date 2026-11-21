@@ -73,7 +73,8 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .map_err(Denial::Phase)?;
         let graph = self
             .application()
-            .inner.runtime
+            .inner
+            .runtime
             .primary_graph()
             .ok_or(Denial::BasisUnavailable)?;
         let result = graph

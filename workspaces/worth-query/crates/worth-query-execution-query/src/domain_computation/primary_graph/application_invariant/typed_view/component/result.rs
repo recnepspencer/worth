@@ -10,10 +10,7 @@ use worth_relational::facade::{
     runtime::{AggregateRead, AggregateReadCollection},
 };
 
-pub struct ComponentContext<
-    Schema,
-    Entity,
-> {
+pub struct ComponentContext<Schema, Entity> {
     binding: ApplicationSchemaBindingIdentity,
     proposal: Option<(u64, u64)>,
     posture: ViewPosture,
@@ -21,10 +18,7 @@ pub struct ComponentContext<
     _marker: PhantomData<fn() -> (Schema, Entity)>,
 }
 impl<Schema, Entity> ComponentContext<Schema, Entity> {
-    pub fn new(
-        view: &WorthQueryApplicationInvariantReadView<'_, Schema>,
-        kind: KindId,
-    ) -> Self {
+    pub fn new(view: &WorthQueryApplicationInvariantReadView<'_, Schema>, kind: KindId) -> Self {
         Self {
             binding: view.binding_identity.clone(),
             proposal: view.proposal_affinity,
@@ -109,10 +103,7 @@ impl ComponentCollection {
     }
 }
 impl<Schema, Set, Entity> WorthQueryApplicationInvariantComponents<Schema, Set, Entity> {
-    pub fn new(
-        native: AggregateReadCollection,
-        context: ComponentContext<Schema, Entity>,
-    ) -> Self {
+    pub fn new(native: AggregateReadCollection, context: ComponentContext<Schema, Entity>) -> Self {
         Self {
             native: ComponentCollection::Direct(native),
             context,

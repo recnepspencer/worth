@@ -25,18 +25,14 @@ impl WorthQueryAdmittedOperation {
         Ok(self)
     }
 
-    pub fn elevation_request_binding(
-        &self,
-    ) -> Option<&WorthQueryElevationRequestBinding> {
+    pub fn elevation_request_binding(&self) -> Option<&WorthQueryElevationRequestBinding> {
         match &self.data.authorization_basis {
             ErasedAuthorizationBasis::ElevationRequest { binding } => Some(binding),
             _ => None,
         }
     }
 
-    pub fn take_elevation_request_binding(
-        &mut self,
-    ) -> Option<WorthQueryElevationRequestBinding> {
+    pub fn take_elevation_request_binding(&mut self) -> Option<WorthQueryElevationRequestBinding> {
         match std::mem::replace(
             &mut self.data.authorization_basis,
             ErasedAuthorizationBasis::Capability,

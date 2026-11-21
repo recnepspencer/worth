@@ -19,13 +19,7 @@ pub struct CoupledPreImage<'a> {
     outputs: &'a WorthQueryApplicationOutputCorrespondenceCandidate,
 }
 impl<'a> CoupledPreImage<'a> {
-    pub fn new<
-        Schema,
-        Operation,
-        Input,
-        Scope,
-        Phase,
-    >(
+    pub fn new<Schema, Operation, Input, Scope, Phase>(
         reads: &'a WorthQueryCompleteApplicationReadSet<Schema, Operation, Input, Scope, Phase>,
         outputs: &'a WorthQueryApplicationOutputCorrespondenceCandidate,
     ) -> Self {

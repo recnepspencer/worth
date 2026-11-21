@@ -1,6 +1,6 @@
 //! A publication refusal retains accepted custody for retry.
-use super::WorthQueryInboundAdmissionDenial as Retry;
 use super::super::inbound_publication::outcome::WorthQueryInboundPublicationDenial as Denial;
+use super::WorthQueryInboundAdmissionDenial as Retry;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
 
 impl Denial {

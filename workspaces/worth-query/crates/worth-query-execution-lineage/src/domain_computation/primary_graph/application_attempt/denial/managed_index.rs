@@ -2,10 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_query::managed_index::WorthQueryManagedIndexWorkDenial as Cause;
 impl WorthQueryApplicationAttemptDenial {
-    pub fn managed_index(
-        cause: Cause,
-        subject: impl Into<String>,
-    ) -> Self {
+    pub fn managed_index(cause: Cause, subject: impl Into<String>) -> Self {
         Self::from_cause(
             WorthQueryApplicationAttemptDenialKind::ManagedIndexSourceDenied,
             subject.into(),

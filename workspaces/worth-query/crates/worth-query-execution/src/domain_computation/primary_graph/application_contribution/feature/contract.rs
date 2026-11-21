@@ -121,8 +121,7 @@ where
     )
 }
 
-pub fn validate_pair<S, C>(
-) -> Result<(), Denial>
+pub fn validate_pair<S, C>() -> Result<(), Denial>
 where
     S: ApplicationSchema,
     C: WorthQueryRequiredFeatureContract<S>,
@@ -164,11 +163,7 @@ where
     Ok(())
 }
 
-pub fn required_producers<
-    S,
-    P,
-    R,
->() -> Vec<String>
+pub fn required_producers<S, P, R>() -> Vec<String>
 where
     S: ApplicationSchema,
     P: Producer<S>,

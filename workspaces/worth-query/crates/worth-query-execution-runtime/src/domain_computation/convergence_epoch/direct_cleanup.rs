@@ -67,9 +67,7 @@ impl DirectTerminalCleanupLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> DirectTerminalCleanupLifecycleEventKind {
+    pub fn into_kind(self) -> DirectTerminalCleanupLifecycleEventKind {
         self.kind
     }
 }

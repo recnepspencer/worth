@@ -24,10 +24,7 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
     /// execution posture the owner's binding serves: the declared posture must
     /// be that one. A declared equivalence predicate is refused because no
     /// installed predicate is visible here.
-    pub fn record_computation_owner<
-        Feature,
-        Computation,
-    >(
+    pub fn record_computation_owner<Feature, Computation>(
         &mut self,
         binding: ApplicationComputationExecution,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>

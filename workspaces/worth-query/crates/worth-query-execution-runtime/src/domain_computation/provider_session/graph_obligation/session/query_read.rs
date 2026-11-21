@@ -82,9 +82,7 @@ impl WorthQueryQuerySourceContext {
     ) -> Result<bool, Stop> {
         parent.admits_managed_product(&self.product, admit, overflow)
     }
-    pub fn session(
-        &self,
-    ) -> super::WorthQueryGraphWorkSessionIdentity {
+    pub fn session(&self) -> super::WorthQueryGraphWorkSessionIdentity {
         self.session
     }
     pub fn runtime(
@@ -92,14 +90,10 @@ impl WorthQueryQuerySourceContext {
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.runtime
     }
-    pub fn principal(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub fn principal(&self) -> worth_relational::facade::identity::EntityId {
         self.principal
     }
-    pub fn scope(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub fn scope(&self) -> worth_relational::facade::identity::EntityId {
         self.scope
     }
 }

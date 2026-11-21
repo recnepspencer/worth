@@ -23,9 +23,7 @@ use crate::domain_computation::primary_graph::schema_layout::{
     WorthQueryUniqueFieldIndex, WorthQueryUniqueFields,
 };
 
-pub struct UniqueValueWrites<
-    'layout,
-> {
+pub struct UniqueValueWrites<'layout> {
     fields: WorthQueryUniqueFields<'layout>,
     retiring: BTreeSet<EntityId>,
     written: BTreeSet<(
@@ -36,10 +34,7 @@ pub struct UniqueValueWrites<
 }
 
 impl<'layout> UniqueValueWrites<'layout> {
-    pub fn new(
-        fields: WorthQueryUniqueFields<'layout>,
-        effects: &[Effect],
-    ) -> Self {
+    pub fn new(fields: WorthQueryUniqueFields<'layout>, effects: &[Effect]) -> Self {
         Self {
             fields,
             written: BTreeSet::new(),

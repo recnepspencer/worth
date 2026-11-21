@@ -5,8 +5,7 @@ use worth_relational::facade::{identity::KindId, transactions::RecordRef};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RetainedOutputFields {
-    pub output:
-        worth_query_declaration::facade::application_aftermath::PortablePreImageFieldOutput,
+    pub output: worth_query_declaration::facade::application_aftermath::PortablePreImageFieldOutput,
     pub target: worth_relational::facade::identity::EntityId,
 }
 

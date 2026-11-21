@@ -1,6 +1,6 @@
 //! Lower the selected producer execution into its owner-held plan.
-use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
 use super::*;
+use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
 pub fn prepare_selected_execution<'owner, Schema, Binding>(
     this: &TypedInstalledProducer<Schema, Binding>,
     phase: &'owner WorthQueryAdvancementPhase<'owner>,

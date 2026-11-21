@@ -20,7 +20,12 @@ where
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &A,
         projection: impl FnOnce(
-            &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, A::Operation>,
+            &mut WorthQueryApplicationOperationInvariantProjectionReader<
+                '_,
+                '_,
+                Schema,
+                A::Operation,
+            >,
             &WorthQueryInvariantEntityIdentity<Schema, A::Scope>,
         ) -> WorthQueryOrdinaryReadBatch<Output>,
     ) -> Result<WorthQueryOrdinaryReadProjection<Output>, WorthQueryOperationProjectionDenial>

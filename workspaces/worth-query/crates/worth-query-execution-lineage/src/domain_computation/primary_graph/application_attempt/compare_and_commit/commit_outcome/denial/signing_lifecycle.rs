@@ -26,9 +26,7 @@ impl WorthQueryApplicationCommitDenial {
             _ => None,
         }
     }
-    pub fn signing_lifecycle(
-        kind: WorthQueryApplicationCommitDenialKind,
-    ) -> Self {
+    pub fn signing_lifecycle(kind: WorthQueryApplicationCommitDenialKind) -> Self {
         Self {
             kind,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,

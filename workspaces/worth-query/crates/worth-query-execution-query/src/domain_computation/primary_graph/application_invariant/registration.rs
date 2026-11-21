@@ -10,8 +10,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationSchemaBindingIdentity,
 };
 
-pub trait ErasedApplicationInvariantRule<Schema>:
-    Send
+pub trait ErasedApplicationInvariantRule<Schema>: Send
 where
     Schema: ApplicationSchema,
 {

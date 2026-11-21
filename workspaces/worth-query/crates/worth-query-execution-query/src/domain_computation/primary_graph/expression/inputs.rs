@@ -90,15 +90,11 @@ impl<Schema: ApplicationSchema> WorthQueryWorkflowConditionSources<Schema> {
     }
 
     /// Operands in name order.
-    pub fn operands(
-        &self,
-    ) -> &[ConditionOperandSource] {
+    pub fn operands(&self) -> &[ConditionOperandSource] {
         &self.operands
     }
 
-    pub fn into_operands(
-        self,
-    ) -> Vec<ConditionOperandSource> {
+    pub fn into_operands(self) -> Vec<ConditionOperandSource> {
         self.operands
     }
 }

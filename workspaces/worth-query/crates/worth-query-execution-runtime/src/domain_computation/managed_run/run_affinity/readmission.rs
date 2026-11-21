@@ -1,9 +1,7 @@
 use super::*;
 
 impl WorthQueryDirectRunReadmissionPending {
-    pub fn custody(
-        &self,
-    ) -> Option<Arc<super::super::durable_custody::ManagedRunCustody>> {
+    pub fn custody(&self) -> Option<Arc<super::super::durable_custody::ManagedRunCustody>> {
         self.custody.clone()
     }
     pub fn bridge_readmission_intent(

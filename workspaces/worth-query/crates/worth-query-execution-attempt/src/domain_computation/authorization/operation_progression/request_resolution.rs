@@ -20,10 +20,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryEntityResolutionTruth, WorthQueryResolvedEntity,
 };
 
-pub struct WorthQueryResolvedCapabilityRequest<
-    Schema,
-    Scope,
-> {
+pub struct WorthQueryResolvedCapabilityRequest<Schema, Scope> {
     resource: WorthQueryApplicationEntityIdentity<Schema, Scope>,
     elevation: Option<EntityId>,
     related: Option<EntityId>,
@@ -49,9 +46,7 @@ impl WorthQueryCapabilityContextKey {
             &self.entity,
         ]
     }
-    pub fn owned_allocation_capacity_bytes(
-        &self,
-    ) -> Option<usize> {
+    pub fn owned_allocation_capacity_bytes(&self) -> Option<usize> {
         [
             &self.context,
             &self.context_type,
@@ -65,9 +60,7 @@ impl WorthQueryCapabilityContextKey {
 }
 
 impl<Schema, Scope> WorthQueryResolvedCapabilityRequest<Schema, Scope> {
-    pub fn resource(
-        &self,
-    ) -> &WorthQueryApplicationEntityIdentity<Schema, Scope> {
+    pub fn resource(&self) -> &WorthQueryApplicationEntityIdentity<Schema, Scope> {
         &self.resource
     }
     pub fn resource_entity_id(&self) -> EntityId {
@@ -90,9 +83,7 @@ impl<Schema, Scope> WorthQueryResolvedCapabilityRequest<Schema, Scope> {
         self.related
     }
 
-    pub fn retained_context(
-        &self,
-    ) -> BTreeMap<WorthQueryCapabilityContextKey, EntityId> {
+    pub fn retained_context(&self) -> BTreeMap<WorthQueryCapabilityContextKey, EntityId> {
         self.context.clone()
     }
 
@@ -119,9 +110,7 @@ impl WorthQueryCapabilityContextKey {
         }
     }
 
-    pub fn from_slot(
-        slot: &ApplicationCapabilityContextEntitySlotBinding,
-    ) -> Self {
+    pub fn from_slot(slot: &ApplicationCapabilityContextEntitySlotBinding) -> Self {
         Self {
             context: slot.context().to_string(),
             context_type: slot.context_identity().as_str().to_string(),

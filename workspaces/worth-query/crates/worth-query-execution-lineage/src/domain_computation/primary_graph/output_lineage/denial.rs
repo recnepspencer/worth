@@ -38,20 +38,14 @@ impl WorthQueryPriorOutputDenial {
         &self.role
     }
 
-    pub fn new(
-        kind: WorthQueryPriorOutputDenialKind,
-        role: impl Into<String>,
-    ) -> Self {
+    pub fn new(kind: WorthQueryPriorOutputDenialKind, role: impl Into<String>) -> Self {
         Self {
             kind,
             role: role.into(),
         }
     }
 
-    pub fn projection(
-        role: &str,
-        denial: WorthQueryApplicationOutputProjectionDenial,
-    ) -> Self {
+    pub fn projection(role: &str, denial: WorthQueryApplicationOutputProjectionDenial) -> Self {
         let kind = match denial {
             // A member name that fails validation cannot have been bound.
             WorthQueryApplicationOutputProjectionDenial::MissingRole

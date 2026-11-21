@@ -3,12 +3,7 @@ use super::super::signed_creation::WorthQuerySignedCreationPreparationDenial as 
 use super::super::WorthQueryApplicationEffectProgram;
 use super::{observation, Denial, Kind, QueryRequestExecution};
 
-pub fn capture_signing<
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn capture_signing<Schema, Operation, Input, Scope>(
     execution: &QueryRequestExecution<'_>,
     mut candidate: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 ) -> Result<WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>, SigningDenial> {

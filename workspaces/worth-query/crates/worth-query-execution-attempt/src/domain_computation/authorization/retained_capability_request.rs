@@ -17,9 +17,7 @@ pub use use_identity::WorthQueryCapabilityUseIdentity;
 pub mod portable;
 use context::RetainedContext;
 pub use portable::MAXIMUM_PORTABLE_BYTES;
-pub use portable::{
-    WorkflowApprovalRequestDecodingDenial, WorkflowApprovalRequestEncodingDenial,
-};
+pub use portable::{WorkflowApprovalRequestDecodingDenial, WorkflowApprovalRequestEncodingDenial};
 
 #[derive(Clone)]
 pub struct WorthQueryRetainedCapabilityRequest {
@@ -72,22 +70,16 @@ impl WorthQueryRetainedCapabilityRequest {
     pub const fn capability_identity(&self) -> [u8; 32] {
         self.capability_identity
     }
-    pub const fn principal(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub const fn principal(&self) -> worth_relational::facade::identity::EntityId {
         self.principal
     }
-    pub const fn resource(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub const fn resource(&self) -> worth_relational::facade::identity::EntityId {
         self.resource
     }
     pub fn resource_entity(&self) -> &str {
         &self.resource_entity
     }
-    pub fn elevation(
-        &self,
-    ) -> Option<worth_relational::facade::identity::EntityId> {
+    pub fn elevation(&self) -> Option<worth_relational::facade::identity::EntityId> {
         self.elevation
     }
     pub fn action(&self) -> &AspectValue {
@@ -96,14 +88,10 @@ impl WorthQueryRetainedCapabilityRequest {
     pub fn purpose(&self) -> &AspectValue {
         &self.purpose
     }
-    pub fn related_relation(
-        &self,
-    ) -> Option<&ApplicationCapabilityRelationBinding> {
+    pub fn related_relation(&self) -> Option<&ApplicationCapabilityRelationBinding> {
         self.related_relation.as_ref()
     }
-    pub fn related(
-        &self,
-    ) -> Option<worth_relational::facade::identity::EntityId> {
+    pub fn related(&self) -> Option<worth_relational::facade::identity::EntityId> {
         self.related
     }
     pub fn field(&self) -> Option<&AspectValue> {

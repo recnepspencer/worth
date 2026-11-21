@@ -16,10 +16,7 @@ pub struct RecoveredProducerPublication {
 }
 
 impl ContinuationState {
-    pub fn progress<
-        S,
-        B,
-    >(
+    pub fn progress<S, B>(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         installed: &TypedInstalledProducer<S, B>,
@@ -177,17 +174,17 @@ impl ContinuationState {
             ));
         };
         let facts = &custody.facts;
-        if !facts.matches_original(&receipt) {
-            return Err(denial(
-                WorthQueryOutputDemandDenialKind::ForeignSource,
-                B::IDENTITY,
-            ));
-        }
         let receipt =
-            crate::domain_computation::primary_graph::WorthQueryRecoveredProducerPublication {
-                original: receipt,
-                facts: std::sync::Arc::clone(facts),
-            };
+            crate::domain_computation::primary_graph::WorthQueryRecoveredProducerPublication::from_matched_facts(
+                receipt,
+                std::sync::Arc::clone(facts),
+            )
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    B::IDENTITY,
+                )
+            })?;
         let original = crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication::for_successor(
             &execution, self.original_publication.clone(), receipt.view(),
         )?;

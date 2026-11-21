@@ -210,13 +210,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
                 closed.expect("successful cleanup retains its actual evidence"),
             )),
             Err(cause) => Err(WorthQueryResourceRecoveryCloseStop::from_parts(
-                worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
                 returned,
-                WorthQueryResourceActionDenial::from_cause_port(
-                    worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
-                    Box::new(cause),
-                    closed,
-                ),
+                WorthQueryResourceActionDenial::from_cause_port(Box::new(cause), closed),
             )),
         }
     }

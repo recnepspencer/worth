@@ -11,9 +11,7 @@ pub struct PreparedWorkflowTransitionReplays {
 }
 
 impl PreparedWorkflowTransitionReplays {
-    pub fn retained(
-        retained: WorkflowTransitionReplayRetention,
-    ) -> Self {
+    pub fn retained(retained: WorkflowTransitionReplayRetention) -> Self {
         Self {
             retained,
             probe_identity: None,
@@ -21,17 +19,12 @@ impl PreparedWorkflowTransitionReplays {
         }
     }
 
-    pub fn for_navigation_back(
-        mut self,
-    ) -> Self {
+    pub fn for_navigation_back(mut self) -> Self {
         self.navigation_back = true;
         self
     }
 
-    pub fn with_probe_identity(
-        mut self,
-        identity: [u8; 32],
-    ) -> Self {
+    pub fn with_probe_identity(mut self, identity: [u8; 32]) -> Self {
         if !self.navigation_back {
             self.probe_identity = Some(identity);
         }

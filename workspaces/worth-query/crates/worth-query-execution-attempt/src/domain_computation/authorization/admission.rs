@@ -7,11 +7,7 @@ use crate::domain_computation::primary_graph::WorthQueryAuthenticatedPrincipal;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_query_installation::facade::WorthQueryInstalledAbilityRequirement;
 
-
-
-pub struct WorthQueryConventionalAuthorizationDecisionPermit(
-    (),
-);
+pub struct WorthQueryConventionalAuthorizationDecisionPermit(());
 
 impl WorthQueryConventionalAuthorizationDecisionPermit {
     pub fn new() -> Self {

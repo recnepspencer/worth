@@ -5,8 +5,7 @@ use crate::domain_computation::primary_graph::{
 use std::sync::Arc;
 
 #[derive(Clone)]
-pub struct CertifiedOutputCorrespondence
-{
+pub struct CertifiedOutputCorrespondence {
     _computation: CurrentComputation,
     correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     role: String,
@@ -23,9 +22,7 @@ impl CertifiedOutputCorrespondence {
             role,
         }
     }
-    pub fn pair(
-        &self,
-    ) -> (Arc<WorthQueryApplicationOutputCorrespondence>, String) {
+    pub fn pair(&self) -> (Arc<WorthQueryApplicationOutputCorrespondence>, String) {
         (Arc::clone(&self.correspondence), self.role.clone())
     }
 }

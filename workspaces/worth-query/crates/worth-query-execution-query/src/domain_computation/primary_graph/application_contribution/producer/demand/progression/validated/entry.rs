@@ -7,9 +7,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    pub fn advance_validated_output_demand<
-        Family,
-    >(
+    pub fn advance_validated_output_demand<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

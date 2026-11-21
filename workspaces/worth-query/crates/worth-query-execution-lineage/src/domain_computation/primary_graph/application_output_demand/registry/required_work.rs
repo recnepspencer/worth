@@ -137,10 +137,7 @@ impl RequiredWorkMembership {
 
     /// The native prepared effect owns this observer. Publish its hint before
     /// testing active membership so a simultaneous activation cannot miss it.
-    pub fn prepare_hint(
-        self: &Arc<Self>,
-        mut hint: Box<NativeHint>,
-    ) {
+    pub fn prepare_hint(self: &Arc<Self>, mut hint: Box<NativeHint>) {
         let active = {
             let mut state = self
                 .state

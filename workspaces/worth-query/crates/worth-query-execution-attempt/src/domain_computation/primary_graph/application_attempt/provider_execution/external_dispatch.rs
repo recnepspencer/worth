@@ -10,16 +10,12 @@
 
 #![deny(private_interfaces)]
 
-
-
 use crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch;
 pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::denial;
 pub enum OriginalDispatchObservation<'a> {
     Starting,
     Observed(&'a WorthQueryExternalEffectDispatch),
 }
-
-
 
 pub use denial::{
     WorthQueryExternalDispatchAttemptDenial, WorthQueryExternalDispatchPreparationDenial,

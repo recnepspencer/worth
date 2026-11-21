@@ -18,10 +18,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub fn authorize_advance<
-        Capability,
-        Spec,
-    >(
+    pub fn authorize_advance<Capability, Spec>(
         &self,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>

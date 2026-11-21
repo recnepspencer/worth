@@ -10,8 +10,7 @@ pub struct WorthQueryConditionalClockHandle<Schema, Node, Clock> {
     pub binding_identity: Arc<str>,
     pub binding_identity_digest: [u8; 32],
     pub node_authority: Arc<str>,
-    pub binding_canonical_work:
-        worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
+    pub binding_canonical_work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
     pub lease: Arc<ConditionalClockLease>,
     pub marker: PhantomData<fn() -> (Schema, Node, Clock)>,
 }
@@ -23,9 +22,7 @@ impl<Schema, Node, Clock> WorthQueryConditionalClockHandle<Schema, Node, Clock> 
         &self.binding_identity
     }
 
-    pub const fn binding_identity_digest(
-        &self,
-    ) -> &[u8; 32] {
+    pub const fn binding_identity_digest(&self) -> &[u8; 32] {
         &self.binding_identity_digest
     }
 
@@ -39,9 +36,7 @@ impl<Schema, Node, Clock> WorthQueryConditionalClockHandle<Schema, Node, Clock> 
         &self.node_authority
     }
 
-    pub fn lease(
-        &self,
-    ) -> &Arc<ConditionalClockLease> {
+    pub fn lease(&self) -> &Arc<ConditionalClockLease> {
         &self.lease
     }
 }

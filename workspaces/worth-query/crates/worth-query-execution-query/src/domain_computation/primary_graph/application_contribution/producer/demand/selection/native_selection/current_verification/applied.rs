@@ -30,9 +30,7 @@ pub struct VerifiedAppliedParent {
 }
 impl VerifiedAppliedParent {
     /// The retention a coupled assembly read this parent as, once retained.
-    pub fn read(
-        &self,
-    ) -> Option<crate::domain_computation::primary_graph::provider::ParentRead> {
+    pub fn read(&self) -> Option<crate::domain_computation::primary_graph::provider::ParentRead> {
         self.read
     }
     pub fn retained_as(
@@ -82,9 +80,7 @@ impl VerifiedAppliedParent {
     }
 }
 impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn verify_applied_output_parent<
-        F: WorthQueryProducerOutputFamily<S>,
-    >(
+    pub fn verify_applied_output_parent<F: WorthQueryProducerOutputFamily<S>>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,

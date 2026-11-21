@@ -14,8 +14,7 @@ use super::{
 use crate::domain_computation::primary_graph::{
     PublishedWorkflowInstanceRef, WorthQueryAdmittedApplicationOperation,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryOperationProjectionDenial,
-    WorthQuerySelectedProductOperation,
+    WorthQueryOperationProjectionDenial, WorthQuerySelectedProductOperation,
 };
 
 #[path = "preparation/actor_denial.rs"]
@@ -76,13 +75,7 @@ impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn prepare_workflow_advance<
-        Capability,
-        Operation,
-        Input,
-        Scope,
-        Spec,
-    >(
+    pub fn prepare_workflow_advance<Capability, Operation, Input, Scope, Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
@@ -106,13 +99,7 @@ where
         )
     }
 
-    pub fn prepare_workflow_navigate_back<
-        Capability,
-        Operation,
-        Input,
-        Scope,
-        Spec,
-    >(
+    pub fn prepare_workflow_navigate_back<Capability, Operation, Input, Scope, Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
@@ -136,13 +123,7 @@ where
         )
     }
 
-    pub fn prepare_workflow_collect_assessment<
-        Capability,
-        Operation,
-        Input,
-        Scope,
-        Spec,
-    >(
+    pub fn prepare_workflow_collect_assessment<Capability, Operation, Input, Scope, Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

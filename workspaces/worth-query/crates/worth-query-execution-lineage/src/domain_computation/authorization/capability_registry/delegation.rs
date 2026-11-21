@@ -20,36 +20,29 @@ pub struct WorthQueryCapabilityDelegationBindings {
     pub parent: RelationalAuthorizationTraversal,
     pub grantor: RelationalAuthorizationTraversal,
     pub grantee: RelationalAuthorizationTraversal,
-    pub grantee_from_grant:
-        RelationalAuthorizationTraversal,
+    pub grantee_from_grant: RelationalAuthorizationTraversal,
     pub resource: RelationalAuthorizationTraversal,
-    pub related:
-        Option<RelationalAuthorizationTraversal>,
+    pub related: Option<RelationalAuthorizationTraversal>,
     pub action: AspectFieldLocator,
     pub purpose: AspectFieldLocator,
     pub disclosure: Option<AspectFieldLocator>,
     pub magnitude: Option<AspectFieldLocator>,
-    pub active_status:
-        (AspectFieldLocator, AspectValue),
+    pub active_status: (AspectFieldLocator, AspectValue),
     pub grant_workflow: AspectFieldLocator,
     pub resource_workflow: AspectFieldLocator,
     pub not_before: AspectFieldLocator,
     pub not_after: AspectFieldLocator,
     pub remaining: AspectFieldLocator,
-    pub activation:
-        Option<WorthQueryCapabilityDelegationActivationBindings>,
-    pub revocation:
-        Option<WorthQueryCapabilityRevocationBindings>,
+    pub activation: Option<WorthQueryCapabilityDelegationActivationBindings>,
+    pub revocation: Option<WorthQueryCapabilityRevocationBindings>,
 }
 
-pub struct WorthQueryCapabilityDelegationActivationBindings
-{
+pub struct WorthQueryCapabilityDelegationActivationBindings {
     pub operation: String,
     pub operation_type: String,
     pub input_type: String,
     pub identity: AspectFieldLocator,
-    pub context_relations:
-        Vec<RelationalAuthorizationTraversal>,
+    pub context_relations: Vec<RelationalAuthorizationTraversal>,
 }
 
 pub struct WorthQueryCapabilityRevocationBindings {
@@ -57,8 +50,7 @@ pub struct WorthQueryCapabilityRevocationBindings {
     pub operation_type: String,
     pub input_type: String,
     pub identity: AspectFieldLocator,
-    pub revoked_status:
-        (AspectFieldLocator, AspectValue),
+    pub revoked_status: (AspectFieldLocator, AspectValue),
 }
 
 impl WorthQueryCapabilityDelegationBindings {

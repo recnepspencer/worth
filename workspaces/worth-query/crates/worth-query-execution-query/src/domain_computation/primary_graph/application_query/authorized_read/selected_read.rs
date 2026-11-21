@@ -13,8 +13,7 @@ use crate::domain_computation::primary_graph::application_query::WorthQueryAppli
 use crate::domain_computation::primary_graph::product_operation::SelectedPermissionSecurityStop;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-pub enum SelectedAuthorizedReadStop
-{
+pub enum SelectedAuthorizedReadStop {
     Currentness(super::SelectedAuthorizationCurrentnessStop),
     Security(SelectedPermissionSecurityStop),
     StaleSecurity,

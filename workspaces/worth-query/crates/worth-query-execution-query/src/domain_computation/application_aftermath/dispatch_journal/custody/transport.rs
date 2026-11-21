@@ -4,20 +4,14 @@ use crate::domain_computation::primary_graph::{
     WorthQueryCommittedDispatchOutboxObservation, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-pub trait QueryInboundJournalAdmissionTransportExt: Sized
-
-{
-    fn record_acceptance<
-        Schema: worth_query_installation::facade::ApplicationSchema,
-    >(
+pub trait QueryInboundJournalAdmissionTransportExt: Sized {
+    fn record_acceptance<Schema: worth_query_installation::facade::ApplicationSchema>(
         &self,
         authenticated: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedInboundOccurrence<'_, Schema>,
         owner: &WorthQueryCommittedDispatchOutboxObservation,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), QueryDispatchJournalDenial>;
-    fn record_transport_binding<
-        Schema: worth_query_installation::facade::ApplicationSchema,
-    >(
+    fn record_transport_binding<Schema: worth_query_installation::facade::ApplicationSchema>(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         owner: &WorthQueryCommittedDispatchOutboxObservation,
@@ -25,12 +19,8 @@ pub trait QueryInboundJournalAdmissionTransportExt: Sized
     ) -> Result<QueryTransportBinding, QueryDispatchJournalDenial>;
 }
 
-impl QueryInboundJournalAdmissionTransportExt for QueryInboundJournalAdmission<'_>
-
-{
-    fn record_acceptance<
-        Schema: worth_query_installation::facade::ApplicationSchema,
-    >(
+impl QueryInboundJournalAdmissionTransportExt for QueryInboundJournalAdmission<'_> {
+    fn record_acceptance<Schema: worth_query_installation::facade::ApplicationSchema>(
         &self,
         authenticated: &crate::domain_computation::primary_graph::WorthQueryAuthenticatedInboundOccurrence<'_, Schema>,
         owner: &WorthQueryCommittedDispatchOutboxObservation,
@@ -50,9 +40,7 @@ impl QueryInboundJournalAdmissionTransportExt for QueryInboundJournalAdmission<'
         }
         self.publish(QueryInboundRecord::Accepted(accepted), request)
     }
-    fn record_transport_binding<
-        Schema: worth_query_installation::facade::ApplicationSchema,
-    >(
+    fn record_transport_binding<Schema: worth_query_installation::facade::ApplicationSchema>(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         owner: &WorthQueryCommittedDispatchOutboxObservation,
@@ -81,9 +69,7 @@ impl QueryInboundJournalAdmissionTransportExt for QueryInboundJournalAdmission<'
     }
 }
 
-pub trait WorthQueryDispatchJournalTransportExt: Sized
-
-{
+pub trait WorthQueryDispatchJournalTransportExt: Sized {
     fn recorded_transport_binding(
         &self,
         owner: &WorthQueryCommittedDispatchOutboxObservation,
@@ -95,9 +81,7 @@ pub trait WorthQueryDispatchJournalTransportExt: Sized
     ) -> Result<crate::domain_computation::application_aftermath::external_effect::RecordedCompletionCausality, QueryDispatchJournalDenial>;
 }
 
-impl WorthQueryDispatchJournalTransportExt for WorthQueryDispatchJournal
-
-{
+impl WorthQueryDispatchJournalTransportExt for WorthQueryDispatchJournal {
     fn recorded_transport_binding(
         &self,
         owner: &WorthQueryCommittedDispatchOutboxObservation,

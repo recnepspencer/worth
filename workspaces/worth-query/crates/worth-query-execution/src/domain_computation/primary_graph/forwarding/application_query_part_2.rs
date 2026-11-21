@@ -27,8 +27,15 @@ mod domain_computation_primary_graph_application_query_managed_index_receiver_ev
         pub fn evict_application_managed_index<
             B: ApplicationQueryBinding<S>,
             I: ApplicationManagedIndexBinding<S>,
-        >(&self, phase: &WorthQueryAdvancementPhase<'_>, binding: &WorthQueryInstalledApplicationQueryBinding<S, B>, plan: BoundPlan<'_, S, B>, index: &WorthQueryManagedIndex<S, I>) -> Result<(), Denial> {
-            self.inner.evict_application_managed_index::<B, I>(phase, binding, plan, index)
+        >(
+            &self,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
+            plan: BoundPlan<'_, S, B>,
+            index: &WorthQueryManagedIndex<S, I>,
+        ) -> Result<(), Denial> {
+            self.inner
+                .evict_application_managed_index::<B, I>(phase, binding, plan, index)
         }
     }
 }
@@ -61,14 +68,28 @@ mod domain_computation_primary_graph_application_query_managed_index_receiver_li
         pub fn open_application_managed_index<
             B: ApplicationQueryBinding<S>,
             I: ApplicationManagedIndexBinding<S>,
-        >(&self, phase: &WorthQueryAdvancementPhase<'_>, binding: &WorthQueryInstalledApplicationQueryBinding<S, B>, plan: BoundPlan<'_, S, B>) -> Result<WorthQueryManagedIndex<S, I>, Denial> {
-            self.inner.open_application_managed_index::<B, I>(phase, binding, plan)
+        >(
+            &self,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
+            plan: BoundPlan<'_, S, B>,
+        ) -> Result<WorthQueryManagedIndex<S, I>, Denial> {
+            self.inner
+                .open_application_managed_index::<B, I>(phase, binding, plan)
         }
         pub fn rebuild_application_managed_index<
             B: ApplicationQueryBinding<S>,
             I: ApplicationManagedIndexBinding<S>,
-        >(&self, phase: &WorthQueryAdvancementPhase<'_>, binding: &WorthQueryInstalledApplicationQueryBinding<S, B>, external: &WorthQueryAuthenticatedExternalPrincipal<S>, plan: BoundPlan<'_, S, B>, index: &WorthQueryManagedIndex<S, I>) -> Result<(), Denial> {
-            self.inner.rebuild_application_managed_index::<B, I>(phase, binding, external, plan, index)
+        >(
+            &self,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
+            external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+            plan: BoundPlan<'_, S, B>,
+            index: &WorthQueryManagedIndex<S, I>,
+        ) -> Result<(), Denial> {
+            self.inner
+                .rebuild_application_managed_index::<B, I>(phase, binding, external, plan, index)
         }
     }
 }
@@ -100,12 +121,21 @@ mod domain_computation_primary_graph_application_query_managed_index_receiver_wa
     <<B as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope,
 >;
     impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-        pub fn next_application_managed_index_watch<B, I>(&self, phase: &WorthQueryAdvancementPhase<'_>, binding: &WorthQueryInstalledApplicationQueryBinding<S, B>, external: &WorthQueryAuthenticatedExternalPrincipal<S>, plan: BoundPlan<'_, S, B>, watch: &mut WorthQueryManagedIndexWatch<S, I>) -> Result<WorthQueryManagedIndexWatchOutcome<B::Query, ResultValue<S, B>>, Denial>
+        pub fn next_application_managed_index_watch<B, I>(
+            &self,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
+            external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+            plan: BoundPlan<'_, S, B>,
+            watch: &mut WorthQueryManagedIndexWatch<S, I>,
+        ) -> Result<WorthQueryManagedIndexWatchOutcome<B::Query, ResultValue<S, B>>, Denial>
         where
             B: ApplicationQueryBinding<S>,
             I: ApplicationManagedIndexBinding<S>,
-            ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>, {
-            self.inner.next_application_managed_index_watch::<B, I>(phase, binding, external, plan, watch)
+            ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+        {
+            self.inner
+                .next_application_managed_index_watch::<B, I>(phase, binding, external, plan, watch)
         }
     }
 }
@@ -137,7 +167,13 @@ mod domain_computation_primary_graph_application_query_managed_index_receiver_wa
     <<B as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope,
 >;
     impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-        pub fn open_application_managed_index_watch<B, I>(&self, phase: &WorthQueryAdvancementPhase<'_>, binding: &WorthQueryInstalledApplicationQueryBinding<S, B>, external: &WorthQueryAuthenticatedExternalPrincipal<S>, plan: BoundPlan<'_, S, B>) -> Result<
+        pub fn open_application_managed_index_watch<B, I>(
+            &self,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
+            external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+            plan: BoundPlan<'_, S, B>,
+        ) -> Result<
             (
                 WorthQueryApplicationOneShotResult<B::Query, ResultValue<S, B>>,
                 WorthQueryManagedIndexWatch<S, I>,
@@ -147,8 +183,10 @@ mod domain_computation_primary_graph_application_query_managed_index_receiver_wa
         where
             B: ApplicationQueryBinding<S>,
             I: ApplicationManagedIndexBinding<S>,
-            ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>, {
-            self.inner.open_application_managed_index_watch::<B, I>(phase, binding, external, plan)
+            ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
+        {
+            self.inner
+                .open_application_managed_index_watch::<B, I>(phase, binding, external, plan)
         }
     }
 }
@@ -167,28 +205,59 @@ mod domain_computation_primary_graph_application_query_derived_view_registration
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub fn open_managed_derived_view<Query, Parameters, QueryResult, Scope, Value>(&self, definition: &ApplicationDerivedViewDefinition<
+    where
+        Schema: ApplicationSchema,
+    {
+        pub fn open_managed_derived_view<Query, Parameters, QueryResult, Scope, Value>(
+            &self,
+            definition: &ApplicationDerivedViewDefinition<
                 Schema,
                 Query,
                 Parameters,
                 QueryResult,
                 Scope,
-            >, query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>, product: &WorthQueryProductBranchLease) -> Result<WorthQueryManagedDerivedView<Query, Value>, Denial>
+            >,
+            query: &WorthQueryInstalledApplicationQuery<
+                Schema,
+                Query,
+                Parameters,
+                QueryResult,
+                Scope,
+            >,
+            product: &WorthQueryProductBranchLease,
+        ) -> Result<WorthQueryManagedDerivedView<Query, Value>, Denial>
         where
-            Value: WorthQueryManagedDerivedValue, {
-            self.inner.open_managed_derived_view::<Query, Parameters, QueryResult, Scope, Value>(definition, query, product)
+            Value: WorthQueryManagedDerivedValue,
+        {
+            self.inner
+                .open_managed_derived_view::<Query, Parameters, QueryResult, Scope, Value>(
+                    definition, query, product,
+                )
         }
-        pub fn observe_managed_derived_view<Query, Value>(&self, view: &WorthQueryManagedDerivedView<Query, Value>) -> Result<WorthQueryManagedDerivedViewSnapshot<Value>, Denial>
+        pub fn observe_managed_derived_view<Query, Value>(
+            &self,
+            view: &WorthQueryManagedDerivedView<Query, Value>,
+        ) -> Result<WorthQueryManagedDerivedViewSnapshot<Value>, Denial>
         where
-            Value: WorthQueryManagedDerivedValue, {
-            self.inner.observe_managed_derived_view::<Query, Value>(view)
+            Value: WorthQueryManagedDerivedValue,
+        {
+            self.inner
+                .observe_managed_derived_view::<Query, Value>(view)
         }
-        pub fn reconstruct_managed_derived_view<Query, QueryResult, Value>(&self, view: &WorthQueryManagedDerivedView<Query, Value>, product: &WorthQueryProductBranchLease, result: &WorthQueryApplicationOneShotResult<Query, QueryResult>, project: impl FnMut(&QueryResult) -> Value) -> Result<(), Denial>
+        pub fn reconstruct_managed_derived_view<Query, QueryResult, Value>(
+            &self,
+            view: &WorthQueryManagedDerivedView<Query, Value>,
+            product: &WorthQueryProductBranchLease,
+            result: &WorthQueryApplicationOneShotResult<Query, QueryResult>,
+            project: impl FnMut(&QueryResult) -> Value,
+        ) -> Result<(), Denial>
         where
-            Value: WorthQueryManagedDerivedValue, {
-            self.inner.reconstruct_managed_derived_view::<Query, QueryResult, Value>(view, product, result, project)
+            Value: WorthQueryManagedDerivedValue,
+        {
+            self.inner
+                .reconstruct_managed_derived_view::<Query, QueryResult, Value>(
+                    view, product, result, project,
+                )
         }
     }
 }
@@ -207,8 +276,9 @@ mod domain_computation_primary_graph_application_query_derived_view_registration
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
+    where
+        Schema: ApplicationSchema,
+    {
         pub fn open_managed_derived_collection<
             MembershipQuery,
             MembershipParameters,
@@ -219,27 +289,34 @@ where
             EntryResult,
             EntryScope,
             Value,
-        >(&self, definition: &ApplicationDerivedViewDefinition<
+        >(
+            &self,
+            definition: &ApplicationDerivedViewDefinition<
                 Schema,
                 MembershipQuery,
                 MembershipParameters,
                 MembershipResult,
                 MembershipScope,
-            >, membership_query: &WorthQueryInstalledApplicationQuery<
+            >,
+            membership_query: &WorthQueryInstalledApplicationQuery<
                 Schema,
                 MembershipQuery,
                 MembershipParameters,
                 MembershipResult,
                 MembershipScope,
-            >, entry_query: &WorthQueryInstalledApplicationQuery<
+            >,
+            entry_query: &WorthQueryInstalledApplicationQuery<
                 Schema,
                 EntryQuery,
                 EntryParameters,
                 EntryResult,
                 EntryScope,
-            >, product: &WorthQueryProductBranchLease) -> Result<WorthQueryManagedDerivedView<MembershipQuery, Value>, Denial>
+            >,
+            product: &WorthQueryProductBranchLease,
+        ) -> Result<WorthQueryManagedDerivedView<MembershipQuery, Value>, Denial>
         where
-            Value: WorthQueryManagedDerivedValue, {
+            Value: WorthQueryManagedDerivedValue,
+        {
             self.inner.open_managed_derived_collection::<MembershipQuery, MembershipParameters, MembershipResult, MembershipScope, EntryQuery, EntryParameters, EntryResult, EntryScope, Value>(definition, membership_query, entry_query, product)
         }
         pub fn refresh_managed_derived_collection_entry<
@@ -252,7 +329,13 @@ where
             PrincipalIdentity,
             EntryScope,
             Value,
-        >(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, view: &WorthQueryManagedDerivedView<MembershipQuery, Value>, product: &WorthQueryProductBranchLease, key: &worth_query_execution_query::facade::domain_computation::primary_graph::application_query::derived_view::WorthQueryManagedDerivedViewKey, plan: WorthQueryAdmittedApplicationQueryPlan<
+        >(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'_, '_>,
+            view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
+            product: &WorthQueryProductBranchLease,
+            key: &worth_query_execution_query::facade::domain_computation::primary_graph::application_query::derived_view::WorthQueryManagedDerivedViewKey,
+            plan: WorthQueryAdmittedApplicationQueryPlan<
                 'a,
                 Schema,
                 EntryQuery,
@@ -261,10 +344,13 @@ where
                 Principal,
                 PrincipalIdentity,
                 EntryScope,
-            >, project: impl FnOnce(&EntryResult) -> Value) -> Result<std::sync::Arc<Value>, Denial>
+            >,
+            project: impl FnOnce(&EntryResult) -> Value,
+        ) -> Result<std::sync::Arc<Value>, Denial>
         where
             EntryResult: WorthQueryApplicationProjection<Schema, EntryQuery>,
-            Value: WorthQueryManagedDerivedValue, {
+            Value: WorthQueryManagedDerivedValue,
+        {
             self.inner.refresh_managed_derived_collection_entry::<MembershipQuery, EntryQuery, EntryParameters, EntryResult, Principal, PrincipalIdentity, EntryScope, Value>(execution, view, product, key, plan, project)
         }
     }

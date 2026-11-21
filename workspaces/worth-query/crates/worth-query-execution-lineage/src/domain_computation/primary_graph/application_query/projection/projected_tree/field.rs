@@ -1,10 +1,7 @@
 use super::*;
 
 impl WorthQueryApplicationProjectedField {
-    pub fn new(
-        projection: &WorthQueryInstalledGraphProjection,
-        value: AspectValue,
-    ) -> Self {
+    pub fn new(projection: &WorthQueryInstalledGraphProjection, value: AspectValue) -> Self {
         Self {
             result_path: projection.result_path_identity(),
             slot_type: projection.slot_type_identity(),
@@ -31,21 +28,15 @@ impl WorthQueryApplicationProjectedField {
         field.content = content;
         Ok(field)
     }
-    pub fn content(
-        &self,
-    ) -> Option<&worth_relational::facade::content::RelationalContentFrame> {
+    pub fn content(&self) -> Option<&worth_relational::facade::content::RelationalContentFrame> {
         self.content.as_ref()
     }
 
-    pub fn result_path(
-        &self,
-    ) -> &str {
+    pub fn result_path(&self) -> &str {
         &self.result_path
     }
 
-    pub fn slot_key_identity(
-        &self,
-    ) -> &Arc<ApplicationQueryResultSlotKey> {
+    pub fn slot_key_identity(&self) -> &Arc<ApplicationQueryResultSlotKey> {
         &self.slot_key
     }
 
@@ -64,15 +55,7 @@ impl WorthQueryApplicationProjectedField {
         value.owned_allocation_capacity_bytes()
     }
 
-    pub fn matches<
-        Query,
-        Slot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-    >(
+    pub fn matches<Query, Slot, Schema, Entity, Aspect, Field, Value>(
         &self,
         selector: &ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
     ) -> bool
@@ -89,15 +72,7 @@ impl WorthQueryApplicationProjectedField {
         selector.matches_slot_key(&self.slot_key)
     }
 
-    pub fn matches_optional<
-        Query,
-        Slot,
-        Schema,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-    >(
+    pub fn matches_optional<Query, Slot, Schema, Entity, Aspect, Field, Value>(
         &self,
         selector: &ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>,
     ) -> bool

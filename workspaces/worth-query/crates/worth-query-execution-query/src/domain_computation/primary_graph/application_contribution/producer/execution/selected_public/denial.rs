@@ -1,9 +1,6 @@
 //! Preserve the current-control or original D origin of a producer admission stop.
 use super::*;
-pub fn preparation_stop<
-    Schema,
-    Binding,
->(
+pub fn preparation_stop<Schema, Binding>(
     stop: SelectedPublicPreparationStop,
 ) -> ProducerExecutionStop
 where

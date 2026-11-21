@@ -66,8 +66,7 @@ pub struct WorthQueryCurrentOutputDenial {
         Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
     kind: WorthQueryCurrentOutputDenialKind,
     subject: String,
-    pub requested_output:
-        Option<super::super::RequestedOutputRead>,
+    pub requested_output: Option<super::super::RequestedOutputRead>,
 }
 
 impl WorthQueryCurrentOutputDenial {
@@ -79,10 +78,7 @@ impl WorthQueryCurrentOutputDenial {
         &self.subject
     }
 
-    pub fn new(
-        kind: WorthQueryCurrentOutputDenialKind,
-        subject: impl Into<String>,
-    ) -> Self {
+    pub fn new(kind: WorthQueryCurrentOutputDenialKind, subject: impl Into<String>) -> Self {
         Self {
             managed_index: None,
             kind,

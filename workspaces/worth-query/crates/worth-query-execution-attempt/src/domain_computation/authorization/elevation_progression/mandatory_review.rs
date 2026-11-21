@@ -49,21 +49,11 @@ impl WorthQueryMandatoryReviewAuthorizationDenial {
     }
 }
 
-#[doc(hidden)]
-pub struct WorthQueryMandatoryReviewAuthorizationDenialAttemptParts {
-    pub denial: WorthQueryOperationAuthorizationDenial,
-    pub mandatory: WorthQueryMandatoryReview,
-}
-
 impl WorthQueryMandatoryReviewAuthorizationDenial {
-    #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: WorthQueryMandatoryReviewAuthorizationDenialAttemptParts,
+    pub fn new(
+        denial: WorthQueryOperationAuthorizationDenial,
+        mandatory: WorthQueryMandatoryReview,
     ) -> Self {
-        Self {
-            denial: parts.denial,
-            mandatory: parts.mandatory,
-        }
+        Self { denial, mandatory }
     }
 }

@@ -3,9 +3,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
-pub enum SourcePartitionPublication<
-    'lineage,
-> {
+pub enum SourcePartitionPublication<'lineage> {
     Vacant,
     Prepared,
     Published(FamilyPublicationHead<'lineage>),

@@ -186,12 +186,7 @@ pub fn workflow_approval_fields(
     Ok(fields)
 }
 
-pub fn visit_workflow_approval_facts<
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn visit_workflow_approval_facts<Schema, Operation, Input, Scope>(
     layout: &WorthQueryWorkflowLayout,
     admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
     meaning: &WorkflowApprovalMeaning,
@@ -262,8 +257,6 @@ fn hex(bytes: [u8; 32]) -> String {
 }
 
 /// Native approval instance encoding, deliberately distinct from original start-intent identity.
-pub fn workflow_approval_instance_identity(
-    instance: EntityId,
-) -> String {
+pub fn workflow_approval_instance_identity(instance: EntityId) -> String {
     format!("{instance:?}")
 }

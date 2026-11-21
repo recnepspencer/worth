@@ -18,9 +18,7 @@ pub use admitted_access::{
     WorthQueryDelegationResolvedRequest, WorthQueryExactCapabilityObservationContext,
 };
 pub use currentness::WorthQueryCurrentCapabilityObservation;
-pub use request_resolution::{
-    WorthQueryCapabilityContextKey, WorthQueryResolvedCapabilityRequest,
-};
+pub use request_resolution::{WorthQueryCapabilityContextKey, WorthQueryResolvedCapabilityRequest};
 
 pub struct ObservedCapabilityAdmission<
     'a,

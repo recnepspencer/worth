@@ -169,9 +169,7 @@ fn invalid(subject: &str) -> WorthQueryInvariantAccessDenial {
         subject,
     )
 }
-pub fn aggregate_denial(
-    cause: AggregateReadDenial,
-) -> WorthQueryInvariantAccessDenial {
+pub fn aggregate_denial(cause: AggregateReadDenial) -> WorthQueryInvariantAccessDenial {
     use WorthQueryInvariantAccessDenialKind as Kind;
     let kind = match cause {
         AggregateReadDenial::Budget(cause) => {

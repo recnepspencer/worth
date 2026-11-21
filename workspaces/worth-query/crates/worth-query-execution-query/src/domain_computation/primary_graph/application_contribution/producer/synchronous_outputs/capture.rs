@@ -104,9 +104,7 @@ impl CapturedSynchronousOutputs {
             },
         )
     }
-    pub fn assemble<
-        S: ApplicationSchema,
-    >(
+    pub fn assemble<S: ApplicationSchema>(
         roots: &[&Self],
         owner: &CoupledApplicationAssembly<'_, '_, '_, S>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -125,9 +123,7 @@ impl CapturedSynchronousOutputs {
         wave.drive(&context, candidate, None)
             .map_err(|cause| cause.0)
     }
-    pub fn seed<
-        S: ApplicationSchema,
-    >(
+    pub fn seed<S: ApplicationSchema>(
         roots: &[&Self],
         owner: &CoupledApplicationAssembly<'_, '_, '_, S>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -174,12 +170,10 @@ impl CapturedSynchronousOutputs {
         Ok(order)
     }
 }
-pub trait EffectProgramSynchronousOutputsExt<S: ApplicationSchema, O, I, Scope>: Sized
-
-{
+pub trait EffectProgramSynchronousOutputsExt<S: ApplicationSchema, O, I, Scope>: Sized {
     fn with_synchronous_required_outputs<C, E>(
         self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: C::Demand,
         position: worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration,
@@ -194,16 +188,15 @@ pub trait EffectProgramSynchronousOutputsExt<S: ApplicationSchema, O, I, Scope>:
             ApplicationQueryScopeResolution<
                 S,
                 <Source<S, C::Demand> as ApplicationQueryBinding<S>>::PrincipalIdentity,
-            >,
-;
+            >;
 }
 
-impl<S: ApplicationSchema, O, I, Scope> EffectProgramSynchronousOutputsExt<S, O, I, Scope> for crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram<S, O, I, Scope>
-
+impl<S: ApplicationSchema, O, I, Scope> EffectProgramSynchronousOutputsExt<S, O, I, Scope>
+    for crate::domain_computation::primary_graph::WorthQueryApplicationEffectProgram<S, O, I, Scope>
 {
     fn with_synchronous_required_outputs<C, E>(
         mut self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         demand: C::Demand,
         position: worth_query_declaration::facade::application_program::ApplicationConnectionDeclaration,
@@ -220,24 +213,28 @@ impl<S: ApplicationSchema, O, I, Scope> EffectProgramSynchronousOutputsExt<S, O,
                 <Source<S, C::Demand> as ApplicationQueryBinding<S>>::PrincipalIdentity,
             >,
     {
-        self.synchronous_outputs
-            .push(worth_query_execution_attempt::facade::ports::OpaqueSynchronousOutputs::new(CapturedSynchronousOutputs::capture(
-                execution,
-                C::IDENTITY,
-                std::mem::size_of::<Tree<C::Demand, Static<E>>>()
-                    + std::mem::size_of::<root::Root<S>>(),
-                || {
-                    let tree: Box<dyn RequiredTree<S>> = Box::new(Tree::<C::Demand, Static<E>> {
-                        connection: C::IDENTITY,
-                        position,
-                        order: order.clone(),
-                        demand,
-                        continuation: Static::new(),
-                        expected_source: None,
-                    });
-                    Box::new(root::Root::Fixed(tree))
-                },
-            )));
+        self.synchronous_outputs.push(
+            worth_query_execution_attempt::facade::ports::OpaqueSynchronousOutputs::new(
+                CapturedSynchronousOutputs::capture(
+                    execution,
+                    C::IDENTITY,
+                    std::mem::size_of::<Tree<C::Demand, Static<E>>>()
+                        + std::mem::size_of::<root::Root<S>>(),
+                    || {
+                        let tree: Box<dyn RequiredTree<S>> =
+                            Box::new(Tree::<C::Demand, Static<E>> {
+                                connection: C::IDENTITY,
+                                position,
+                                order: order.clone(),
+                                demand,
+                                continuation: Static::new(),
+                                expected_source: None,
+                            });
+                        Box::new(root::Root::Fixed(tree))
+                    },
+                ),
+            ),
+        );
         self
     }
 }

@@ -23,7 +23,8 @@ where
             return Err(ResourceCause::Unavailable);
         };
         runtime
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .with_view(
@@ -42,7 +43,8 @@ where
             return Err(ResourceCause::Unavailable);
         };
         let drained = runtime
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .with_view(
@@ -114,7 +116,8 @@ where
     };
     if owner.wake_cleanup_pending() {
         runtime
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .with_view(
@@ -132,7 +135,8 @@ where
         && !completion.timeout_cleanup_complete()
     {
         runtime
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .with_view(
@@ -148,7 +152,8 @@ where
     }
     if owner.has_pending_retry() {
         runtime
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .with_view(
@@ -165,7 +170,8 @@ where
     occurrence.retry = None;
     if completion.is_none() {
         runtime
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .with_view(
@@ -188,7 +194,8 @@ where
         .signal_basis();
     let lifecycle = &mut occurrence.lifecycle;
     runtime
-        .inner.runtime
+        .inner
+        .runtime
         .bridge
         .conditional()
         .with_view(basis, |bridge| {

@@ -6,9 +6,9 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
 use super::super::{
-    PublishedWorkflowInstanceRef,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
-    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryApplicationUncommitted,
+    PublishedWorkflowInstanceRef, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryApplicationUncommitted,
 };
 use crate::domain_computation::primary_graph::workflow::proposal::derive_workflow_proposal_context_identity;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
@@ -60,11 +60,7 @@ where
     Schema: ApplicationSchema,
 {
     #[allow(clippy::too_many_arguments)]
-    pub fn resolve_workflow_proposal_replay<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn resolve_workflow_proposal_replay<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -107,11 +103,7 @@ where
         Ok(Some(outcome))
     }
 
-    pub fn compare_and_commit_workflow_proposal<
-        Operation: 'static,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_workflow_proposal<Operation: 'static, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -235,18 +227,19 @@ fn project(
     else {
         return WorkflowProposalOutcome::ProjectionDenied(receipt);
     };
-    let published = PublishedWorkflowProposalRef::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_proposal_program::publication::reference::PublishedWorkflowProposalRefAttemptParts {
-        branch: receipt.product_branch(),
-        entity: proposal,
-        instance: context.instance.entity_id(),
-        definition: context.instance.definition_entity_id(),
-        identity: identity.into(),
-        operation: context.operation.into(),
-        input_type: context.input_type.into(),
-        input_identity: context.input_identity,
-        source_identity: context.source_identity,
-        node_path: node_path.into(),
-    });
+    let Some(published) = PublishedWorkflowProposalRef::from_committed_proposal(
+        &receipt,
+        &context.instance,
+        proposal,
+        identity.into(),
+        context.operation.into(),
+        context.input_type.into(),
+        context.input_identity,
+        context.source_identity,
+        node_path.into(),
+    ) else {
+        return WorkflowProposalOutcome::ProjectionDenied(receipt);
+    };
     WorkflowProposalOutcome::Published(PerformedWorkflowProposal {
         proposal: published,
         transition,

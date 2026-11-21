@@ -15,5 +15,4 @@ pub use installed_reentry::WorthQueryCommitEntryRefusal;
 pub mod candidate_planning;
 pub mod fragment;
 
-
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::WorthQueryApplicationRealizedEffect;

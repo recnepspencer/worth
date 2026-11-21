@@ -16,9 +16,7 @@ impl ReadOnlyWorkflowHistory {
                 && snapshot.version_id()==basis.version_id())
     }
 
-    pub fn transitions(
-        &self,
-    ) -> &[ObservedWorkflowTransition] {
+    pub fn transitions(&self) -> &[ObservedWorkflowTransition] {
         &self.history.transitions
     }
 

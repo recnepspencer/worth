@@ -1,7 +1,7 @@
 //! Lineage-layer port implementations for attempt-owned types.
 
-use std::any::Any;
 use crate::domain_computation::authorization::SourceAuthorizationLocus;
+use std::any::Any;
 use worth_query_execution_lineage::facade::ports::SourceReadSupportPort;
 
 pub mod aftermath;
@@ -16,7 +16,7 @@ pub use workflow_retention::{PrimaryGraphHandleWorkflowExt, WorkflowRetentionSto
 
 impl worth_query_execution_lineage::facade::ports::SourceReadSupportPort
     for crate::domain_computation::authorization::SourceReadSupport
- {
+{
     fn belongs_to_session(
         &self,
         session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
@@ -32,7 +32,7 @@ impl worth_query_execution_lineage::facade::ports::SourceReadSupportPort
     ) -> Result<
         (),
         crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop,
-    > {
+    >{
         use crate::domain_computation::primary_graph::source_facts::map_source_authorization_currentness;
         self.validate_current(execution, runtime, snapshot)
             .map_err(map_source_authorization_currentness)

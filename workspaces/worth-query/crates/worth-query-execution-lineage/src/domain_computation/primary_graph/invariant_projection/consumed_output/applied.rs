@@ -1,8 +1,7 @@
 //! Attempt-local prerequisite custody. No Current or settlement exists before publication.
 use super::*;
 use crate::domain_computation::primary_graph::{
-    application_output_demand::WorthQueryOutputDemandKey,
-    output_lineage::CoupledOutputCompletion,
+    application_output_demand::WorthQueryOutputDemandKey, output_lineage::CoupledOutputCompletion,
 };
 use crate::ports::{ApplicationAttemptPort, CoupledMemberPort};
 use worth_relational::facade::{
@@ -124,16 +123,11 @@ impl AppliedConsumedOutput {
         }
         matches
     }
-    pub fn prerequisite_key(
-        &self,
-    ) -> Option<&Arc<WorthQueryOutputDemandKey>> {
+    pub fn prerequisite_key(&self) -> Option<&Arc<WorthQueryOutputDemandKey>> {
         self.cells[0].supported.get()?;
         self.key.as_ref()
     }
-    pub fn settle(
-        &self,
-        after: &PositionedRelationalSnapshot,
-    ) {
+    pub fn settle(&self, after: &PositionedRelationalSnapshot) {
         assert!(
             self.cells[0].supported.get().is_some(),
             "final support precedes publication"

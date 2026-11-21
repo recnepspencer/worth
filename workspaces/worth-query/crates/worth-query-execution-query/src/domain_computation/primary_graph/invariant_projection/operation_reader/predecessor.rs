@@ -1,5 +1,6 @@
 //! Sealed historical projection: C controls access, the predecessor owns values.
 use super::*;
+use crate::domain_computation::primary_graph::invariant_projection::WorthQueryApplicationInvariantProjectionAuthority;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryApplicationObservedFact as Fact,
     application_contribution::producer::observation_reads::{
@@ -13,14 +14,10 @@ use worth_query_declaration::facade::application_schema::{
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationSchema, WorthQueryInstalledPackageIndex,
 };
-use crate::domain_computation::primary_graph::invariant_projection::WorthQueryApplicationInvariantProjectionAuthority;
 mod reader;
 pub use reader::{BeforeDecisionReader, BeforeEntity, BeforeRelation};
 
-pub trait OperationReaderPredecessorExt<
-    S: ApplicationSchema + 'static,
->
-{
+pub trait OperationReaderPredecessorExt<S: ApplicationSchema + 'static> {
     fn observe_predecessor<R, I, T>(
         &mut self,
         operation: ApplicationOperationRef<S, R, I>,
@@ -141,19 +138,19 @@ where
             completed.map_err(Denial::Projection)?,
         ))
     };
-    let (prior, input, authorization, completed) = match reader_self.reader.native.committed_runtime()
-    {
-        Some(native) => project(native)?,
-        // Scoped Native assembly holds its preparation port, not Query's
-        // Native transport. This is the sole ordinary transport entrance.
-        None => {
-            let mut result = None;
-            access.with_committed_runtime_dyn(&execution, &mut |native| {
-                result = Some(project(native));
-            });
-            result.expect("committed runtime callback runs once")?
-        }
-    };
+    let (prior, input, authorization, completed) =
+        match reader_self.reader.native.committed_runtime() {
+            Some(native) => project(native)?,
+            // Scoped Native assembly holds its preparation port, not Query's
+            // Native transport. This is the sole ordinary transport entrance.
+            None => {
+                let mut result = None;
+                access.with_committed_runtime_dyn(&execution, &mut |native| {
+                    result = Some(project(native));
+                });
+                result.expect("committed runtime callback runs once")?
+            }
+        };
     let (output, facts, consumed) = completed.output;
     if !reader_self.reader.work_budget.consume(consumed) {
         return Err(Denial::Projection(

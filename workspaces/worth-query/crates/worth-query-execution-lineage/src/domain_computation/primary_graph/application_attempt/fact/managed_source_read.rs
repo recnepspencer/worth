@@ -26,8 +26,7 @@ pub struct ManagedSourceReadKey {
 pub struct ManagedInfluenceOrigin {
     pub parameters: [u8; 32],
     pub audience: [u8; 32],
-    pub content:
-        worth_foundational::facade::ProjectedCandidateContentV1,
+    pub content: worth_foundational::facade::ProjectedCandidateContentV1,
 }
 
 #[derive(Clone)]
@@ -47,9 +46,7 @@ impl CheckedManagedSource {
     pub fn is_realized(&self) -> bool {
         matches!(self.0, CheckedSource::Realized(_))
     }
-    pub fn native(
-        &self,
-    ) -> &ManagedIndexSourceObservation {
+    pub fn native(&self) -> &ManagedIndexSourceObservation {
         match &self.0 {
             CheckedSource::Whole(value) => value,
             CheckedSource::Realized(value) => value.native(),
@@ -85,22 +82,16 @@ impl ManagedSourceRead {
             _allocation: allocation,
         }
     }
-    pub fn authorization(
-        &self,
-    ) -> &Arc<super::SourceReadAuthorization> {
+    pub fn authorization(&self) -> &Arc<super::SourceReadAuthorization> {
         &self.authorization
     }
     pub fn key(&self) -> &ManagedSourceReadKey {
         &self.key
     }
-    pub fn native(
-        &self,
-    ) -> &ManagedIndexSourceObservation {
+    pub fn native(&self) -> &ManagedIndexSourceObservation {
         &self.native
     }
-    pub fn has_verified_realized_footprint(
-        &self,
-    ) -> bool {
+    pub fn has_verified_realized_footprint(&self) -> bool {
         self.influence.is_some()
     }
     pub fn history_selector(

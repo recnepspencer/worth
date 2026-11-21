@@ -194,13 +194,9 @@ impl CleanupOwner for NativeCleanupOwner {
     }
 }
 #[derive(Debug)]
-pub struct DemandCleanupCustody(
-    Box<dyn CleanupOwner>,
-);
+pub struct DemandCleanupCustody(Box<dyn CleanupOwner>);
 impl DemandCleanupCustody {
-    pub fn retired_components(
-        &mut self,
-    ) -> usize {
+    pub fn retired_components(&mut self) -> usize {
         self.0.retired_components()
     }
     pub fn from_outcome(
@@ -216,9 +212,7 @@ impl DemandCleanupCustody {
             },
         ))))
     }
-    pub fn outcome(
-        &mut self,
-    ) -> Option<&WorthQueryApplicationCommitOutcome> {
+    pub fn outcome(&mut self) -> Option<&WorthQueryApplicationCommitOutcome> {
         self.0.outcome()
     }
     pub fn close_read(
@@ -228,14 +222,10 @@ impl DemandCleanupCustody {
     ) -> Result<(), super::super::WorthQueryOutputReadCloseDenial> {
         self.0.read_close(phase, release)
     }
-    pub fn receipt_mut(
-        &mut self,
-    ) -> Option<&mut Receipt> {
+    pub fn receipt_mut(&mut self) -> Option<&mut Receipt> {
         self.0.receipt_mut()
     }
-    pub fn receipt(
-        &mut self,
-    ) -> Option<&Receipt> {
+    pub fn receipt(&mut self) -> Option<&Receipt> {
         self.0.receipt()
     }
 
@@ -245,9 +235,7 @@ impl DemandCleanupCustody {
         self.0.failure()
     }
 
-    pub fn new(
-        owner: Box<Required>,
-    ) -> Self {
+    pub fn new(owner: Box<Required>) -> Self {
         Self(Box::new(NativeCleanupOwner(std::sync::Mutex::new(
             NativeCleanupState {
                 required: Some(owner),
@@ -258,9 +246,7 @@ impl DemandCleanupCustody {
             },
         ))))
     }
-    pub fn into_required(
-        self,
-    ) -> Result<Box<Required>, Self> {
+    pub fn into_required(self) -> Result<Box<Required>, Self> {
         self.0.into_required().map_err(Self)
     }
     pub fn release(

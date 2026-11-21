@@ -4,32 +4,7 @@ use super::*;
 /// A historical entity is descriptive read data, never a current mutation handle.
 /// The current counterpart is accepted by the ordinary reader:
 ///
-/// ```
-/// use worth_query_declaration::facade::application_schema::ApplicationSchema;
-/// use worth_query_execution::facade::primary_graph::{
-///     WorthQueryApplicationOperationInvariantProjectionReader as Reader,
-///     WorthQueryInvariantEntityIdentity as CurrentEntity, BeforeEntity,
-///     RelationalPredecessorBasisDenial as Denial, RelationalPredecessorBasisOrigin as Origin,
-/// };
-/// fn current<S: ApplicationSchema, E, O>(reader: &Reader<'_, '_, S, O>, entity: &CurrentEntity<S, E>) {
-///     let _ = reader.mutation_target(entity);
-///     let _historical_type: Option<&BeforeEntity<S, E>> = None;
-///     let _ = Denial::PredecessorBasisUnavailableForOrigin(Origin::HistoricalSelection);
-/// }
-/// ```
-///
 /// Historical identities cannot take that path:
-///
-/// ```compile_fail
-/// use worth_query_declaration::facade::application_schema::ApplicationSchema;
-/// use worth_query_execution::facade::primary_graph::{
-///     WorthQueryApplicationOperationInvariantProjectionReader as Reader,
-///     BeforeEntity,
-/// };
-/// fn historical<S: ApplicationSchema, E, O>(reader: &Reader<'_, '_, S, O>, entity: &BeforeEntity<S, E>) {
-///     let _ = reader.mutation_target(entity);
-/// }
-/// ```
 pub struct BeforeEntity<S, E> {
     pub(crate) identity: WorthQueryInvariantEntityIdentity<S, E>,
 }

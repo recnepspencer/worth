@@ -12,8 +12,8 @@ use worth_execution::{
 };
 use worth_foundational::facade::PartitionIdentity;
 
-use worth_query_execution_runtime::facade::request_execution::query_test_execution_authority_for_test;
 use super::*;
+use worth_query_execution_runtime::facade::request_execution::query_test_execution_authority_for_test;
 
 fn test_policy(
     workers: NonZeroUsize,

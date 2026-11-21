@@ -13,9 +13,7 @@ pub struct WorthQueryApplicationFactStorageKey {
 }
 
 impl WorthQueryApplicationObservedFact {
-    pub fn dependency_locator_byte_bound(
-        &self,
-    ) -> Option<u64> {
+    pub fn dependency_locator_byte_bound(&self) -> Option<u64> {
         if let Self::DerivedSource { observation } = self {
             let key = observation.key();
             return u64::try_from(key.relation().len())
@@ -78,9 +76,7 @@ impl WorthQueryApplicationObservedFact {
         }
     }
 
-    pub fn dependency_key(
-        &self,
-    ) -> WorthQueryApplicationFactStorageKey {
+    pub fn dependency_key(&self) -> WorthQueryApplicationFactStorageKey {
         let predicate = match self {
             Self::IndexedEntitySelection {
                 value,

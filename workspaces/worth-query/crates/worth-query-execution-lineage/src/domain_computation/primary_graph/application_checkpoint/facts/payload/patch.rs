@@ -126,10 +126,7 @@ impl NativeFactPatchBuilder {
 
     /// All storage was prepared before effects. Only changed leaves are
     /// filled; untouched branches keep their exact old Arc and admission.
-    pub fn seal(
-        self,
-        control: StorageControl<'_, '_>,
-    ) -> Result<FactPayload, StoreDenial> {
+    pub fn seal(self, control: StorageControl<'_, '_>) -> Result<FactPayload, StoreDenial> {
         control.check_live()?;
         if self.written != self.replacements {
             return Err(StoreDenial::ConflictingBody);

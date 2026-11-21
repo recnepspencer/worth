@@ -27,8 +27,7 @@ pub struct WorthQueryRelationalSourceOwner {
     pub runtime_instance_id: u64,
     pub(super) source: RuntimeBridgeRelationalSource,
     pub(super) bridge_head: Arc<Mutex<Option<RelationalBridgeBranchHeadLease>>>,
-    pub invalidation_owner:
-        Arc<dyn crate::ports::RelationalSourceInvalidationPort>,
+    pub invalidation_owner: Arc<dyn crate::ports::RelationalSourceInvalidationPort>,
     canonical_subscription: RelationalBridgeCanonicalSubscription,
     read_acquisitions: Arc<std::sync::atomic::AtomicU64>,
     _bridge_lock_observations: Arc<
@@ -39,7 +38,7 @@ pub struct WorthQueryRelationalSourceOwner {
 }
 
 impl WorthQueryRelationalSourceOwner {
-pub fn with_invalidation_owner(
+    pub fn with_invalidation_owner(
         runtime: RelationalRuntime,
         graph_role: impl Into<Arc<str>>,
         invalidation_owner: Arc<dyn crate::ports::RelationalSourceInvalidationPort>,

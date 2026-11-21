@@ -4,7 +4,6 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_installation::facade::WorthQueryOperationFieldTouchScope;
 use worth_relational::facade::identity::{EntityId, KindId};
 
-
 pub struct WorthQueryCapabilityRevocationBinding {
     pub proposal_identity: [u8; 32],
     pub required_field_touch: WorthQueryOperationFieldTouchScope,
@@ -23,9 +22,7 @@ impl WorthQueryCapabilityRevocationBinding {
     pub const fn proposal_identity(&self) -> &[u8; 32] {
         &self.proposal_identity
     }
-    pub const fn required_field_touch(
-        &self,
-    ) -> &WorthQueryOperationFieldTouchScope {
+    pub const fn required_field_touch(&self) -> &WorthQueryOperationFieldTouchScope {
         &self.required_field_touch
     }
     pub const fn target_kind(&self) -> KindId {

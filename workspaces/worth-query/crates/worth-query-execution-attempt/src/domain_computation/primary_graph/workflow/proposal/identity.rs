@@ -6,8 +6,7 @@ use crate::domain_computation::{
 
 pub struct WorkflowProposalMeaning {
     pub(super) captured_identity: Option<[u8; 32]>,
-    pub captured:
-        Vec<super::super::captured_input::WorkflowCapturedTarget>,
+    pub captured: Vec<super::super::captured_input::WorkflowCapturedTarget>,
     pub(super) identity: String,
     pub(super) proposer: worth_relational::facade::identity::EntityId,
     pub(super) operation: String,
@@ -24,8 +23,7 @@ pub struct WorkflowProposalCoverageMeaning {
     local_identity: String,
     pub selector:
         worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
-    pub subject:
-        worth_relational::facade::identity::EntityId,
+    pub subject: worth_relational::facade::identity::EntityId,
 }
 
 /// Proposal meaning shared by every coverage in one authored proposal.

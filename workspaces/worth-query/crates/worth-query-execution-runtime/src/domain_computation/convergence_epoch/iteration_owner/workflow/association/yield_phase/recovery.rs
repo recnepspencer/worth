@@ -178,13 +178,11 @@ fn map_release(
     }
 }
 
-pub struct WorkflowYieldRecoveryCleanupLifecycleEvent
-{
+pub struct WorkflowYieldRecoveryCleanupLifecycleEvent {
     kind: WorkflowYieldRecoveryCleanupLifecycleEventKind,
 }
 
-pub enum WorkflowYieldRecoveryCleanupLifecycleEventKind
-{
+pub enum WorkflowYieldRecoveryCleanupLifecycleEventKind {
     Attempted,
     Completed,
 }
@@ -202,9 +200,7 @@ impl WorkflowYieldRecoveryCleanupLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> WorkflowYieldRecoveryCleanupLifecycleEventKind {
+    pub fn into_kind(self) -> WorkflowYieldRecoveryCleanupLifecycleEventKind {
         self.kind
     }
 }

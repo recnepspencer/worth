@@ -17,9 +17,7 @@ pub struct TakenNestedFailure<E> {
 }
 
 impl<'context> NestedFailureTransport<'context> {
-    pub fn new(
-        take: &'context mut dyn FnMut() -> Option<NestedComputationStop>,
-    ) -> Self {
+    pub fn new(take: &'context mut dyn FnMut() -> Option<NestedComputationStop>) -> Self {
         Self { take }
     }
 

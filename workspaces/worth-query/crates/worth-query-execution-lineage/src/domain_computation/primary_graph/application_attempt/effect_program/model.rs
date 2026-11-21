@@ -7,9 +7,7 @@ use worth_relational::facade::identity::{EntityId, KindId, RelationId};
 use worth_relational::facade::transactions::EntityReference;
 
 pub mod emission;
-pub use emission::{
-    WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
-};
+pub use emission::{WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission};
 
 /// An entity handle usable only inside the effect program that produced it: an
 /// existing entity from the read set, or one the program creates.

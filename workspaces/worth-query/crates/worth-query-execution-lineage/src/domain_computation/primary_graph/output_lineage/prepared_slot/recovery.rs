@@ -55,9 +55,7 @@ impl PreparedOutputLineageSlot {
                 ))
     }
 
-    pub fn into_recovery_metadata(
-        mut self,
-    ) -> PreparedLineageRecoveryMetadata {
+    pub fn into_recovery_metadata(mut self) -> PreparedLineageRecoveryMetadata {
         let metadata = PreparedLineageRecoveryMetadata {
             original_ready_key: self.original_ready_key.take(),
             coupled_completion: self.coupled_completion.take(),
@@ -72,10 +70,7 @@ impl PreparedOutputLineageSlot {
         metadata
     }
 
-    pub fn retain_recovery_metadata(
-        &mut self,
-        mut metadata: PreparedLineageRecoveryMetadata,
-    ) {
+    pub fn retain_recovery_metadata(&mut self, mut metadata: PreparedLineageRecoveryMetadata) {
         assert!(self.completed_handler_facts.is_none());
         assert!(self.completed_decision_reuse.is_none());
         assert!(self.prepared_input_reuse_key.is_none());

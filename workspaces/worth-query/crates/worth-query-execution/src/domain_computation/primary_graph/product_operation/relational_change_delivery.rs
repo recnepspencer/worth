@@ -78,7 +78,12 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 ),
             );
         };
-        let bridge_root = self.application().inner.runtime.bridge.conditional_operations();
+        let bridge_root = self
+            .application()
+            .inner
+            .runtime
+            .bridge
+            .conditional_operations();
         let bridge = bridge_root
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);

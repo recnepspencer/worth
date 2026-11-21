@@ -12,9 +12,7 @@ use crate::domain_computation::primary_graph::{
     },
     source_facts::SourceFactsAllocation,
 };
-pub use registration::{
-    PredicateRegistration, PredicateRootReservation,
-};
+pub use registration::{PredicateRegistration, PredicateRootReservation};
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex},

@@ -37,7 +37,12 @@ where
         }
         runtime.inner.runtime.output_demands.validate_owned_root_kind(prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()))?;
-        self.admitted
-            .retain_fulfilled_root(runtime.inner(), &execution, prepared, receipt, settlement)
+        self.admitted.retain_fulfilled_root(
+            runtime.inner(),
+            &execution,
+            prepared,
+            receipt,
+            settlement,
+        )
     }
 }

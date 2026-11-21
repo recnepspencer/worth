@@ -3,9 +3,7 @@ pub mod admitted;
 pub mod resolution;
 pub mod selection;
 pub use resolution::{resolve_frame, typed};
-pub use selection::{
-    ContentFieldSelection, DecodeReference,
-};
+pub use selection::{ContentFieldSelection, DecodeReference};
 pub mod denial;
 pub use admitted::AdmittedContent;
 pub use denial::{ContentReadDenial, ContentWriteDenial};

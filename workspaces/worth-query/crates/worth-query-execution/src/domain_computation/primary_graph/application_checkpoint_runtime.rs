@@ -22,7 +22,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         let receiver = self
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .graph
             .with_runtime(request, |runtime| {

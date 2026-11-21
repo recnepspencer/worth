@@ -25,14 +25,10 @@ impl OriginalCorrectionDisclosure {
     pub fn association(&self) -> &InstalledCorrectionBinding {
         &self.association
     }
-    pub fn query(
-        &self,
-    ) -> &WorthQueryInstalledApplicationQueryIdentity {
+    pub fn query(&self) -> &WorthQueryInstalledApplicationQueryIdentity {
         self.disclosure.query()
     }
-    pub fn parameters(
-        &self,
-    ) -> &WorthQueryAdmittedApplicationQueryParameters {
+    pub fn parameters(&self) -> &WorthQueryAdmittedApplicationQueryParameters {
         self.disclosure.parameters()
     }
 }

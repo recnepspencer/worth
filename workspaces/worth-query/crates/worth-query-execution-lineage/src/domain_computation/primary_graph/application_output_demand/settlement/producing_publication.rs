@@ -1,20 +1,20 @@
 //! One immutable publication carried by an original own-publication continuation.
-use std::sync::Arc;
 use super::super::ReadyCompletion;
-use crate::domain_computation::primary_graph::{WorthQueryApplicationOutputCorrespondence, WorthQueryOutputDemandDenial};
 use crate::domain_computation::primary_graph::{
     application_checkpoint::facts::FactPayload, WorthQueryApplicationCommittedChanges,
 };
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationOutputCorrespondence, WorthQueryOutputDemandDenial,
+};
+use std::sync::Arc;
 
 /// Descriptive original evidence only: no receipt authority, Ready cell or reader.
 /// No link to another publication is retained.
 pub struct OriginalProducingPublication {
     pub changes: WorthQueryApplicationCommittedChanges,
     pub inputs: FactPayload,
-    pub correspondence:
-        Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub conditional:
-        Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,
+    pub correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub conditional: Option<worth_runtime_bridge::facade::BridgeConditionalCausalObservation>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 

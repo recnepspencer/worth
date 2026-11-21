@@ -47,11 +47,7 @@ where
         })
     }
 
-    pub fn compare_and_commit_elevation_request_for_program<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_elevation_request_for_program<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

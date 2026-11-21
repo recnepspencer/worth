@@ -31,7 +31,10 @@ impl PartialEq for RetainedRelations {
 impl Eq for RetainedRelations {}
 impl RetainedRelations {
     pub fn from_parts(
-        rows: Vec<(worth_query_installation::facade::InstalledPreImageRelationLocus, ValidatedRelationMutation)>,
+        rows: Vec<(
+            worth_query_installation::facade::InstalledPreImageRelationLocus,
+            ValidatedRelationMutation,
+        )>,
         loci: Vec<worth_query_installation::facade::InstalledPreImageRelationLocus>,
         footprint: worth_relational::facade::mvcc::ValidatedRelationMutationFootprint,
         memory: Option<worth_execution::ExecutionMemoryReservation>,

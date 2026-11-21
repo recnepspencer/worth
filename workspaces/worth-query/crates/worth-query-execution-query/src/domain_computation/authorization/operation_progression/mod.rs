@@ -10,9 +10,7 @@ pub use authority_validation::{
 pub use authority_validation::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use authority_validation::WorthQueryAdmittedApplicationOperation;
 pub use authority_validation::WorthQueryOperationAdmissionIdentity;
-pub use authority_validation::{
-    admit_capability_access, admit_encoded_capability_access,
-};
+pub use authority_validation::{admit_capability_access, admit_encoded_capability_access};
 pub use authority_validation::{
     WorthQueryCapabilityContextKey, WorthQueryCurrentCapabilityObservation,
     WorthQueryDelegationResolvedRequest, WorthQueryExactCapabilityObservationContext,
@@ -134,6 +132,4 @@ where
     authority_validation::transition_conventional_operation(execution, bound)
 }
 
-pub use authority_validation::{
-    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
-};
+pub use authority_validation::{BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation};

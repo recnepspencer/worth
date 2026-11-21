@@ -62,10 +62,7 @@ impl QueryObligationHistory {
         let pending = driver.finish_pending(medium.as_ref(), request).err();
         Ok(Some((identity, pending)))
     }
-    pub fn resource_retained(
-        &self,
-        identity: OwnedAsyncObligationIdentity,
-    ) -> bool {
+    pub fn resource_retained(&self, identity: OwnedAsyncObligationIdentity) -> bool {
         self.state().journal.as_ref().is_some_and(|journal| {
             ledger_inspect::resources(&journal.ledger).contains_key(&identity)
         })

@@ -4,10 +4,8 @@ use crate::domain_computation::primary_graph::application_contribution::QueryMem
 use crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity;
 use worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget;
 pub struct PreparedBodySelection<Schema> {
-    pub identity:
-        WorthQueryInvariantEntityIdentity<Schema, ()>,
-    pub target:
-        WorthQueryInvariantMutationTarget<Schema, ()>,
+    pub identity: WorthQueryInvariantEntityIdentity<Schema, ()>,
+    pub target: WorthQueryInvariantMutationTarget<Schema, ()>,
 }
 pub struct PreparedBodySelections<Schema> {
     pub targets: Vec<(

@@ -55,9 +55,7 @@ impl WorthQueryArtifactProductionGenerationPending {
         Arc::ptr_eq(&self.registry, registry)
     }
 
-    pub fn abort(
-        mut self,
-    ) -> Result<(), WorthQueryArtifactProductionGenerationAbortFailure> {
+    pub fn abort(mut self) -> Result<(), WorthQueryArtifactProductionGenerationAbortFailure> {
         let outcome = self
             .registry
             .abort_generation(self.prior, self.next)

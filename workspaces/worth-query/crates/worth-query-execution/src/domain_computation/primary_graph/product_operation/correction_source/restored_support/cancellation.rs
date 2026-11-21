@@ -119,7 +119,8 @@ fn require_pair<Schema: ApplicationSchema>(
         return Err(Denial::RestoredSupport(Stop::CanonicalAssociationMismatch));
     }
     if !application
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .validate_correction_witness(execution, target.product().relational_basis(), sealed)
         .map_err(witness_denial)?
@@ -130,7 +131,8 @@ fn require_pair<Schema: ApplicationSchema>(
     // its existing ancestry work remains separate from selected posting visits.
     for (witness, occurrence) in [(before, source), (after, reverse)] {
         let ancestor = application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .owner
             .observation_port()

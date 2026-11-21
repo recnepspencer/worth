@@ -13,8 +13,7 @@ pub enum WorthQueryRuleReadableCollectionLifecycleForTest {
     Disposed,
 }
 
-pub enum ManagedDerivedSource
-{
+pub enum ManagedDerivedSource {
     Query(WorthQueryInstalledApplicationQueryIdentity),
     NativeCount {
         definition: DerivedRelationHandle,
@@ -23,9 +22,7 @@ pub enum ManagedDerivedSource
     },
 }
 impl ManagedDerivedSource {
-    pub fn query(
-        &self,
-    ) -> Option<&WorthQueryInstalledApplicationQueryIdentity> {
+    pub fn query(&self) -> Option<&WorthQueryInstalledApplicationQueryIdentity> {
         match self {
             Self::Query(query) => Some(query),
             Self::NativeCount { .. } => None,
@@ -34,9 +31,7 @@ impl ManagedDerivedSource {
 }
 
 impl<Key: Clone + Ord, Value: WorthQueryManagedDerivedValue> ManagedDerivedViewState<Key, Value> {
-    pub fn lifecycle(
-        &self,
-    ) -> WorthQueryRuleReadableCollectionLifecycleForTest {
+    pub fn lifecycle(&self) -> WorthQueryRuleReadableCollectionLifecycleForTest {
         use WorthQueryRuleReadableCollectionLifecycleForTest as State;
         let state = self
             .retained

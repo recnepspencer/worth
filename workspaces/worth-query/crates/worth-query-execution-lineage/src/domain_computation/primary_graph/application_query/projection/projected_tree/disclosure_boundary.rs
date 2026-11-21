@@ -12,9 +12,7 @@ pub struct WorthQueryApplicationDisclosedProjectionTree {
 }
 
 #[derive(Clone, Copy)]
-pub struct WorthQueryApplicationDisclosedProjectionNode<
-    'a,
-> {
+pub struct WorthQueryApplicationDisclosedProjectionNode<'a> {
     node: &'a WorthQueryApplicationProjectionNode,
 }
 
@@ -57,19 +55,14 @@ impl WorthQueryApplicationDisclosedProjectionTree {
             .map(WorthQueryApplicationDisclosedProjectionNode::new)
     }
 
-    pub fn at(
-        &self,
-        ordinal: usize,
-    ) -> Option<WorthQueryApplicationDisclosedProjectionNode<'_>> {
+    pub fn at(&self, ordinal: usize) -> Option<WorthQueryApplicationDisclosedProjectionNode<'_>> {
         self.rows
             .rows()
             .get(ordinal)
             .map(WorthQueryApplicationDisclosedProjectionNode::new)
     }
 
-    pub fn only(
-        &self,
-    ) -> Option<WorthQueryApplicationDisclosedProjectionNode<'_>> {
+    pub fn only(&self) -> Option<WorthQueryApplicationDisclosedProjectionNode<'_>> {
         let [node] = self.rows.rows().as_slice() else {
             return None;
         };
@@ -108,16 +101,11 @@ impl<'a> WorthQueryApplicationDisclosedProjectionNode<'a> {
         Self { node }
     }
 
-    pub const fn entity_id(
-        &self,
-    ) -> EntityId {
+    pub const fn entity_id(&self) -> EntityId {
         self.node.entity_id()
     }
 
-    pub fn field(
-        &self,
-        slot_type: &str,
-    ) -> Option<&'a super::WorthQueryApplicationProjectedField> {
+    pub fn field(&self, slot_type: &str) -> Option<&'a super::WorthQueryApplicationProjectedField> {
         self.node.field(slot_type)
     }
 
@@ -128,10 +116,7 @@ impl<'a> WorthQueryApplicationDisclosedProjectionNode<'a> {
         self.node.relation(slot_type)
     }
 
-    pub fn child(
-        &self,
-        node: &'a WorthQueryApplicationProjectionNode,
-    ) -> Self {
+    pub fn child(&self, node: &'a WorthQueryApplicationProjectionNode) -> Self {
         Self::new(node)
     }
 }

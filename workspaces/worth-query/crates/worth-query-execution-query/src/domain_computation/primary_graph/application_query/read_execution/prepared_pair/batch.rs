@@ -5,15 +5,7 @@ use super::super::super::{
     WorthQueryApplicationQueryBatchResourceDenial as Resource,
 };
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
-pub fn admit_batch_read<
-    S: ApplicationSchema,
-    Q,
-    P,
-    R,
-    A,
-    I,
-    C,
->(
+pub fn admit_batch_read<S: ApplicationSchema, Q, P, R, A, I, C>(
     plan: &mut WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,
     batch: &WorthQueryApplicationQueryBatchAdmission,
 ) -> Result<PlannedBatchItem, Resource> {

@@ -58,7 +58,6 @@ pub fn compare_source_facts<Schema, Operation, Input, Scope>(
     Ok(())
 }
 
-
 pub fn merge_source_facts(
     admitted: Vec<WorthQueryApplicationObservedFact>,
     dependent: Option<RetainedSourceFacts>,

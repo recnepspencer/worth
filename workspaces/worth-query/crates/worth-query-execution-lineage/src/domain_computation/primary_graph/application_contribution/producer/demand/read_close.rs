@@ -61,9 +61,8 @@ impl WorthQueryOutputReadCleanup {
 
     pub fn receipt(
         &mut self,
-    ) -> Option<
-        &crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt,
-    > {
+    ) -> Option<&crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt>
+    {
         self.custody.receipt()
     }
 }

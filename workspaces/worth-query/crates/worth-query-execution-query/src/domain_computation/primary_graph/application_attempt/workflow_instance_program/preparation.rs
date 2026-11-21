@@ -20,7 +20,8 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::workflow::instance::WorkflowSuccession;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationIdempotencyBinding, WorthQueryOperationProjectionDenial, WorthQuerySelectedProductOperation,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryOperationProjectionDenial,
+    WorthQuerySelectedProductOperation,
 };
 
 /// Why a workflow instance request could not bind to the branch's program: the installed
@@ -60,13 +61,7 @@ impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn prepare_workflow_instance_start<
-        Capability,
-        Operation,
-        Input,
-        Scope,
-        Spec,
-    >(
+    pub fn prepare_workflow_instance_start<Capability, Operation, Input, Scope, Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
@@ -94,13 +89,7 @@ where
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn prepare_workflow_instance_migration<
-        Capability,
-        Operation,
-        Input,
-        Scope,
-        Spec,
-    >(
+    pub fn prepare_workflow_instance_migration<Capability, Operation, Input, Scope, Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
@@ -133,13 +122,7 @@ where
             .map_err(WorkflowInstancePreparationDenial::Attempt)
     }
 
-    pub fn prepare_workflow_instance_cancellation<
-        Capability,
-        Operation,
-        Input,
-        Scope,
-        Spec,
-    >(
+    pub fn prepare_workflow_instance_cancellation<Capability, Operation, Input, Scope, Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

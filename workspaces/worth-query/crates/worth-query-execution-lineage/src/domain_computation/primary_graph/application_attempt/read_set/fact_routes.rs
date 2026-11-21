@@ -170,33 +170,19 @@ impl FactRoutes {
         }
         Ok(Arc::new(routes))
     }
-    pub fn aspect_presence(
-        &self,
-        entity: EntityId,
-        aspect: &AspectKey,
-    ) -> Option<bool> {
+    pub fn aspect_presence(&self, entity: EntityId, aspect: &AspectKey) -> Option<bool> {
         self.aspects.get(&entity)?.get(aspect).copied().flatten()
     }
-    pub fn field(
-        &self,
-        entity: EntityId,
-        locator: &AspectFieldLocator,
-    ) -> Option<usize> {
+    pub fn field(&self, entity: EntityId, locator: &AspectFieldLocator) -> Option<usize> {
         self.ordinals(entity, locator).first().copied()
     }
-    pub fn entity(
-        &self,
-        id: EntityId,
-    ) -> Option<usize> {
+    pub fn entity(&self, id: EntityId) -> Option<usize> {
         self.entities.get(&id).copied()
     }
     pub fn walk_entity(&self, id: EntityId) -> bool {
         self.complete_entities.contains_key(&id)
     }
-    pub fn relation(
-        &self,
-        id: RelationId,
-    ) -> Option<usize> {
+    pub fn relation(&self, id: RelationId) -> Option<usize> {
         self.relations.get(&id).copied()
     }
     pub fn selection(
@@ -210,11 +196,7 @@ impl FactRoutes {
     ) -> Option<usize> {
         self.selections.get(key).copied()
     }
-    pub fn ordinals(
-        &self,
-        entity: EntityId,
-        locator: &AspectFieldLocator,
-    ) -> &[usize] {
+    pub fn ordinals(&self, entity: EntityId, locator: &AspectFieldLocator) -> &[usize] {
         self.ordinals
             .get(&entity)
             .and_then(|fields| fields.get(locator))

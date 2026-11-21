@@ -64,7 +64,7 @@ impl BasisLeasePort for WorthQueryApplicationBasisLease {
     fn release_basis(
         self: Box<Self>,
     ) -> worth_query_execution_runtime::facade::basis_identities::WorthQueryApplicationBasisReleaseOutcome
-    {
+{
         self.release().outcome()
     }
 }

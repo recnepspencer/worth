@@ -17,9 +17,7 @@ impl VerificationImage<'_> {
             Self::Applied { authorization, .. } => authorization,
         }
     }
-    pub fn applied(
-        &self,
-    ) -> Option<&RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>> {
+    pub fn applied(&self) -> Option<&RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>> {
         match self {
             Self::Committed(_) => None,
             Self::Applied { pin, .. } => Some(pin),

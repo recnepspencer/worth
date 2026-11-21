@@ -18,15 +18,9 @@ enum PublishedSubjectData {
     Scope(Scope),
     Graph(Graph),
 }
-pub struct PublishedCertifiedSubject(
-    PublishedSubjectData,
-);
+pub struct PublishedCertifiedSubject(PublishedSubjectData);
 impl PublishedCertifiedSubject {
-    pub fn decode(
-        layout: &Layout,
-        field: &Locus,
-        raw: &AspectValue,
-    ) -> Result<Self, ()> {
+    pub fn decode(layout: &Layout, field: &Locus, raw: &AspectValue) -> Result<Self, ()> {
         match layout.signing_provenance_encoding(field).ok_or(())? {
             Encoding::CertifiedSubjectV2 => ScopeBinding::decode(raw)
                 .map(|value| Self(PublishedSubjectData::Scope(value)))
@@ -45,9 +39,7 @@ impl PublishedCertifiedSubject {
             PublishedSubjectData::Graph(value) => value.authentication(),
         }
     }
-    pub fn dependencies(
-        &self,
-    ) -> impl Iterator<Item = (Coordinates, &Locus)> {
+    pub fn dependencies(&self) -> impl Iterator<Item = (Coordinates, &Locus)> {
         let (scope, graph) = match &self.0 {
             PublishedSubjectData::Scope(value) => (Some(value.dependencies()), None),
             PublishedSubjectData::Graph(value) => (None, Some(value.dependencies())),
@@ -69,10 +61,7 @@ impl PublishedCertifiedSubject {
             PublishedSubjectData::Graph(value) => value.selections(),
         }
     }
-    pub fn source_for_capture(
-        &self,
-        capture: &Locus,
-    ) -> Option<&Locus> {
+    pub fn source_for_capture(&self, capture: &Locus) -> Option<&Locus> {
         match &self.0 {
             PublishedSubjectData::Scope(value) => value
                 .dependencies()
@@ -86,10 +75,7 @@ impl PublishedCertifiedSubject {
                 .map(|d| &d.source_field),
         }
     }
-    pub fn has_valid_subject(
-        &self,
-        subject: Coordinates,
-    ) -> bool {
+    pub fn has_valid_subject(&self, subject: Coordinates) -> bool {
         self.authentication().subject == subject
             && match &self.0 {
                 PublishedSubjectData::Scope(value) => {

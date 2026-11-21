@@ -21,15 +21,11 @@ use worth_query_installation::facade::{
     WorthQueryInstalledManagedIndex as Installed, WorthQueryInstalledManagedIndexParent as Parent,
 };
 
-pub trait PredicateFactory:
-    Send + Sync
-{
+pub trait PredicateFactory: Send + Sync {
     fn admits(&self, parent: &Parent) -> bool;
     fn open(&self, execution: &ExecutionRequest<'_, '_>) -> Result<Arc<dyn PredicateRoot>, Denial>;
 }
-pub trait PredicateRoot:
-    Send + Sync
-{
+pub trait PredicateRoot: Send + Sync {
     fn len(&self) -> usize;
     fn insert(
         &self,
@@ -63,14 +59,10 @@ pub struct TypedPredicateFactory<
     I: ApplicationManagedIndexBinding<S>,
     P: Provider<S, I>,
 > {
-    pub installed:
-        Installed<S, I>,
-    pub provider:
-        Arc<P>,
-    pub refinement:
-        Option<super::super::refinement::RefinementCallbacks<S, I, P>>,
-    pub bindings:
-        Bindings,
+    pub installed: Installed<S, I>,
+    pub provider: Arc<P>,
+    pub refinement: Option<super::super::refinement::RefinementCallbacks<S, I, P>>,
+    pub bindings: Bindings,
 }
 struct TypedPredicateRoot<
     S: ApplicationSchema,

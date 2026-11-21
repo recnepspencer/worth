@@ -186,9 +186,9 @@ impl From<WorthQueryProductBranchAdmissionDenial> for WorthQueryOperationAuthori
     fn from(denial: WorthQueryProductBranchAdmissionDenial) -> Self {
         match denial {
             WorthQueryProductBranchAdmissionDenial::Stopped(stop) => Self::Stopped(stop),
-            WorthQueryProductBranchAdmissionDenial::Refused(refusal) => {
-                Self::Refused(WorthQueryOperationAuthorizationRefusalKind::ProductSecurityBasis(refusal))
-            }
+            WorthQueryProductBranchAdmissionDenial::Refused(refusal) => Self::Refused(
+                WorthQueryOperationAuthorizationRefusalKind::ProductSecurityBasis(refusal),
+            ),
         }
     }
 }

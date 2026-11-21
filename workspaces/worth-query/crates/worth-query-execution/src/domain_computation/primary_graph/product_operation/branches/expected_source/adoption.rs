@@ -1,8 +1,6 @@
 //! Replace an application head only while the candidate's exact source is current.
 use super::*;
-use worth_runtime_world::facade::{
-    ProductBranchCurrentnessFailure, ProductBranchObservation,
-};
+use worth_runtime_world::facade::{ProductBranchCurrentnessFailure, ProductBranchObservation};
 
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::WorthQueryExpectedProductBranchAdoptionDenial;
 
@@ -86,7 +84,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         ),
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
-        let execution = match phase.execution_request_for(&self.application.inner.runtime.product_runtime)
+        let execution = match phase
+            .execution_request_for(&self.application.inner.runtime.product_runtime)
         {
             Ok(execution) => execution,
             Err(_) => {
@@ -110,14 +109,16 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         occurrences.sort_unstable();
         let lanes = occurrences.map(|occurrence| {
             application
-                .inner.runtime
+                .inner
+                .runtime
                 .primary_provider
                 .application_branch_commit_lane_for_occurrence(occurrence)
         });
         let _first = lanes[0].enter();
         let _second = lanes[1].enter();
         let candidate = match application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .admit_product_occurrence(self.branch.occurrence())
         {
@@ -136,26 +137,25 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         }
         let expected_source = self.source.observation().clone();
         // Keep resource drops outside Native access and the outer head-slot guard.
-        let result =
-            application
-                .inner.runtime
-                .primary_provider
-                .graph
-                .with_runtime(&execution, |native| {
-                    let basis = native.owner_component_services().basis_port();
-                    if let Err(denial) = basis.compare_current_exact(self.source.relational_basis())
-                    {
-                        return Err(self.adoption_failed(
-                            WorthQueryExpectedProductBranchAdoptionDenial::SourceBasis(denial),
-                        ));
-                    }
-                    if let Err(denial) = basis.compare_current_exact(candidate.relational_basis()) {
-                        return Err(self.adoption_failed(
-                            WorthQueryExpectedProductBranchAdoptionDenial::CandidateBasis(denial),
-                        ));
-                    }
-                    self.adopt_while_heads_current(head, &candidate, &expected_source, &execution)
-                });
+        let result = application
+            .inner
+            .runtime
+            .primary_provider
+            .graph
+            .with_runtime(&execution, |native| {
+                let basis = native.owner_component_services().basis_port();
+                if let Err(denial) = basis.compare_current_exact(self.source.relational_basis()) {
+                    return Err(self.adoption_failed(
+                        WorthQueryExpectedProductBranchAdoptionDenial::SourceBasis(denial),
+                    ));
+                }
+                if let Err(denial) = basis.compare_current_exact(candidate.relational_basis()) {
+                    return Err(self.adoption_failed(
+                        WorthQueryExpectedProductBranchAdoptionDenial::CandidateBasis(denial),
+                    ));
+                }
+                self.adopt_while_heads_current(head, &candidate, &expected_source, &execution)
+            });
         match result {
             Ok((previous, adopted)) => Ok((
                 previous,
@@ -184,7 +184,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
     > {
         let world = self
             .application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .owner
             .observation_port();

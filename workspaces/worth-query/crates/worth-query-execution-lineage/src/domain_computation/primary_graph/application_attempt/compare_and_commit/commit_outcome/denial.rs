@@ -306,9 +306,7 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub const fn provider_rejected(
-        stage: WorthQueryApplicationCommitDenialStage,
-    ) -> Self {
+    pub const fn provider_rejected(stage: WorthQueryApplicationCommitDenialStage) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
             stage,
@@ -329,8 +327,7 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub const fn idempotency_intent_drift(
-    ) -> Self {
+    pub const fn idempotency_intent_drift() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
@@ -339,8 +336,7 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub const fn mutation_binding_mismatch(
-    ) -> Self {
+    pub const fn mutation_binding_mismatch() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::MutationBindingMismatch,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
@@ -349,8 +345,7 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub const fn mutation_input_mismatch(
-    ) -> Self {
+    pub const fn mutation_input_mismatch() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::MutationInputMismatch,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
@@ -359,8 +354,7 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub const fn operation_body_execution_required(
-    ) -> Self {
+    pub const fn operation_body_execution_required() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::OperationBodyExecutionRequired,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
@@ -369,8 +363,7 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub const fn coupled_refusal_without_subject(
-    ) -> Self {
+    pub const fn coupled_refusal_without_subject() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::CoupledRefusalWithoutSubject,
             stage: WorthQueryApplicationCommitDenialStage::InvariantExecution,

@@ -40,10 +40,7 @@ pub enum ReadInterruption<'a> {
     Execution(&'a dyn Fn(&str) -> Result<(), WorthQueryApplicationReadExecutionDenial>),
 }
 impl ReadInterruption<'_> {
-    pub fn checkpoint(
-        self,
-        subject: &str,
-    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+    pub fn checkpoint(self, subject: &str) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         match self {
             Self::Query(request) => checkpoint(request, subject),
             Self::Execution(check) => check(subject),

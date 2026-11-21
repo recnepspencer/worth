@@ -47,15 +47,11 @@ pub use artifact_evidence::WorthQueryGraphProviderStepArtifactContext;
 pub use artifact_evidence::WorthQueryGraphProviderStepArtifactEvidence;
 pub use checkpoint::WorthQueryRetainedGraphProviderCheckpoint;
 pub use checkpoint_restore::WorthQueryProviderCheckpointRestoreInvocation;
-pub use memory::{
-    WorthQueryGraphProviderMemoryArena, WorthQueryGraphProviderMemorySnapshot,
-};
+pub use memory::{WorthQueryGraphProviderMemoryArena, WorthQueryGraphProviderMemorySnapshot};
 pub use provider_execution_owner::{
     WorthQueryOwnedGraphProviderExecution, WorthQueryProviderExecutionInvocation,
 };
-pub use report::{
-    WorthQueryGraphProviderStepCompletion, WorthQueryGraphProviderStepReportParts,
-};
+pub use report::{WorthQueryGraphProviderStepCompletion, WorthQueryGraphProviderStepReportParts};
 
 #[cfg(test)]
 mod provider_execution_release_tests;

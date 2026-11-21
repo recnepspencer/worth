@@ -12,10 +12,7 @@ pub struct CallerPassControl {
     interleaving: Mutex<Option<Box<dyn FnOnce() + Send>>>,
 }
 impl CallerPassControl {
-    pub fn arm_interleaving(
-        self: &Arc<Self>,
-        action: impl FnOnce() + Send + 'static,
-    ) {
+    pub fn arm_interleaving(self: &Arc<Self>, action: impl FnOnce() + Send + 'static) {
         let owner = {
             let update_counter = &self.next_arm;
             let mut value = update_counter.load(Ordering::Relaxed);

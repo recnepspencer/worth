@@ -8,10 +8,7 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 /// The query proof keeps its value, source, request affinity and selected
 /// observation and original admission edition. Executable sealing happens only
 /// after the typed family selector admits the successor; this does not retag it.
-pub fn validate_required_successor<
-    Schema,
-    Family,
->(
+pub fn validate_required_successor<Schema, Family>(
     fresh: FreshOutputDisclosure<
         FamilySourceQuery<Schema, Family>,
         FamilySourceValue<Schema, Family>,

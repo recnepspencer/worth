@@ -26,10 +26,7 @@ mod delegation;
 mod elevation;
 pub use delegation::WorthQueryDelegationResolvedRequest;
 
-pub struct WorthQueryExactCapabilityObservation<
-    'observation,
-    Schema,
-> {
+pub struct WorthQueryExactCapabilityObservation<'observation, Schema> {
     runtime: &'observation WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     relational: &'observation worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &'observation worth_relational::facade::snapshots::SnapshotHandle,
@@ -122,9 +119,7 @@ impl<Schema> WorthQueryExactCapabilityObservation<'_, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn bind_capability_observation<
-        'observation,
-    >(
+    pub fn bind_capability_observation<'observation>(
         &'observation self,
         installed: &'observation crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan,
         request: &'observation crate::domain_computation::authorization::retained_capability_request::WorthQueryRetainedCapabilityRequest,
@@ -208,24 +203,16 @@ where
 }
 
 impl<Schema> WorthQueryExactCapabilityObservationContext<'_, Schema> {
-    pub const fn session_identity(
-        &self,
-    ) -> WorthQueryGraphWorkSessionIdentity {
+    pub const fn session_identity(&self) -> WorthQueryGraphWorkSessionIdentity {
         self.observation.session
     }
-    pub const fn relational(
-        &self,
-    ) -> &worth_relational::facade::runtime::RelationalRuntime {
+    pub const fn relational(&self) -> &worth_relational::facade::runtime::RelationalRuntime {
         self.observation.relational
     }
-    pub const fn snapshot(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+    pub const fn snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
         self.observation.snapshot
     }
-    pub fn bridge(
-        &self,
-    ) -> &worth_runtime_bridge::facade::BridgeAuthorizationRuntime {
+    pub fn bridge(&self) -> &worth_runtime_bridge::facade::BridgeAuthorizationRuntime {
         self.observation.runtime.runtime.authorization.bridge()
     }
     pub const fn installed(&self) -> &crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan{

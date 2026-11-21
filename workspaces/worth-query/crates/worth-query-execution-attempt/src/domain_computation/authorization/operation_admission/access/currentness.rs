@@ -38,9 +38,7 @@ impl WorthQueryAdmittedOperation {
     ///
     /// Later governed phases must call this rather than accepting a detached
     /// timestamp or caller assertion.
-    pub fn validate_current_authority(
-        &self,
-    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+    pub fn validate_current_authority(&self) -> Result<(), WorthQueryOperationAuthorizationDenial> {
         match self.current_authority_lapse() {
             Some(lapse) => Err(WorthQueryOperationAuthorizationDenial::new(
                 lapse.denial_kind(),
@@ -52,9 +50,7 @@ impl WorthQueryAdmittedOperation {
 
     /// The exact cause when the request authority that minted this admission
     /// has lapsed, or `None` while it is still current.
-    pub fn current_authority_lapse(
-        &self,
-    ) -> Option<WorthQueryAdmissionLapse> {
+    pub fn current_authority_lapse(&self) -> Option<WorthQueryAdmissionLapse> {
         crate::domain_computation::authorization::admitted_request::request_lapse(
             &self.data.request_scope,
             self.data.authentication_valid_until,

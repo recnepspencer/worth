@@ -38,9 +38,7 @@ impl WorthQueryAcceptedInboundOccurrence {
         &self.operation
     }
 
-    pub fn owner(
-        &self,
-    ) -> &WorthQueryCommittedDispatchOutboxObservation {
+    pub fn owner(&self) -> &WorthQueryCommittedDispatchOutboxObservation {
         &self.owner
     }
 

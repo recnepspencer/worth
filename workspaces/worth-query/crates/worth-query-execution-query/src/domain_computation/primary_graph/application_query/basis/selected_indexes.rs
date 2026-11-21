@@ -97,13 +97,7 @@ fn prepare_selected_basis<Schema, Query, Parameters, QueryResult, Scope>(
 /// Recorded original DATA may name a historical basis whose disposable indexes
 /// were reclaimed. Only this explicit readmission door reconstructs those
 /// installed indexes; fresh authority and scope admission precede the call.
-pub fn recover_recorded_query_indexes<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Scope,
->(
+pub fn recover_recorded_query_indexes<Schema, Query, Parameters, QueryResult, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &WorthQueryPrimaryGraph,
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,

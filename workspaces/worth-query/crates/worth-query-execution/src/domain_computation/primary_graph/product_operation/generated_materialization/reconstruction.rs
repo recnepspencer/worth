@@ -120,7 +120,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         let request = match phase.request_for_source(
-            self.inner.runtime
+            self.inner
+                .runtime
                 .primary_provider
                 .graph
                 .relational_runtime_instance_id(),
@@ -151,7 +152,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         if !suspended.matches_provider_version::<Schema, Producer>()
-            || self.inner.installed_producers.provider::<Producer>().is_none()
+            || self
+                .inner
+                .installed_producers
+                .provider::<Producer>()
+                .is_none()
         {
             return Err(reconstruction_failure(
                 suspended,

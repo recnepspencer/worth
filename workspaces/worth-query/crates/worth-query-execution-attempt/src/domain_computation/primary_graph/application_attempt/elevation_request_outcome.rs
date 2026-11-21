@@ -13,14 +13,6 @@ use crate::domain_computation::authorization::{
 ///
 /// The receipt is descriptive until a later lifecycle transition consumes it;
 /// it cannot itself authorize active elevated use.
-///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::WorthQueryRequestedElevation;
-///
-/// fn requested_elevation_cannot_be_copied(receipt: WorthQueryRequestedElevation) {
-///     let _copied = receipt.clone();
-/// }
-/// ```
 #[derive(Debug)]
 pub struct WorthQueryRequestedElevation {
     binding: WorthQueryElevationRequestBinding,
@@ -127,34 +119,19 @@ impl WorthQueryRequestedElevation {
         Self { binding, commit }
     }
 
-    pub const fn binding(
-        &self,
-    ) -> &WorthQueryElevationRequestBinding {
+    pub const fn binding(&self) -> &WorthQueryElevationRequestBinding {
         &self.binding
     }
 
-    pub fn apply_current_support<
-        Schema,
-        Capability,
-        Operation,
-        Input,
-    >(
+    pub fn apply_current_support(
         &mut self,
         current: crate::domain_computation::authorization::WorthQueryCurrentElevationSupport,
-        access: &mut crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+        access: &mut impl crate::ports::AdmittedCapabilityAccessElevationPort,
         subject: &str,
     ) -> Result<
         crate::domain_computation::authorization::WorthQueryRuntimeTimeSample,
         crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
-    >
-    where
-        Schema: worth_query_installation::facade::ApplicationSchema,
-        Input:
-            worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest<
-                Schema,
-                Capability,
-            >,
-    {
+    > {
         self.binding.apply_current_support(current, access, subject)
     }
 

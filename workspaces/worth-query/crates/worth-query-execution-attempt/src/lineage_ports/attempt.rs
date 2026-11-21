@@ -23,7 +23,7 @@ impl ApplicationAttemptPort for WorthQueryPrimaryGraphApplicationAttempt {
     fn idempotency(
         &self,
     ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding
-    {
+{
         self.idempotency()
     }
 
@@ -36,13 +36,14 @@ impl ApplicationAttemptPort for WorthQueryPrimaryGraphApplicationAttempt {
     fn product_publication(
         &self,
     ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding
-    {
+{
         self.affinity().product_publication()
     }
 
     fn admitted_request(
         &self,
-    ) -> &crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness {
+    ) -> &crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness
+    {
         self.affinity().admitted_request()
     }
 
@@ -52,7 +53,8 @@ impl ApplicationAttemptPort for WorthQueryPrimaryGraphApplicationAttempt {
 
     fn provider_session(
         &self,
-    ) -> &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding {
+    ) -> &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding
+    {
         self.affinity().provider_session()
     }
 
@@ -73,7 +75,9 @@ impl ApplicationAttemptPort for WorthQueryPrimaryGraphApplicationAttempt {
         self.affinity().runtime_authority_u64()
     }
 
-    fn schema_binding(&self) -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity {
+    fn schema_binding(
+        &self,
+    ) -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity {
         self.affinity().installed_binding()
     }
 
@@ -96,14 +100,15 @@ impl ApplicationAttemptPort for WorthQueryPrimaryGraphApplicationAttempt {
         role: &str,
         entity: worth_relational::facade::identity::EntityId,
     ) -> bool {
-        self.native_publication_roles().any(|(candidate_role, _, _, reference)| {
-            candidate_role == role
-                && matches!(
-                    reference,
-                    worth_relational::facade::transactions::EntityReference::Existing(existing)
-                        if *existing == entity
-                )
-        })
+        self.native_publication_roles()
+            .any(|(candidate_role, _, _, reference)| {
+                candidate_role == role
+                    && matches!(
+                        reference,
+                        worth_relational::facade::transactions::EntityReference::Existing(existing)
+                            if *existing == entity
+                    )
+            })
     }
 
     fn as_any(&self) -> &(dyn Any + Send) {
@@ -118,7 +123,10 @@ impl CoupledMemberPort for CoupledApplicationMember {
 
     fn producer_route(
         &self,
-    ) -> Option<(&str, &worth_relational::facade::mvcc::RequiredOutputPublicationMeaning)> {
+    ) -> Option<(
+        &str,
+        &worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    )> {
         self.producer_route()
     }
 
@@ -154,8 +162,12 @@ impl<Schema, Operation, Input, Scope> AdmittedOperationPort
         binding_identity: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         installed_operations: &worth_query_installation::facade::InstalledOperationCatalog,
     ) -> Result<(), WorthQueryOperationProjectionDenial> {
-        self.validate_projection_authority(runtime_authority, binding_identity, installed_operations)
-            .map_err(WorthQueryOperationProjectionDenial::from)
+        self.validate_projection_authority(
+            runtime_authority,
+            binding_identity,
+            installed_operations,
+        )
+        .map_err(WorthQueryOperationProjectionDenial::from)
     }
 
     fn mutation_product(&self) -> Option<&crate::basis::WorthQueryProductBranchLease> {
@@ -183,7 +195,8 @@ impl<Schema, Operation, Input, Scope> AdmittedOperationPort
 
     fn retain_graph_contract(
         &self,
-    ) -> Arc<worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts> {
+    ) -> Arc<worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts>
+    {
         self.retain_graph_contract()
     }
 
@@ -200,7 +213,7 @@ impl<Schema, Operation, Input, Scope> AdmittedOperationPort
     fn query_context(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>
-    {
+{
         self.query_context()
     }
 

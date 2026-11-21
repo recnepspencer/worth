@@ -15,17 +15,16 @@ use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
 };
 
+use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::{
+    PreparedWorkflowAdvance, PreparedWorkflowAssessment, PreparedWorkflowCondition,
+    PreparedWorkflowOperation, RequiredWorkflowActor, RequiredWorkflowApproval,
+    RequiredWorkflowAssessment, RequiredWorkflowCondition, RequiredWorkflowOperation,
+    WorkflowApprovalBodyDenial, WorkflowApprovalBodyPreparation, WorkflowApprovalDecision,
+    WorkflowLocalActionKind, WorkflowProgressOutcome, WorkflowTransitionBindingDenial,
+    WorkflowTransitionPreparationDenial, WorthQueryWorkflowActorContext,
+};
 use crate::domain_computation::primary_graph::application_attempt::{
     PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
-};
-use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::{
-    PreparedWorkflowAdvance, PreparedWorkflowAssessment,
-    PreparedWorkflowCondition, PreparedWorkflowOperation, RequiredWorkflowActor,
-    RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
-    RequiredWorkflowOperation, WorkflowApprovalBodyDenial, WorkflowApprovalBodyPreparation,
-    WorkflowApprovalDecision, WorkflowLocalActionKind, WorkflowProgressOutcome,
-    WorkflowTransitionBindingDenial, WorkflowTransitionPreparationDenial,
-    WorthQueryWorkflowActorContext,
 };
 use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary;
 use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
@@ -44,10 +43,10 @@ pub struct WorthQueryWorkflowAdvanceAdapter;
 
 #[path = "workflow_transition_program/actor_context.rs"]
 mod actor_context;
-#[path = "workflow_transition_program/approval.rs"]
-mod approval;
 #[path = "workflow_transition_program/preparation/adapter_preparation.rs"]
 mod adapter_preparation;
+#[path = "workflow_transition_program/approval.rs"]
+mod approval;
 #[path = "workflow_transition_program/preparation/local_completion.rs"]
 mod local_completion;
 
@@ -67,7 +66,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     where
         Schema: ApplicationSchema,
         Input: Clone + Send + Sync + 'static,
-    {
+{
         InnerAdapter::resolve_guarded_operation_custody::<Schema, Operation, Input, Scope>(
             phase,
             runtime,
@@ -156,7 +155,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             >,
         >,
         Binding::Input: Clone + Send + Sync + 'static,
-    {
+{
         InnerAdapter::prepare_body::<Schema, Binding>(
             access,
             phase,
@@ -351,45 +350,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     ) -> WorthQueryApplicationIdempotencyBinding {
         InnerAdapter::bind_operation_idempotency(idempotency, transition_identity)
     }
-
-    pub fn resolve_condition_replay<Schema, Operation, Input, Scope>(
-        phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        required: &RequiredWorkflowCondition,
-        sources: &WorthQueryWorkflowConditionSources<Schema>,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-    ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
-    where
-        Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-    {
-        InnerAdapter::resolve_condition_replay::<Schema, Operation, Input, Scope>(
-            phase, runtime, prepared, required, sources, idempotency,
-        )
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    pub fn resolve_operation_replay<Schema, Operation, Input, Scope, Binding>(
-        phase: &WorthQueryAdvancementPhase<'_>,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-        prepared: &PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
-        required: &RequiredWorkflowOperation,
-        receipt: &WorthQueryApplicationCommitReceipt,
-        recovery: Option<
-            &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
-        >,
-        idempotency: WorthQueryApplicationIdempotencyBinding,
-    ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
-    where
-        Schema: ApplicationSchema,
-        Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-        Binding: ApplicationMutationBinding<Schema>,
-    {
-        InnerAdapter::resolve_operation_replay::<Schema, Operation, Input, Scope, Binding>(
-            phase, runtime, prepared, required, receipt, recovery, idempotency,
-        )
-    }
 }
+
+#[path = "workflow_transition_program/replay.rs"]
+mod replay;

@@ -12,16 +12,20 @@ pub mod workflow_proposal_program;
 pub mod workflow_transition_program;
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::coupled_outputs;
 
+pub use idempotency_resolution::{
+    WorthQueryApplicationIdempotencyResolution, WorthQueryGuardedWorkflowOperationCustody,
+};
 pub use provider_execution::{
     inspect_authored_application, inspect_coupled_application, prepare_coupled_application,
     register_coupled_application, ApprovedCoupledWriter, CommitPreparedCoupledWriter,
     InspectedAuthoredApplication, InspectedCoupledWriter, ReadmittedCommitProgram,
 };
-pub use provider_execution::{WorthQueryManagedPhaseStorageForTest, WorthQueryProviderProgressionOutcome};
+pub use provider_execution::{
+    WorthQueryManagedPhaseStorageForTest, WorthQueryProviderProgressionOutcome,
+};
 pub use signed_creation::adapter::WorthQuerySignedCreationAdapter;
 pub use signed_creation::sealing::WorthQuerySignedCreationPreparationDenial;
 pub use workflow_transition_program::WorthQueryWorkflowActorContext;
-pub use idempotency_resolution::{WorthQueryApplicationIdempotencyResolution, WorthQueryGuardedWorkflowOperationCustody};
 
 pub mod workflow_instance_observation;
 

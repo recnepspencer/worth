@@ -109,11 +109,7 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
         }
     }
 
-    pub fn insert_entry(
-        &mut self,
-        dependency: &ViewDependency,
-        key: &Key,
-    ) {
+    pub fn insert_entry(&mut self, dependency: &ViewDependency, key: &Key) {
         self.insert(dependency, Target::Entry(key.clone()));
     }
 
@@ -121,11 +117,7 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
         self.insert(dependency, Target::Membership);
     }
 
-    pub fn remove_entry(
-        &mut self,
-        key: &Key,
-        dependencies: &BTreeSet<ViewDependency>,
-    ) {
+    pub fn remove_entry(&mut self, key: &Key, dependencies: &BTreeSet<ViewDependency>) {
         self.remove_target(dependencies, Target::Entry(key.clone()));
     }
 
@@ -165,9 +157,7 @@ impl<Key: Clone + Ord> DependencyIndex<Key> {
         }
     }
 
-    pub fn entry_insertion_bound(
-        dependency: &ViewDependency,
-    ) -> usize {
+    pub fn entry_insertion_bound(dependency: &ViewDependency) -> usize {
         let axes = if matches!(
             dependency,
             ViewDependency::Aspect(..) | ViewDependency::Field(..)

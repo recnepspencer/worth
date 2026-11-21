@@ -5,11 +5,7 @@ use worth_query_declaration::facade::application_query::{
 };
 
 impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
-    pub fn with_same_scope_plan<
-        B,
-        R,
-        E,
-    >(
+    pub fn with_same_scope_plan<B, R, E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         selector: &WorthQueryObservedScopeSelector,
@@ -39,11 +35,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
         )
     }
 
-    pub fn with_same_scope_plan_on<
-        B,
-        R,
-        E,
-    >(
+    pub fn with_same_scope_plan_on<B, R, E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         selector: &WorthQueryObservedScopeSelector,

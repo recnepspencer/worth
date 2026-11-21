@@ -5,9 +5,7 @@ use std::sync::Arc;
 use worth_runtime_world::facade::ProductBranchObservation;
 
 impl PublishedStableLineage {
-    pub fn has_executed_adoption_support(
-        &self,
-    ) -> bool {
+    pub fn has_executed_adoption_support(&self) -> bool {
         self.recorded().computation_source.is_executed_adoption()
     }
 
@@ -26,15 +24,10 @@ impl PublishedStableLineage {
             .get()
             .expect("stable publication filled its immutable row")
     }
-    pub fn same_publication(
-        &self,
-        other: &Self,
-    ) -> bool {
+    pub fn same_publication(&self, other: &Self) -> bool {
         Arc::ptr_eq(&self.cell, &other.cell) && self.observation == other.observation
     }
-    pub fn exact_settlement(
-        &self,
-    ) -> &Arc<super::super::super::RecordedSettlementIdentity> {
+    pub fn exact_settlement(&self) -> &Arc<super::super::super::RecordedSettlementIdentity> {
         &self.recorded().settlement_identity
     }
     pub fn output_correspondence(
@@ -43,9 +36,7 @@ impl PublishedStableLineage {
     {
         &self.recorded().correspondence
     }
-    pub fn source_identity(
-        &self,
-    ) -> Option<super::super::super::RecordedSourceIdentity> {
+    pub fn source_identity(&self) -> Option<super::super::super::RecordedSourceIdentity> {
         self.recorded().source_identity
     }
     pub fn source_scope(
@@ -53,9 +44,7 @@ impl PublishedStableLineage {
     ) -> crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding {
         self.recorded().settlement_identity.source().scope
     }
-    pub fn source_partition_identity(
-        &self,
-    ) -> Option<[u8; 32]> {
+    pub fn source_partition_identity(&self) -> Option<[u8; 32]> {
         self.recorded().source_partition_identity
     }
     pub fn producing_implementation(
@@ -64,14 +53,10 @@ impl PublishedStableLineage {
         self.recorded().producing_implementation
     }
 
-    pub fn producer_dependency_identity(
-        &self,
-    ) -> Option<[u8; 32]> {
+    pub fn producer_dependency_identity(&self) -> Option<[u8; 32]> {
         self.recorded().producer_dependency_identity
     }
-    pub fn idempotency_key_identity(
-        &self,
-    ) -> [u8; 32] {
+    pub fn idempotency_key_identity(&self) -> [u8; 32] {
         self.recorded().idempotency_key_identity
     }
     pub fn checkpoint_source_facts(
@@ -88,9 +73,7 @@ impl PublishedStableLineage {
     ) -> Option<&super::super::super::SealedNativeOutputWitness> {
         self.recorded().native_output_witness()
     }
-    pub fn observation(
-        &self,
-    ) -> &ProductBranchObservation {
+    pub fn observation(&self) -> &ProductBranchObservation {
         &self.observation
     }
 }

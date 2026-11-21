@@ -1,10 +1,7 @@
 //! Equal output correspondence and installed revisions across exact settlements.
 use super::*;
 impl SealedNativeOutputWitness {
-    pub fn same_output_as(
-        &self,
-        other: &Self,
-    ) -> Result<bool, CompanionPreflightStop> {
+    pub fn same_output_as(&self, other: &Self) -> Result<bool, CompanionPreflightStop> {
         if self.roles.len() != other.roles.len() || self.aspects.len() != other.aspects.len() {
             return Ok(false);
         }

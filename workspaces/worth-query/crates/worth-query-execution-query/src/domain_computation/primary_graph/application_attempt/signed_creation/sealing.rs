@@ -1,8 +1,5 @@
 //! Seals the actual prepared native body once, at its retained occurrence snapshot.
-use super::super::{
-    WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationEffectProgram,
-};
+use super::super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationEffectProgram};
 use super::{identity, SealedSigningContext};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryPrimaryGraphApplicationRuntime,
@@ -18,6 +15,7 @@ use worth_query_declaration::facade::{
     },
     application_schema::{ApplicationSchema, ApplicationSigningProvenanceMetadata},
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 pub type BodyCandidate<Schema, Binding> = WorthQueryApplicationEffectProgram<Schema, <Binding as ApplicationMutationBinding<Schema>>::Operation, <Binding as ApplicationMutationBinding<Schema>>::Input, <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>;
 
@@ -25,10 +23,7 @@ pub type BodyCandidate<Schema, Binding> = WorthQueryApplicationEffectProgram<Sch
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::signed_creation::WorthQuerySignedCreationPreparationDenial;
 type Denial = WorthQuerySignedCreationPreparationDenial;
 
-pub fn seal<
-    Schema: ApplicationSchema,
-    Binding: ApplicationMutationBinding<Schema>,
->(
+pub fn seal<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
     phase: &WorthQueryAdvancementPhase<'_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     candidate: BodyCandidate<Schema, Binding>,

@@ -9,9 +9,7 @@ pub use commit_execution::WorthQueryPrimaryGraphCommittedApplication;
 
 pub use evidence_seal::RebaseVerificationFailure;
 pub use evidence_seal::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
-pub use evidence_seal::{
-    WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommitEvidence,
-};
+pub use evidence_seal::{WorthQueryMutationWorkCommitSeal, WorthQueryPrimaryGraphCommitEvidence};
 
 use super::super::super::WorthQueryPrimaryGraphProvider;
 use super::WorthQueryPreparedApplicationCommit;
@@ -136,9 +134,7 @@ pub fn publish_recovered(
     })
 }
 
-pub use evidence_seal::{
-    PreparedRebaseDenial, PreparedSourceFactRebase,
-};
+pub use evidence_seal::{PreparedRebaseDenial, PreparedSourceFactRebase};
 
 pub use commit_execution::QueryPreparingApplicationCommit;
 pub use commit_execution::RetainedQueryDurablePreparation;

@@ -36,17 +36,10 @@ pub struct WorkflowAssessmentEvidenceMeaning {
     pub program_revision: String,
     /// What the evidence retains; see [`workflow_evidence_retained_bytes`].
     pub retained_bytes: u64,
-    pub currentness_facts:
-        std::sync::Arc<[super::super::WorthQueryApplicationObservedFact]>,
+    pub currentness_facts: std::sync::Arc<[super::super::WorthQueryApplicationObservedFact]>,
 }
 
-pub fn visit_workflow_assessment_facts<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-    Error,
->(
+pub fn visit_workflow_assessment_facts<Schema, Operation, Input, Scope, Error>(
     layout: &WorthQueryWorkflowLayout,
     admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
     meaning: &WorkflowAssessmentEvidenceMeaning,

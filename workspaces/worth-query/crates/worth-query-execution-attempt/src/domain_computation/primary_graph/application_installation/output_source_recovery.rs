@@ -1,8 +1,8 @@
 //! One-use recovered program output source carrier.
-use std::sync::Arc;
 use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryPerformedRelationalProductChange, WorthQueryProductPublicationReceipt,
 };
+use std::sync::Arc;
 
 /// Query projection or history retirement. Missing parts remain owned and
 /// refuse promotion; a partial transfer never drops an already-taken witness.
@@ -19,9 +19,7 @@ impl WorthQueryRecoveredProgramOutputSource {
     ) -> &crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication {
         &self.publication
     }
-    pub fn product_branch(
-        &self,
-    ) -> crate::basis::WorthQueryProductBranch {
+    pub fn product_branch(&self) -> crate::basis::WorthQueryProductBranch {
         crate::basis::WorthQueryProductBranch::from_occurrence(
             self.publication.product_incarnation(),
         )
@@ -87,9 +85,7 @@ impl WorthQueryRecoveredProgramOutputSource {
         }
     }
 
-    pub fn take_original(
-        publication: &WorthQueryProductPublicationReceipt,
-    ) -> Self {
+    pub fn take_original(publication: &WorthQueryProductPublicationReceipt) -> Self {
         Self {
             publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication::from_receipt(publication.clone()),
             change: publication.take_fresh_delivery().map(Arc::new),

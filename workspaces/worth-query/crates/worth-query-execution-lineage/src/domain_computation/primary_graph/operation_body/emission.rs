@@ -54,14 +54,10 @@ impl BodyExternalEffectSelection {
     pub fn take_payload(&mut self) -> Option<worth_query_declaration::facade::application_schema::ApplicationExternalEffectPayloadProjection>{
         self.payload.take()
     }
-    pub fn backing(
-        &self,
-    ) -> Option<ObservedQueryExpressionContext> {
+    pub fn backing(&self) -> Option<ObservedQueryExpressionContext> {
         self.backing.clone()
     }
-    pub fn values(
-        &self,
-    ) -> Option<super::value::PreparedBodyValues> {
+    pub fn values(&self) -> Option<super::value::PreparedBodyValues> {
         self.values.clone()
     }
     pub fn matches(&self, meaning: &Meaning) -> bool {
@@ -78,11 +74,7 @@ impl BodyExternalEffectSelection {
     }
 }
 
-pub fn prepare<
-    Schema: worth_query_installation::facade::ApplicationSchema,
-    Operation,
-    Entity,
->(
+pub fn prepare<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Entity>(
     reader: &mut crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
     scope: &crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<
         Schema,

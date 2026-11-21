@@ -19,12 +19,7 @@ pub struct WorthQuerySignedCreationAdapter;
 impl WorthQuerySignedCreationAdapter {
     /// A joint native publication may rely on this exact candidate's proof.
     /// It neither consumes another event nor turns descriptive provenance into authority.
-    pub fn validate_shared_authentication<
-        Schema,
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn validate_shared_authentication<Schema, Operation, Input, Scope>(
         candidate: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
         intent: &WorthQueryAuthenticationEventIntent,
         principal: &worth_query_declaration::facade::authentication::WorthQueryExternalPrincipalIdentity,
@@ -51,7 +46,7 @@ impl WorthQuerySignedCreationAdapter {
         Ok(())
     }
     pub fn prepare<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,
         application: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
         candidate: sealing::BodyCandidate<Schema, Binding>,

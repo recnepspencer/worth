@@ -24,9 +24,7 @@ impl InstalledProducerEdition {
 
 impl InstalledProducerEdition {
     #[doc(hidden)]
-    pub fn from_declaration_for_test<
-        D: crate::ports::ProducerEditionDeclarationPort + ?Sized,
-    >(
+    pub fn from_declaration_for_test<D: crate::ports::ProducerEditionDeclarationPort + ?Sized>(
         declaration: &D,
         build_identity: worth_foundational::facade::ApplicationBuildIdentity,
     ) -> Result<Self, D::Error> {

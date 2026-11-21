@@ -86,9 +86,7 @@ impl WorthQueryProductWorldPorts {
 }
 
 impl super::WorthQueryProductRuntime {
-    pub fn interim_checkpoint_port(
-        &self,
-    ) -> Option<WorldInterimCheckpointPort> {
+    pub fn interim_checkpoint_port(&self) -> Option<WorldInterimCheckpointPort> {
         self.owner.interim_checkpoint_port()
     }
     pub fn with_execution_placement<R>(

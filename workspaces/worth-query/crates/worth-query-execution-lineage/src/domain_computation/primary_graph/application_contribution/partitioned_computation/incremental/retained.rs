@@ -35,9 +35,7 @@ pub use worth_query_execution_contracts::facade::partitioned_tree_observation::{
 /// allocation outlives every state retained under it and no later
 /// installation can share its address.
 #[derive(Clone, Debug)]
-pub struct ComputationInstallation(
-    Arc<InstalledOwner>,
-);
+pub struct ComputationInstallation(Arc<InstalledOwner>);
 
 #[derive(Debug)]
 struct InstalledOwner;
@@ -195,8 +193,7 @@ pub struct SealedComputationRun {
     pub cloned_from: Option<Arc<RetainedComputation>>,
     /// The request memory the state's tree and routing hold until the
     /// lineage charges the state.
-    pub attribution_memory:
-        Option<QueryMemoryReservation>,
+    pub attribution_memory: Option<QueryMemoryReservation>,
 }
 
 /// The owner calls a run carried from `prior` without making them.

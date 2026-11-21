@@ -27,9 +27,7 @@ impl QueryObligationHistory {
         }
         driver.publish(medium.as_ref(), row, request)
     }
-    pub fn accepted_outputs(
-        &self,
-    ) -> Vec<QueryAcceptedOutputRecord> {
+    pub fn accepted_outputs(&self) -> Vec<QueryAcceptedOutputRecord> {
         self.state()
             .journal
             .as_ref()

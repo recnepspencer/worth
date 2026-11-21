@@ -11,10 +11,7 @@ pub enum ObservedComputationInputs {
     Several(std::sync::Arc<ComputationFactAttribution>),
 }
 impl ObservedComputationInputs {
-    pub fn ordinals(
-        &self,
-        facts: &BTreeMap<Key, Fact>,
-    ) -> Box<[usize]> {
+    pub fn ordinals(&self, facts: &BTreeMap<Key, Fact>) -> Box<[usize]> {
         facts
             .keys()
             .enumerate()
@@ -29,9 +26,7 @@ impl ObservedComputationInputs {
             })
             .collect()
     }
-    pub fn into_attribution(
-        self,
-    ) -> Option<ComputationFactAttribution> {
+    pub fn into_attribution(self) -> Option<ComputationFactAttribution> {
         match self {
             Self::One(attribution) => {
                 let mut attribution =

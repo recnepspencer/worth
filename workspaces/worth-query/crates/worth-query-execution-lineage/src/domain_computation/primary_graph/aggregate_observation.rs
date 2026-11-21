@@ -113,9 +113,7 @@ impl AggregateObservation {
         poll()?;
         Ok(true)
     }
-    pub fn checkpoint(
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<(), Cause> {
+    pub fn checkpoint(context: &mut MapKernelContext<'_, '_>) -> Result<(), Cause> {
         (if context.has_accounting() {
             context.checkpoint(1)
         } else {
@@ -139,9 +137,7 @@ impl<Member> AggregateObservation<Member> {
     pub fn native(&self) -> &PinnedAggregateRead<Member> {
         &self.native
     }
-    pub fn source(
-        &self,
-    ) -> &super::projection_read_origin::ProjectionReadOrigin {
+    pub fn source(&self) -> &super::projection_read_origin::ProjectionReadOrigin {
         &self.source
     }
 }

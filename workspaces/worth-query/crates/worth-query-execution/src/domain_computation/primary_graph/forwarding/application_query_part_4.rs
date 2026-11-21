@@ -29,7 +29,13 @@ mod domain_computation_primary_graph_application_query_derived_view_registration
             SecondResult,
             Value,
             LinkKey,
-        >(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, view: &WorthQueryManagedDerivedView<MembershipQuery, Value>, product: &WorthQueryProductBranchLease, key: &WorthQueryManagedDerivedViewKey, first: WorthQueryAdmittedApplicationQueryPlan<
+        >(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'_, '_>,
+            view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
+            product: &WorthQueryProductBranchLease,
+            key: &WorthQueryManagedDerivedViewKey,
+            first: WorthQueryAdmittedApplicationQueryPlan<
                 'a,
                 Schema,
                 FirstQuery,
@@ -38,13 +44,19 @@ mod domain_computation_primary_graph_application_query_derived_view_registration
                 FirstPrincipal,
                 FirstPrincipalIdentity,
                 FirstScope,
-            >, batch: &WorthQueryApplicationQueryBatchAdmission, second_for: impl FnOnce(
+            >,
+            batch: &WorthQueryApplicationQueryBatchAdmission,
+            second_for: impl FnOnce(
                 &FirstResult,
                 &WorthQueryApplicationQueryBatchAdmission,
             ) -> Result<
                 WorthQueryApplicationBatchResult<SecondQuery, SecondResult>,
                 Denial,
-            >, first_link: impl FnOnce(&FirstResult) -> LinkKey, second_link: impl FnOnce(&SecondResult) -> LinkKey, project: impl FnOnce(&FirstResult, &SecondResult) -> Value) -> Result<std::sync::Arc<Value>, Denial>
+            >,
+            first_link: impl FnOnce(&FirstResult) -> LinkKey,
+            second_link: impl FnOnce(&SecondResult) -> LinkKey,
+            project: impl FnOnce(&FirstResult, &SecondResult) -> Value,
+        ) -> Result<std::sync::Arc<Value>, Denial>
         where
             FirstQuery: 'a,
             FirstParameters: 'a,
@@ -54,7 +66,8 @@ mod domain_computation_primary_graph_application_query_derived_view_registration
             FirstScope: 'a,
             SecondResult: WorthQueryApplicationProjection<Schema, SecondQuery> + 'a,
             Value: WorthQueryManagedDerivedValue,
-            LinkKey: Eq, {
+            LinkKey: Eq,
+        {
             self.inner.refresh_managed_derived_collection_pair_entry_in_batch::<MembershipQuery, FirstQuery, FirstParameters, FirstResult, FirstPrincipal, FirstPrincipalIdentity, FirstScope, SecondQuery, SecondResult, Value, LinkKey>(execution, view, product, key, first, batch, second_for, first_link, second_link, project)
         }
         #[allow(clippy::too_many_arguments)]
@@ -66,18 +79,30 @@ mod domain_computation_primary_graph_application_query_derived_view_registration
             SecondResult,
             Value,
             LinkKey,
-        >(&self, view: &WorthQueryManagedDerivedView<MembershipQuery, Value>, product: &WorthQueryProductBranchLease, key: &WorthQueryManagedDerivedViewKey, first: WorthQueryApplicationBatchResult<FirstQuery, FirstResult>, batch: &WorthQueryApplicationQueryBatchAdmission, second_for: impl FnOnce(
+        >(
+            &self,
+            view: &WorthQueryManagedDerivedView<MembershipQuery, Value>,
+            product: &WorthQueryProductBranchLease,
+            key: &WorthQueryManagedDerivedViewKey,
+            first: WorthQueryApplicationBatchResult<FirstQuery, FirstResult>,
+            batch: &WorthQueryApplicationQueryBatchAdmission,
+            second_for: impl FnOnce(
                 &FirstResult,
                 &WorthQueryApplicationQueryBatchAdmission,
             ) -> Result<
                 WorthQueryApplicationBatchResult<SecondQuery, SecondResult>,
                 Denial,
-            >, first_link: impl FnOnce(&FirstResult) -> LinkKey, second_link: impl FnOnce(&SecondResult) -> LinkKey, project: impl FnOnce(&FirstResult, &SecondResult) -> Value) -> Result<std::sync::Arc<Value>, Denial>
+            >,
+            first_link: impl FnOnce(&FirstResult) -> LinkKey,
+            second_link: impl FnOnce(&SecondResult) -> LinkKey,
+            project: impl FnOnce(&FirstResult, &SecondResult) -> Value,
+        ) -> Result<std::sync::Arc<Value>, Denial>
         where
             FirstResult: WorthQueryApplicationProjection<Schema, FirstQuery>,
             SecondResult: WorthQueryApplicationProjection<Schema, SecondQuery>,
             Value: WorthQueryManagedDerivedValue,
-            LinkKey: Eq, {
+            LinkKey: Eq,
+        {
             self.inner.refresh_managed_derived_collection_pair_entry_from_batch_result::<MembershipQuery, FirstQuery, FirstResult, SecondQuery, SecondResult, Value, LinkKey>(view, product, key, first, batch, second_for, first_link, second_link, project)
         }
     }
@@ -94,15 +119,24 @@ mod domain_computation_primary_graph_application_query_observed_source_original_
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
-        pub fn readmit_original_operation_source<B>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, __arg1: &crate::publication_boundary::WorthQueryProgramPublicationAccess, external: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<S>, request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope, data: &WorthQueryOriginalSourceData) -> Result<WorthQueryReadmittedOriginalSource<B::Query>, D>
+        pub fn readmit_original_operation_source<B>(
+            &self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            __arg1: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+            external: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<S>,
+            request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+            data: &WorthQueryOriginalSourceData,
+        ) -> Result<WorthQueryReadmittedOriginalSource<B::Query>, D>
         where
             B: ApplicationQueryBinding<S>,
             <B::ResultBinding as ApplicationStructuredValueBinding>::Value:
                 crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
                         S,
                         B::Query,
-                    > + 'static, {
-            self.inner.readmit_original_operation_source::<B>(phase, __arg1, external, request, data)
+                    > + 'static,
+        {
+            self.inner
+                .readmit_original_operation_source::<B>(phase, __arg1, external, request, data)
         }
     }
 }
@@ -116,10 +150,10 @@ mod domain_computation_primary_graph_application_query_observed_source_prepared_
     use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::observed_source::result_set::WorthQueryObservedResultSet;
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
-    impl<Schema>
-    WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: worth_query_installation::facade::ApplicationSchema, {
+    impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
         pub fn bind_application_source_expectation<Binding, Scope>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, admission: &mut WorthQueryAdmittedApplicationOperation<
                 Schema,
                 Binding::Operation,
@@ -131,8 +165,11 @@ where
         where
             Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
                 Schema,
-            >, {
-            self.inner.bind_application_source_expectation::<Binding, Scope>(phase, admission, source, input)
+        >,{
+            self.inner
+                .bind_application_source_expectation::<Binding, Scope>(
+                    phase, admission, source, input,
+                )
         }
         pub fn bind_application_result_set_expectation<Binding, Scope>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, admission: &mut WorthQueryAdmittedApplicationOperation<
                 Schema,
@@ -145,8 +182,11 @@ where
         where
             Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
                 Schema,
-            >, {
-            self.inner.bind_application_result_set_expectation::<Binding, Scope>(phase, admission, result_set, input)
+        >,{
+            self.inner
+                .bind_application_result_set_expectation::<Binding, Scope>(
+                    phase, admission, result_set, input,
+                )
         }
     }
 }
@@ -161,13 +201,27 @@ mod domain_computation_primary_graph_application_query_observed_source_retained_
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
-        pub fn retain_query_dependencies<Query, Value>(&self, phase: &WorthQueryAdvancementPhase<'_>, __arg1: &crate::publication_boundary::WorthQueryProgramPublicationAccess, source: &WorthQueryApplicationOutputDemandSource<Query, Value>) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial> {
-            self.inner.retain_query_dependencies::<Query, Value>(phase, __arg1, source)
+        pub fn retain_query_dependencies<Query, Value>(
+            &self,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            __arg1: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+            source: &WorthQueryApplicationOutputDemandSource<Query, Value>,
+        ) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial>
+        {
+            self.inner
+                .retain_query_dependencies::<Query, Value>(phase, __arg1, source)
         }
-        pub fn combine_query_dependencies<'a, I>(&self, phase: &WorthQueryAdvancementPhase<'_>, __arg1: &crate::publication_boundary::WorthQueryProgramPublicationAccess, parts: I) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial>
+        pub fn combine_query_dependencies<'a, I>(
+            &self,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            __arg1: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+            parts: I,
+        ) -> Result<WorthQueryRetainedQueryDependencies, WorthQueryRequiredSetCurrentnessDenial>
         where
-            I: Iterator<Item = &'a WorthQueryRetainedQueryDependencies> + Clone, {
-            self.inner.combine_query_dependencies::<I>(phase, __arg1, parts)
+            I: Iterator<Item = &'a WorthQueryRetainedQueryDependencies> + Clone,
+        {
+            self.inner
+                .combine_query_dependencies::<I>(phase, __arg1, parts)
         }
     }
 }
@@ -183,151 +237,21 @@ mod domain_computation_primary_graph_application_query_observed_source_retained_
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
-        pub fn require_current_required_set<'s>(&self, phase: &WorthQueryAdvancementPhase<'_>, __arg1: &crate::publication_boundary::WorthQueryProgramPublicationAccess, request: &WorthQueryRequestScope, settlements: impl IntoIterator<Item = &'s WorthQueryOutputDemandSettlement>, dependencies: &WorthQueryRetainedQueryDependencies) -> Result<(), WorthQueryRequiredSetCurrentnessDenial> {
-            self.inner.require_current_required_set(phase, __arg1, request, settlements, dependencies)
-        }
-    }
-}
-
-#[allow(unused_imports, dead_code)]
-mod domain_computation_primary_graph_application_query_one_shot_batch {
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryBatchAdmission;
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::one_shot::batch::result::WorthQueryApplicationBatchResult;
-    use worth_query_execution_lineage::facade::primary_graph::application_query::one_shot::WorthQueryApplicationBatchReadDenial;
-    use worth_query_declaration::facade::application_schema::ApplicationSchema;
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan;
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection;
-    use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
-    use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
-    impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        pub fn execute_application_query_one_shot_in_batch<
-            Query,
-            Parameters,
-            QueryResult,
-            Principal,
-            PrincipalIdentity,
-            Scope,
-        >(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, plan: WorthQueryAdmittedApplicationQueryPlan<
-                '_,
-                Schema,
-                Query,
-                Parameters,
-                QueryResult,
-                Principal,
-                PrincipalIdentity,
-                Scope,
-            >, batch: &WorthQueryApplicationQueryBatchAdmission) -> Result<
-            WorthQueryApplicationBatchResult<Query, QueryResult>,
-            WorthQueryApplicationBatchReadDenial,
-        >
-        where
-            QueryResult: WorthQueryApplicationProjection<Schema, Query>, {
-            self.inner.execute_application_query_one_shot_in_batch::<Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>(phase, plan, batch)
-        }
-    }
-}
-
-#[allow(unused_imports, dead_code)]
-mod domain_computation_primary_graph_application_query_one_shot_correction_disclosure {
-    use worth_relational::facade::identity::EntityId;
-    use worth_query_declaration::facade::application_schema::ApplicationSchema;
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::one_shot::denial::WorthQueryApplicationOneShotDenial;
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan;
-    use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
-    use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
-    impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        pub(crate) fn execute_correction_disclosure<
-            Query,
-            Parameters,
-            QueryResult,
-            Principal,
-            PrincipalIdentity,
-            Scope,
-        >(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, plan: WorthQueryAdmittedApplicationQueryPlan<
-                '_,
-                Schema,
-                Query,
-                Parameters,
-                QueryResult,
-                Principal,
-                PrincipalIdentity,
-                Scope,
-            >, original_subject: EntityId) -> Result<bool, WorthQueryApplicationOneShotDenial> {
-            self.inner.execute_correction_disclosure::<Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>(execution, plan, original_subject)
-        }
-    }
-}
-
-#[allow(unused_imports, dead_code)]
-mod domain_computation_primary_graph_application_query_one_shot_history_capture {
-    use worth_query_declaration::facade::application_query::ApplicationHistoryQueryBinding;
-    use worth_query_declaration::facade::application_schema::ApplicationSchema;
-    use crate::domain_computation::primary_graph::application_query::history::SubjectQuery;
-    use crate::domain_computation::primary_graph::application_query::history::SubjectResult;
-    use crate::domain_computation::primary_graph::application_query::history::WorthQueryAdmittedApplicationHistoryCapture;
-    use crate::domain_computation::primary_graph::application_query::history::WorthQueryApplicationHistoryDenial as Denial;
-    use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationProjection;
-    use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::one_shot::history_capture::WorthQueryApplicationHistoryCaptureResult;
-    use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
-    use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
-    impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        pub fn execute_application_history_capture<History>(&self, phase: &WorthQueryAdvancementPhase<'_>, capture: WorthQueryAdmittedApplicationHistoryCapture<'_, Schema, History>) -> Result<WorthQueryApplicationHistoryCaptureResult<Schema, History>, Denial>
-        where
-            History: ApplicationHistoryQueryBinding<Schema>,
-            SubjectResult<Schema, History>:
-                WorthQueryApplicationProjection<Schema, SubjectQuery<Schema, History>>, {
-            self.inner.execute_application_history_capture::<History>(phase, capture)
-        }
-    }
-}
-
-#[allow(unused_imports, dead_code)]
-mod domain_computation_primary_graph_application_query_admission_correction_disclosure {
-    use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
-    use worth_query_declaration::facade::application_schema::ApplicationSchema;
-    use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryPlan;
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAccessContext;
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAdmissionDenial;
-    use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryControls;
-    use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
-    use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
-    impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        pub(crate) fn admit_correction_disclosure<
-            'a,
-            Query,
-            Parameters,
-            QueryResult,
-            Principal,
-            PrincipalIdentity,
-            Scope,
-        >(&'a self, execution: &worth_execution::ExecutionRequest<'_, '_>, query: &'a WorthQueryInstalledApplicationQuery<
-                Schema,
-                Query,
-                Parameters,
-                QueryResult,
-                Scope,
-            >, access: &WorthQueryApplicationQueryAccessContext<
-                'a,
-                Schema,
-                Principal,
-                PrincipalIdentity,
-                Scope,
-            >, retained: &WorthQueryAdmittedApplicationQueryParameters, controls: WorthQueryApplicationQueryControls<'a, Schema>) -> Result<
-            WorthQueryAdmittedApplicationQueryPlan<
-                'a,
-                Schema,
-                Query,
-                Parameters,
-                QueryResult,
-                Principal,
-                PrincipalIdentity,
-                Scope,
-            >,
-            WorthQueryApplicationQueryAdmissionDenial,
-        > {
-            self.inner.admit_correction_disclosure::<Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>(execution, query, access, retained, controls)
+        pub fn require_current_required_set<'s>(
+            &self,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            __arg1: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+            request: &WorthQueryRequestScope,
+            settlements: impl IntoIterator<Item = &'s WorthQueryOutputDemandSettlement>,
+            dependencies: &WorthQueryRetainedQueryDependencies,
+        ) -> Result<(), WorthQueryRequiredSetCurrentnessDenial> {
+            self.inner.require_current_required_set(
+                phase,
+                __arg1,
+                request,
+                settlements,
+                dependencies,
+            )
         }
     }
 }

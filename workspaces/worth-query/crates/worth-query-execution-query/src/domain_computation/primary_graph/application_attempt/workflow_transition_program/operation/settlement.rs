@@ -6,9 +6,7 @@ where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    fn settle<
-        Binding,
-    >(
+    fn settle<Binding>(
         self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         receipt: &WorthQueryApplicationCommitReceipt,
@@ -17,11 +15,8 @@ where
         WorthQueryApplicationAttemptDenial,
     >
     where
-        Binding: ApplicationMutationBinding<Schema>,
-;
-    fn settle_recovered<
-        Binding,
-    >(
+        Binding: ApplicationMutationBinding<Schema>;
+    fn settle_recovered<Binding>(
         self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         receipt: &WorthQueryApplicationCommitReceipt,
@@ -31,8 +26,7 @@ where
         WorthQueryApplicationAttemptDenial,
     >
     where
-        Binding: ApplicationMutationBinding<Schema>,
-;
+        Binding: ApplicationMutationBinding<Schema>;
     fn settle_validated(
         self,
         performed: ValidatedWorkflowOperationReceipt<'_>,
@@ -42,14 +36,14 @@ where
     >;
 }
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowOperationSettlementExt<Schema, Operation, Input, Scope> for PreparedWorkflowOperation<Schema, Operation, Input, Scope>
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowOperationSettlementExt<Schema, Operation, Input, Scope>
+    for PreparedWorkflowOperation<Schema, Operation, Input, Scope>
 where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    fn settle<
-        Binding,
-    >(
+    fn settle<Binding>(
         self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         receipt: &WorthQueryApplicationCommitReceipt,
@@ -71,9 +65,7 @@ where
         self.settle_validated(performed)
     }
 
-    fn settle_recovered<
-        Binding,
-    >(
+    fn settle_recovered<Binding>(
         self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         receipt: &WorthQueryApplicationCommitReceipt,

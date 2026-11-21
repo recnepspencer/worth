@@ -107,11 +107,7 @@ pub fn bind_mutation_preconditions<Schema, Operation, Scope>(
 /// same empty acceptance branch as the ordinary binder, issued before its
 /// unrelated installed-target collection. A nonempty selected request has no
 /// admitted binding route and refuses before operation effects.
-pub fn bind_empty_mutation_preconditions_admitted<
-    Schema,
-    Operation,
-    Scope,
->(
+pub fn bind_empty_mutation_preconditions_admitted<Schema, Operation, Scope>(
     requested: TypedMutationPreconditions<Schema, Operation, Scope>,
 ) -> Result<WorthQueryBoundMutationPreconditions, EmptyMutationPreconditionAdmissionStop> {
     if !requested.entries().is_empty() {
@@ -167,9 +163,7 @@ impl WorthQueryBoundMutationPreconditions {
         self.canonical_digest.as_ref().map(CanonicalDigestId::bytes)
     }
 
-    pub const fn canonical_work(
-        &self,
-    ) -> WorthQueryCanonicalWorkEvidence {
+    pub const fn canonical_work(&self) -> WorthQueryCanonicalWorkEvidence {
         self.canonical_work
     }
 

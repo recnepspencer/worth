@@ -40,10 +40,7 @@ where
         }
     }
 
-    pub fn terminate(
-        &mut self,
-        disposition: BridgeExecutionBasisTerminalDisposition,
-    ) -> bool {
+    pub fn terminate(&mut self, disposition: BridgeExecutionBasisTerminalDisposition) -> bool {
         let Some(mut basis) = self.basis.take() else {
             return true;
         };

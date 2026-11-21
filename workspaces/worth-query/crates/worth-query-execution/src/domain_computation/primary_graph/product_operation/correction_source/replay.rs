@@ -58,7 +58,8 @@ pub(super) fn select_input<Schema: ApplicationSchema, C: ApplicationCorrectionBi
         .map_err(|_| WorthQueryCorrectionDerivationDenial::ForeignPhase)?;
     let observed = target
         .application()
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .observe_correction_command(
             &execution,
@@ -136,7 +137,8 @@ pub(super) fn select_reapplication_input<
         .map_err(|_| WorthQueryCorrectionDerivationDenial::ForeignPhase)?;
     let observed = target
         .application()
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .observe_correction_command(
             &execution,

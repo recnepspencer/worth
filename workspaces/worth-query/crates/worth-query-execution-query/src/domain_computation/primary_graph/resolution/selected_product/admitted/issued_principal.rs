@@ -27,15 +27,11 @@ impl<Schema, Principal, PrincipalIdentity>
         &self.principal
     }
 
-    pub fn issued_root(
-        &self,
-    ) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
+    pub fn issued_root(&self) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
         self.selected.product().relational_basis()
     }
 
-    pub fn issued_snapshot(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+    pub fn issued_snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
         self.selected.application_basis().snapshot_handle()
     }
 

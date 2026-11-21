@@ -62,15 +62,11 @@ impl WorthQueryGraphProviderCallRequest {
         self
     }
 
-    pub fn kind(
-        &self,
-    ) -> WorthQueryGraphProviderCallKind {
+    pub fn kind(&self) -> WorthQueryGraphProviderCallKind {
         self.kind
     }
 
-    pub fn execution_snapshot_identity(
-        &self,
-    ) -> Option<&str> {
+    pub fn execution_snapshot_identity(&self) -> Option<&str> {
         self.snapshot_identity.as_deref()
     }
 

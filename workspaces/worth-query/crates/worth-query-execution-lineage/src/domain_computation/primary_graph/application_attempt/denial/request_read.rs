@@ -67,10 +67,7 @@ impl WorthQueryApplicationAttemptDenial {
         };
         Self::new(kind, subject)
     }
-    pub fn request_read_stopped(
-        stop: worth_execution::MapKernelStop,
-        subject: &str,
-    ) -> Self {
+    pub fn request_read_stopped(stop: worth_execution::MapKernelStop, subject: &str) -> Self {
         Self::query_read_denial(
             worth_relational::facade::runtime::QueryReadExecutionStop::Request(
                 worth_execution::WorkCeilingDenial::Stopped(stop),

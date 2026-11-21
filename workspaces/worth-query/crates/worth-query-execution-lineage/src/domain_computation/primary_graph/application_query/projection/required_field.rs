@@ -88,13 +88,7 @@ impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query
         }
         Ok(WorthQueryApplicationDisclosed::Disclosed(projected))
     }
-    pub fn required_field<
-        Slot,
-        Entity,
-        Aspect,
-        Field,
-        Value,
-    >(
+    pub fn required_field<Slot, Entity, Aspect, Field, Value>(
         &self,
         selector: ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
     ) -> Result<&super::WorthQueryApplicationProjectedField, WorthQueryApplicationProjectionDenial>

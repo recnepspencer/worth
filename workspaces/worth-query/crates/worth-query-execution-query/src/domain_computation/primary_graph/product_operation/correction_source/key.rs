@@ -9,7 +9,7 @@ pub struct WorthQueryCorrectionCommandKey {
 
 impl WorthQueryCorrectionCommandKey {
     pub fn from_canonical(
-        _seal: crate::ports::WorthQueryQueryCrateSeal,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         canonical: ApplicationCanonicalIdentity,
     ) -> Self {
         Self { canonical }

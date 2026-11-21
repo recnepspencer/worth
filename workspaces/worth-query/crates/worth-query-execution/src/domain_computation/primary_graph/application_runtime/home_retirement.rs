@@ -5,8 +5,7 @@ pub use super::home_retirement_denial::{
 };
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::{
-    handler::HandlerRetirementCursor,
-    WorthQueryOperationHomeRetirementProgress as Progress,
+    handler::HandlerRetirementCursor, WorthQueryOperationHomeRetirementProgress as Progress,
 };
 use worth_execution::ExecutionRequest;
 use worth_query_installation::facade::ApplicationSchema;
@@ -58,7 +57,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.conditional_cleanup
             .resources
             .handoff_home(self, request)?;
-        self.inner.runtime
+        self.inner
+            .runtime
             .execution()
             .managed_run_custody
             .flush(request)
@@ -77,30 +77,40 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .preflight_managed_cleanup_close(request)
                 .map_err(WorthQueryHomeRetirementDenial::ManagedCleanup)?;
         }
-        self.inner.mutation_handlers.preflight_home_retirement(request)?;
+        self.inner
+            .mutation_handlers
+            .preflight_home_retirement(request)?;
         self.conditional_cleanup
             .preflight_home_retirement(request)?;
         if !self.inner.installed_producers.is_empty() {
             let history = self
                 .installed_program_support()
                 .map(|support| support.obligation_history());
-            self.inner.runtime
+            self.inner
+                .runtime
                 .output_demands
                 .reclaim_home_retirement_cache(history.as_deref(), request)?;
-            self.inner.installed_producers
+            self.inner
+                .installed_producers
                 .preflight_home_retirement(request)?;
-            self.inner.runtime.output_demands.preflight_home_retirement()?;
+            self.inner
+                .runtime
+                .output_demands
+                .preflight_home_retirement()?;
         }
-        self.inner.installed_conditionals
+        self.inner
+            .installed_conditionals
             .preflight_home_retirement(self.inner.runtime.bridge.conditional_owner())?;
         // Every recorded attempt owns its one durable observation before close.
         let dispatch_custody = self
-            .inner.runtime
+            .inner
+            .runtime
             .dispatch_journal
             .settle_for_close(request)
             .map_err(WorthQueryHomeRetirementDenial::DispatchCustody)?;
         if self.inner.runtime.dispatch_journal.is_durable() {
-            self.inner.runtime
+            self.inner
+                .runtime
                 .primary_provider
                 .protect_dispatch_originals_for_close(
                     request,
@@ -108,7 +118,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 )?;
         }
         let transport = self
-            .inner.runtime
+            .inner
+            .runtime
             .transport_completion_custody
             .try_lock()
             .map_err(|_| {
@@ -119,17 +130,21 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             .preflight_home_retirement(request, &self.inner.runtime.dispatch_journal)?;
         self.preflight_inbound_home_retirement(request)?;
         self.preflight_supplied_home_owners()?;
-        self.inner.runtime
+        self.inner
+            .runtime
             .primary_graph_authority
             .as_mut()
             .expect("serving participation remains owned")
             .preflight(&self.inner.runtime.primary_provider)?;
-        self.inner.runtime
+        self.inner
+            .runtime
             .primary_provider
             .preflight(request, dispatch_custody, &transport)?;
-        self.inner.mutation_projection
+        self.inner
+            .mutation_projection
             .preflight_home_retirement(request)?;
-        self.inner.runtime
+        self.inner
+            .runtime
             .granular_invalidation
             .preflight_home_retirement(request)?;
         if let Some(maintenance) = self.inner.runtime.product_runtime.home_maintenance.as_mut() {
@@ -163,7 +178,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         }
         // The actual source owner, not the durable roster, decides whether
         // its Native handle/subscription/head custody has a consuming path.
-        self.inner.runtime
+        self.inner
+            .runtime
             .primary_graph()
             .expect("an installed application owns its original primary graph")
             .preflight_home_retirement(request)
@@ -173,7 +189,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     fn preflight_supplied_home_owners(&mut self) -> Result<(), WorthQueryHomeRetirementDenial> {
         use WorthQueryHomeRetirementDenial::Busy;
         use WorthQueryHomeRetirementOwner as Owner;
-        self.inner.runtime
+        self.inner
+            .runtime
             .inbound_verifiers
             .get_mut()
             .map_err(|_| Busy(Owner::InboundVerifiers))?;
@@ -187,15 +204,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         // The intact signer registry follows this original runtime into inert
         // retirement custody. Its final supplier destruction belongs to reclaim,
         // not budgeted close; external authentication owners are not revoked.
-        self.inner.signing_owners
+        self.inner
+            .signing_owners
             .get_mut()
             .map_err(|_| Busy(Owner::SigningOwners))?;
         Ok(())
     }
 
-    pub fn into_home_retirement(
-        self,
-    ) -> RetiringPrimaryGraphRuntime<Schema> {
+    pub fn into_home_retirement(self) -> RetiringPrimaryGraphRuntime<Schema> {
         RetiringPrimaryGraphRuntime {
             runtime: self,
             handlers: Default::default(),
@@ -223,7 +239,13 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
     }
     pub fn take_home_maintenance(&mut self)
     -> Option<std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>>{
-        let taken = self.runtime.inner.runtime.product_runtime.home_maintenance.take()?;
+        let taken = self
+            .runtime
+            .inner
+            .runtime
+            .product_runtime
+            .home_maintenance
+            .take()?;
         let inner = taken
             .as_any()
             .downcast_ref::<crate::domain_computation::execution_runtime::product_world::HomeMaintenanceAdapter>()
@@ -239,7 +261,8 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
     ) -> Result<Progress, WorthQueryHomeRetirementDenial> {
         if self
             .runtime
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .home_maintenance
             .is_some()
@@ -251,11 +274,13 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
         let progress = match self.stage {
             QueryRetirementStage::Handlers => self
                 .runtime
-                .inner.mutation_handlers
+                .inner
+                .mutation_handlers
                 .advance_home_retirement(&mut self.handlers, request)?,
             QueryRetirementStage::InboundCustody => self
                 .runtime
-                .inner.runtime
+                .inner
+                .runtime
                 .inbound_custody
                 .try_lock()
                 .map_err(|_| {
@@ -266,7 +291,8 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                 .advance_home_retirement(request, native)?,
             QueryRetirementStage::TransportCustody => self
                 .runtime
-                .inner.runtime
+                .inner
+                .runtime
                 .transport_completion_custody
                 .try_lock()
                 .map_err(|_| {
@@ -277,23 +303,27 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                 .advance_home_retirement(request, native)?,
             QueryRetirementStage::Participation => self
                 .runtime
-                .inner.runtime
+                .inner
+                .runtime
                 .primary_graph_authority
                 .as_mut()
                 .expect("serving participation remains owned")
                 .advance(request, &self.runtime.inner.runtime.primary_provider)?,
             QueryRetirementStage::Provider => self
                 .runtime
-                .inner.runtime
+                .inner
+                .runtime
                 .primary_provider
                 .advance(request, native)?,
             QueryRetirementStage::Projection => self
                 .runtime
-                .inner.mutation_projection
+                .inner
+                .mutation_projection
                 .advance_home_retirement(request, native)?,
             QueryRetirementStage::Granular => self
                 .runtime
-                .inner.runtime
+                .inner
+                .runtime
                 .granular_invalidation
                 .advance_home_retirement(request, native)?,
             QueryRetirementStage::ProductSource => {
@@ -302,7 +332,8 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
                     .map_err(WorthQueryHomeRetirementDenial::Execution)?;
                 let source = self
                     .runtime
-                    .inner.runtime
+                    .inner
+                    .runtime
                     .product_runtime
                     .source
                     .take()
@@ -318,7 +349,8 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
             }
             QueryRetirementStage::ServingGraph => self
                 .runtime
-                .inner.runtime
+                .inner
+                .runtime
                 .execution_mut()
                 .primary_graph_mut()
                 .expect("same original serving graph")
@@ -328,39 +360,35 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
             // release them before consuming source shares so the final source
             // retirement owns the Native subscription detach.
             QueryRetirementStage::InstalledConditionals => {
-                request.consult().map_err(WorthQueryHomeRetirementDenial::Execution)?;
+                request
+                    .consult()
+                    .map_err(WorthQueryHomeRetirementDenial::Execution)?;
                 self.runtime.inner.installed_conditionals = Default::default();
                 self.runtime.release_query_conditional_bindings();
                 Progress::Complete
             }
             QueryRetirementStage::RecoveredOutputs => {
-                self.runtime.inner.runtime.recovered_outputs.retire_home_observations(request)?;
+                self.runtime
+                    .inner
+                    .runtime
+                    .recovered_outputs
+                    .retire_home_observations(request)?;
                 Progress::Complete
             }
             QueryRetirementStage::Bridge => self
                 .runtime
-                .inner.runtime
+                .inner
+                .runtime
                 .bridge
                 .advance_home_retirement(request, native, bridge_owner)?,
             QueryRetirementStage::Complete => return Ok(Progress::Complete),
         };
         if progress == Progress::Complete {
-            self.stage = match self.stage {
-                QueryRetirementStage::Handlers => QueryRetirementStage::InboundCustody,
-                QueryRetirementStage::InboundCustody => QueryRetirementStage::TransportCustody,
-                QueryRetirementStage::TransportCustody => QueryRetirementStage::Participation,
-                QueryRetirementStage::Participation => QueryRetirementStage::InstalledConditionals,
-                QueryRetirementStage::InstalledConditionals => QueryRetirementStage::RecoveredOutputs,
-                QueryRetirementStage::RecoveredOutputs => QueryRetirementStage::Provider,
-                QueryRetirementStage::Provider => QueryRetirementStage::Projection,
-                QueryRetirementStage::Projection => QueryRetirementStage::Granular,
-                QueryRetirementStage::Granular => QueryRetirementStage::ProductSource,
-                QueryRetirementStage::ProductSource => QueryRetirementStage::ServingGraph,
-                QueryRetirementStage::ServingGraph => QueryRetirementStage::Bridge,
-                QueryRetirementStage::Bridge => QueryRetirementStage::Complete,
-                QueryRetirementStage::Complete => QueryRetirementStage::Complete,
-            };
+            self.stage = self.stage.next();
         }
         Ok(Progress::Advanced)
     }
 }
+
+#[path = "home_retirement/stage_order.rs"]
+mod stage_order;

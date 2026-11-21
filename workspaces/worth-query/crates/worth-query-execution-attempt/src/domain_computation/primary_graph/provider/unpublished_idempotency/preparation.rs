@@ -53,9 +53,8 @@ pub(super) fn preparation_stage(
         .as_ref()
         .map(|preparing| preparing.stage())
         .or_else(|| {
-            (entry.posture == WorthQueryUnpublishedIdempotencyPosture::Preparing).then_some(
-                crate::domain_computation::WorthQueryProductPreparationStage::CheckedOut,
-            )
+            (entry.posture == WorthQueryUnpublishedIdempotencyPosture::Preparing)
+                .then_some(crate::domain_computation::WorthQueryProductPreparationStage::CheckedOut)
         })
 }
 impl super::super::WorthQueryPrimaryGraphProvider {

@@ -16,14 +16,14 @@ impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
     #[inline]
-    pub fn graph_work_session_identity(
+    pub(crate) fn graph_work_session_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
         self.core.graph_work_session_identity()
     }
 
     #[inline]
-    pub fn graph_work_managed_run_identity(
+    pub(crate) fn graph_work_managed_run_identity(
         &self,
     ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity {
         self.core.graph_work_managed_run_identity()
@@ -35,12 +35,12 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn graph_work_decision_fact_count(&self) -> usize {
+    pub(crate) fn graph_work_decision_fact_count(&self) -> usize {
         self.core.graph_work_decision_fact_count()
     }
 
     #[inline]
-    pub fn graph_work_runtime_ordinal(&self) -> u64 {
+    pub(crate) fn graph_work_runtime_ordinal(&self) -> u64 {
         self.core.graph_work_runtime_ordinal()
     }
 
@@ -50,60 +50,58 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn graph_work_scope_entity_id(
+    pub(crate) fn graph_work_scope_entity_id(
         &self,
     ) -> Option<worth_relational::facade::identity::EntityId> {
         self.core.graph_work_scope_entity_id()
     }
 
     #[inline]
-    pub fn graph_work_capability_identity(&self) -> Option<[u8; 32]> {
+    pub(crate) fn graph_work_capability_identity(&self) -> Option<[u8; 32]> {
         self.core.graph_work_capability_identity()
     }
 
     #[inline]
-    pub fn graph_work_provider(&self) -> &str {
+    pub(crate) fn graph_work_provider(&self) -> &str {
         self.core.graph_work_provider()
     }
 
     #[inline]
-    pub fn graph_work_mut(
+    pub(crate) fn graph_work_mut(
         &mut self,
     ) -> &mut crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession {
         self.core.graph_work_mut()
     }
 
     #[inline]
-    pub const fn graph_work(
+    pub(crate) const fn graph_work(
         &self,
     ) -> &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession {
         self.core.graph_work()
     }
 
     #[inline]
-    pub const fn operation_authority_identity_bytes(
-        &self,
-    ) -> &[u8; 32] {
+    pub(crate) const fn operation_authority_identity_bytes(&self) -> &[u8; 32] {
         self.core.operation_authority_identity_bytes()
     }
 
     #[inline]
-    pub const fn operation_definition_identity(&self) -> &[u8; 32] {
+    pub(crate) const fn operation_definition_identity(&self) -> &[u8; 32] {
         self.core.operation_definition_identity()
     }
 
     #[inline]
-    pub const fn governed_input_identity(&self) -> Option<&[u8; 32]> {
+    pub(crate) const fn governed_input_identity(&self) -> Option<&[u8; 32]> {
         self.core.governed_input_identity()
     }
 
     #[inline]
-    pub fn governed_proposal_identity(&self) -> Option<&[u8; 32]> {
+    pub(crate) fn governed_proposal_identity(&self) -> Option<&[u8; 32]> {
         self.core.governed_proposal_identity()
     }
 
     #[inline]
-    pub fn record_decision_context_use(
+    pub(crate) fn record_decision_context_use(
         &mut self,
         use_mask: crate::domain_computation::primary_graph::DecisionContextUse,
     ) {
@@ -111,22 +109,17 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn bind_required_output_demand(
-        &mut self,
-        context: RequiredOutputDemandContext,
-    ) {
+    pub(crate) fn bind_required_output_demand(&mut self, context: RequiredOutputDemandContext) {
         self.core.bind_required_output_demand(context)
     }
 
     #[inline]
-    pub fn take_required_output_demand(
-        &mut self,
-    ) -> Option<RequiredOutputDemandContext> {
+    pub(crate) fn take_required_output_demand(&mut self) -> Option<RequiredOutputDemandContext> {
         self.core.take_required_output_demand()
     }
 
     #[inline]
-    pub fn record_completed_handler_facts(
+    pub(crate) fn record_completed_handler_facts(
         &mut self,
         boundary: CompletedHandlerFactBoundary,
         computation: SealedComputationRetention,
@@ -136,24 +129,20 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn computation_prior(&self) -> Option<ComputationPrior> {
+    pub(crate) fn computation_prior(&self) -> Option<ComputationPrior> {
         self.core.computation_prior()
     }
 
-    pub fn completed_input_prefix(&self) -> Option<usize> {
+    pub(crate) fn completed_input_prefix(&self) -> Option<usize> {
         self.core.completed_input_prefix()
     }
 
-    pub fn insert_input_facts(
-        &mut self,
-        expected: usize,
-        count: usize,
-    ) -> bool {
+    pub(crate) fn insert_input_facts(&mut self, expected: usize, count: usize) -> bool {
         self.core.insert_input_facts(expected, count)
     }
 
     #[inline]
-    pub fn retain_delegation_proposal_canonical_work(
+    pub(crate) fn retain_delegation_proposal_canonical_work(
         &mut self,
         work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
     ) {
@@ -161,77 +150,69 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn delegation_activation_binding(
+    pub(crate) fn delegation_activation_binding(
         &self,
     ) -> Option<&WorthQueryDelegationActivationBinding> {
         self.core.delegation_activation_binding()
     }
 
     #[inline]
-    pub fn capability_revocation_binding(
+    pub(crate) fn capability_revocation_binding(
         &self,
     ) -> Option<&WorthQueryCapabilityRevocationBinding> {
         self.core.capability_revocation_binding()
     }
 
     #[inline]
-    pub fn elevation_request_binding(
-        &self,
-    ) -> Option<&WorthQueryElevationRequestBinding> {
+    pub(crate) fn elevation_request_binding(&self) -> Option<&WorthQueryElevationRequestBinding> {
         self.core.elevation_request_binding()
     }
 
     #[inline]
-    pub fn take_elevation_request_binding(
+    pub(crate) fn take_elevation_request_binding(
         &mut self,
     ) -> Option<WorthQueryElevationRequestBinding> {
         self.core.take_elevation_request_binding()
     }
 
     #[inline]
-    pub fn elevation_approval_binding(
-        &self,
-    ) -> Option<&WorthQueryElevationApprovalBinding> {
+    pub(crate) fn elevation_approval_binding(&self) -> Option<&WorthQueryElevationApprovalBinding> {
         self.core.elevation_approval_binding()
     }
 
     #[inline]
-    pub fn take_elevation_approval_binding(
+    pub(crate) fn take_elevation_approval_binding(
         &mut self,
     ) -> Option<WorthQueryElevationApprovalBinding> {
         self.core.take_elevation_approval_binding()
     }
 
     #[inline]
-    pub fn elevation_close_binding(
-        &self,
-    ) -> Option<&WorthQueryElevationCloseBinding> {
+    pub(crate) fn elevation_close_binding(&self) -> Option<&WorthQueryElevationCloseBinding> {
         self.core.elevation_close_binding()
     }
 
     #[inline]
-    pub fn take_elevation_close_binding(
+    pub(crate) fn take_elevation_close_binding(
         &mut self,
     ) -> Option<WorthQueryElevationCloseBinding> {
         self.core.take_elevation_close_binding()
     }
 
     #[inline]
-    pub fn mandatory_review_binding(
-        &self,
-    ) -> Option<&WorthQueryMandatoryReviewBinding> {
+    pub(crate) fn mandatory_review_binding(&self) -> Option<&WorthQueryMandatoryReviewBinding> {
         self.core.mandatory_review_binding()
     }
 
     #[inline]
-    pub fn take_mandatory_review_binding(
+    pub(crate) fn take_mandatory_review_binding(
         &mut self,
     ) -> Option<WorthQueryMandatoryReviewBinding> {
         self.core.take_mandatory_review_binding()
     }
 
     #[inline]
-    pub fn original_scope(
+    pub(crate) fn original_scope(
         &self,
     ) -> Option<
         &std::sync::Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>,
@@ -240,14 +221,12 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn original_mutation_binding(
-        &self,
-    ) -> Option<std::any::TypeId> {
+    pub(crate) fn original_mutation_binding(&self) -> Option<std::any::TypeId> {
         self.core.original_mutation_binding()
     }
 
     #[inline]
-    pub fn retain_original_inspection_disclosure(
+    pub(crate) fn retain_original_inspection_disclosure(
         &mut self,
         disclosure: Option<std::sync::Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>,
     ) {
@@ -255,14 +234,14 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn original_inspection_disclosure(
+    pub(crate) fn original_inspection_disclosure(
         &self,
     ) -> Option<&std::sync::Arc<crate::domain_computation::primary_graph::source_disclosure::OriginalSourceInspectionDisclosure>>{
         self.core.original_inspection_disclosure()
     }
 
     #[inline]
-    pub fn original_material_input(
+    pub(crate) fn original_material_input(
         &self,
     ) -> Option<(
         &worth_query_declaration::facade::application_operation::ApplicationCanonicalInput,
@@ -271,14 +250,14 @@ impl<Schema, Operation, Input, Scope>
     )> {
         self.core.original_material_input()
     }
-    pub fn original_retained_input(
+    pub(crate) fn original_retained_input(
         &self,
     ) -> Option<&std::sync::Arc<dyn std::any::Any + Send + Sync>> {
         self.core.original_retained_input()
     }
 
     #[inline]
-    pub fn retain_original_program(
+    pub(crate) fn retain_original_program(
         &mut self,
         program: std::sync::Arc<crate::domain_computation::primary_graph::OriginalProgramMeaning>,
     ) {
@@ -286,7 +265,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn original_program(
+    pub(crate) fn original_program(
         &self,
     ) -> Option<&std::sync::Arc<crate::domain_computation::primary_graph::OriginalProgramMeaning>>
     {
@@ -294,7 +273,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn original_correction_disclosure(
+    pub(crate) fn original_correction_disclosure(
         &self,
     ) -> Option<
         &std::sync::Arc<

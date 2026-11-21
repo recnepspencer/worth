@@ -64,7 +64,13 @@ where
 
         self.require_discovered_root::<Root>()?;
         if prepared.runtime_authority
-            != self.backing.runtime().inner.runtime.authority_identity().as_u64()
+            != self
+                .backing
+                .runtime()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64()
             || &prepared.source_commit != receipt.source_commit()
             || &prepared.source_commit != observation.selected_commit()
             || prepared.product_occurrence != observation.branch_incarnation()
@@ -128,7 +134,13 @@ where
     {
         self.require_discovered_root::<Root>()?;
         if prepared.runtime_authority
-            != self.backing.runtime().inner.runtime.authority_identity().as_u64()
+            != self
+                .backing
+                .runtime()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64()
         {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSource,

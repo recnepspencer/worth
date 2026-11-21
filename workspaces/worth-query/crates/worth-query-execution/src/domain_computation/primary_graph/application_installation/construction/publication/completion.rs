@@ -24,7 +24,8 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
     application.inner.installed_producers = producers;
     application.inner.installed_conditionals = installed_conditionals;
     application
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .graph
         .output_lineage
@@ -33,7 +34,8 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
         .bind_implementation_build(build_identity);
     if let Some(support) = admitted_program_support {
         application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .activations
             .require_program_coordination();

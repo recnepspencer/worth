@@ -55,11 +55,7 @@ impl ClaimBatch {
     pub fn publish(&self) {
         self.published.store(true, Ordering::Release);
     }
-    pub fn retarget(
-        &mut self,
-        position: usize,
-        target: Option<&Arc<ClosedNoteBacking>>,
-    ) {
+    pub fn retarget(&mut self, position: usize, target: Option<&Arc<ClosedNoteBacking>>) {
         let edge = &self.edges[position];
         edge.unlink();
         if let Some(target) = target {

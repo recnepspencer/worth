@@ -86,16 +86,12 @@ impl WorthQueryInstalledApplicationBridge {
             .ordinary()
             .expect("retired Query exposes no ordinary Bridge")
     }
-    pub fn conditional_owner(
-        &self,
-    ) -> Option<&conditional_owner::ConditionalOwner> {
+    pub fn conditional_owner(&self) -> Option<&conditional_owner::ConditionalOwner> {
         self.custody
             .as_ref()
             .and_then(InstalledBridgeCustody::conditional)
     }
-    pub fn conditional(
-        &self,
-    ) -> conditional_execution::ConditionalExecutionOwner<'_> {
+    pub fn conditional(&self) -> conditional_execution::ConditionalExecutionOwner<'_> {
         match self.conditional_owner() {
             Some(owner) => owner
                 .read()

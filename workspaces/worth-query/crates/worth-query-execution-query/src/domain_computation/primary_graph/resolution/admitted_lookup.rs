@@ -32,9 +32,7 @@ impl<'view, 'resolution, 'identity> CheckedMappingCandidate<'view, 'resolution, 
         self.view
     }
 
-    pub fn resolution(
-        &self,
-    ) -> &'resolution WorthQueryPrincipalSnapshotResolution<'identity> {
+    pub fn resolution(&self) -> &'resolution WorthQueryPrincipalSnapshotResolution<'identity> {
         self.resolution
     }
 

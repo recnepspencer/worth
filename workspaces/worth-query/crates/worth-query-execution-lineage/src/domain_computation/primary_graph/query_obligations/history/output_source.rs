@@ -43,9 +43,7 @@ impl QueryObligationHistory {
             .map(|prior| prior.commit)
             .collect()
     }
-    pub fn output_sources(
-        &self,
-    ) -> Vec<QueryOutputSourceObligation> {
+    pub fn output_sources(&self) -> Vec<QueryOutputSourceObligation> {
         self.state()
             .journal
             .as_ref()

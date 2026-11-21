@@ -8,10 +8,7 @@ use worth_runtime_world::facade::ProductBranchObservation;
 
 // Construction stays in disclosure validation. In particular, no arbitrary
 // value paired with a descriptive observation can mint either predecessor.
-pub struct AdmittedDisclosure<
-    Query,
-    Value,
-> {
+pub struct AdmittedDisclosure<Query, Value> {
     pub value: Value,
     pub source: WorthQueryObservedSource<Query>,
     pub affinity: WorthQueryApplicationQueryRequestAffinity,
@@ -19,20 +16,11 @@ pub struct AdmittedDisclosure<
     pub admission_edition: InstalledProducerEdition,
 }
 
-pub struct FreshOutputDisclosure<
-    Query,
-    Value,
->(pub AdmittedDisclosure<Query, Value>);
+pub struct FreshOutputDisclosure<Query, Value>(pub AdmittedDisclosure<Query, Value>);
 
-pub struct RetainedProgramOutputDisclosure<
-    Query,
-    Value,
->(pub AdmittedDisclosure<Query, Value>);
+pub struct RetainedProgramOutputDisclosure<Query, Value>(pub AdmittedDisclosure<Query, Value>);
 
-pub enum ValidatedOutputDisclosure<
-    Query,
-    Value,
-> {
+pub enum ValidatedOutputDisclosure<Query, Value> {
     Fresh(FreshOutputDisclosure<Query, Value>),
     RetainedProgram(RetainedProgramOutputDisclosure<Query, Value>),
 }
@@ -45,15 +33,11 @@ impl<Query, Value> ValidatedOutputDisclosure<Query, Value> {
         }
     }
 
-    pub fn value(
-        &self,
-    ) -> &Value {
+    pub fn value(&self) -> &Value {
         &self.admitted().value
     }
 
-    pub fn source(
-        &self,
-    ) -> &WorthQueryObservedSource<Query> {
+    pub fn source(&self) -> &WorthQueryObservedSource<Query> {
         &self.admitted().source
     }
 }
@@ -62,27 +46,19 @@ impl<Query, Value> FreshOutputDisclosure<Query, Value> {
     /// Borrow the same owner-issued disclosure while its observed source is
     /// retained for required successor admission. The proof itself remains
     /// intact for the later Scheduleâ†’Execute transition.
-    pub fn value(
-        &self,
-    ) -> &Value {
+    pub fn value(&self) -> &Value {
         &self.0.value
     }
 
-    pub fn source(
-        &self,
-    ) -> &WorthQueryObservedSource<Query> {
+    pub fn source(&self) -> &WorthQueryObservedSource<Query> {
         &self.0.source
     }
 
-    pub fn into_parts(
-        self,
-    ) -> (Value, WorthQueryObservedSource<Query>) {
+    pub fn into_parts(self) -> (Value, WorthQueryObservedSource<Query>) {
         (self.0.value, self.0.source)
     }
 
-    pub fn admits<
-        Schema,
-    >(
+    pub fn admits<Schema>(
         &self,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
@@ -95,15 +71,11 @@ impl<Query, Value> FreshOutputDisclosure<Query, Value> {
 }
 
 impl<Query, Value> RetainedProgramOutputDisclosure<Query, Value> {
-    pub fn source(
-        &self,
-    ) -> &WorthQueryObservedSource<Query> {
+    pub fn source(&self) -> &WorthQueryObservedSource<Query> {
         &self.0.source
     }
 
-    pub fn admits<
-        Schema,
-    >(
+    pub fn admits<Schema>(
         &self,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,

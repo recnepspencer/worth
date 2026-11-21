@@ -20,12 +20,8 @@ pub mod source_facts;
 pub use output_fields::{
     RecordedAbsenceKind, RecordedFieldCapture, RecordedOutputFields, RecordedPreImageAbsence,
 };
-pub use prepared::{
-    PreparedCorrectionSnapshot, RecordedCorrectionTarget,
-};
-pub use source_facts::{
-    RecordedSourceFacts, RecordedSourceFactsUnavailable,
-};
+pub use prepared::{PreparedCorrectionSnapshot, RecordedCorrectionTarget};
+pub use source_facts::{RecordedSourceFacts, RecordedSourceFactsUnavailable};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -62,8 +58,7 @@ pub struct RecordedPreImageField {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MaterialCapture {
-    pub original:
-        DurableCompositePublicationAttemptIdentity,
+    pub original: DurableCompositePublicationAttemptIdentity,
     pub program: [u8; 32],
     pub mutation: String,
     pub key: [u8; 32],
@@ -99,8 +94,7 @@ pub struct RecordedOutputField {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MaterialReady {
-    pub original:
-        DurableCompositePublicationAttemptIdentity,
+    pub original: DurableCompositePublicationAttemptIdentity,
     pub commit: RelationalCommitReceipt,
     pub roles: Vec<RecordedOutputRole>,
     pub output_fields: Vec<RecordedOutputField>,
@@ -172,9 +166,7 @@ impl MaterialRecord {
         })
         .map_err(|_| Denial::MalformedFrame)
     }
-    pub fn decode(
-        frame: &QueryCorrectionMaterialFrame,
-    ) -> Result<Self, Denial> {
+    pub fn decode(frame: &QueryCorrectionMaterialFrame) -> Result<Self, Denial> {
         let envelope: MaterialEnvelope =
             serde_json::from_slice(frame.body()).map_err(|_| Denial::MalformedFrame)?;
         if envelope.version != MATERIAL_RECORD_VERSION {

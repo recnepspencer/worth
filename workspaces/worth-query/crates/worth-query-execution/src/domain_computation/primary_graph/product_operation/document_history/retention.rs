@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_history::{
     ApplicationHistoryModel, ApplicationHistoryRecentSteps, ApplicationHistoryRetentionBinding,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 #[derive(Clone, Copy, Debug)]
 pub struct WorthQueryHistoryRetentionStatus {

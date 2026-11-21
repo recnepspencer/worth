@@ -107,9 +107,7 @@ impl WorthQueryManagedGraphRestorePending {
         self.retained.checkpoint_evidence()
     }
 
-    pub fn abort(
-        self,
-    ) -> WorthQueryManagedGraphRestoreAbortOutcome {
+    pub fn abort(self) -> WorthQueryManagedGraphRestoreAbortOutcome {
         let Self {
             retained,
             fresh_call,
@@ -133,9 +131,7 @@ impl WorthQueryManagedGraphRestorePending {
         }
     }
 
-    pub fn into_cleanup(
-        self,
-    ) -> WorthQueryManagedGraphRestoreCleanupRequired {
+    pub fn into_cleanup(self) -> WorthQueryManagedGraphRestoreCleanupRequired {
         match self.abort() {
             WorthQueryManagedGraphRestoreAbortOutcome::Aborted(retained) => {
                 WorthQueryManagedGraphRestoreCleanupRequired::retained(retained, None)
@@ -228,9 +224,7 @@ impl WorthQueryManagedGraphRestoreDenied {
         &self.detail
     }
 
-    pub fn into_retained(
-        self,
-    ) -> WorthQueryRetainedManagedGraphExecution {
+    pub fn into_retained(self) -> WorthQueryRetainedManagedGraphExecution {
         self.retained
     }
 }

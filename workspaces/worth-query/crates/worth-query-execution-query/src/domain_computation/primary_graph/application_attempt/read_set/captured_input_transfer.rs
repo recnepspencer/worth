@@ -1,7 +1,8 @@
 //! Consume completed capture custody without rebinding its original admission.
-use crate::domain_computation::primary_graph::SourceReadAuthorizationRuntimeExt;
 use super::*;
 use crate::domain_computation::authorization::WorthQueryInstalledAuthorizationRegistry;
+use crate::domain_computation::primary_graph::SourceReadAuthorizationRuntimeExt;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 pub trait ReadSetCapturedInputTransferExt: Sized {
     fn append_captured_inputs(

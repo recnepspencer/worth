@@ -15,8 +15,7 @@ use crate::domain_computation::primary_graph::provider::ManagedUnpublishedAttemp
 /// Linear Query custody paired with World's already-reserved recovery slot.
 /// A returned terminal consumes it explicitly; unwind reconciles this one
 /// opaque handle after World has restored or retained its own custody.
-pub struct WorthQueryUnpublishedIdempotencyReservation
-{
+pub struct WorthQueryUnpublishedIdempotencyReservation {
     store: Arc<Mutex<WorthQueryUnpublishedIdempotencyStore>>,
     key: WorthQueryUnpublishedIdempotencyKey,
     entry: Arc<Mutex<WorthQueryUnpublishedIdempotencyEntry>>,

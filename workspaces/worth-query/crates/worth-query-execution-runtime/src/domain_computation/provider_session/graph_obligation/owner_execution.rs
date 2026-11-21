@@ -118,9 +118,7 @@ pub struct WorthQuerySessionGraphReadProof {
 }
 
 impl WorthQuerySessionGraphReadProof {
-    pub fn session_identity(
-        &self,
-    ) -> WorthQueryGraphWorkSessionIdentity {
+    pub fn session_identity(&self) -> WorthQueryGraphWorkSessionIdentity {
         self.session
     }
 

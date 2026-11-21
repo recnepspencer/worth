@@ -20,9 +20,7 @@ impl ResolvedConsumedPredecessor {
             successor: successor.clone(),
         })
     }
-    pub fn into_parts(
-        self,
-    ) -> (Arc<RecordedSettlementIdentity>, ReadyCompletion) {
+    pub fn into_parts(self) -> (Arc<RecordedSettlementIdentity>, ReadyCompletion) {
         (self.old, self.successor)
     }
 }

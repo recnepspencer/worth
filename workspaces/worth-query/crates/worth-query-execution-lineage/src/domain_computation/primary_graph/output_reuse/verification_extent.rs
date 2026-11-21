@@ -10,11 +10,7 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause,
 };
 
-pub struct RetainedFactVerification<
-    'call,
-    'request,
-    'authority,
-> {
+pub struct RetainedFactVerification<'call, 'request, 'authority> {
     execution: &'call worth_execution::ExecutionRequest<'request, 'authority>,
     runtime: &'call RelationalRuntime,
     snapshot: &'call SnapshotHandle,
@@ -37,9 +33,7 @@ impl<'call, 'request, 'authority> RetainedFactVerification<'call, 'request, 'aut
         }
     }
 
-    pub fn check_live(
-        &self,
-    ) -> Result<(), RelationalExecutionDenialCause> {
+    pub fn check_live(&self) -> Result<(), RelationalExecutionDenialCause> {
         if let Some(control) = self.control {
             control()?;
         }

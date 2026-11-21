@@ -1,15 +1,9 @@
 //! Exact published authorities identify the owning completed publication.
 
 use super::*;
-pub fn release_published_member(
-    state: &mut DemandRegistryState,
-    key: &WorthQueryOutputDemandKey,
-) {
+pub fn release_published_member(state: &mut DemandRegistryState, key: &WorthQueryOutputDemandKey) {
     state.remove_required_member_if_released(key);
 }
-pub fn release_settled_member(
-    state: &mut DemandRegistryState,
-    key: &WorthQueryOutputDemandKey,
-) {
+pub fn release_settled_member(state: &mut DemandRegistryState, key: &WorthQueryOutputDemandKey) {
     state.remove_required_member_if_released(key);
 }

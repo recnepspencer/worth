@@ -99,8 +99,7 @@ impl WorthQueryHistoryOutputIntent {
             source.model_root,
             source.runtime_authority,
             &source.schema_binding,
-        )
-            && matches!(&source.selection,
+        ) && matches!(&source.selection,
             crate::domain_computation::primary_graph::WorthQueryApplicationBasisSelectionIdentity::Product(product)
                 if product.matches_observation(observation))
     }

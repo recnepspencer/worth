@@ -5,12 +5,7 @@ use worth_query_declaration::facade::application_schema::{
 
 use super::*;
 
-
-pub fn validate_operation_receipt<
-    'receipt,
-    Schema,
-    Binding,
->(
+pub fn validate_operation_receipt<'receipt, Schema, Binding>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     required: &RequiredWorkflowOperation,
     subject: worth_relational::facade::identity::EntityId,
@@ -74,7 +69,6 @@ where
     };
     Ok(ValidatedWorkflowOperationReceipt { receipt, identity })
 }
-
 
 pub fn validate_operation_receipt_custody(
     node_path: &str,

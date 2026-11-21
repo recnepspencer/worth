@@ -19,14 +19,11 @@ pub struct PreparedWorkflowOperation<Schema, Operation, Input, Scope> {
             Input,
             Scope,
         >,
-    pub required:
-        RequiredWorkflowOperation,
+    pub required: RequiredWorkflowOperation,
     pub layout:
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-    pub program_revision:
-        ApplicationProgramRevision,
-    pub replays:
-        PreparedWorkflowTransitionReplays,
+    pub program_revision: ApplicationProgramRevision,
+    pub replays: PreparedWorkflowTransitionReplays,
 }
 
 impl<Schema, Operation, Input, Scope> PreparedWorkflowOperation<Schema, Operation, Input, Scope> {
@@ -273,10 +270,7 @@ impl WorkflowOperationAuthority {
         }
     }
 
-    pub fn with_deadline(
-        mut self,
-        deadline: Option<u64>,
-    ) -> Self {
+    pub fn with_deadline(mut self, deadline: Option<u64>) -> Self {
         self.deadline = deadline;
         self
     }
@@ -301,9 +295,7 @@ impl WorkflowOperationAuthority {
 
     #[doc(hidden)]
 
-    pub fn facts(
-        &self,
-    ) -> &[WorthQueryApplicationObservedFact] {
+    pub fn facts(&self) -> &[WorthQueryApplicationObservedFact] {
         &self.facts
     }
 }
@@ -311,7 +303,7 @@ impl WorkflowOperationAuthority {
 impl RequiredWorkflowOperation {
     pub fn captured_input_contract(
         &self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
     ) -> Option<&crate::domain_computation::primary_graph::WorkflowCapturedInputContract> {
         self.captured_input.as_ref()
     }

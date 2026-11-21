@@ -26,10 +26,8 @@ const DIGEST_DOMAIN: &[u8] = b"worth-query/workflow-adoption-inventory/1\0";
 pub struct WorkflowAdoptionInventoryRequest<'a> {
     pub layout: &'a WorthQueryWorkflowLayout,
     pub branch_occurrence: u64,
-    pub coverage:
-        &'a WorkflowVocabularyCoverageRegistry,
-    pub requirements:
-        &'a WorthQueryProgramAdoptionRequirements,
+    pub coverage: &'a WorkflowVocabularyCoverageRegistry,
+    pub requirements: &'a WorthQueryProgramAdoptionRequirements,
     pub source: &'a ApplicationProgramRevision,
     pub target: &'a ApplicationProgramRevision,
     pub maximum_work_units: usize,

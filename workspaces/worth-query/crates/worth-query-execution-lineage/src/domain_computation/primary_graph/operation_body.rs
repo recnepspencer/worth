@@ -20,12 +20,8 @@ pub mod source;
 pub mod value;
 pub use input::{prepare_inputs, PreparedBodyInputs};
 pub use path_value::PreparedBodyPathWrites;
-pub use retirement::{
-    PreparedBodyRetirements, PreparedRetirementBatch,
-};
-pub use selection::{
-    PreparedBodySelection, PreparedBodySelections,
-};
+pub use retirement::{PreparedBodyRetirements, PreparedRetirementBatch};
+pub use selection::{PreparedBodySelection, PreparedBodySelections};
 pub use source::PreparedBodySource;
 
 pub use assessment::{
@@ -33,9 +29,7 @@ pub use assessment::{
 };
 pub use field_expectation::BodyFieldExpectation;
 pub use requirement::evaluate_requirements;
-pub use requirement::{
-    field_value, PreparedRequirementOperand,
-};
+pub use requirement::{field_value, PreparedRequirementOperand};
 pub use requirement::{
     WorthQueryOperationBodyRequirementFinding, WorthQueryOperationBodyRequirementStatus,
     WorthQueryOperationBodyRequirementTarget,

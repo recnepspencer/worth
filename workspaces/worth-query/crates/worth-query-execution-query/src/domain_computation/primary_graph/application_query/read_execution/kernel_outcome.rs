@@ -7,15 +7,12 @@ use crate::domain_computation::primary_graph::application_query::{
     WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationProjectionRow,
 };
 
-pub struct ProjectedNonLiveKernelOutcome<
-    QueryResult,
-> {
+pub struct ProjectedNonLiveKernelOutcome<QueryResult> {
     pub rows: Vec<QueryResult>,
     pub receipt: NonLiveKernelReceiptEvidence,
 }
 
-pub struct NonLiveKernelReceiptEvidence
-{
+pub struct NonLiveKernelReceiptEvidence {
     pub read: RawOneShotRows,
     pub result_count: usize,
     pub truncation_count: usize,
@@ -42,9 +39,7 @@ pub fn project_non_live_kernel_roots(
 }
 
 impl<QueryResult> ProjectedNonLiveKernelOutcome<QueryResult> {
-    pub fn into_parts(
-        self,
-    ) -> (Vec<QueryResult>, NonLiveKernelReceiptEvidence) {
+    pub fn into_parts(self) -> (Vec<QueryResult>, NonLiveKernelReceiptEvidence) {
         (self.rows, self.receipt)
     }
 }
@@ -63,12 +58,7 @@ impl NonLiveKernelReceiptEvidence {
     }
 }
 
-pub fn project_non_live_kernel_with_decode<
-    Schema,
-    Query,
-    QueryResult,
-    Denial,
->(
+pub fn project_non_live_kernel_with_decode<Schema, Query, QueryResult, Denial>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     decode: &ValueDecodeState,
     kernel: RawNonLiveKernelOutcome,

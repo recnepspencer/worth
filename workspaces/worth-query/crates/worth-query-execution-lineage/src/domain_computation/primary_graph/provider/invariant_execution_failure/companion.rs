@@ -7,9 +7,7 @@ use worth_relational::facade::{
     },
 };
 
-pub fn companion_failure(
-    stop: Stop,
-) -> WorthQueryInvariantExecutionFailure {
+pub fn companion_failure(stop: Stop) -> WorthQueryInvariantExecutionFailure {
     let cause = match stop {
         Stop::Execution(cause) => cause,
         Stop::PreparationMemoryCounterOverflow => Cause::ChargedBytesOverflow,

@@ -30,9 +30,7 @@ impl<'support> WorthQueryPresentedProgram<'support> {
         Self { entry, rendering }
     }
 
-    pub fn identity(
-        &self,
-    ) -> &'support ApplicationProgramIdentity {
+    pub fn identity(&self) -> &'support ApplicationProgramIdentity {
         self.entry.identity()
     }
 
@@ -40,17 +38,11 @@ impl<'support> WorthQueryPresentedProgram<'support> {
         self.rendering
     }
 
-    pub fn acts_through_operation(
-        &self,
-        operation: TypeId,
-    ) -> bool {
+    pub fn acts_through_operation(&self, operation: TypeId) -> bool {
         self.entry.acts_through_operation(operation.into_external())
     }
 
-    pub fn acts_through_mutation_binding(
-        &self,
-        binding: TypeId,
-    ) -> bool {
+    pub fn acts_through_mutation_binding(&self, binding: TypeId) -> bool {
         self.entry
             .acts_through_mutation_binding(binding.into_external())
     }

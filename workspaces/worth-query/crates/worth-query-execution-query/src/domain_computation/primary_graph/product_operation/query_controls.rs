@@ -15,11 +15,4 @@ impl<'request> WorthQueryProductQueryControls<'request> {
             request,
         }
     }
-
-    pub fn into_query_parts(
-        self,
-        _seal: crate::ports::WorthQueryQueryCrateSeal,
-    ) -> (NonZeroUsize, &'request WorthQueryRequestScope) {
-        (self.maximum_results, self.request)
-    }
 }

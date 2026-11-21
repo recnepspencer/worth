@@ -44,10 +44,7 @@ pub struct WorkflowAdoptionTruth {
 }
 
 impl WorkflowAdoptionTruth {
-    pub const fn new(
-        view: VisibilityProjectionView,
-        maximum_work_units: usize,
-    ) -> Self {
+    pub const fn new(view: VisibilityProjectionView, maximum_work_units: usize) -> Self {
         Self {
             view,
             maximum_work_units,

@@ -27,8 +27,7 @@ pub(in crate::domain_computation::primary_graph::application_contribution) use d
     managed_reads, ProducerDependencyScopes,
 };
 pub use envelope::{
-    with_resolved_edit_envelope, AuthoredEnvelopeResolution,
-    UnseenAuthoredEnvelope,
+    with_resolved_edit_envelope, AuthoredEnvelopeResolution, UnseenAuthoredEnvelope,
 };
 mod results;
 pub(in crate::domain_computation::primary_graph) use capture::AuthoredEditStageExecutor;
@@ -75,7 +74,7 @@ impl<'a, S> AuthoredEditStageContext<'a, '_, '_, S> {
 
 /// Publication reports a failed genuine admission with its nominal stage subject.
 pub fn stage_admission_refusal<S: ApplicationSchema, B: ApplicationMutationBinding<S>>(
-    _access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+    _access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
     ordinal: usize,
     detail: String,
 ) -> WorthQueryOutputDemandDenial {

@@ -4,9 +4,7 @@ use super::{CompletedComputationRetention, PriorAbsence};
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone)]
-pub struct ComputationDeposit(
-    Arc<Mutex<DepositCustody>>,
-);
+pub struct ComputationDeposit(Arc<Mutex<DepositCustody>>);
 
 enum DepositCustody {
     Held(CompletedComputationRetention),
@@ -20,10 +18,7 @@ impl ComputationDeposit {
         ))))
     }
 
-    pub fn write(
-        &self,
-        result: CompletedComputationRetention,
-    ) {
+    pub fn write(&self, result: CompletedComputationRetention) {
         let mut custody = self
             .0
             .lock()
@@ -35,9 +30,7 @@ impl ComputationDeposit {
         *custody = DepositCustody::Held(result);
     }
 
-    pub fn take(
-        &self,
-    ) -> CompletedComputationRetention {
+    pub fn take(&self) -> CompletedComputationRetention {
         match std::mem::replace(
             &mut *self
                 .0

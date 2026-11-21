@@ -34,10 +34,7 @@ impl WorthQueryCorrectionHistoryPageAllocation {
     }
 
     /// Fact payloads moved into projected references remain funded; only the old slots go away.
-    pub fn release_fact_slots(
-        &mut self,
-        capacity: usize,
-    ) -> Result<(), Denial> {
+    pub fn release_fact_slots(&mut self, capacity: usize) -> Result<(), Denial> {
         let released = u64::try_from(slots::<WorthQueryCanonicalCorrectionFact>(capacity)?)
             .map_err(|_| overflow())?;
         if let Some(memory) = &mut self.memory {

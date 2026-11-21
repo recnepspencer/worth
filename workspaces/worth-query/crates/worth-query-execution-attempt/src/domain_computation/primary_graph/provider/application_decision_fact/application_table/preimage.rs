@@ -12,9 +12,7 @@ impl ProjectedPreImageCandidates {
     pub fn as_slice(&self) -> &[Decision] {
         &self.facts
     }
-    pub fn iter(
-        &self,
-    ) -> impl Iterator<Item = &Decision> + Clone {
+    pub fn iter(&self) -> impl Iterator<Item = &Decision> + Clone {
         self.facts.iter()
     }
     pub fn examined(&self) -> usize {

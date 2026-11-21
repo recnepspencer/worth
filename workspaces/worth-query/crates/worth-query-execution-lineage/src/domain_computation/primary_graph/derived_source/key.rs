@@ -4,9 +4,7 @@ use std::cmp::Ordering;
 use worth_foundational::facade::RelationDirection;
 use worth_relational::facade::{identity::EntityId, schema::DerivedRelationIdentity};
 #[derive(Clone, Debug)]
-pub struct DerivedSourceKey(
-    pub Arc<Parameters>,
-);
+pub struct DerivedSourceKey(pub Arc<Parameters>);
 #[derive(Debug)]
 pub struct Parameters {
     pub relation: String,
@@ -19,9 +17,7 @@ impl DerivedSourceKey {
     pub fn relation(&self) -> &str {
         &self.0.relation
     }
-    pub fn identity(
-        &self,
-    ) -> &DerivedRelationIdentity {
+    pub fn identity(&self) -> &DerivedRelationIdentity {
         &self.0.identity
     }
     pub fn root(&self) -> EntityId {
@@ -30,10 +26,7 @@ impl DerivedSourceKey {
     pub fn direction(&self) -> RelationDirection {
         self.0.direction
     }
-    pub fn write_locator(
-        &self,
-        output: &mut dyn std::fmt::Write,
-    ) -> std::fmt::Result {
+    pub fn write_locator(&self, output: &mut dyn std::fmt::Write) -> std::fmt::Result {
         let id = self.identity();
         write!(
             output,

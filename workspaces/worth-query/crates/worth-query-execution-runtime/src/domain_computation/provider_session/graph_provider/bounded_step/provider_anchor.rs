@@ -142,8 +142,7 @@ impl<P: WorthQueryProviderSessionLifecycle> WorthQueryErasedProviderSessionLifec
 }
 
 pub struct WorthQueryGraphProviderAnchor {
-    pub session_grant_control:
-        Arc<crate::domain_computation::ProviderSessionGrantControl>,
+    pub session_grant_control: Arc<crate::domain_computation::ProviderSessionGrantControl>,
     pub(super) provider: Arc<dyn WorthQueryErasedGraphParticipationProvider>,
     pub(super) session_lifecycle: Option<Arc<dyn WorthQueryErasedProviderSessionLifecycle>>,
     pub(super) decision_fact_provider: Option<Arc<dyn WorthQueryErasedDecisionFactProvider>>,

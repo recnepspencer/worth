@@ -21,13 +21,7 @@ pub enum DiagnosticContractDenial {
 
 /// Public payload visibility supplies no diagnostic field contract. This check
 /// precedes any lookup of an original retained projection or its availability.
-pub fn compile_diagnostic_disclosure_contract<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Scope,
->(
+pub fn compile_diagnostic_disclosure_contract<Schema, Query, Parameters, QueryResult, Scope>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     layout: &WorthQueryPrimaryGraphLayout,
     execution: &ExecutionRequest<'_, '_>,
@@ -65,13 +59,7 @@ pub fn compile_diagnostic_disclosure_contract<
     })
 }
 
-pub fn diagnostic_shape_supported<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Scope,
->(
+pub fn diagnostic_shape_supported<Schema, Query, Parameters, QueryResult, Scope>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
 ) -> bool {
     let graph = query.read_graph();

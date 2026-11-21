@@ -8,15 +8,9 @@ pub mod start_provenance;
 pub mod state;
 pub mod transition;
 
-pub use adoption_inventory::{
-    read_live_instances, WorkflowInventoriedTransition,
-};
-pub use facts::{
-    visit_instance_birth_facts, visit_instance_start_facts, WorkflowLineageCarry,
-};
-pub use migration::{
-    admit_workflow_migration, WorkflowPerformedEffect, WorkflowSuccession,
-};
+pub use adoption_inventory::{read_live_instances, WorkflowInventoriedTransition};
+pub use facts::{visit_instance_birth_facts, visit_instance_start_facts, WorkflowLineageCarry};
+pub use migration::{admit_workflow_migration, WorkflowPerformedEffect, WorkflowSuccession};
 pub use progression::WorthQueryWorkflowInstanceProgressCounters;
 pub use progression::{
     default_progress_retention_shards, PreparedWorkflowProgressUpdate,

@@ -37,17 +37,12 @@ impl<Query> WorthQueryObservedSource<Query> {
         self.parameters.binding_observation()
     }
 
-    pub fn retained_scope_selector(
-        &self,
-    ) -> &Arc<WorthQueryObservedScopeSelector> {
+    pub fn retained_scope_selector(&self) -> &Arc<WorthQueryObservedScopeSelector> {
         &self.scope_selector
     }
 
     /// Exact original immutable custody, rather than public receipt equality.
-    pub fn shares_original_custody<Other>(
-        &self,
-        other: &WorthQueryObservedSource<Other>,
-    ) -> bool {
+    pub fn shares_original_custody<Other>(&self, other: &WorthQueryObservedSource<Other>) -> bool {
         (match (
             &self.invocation_managed_source,
             &other.invocation_managed_source,

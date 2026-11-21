@@ -20,11 +20,7 @@ fn unavailable() -> HandlerExecutionDenial {
     HandlerExecutionDenial::new(IndexDecisionStop::ContextUnavailable)
 }
 
-pub fn index_query<
-    Schema: ApplicationSchema,
-    Operation,
-    B,
->(
+pub fn index_query<Schema: ApplicationSchema, Operation, B>(
     reader_self: &mut WorthQueryApplicationOperationInvariantProjectionReader<
         '_,
         '_,

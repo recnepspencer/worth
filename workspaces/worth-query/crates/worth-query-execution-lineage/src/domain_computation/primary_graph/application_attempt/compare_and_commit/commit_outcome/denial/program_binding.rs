@@ -8,9 +8,7 @@ use super::{
 };
 
 impl WorthQueryApplicationCommitDenial {
-    pub fn required_output_preparation_missing(
-        binding: &'static str,
-    ) -> Self {
+    pub fn required_output_preparation_missing(binding: &'static str) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::RequiredOutputPreparationMissing,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
@@ -27,9 +25,7 @@ impl WorthQueryApplicationCommitDenial {
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    pub fn program_lane_required<
-        Operation,
-    >() -> Self {
+    pub fn program_lane_required<Operation>() -> Self {
         Self::program_operation_required(format!(
             "operation {} requires the program commit lane",
             std::any::type_name::<Operation>(),
@@ -41,9 +37,7 @@ impl WorthQueryApplicationCommitDenial {
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    pub fn conditional_operation_not_installed<
-        Operation,
-    >() -> Self {
+    pub fn conditional_operation_not_installed<Operation>() -> Self {
         Self::program_operation_required(format!(
             "operation {} is not installed as a conditional operation",
             std::any::type_name::<Operation>(),
@@ -55,9 +49,7 @@ impl WorthQueryApplicationCommitDenial {
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    pub fn operation_not_declared_by_active_program<
-        Operation,
-    >(
+    pub fn operation_not_declared_by_active_program<Operation>(
         identity: &ApplicationProgramIdentity,
         revision: &ApplicationProgramRevision,
     ) -> Self {
@@ -109,9 +101,7 @@ impl WorthQueryApplicationCommitDenial {
 
     /// Refuses a rostered revision whose support this host is retiring or has
     /// retired.
-    pub fn program_support_retired(
-        revision: &ApplicationProgramRevision,
-    ) -> Self {
+    pub fn program_support_retired(revision: &ApplicationProgramRevision) -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::ProgramSupportRetired,
             stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,

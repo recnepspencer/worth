@@ -86,10 +86,7 @@ pub trait ManagedDerivedViewPort: Any + Send + Sync {
         self: Arc<Self>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         target: &worth_relational::facade::mvcc::ManagedIndexSourceForkPreparation<'_>,
-    ) -> Result<
-        Box<dyn Any + Send + Sync>,
-        worth_relational::facade::mvcc::CompanionPreflightStop,
-    >;
+    ) -> Result<Box<dyn Any + Send + Sync>, worth_relational::facade::mvcc::CompanionPreflightStop>;
 
     fn prepare_sources(
         &self,
@@ -138,10 +135,8 @@ impl ManagedDerivedViewPort for EmptyManagedDerivedViewPort {
         self: Arc<Self>,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _target: &worth_relational::facade::mvcc::ManagedIndexSourceForkPreparation<'_>,
-    ) -> Result<
-        Box<dyn Any + Send + Sync>,
-        worth_relational::facade::mvcc::CompanionPreflightStop,
-    > {
+    ) -> Result<Box<dyn Any + Send + Sync>, worth_relational::facade::mvcc::CompanionPreflightStop>
+    {
         Ok(Box::new(()))
     }
 
@@ -336,7 +331,9 @@ pub trait PendingProducerPublicationPort: Any + Send + Sync {
 pub trait AppliedManagedSourcePort: Any + Send + Sync {
     fn published(
         &self,
-    ) -> Option<&Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>>;
+    ) -> Option<
+        &Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>,
+    >;
 
     fn matches_current(
         &self,

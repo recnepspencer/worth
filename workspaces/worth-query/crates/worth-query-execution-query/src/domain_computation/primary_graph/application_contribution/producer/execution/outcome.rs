@@ -12,8 +12,7 @@ use graph::{
 
 /// A stable publication carries owner-issued lineage authority and cannot be
 /// mistaken for a fresh commit receipt or a performed delivery obligation.
-pub enum ProducerExecutionOutcome
-{
+pub enum ProducerExecutionOutcome {
     Committed(ProducerCommitReceipt),
     Unpublished(super::unpublished::PendingProducerPublication),
     Stable(graph::output_lineage::PublishedStableLineage),
@@ -24,9 +23,7 @@ pub enum ProducerExecutionOutcome
     LiveCompletion(WorthQueryApplicationCommitReceipt),
 }
 
-pub type PreparedProducerExecutionPlan<
-    'owner,
-> = super::prepared_plan::OwnerPlan<
+pub type PreparedProducerExecutionPlan<'owner> = super::prepared_plan::OwnerPlan<
     'owner,
     PreparedProducerExecutionOutcome,
     super::ProducerExecutionStop,
@@ -39,24 +36,18 @@ pub struct ProducerCommitReceipt {
 }
 
 impl ProducerCommitReceipt {
-    pub fn record_publication(
-        self,
-        record: impl FnOnce(),
-    ) -> Self {
+    pub fn record_publication(self, record: impl FnOnce()) -> Self {
         record();
         self
     }
 
-    pub fn into_receipt(
-        self,
-    ) -> WorthQueryApplicationCommitReceipt {
+    pub fn into_receipt(self) -> WorthQueryApplicationCommitReceipt {
         self.receipt
     }
 }
 
 /// A successful producer returns its original pre-effect Ready storage.
-pub struct PreparedProducerExecutionOutcome
-{
+pub struct PreparedProducerExecutionOutcome {
     pub outcome: ProducerExecutionOutcome,
     pub ready_backing: graph::application_output_demand::PreparedReadyBacking,
 }

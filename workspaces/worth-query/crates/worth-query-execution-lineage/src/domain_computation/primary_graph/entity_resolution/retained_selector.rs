@@ -125,9 +125,7 @@ impl WorthQueryObservedScopeSelector {
 }
 
 impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
-    pub fn retain_scope_selector(
-        &self,
-    ) -> Arc<WorthQueryObservedScopeSelector> {
+    pub fn retain_scope_selector(&self) -> Arc<WorthQueryObservedScopeSelector> {
         Arc::new(WorthQueryObservedScopeSelector {
             description: ScopeDescription::Resolved(self.retain_description()),
             _funding: None,

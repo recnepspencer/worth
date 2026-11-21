@@ -3,6 +3,7 @@ use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_schema::ApplicationOperationMarkerIdentity,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledWorkflowDefinitionContract,
 };
@@ -21,8 +22,6 @@ pub use worth_query_execution_attempt::facade::domain_computation::primary_graph
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::workflow::definition::preparation::{WorkflowDefinitionBindingDenial, WorkflowDefinitionPreparationDenial};
 
 /// Why a workflow definition publication or retirement did not prepare.
-
-
 
 impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
 where
@@ -53,13 +52,7 @@ where
         })
     }
 
-    pub fn prepare_workflow_publication<
-        Capability,
-        Operation,
-        Input,
-        Scope,
-        Spec,
-    >(
+    pub fn prepare_workflow_publication<Capability, Operation, Input, Scope, Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,

@@ -51,10 +51,7 @@ impl ComponentSelection {
             commitment,
         }))
     }
-    pub fn installed_scope_matches(
-        &self,
-        scope: &WorthQueryOperationGraphReadScope,
-    ) -> bool {
+    pub fn installed_scope_matches(&self, scope: &WorthQueryOperationGraphReadScope) -> bool {
         match (&self.origin, scope) {
             (
                 ComponentSelectionOrigin::Operation(a),

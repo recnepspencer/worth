@@ -11,10 +11,7 @@ impl QueuedClosedRow {
     pub fn key(&self) -> Arc<WorthQueryOutputDemandKey> {
         self.0.key_arc()
     }
-    pub fn names(
-        &self,
-        records: &super::super::super::record_map::DemandRecords,
-    ) -> bool {
+    pub fn names(&self, records: &super::super::super::record_map::DemandRecords) -> bool {
         records
             .get(&self.key())
             .is_some_and(|row| Arc::ptr_eq(&row.closed_cleanup.0, &self.0))
@@ -36,10 +33,7 @@ impl<'a> ClosedRowNote<'a> {
             outstanding: true,
         }
     }
-    pub fn prune<T>(
-        mut self,
-        prune: impl FnOnce(&mut DemandRegistryState) -> T,
-    ) -> T {
+    pub fn prune<T>(mut self, prune: impl FnOnce(&mut DemandRegistryState) -> T) -> T {
         let result = prune(self.state);
         // A missing original row consumes closed debt: its claims left with it.
         // Custody is independent, so a missing row cannot consume a custody note.

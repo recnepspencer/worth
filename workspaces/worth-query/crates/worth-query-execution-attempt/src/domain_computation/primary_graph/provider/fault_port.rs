@@ -52,8 +52,7 @@ pub trait WorthQueryPrimaryGraphFaultPort: Send + Sync {
     }
 }
 
-pub fn production_fault_port(
-) -> Arc<dyn WorthQueryPrimaryGraphFaultPort> {
+pub fn production_fault_port() -> Arc<dyn WorthQueryPrimaryGraphFaultPort> {
     {
         Arc::new(WorthQueryScriptedPrimaryGraphFaults::default())
     }
@@ -147,9 +146,7 @@ impl super::WorthQueryPrimaryGraphProvider {
         self.take_fault(WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot)
     }
 
-    pub fn fail_next_post_commit_snapshot_for_test(
-        &self,
-    ) {
+    pub fn fail_next_post_commit_snapshot_for_test(&self) {
         assert!(self
             .fault_port
             .schedule_for_test(WorthQueryPrimaryGraphFault::FailedPostCommitSnapshot));
@@ -175,10 +172,7 @@ impl super::WorthQueryPrimaryGraphProvider {
         self.take_fault(WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget)
     }
 
-    pub fn take_fault(
-        &self,
-        fault: WorthQueryPrimaryGraphFault,
-    ) -> bool {
+    pub fn take_fault(&self, fault: WorthQueryPrimaryGraphFault) -> bool {
         self.publication_fault_control.take(fault) || self.fault_port.take(fault)
     }
 }

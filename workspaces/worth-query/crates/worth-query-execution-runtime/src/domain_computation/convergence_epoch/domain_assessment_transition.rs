@@ -74,9 +74,7 @@ impl DomainAssessmentLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> DomainAssessmentLifecycleEventKind {
+    pub fn into_kind(self) -> DomainAssessmentLifecycleEventKind {
         self.kind
     }
 }

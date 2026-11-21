@@ -9,10 +9,7 @@ pub struct WorkflowTransitionLocator {
 }
 
 impl WorkflowTransitionLocator {
-    pub const fn new(
-        entity: EntityId,
-        settlement: SettledWorkflowTransition,
-    ) -> Self {
+    pub const fn new(entity: EntityId, settlement: SettledWorkflowTransition) -> Self {
         Self { entity, settlement }
     }
 
@@ -20,9 +17,7 @@ impl WorkflowTransitionLocator {
         self.entity
     }
 
-    pub const fn settlement(
-        self,
-    ) -> SettledWorkflowTransition {
+    pub const fn settlement(self) -> SettledWorkflowTransition {
         self.settlement
     }
 }
@@ -34,19 +29,14 @@ pub struct WorkflowAssessmentEvidenceLocator {
 }
 
 impl WorkflowAssessmentEvidenceLocator {
-    pub const fn new(
-        transition: WorkflowTransitionLocator,
-        evidence: EntityId,
-    ) -> Self {
+    pub const fn new(transition: WorkflowTransitionLocator, evidence: EntityId) -> Self {
         Self {
             transition,
             evidence,
         }
     }
 
-    pub const fn transition(
-        self,
-    ) -> WorkflowTransitionLocator {
+    pub const fn transition(self) -> WorkflowTransitionLocator {
         self.transition
     }
 
@@ -77,23 +67,16 @@ impl WorkflowTransitionProgressObservation {
     }
 
     /// The bytes its assessment evidence retains, recorded on the evidence.
-    pub const fn retaining_evidence_bytes(
-        mut self,
-        bytes: u64,
-    ) -> Self {
+    pub const fn retaining_evidence_bytes(mut self, bytes: u64) -> Self {
         self.evidence_bytes = bytes;
         self
     }
 
-    pub const fn transition(
-        &self,
-    ) -> WorkflowTransitionLocator {
+    pub const fn transition(&self) -> WorkflowTransitionLocator {
         self.transition
     }
 
-    pub const fn assessment_evidence(
-        &self,
-    ) -> Option<EntityId> {
+    pub const fn assessment_evidence(&self) -> Option<EntityId> {
         self.assessment_evidence
     }
     pub fn retaining_captured_inputs(
@@ -106,10 +89,7 @@ impl WorkflowTransitionProgressObservation {
 }
 
 impl WorkflowInstanceProgress {
-    pub fn latest_transition(
-        &self,
-        node: EntityId,
-    ) -> Option<WorkflowTransitionLocator> {
+    pub fn latest_transition(&self, node: EntityId) -> Option<WorkflowTransitionLocator> {
         self.latest_transitions.get(&node).copied()
     }
 
@@ -120,10 +100,7 @@ impl WorkflowInstanceProgress {
         self.latest_assessment_evidence.get(&node).copied()
     }
 
-    pub fn retain_observation(
-        &mut self,
-        observation: WorkflowTransitionProgressObservation,
-    ) {
+    pub fn retain_observation(&mut self, observation: WorkflowTransitionProgressObservation) {
         let locator = observation.transition;
         let node = locator.settlement().node();
         if let Some(support) = observation.captured_inputs {

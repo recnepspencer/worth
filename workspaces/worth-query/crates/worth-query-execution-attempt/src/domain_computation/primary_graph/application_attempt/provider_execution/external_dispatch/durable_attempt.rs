@@ -9,8 +9,8 @@ use crate::domain_computation::application_aftermath::dispatch_journal::{
     WorthQueryDispatchJournal,
 };
 use crate::domain_computation::application_aftermath::{
-    ExternalRailTransportFault,
-    WorthQueryExternalDispatchPostureKind, WorthQueryExternalEffectDispatch,
+    ExternalRailTransportFault, WorthQueryExternalDispatchPostureKind,
+    WorthQueryExternalEffectDispatch,
 };
 
 pub use worth_query_execution_lineage::facade::primary_graph::application_attempt::provider_execution::external_dispatch::durable_attempt::WorthQueryDurableDispatchRecordDenial;
@@ -46,9 +46,7 @@ impl<'journal> DurableDispatchContact<'journal> {
         self.attempt
             .expect("recorded contact owns its actual attempt")
     }
-    pub fn correlation(
-        &self,
-    ) -> &worth_foundational::facade::CanonicalDigestId {
+    pub fn correlation(&self) -> &worth_foundational::facade::CanonicalDigestId {
         &self.correlation
     }
     pub fn mark_contact_started(&self) {
@@ -94,7 +92,6 @@ impl Drop for DurableDispatchContact<'_> {
         }
     }
 }
-
 
 pub fn recorded_observation(
     dispatch: &WorthQueryExternalEffectDispatch,

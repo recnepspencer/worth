@@ -1,4 +1,5 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::idempotency_resolution::denial;
@@ -190,11 +191,7 @@ where
         self.resolve_admitted_application_idempotency_with_request(&execution, admission, binding)
     }
 
-    pub fn resolve_admitted_application_idempotency_with_request<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn resolve_admitted_application_idempotency_with_request<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
@@ -211,11 +208,7 @@ where
             })
     }
 
-    pub fn resolve_admitted_application_idempotencies<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn resolve_admitted_application_idempotencies<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,

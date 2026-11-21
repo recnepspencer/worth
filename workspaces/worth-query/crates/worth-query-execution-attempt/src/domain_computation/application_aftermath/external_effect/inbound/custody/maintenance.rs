@@ -50,10 +50,7 @@ impl WorthQueryInboundCustody {
             .is_some_and(|entry| entry.publication == PublicationState::Retryable)
     }
 
-    pub fn next_terminal_expiry(
-        &self,
-        operation: &str,
-    ) -> Option<u64> {
+    pub fn next_terminal_expiry(&self, operation: &str) -> Option<u64> {
         let settled = self
             .terminal_expiry
             .get(operation)

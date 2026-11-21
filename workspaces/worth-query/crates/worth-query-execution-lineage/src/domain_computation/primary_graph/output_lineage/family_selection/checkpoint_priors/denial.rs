@@ -33,10 +33,7 @@ impl CheckpointPriorSelectionDenial {
         Self::Admission { phase, stop }
     }
 
-    pub fn allocation(
-        phase: &'static str,
-        error: std::collections::TryReserveError,
-    ) -> Self {
+    pub fn allocation(phase: &'static str, error: std::collections::TryReserveError) -> Self {
         Self::Allocation { phase, error }
     }
 
@@ -44,9 +41,7 @@ impl CheckpointPriorSelectionDenial {
         Self::CheckedArithmetic { phase }
     }
 
-    pub fn into_capture_denial(
-        self,
-    ) -> worth_relational::facade::durability::DurabilityError {
+    pub fn into_capture_denial(self) -> worth_relational::facade::durability::DurabilityError {
         use worth_relational::facade::durability::{DurabilityError, RecoveryFailureClass};
         let detail = match self {
             Self::Admission { phase, stop } => {

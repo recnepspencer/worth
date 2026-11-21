@@ -16,10 +16,7 @@ impl WorthQueryApplicationReadScope {
         }
     }
 
-    pub const fn projected(
-        root: EntityId,
-        projected: WorthQueryRealizedProjectionScope,
-    ) -> Self {
+    pub const fn projected(root: EntityId, projected: WorthQueryRealizedProjectionScope) -> Self {
         Self {
             root,
             projected: Some(projected),

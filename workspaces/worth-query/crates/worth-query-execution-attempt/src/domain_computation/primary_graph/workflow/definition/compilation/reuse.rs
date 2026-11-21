@@ -223,9 +223,7 @@ impl WorkflowDefinitionCompilationReuse {
         self.use_sequence
     }
 
-    pub const fn counters(
-        &self,
-    ) -> WorthQueryWorkflowCompilationReuseCounters {
+    pub const fn counters(&self) -> WorthQueryWorkflowCompilationReuseCounters {
         WorthQueryWorkflowCompilationReuseCounters::new(
             self.warm_hits,
             self.cold_misses,

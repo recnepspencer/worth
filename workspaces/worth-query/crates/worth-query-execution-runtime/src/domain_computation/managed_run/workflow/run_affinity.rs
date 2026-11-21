@@ -86,9 +86,7 @@ impl WorthQueryWorkflowRunAffinity {
             == attempt.attempt_identity().as_str()
     }
 
-    pub fn initial(
-        attempt: WorthQueryWorkflowExecutionResourceAttempt,
-    ) -> Self {
+    pub fn initial(attempt: WorthQueryWorkflowExecutionResourceAttempt) -> Self {
         let ordinal = NEXT_WORKFLOW_LOGICAL_RUN.fetch_add(1, Ordering::Relaxed);
         let provider_work = WorthQueryManagedProviderWorkLedger::new(
             attempt
@@ -127,9 +125,7 @@ impl WorthQueryWorkflowRunAffinity {
         self.attempt.binding_authority().binding_identity() == operation.binding_identity()
     }
 
-    pub fn retained_capacity_reservation_count(
-        &self,
-    ) -> usize {
+    pub fn retained_capacity_reservation_count(&self) -> usize {
         self.attempt.retained_capacity_reservation_count()
     }
 
@@ -147,9 +143,7 @@ impl WorthQueryWorkflowRunAffinity {
         self.attempt.resources()
     }
 
-    pub fn evidence(
-        &self,
-    ) -> &WorthQueryExecutionResourceAttemptEvidence {
+    pub fn evidence(&self) -> &WorthQueryExecutionResourceAttemptEvidence {
         self.attempt.evidence()
     }
 
@@ -180,9 +174,7 @@ impl WorthQueryWorkflowRunAffinity {
         self.provider_work.settle_artifacts(evidence);
     }
 
-    pub fn provider_work_snapshot(
-        &self,
-    ) -> WorthQueryManagedProviderWorkEvidence {
+    pub fn provider_work_snapshot(&self) -> WorthQueryManagedProviderWorkEvidence {
         self.provider_work.snapshot()
     }
 

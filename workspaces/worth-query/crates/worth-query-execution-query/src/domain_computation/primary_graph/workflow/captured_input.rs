@@ -13,10 +13,9 @@ use worth_query_installation::facade::ApplicationSchema;
 use crate::domain_computation::primary_graph::{
     application_attempt::precondition_binding::bind_mutation_preconditions,
     WorthQueryAdvancementPhase, WorthQueryApplicationEntityIdentity,
-    WorthQueryApplicationObservedFact,
-    WorthQuerySelectedProductOperation,
+    WorthQueryApplicationObservedFact, WorthQuerySelectedProductOperation,
 };
-use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort;
+use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
 mod inventory;
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::workflow::captured_input::support;
 pub use inventory::inventory_identity;
@@ -32,7 +31,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     pub fn prepare_workflow_captured_input<B>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        _: &dyn WorthQueryProgramPublicationAccessPort,
+        _: &WorthQueryProgramPublicationAccess,
         scope: &WorthQueryApplicationEntityIdentity<S, Scope<S, B>>,
         identities: &ApplicationMutationIdentities<'_, S, B>,
         preconditions: &TypedMutationPreconditions<S, B::Operation, Scope<S, B>>,

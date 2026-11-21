@@ -81,21 +81,16 @@ impl AppliedOutputParent {
         self
     }
 }
-pub struct SynchronousOutputFailure(
-    pub(crate) CoupledSourceReadStop,
-);
+pub struct SynchronousOutputFailure(pub(crate) CoupledSourceReadStop);
 impl From<CoupledSourceReadStop> for SynchronousOutputFailure {
     fn from(cause: CoupledSourceReadStop) -> Self {
         Self(cause)
     }
 }
 pub struct SynchronousOutputAssembly<'a, 'owner, 'run, 'phase, S: ApplicationSchema> {
-    pub(crate) owner:
-        &'a CoupledApplicationAssembly<'owner, 'run, 'phase, S>,
-    pub(crate) execution:
-        &'a worth_execution::ExecutionRequest<'a, 'a>,
-    pub(crate) before:
-        &'a RelationalPinnedRead,
+    pub(crate) owner: &'a CoupledApplicationAssembly<'owner, 'run, 'phase, S>,
+    pub(crate) execution: &'a worth_execution::ExecutionRequest<'a, 'a>,
+    pub(crate) before: &'a RelationalPinnedRead,
     pub(crate) order:
         &'a worth_query_declaration::facade::application_program::ApplicationProgramConnectionOrder,
 }

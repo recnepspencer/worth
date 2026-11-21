@@ -23,9 +23,7 @@ pub struct WorthQueryPrimaryGraphResourceSupport {
 }
 
 impl WorthQueryPrimaryGraphResourceSupport {
-    pub fn install(
-        maximum_concurrent_graph_work: std::num::NonZeroUsize,
-    ) -> Self {
+    pub fn install(maximum_concurrent_graph_work: std::num::NonZeroUsize) -> Self {
         let (executor, _) = component_support("executor", maximum_concurrent_graph_work);
         let (graph, _) = component_support("graph", maximum_concurrent_graph_work);
         let (commit, _) = component_support("commit", maximum_concurrent_graph_work);

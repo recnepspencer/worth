@@ -32,9 +32,7 @@ impl<Query> super::super::WorthQueryObservedSource<Query> {
         self.source_meaning.runtime_idempotency_identity()
     }
 
-    pub fn checkpoint_identity(
-        &self,
-    ) -> WorthQueryCheckpointSourceIdentity {
+    pub fn checkpoint_identity(&self) -> WorthQueryCheckpointSourceIdentity {
         self.source_meaning.checkpoint_identity()
     }
 }

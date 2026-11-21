@@ -120,10 +120,7 @@ impl WorthQueryOutputDemandRegistry {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         state.records.publication_selection(occurrence)
     }
-    pub fn record_selection_state(
-        &self,
-        frozen: bool,
-    ) {
+    pub fn record_selection_state(&self, frozen: bool) {
         self.state
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

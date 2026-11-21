@@ -40,10 +40,7 @@ impl WorthQueryOutputDemandRegistry {
     }
 
     /// The row certified Current or refreshed: no recorded stop survives it.
-    pub fn clear_required_stop(
-        &self,
-        key: &WorthQueryOutputDemandKey,
-    ) {
+    pub fn clear_required_stop(&self, key: &WorthQueryOutputDemandKey) {
         self.set_required_stop(key, None);
     }
 

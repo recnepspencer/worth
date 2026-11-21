@@ -132,7 +132,8 @@ where
             .snapshot();
         let retained = registry.retained_resource_counts();
         let bridge = self
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .conditional_lifecycle_probe();
@@ -154,7 +155,8 @@ where
         &self,
     ) -> super::WorthQueryConditionalRuntimeLifecycleProbe {
         let bridge = self
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .conditional()
             .conditional_lifecycle_probe();

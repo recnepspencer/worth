@@ -10,11 +10,7 @@ use std::ops::Range;
 impl<Schema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn can_carry_call_range(
-        &self,
-        _: &Comparator,
-        summary: &CallSummary,
-    ) -> bool {
+    pub fn can_carry_call_range(&self, _: &Comparator, summary: &CallSummary) -> bool {
         if !self.reader.execution.has_accounting() {
             return true;
         }
@@ -24,11 +20,7 @@ impl<Schema, Operation>
         let mut budget = self.reader.work_budget;
         budget.carry(accounting.demand, accounting.consumed)
     }
-    pub fn begin_call_ranges(
-        &mut self,
-        _: &Comparator,
-        binding: CheckedCallShape,
-    ) {
+    pub fn begin_call_ranges(&mut self, _: &Comparator, binding: CheckedCallShape) {
         self.decision_facts.computation.begin_ranges(binding);
     }
     pub fn select_call_shape_transition(

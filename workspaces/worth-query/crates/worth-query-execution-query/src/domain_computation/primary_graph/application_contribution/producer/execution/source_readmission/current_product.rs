@@ -5,10 +5,7 @@ use super::*;
 /// Authenticate an already prepared permission against the exact issued head.
 /// The guarded callback only seals currentness; actor verification and its
 /// variable work run afterward against the pinned native Product root.
-pub fn is_current_selected_product<
-    Schema,
-    Binding,
->(
+pub fn is_current_selected_product<Schema, Binding>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
 ) -> Result<bool, ProducerExecutionStop>

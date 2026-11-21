@@ -72,10 +72,7 @@ pub struct WorthQueryPrincipalResolutionDenial {
 }
 
 impl WorthQueryPrincipalResolutionDenial {
-    pub fn new(
-        kind: WorthQueryPrincipalResolutionDenialKind,
-        binding: impl Into<String>,
-    ) -> Self {
+    pub fn new(kind: WorthQueryPrincipalResolutionDenialKind, binding: impl Into<String>) -> Self {
         Self {
             kind,
             binding: binding.into(),

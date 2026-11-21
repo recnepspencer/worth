@@ -16,17 +16,10 @@ pub fn select_current_proposal_need<'compiled>(
 }
 
 impl<'compiled> SelectedWorkflowProposal<'compiled> {
-    pub fn matches_recorded(
-        &self,
-        operation: &str,
-        input_type: &str,
-        node_path: &str,
-    ) -> bool {
+    pub fn matches_recorded(&self, operation: &str, input_type: &str, node_path: &str) -> bool {
         self.operation == operation && self.input_type == input_type && self.node_path == node_path
     }
-    pub fn from_node(
-        node: &'compiled CompiledWorkflowNode,
-    ) -> Option<Self> {
+    pub fn from_node(node: &'compiled CompiledWorkflowNode) -> Option<Self> {
         match node.kind() {
             CompiledWorkflowNodeKind::Operation {
                 operation,

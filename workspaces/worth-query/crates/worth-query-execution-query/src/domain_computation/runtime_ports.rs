@@ -6,8 +6,7 @@ use std::sync::{Arc, Mutex};
 
 use worth_query_execution_runtime::facade::execution_runtime::product_world::WorthQueryProductRuntime;
 use worth_query_execution_runtime::facade::ports::{
-    ForkLineagePort, InspectionTargetPort,
-    ProductRuntimeRef, RuntimeHomeRetirementDenial,
+    ForkLineagePort, InspectionTargetPort, ProductRuntimeRef, RuntimeHomeRetirementDenial,
 };
 use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaBindingIdentity,
@@ -20,8 +19,6 @@ use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicat
 use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
-
-
 
 impl InspectionTargetPort for WorthQueryApplicationInspectionTarget {
     fn contract(&self) -> &WorthQueryInstalledApplicationInspectionContract {
@@ -49,9 +46,7 @@ impl<Schema: ApplicationSchema> ProductRuntimeRef
     }
 }
 
-pub struct OutputLineageForkAdapter(
-    pub Arc<Mutex<WorthQueryApplicationOutputLineage>>,
-);
+pub struct OutputLineageForkAdapter(pub Arc<Mutex<WorthQueryApplicationOutputLineage>>);
 
 impl ForkLineagePort for OutputLineageForkAdapter {
     fn register_fork(
@@ -67,9 +62,6 @@ impl ForkLineagePort for OutputLineageForkAdapter {
 }
 
 pub use worth_query_execution_attempt::facade::domain_computation::runtime_ports::PrimaryGraphProviderArc;
-
-
-
 
 impl From<RuntimeHomeRetirementDenial> for WorthQueryHomeRetirementDenial {
     fn from(value: RuntimeHomeRetirementDenial) -> Self {

@@ -1,9 +1,7 @@
 pub mod home_retirement;
 pub mod output_availability_candidate;
 pub mod retention;
-pub use output_availability_candidate::{
-    ObservedOutputCandidate, ObservedOutputPosture,
-};
+pub use output_availability_candidate::{ObservedOutputCandidate, ObservedOutputPosture};
 pub mod admission_denial;
 pub mod aggregate;
 pub mod aggregate_read;
@@ -61,9 +59,7 @@ use worth_query_installation::facade::{
 use worth_relational::facade::identity::{EntityId, KindId, VersionId};
 
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
-use super::{
-    WorthQueryInstalledEntityResolutionContext, WorthQueryPrimaryGraphIntegrationHandle,
-};
+use super::{WorthQueryInstalledEntityResolutionContext, WorthQueryPrimaryGraphIntegrationHandle};
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 
 pub use super::read_observation::WorthQueryInvariantProjectionWork;
@@ -164,10 +160,8 @@ pub mod entity_identity;
 pub struct WorthQueryInvariantMutationTarget<Schema, Entity> {
     pub entity_id: EntityId,
     pub entity: Arc<str>,
-    pub runtime_authority:
-        WorthQueryRuntimeAuthorityIdentity,
-    pub binding_identity:
-        ApplicationSchemaBindingIdentity,
+    pub runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    pub binding_identity: ApplicationSchemaBindingIdentity,
     pub admission_identity:
         crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
     pub phase:

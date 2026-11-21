@@ -37,9 +37,7 @@ impl WorthQueryLivePublicationReservation {
         }
     }
 
-    pub const fn requires_successor_observation(
-        &self,
-    ) -> bool {
+    pub const fn requires_successor_observation(&self) -> bool {
         self.active
     }
 }

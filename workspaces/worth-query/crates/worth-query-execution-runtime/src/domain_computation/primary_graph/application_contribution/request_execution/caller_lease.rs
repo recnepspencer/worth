@@ -32,9 +32,7 @@ impl<'a> QueryRequestExecution<'a> {
 
     /// The request's cancellation or elapsed deadline, if either happened,
     /// including a cancellation anywhere in its lease's lineage.
-    pub fn interruption(
-        &self,
-    ) -> Option<WorthQueryManagedComputationInterruption> {
+    pub fn interruption(&self) -> Option<WorthQueryManagedComputationInterruption> {
         let lease = match &self.form {
             Form::Leased { lease, .. } | Form::Serial { lease, .. } => lease.as_ref().ok(),
         };

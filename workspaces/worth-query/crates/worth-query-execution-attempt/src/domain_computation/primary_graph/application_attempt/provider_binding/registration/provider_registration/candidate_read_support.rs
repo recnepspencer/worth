@@ -117,9 +117,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             .retain(|(_, _, support)| !matches!(support, CandidateReadSupport::Outgoing(_)));
         Ok(())
     }
-    pub fn candidate_read_support(
-        &self,
-    ) -> &[(EntityId, usize, CandidateReadSupport)] {
+    pub fn candidate_read_support(&self) -> &[(EntityId, usize, CandidateReadSupport)] {
         &self.candidate_read_support.values
     }
 }

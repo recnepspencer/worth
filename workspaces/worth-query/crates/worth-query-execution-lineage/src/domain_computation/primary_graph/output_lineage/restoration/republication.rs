@@ -48,10 +48,8 @@ pub struct RepublishedRecord {
     /// The suspended record this row continues.
     pub predecessor: Arc<RecordedSettlementIdentity>,
     pub facts: super::super::RetainedSourceFacts,
-    pub consumed_outputs:
-        Arc<[ConsumedOutputEvidence]>,
-    pub witness:
-        Arc<OnceLock<SealedNativeOutputWitness>>,
+    pub consumed_outputs: Arc<[ConsumedOutputEvidence]>,
+    pub witness: Arc<OnceLock<SealedNativeOutputWitness>>,
 }
 
 impl RepublishedOutput {

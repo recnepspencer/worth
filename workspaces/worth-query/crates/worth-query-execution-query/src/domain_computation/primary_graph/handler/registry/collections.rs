@@ -20,9 +20,8 @@ struct RuleReadableCount {
 }
 
 impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
-    pub fn bind_collection<Feature, Collection>(
-        &mut self,
-    ) where
+    pub fn bind_collection<Feature, Collection>(&mut self)
+    where
         Feature: ApplicationFeature<Schema>,
         Collection: ApplicationDerivedCollection<Schema, Feature>,
     {
@@ -39,13 +38,8 @@ impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
         });
     }
 
-    pub fn bind_rule_readable_count<
-        Feature,
-        Collection,
-    >(
-        &mut self,
-        relation: &'static str,
-    ) where
+    pub fn bind_rule_readable_count<Feature, Collection>(&mut self, relation: &'static str)
+    where
         Feature: ApplicationFeature<Schema>,
         Collection: ApplicationDerivedCollection<Schema, Feature>,
     {

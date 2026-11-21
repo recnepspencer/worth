@@ -14,17 +14,13 @@ pub enum InboundTerminalSource {
     },
 }
 impl InboundTerminalSource {
-    pub fn incarnation(
-        &self,
-    ) -> ProductBranchIncarnation {
+    pub fn incarnation(&self) -> ProductBranchIncarnation {
         match self {
             Self::Performed { incarnation, .. } => *incarnation,
             Self::Readmitted { world, .. } => world.after().lifecycle_incarnation(),
         }
     }
-    pub fn commit_identity(
-        &self,
-    ) -> &CompositeCommitIdentity {
+    pub fn commit_identity(&self) -> &CompositeCommitIdentity {
         match self {
             Self::Performed { protection, .. } => protection.commit_identity(),
             Self::Readmitted { world, .. } => world.after().selected_commit(),

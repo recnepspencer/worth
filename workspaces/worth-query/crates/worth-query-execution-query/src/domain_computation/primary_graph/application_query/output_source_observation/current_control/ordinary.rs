@@ -1,7 +1,7 @@
 //! An ordinary producer lends its admitted C control without navigation lifetimes.
-use crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControlRuntimeExt as _;
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
+use crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControlRuntimeExt as _;
 use crate::domain_computation::primary_graph::product_operation::current_read::{
     CurrentReadControl, CurrentReadDenial,
 };
@@ -77,17 +77,13 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
             .held = Some(coordination);
         Ok(admitted)
     }
-    pub fn read_control(
-        &self,
-    ) -> Option<CurrentReadControl<'_>> {
+    pub fn read_control(&self) -> Option<CurrentReadControl<'_>> {
         self.history
             .as_ref()
             .map(|history| history.invocation.read_control())
             .or_else(|| self.current.as_ref().map(|current| current.proof))
     }
-    pub fn confirm_current_control<
-        T,
-    >(
+    pub fn confirm_current_control<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         native: &mut ApplicationQueryNativeAccess<'_>,

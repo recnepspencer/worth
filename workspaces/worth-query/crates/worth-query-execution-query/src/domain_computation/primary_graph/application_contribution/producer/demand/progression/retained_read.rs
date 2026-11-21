@@ -46,10 +46,7 @@ type Permission<'a, S, F> =
         Scope<S, F>,
     >;
 
-pub fn authorize_history_source<
-    Schema,
-    Family,
->(
+pub fn authorize_history_source<Schema, Family>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retained: &WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,

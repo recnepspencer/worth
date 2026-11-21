@@ -168,9 +168,7 @@ fn next_comparison_attempt(attempts: &std::sync::atomic::AtomicU64) -> Option<u6
     }
 }
 
-pub fn consult(
-    execution: &ExecutionRequest<'_, '_>,
-) -> Result<(), WorthQueryOutputDemandDenial> {
+pub fn consult(execution: &ExecutionRequest<'_, '_>) -> Result<(), WorthQueryOutputDemandDenial> {
     execution.consult().map_err(|cause| {
         retained_fact_denial(
             RetainedFactStop::Execution(cause.into()),

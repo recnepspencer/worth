@@ -9,10 +9,7 @@ use worth_query_installation::facade::{
 };
 use worth_runtime_bridge::facade::*;
 
-pub struct QueryAuthoredPredicateProvider<
-    Node,
-    Provider,
-> {
+pub struct QueryAuthoredPredicateProvider<Node, Provider> {
     binding: WorthQueryAuthoredHostPredicateBinding<Node, Provider>,
     evaluator: QueryTemporalPredicateProvider<Node, Provider>,
     node: Arc<str>,

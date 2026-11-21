@@ -68,13 +68,12 @@ where
             MutationScope<Schema, Binding>,
         >,
     >,
-    pub operation:
-        crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
-            Schema,
-            <Mutation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Operation,
-            MutationInput<Schema, Binding>,
-            MutationScope<Schema, Binding>,
-        >,
+    pub operation: crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        <Mutation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Operation,
+        MutationInput<Schema, Binding>,
+        MutationScope<Schema, Binding>,
+    >,
 }
 
 #[allow(clippy::too_many_arguments)]

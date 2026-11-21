@@ -1,6 +1,6 @@
 //! Pure producer input reads complete under their actual before admission and D pin.
-use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
 use super::*;
+use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
 use crate::domain_computation::primary_graph::{
     application_query::AppliedQuerySource, MutationHandlerExecutionDenial,
     WorthQueryApplicationProjection, WorthQueryCompleteApplicationReadSet,
@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding, ApplicationOwnedMutationIdentities,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
@@ -18,26 +19,22 @@ type Op<S, B> = <Operation<S, B> as ApplicationMutationBinding<S>>::Operation;
 type Input<S, B> = <Operation<S, B> as ApplicationMutationBinding<S>>::Input;
 
 /// Only the opted-in cold owner instantiates the complete admission prelude.
-pub type CaptureAdmission<
-    S,
-    B,
-> = fn(
-    &TypedInstalledProducer<S, B>,
-    &WorthQueryAdvancementPhase<'_>,
-    &WorthQueryPrimaryGraphApplicationRuntime<S>,
-    &WorthQueryAuthenticatedExternalPrincipal<S>,
-    &WorthQueryRequestScope,
-    &crate::basis::WorthQueryProductBranchLease,
-    &RelationalPinnedRead,
-    &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-    ErasedAppliedProducerSource,
-    super::super::InstalledProducerEdition,
-    std::any::TypeId,
-) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop>;
+pub type CaptureAdmission<S, B> =
+    fn(
+        &TypedInstalledProducer<S, B>,
+        &WorthQueryAdvancementPhase<'_>,
+        &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        &WorthQueryAuthenticatedExternalPrincipal<S>,
+        &WorthQueryRequestScope,
+        &crate::basis::WorthQueryProductBranchLease,
+        &RelationalPinnedRead,
+        &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        ErasedAppliedProducerSource,
+        super::super::InstalledProducerEdition,
+        std::any::TypeId,
+    ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop>;
 
-pub trait CapturedProducerInputRead:
-    std::any::Any
-{
+pub trait CapturedProducerInputRead: std::any::Any {
     fn producer(&self) -> &'static str;
     fn definition(&self) -> crate::equality_type_id::EqualityTypeId;
     fn affinity(&self) -> super::super::input_capture::InputCaptureAffinity;
@@ -139,10 +136,7 @@ impl<S: ApplicationSchema, B: WorthQueryApplicationProducerBinding<S>>
     }
 }
 
-pub fn capture<
-    S,
-    B,
->(
+pub fn capture<S, B>(
     installed: &TypedInstalledProducer<S, B>,
     phase: &WorthQueryAdvancementPhase<'_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,

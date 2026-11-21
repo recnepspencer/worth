@@ -162,15 +162,11 @@ impl WorthQueryCompletedCapabilityRulePrefix {
 }
 
 impl WorthQueryCapabilityRuleSet {
-    pub fn paths(
-        &self,
-    ) -> &[WorthQueryCapabilityPathTemplate] {
+    pub fn paths(&self) -> &[WorthQueryCapabilityPathTemplate] {
         &self.paths
     }
 
-    pub fn rules(
-        &self,
-    ) -> &[WorthQueryCapabilityRuleBinding] {
+    pub fn rules(&self) -> &[WorthQueryCapabilityRuleBinding] {
         &self.rules
     }
 }

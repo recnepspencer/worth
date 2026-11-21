@@ -24,9 +24,7 @@ use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkfl
 
 pub mod cold;
 pub mod readmission;
-pub use readmission::{
-    read_recorded_definition, RecordedWorkflowDefinition,
-};
+pub use readmission::{read_recorded_definition, RecordedWorkflowDefinition};
 pub mod connection;
 pub mod global_actions;
 pub use connection::observe_connection;

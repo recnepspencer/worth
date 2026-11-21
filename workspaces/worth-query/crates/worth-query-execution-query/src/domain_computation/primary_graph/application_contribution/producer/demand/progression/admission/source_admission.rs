@@ -7,9 +7,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    pub fn admit_output_demand_with_source_admitted<
-        Family,
-    >(
+    pub fn admit_output_demand_with_source_admitted<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,

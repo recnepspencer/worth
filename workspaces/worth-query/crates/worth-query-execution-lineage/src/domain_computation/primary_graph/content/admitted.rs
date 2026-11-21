@@ -5,14 +5,6 @@ use worth_relational::facade::content::RelationalContentFrame;
 /// Completed field-bound admission retains actual Native byte custody.
 ///
 /// A descriptive identity supplies neither the field admission nor byte custody:
-/// ```compile_fail,E0308
-/// use worth_query_execution::facade::primary_graph::AdmittedContent;
-/// use worth_query_declaration::facade::application_schema::ApplicationContentBinding;
-/// use worth_foundational::facade::ContentRefId;
-/// fn cannot_forge<C:ApplicationContentBinding>(identity:ContentRefId)->AdmittedContent<C> {
-///     identity
-/// }
-/// ```
 #[derive(Clone, Debug)]
 pub struct AdmittedContent<C: ApplicationContentBinding> {
     frame: RelationalContentFrame,

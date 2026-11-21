@@ -16,9 +16,7 @@ pub use material_storage::admit_footprint_comparison;
 pub mod membership;
 pub mod ordering;
 pub mod runtime_commitment;
-pub use identity_kind::{
-    WorthQueryCheckpointSourceIdentity, WorthQueryRuntimeSourceIdentity,
-};
+pub use identity_kind::{WorthQueryCheckpointSourceIdentity, WorthQueryRuntimeSourceIdentity};
 pub use membership::WorthQueryObservedSourceSelection;
 use runtime_commitment::stable_runtime_identity;
 
@@ -194,10 +192,7 @@ impl WorthQueryObservedSourceEpoch {
         self.same_occurrence(other) && self.meaning.identity() == other.meaning.identity()
     }
 
-    pub fn replacement_order(
-        &self,
-        other: &Self,
-    ) -> Option<std::cmp::Ordering> {
+    pub fn replacement_order(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.same_occurrence(other).then(|| {
             if self.same_semantic_source(other) {
                 std::cmp::Ordering::Equal
@@ -208,9 +203,7 @@ impl WorthQueryObservedSourceEpoch {
         })
     }
 
-    pub fn root_entity_for_test(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub fn root_entity_for_test(&self) -> worth_relational::facade::identity::EntityId {
         self.root
     }
 

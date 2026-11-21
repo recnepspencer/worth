@@ -1,5 +1,5 @@
-use super::*;
 use super::evidence::WorkflowOperationEvidence;
+use super::*;
 
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<

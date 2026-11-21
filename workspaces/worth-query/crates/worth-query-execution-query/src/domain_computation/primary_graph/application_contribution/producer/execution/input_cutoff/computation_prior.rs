@@ -4,10 +4,7 @@ use super::*;
 /// A retained partitioned run takes the record at the address it will replace.
 /// This is independent of whole-output input cutoff. Producers without a
 /// retained computation perform no lookup and pay no lookup charge.
-pub fn prepare_computation_prior<
-    Schema,
-    Binding,
->(
+pub fn prepare_computation_prior<Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,

@@ -83,9 +83,7 @@ impl ProducerPredecessorReadAccess {
             ),
         })
     }
-    pub fn require<S, O>(
-        &self,
-    ) -> Result<(), WorthQueryProducerObservationReadDenial>
+    pub fn require<S, O>(&self) -> Result<(), WorthQueryProducerObservationReadDenial>
     where
         S: ApplicationSchema,
         O: ApplicationOperationMarkerIdentity<S> + 'static,

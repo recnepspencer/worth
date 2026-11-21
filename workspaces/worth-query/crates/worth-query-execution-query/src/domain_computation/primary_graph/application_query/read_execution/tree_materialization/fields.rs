@@ -91,9 +91,7 @@ pub fn direct_projections<'a>(
     work.collect_material(contract.projections().len(), selected, parent)
 }
 
-pub fn projection_scope(
-    fields: &[&WorthQueryInstalledGraphProjection],
-) -> ProjectionAspectScope {
+pub fn projection_scope(fields: &[&WorthQueryInstalledGraphProjection]) -> ProjectionAspectScope {
     let mut keys = BTreeMap::new();
     for field in fields {
         keys.entry(field.aspect_key().clone())

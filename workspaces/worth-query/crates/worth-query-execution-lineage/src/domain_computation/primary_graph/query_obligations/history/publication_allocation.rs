@@ -4,8 +4,7 @@ pub struct QueryObligationJournalState {
     pub ledger: QueryObligationLedger,
     generations: QueryObligationPublicationGenerations,
     pub pending: Option<QueryObligationFrame>,
-    pub interpretation_transfer:
-        Option<super::original_transfer::PendingInterpretationTransfer>,
+    pub interpretation_transfer: Option<super::original_transfer::PendingInterpretationTransfer>,
 }
 impl QueryObligationJournalState {
     pub fn from_ledger(ledger: QueryObligationLedger) -> Self {

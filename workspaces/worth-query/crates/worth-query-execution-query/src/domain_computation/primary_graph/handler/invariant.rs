@@ -183,9 +183,7 @@ where
 
     /// The request's execution, for a partitioned computation this handler
     /// runs.
-    pub const fn execution(
-        &self,
-    ) -> &'borrow QueryRequestExecution<'borrow> {
+    pub const fn execution(&self) -> &'borrow QueryRequestExecution<'borrow> {
         self.execution
     }
 
@@ -195,7 +193,9 @@ where
     }
 
     #[doc(hidden)]
-    pub fn conditional_definitions(&self) -> &super::ConditionalDefinitionAdmission<'borrow, Schema> {
+    pub fn conditional_definitions(
+        &self,
+    ) -> &super::ConditionalDefinitionAdmission<'borrow, Schema> {
         &self.conditional_definitions
     }
 }

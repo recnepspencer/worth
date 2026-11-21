@@ -9,7 +9,8 @@ pub mod conditional {
     pub use package_contract::WorthQueryApplicationConditionalPackageContract;
     pub use worth_query_declaration::facade::application_schema::ApplicationSchema;
     pub use worth_query_installation::facade::{
-        WorthQueryConditionalNodeLocation, WorthQueryPortableApplicationConditionalOperationBinding,
+        WorthQueryConditionalNodeLocation,
+        WorthQueryPortableApplicationConditionalOperationBinding,
         WorthQueryPortableDomainOperationDefinition,
     };
 }
@@ -123,13 +124,15 @@ pub mod producer {
             self.execution_point
         }
     }
-    pub use input_reuse_contract::{WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract};
     pub use denial_value::{
         WorthQueryProducerDenialDeclaration, WorthQueryProducerDenialDecodeDenial,
         WorthQueryProducerDenialEncodingRefusal, WorthQueryProducerDenialProjection,
         WorthQueryProducerDenialValue, WorthQueryProjectedProducerDenial,
         WorthQueryRecordedProducerDenialEncodingRefusal, WorthQueryRecordedProducerDenialValue,
         WorthQueryUndeclaredProducerDenial,
+    };
+    pub use input_reuse_contract::{
+        WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract,
     };
     pub use observation_reads::{
         WorthQueryProducerObservationReadContract, WorthQueryProducerObservationReadDenial,
@@ -162,34 +165,33 @@ pub use partitioned_computation::{
     observe_published, partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
     published_partitioned_computations_on_this_thread_for_test, Comparator,
-    CompletedComputationRetention, ComputationDeposit, ComputationPrior,
-    NativeComputationReads, PriorAbsence, RetainedComputation, SealedComputationRetention,
-    SealedComputationRun, Suppression,
-    WorthQueryComputationInputDenial, WorthQueryComputationPartitionMembers,
+    CompletedComputationRetention, ComputationDeposit, ComputationPrior, NativeComputationReads,
+    PriorAbsence, RetainedComputation, SealedComputationRetention, SealedComputationRun,
+    Suppression, WorthQueryComputationInputDenial, WorthQueryComputationPartitionMembers,
     WorthQueryComputationPartitionPlan, WorthQueryComputationPartitionStop,
     WorthQueryComputationPartitionView, WorthQueryComputationReadDenial,
-    WorthQueryDeterministicReducer,
-    WorthQueryPartitionedComputationDenial,
-    WorthQueryPartitionedComputationFullCause,
-    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeAccounting,
-    WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,
-    WorthQueryPartitionedTreeRun,
+    WorthQueryDeterministicReducer, WorthQueryPartitionedComputationDenial,
+    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationRunForTest,
+    WorthQueryPartitionedTreeAccounting, WorthQueryPartitionedTreeMetrics,
+    WorthQueryPartitionedTreeRebuildCause, WorthQueryPartitionedTreeRun,
     WorthQueryPublishedComputationStateForTest, WorthQueryReductionInputDenial,
 };
 pub use producer::{
-    WorthQueryDecisionContextDependencies, WorthQueryProducerInputReuseContract, ComparedProducerOutput, CurrentBasis, InstalledProducerEdition, MatchedRequiredPredecessors,
-    OutputSourceAddress, ProducerOutputEvaluation, ProducerOutputEvaluationState, QualifiedOutputSource,
-    WorthQueryApplicationOutputDemand, WorthQueryOutputDemandDenial,
+    ComparedProducerOutput, CurrentBasis, InstalledProducerEdition, MatchedRequiredPredecessors,
+    OutputSourceAddress, ProducerOutputEvaluation, ProducerOutputEvaluationState,
+    QualifiedOutputSource, WorthQueryApplicationOutputDemand,
+    WorthQueryDecisionContextDependencies, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQueryOutputDemandRecoveryPosture,
     WorthQueryOutputReadCleanup, WorthQueryOutputReadCloseDenial, WorthQueryProducerApplicability,
     WorthQueryProducerCommitAuthority, WorthQueryProducerDenialDeclaration,
     WorthQueryProducerDenialDecodeDenial, WorthQueryProducerDenialEncodingRefusal,
     WorthQueryProducerDenialProjection, WorthQueryProducerDenialValue,
-    WorthQueryProducerInvariantRequirement, WorthQueryProducerLifecyclePosture,
-    WorthQueryProducerObservationReadContract, WorthQueryProducerObservationReadDenial,
-    WorthQueryProducerObservationReadOperation, WorthQueryProducerOutputFamily,
-    WorthQueryProjectedProducerDenial, WorthQueryRecordedProducerDenialEncodingRefusal,
-    WorthQueryRecordedProducerDenialValue, WorthQueryUndeclaredProducerDenial,
+    WorthQueryProducerInputReuseContract, WorthQueryProducerInvariantRequirement,
+    WorthQueryProducerLifecyclePosture, WorthQueryProducerObservationReadContract,
+    WorthQueryProducerObservationReadDenial, WorthQueryProducerObservationReadOperation,
+    WorthQueryProducerOutputFamily, WorthQueryProjectedProducerDenial,
+    WorthQueryRecordedProducerDenialEncodingRefusal, WorthQueryRecordedProducerDenialValue,
+    WorthQueryUndeclaredProducerDenial,
 };
 pub use request_execution::{
     advancement_denial, advancement_observations_on_this_thread_for_test,

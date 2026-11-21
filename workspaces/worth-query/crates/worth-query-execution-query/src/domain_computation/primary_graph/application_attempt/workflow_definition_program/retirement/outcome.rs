@@ -16,11 +16,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn compare_and_commit_workflow_definition_retirement<
-        Operation: 'static,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_workflow_definition_retirement<Operation: 'static, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -31,12 +27,9 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let PreparedWorkflowDefinitionRetirement {
-            program,
-            program_revision,
-            definition,
-            workflow_intent_identity,
-        } = prepared;
+        use worth_query_execution_attempt::facade::ports::WorkflowDefinitionRetirementPort as _;
+        let (program, program_revision, definition, workflow_intent_identity) =
+            prepared.into_retirement_commit_parts();
         let entry = match self.validate_commit_program_in_advancement(phase, program) {
             Ok(entry) => entry,
             Err(outcome) => {
@@ -71,9 +64,13 @@ where
                 return WorkflowDefinitionRetirementOutcome::Application(uncommitted)
             }
         };
-        WorkflowDefinitionRetirementOutcome::Retired(PerformedWorkflowDefinitionRetirement {
-            definition,
-            receipt,
-        })
+        WorkflowDefinitionRetirementOutcome::Retired(PreparedWorkflowDefinitionRetirement::<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >::complete_retirement(
+            definition, receipt
+        ))
     }
 }

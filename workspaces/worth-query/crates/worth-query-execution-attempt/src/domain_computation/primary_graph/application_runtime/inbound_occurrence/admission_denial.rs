@@ -3,8 +3,6 @@ use super::receive_denial::WorthQueryInboundAuthenticatedPermanentDenial;
 use crate::domain_computation::application_aftermath::external_effect::inbound::WorthQueryInboundVerificationDenial;
 use crate::domain_computation::primary_graph::provider::WorthQueryCommittedDispatchOutboxReadDenial;
 
-
-
 /// Why an authenticated completion could not enter or finish owner custody.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundAdmissionDenial {

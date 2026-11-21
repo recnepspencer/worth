@@ -1,6 +1,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::basis::basis_lifecycle;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_bridge::facade::{
     BridgeDeliveryIntent, BridgeDiagnosticsTier, BridgeReplayMode, BridgeTruthViewSelector,

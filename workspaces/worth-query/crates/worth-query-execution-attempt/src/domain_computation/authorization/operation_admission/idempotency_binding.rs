@@ -1,9 +1,7 @@
 use super::WorthQueryAdmittedOperation;
 
 impl WorthQueryAdmittedOperation {
-    pub const fn operation_authority_identity_bytes(
-        &self,
-    ) -> &[u8; 32] {
+    pub const fn operation_authority_identity_bytes(&self) -> &[u8; 32] {
         &self.data.operation_authority_identity_bytes
     }
 

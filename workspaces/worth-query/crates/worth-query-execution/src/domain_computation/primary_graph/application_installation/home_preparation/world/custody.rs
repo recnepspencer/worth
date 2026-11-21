@@ -1,7 +1,7 @@
 //! Actual cold World custody and original Query keys admit the service phase.
-use crate::domain_computation::primary_graph::query_obligations::history::journal_readmission::QueryObligationHistoryJournalReadmissionExt;
 use super::*;
 use crate::domain_computation::primary_graph::provider::aftermath_causality::readmission as corrections;
+use crate::domain_computation::primary_graph::query_obligations::history::journal_readmission::QueryObligationHistoryJournalReadmissionExt;
 use worth_proof::CustodyReadmitted;
 
 #[derive(Debug)]
@@ -57,7 +57,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let owner = self
             .runtime
             .runtime()
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .owner
             .owner_identity();
@@ -97,7 +98,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let originals = match self
             .runtime
             .runtime()
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .owner
             .inspection_port()
@@ -127,7 +129,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let material_admission = match self
             .runtime
             .runtime()
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .readmit_correction_material(std::sync::Arc::clone(&material), &originals, execution)
         {
@@ -244,7 +247,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         match self
             .runtime
             .runtime()
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .readmit_correction_material(material, &originals, execution)
         {
@@ -265,7 +269,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             dispatch,
             execution,
             application
-                .inner.runtime
+                .inner
+                .runtime
                 .primary_provider
                 .dispatch_readmission_catalog(),
         ) {

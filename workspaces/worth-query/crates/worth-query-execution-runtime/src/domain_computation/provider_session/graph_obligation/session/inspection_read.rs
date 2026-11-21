@@ -3,9 +3,7 @@ use super::super::inspection_terminal::{
     WorthQueryInspectionReadCompletion, WorthQueryInspectionReadTerminalDenial,
 };
 use super::*;
-use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationBasisReleaseReceipt,
-};
+use crate::domain_computation::primary_graph::WorthQueryApplicationBasisReleaseReceipt;
 use std::sync::Arc;
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
 

@@ -80,9 +80,7 @@ impl SourceFactsBuilder {
             Ok(false)
         }
     }
-    pub fn entities(
-        &self,
-    ) -> impl Iterator<Item = EntityId> + '_ {
+    pub fn entities(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.entities.iter().copied()
     }
     pub fn source_count(&self) -> usize {
@@ -126,15 +124,10 @@ impl SourceFactsBuilder {
         }
         Ok(())
     }
-    pub fn walks(
-        &self,
-    ) -> Option<&Arc<StructuralWalkDependencies>> {
+    pub fn walks(&self) -> Option<&Arc<StructuralWalkDependencies>> {
         self.walks.as_ref()
     }
-    pub fn set_walks(
-        &mut self,
-        walks: Arc<StructuralWalkDependencies>,
-    ) {
+    pub fn set_walks(&mut self, walks: Arc<StructuralWalkDependencies>) {
         self.walks = Some(walks);
     }
     pub fn record_walk(
@@ -263,10 +256,7 @@ impl SourceFactsBuilder {
             }
         }
     }
-    pub fn finish(
-        self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<SourceFacts, Cause> {
+    pub fn finish(self, execution: &ExecutionRequest<'_, '_>) -> Result<SourceFacts, Cause> {
         if let Some(allocation) = &self.allocation {
             allocation.claim_slice::<EntityId>(execution, self.entities.len())?;
             allocation

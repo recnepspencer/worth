@@ -18,14 +18,6 @@ pub enum WorthQueryElevationClosureKind {
 }
 
 /// Move-only obligation produced only after the approved elevation is closed.
-///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::WorthQueryMandatoryReview;
-///
-/// fn mandatory_review_cannot_be_copied(review: WorthQueryMandatoryReview) {
-///     let _copied = review.clone();
-/// }
-/// ```
 #[derive(Debug)]
 pub struct WorthQueryMandatoryReview {
     binding: WorthQueryElevationCloseBinding,

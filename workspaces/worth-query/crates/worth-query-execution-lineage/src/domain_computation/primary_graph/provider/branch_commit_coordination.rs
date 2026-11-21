@@ -119,10 +119,7 @@ impl WorthQueryApplicationBranchCommitLane {
 }
 
 impl WorthQueryApplicationBranchCommitCoordination<'_> {
-    pub fn admits(
-        &self,
-        observation: &ProductBranchObservation,
-    ) -> bool {
+    pub fn admits(&self, observation: &ProductBranchObservation) -> bool {
         self.occurrence == observation.lifecycle_incarnation()
     }
 }

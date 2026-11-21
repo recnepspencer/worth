@@ -25,9 +25,7 @@ impl<
         WorthQueryProjectedApplicationMutation,
     >
 {
-    pub fn observe_succession_basis<
-        Spec,
-    >(
+    pub fn observe_succession_basis<Spec>(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

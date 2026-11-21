@@ -1,7 +1,6 @@
 use super::*;
 
-pub struct WorthQueryWorkflowCommittedAssociation
-{
+pub struct WorthQueryWorkflowCommittedAssociation {
     state: WorthQueryWorkflowReadmissionCommitState,
     resource: WorthQueryWorkflowRunRestoredPending,
     bridge: BridgeExecutionBasisReadmissionPending,

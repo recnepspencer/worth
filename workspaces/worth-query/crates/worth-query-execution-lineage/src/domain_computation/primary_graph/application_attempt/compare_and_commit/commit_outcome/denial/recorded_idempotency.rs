@@ -15,8 +15,7 @@ impl WorthQueryApplicationCommitDenial {
             cause: None,
         }
     }
-    pub const fn idempotency_foreign_affinity(
-    ) -> Self {
+    pub const fn idempotency_foreign_affinity() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyForeignAffinity,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
@@ -24,8 +23,7 @@ impl WorthQueryApplicationCommitDenial {
             cause: None,
         }
     }
-    pub const fn idempotency_preparation_busy(
-    ) -> Self {
+    pub const fn idempotency_preparation_busy() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyPreparationBusy,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,
@@ -34,8 +32,7 @@ impl WorthQueryApplicationCommitDenial {
         }
     }
 
-    pub const fn idempotency_intent_unverifiable(
-    ) -> Self {
+    pub const fn idempotency_intent_unverifiable() -> Self {
         Self {
             kind: WorthQueryApplicationCommitDenialKind::IdempotencyIntentUnverifiable,
             stage: WorthQueryApplicationCommitDenialStage::Idempotency,

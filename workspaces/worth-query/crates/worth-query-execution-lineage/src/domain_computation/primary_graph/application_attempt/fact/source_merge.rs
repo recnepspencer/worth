@@ -4,10 +4,7 @@ impl Fact {
     /// Equal adjacency truth may have been read under different work allowances.
     /// Keep the stronger comparison allowance without weakening the exact native
     /// edge inventory. This merge allocates nothing and preserves all fact roles.
-    pub fn merge_equal_observation(
-        &mut self,
-        duplicate: &Self,
-    ) -> bool {
+    pub fn merge_equal_observation(&mut self, duplicate: &Self) -> bool {
         match (self, duplicate) {
             (
                 Fact::Adjacency {

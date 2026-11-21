@@ -30,7 +30,9 @@ pub trait WorthQueryHomeMaintenance: std::any::Any + std::fmt::Debug + Send + Sy
 pub struct HomeMaintenanceAdapter(pub Arc<dyn WorthQueryHomeMaintenance>);
 
 impl HomeMaintenanceAdapter {
-    pub fn wrap(maintenance: Arc<dyn WorthQueryHomeMaintenance>) -> Arc<dyn HomeMaintenanceAfterAdvancement> {
+    pub fn wrap(
+        maintenance: Arc<dyn WorthQueryHomeMaintenance>,
+    ) -> Arc<dyn HomeMaintenanceAfterAdvancement> {
         Arc::new(Self(maintenance))
     }
 

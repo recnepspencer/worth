@@ -3,11 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_attempt::ReadmittedCommitProgram;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn readmit_elevation_request_installation<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn readmit_elevation_request_installation<Operation, Input, Scope>(
         &self,
         program: WorthQueryElevationRequestProgram<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -21,11 +17,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.validate_commit_program(program)
     }
 
-    pub fn readmit_elevation_approval_installation<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn readmit_elevation_approval_installation<Operation, Input, Scope>(
         &self,
         program: WorthQueryElevationApprovalProgram<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -39,11 +31,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.validate_commit_program(program)
     }
 
-    pub fn readmit_elevation_close_installation<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn readmit_elevation_close_installation<Operation, Input, Scope>(
         &self,
         program: WorthQueryElevationCloseProgram<Schema, Operation, Input, Scope>,
     ) -> Result<
@@ -57,11 +45,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.validate_commit_program(program)
     }
 
-    pub fn readmit_mandatory_review_installation<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn readmit_mandatory_review_installation<Operation, Input, Scope>(
         &self,
         program: WorthQueryMandatoryReviewProgram<Schema, Operation, Input, Scope>,
     ) -> Result<

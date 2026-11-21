@@ -9,8 +9,7 @@ pub struct RootSelectionWork<'a> {
     pub predicate_records_examined: usize,
     pub predicate_work_units: usize,
     pub spent: Option<&'a OneShotReadWorkObservation<'a>>,
-    pub steps:
-        Vec<super::super::super::access_receipt::WorthQueryApplicationQueryRootPathStepRead>,
+    pub steps: Vec<super::super::super::access_receipt::WorthQueryApplicationQueryRootPathStepRead>,
     pub step_limit: usize,
     pub step_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }

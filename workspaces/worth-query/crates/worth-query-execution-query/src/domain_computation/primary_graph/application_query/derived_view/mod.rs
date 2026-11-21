@@ -8,16 +8,11 @@ pub mod registry;
 pub use registry::PredicateNoticeDisposition;
 pub mod retention;
 
-
 pub use change_summary::changes_from_summary;
-pub use publication::{
-    ViewChange, ViewPublicationBasis,
-};
+pub use publication::{ViewChange, ViewPublicationBasis};
 pub use registry::PredicateRegistration;
 pub use registry::RegisteredManagedIndex;
-pub use registry::{
-    mark_prepared_predicates_unavailable, route_prepared_predicates,
-};
+pub use registry::{mark_prepared_predicates_unavailable, route_prepared_predicates};
 pub use registry::{
     ManagedDerivedViewRegistry, PredicatePreparationFactory, PredicatePreparationOwner,
     PredicatePreparationRetirement, PredicateWorld, PreparedManagedViewPublication,

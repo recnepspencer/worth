@@ -173,9 +173,7 @@ impl<'session> WorthQueryProviderSessionView<'session> {
     }
 
     #[allow(dead_code)]
-    pub fn affinity_identity(
-        self,
-    ) -> WorthQueryProviderSessionAffinityIdentity {
+    pub fn affinity_identity(self) -> WorthQueryProviderSessionAffinityIdentity {
         WorthQueryProviderSessionAffinityIdentity::from_token(self.token)
     }
 

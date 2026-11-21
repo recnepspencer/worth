@@ -40,8 +40,7 @@ impl WorthQueryWorkflowBridgeRecoveryAssociation {
     }
 }
 
-pub struct WorthQueryWorkflowBridgeRecoveryTransition
-{
+pub struct WorthQueryWorkflowBridgeRecoveryTransition {
     outcome: WorthQueryWorkflowBridgeRecoveryOutcome,
 }
 

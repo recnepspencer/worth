@@ -66,9 +66,7 @@ impl std::error::Error for StoreDenial {
     }
 }
 
-pub use fact_store::{
-    AuthoringSourceFacts, RetainedSourceFactValues, RetainedSourceFacts,
-};
+pub use fact_store::{AuthoringSourceFacts, RetainedSourceFactValues, RetainedSourceFacts};
 
 impl StoreDenial {
     pub fn into_attempt_denial(

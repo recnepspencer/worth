@@ -1,8 +1,8 @@
 //! The published host paired with the initial program that governed its
 //! installation, and with every other program it rostered.
 
-use crate::domain_computation::primary_graph::query_obligations::history::durable_retirement::QueryObligationHistoryDurableRetirementExt;
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use crate::domain_computation::primary_graph::query_obligations::history::durable_retirement::QueryObligationHistoryDurableRetirementExt;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 use worth_query_declaration::facade::application_program::{
@@ -194,7 +194,8 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             let barrier = match self
                 .backing
                 .runtime()
-                .inner.runtime
+                .inner
+                .runtime
                 .product_runtime
                 .activations
                 .begin_program_retirement(revision)
@@ -209,7 +210,8 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             let occurrences = match self
                 .backing
                 .runtime()
-                .inner.runtime
+                .inner
+                .runtime
                 .product_runtime
                 .activations
                 .live_occurrences()
@@ -226,7 +228,8 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                 let selected = match self
                     .backing
                     .runtime()
-                    .inner.runtime
+                    .inner
+                    .runtime
                     .product_runtime
                     .admit_product_occurrence(occurrence)
                 {

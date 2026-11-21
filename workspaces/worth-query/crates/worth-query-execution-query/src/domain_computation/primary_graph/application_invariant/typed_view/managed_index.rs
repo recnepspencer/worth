@@ -19,8 +19,7 @@ use worth_relational::facade::runtime::{
 };
 
 pub struct WorthQueryApplicationInvariantManagedIndexBinding<S, I> {
-    pub(crate) binding_identity:
-        ApplicationSchemaBindingIdentity,
+    pub(crate) binding_identity: ApplicationSchemaBindingIdentity,
     pub(crate) program: ManagedIndexSourceProgram,
     pub(crate) marker: PhantomData<fn() -> (S, I)>,
 }

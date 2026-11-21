@@ -44,7 +44,15 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             for demand in &self.demands.values {
                 self.prepare_one(execution, &before_pin, demand, candidate)?;
             }
-            let roots = self.demands.synchronous.iter().map(|o| o.downcast_ref::<synchronous_outputs::CapturedSynchronousOutputs>().expect("captured synchronous outputs")).collect::<Vec<_>>();
+            let roots = self
+                .demands
+                .synchronous
+                .iter()
+                .map(|o| {
+                    o.downcast_ref::<synchronous_outputs::CapturedSynchronousOutputs>()
+                        .expect("captured synchronous outputs")
+                })
+                .collect::<Vec<_>>();
             return synchronous_outputs::CapturedSynchronousOutputs::assemble(
                 &roots,
                 self,
@@ -81,7 +89,10 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .demands
             .synchronous
             .iter()
-            .map(|o| o.downcast_ref::<synchronous_outputs::CapturedSynchronousOutputs>().expect("captured synchronous outputs"))
+            .map(|o| {
+                o.downcast_ref::<synchronous_outputs::CapturedSynchronousOutputs>()
+                    .expect("captured synchronous outputs")
+            })
             .chain(captured.iter())
             .collect::<Vec<_>>();
         let mut wave = synchronous_outputs::SynchronousOutputWave::new();
@@ -134,7 +145,11 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             self.owe_at(owed);
             if positioned && let Some(required) = &capture.required {
                 // Only this actual append makes its required root available.
-                demands.synchronous.push(worth_query_execution_attempt::facade::ports::OpaqueSynchronousOutputs::new(required(execution)));
+                demands.synchronous.push(
+                    worth_query_execution_attempt::facade::ports::OpaqueSynchronousOutputs::new(
+                        required(execution),
+                    ),
+                );
             }
             pending.extend(
                 demands
@@ -142,7 +157,14 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                     .drain(..)
                     .map(|demand| PendingOutputDemand::Stage(demand, owed)),
             );
-            let roots = demands.synchronous.iter().map(|o| o.downcast_ref::<synchronous_outputs::CapturedSynchronousOutputs>().expect("captured synchronous outputs")).collect::<Vec<_>>();
+            let roots = demands
+                .synchronous
+                .iter()
+                .map(|o| {
+                    o.downcast_ref::<synchronous_outputs::CapturedSynchronousOutputs>()
+                        .expect("captured synchronous outputs")
+                })
+                .collect::<Vec<_>>();
             if let Some(next_order) = synchronous_outputs::CapturedSynchronousOutputs::seed(
                 &roots,
                 self,

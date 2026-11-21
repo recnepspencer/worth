@@ -44,9 +44,7 @@ where
 }
 
 impl<S: ApplicationSchema> WorthQueryInstalledApplicationProducerRegistry<S> {
-    pub fn source_scope_owned_producers(
-        &self,
-    ) -> impl Iterator<Item = (&str, &str)> {
+    pub fn source_scope_owned_producers(&self) -> impl Iterator<Item = (&str, &str)> {
         self.entries.values().filter_map(|entry| {
             entry
                 .declaration

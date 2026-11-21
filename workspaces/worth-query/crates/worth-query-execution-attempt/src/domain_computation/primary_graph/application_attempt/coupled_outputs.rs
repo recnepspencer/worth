@@ -26,8 +26,7 @@ pub struct DeclaredCoupledOutputDemand {
     pub family_type: EqualityTypeId,
     pub source_binding_type: EqualityTypeId,
     pub demand: Box<dyn Any + Send>,
-    pub lower_source:
-        fn(&dyn Any, &dyn Any) -> Result<CoupledSourceArguments, Denial>,
+    pub lower_source: fn(&dyn Any, &dyn Any) -> Result<CoupledSourceArguments, Denial>,
 }
 pub struct DeclaredCoupledOutputDemands {
     pub round_limits: (std::num::NonZeroUsize, std::num::NonZeroUsize),

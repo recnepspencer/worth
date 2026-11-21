@@ -1,9 +1,7 @@
 use super::{WorthQueryProposedFact, WorthQueryStagedApplicationAttempt};
 
 impl WorthQueryStagedApplicationAttempt<'_> {
-    pub fn appendix_attempt(
-        &self,
-    ) -> &super::WorthQueryPrimaryGraphApplicationAttempt {
+    pub fn appendix_attempt(&self) -> &super::WorthQueryPrimaryGraphApplicationAttempt {
         self.attempt
     }
 
@@ -43,7 +41,9 @@ impl WorthQueryStagedApplicationAttempt<'_> {
                 prepared.source_commit().commit_id,
                 old,
                 new,
-                prepared.authored_restoration_co_anchors(&self.attempt.native_publication_roles().collect::<Vec<_>>()),
+                prepared.authored_restoration_co_anchors(
+                    &self.attempt.native_publication_roles().collect::<Vec<_>>(),
+                ),
             )
         }))
     }
@@ -58,15 +58,11 @@ impl WorthQueryStagedApplicationAttempt<'_> {
         self.overlay.identity()
     }
 
-    pub fn overlay_facts(
-        &self,
-    ) -> &[WorthQueryProposedFact] {
+    pub fn overlay_facts(&self) -> &[WorthQueryProposedFact] {
         self.overlay.facts()
     }
 
-    pub fn expected_step_count(
-        &self,
-    ) -> usize {
+    pub fn expected_step_count(&self) -> usize {
         self.attempt.expected_steps().len()
     }
 
@@ -76,15 +72,11 @@ impl WorthQueryStagedApplicationAttempt<'_> {
         self.attempt.expected_step_preparation_work()
     }
 
-    pub fn batch(
-        &self,
-    ) -> &worth_relational::facade::transactions::WorkerIntentBatch {
+    pub fn batch(&self) -> &worth_relational::facade::transactions::WorkerIntentBatch {
         self.attempt.batch()
     }
 
-    pub fn branch(
-        &self,
-    ) -> &worth_relational::facade::history::BranchId {
+    pub fn branch(&self) -> &worth_relational::facade::history::BranchId {
         self.attempt.affinity().branch()
     }
 
@@ -95,9 +87,7 @@ impl WorthQueryStagedApplicationAttempt<'_> {
         self.attempt.affinity().product_publication()
     }
 
-    pub fn decision_fact_count(
-        &self,
-    ) -> usize {
+    pub fn decision_fact_count(&self) -> usize {
         self.attempt.decision_fact_count()
     }
 

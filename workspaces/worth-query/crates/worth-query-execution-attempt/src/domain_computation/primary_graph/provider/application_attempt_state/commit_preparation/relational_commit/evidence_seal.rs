@@ -2,9 +2,7 @@
 
 pub mod postcommit_currentness;
 pub use postcommit_currentness::{FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason};
-pub use postcommit_currentness::{
-    FailedRebase, RebaseVerificationFailure,
-};
+pub use postcommit_currentness::{FailedRebase, RebaseVerificationFailure};
 
 use super::commit_execution::WorthQueryCommittedApplicationSession;
 use crate::domain_computation::primary_graph::provider::{
@@ -135,6 +133,4 @@ impl WorthQueryMutationWorkCommitSeal {
     }
 }
 
-pub use postcommit_currentness::{
-    PreparedRebaseDenial, PreparedSourceFactRebase,
-};
+pub use postcommit_currentness::{PreparedRebaseDenial, PreparedSourceFactRebase};

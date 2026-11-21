@@ -9,9 +9,7 @@ pub struct DerivedSourceDependencies {
     _memory: Option<ExecutionMemoryReservation>,
 }
 impl DerivedSourceDependencies {
-    pub fn values(
-        &self,
-    ) -> &[Arc<DerivedSourceObservation>] {
+    pub fn values(&self) -> &[Arc<DerivedSourceObservation>] {
         &self.values
     }
     pub fn append(

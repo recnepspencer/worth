@@ -50,15 +50,7 @@ struct RelationalCapabilityObservation<Schema, Scope> {
     observed: WorthQueryObservedCapabilityDecision,
 }
 
-pub fn observe_and_admit<
-    'a,
-    Schema,
-    Principal,
-    PrincipalIdentity,
-    Capability,
-    Operation,
-    Input,
->(
+pub fn observe_and_admit<'a, Schema, Principal, PrincipalIdentity, Capability, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     mut prepared: PreparedCapabilityAdmission<
         'a,

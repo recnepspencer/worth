@@ -18,10 +18,7 @@ pub struct InstalledBodyOutput {
     pub role: OutputRoleUse,
 }
 
-pub fn install_outputs<
-    Schema: ApplicationSchema,
-    Binding: ApplicationMutationBinding<Schema>,
->(
+pub fn install_outputs<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     body: &ApplicationOperationBodyProgram,
 ) -> Result<Vec<InstalledBodyOutput>, Denial> {

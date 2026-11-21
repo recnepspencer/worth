@@ -8,9 +8,7 @@ use worth_foundational::facade::BoundaryProtocolVersion;
 pub(super) const ENCLOSING_NATIVE_ASSOCIATION: u64 = 1;
 const MEMORY_AFFINITY: &str = "memory-only";
 
-pub fn affinity_text(
-    product: &WorthQueryProductIdempotencyAffinity,
-) -> String {
+pub fn affinity_text(product: &WorthQueryProductIdempotencyAffinity) -> String {
     let Some(owner) = product.branch().owner_identity().durable() else {
         return MEMORY_AFFINITY.to_owned();
     };
@@ -21,9 +19,7 @@ pub fn affinity_text(
     )
 }
 
-pub fn original_affinity_text(
-    source: &super::super::OriginalPublication,
-) -> String {
+pub fn original_affinity_text(source: &super::super::OriginalPublication) -> String {
     match source {
         super::super::OriginalPublication::Memory(_) => MEMORY_AFFINITY.to_owned(),
         super::super::OriginalPublication::Home(source) => {

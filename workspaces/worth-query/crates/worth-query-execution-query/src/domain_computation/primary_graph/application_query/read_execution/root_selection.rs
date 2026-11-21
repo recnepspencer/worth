@@ -36,8 +36,7 @@ pub struct BoundedRootSelection {
     pub work_units: usize,
     pub predicate_index_generation: Option<DerivedIndexGenerationId>,
     pub reads: WorthQueryInvariantProjectionWork,
-    pub root_path_steps:
-        Option<std::sync::Arc<super::super::access_receipt::RootPathReadEvidence>>,
+    pub root_path_steps: Option<std::sync::Arc<super::super::access_receipt::RootPathReadEvidence>>,
 }
 
 mod work;

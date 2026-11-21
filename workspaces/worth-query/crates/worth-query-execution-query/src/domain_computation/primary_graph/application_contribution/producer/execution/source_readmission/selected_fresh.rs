@@ -15,11 +15,7 @@ type ResultValue<Schema, Binding> = <<SourceBinding<Schema, Binding> as Applicat
 /// Consume the same permission used by the Clean probe. Its access owners stay
 /// alive until the one-shot read returns an owned, inseparable disclosure.
 #[allow(clippy::too_many_arguments)]
-pub fn disclose_prepared_on_selected<
-    'prepared,
-    Schema,
-    Binding,
->(
+pub fn disclose_prepared_on_selected<'prepared, Schema, Binding>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &'prepared WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     permission: PreparedApplicationQueryPermission<

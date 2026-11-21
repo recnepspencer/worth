@@ -14,14 +14,13 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationObservedFact,  WorthQueryObservedSource,
+    WorthQueryApplicationObservedFact, WorthQueryObservedSource,
 };
 pub mod support;
 pub use support::WorkflowCapturedInputSupport;
 
 type Scope<S, B> = <<B as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;
 type Query<S, B> = <<B as ApplicationMutationBinding<S>>::SourceExpectation as ApplicationMutationSourceExpectation<S>>::Query;
-
 
 /// Owner-derived descriptive request contract. No public raw-digest constructor.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -74,7 +73,7 @@ pub enum WorkflowCapturedInputSource<'a, Q> {
 impl WorkflowCapturedInputContract {
     pub fn validate_admission<S: ApplicationSchema, B, C>(
         &self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<S, B::Operation, B::Input, C>,
         identities: &ApplicationMutationIdentities<'_, S, B>,
         source: WorkflowCapturedInputSource<'_, Query<S, B>>,
@@ -106,10 +105,7 @@ impl WorkflowCapturedInputContract {
         Ok(())
     }
 
-    pub fn matches_recorded_node(
-        &self,
-        node: &super::definition::CompiledWorkflowNode,
-    ) -> bool {
+    pub fn matches_recorded_node(&self, node: &super::definition::CompiledWorkflowNode) -> bool {
         match node.kind() {
             super::definition::CompiledWorkflowNodeKind::Operation {
                 binding: Some(binding),

@@ -44,11 +44,7 @@ impl<S, R, F, T> WorthQueryInvariantDerivedRelation<S, R, F, T> {
 impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Schema>>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn decision_derived_count<
-        Relation: OperationReads<Operation>,
-        From,
-        To,
-    >(
+    pub fn decision_derived_count<Relation: OperationReads<Operation>, From, To>(
         &mut self,
         relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
         root: &WorthQueryInvariantEntityIdentity<Schema, From>,

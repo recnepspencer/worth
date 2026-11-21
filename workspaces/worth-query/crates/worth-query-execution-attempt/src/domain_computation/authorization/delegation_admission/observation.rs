@@ -24,9 +24,7 @@ pub struct ObservedDelegationTransition {
 }
 
 impl ObservedDelegationTransition {
-    pub const fn grantor(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub const fn grantor(&self) -> worth_relational::facade::identity::EntityId {
         self.grantor
     }
 }

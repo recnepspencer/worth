@@ -28,9 +28,7 @@ impl ManagedIndexRegistrationKey {
     }
 }
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexState<S, I> {
-    pub fn registration_key(
-        &self,
-    ) -> ManagedIndexRegistrationKey {
+    pub fn registration_key(&self) -> ManagedIndexRegistrationKey {
         ManagedIndexRegistrationKey {
             runtime: self.runtime,
             incarnation: self.incarnation,

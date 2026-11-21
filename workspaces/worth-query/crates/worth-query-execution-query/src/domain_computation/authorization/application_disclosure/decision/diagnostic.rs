@@ -30,14 +30,7 @@ pub enum DiagnosticComparisonDenial {
 
 impl WorthQueryApplicationQueryGovernance {
     #[allow(clippy::too_many_arguments)]
-    pub fn admit_diagnostic_comparison<
-        'a,
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Scope,
-    >(
+    pub fn admit_diagnostic_comparison<'a, Schema, Query, Parameters, QueryResult, Scope>(
         &'a self,
         context: &mut MapKernelContext<'_, '_>,
         query: &'a WorthQueryInstalledApplicationQuery<

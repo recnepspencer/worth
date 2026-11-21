@@ -82,10 +82,7 @@ impl CompletedReadScopes {
             Self::EmptyOwnerFixture => 0,
         }
     }
-    pub fn get(
-        &self,
-        ordinal: usize,
-    ) -> Option<&Scope> {
+    pub fn get(&self, ordinal: usize) -> Option<&Scope> {
         match self {
             Self::Installed {
                 contracts,
@@ -94,10 +91,7 @@ impl CompletedReadScopes {
             Self::EmptyOwnerFixture => None,
         }
     }
-    pub fn same_contract(
-        &self,
-        current: &Arc<Contracts>,
-    ) -> bool {
+    pub fn same_contract(&self, current: &Arc<Contracts>) -> bool {
         match self {
             Self::Installed { contracts, .. } => Arc::ptr_eq(contracts, current),
             Self::EmptyOwnerFixture => false,

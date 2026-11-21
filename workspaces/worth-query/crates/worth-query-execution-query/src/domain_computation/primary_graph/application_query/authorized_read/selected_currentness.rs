@@ -7,8 +7,7 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 use super::super::WorthQueryAdmittedApplicationQueryPlan;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-pub enum SelectedAuthorizationCurrentnessStop
-{
+pub enum SelectedAuthorizationCurrentnessStop {
     Admission(CompanionPreflightStop),
     Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     StaleIssuedAccess,

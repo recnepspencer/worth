@@ -5,10 +5,7 @@ impl<Query: 'static, Value: 'static> PreparedProducerInput<Query, Value> {
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    pub fn assert_transport_guards(
-        self,
-        foreign: InstalledProducerEdition,
-    ) {
+    pub fn assert_transport_guards(self, foreign: InstalledProducerEdition) {
         assert_ne!(
             self.edition, foreign,
             "real distinct installed producer editions"

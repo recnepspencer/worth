@@ -3,9 +3,7 @@
 use super::super::*;
 use std::marker::PhantomData;
 
-pub trait Continuation<S: ApplicationSchema, D>:
-    Clone + Send + 'static
-{
+pub trait Continuation<S: ApplicationSchema, D>: Clone + Send + 'static {
     fn occurrence_context(
         &self,
         family: std::any::TypeId,

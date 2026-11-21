@@ -103,9 +103,14 @@ pub enum RebasedSourceFacts {
 impl RebasedSourceFacts {
     pub fn posting_continuation(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::output_lineage::invalidation::PostingContinuation> {
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostingContinuation,
+    > {
         match self {
-            Self::Cached { posting_continuation, .. } => posting_continuation.clone(),
+            Self::Cached {
+                posting_continuation,
+                ..
+            } => posting_continuation.clone(),
             _ => None,
         }
     }
@@ -119,9 +124,14 @@ impl RebasedSourceFacts {
 
     pub fn retained(
         &self,
-    ) -> Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, FailedRebase> {
+    ) -> Result<
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+        FailedRebase,
+    > {
         match self {
-            Self::Exact(facts) | Self::Cached { facts, .. } | Self::SupersededByOwnEffect { facts, .. } => Ok(facts.clone()),
+            Self::Exact(facts)
+            | Self::Cached { facts, .. }
+            | Self::SupersededByOwnEffect { facts, .. } => Ok(facts.clone()),
             Self::VerificationRequired { reason, own_effect } => Err(FailedRebase {
                 reason: reason.clone(),
                 own_effect: *own_effect,
@@ -129,22 +139,29 @@ impl RebasedSourceFacts {
         }
     }
 
-    pub fn retain_exact(&self) -> Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload> {
+    pub fn retain_exact(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>
+    {
         self.retained().ok()
     }
 
     pub fn superseded_by_own_effect(&self) -> impl Iterator<Item = usize> + '_ {
         let (full, selected): (Option<&[usize]>, Option<&[Option<usize>]>) = match self {
-            Self::Cached { ordinals, superseded_count, .. } => {
-                (None, (*superseded_count > 0).then(|| ordinals.elements()))
-            }
+            Self::Cached {
+                ordinals,
+                superseded_count,
+                ..
+            } => (None, (*superseded_count > 0).then(|| ordinals.elements())),
             Self::SupersededByOwnEffect { ordinals, .. } => (Some(ordinals.as_ref()), None),
             Self::Exact(_) | Self::VerificationRequired { .. } => (None, None),
         };
-        full.into_iter()
-            .flatten()
-            .copied()
-            .chain(selected.into_iter().flatten().filter_map(|ordinal| *ordinal))
+        full.into_iter().flatten().copied().chain(
+            selected
+                .into_iter()
+                .flatten()
+                .filter_map(|ordinal| *ordinal),
+        )
     }
 }
 

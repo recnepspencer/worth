@@ -86,63 +86,49 @@ impl WorthQueryInvariantProjectionTraversalDenial {
         }
     }
 
-    pub fn cardinality_contract_mismatch(
-        relation: impl Into<String>,
-    ) -> Self {
+    pub fn cardinality_contract_mismatch(relation: impl Into<String>) -> Self {
         Self::new(
             WorthQueryInvariantProjectionTraversalDenialKind::CardinalityContractMismatch,
             relation,
         )
     }
 
-    pub fn missing_target(
-        relation: impl Into<String>,
-    ) -> Self {
+    pub fn missing_target(relation: impl Into<String>) -> Self {
         Self::new(
             WorthQueryInvariantProjectionTraversalDenialKind::MissingTarget,
             relation,
         )
     }
 
-    pub fn multiple_targets(
-        relation: impl Into<String>,
-    ) -> Self {
+    pub fn multiple_targets(relation: impl Into<String>) -> Self {
         Self::new(
             WorthQueryInvariantProjectionTraversalDenialKind::MultipleTargets,
             relation,
         )
     }
 
-    pub fn missing_source(
-        relation: impl Into<String>,
-    ) -> Self {
+    pub fn missing_source(relation: impl Into<String>) -> Self {
         Self::new(
             WorthQueryInvariantProjectionTraversalDenialKind::MissingSource,
             relation,
         )
     }
 
-    pub fn multiple_sources(
-        relation: impl Into<String>,
-    ) -> Self {
+    pub fn multiple_sources(relation: impl Into<String>) -> Self {
         Self::new(
             WorthQueryInvariantProjectionTraversalDenialKind::MultipleSources,
             relation,
         )
     }
 
-    pub fn foreign_identity(
-        entity: impl Into<String>,
-    ) -> Self {
+    pub fn foreign_identity(entity: impl Into<String>) -> Self {
         Self::new(
             WorthQueryInvariantProjectionTraversalDenialKind::ForeignIdentity,
             entity,
         )
     }
 
-    pub fn mutation_target_unavailable(
-        entity: impl Into<String>,
-    ) -> Self {
+    pub fn mutation_target_unavailable(entity: impl Into<String>) -> Self {
         Self::new(
             WorthQueryInvariantProjectionTraversalDenialKind::MutationTargetUnavailable,
             entity,

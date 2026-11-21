@@ -26,9 +26,7 @@ mod work_limit;
 pub use governed_access::governance_denial;
 pub use governed_access::prepare_governed_access;
 pub use permission::SelectedIssuedAccessRoot;
-pub use permission::{
-    FreshQueryPermissionStop, PreparedApplicationQueryPermission,
-};
+pub use permission::{FreshQueryPermissionStop, PreparedApplicationQueryPermission};
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where

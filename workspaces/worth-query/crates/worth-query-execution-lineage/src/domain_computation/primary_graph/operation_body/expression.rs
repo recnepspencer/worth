@@ -29,11 +29,7 @@ impl Purpose<'_> {
         })
     }
 }
-pub fn evaluate<
-    Schema: worth_query_installation::facade::ApplicationSchema,
-    Operation,
-    Entity,
->(
+pub fn evaluate<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Entity>(
     reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
     identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
     operands: &[worth_query_declaration::facade::application_schema::ApplicationOperationBodyRequirementOperand],

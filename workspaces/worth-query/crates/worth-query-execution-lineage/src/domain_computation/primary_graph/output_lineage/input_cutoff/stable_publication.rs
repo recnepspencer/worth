@@ -35,10 +35,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind a
 /// This reserves preparation custody and a prospective address, not a published
 /// settlement. Borrowing the coordination proof keeps the exact occurrence
 /// lane held while the registry prepares its own prerequisite vacancy.
-pub struct PreparedStableLineageAddress<
-    'lane,
-    'selected,
-> {
+pub struct PreparedStableLineageAddress<'lane, 'selected> {
     pub owner: Arc<Mutex<WorthQueryApplicationOutputLineage>>,
     pub source: SemanticSource,
     pub coordinate: ProductCoordinate,
@@ -53,29 +50,21 @@ pub struct PreparedStableLineageAddress<
 }
 
 /// A fully materialized, private alias row awaiting the exact-current cutover.
-pub struct PreparedStableLineagePublication<
-    'lane,
-    'selected,
-> {
+pub struct PreparedStableLineagePublication<'lane, 'selected> {
     pub address: PreparedStableLineageAddress<'lane, 'selected>,
     pub recorded: RecordedOutput,
-    pub facts:
-        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    pub facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
 }
 
 impl PreparedStableLineagePublication<'_, '_> {
-    pub fn identity(
-        &self,
-    ) -> &Arc<RecordedSettlementIdentity> {
+    pub fn identity(&self) -> &Arc<RecordedSettlementIdentity> {
         &self.address.identity
     }
 
     /// The settlement of the generation this alias displaces as the latest
     /// output of its partition: the verified output it restates, when that
     /// belongs to the alias's own occurrence.
-    pub fn displaced_settlement(
-        &self,
-    ) -> Option<Arc<RecordedSettlementIdentity>> {
+    pub fn displaced_settlement(&self) -> Option<Arc<RecordedSettlementIdentity>> {
         let displaced = self.address.candidate.settlement_identity();
         (displaced.coordinate().occurrence == self.address.coordinate.occurrence)
             .then(|| Arc::clone(displaced))
@@ -89,11 +78,7 @@ impl PreparedStableLineagePublication<'_, '_> {
     }
 }
 
-pub fn prepare_stable_address<
-    'lane,
-    'selected,
-    Binding: 'static,
->(
+pub fn prepare_stable_address<'lane, 'selected, Binding: 'static>(
     owner: &Arc<Mutex<WorthQueryApplicationOutputLineage>>,
     verified: VerifiedInputCutoff<'selected>,
     scope: &WorthQueryOperationScopeBinding,

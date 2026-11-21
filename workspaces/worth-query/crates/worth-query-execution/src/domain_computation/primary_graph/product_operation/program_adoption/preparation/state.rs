@@ -240,7 +240,8 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     let recovery = selected.product().publication_binding().recovery();
     let disposition = selected
         .application()
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .unpublished_idempotency_disposition();
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
@@ -271,7 +272,8 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         branch: selected.product().product_branch(),
         owner_identity: selected
             .application()
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .owner
             .owner_identity(),

@@ -22,9 +22,7 @@ pub use diagnostic_preparation::prepare_application_diagnostic_governance;
 mod field_admission;
 mod governance;
 mod influence;
-pub use influence::{
-    WorthQueryRetainedQueryInfluence, WorthQueryRetainedQueryInfluenceDenial,
-};
+pub use influence::{WorthQueryRetainedQueryInfluence, WorthQueryRetainedQueryInfluenceDenial};
 mod inspection;
 pub use diagnostic::DiagnosticComparisonAdmission;
 mod preparation;
@@ -63,9 +61,7 @@ impl WorthQueryPendingApplicationQueryGovernance {
         }
     }
 
-    pub fn authorization_mut(
-        &mut self,
-    ) -> &mut WorthQueryRetainedCapabilityAuthorization {
+    pub fn authorization_mut(&mut self) -> &mut WorthQueryRetainedCapabilityAuthorization {
         &mut self.authorization
     }
 

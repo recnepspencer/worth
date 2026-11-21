@@ -17,9 +17,7 @@ impl CheckpointDecodeDenial {
             message: cause.subject().to_owned(),
         }
     }
-    pub fn execution(
-        cause: worth_execution::WorkCeilingDenial,
-    ) -> Self {
+    pub fn execution(cause: worth_execution::WorkCeilingDenial) -> Self {
         let native =
             worth_relational::facade::transactions::RelationalExecutionDenialCause::from(cause);
         Self::native_execution(

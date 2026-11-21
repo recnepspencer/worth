@@ -1,5 +1,6 @@
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::identity::{EntityId, KindId};
 
@@ -26,9 +27,7 @@ impl HistoryModelIdentity {
     pub fn kind(&self) -> KindId {
         self.kind
     }
-    pub fn record(
-        &self,
-    ) -> worth_relational::facade::transactions::RecordRef {
+    pub fn record(&self) -> worth_relational::facade::transactions::RecordRef {
         worth_relational::facade::transactions::RecordRef::Entity(self.entity)
     }
     pub fn matches_operation<S, O, I, E>(
@@ -46,9 +45,7 @@ impl HistoryModelIdentity {
             && &self.binding == admitted.binding_identity()
     }
 
-    pub fn from_resolved<S, E>(
-        resolved: &WorthQueryApplicationEntityIdentity<S, E>,
-    ) -> Self {
+    pub fn from_resolved<S, E>(resolved: &WorthQueryApplicationEntityIdentity<S, E>) -> Self {
         Self {
             entity: resolved.entity_id(),
             kind: resolved.entity_kind(),

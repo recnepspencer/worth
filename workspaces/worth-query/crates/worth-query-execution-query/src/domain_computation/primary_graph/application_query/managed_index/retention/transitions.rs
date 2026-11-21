@@ -6,11 +6,7 @@ use WorthQueryManagedIndexLifecycle as Status;
 use WorthQueryManagedIndexLifecycleDenial as Denial;
 
 impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexState<S, I> {
-    pub fn holds_ready(
-        &self,
-        epoch: u64,
-        root: &Arc<ReadyIndex<S, I>>,
-    ) -> bool {
+    pub fn holds_ready(&self, epoch: u64, root: &Arc<ReadyIndex<S, I>>) -> bool {
         let matches = {
             let state = self
                 .retained
@@ -115,10 +111,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         Ok(())
     }
 
-    pub fn failed(
-        &self,
-        epoch: u64,
-    ) {
+    pub fn failed(&self, epoch: u64) {
         let mut state = self
             .retained
             .lock()
@@ -128,9 +121,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         }
     }
 
-    pub fn ready(
-        &self,
-    ) -> Result<(u64, Arc<ReadyIndex<S, I>>), Denial> {
+    pub fn ready(&self) -> Result<(u64, Arc<ReadyIndex<S, I>>), Denial> {
         let state = self
             .retained
             .lock()
@@ -147,9 +138,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         }
     }
 
-    pub fn evict(
-        &self,
-    ) -> Result<(), Denial> {
+    pub fn evict(&self) -> Result<(), Denial> {
         let mut state = self
             .retained
             .lock()

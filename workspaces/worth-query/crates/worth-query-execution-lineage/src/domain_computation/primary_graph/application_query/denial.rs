@@ -161,9 +161,7 @@ impl WorthQueryApplicationQueryAdmissionDenial {
         self.historical_source = Some((source, family));
         self
     }
-    pub fn without_historical_source(
-        mut self,
-    ) -> Self {
+    pub fn without_historical_source(mut self) -> Self {
         self.historical_source = None;
         self
     }
@@ -186,9 +184,7 @@ impl WorthQueryApplicationQueryAdmissionDenial {
         self.authorization_denial.as_deref()
     }
 
-    pub fn into_authorization_denial(
-        self,
-    ) -> Option<WorthQueryOperationAuthorizationDenial> {
+    pub fn into_authorization_denial(self) -> Option<WorthQueryOperationAuthorizationDenial> {
         self.authorization_denial.map(|denial| *denial)
     }
 }

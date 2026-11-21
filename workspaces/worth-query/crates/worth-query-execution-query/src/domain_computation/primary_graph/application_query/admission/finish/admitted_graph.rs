@@ -4,12 +4,7 @@ use crate::domain_computation::primary_graph::application_query::execution_shape
 use crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedApplicationQueryControls;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     #[allow(clippy::too_many_arguments)]
-    pub fn prepare_application_query_graph_work_admitted<
-        Query,
-        Parameters,
-        QueryResult,
-        Scope,
-    >(
+    pub fn prepare_application_query_graph_work_admitted<Query, Parameters, QueryResult, Scope>(
         &self,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         parameters: &WorthQueryAdmittedApplicationQueryParameters,

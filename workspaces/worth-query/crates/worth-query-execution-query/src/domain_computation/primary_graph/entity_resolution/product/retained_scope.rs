@@ -3,9 +3,7 @@ use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalK
 use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
-    pub fn resolve_retained_query_scope<
-        Field: RecordSelection,
-    >(
+    pub fn resolve_retained_query_scope<Field: RecordSelection>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: Field,
@@ -19,9 +17,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
 
-    pub fn resolve_retained_query_scope_with_native_access<
-        Field: RecordSelection,
-    >(
+    pub fn resolve_retained_query_scope_with_native_access<Field: RecordSelection>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: Field,
@@ -44,9 +40,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 
     /// Resolve the installed retained selector on the actual candidate image.
     /// The selector is input to the issuer, never authority for its subject.
-    pub fn resolve_retained_applied_query_scope<
-        Field: RecordSelection,
-    >(
+    pub fn resolve_retained_applied_query_scope<Field: RecordSelection>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: Field,
@@ -107,9 +101,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
 
     /// Both retained source readmission and declared coupled roots resolve the
     /// same installed equality field through this one canonical Native lookup.
-    pub fn resolve_query_scope_value_with_native_access<
-        Field: RecordSelection,
-    >(
+    pub fn resolve_query_scope_value_with_native_access<Field: RecordSelection>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: Field,

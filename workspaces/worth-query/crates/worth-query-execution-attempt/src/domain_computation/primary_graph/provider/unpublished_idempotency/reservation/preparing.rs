@@ -32,9 +32,7 @@ impl WorthQueryUnpublishedIdempotencyReservation {
 }
 
 impl QueryDurablePreparationGuard {
-    pub fn preparation_mut(
-        &mut self,
-    ) -> &mut RetainedQueryDurablePreparation {
+    pub fn preparation_mut(&mut self) -> &mut RetainedQueryDurablePreparation {
         self.preparation
             .as_mut()
             .expect("the active checkout owns the preparation")

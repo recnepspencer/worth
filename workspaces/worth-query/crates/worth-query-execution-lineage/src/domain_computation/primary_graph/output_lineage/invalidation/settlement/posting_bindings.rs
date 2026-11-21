@@ -9,15 +9,11 @@ pub enum PostingBindings {
 }
 #[derive(Clone, Debug)]
 pub struct SettlementPostingBindings {
-    pub projection:
-        Arc<PostingProjection>,
-    pub settlements:
-        OrdSet<Arc<RecordedSettlementIdentity>>,
+    pub projection: Arc<PostingProjection>,
+    pub settlements: OrdSet<Arc<RecordedSettlementIdentity>>,
 }
 impl PostingBindings {
-    pub fn settlements(
-        &self,
-    ) -> Option<&SettlementPostingBindings> {
+    pub fn settlements(&self) -> Option<&SettlementPostingBindings> {
         match self {
             Self::Settlements(binding) => Some(binding),
             Self::QueryRead(_) => None,

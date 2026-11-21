@@ -4,7 +4,6 @@ use worth_query_declaration::facade::application_schema::{
 };
 use worth_query_installation::facade::ApplicationSchema;
 
-
 pub use worth_query_execution_lineage::facade::primary_graph::application_contribution::producer::observation_reads::*;
 pub mod access;
 pub mod original;

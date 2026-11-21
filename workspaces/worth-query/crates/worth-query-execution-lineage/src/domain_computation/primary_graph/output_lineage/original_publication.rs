@@ -11,9 +11,7 @@ use worth_runtime_world::facade::ProductBranchObservation;
 impl WorthQueryApplicationOutputLineage {
     /// Resolve an exact original slot against this owner's retained native
     /// correspondence. Stable consumption still admits currentness/disclosure.
-    pub fn resolve_original_publication<
-        Binding: 'static,
-    >(
+    pub fn resolve_original_publication<Binding: 'static>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         scope: &WorthQueryOperationScopeBinding,

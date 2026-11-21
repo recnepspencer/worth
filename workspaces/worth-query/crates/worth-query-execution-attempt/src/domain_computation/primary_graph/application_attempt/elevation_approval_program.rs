@@ -86,19 +86,12 @@ impl<Schema, Operation, Input, Scope>
         &self.program
     }
 
-    pub fn into_inner(
-        self,
-    ) -> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
+    pub fn into_inner(self) -> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         self.program
     }
 }
 
-pub fn validate_elevation_approval_program<
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn validate_elevation_approval_program<Schema, Operation, Input, Scope>(
     program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
 ) -> Result<(), WorthQueryApplicationAttemptDenial> {
     let binding = program

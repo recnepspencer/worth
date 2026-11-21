@@ -7,12 +7,7 @@ use crate::domain_computation::primary_graph::{
 impl<Schema, Operation, Input, Scope>
     WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope>
 {
-    pub fn resolve_observed_entity<
-        Entity,
-        Aspect,
-        Field,
-        Value,
-    >(
+    pub fn resolve_observed_entity<Entity, Aspect, Field, Value>(
         &self,
         field: Field,
         value: Value,

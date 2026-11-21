@@ -22,9 +22,7 @@ pub use worth_query_execution_runtime::facade::ports::{
 impl SourceInvalidationOwner {
     /// Latest delivered position across branches. Positions are globally
     /// ordered, so a cursor taken here precedes every later commit anywhere.
-    pub fn latest_position(
-        &self,
-    ) -> Option<PatchStreamPosition> {
+    pub fn latest_position(&self) -> Option<PatchStreamPosition> {
         let cells = self
             .branches
             .lock()
@@ -99,7 +97,9 @@ impl SourceInvalidationOwner {
                     batch.work_remaining = true;
                     break;
                 }
-                batch.commits.push(TouchedCommit::new(position, commit, touched));
+                batch
+                    .commits
+                    .push(TouchedCommit::new(position, commit, touched));
             }
             batch.next_cursor = Some(position);
         }

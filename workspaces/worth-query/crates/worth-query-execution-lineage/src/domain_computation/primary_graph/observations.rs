@@ -36,8 +36,7 @@ pub struct WorthQueryPrincipalTargetObservation {
     pub target: EntityId,
     pub principal_kind: KindId,
     pub principal_identity: AspectValue,
-    pub principal_identity_revision:
-        worth_relational::facade::runtime::RelationalFieldRevision,
+    pub principal_identity_revision: worth_relational::facade::runtime::RelationalFieldRevision,
     pub adjacency_revision: Option<worth_relational::facade::identity::VersionId>,
 }
 

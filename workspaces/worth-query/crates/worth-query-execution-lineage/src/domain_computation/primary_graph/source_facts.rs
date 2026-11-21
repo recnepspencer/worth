@@ -13,14 +13,10 @@ pub mod descriptor;
 pub mod retention;
 pub mod revisions;
 pub use allocation::SourceFactsAllocation;
-pub use builder::{
-    SourceFactReadDenial, SourceFactsBuilder,
-};
+pub use builder::{SourceFactReadDenial, SourceFactsBuilder};
 pub use descriptor::encode_text;
 pub use revisions::adjacency_direction_rank;
-pub use revisions::{
-    WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision,
-};
+pub use revisions::{WorthQueryObservedAdjacencyRevision, WorthQueryObservedFieldRevision};
 
 #[derive(Debug)]
 pub struct SourceFacts {

@@ -123,11 +123,7 @@ impl WorthQueryRetainedQueryInfluence {
     }
     /// The enclosing captured comparison preserves any owned error behind this
     /// bool-erased checkpoint; this method never turns a stop into equality.
-    pub fn same_meaning(
-        &self,
-        other: &Self,
-        checkpoint: &mut dyn FnMut(u64) -> bool,
-    ) -> bool {
+    pub fn same_meaning(&self, other: &Self, checkpoint: &mut dyn FnMut(u64) -> bool) -> bool {
         if self.descriptor != other.descriptor {
             return false;
         }

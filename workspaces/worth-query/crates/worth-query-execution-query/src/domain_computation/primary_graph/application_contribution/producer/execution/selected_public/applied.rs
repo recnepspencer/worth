@@ -1,11 +1,6 @@
 //! Applied producer preparation reuses the selected conventional admission spine.
 use super::*;
-pub fn prepare_applied_public_mutation<
-    'selected,
-    'runtime,
-    S,
-    B,
->(
+pub fn prepare_applied_public_mutation<'selected, 'runtime, S, B>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     installed: &TypedInstalledProducer<S, B>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,

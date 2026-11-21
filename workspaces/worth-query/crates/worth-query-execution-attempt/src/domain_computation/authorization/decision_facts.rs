@@ -42,9 +42,7 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
     > {
         principal(self).external_identity()
     }
-    pub const fn principal(
-        principal: WorthQueryPrincipalCurrentnessDependency,
-    ) -> Self {
+    pub const fn principal(principal: WorthQueryPrincipalCurrentnessDependency) -> Self {
         Self::Principal(principal)
     }
 
@@ -58,9 +56,7 @@ impl WorthQueryRetainedAuthorizationDecisionFacts {
         }
     }
 
-    pub const fn capability(
-        authorization: WorthQueryRetainedCapabilityAuthorization,
-    ) -> Self {
+    pub const fn capability(authorization: WorthQueryRetainedCapabilityAuthorization) -> Self {
         Self::Capability(authorization)
     }
 
@@ -367,4 +363,6 @@ impl WorthQueryObservedCommitBasis {
 
 pub use authorization::WorthQueryAuthorizationDecisionFact;
 pub mod provider_commit_authorization;
-pub use provider_commit_authorization::{WorthQueryProviderCommitAuthorization, WorthQueryRegisteredCommitAuthorization};
+pub use provider_commit_authorization::{
+    WorthQueryProviderCommitAuthorization, WorthQueryRegisteredCommitAuthorization,
+};

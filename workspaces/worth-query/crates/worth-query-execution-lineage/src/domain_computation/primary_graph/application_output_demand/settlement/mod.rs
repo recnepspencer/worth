@@ -4,12 +4,15 @@ use std::sync::Arc;
 
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
-use super::{OutputPublicationView, ReadyCompletion, WorthQueryAcceptedOutputAuthority, WorthQueryOutputReadinessDeliveryEvidence, WorthQueryRestoredAcceptedOutput};
+use super::{
+    OutputPublicationView, ReadyCompletion, WorthQueryAcceptedOutputAuthority,
+    WorthQueryOutputReadinessDeliveryEvidence, WorthQueryRestoredAcceptedOutput,
+};
 use crate::domain_computation::primary_graph::{
-    output_lineage::PublishedStableLineage,
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationOutputCorrespondence,
-    WorthQueryApplicationOutputProjectionDenial, WorthQueryApplicationReadObservation,
-    WorthQueryApplicationTypedClosureEvidence, WorthQueryApplicationTypedOutputCorrespondence,
+    output_lineage::PublishedStableLineage, WorthQueryApplicationCommitReceipt,
+    WorthQueryApplicationOutputCorrespondence, WorthQueryApplicationOutputProjectionDenial,
+    WorthQueryApplicationReadObservation, WorthQueryApplicationTypedClosureEvidence,
+    WorthQueryApplicationTypedOutputCorrespondence,
 };
 
 pub mod authority;

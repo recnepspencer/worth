@@ -79,9 +79,7 @@ impl WorthQueryApplicationBasisLease {
         }
     }
 
-    pub fn prepare_shared(
-        &mut self,
-    ) -> Result<(), CompanionPreflightStop> {
+    pub fn prepare_shared(&mut self) -> Result<(), CompanionPreflightStop> {
         if matches!(self.custody, BasisCustody::Shared(_)) {
             return Ok(());
         }
@@ -149,9 +147,10 @@ impl WorthQueryApplicationBasisLease {
             product.basis().relational_basis().descriptor(),
             "product custody retains the exact query snapshot basis"
         );
-        self.identity.set_selection(WorthQueryApplicationBasisSelectionIdentity::Product(
-            crate::basis::WorthQueryProductBranchReadIdentity::from_observation(product),
-        ));
+        self.identity
+            .set_selection(WorthQueryApplicationBasisSelectionIdentity::Product(
+                crate::basis::WorthQueryProductBranchReadIdentity::from_observation(product),
+            ));
     }
 
     pub fn bind_program_interpretation(
@@ -182,9 +181,7 @@ impl WorthQueryApplicationBasisLease {
             .expect("an active application-query basis retains its snapshot")
     }
 
-    pub fn graph_handle(
-        &self,
-    ) -> &WorthQueryPrimaryGraphIntegrationHandle {
+    pub fn graph_handle(&self) -> &WorthQueryPrimaryGraphIntegrationHandle {
         &self.core().graph
     }
 

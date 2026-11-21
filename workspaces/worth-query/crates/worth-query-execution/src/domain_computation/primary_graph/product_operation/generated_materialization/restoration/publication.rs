@@ -22,22 +22,22 @@ where
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<WorthQueryRestoredGeneratedOutput, WorthQueryGeneratedOutputRestorationFailure>
     {
-        let publication_execution = match phase.execution_request_for(&self.inner.runtime.product_runtime)
-        {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return Err(restoration_failure(
-                    suspended_from_completion(
-                        publication,
-                        branch,
-                        correspondence,
-                        producer,
-                        completion,
-                    ),
-                    WorthQueryGeneratedOutputRestorationFailureCause::advancement(cause.into()),
-                ))
-            }
-        };
+        let publication_execution =
+            match phase.execution_request_for(&self.inner.runtime.product_runtime) {
+                Ok(execution) => execution,
+                Err(cause) => {
+                    return Err(restoration_failure(
+                        suspended_from_completion(
+                            publication,
+                            branch,
+                            correspondence,
+                            producer,
+                            completion,
+                        ),
+                        WorthQueryGeneratedOutputRestorationFailureCause::advancement(cause.into()),
+                    ))
+                }
+            };
         let prepared = match publication.prepare_relational_candidate(candidate, request, true) {
             Ok(prepared) => prepared,
             Err(PublicationDenial::ClockMismatch) => {

@@ -17,12 +17,23 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         use QueryHomeCustodyReadmissionDenial as Denial;
         let application = self.runtime.runtime();
         if application
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .readmit_dispatch_outboxes(
                 execution,
-                &application.inner.runtime.product_runtime.owner.observation_port(),
-                &application.inner.runtime.product_runtime.owner.inspection_port(),
+                &application
+                    .inner
+                    .runtime
+                    .product_runtime
+                    .owner
+                    .observation_port(),
+                &application
+                    .inner
+                    .runtime
+                    .product_runtime
+                    .owner
+                    .inspection_port(),
             )
             .map_err(Denial::DispatchOutbox)?
         {
@@ -41,7 +52,12 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         dispatch: std::sync::Arc<dyn QueryDispatchMedium>,
     ) -> Result<(), Denial> {
         let application = self.runtime.runtime();
-        let owner = application.inner.runtime.product_runtime.owner.owner_identity();
+        let owner = application
+            .inner
+            .runtime
+            .product_runtime
+            .owner
+            .owner_identity();
         if owner.durable().map(|owner| owner.home()) != Some(dispatch.home()) {
             return Err(Denial::ForeignHome);
         }
@@ -53,7 +69,8 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             dispatch,
             execution,
             application
-                .inner.runtime
+                .inner
+                .runtime
                 .primary_provider
                 .dispatch_readmission_catalog(),
         )?;

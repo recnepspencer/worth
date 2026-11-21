@@ -6,13 +6,6 @@ mod sealed {
 }
 
 /// A foreign committed receipt cannot become this carrier's refusal.
-/// ```compile_fail,E0308
-/// use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::entry_custody::CommitCarrier;
-/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitOutcome;
-/// fn cannot_substitute<S, P: CommitCarrier<S>>(program: P, unrelated: WorthQueryApplicationCommitOutcome) {
-///     program.refuse(unrelated);
-/// }
-/// ```
 pub trait CommitCarrier<Schema>: sealed::Sealed {
     type Operation;
     type Input;

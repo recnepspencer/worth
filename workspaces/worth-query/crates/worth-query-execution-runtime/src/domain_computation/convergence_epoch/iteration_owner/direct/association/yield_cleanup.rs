@@ -60,9 +60,7 @@ impl DirectYieldCleanupLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> DirectYieldCleanupLifecycleEventKind {
+    pub fn into_kind(self) -> DirectYieldCleanupLifecycleEventKind {
         self.kind
     }
 }

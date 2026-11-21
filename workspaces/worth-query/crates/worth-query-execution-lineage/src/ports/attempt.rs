@@ -29,7 +29,8 @@ pub trait ApplicationAttemptPort: Any + Send {
         &self,
     ) -> Arc<[crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence]>;
     fn runtime_authority(&self) -> u64;
-    fn schema_binding(&self) -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+    fn schema_binding(&self)
+        -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity;
     fn required_output_key(
         &self,
     ) -> Option<
@@ -53,7 +54,8 @@ pub struct CoupledPreparationView<'a> {
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
     >,
-    pub output_meaning: Option<&'a worth_relational::facade::mvcc::RequiredOutputPublicationMeaning>,
+    pub output_meaning:
+        Option<&'a worth_relational::facade::mvcc::RequiredOutputPublicationMeaning>,
     pub output_producer: Option<&'a str>,
 }
 
@@ -62,7 +64,10 @@ pub trait CoupledMemberPort {
     fn position(&self) -> usize;
     fn producer_route(
         &self,
-    ) -> Option<(&str, &worth_relational::facade::mvcc::RequiredOutputPublicationMeaning)>;
+    ) -> Option<(
+        &str,
+        &worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    )>;
     fn extracted_attempt(&self) -> &dyn ApplicationAttemptPort;
 }
 
@@ -166,7 +171,8 @@ impl<T: AdmittedOperationPort + ?Sized> AdmittedOperationPort for Box<T> {
     }
     fn retain_graph_contract(
         &self,
-    ) -> Arc<worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts> {
+    ) -> Arc<worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts>
+    {
         (**self).retain_graph_contract()
     }
     fn admission_identity(
@@ -180,7 +186,7 @@ impl<T: AdmittedOperationPort + ?Sized> AdmittedOperationPort for Box<T> {
     fn query_context(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>
-    {
+{
         (**self).query_context()
     }
     fn operation_scope_binding(

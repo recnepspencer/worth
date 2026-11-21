@@ -11,17 +11,17 @@ use worth_query_declaration::facade::{
 /// no actor value, live authority slot or grant, and cannot itself admit access.
 #[derive(Clone, Debug)]
 pub struct WorthQueryWorkflowActorContext {
-    pub runtime: u64,
-    pub instance: super::super::PublishedWorkflowInstanceRef,
-    pub command: Command,
-    pub revision: ApplicationProgramRevision,
-    pub spec: String,
-    pub support: [u8; 32],
-    pub resources:
+    pub(crate) runtime: u64,
+    pub(crate) instance: super::super::PublishedWorkflowInstanceRef,
+    pub(crate) command: Command,
+    pub(crate) revision: ApplicationProgramRevision,
+    pub(crate) spec: String,
+    pub(crate) support: [u8; 32],
+    pub(crate) resources:
         worth_query_installation::facade::WorthQueryApplicationWorkflowResourceCeiling,
-    pub source: ApplicationWorkflowRecordedActorSource,
-    pub operation: String,
-    pub binding: String,
+    pub(crate) source: ApplicationWorkflowRecordedActorSource,
+    pub(crate) operation: String,
+    pub(crate) binding: String,
     capability: String,
     capability_type: String,
 }
@@ -64,10 +64,9 @@ pub enum Command {
     },
 }
 
-
 impl WorthQueryWorkflowActorContext {
     pub fn build<Schema, Spec, Binding>(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         runtime: u64,
         installed: &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
             Schema,
@@ -75,7 +74,10 @@ impl WorthQueryWorkflowActorContext {
         >,
         instance: &super::super::PublishedWorkflowInstanceRef,
         command: Command,
-    ) -> Result<Option<Self>, crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>
+    ) -> Result<
+        Option<Self>,
+        crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+    >
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
         Spec: worth_query_declaration::facade::application_program::ApplicationWorkflowSpec<

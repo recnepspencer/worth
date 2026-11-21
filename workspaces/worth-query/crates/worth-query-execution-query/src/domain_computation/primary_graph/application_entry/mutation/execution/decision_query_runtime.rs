@@ -1,5 +1,6 @@
 //! Ordinary authenticated decisions borrow Query reads at their exact admitted product.
 
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
@@ -92,9 +93,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// An authored stage retains C authorization while its ordinary readers
     /// borrow the exact unpublished D pin from Native.
     #[allow(clippy::too_many_arguments)]
-    pub fn execute_authored_stage_handler<
-        B: ApplicationMutationBinding<S>,
-    >(
+    pub fn execute_authored_stage_handler<B: ApplicationMutationBinding<S>>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
         identities: &ApplicationMutationIdentities<'_, S, B>,

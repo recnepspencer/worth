@@ -46,9 +46,7 @@ pub mod sealing;
 pub mod typed_prior;
 pub use deposit::ComputationDeposit;
 pub use prior_absence::CompletedComputationRetention;
-pub use prior_absence::{
-    PriorAbsence, SealedComputationRetention, Suppression,
-};
+pub use prior_absence::{PriorAbsence, SealedComputationRetention, Suppression};
 pub mod tree_attempt;
 pub mod tree_edits;
 pub mod tree_membership;
@@ -72,9 +70,7 @@ pub use recording::{observe_unretained, FullRecording};
 pub use retained::ComputationInstallation;
 pub use retained::WorthQueryPartitionedComputationFullCause;
 pub use retained::WorthQueryPartitionedComputationRunForTest;
-pub use retained::{
-    ComputationPrior, RetainedComputation, SealedComputationRun,
-};
+pub use retained::{ComputationPrior, RetainedComputation, SealedComputationRun};
 
 use self::retained::{RetainedBasis, TypedPrior};
 use crate::domain_computation::primary_graph::application_attempt::{
@@ -128,7 +124,8 @@ pub struct IncrementalRun<Key, Item, Reduced> {
     pub moved_items: BTreeSet<PartitionItemId>,
     /// The partitions a fact their gathering read moved for.
     pub marked: BTreeSet<PartitionIdentity>,
-    pub calls: Arc<crate::domain_computation::primary_graph::application_attempt::ComputationFactIndex>,
+    pub calls:
+        Arc<crate::domain_computation::primary_graph::application_attempt::ComputationFactIndex>,
     pub validated_at: Option<worth_relational::facade::snapshots::SnapshotHandle>,
     pub rebase_changes: Option<
         crate::domain_computation::primary_graph::output_lineage::invalidation::ComputationChanges,

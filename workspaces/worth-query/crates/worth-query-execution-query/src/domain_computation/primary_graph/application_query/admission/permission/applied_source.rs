@@ -4,15 +4,7 @@ use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn admit_applied_source_query<
-        'a,
-        Q,
-        P,
-        R,
-        A,
-        I,
-        E,
-    >(
+    pub fn admit_applied_source_query<'a, Q, P, R, A, I, E>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         query: &'a WorthQueryInstalledApplicationQuery<S, Q, P, R, E>,
@@ -51,15 +43,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             &mut native,
         )
     }
-    pub fn admit_fresh_applied_source_query<
-        'a,
-        Q,
-        P,
-        R,
-        A,
-        I,
-        E,
-    >(
+    pub fn admit_fresh_applied_source_query<'a, Q, P, R, A, I, E>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         query: &'a WorthQueryInstalledApplicationQuery<S, Q, P, R, E>,

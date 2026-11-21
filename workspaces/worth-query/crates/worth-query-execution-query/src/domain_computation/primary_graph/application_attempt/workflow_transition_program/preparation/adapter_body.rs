@@ -10,7 +10,7 @@ use worth_query_declaration::facade::application_operation::{
 
 impl WorthQueryWorkflowAdvanceAdapter {
     pub fn prepare_body<Schema, Binding>(
-        access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         runtime: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
         prepared: PreparedWorkflowAdvance<Schema, Binding::Operation, Binding::Input,

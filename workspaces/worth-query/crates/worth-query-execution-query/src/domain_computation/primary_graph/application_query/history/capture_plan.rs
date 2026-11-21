@@ -25,14 +25,10 @@ pub struct WorthQueryAdmittedApplicationHistoryCapture<
     Schema: ApplicationSchema,
     History: ApplicationHistoryQueryBinding<Schema>,
 > {
-    pub(crate) history:
-        &'a WorthQueryInstalledApplicationHistoryQuery<Schema, History>,
-    pub(crate) plan:
-        SubjectPlan<'a, Schema, History>,
-    pub(crate) metadata:
-        HistoryMetadataAdmission,
-    pub(crate) limits:
-        WorthQueryApplicationHistoryCaptureLimits,
+    pub(crate) history: &'a WorthQueryInstalledApplicationHistoryQuery<Schema, History>,
+    pub(crate) plan: SubjectPlan<'a, Schema, History>,
+    pub(crate) metadata: HistoryMetadataAdmission,
+    pub(crate) limits: WorthQueryApplicationHistoryCaptureLimits,
 }
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {

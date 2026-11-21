@@ -98,10 +98,7 @@ impl ProducerHandlerPreparation {
         assert!(self.decision_context_use.replace(use_mask).is_none());
     }
 
-    pub fn retain_computation_prior(
-        &mut self,
-        prior: ComputationPrior,
-    ) {
+    pub fn retain_computation_prior(&mut self, prior: ComputationPrior) {
         assert!(self.computation_prior.replace(prior).is_none());
     }
 
@@ -146,9 +143,7 @@ impl ProducerHandlerPreparation {
         self.completed_handler_facts = Some(boundary);
     }
 
-    pub fn take_completed_handler_facts(
-        &mut self,
-    ) -> Option<CompletedHandlerFactBoundary> {
+    pub fn take_completed_handler_facts(&mut self) -> Option<CompletedHandlerFactBoundary> {
         self.completed_handler_facts.take()
     }
 
@@ -158,11 +153,7 @@ impl ProducerHandlerPreparation {
             .map(CompletedHandlerFactBoundary::handler_fact_count)
     }
 
-    pub fn insert_input_facts(
-        &mut self,
-        expected: usize,
-        count: usize,
-    ) -> bool {
+    pub fn insert_input_facts(&mut self, expected: usize, count: usize) -> bool {
         self.completed_handler_facts
             .as_mut()
             .is_some_and(|boundary| boundary.insert_input_facts(expected, count))

@@ -1,5 +1,7 @@
 //! Original source disclosure meaning; fresh use must independently authorize it.
-pub use worth_query_execution_lineage::facade::primary_graph::source_disclosure::{inspection, original};
+pub use worth_query_execution_lineage::facade::primary_graph::source_disclosure::{
+    inspection, original,
+};
 pub mod inspection_capture;
 mod parameter_capture;
 

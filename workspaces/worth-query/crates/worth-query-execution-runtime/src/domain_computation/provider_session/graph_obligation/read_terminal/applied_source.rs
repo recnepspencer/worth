@@ -91,9 +91,7 @@ impl WorthQueryAppliedSourceRead {
     ) -> Result<bool, Stop> {
         self.context.admits_parent(parent, admit, overflow)
     }
-    pub fn session_identity(
-        &self,
-    ) -> WorthQueryGraphWorkSessionIdentity {
+    pub fn session_identity(&self) -> WorthQueryGraphWorkSessionIdentity {
         self.session
     }
     pub fn runtime(
@@ -101,35 +99,24 @@ impl WorthQueryAppliedSourceRead {
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.context.runtime()
     }
-    pub fn principal(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub fn principal(&self) -> worth_relational::facade::identity::EntityId {
         self.context.principal()
     }
-    pub fn scope(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub fn scope(&self) -> worth_relational::facade::identity::EntityId {
         self.context.scope()
     }
     pub fn binding(&self) -> &ApplicationSchemaBindingIdentity {
         &self.binding
     }
-    pub fn obligation(
-        &self,
-    ) -> &WorthQueryInstalledGraphObligationSetIdentity {
+    pub fn obligation(&self) -> &WorthQueryInstalledGraphObligationSetIdentity {
         &self.obligation
     }
-    pub fn admits_loan(
-        &self,
-        source: &ManagedIndexAppliedSourceRead<'_>,
-    ) -> bool {
+    pub fn admits_loan(&self, source: &ManagedIndexAppliedSourceRead<'_>) -> bool {
         self.candidate.qualification() == source.candidate_identity().qualification()
             && self.program == *source.program()
             && self.scope() == source.scope()
     }
-    pub fn candidate(
-        &self,
-    ) -> &RelationalAppliedCandidateReadIdentity {
+    pub fn candidate(&self) -> &RelationalAppliedCandidateReadIdentity {
         &self.candidate
     }
 }

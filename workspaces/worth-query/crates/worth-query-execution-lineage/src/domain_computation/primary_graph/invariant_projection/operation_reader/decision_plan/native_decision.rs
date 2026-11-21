@@ -5,9 +5,7 @@ use worth_foundational::facade::AspectFieldLocator;
 use worth_query_declaration::facade::application_schema::fragment::ColumnIdentity;
 use worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts as Contracts;
 
-pub struct NativeDecision<
-    'a,
-> {
+pub struct NativeDecision<'a> {
     layout:
         &'a crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
     bindings:
@@ -21,9 +19,7 @@ impl<'r, S: ApplicationSchema, O>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, 'r, S, O>
 {
     #[inline(always)]
-    pub fn native_decision(
-        &mut self,
-    ) -> NativeDecision<'_> {
+    pub fn native_decision(&mut self) -> NativeDecision<'_> {
         NativeDecision {
             layout: self.reader.layout,
             bindings: self.reader.value_bindings,

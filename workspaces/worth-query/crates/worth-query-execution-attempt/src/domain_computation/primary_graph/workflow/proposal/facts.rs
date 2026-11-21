@@ -16,13 +16,7 @@ use crate::domain_computation::primary_graph::workflow::{
     schema::WorthQueryWorkflowLayout,
 };
 
-pub fn visit_workflow_proposal_facts<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-    Error,
->(
+pub fn visit_workflow_proposal_facts<Schema, Operation, Input, Scope, Error>(
     layout: &WorthQueryWorkflowLayout,
     admitted: &AdmittedWorkflowTransition<Schema, Operation, Input, Scope>,
     proposal: &WorkflowProposalMeaning,

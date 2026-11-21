@@ -82,7 +82,8 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             .map_err(InspectionAdmissionDenial::Security)?;
         let graph = self
             .runtime
-            .inner.runtime
+            .inner
+            .runtime
             .primary_graph()
             .ok_or(InspectionAdmissionDenial::MissingGraph)?;
         let resolution = graph.retain_entity_resolution_context();

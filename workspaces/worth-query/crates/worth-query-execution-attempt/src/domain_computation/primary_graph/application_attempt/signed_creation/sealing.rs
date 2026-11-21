@@ -7,8 +7,8 @@ use worth_query_admission::facade::authentication_event::{
     WorthQueryAuthenticationEventDenial, WorthQueryAuthenticationEventIntent,
 };
 use worth_query_declaration::facade::application_operation::{
-        ApplicationMutationBinding, ApplicationMutationScopeBinding,
-    };
+    ApplicationMutationBinding, ApplicationMutationScopeBinding,
+};
 
 pub type BodyCandidate<Schema, Binding> = WorthQueryApplicationEffectProgram<Schema, <Binding as ApplicationMutationBinding<Schema>>::Operation, <Binding as ApplicationMutationBinding<Schema>>::Input, <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope>;
 
@@ -36,7 +36,6 @@ impl std::fmt::Display for WorthQuerySignedCreationPreparationDenial {
 }
 impl std::error::Error for WorthQuerySignedCreationPreparationDenial {}
 pub type Denial = WorthQuerySignedCreationPreparationDenial;
-
 
 pub fn intent<Schema, Operation, Input, Scope>(
     candidate: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,

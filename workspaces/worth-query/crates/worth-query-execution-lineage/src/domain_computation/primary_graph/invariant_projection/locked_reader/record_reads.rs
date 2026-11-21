@@ -85,9 +85,7 @@ where
         decoded.value
     }
 
-    pub fn identity_is_local<
-        Entity,
-    >(
+    pub fn identity_is_local<Entity>(
         &self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         entity: &str,

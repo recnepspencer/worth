@@ -39,7 +39,8 @@ where
     let reading = installed.clock.observe().map_err(ResourceCause::Clock)?;
     execution.consult().map_err(ResourceCause::Request)?;
     let clock = runtime
-        .inner.runtime
+        .inner
+        .runtime
         .bridge
         .conditional()
         .with_view(
@@ -50,7 +51,8 @@ where
                 .signal_basis(),
             |bridge| {
                 runtime
-                    .inner.runtime
+                    .inner
+                    .runtime
                     .product_runtime
                     .advance_owned_async_source_clock(
                         &bridge,
@@ -65,7 +67,8 @@ where
     row.occurrence_mut().lifecycle = ResourceLifecycle::Reserved { clock: Some(clock) };
     execution.consult().map_err(ResourceCause::Request)?;
     let owner = runtime
-        .inner.runtime
+        .inner
+        .runtime
         .bridge
         .conditional()
         .with_view(
@@ -76,7 +79,8 @@ where
                 .signal_basis(),
             |bridge| {
                 runtime
-                    .inner.runtime
+                    .inner
+                    .runtime
                     .product_runtime
                     .admit_managed_owned_async_request(
                         &bridge,

@@ -35,7 +35,8 @@ impl<S: ApplicationSchema>
             match &tree.completion {
                 RecordingTreeCompletion::Original(original) => {
                     original.require_current_at(
-                        self.inner.select_application_read_observation(phase, &endpoint)
+                        self.inner
+                            .select_application_read_observation(phase, &endpoint)
                             .map_err(WorthQueryOriginalReadOutputDenial::Observation)?,
                         phase,
                         access,

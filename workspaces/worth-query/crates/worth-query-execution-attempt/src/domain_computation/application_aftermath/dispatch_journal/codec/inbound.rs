@@ -17,10 +17,7 @@ fn key(output: &mut Vec<u8>, value: &QueryInboundMessageKey) {
     output.extend_from_slice(&value.epoch.to_le_bytes());
     output.extend_from_slice(&value.message);
 }
-pub fn encode(
-    output: &mut Vec<u8>,
-    value: &QueryInboundRecord,
-) {
+pub fn encode(output: &mut Vec<u8>, value: &QueryInboundRecord) {
     match value {
         QueryInboundRecord::TransportBinding(binding) => {
             output.push(6);

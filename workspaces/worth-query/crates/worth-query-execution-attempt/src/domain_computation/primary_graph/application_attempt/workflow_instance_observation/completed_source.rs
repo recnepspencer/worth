@@ -12,16 +12,13 @@ use worth_relational::facade::{
 pub mod output_match;
 
 /// Has no progression basis, replay collection or step-allowance method.
-pub struct CompletedWorkflowSource
-{
+pub struct CompletedWorkflowSource {
     facts: Vec<WorthQueryApplicationObservedFact>,
     transitions: Vec<super::ObservedWorkflowTransition>,
 }
 
 impl CompletedWorkflowSource {
-    pub fn into_facts(
-        self,
-    ) -> Vec<WorthQueryApplicationObservedFact> {
+    pub fn into_facts(self) -> Vec<WorthQueryApplicationObservedFact> {
         self.facts
     }
 }

@@ -77,9 +77,7 @@ impl ComputationSourceEvidence {
 
     /// The one certification door. Own-effect staleness survives every
     /// verification route and record derivation until a computation runs again.
-    pub fn certify_current(
-        self,
-    ) -> Option<CurrentComputation> {
+    pub fn certify_current(self) -> Option<CurrentComputation> {
         match self.0 {
             Origin::Performed {
                 superseded_by_own_effect: true,

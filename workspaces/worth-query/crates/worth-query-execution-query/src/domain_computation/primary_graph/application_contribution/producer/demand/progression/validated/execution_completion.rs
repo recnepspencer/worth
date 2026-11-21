@@ -5,18 +5,12 @@ use crate::domain_computation::primary_graph::application_output_demand::Running
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint;
 
 #[allow(clippy::too_many_arguments)]
-pub
-struct CompletionRefusal
-{
-    pub denial:
-        WorthQueryOutputDemandDenial,
-    pub checkpoint:
-        Option<WorthQueryOutputCheckpoint>,
+pub struct CompletionRefusal {
+    pub denial: WorthQueryOutputDemandDenial,
+    pub checkpoint: Option<WorthQueryOutputCheckpoint>,
 }
 impl CompletionRefusal {
-    pub fn denied(
-        denial: WorthQueryOutputDemandDenial,
-    ) -> Self {
+    pub fn denied(denial: WorthQueryOutputDemandDenial) -> Self {
         Self {
             denial,
             checkpoint: None,

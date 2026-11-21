@@ -4,10 +4,7 @@ use super::{WorthQueryGraphWorkBasis, WorthQueryManagedGraphWorkSession};
 
 impl WorthQueryManagedGraphWorkSession {
     /// Restore a temporarily taken mutation lease back into the mutation basis.
-    pub fn restore_mutation_lease(
-        &mut self,
-        lease: Box<dyn crate::ports::PrimaryMutationLease>,
-    ) {
+    pub fn restore_mutation_lease(&mut self, lease: Box<dyn crate::ports::PrimaryMutationLease>) {
         if let WorthQueryGraphWorkBasis::Mutation(basis) = &mut self.basis {
             basis.lease = Some(lease);
         }

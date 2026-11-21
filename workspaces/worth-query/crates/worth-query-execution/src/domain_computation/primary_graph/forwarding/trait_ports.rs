@@ -147,7 +147,7 @@ impl<Schema: ApplicationSchema> WorthQueryReadCleanupRuntime
     ) -> Result<
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanupReceipt,
         crate::domain_computation::WorthQueryProductUnpublishedRecoveryReleaseFailure,
-    > {
+    >{
         self.inner
             .close_product_publication_recovery_in_advancement(phase, recovery)
     }

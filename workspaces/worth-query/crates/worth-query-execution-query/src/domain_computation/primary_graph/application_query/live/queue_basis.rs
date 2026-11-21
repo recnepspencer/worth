@@ -13,9 +13,7 @@ use crate::domain_computation::{
 
 static NEXT_APPLICATION_QUERY_LIVE_LEASE: AtomicU64 = AtomicU64::new(1);
 
-pub fn admit_live_managed_basis<
-    Schema,
->(
+pub fn admit_live_managed_basis<Schema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     buffer_capacity: usize,
     graph_work: &crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,

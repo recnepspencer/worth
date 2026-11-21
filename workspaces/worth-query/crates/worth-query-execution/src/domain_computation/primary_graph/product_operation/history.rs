@@ -41,7 +41,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
             })?;
         let history = self
             .application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .trace_product_history(&execution, branch, maximum)?;
         Ok(WorthQueryProductHistory {
@@ -83,7 +84,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
             })?;
         let history = self
             .application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .continue_product_history(&execution, &self.history, maximum)?;
         Ok(Self {
@@ -121,7 +123,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
         }
         let product = self
             .application
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .admit_product_history_entry(&self.history, entry.index)?;
         self.application.on_product(execution, product)

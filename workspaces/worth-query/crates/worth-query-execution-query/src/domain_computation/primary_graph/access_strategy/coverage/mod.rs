@@ -31,14 +31,10 @@ impl CoverageVerifier {
             realized,
         }
     }
-    pub fn authority(
-        &self,
-    ) -> &ManagedIndexCoverageAuthority {
+    pub fn authority(&self) -> &ManagedIndexCoverageAuthority {
         &self.authority
     }
-    pub fn realized_authority(
-        &self,
-    ) -> worth_proof::RealizedFootprintAuthority {
+    pub fn realized_authority(&self) -> worth_proof::RealizedFootprintAuthority {
         self.realized.authority()
     }
     pub fn verify_realized(
@@ -95,10 +91,7 @@ pub struct CandidateSelection<'a, 'loan> {
     coverage: Option<Arc<RetainedCoverage>>,
 }
 impl<'a, 'loan> CandidateSelection<'a, 'loan> {
-    pub fn conservative(
-        frame: CoverageFrame<'a, 'loan>,
-        slots: ExecutionArray<Slot>,
-    ) -> Self {
+    pub fn conservative(frame: CoverageFrame<'a, 'loan>, slots: ExecutionArray<Slot>) -> Self {
         Self {
             frame,
             slots,
@@ -142,9 +135,7 @@ pub struct ReceivedSelection {
     coverage: Option<Arc<RetainedCoverage>>,
 }
 impl ReceivedSelection {
-    pub fn coverage(
-        &self,
-    ) -> Option<&Arc<RetainedCoverage>> {
+    pub fn coverage(&self) -> Option<&Arc<RetainedCoverage>> {
         self.coverage.as_ref()
     }
     /// Exact completion keeps the actual original candidate universe; influence
@@ -157,10 +148,7 @@ impl ReceivedSelection {
                 refinement.candidates.elements()
             })
     }
-    pub fn candidate_accepted(
-        &self,
-        ordinal: usize,
-    ) -> Option<bool> {
+    pub fn candidate_accepted(&self, ordinal: usize) -> Option<bool> {
         match self
             .coverage
             .as_ref()
@@ -170,14 +158,10 @@ impl ReceivedSelection {
             None => (ordinal < self.slots.len()).then_some(true),
         }
     }
-    pub fn into_parts(
-        self,
-    ) -> (ExecutionArray<Slot>, Option<Arc<RetainedCoverage>>) {
+    pub fn into_parts(self) -> (ExecutionArray<Slot>, Option<Arc<RetainedCoverage>>) {
         (self.slots, self.coverage)
     }
-    pub fn complete_slots(
-        &self,
-    ) -> Result<&[Slot], Stop> {
+    pub fn complete_slots(&self) -> Result<&[Slot], Stop> {
         if self.coverage.is_none() {
             return Err(Stop::IncompleteCoverage);
         }
@@ -192,10 +176,7 @@ pub struct RetainedCoverage {
     _allocation: Arc<SourceFactsAllocation>,
 }
 impl RetainedCoverage {
-    pub fn admits(
-        &self,
-        authority: &ManagedIndexCoverageAuthority,
-    ) -> bool {
+    pub fn admits(&self, authority: &ManagedIndexCoverageAuthority) -> bool {
         authority.admits(&self.proof)
     }
 }

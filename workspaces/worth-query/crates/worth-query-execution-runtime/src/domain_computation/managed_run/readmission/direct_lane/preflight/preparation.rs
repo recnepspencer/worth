@@ -44,16 +44,12 @@ struct WorthQueryDirectYieldedParts {
 
 pub struct WorthQueryDirectYieldRestoredOwner {
     pub affinity: WorthQueryDirectRunAffinity,
-    pub relational_basis:
-        WorthQueryManagedRelationalObservation,
+    pub relational_basis: WorthQueryManagedRelationalObservation,
     pub bridge: BridgeYieldedExecutionBasis,
-    pub execution:
-        WorthQueryRetainedManagedGraphExecution,
+    pub execution: WorthQueryRetainedManagedGraphExecution,
     pub run_counters: WorthQueryManagedRunCounters,
-    pub yield_counters:
-        WorthQueryYieldTransitionCounters,
-    pub inspection:
-        crate::domain_computation::WorthQueryYieldedDirectRunInspection,
+    pub yield_counters: WorthQueryYieldTransitionCounters,
+    pub inspection: crate::domain_computation::WorthQueryYieldedDirectRunInspection,
 }
 
 struct WorthQueryDirectProvisionalResourceAttempt {

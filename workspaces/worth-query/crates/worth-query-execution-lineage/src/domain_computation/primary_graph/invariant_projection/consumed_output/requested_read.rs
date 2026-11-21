@@ -8,9 +8,7 @@ impl ConsumedOutputEvidence {
     /// A native read may be Current before its managed Ready delivery completes.
     /// This separately funded packet lets the existing driver finish that delivery;
     /// it supplies scheduling evidence, never publication or currentness authority.
-    pub fn requested_read(
-        &self,
-    ) -> Result<RequestedOutputRead, CompanionPreflightStop> {
+    pub fn requested_read(&self) -> Result<RequestedOutputRead, CompanionPreflightStop> {
         let selected = self.recorded().selected_native_root.as_ref();
 
         Ok(RequestedOutputRead::new(

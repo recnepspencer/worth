@@ -40,10 +40,7 @@ impl<'a> VerificationContext<'a> {
             ) => Ok(Self::Other(requirement)),
         }
     }
-    pub fn describe(
-        self,
-        error: WorthQueryOutputDemandDenial,
-    ) -> WorthQueryOutputDemandDenial {
+    pub fn describe(self, error: WorthQueryOutputDemandDenial) -> WorthQueryOutputDemandDenial {
         let subject = match self {
             Self::Native(fact) => format!(
                 "{}; native revision unavailable for: {}",

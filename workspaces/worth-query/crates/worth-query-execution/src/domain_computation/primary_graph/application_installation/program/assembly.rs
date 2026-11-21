@@ -106,9 +106,10 @@ where
             .adoption_admissions
             .insert(*installed.revision(), Box::new(admit_program::<Schema, Program> as crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::ProgramAdoptionAdmission<Schema>));
         for record in &supported {
-            support
-                .adoption_admissions
-                .insert(*record.revision(), Box::new(record.adoption_admission::<Schema>()));
+            support.adoption_admissions.insert(
+                *record.revision(),
+                Box::new(record.adoption_admission::<Schema>()),
+            );
         }
     }
     if !runtime.inner.runtime.product_runtime.is_directory_home() {
@@ -133,13 +134,15 @@ where
     );
     runtime.inner.program_required_operations.extend(
         runtime
-            .inner.installed_schema
+            .inner
+            .installed_schema
             .installed_mutation_binding_inventory()
             .filter(|binding| action_bindings.contains(&TypeId::from(binding.binding_type())))
             .map(|binding| TypeId::from(binding.operation_type())),
     );
     runtime
-        .inner.program_required_bindings
+        .inner
+        .program_required_bindings
         .extend(action_bindings.iter().copied());
     let output_source_bindings = super::output_roots::required_output_bindings::<
         Schema,
@@ -151,7 +154,8 @@ where
         &output_source_bindings
     ));
     runtime
-        .inner.program_required_bindings
+        .inner
+        .program_required_bindings
         .extend(output_source_bindings.iter().copied());
     let installed = std::sync::Arc::new(installed);
     let initial = std::sync::Arc::new(WorthQuerySupportedProgramRecord::installed(

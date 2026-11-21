@@ -8,11 +8,7 @@ use crate::domain_computation::primary_graph::{
     WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
 };
 
-pub trait SourceFactExpansionControlExt<
-    'request,
-    'authority,
->: Sized
-{
+pub trait SourceFactExpansionControlExt<'request, 'authority>: Sized {
     fn for_phase<S: worth_query_installation::facade::ApplicationSchema>(
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         phase: &'request WorthQueryAdvancementPhase<'authority>,

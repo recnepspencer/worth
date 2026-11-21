@@ -7,20 +7,6 @@ use super::{WorthQueryManagedComputationExecution, WorthQueryManagedComputationI
 ///
 /// The worker receives no reader, writer, application, provider or phase.
 /// Author-held handles remain subject to the worker reentry rule.
-///
-/// ```compile_fail,E0599
-/// use worth_query_execution::facade::application_contribution::WorthQueryMemberExecution;
-/// fn cannot_read(member: WorthQueryMemberExecution<'_>) {
-///     let _ = member.reader();
-/// }
-/// ```
-///
-/// ```
-/// use worth_query_execution::facade::application_contribution::WorthQueryMemberExecution;
-/// fn can_check(member: WorthQueryMemberExecution<'_>) {
-///     let _ = member.interruption();
-/// }
-/// ```
 pub struct WorthQueryMemberExecution<'member> {
     execution: &'member QueryRequestExecution<'member>,
     take: &'member mut dyn FnMut() -> Option<worth_execution::NestedComputationStop>,

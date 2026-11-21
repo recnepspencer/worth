@@ -28,7 +28,6 @@ pub(crate) mod query;
 mod relational_change_delivery;
 mod transaction;
 
-
 pub use branches::{
     WorthQueryApplicationProductBranches, WorthQueryExpectedProductBasisSelectionDenial,
     WorthQueryExpectedProductBranch, WorthQueryExpectedProductBranchAdoptionDenial,

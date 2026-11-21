@@ -25,9 +25,7 @@ mod step;
 mod yield_cleanup;
 mod yield_phase;
 
-pub use admit::{
-    admit_epoch, DirectAdmissionLifecycleEvent, DirectAdmissionLifecycleEventKind,
-};
+pub use admit::{admit_epoch, DirectAdmissionLifecycleEvent, DirectAdmissionLifecycleEventKind};
 pub use completion::DirectTerminalProviderWorkEvent;
 pub(super) use readmission::{
     DirectAssociatedReadmissionCleanupOutcome, DirectAssociatedReadmissionOutcome,
@@ -44,9 +42,7 @@ pub(super) use step::DirectAssociatedStepOutcome;
 pub(super) use yield_cleanup::{
     DirectAssociatedYieldCleanupOutcome, DirectYieldCleanupReceiptAssociation,
 };
-pub use yield_cleanup::{
-    DirectYieldCleanupLifecycleEvent, DirectYieldCleanupLifecycleEventKind,
-};
+pub use yield_cleanup::{DirectYieldCleanupLifecycleEvent, DirectYieldCleanupLifecycleEventKind};
 pub(super) use yield_phase::{
     DirectAssociatedYieldOutcome, DirectAssociatedYieldRecovery,
     DirectYieldRecoveryCleanupReceiptAssociation, DirectYieldRunningRecoveryAssociation,

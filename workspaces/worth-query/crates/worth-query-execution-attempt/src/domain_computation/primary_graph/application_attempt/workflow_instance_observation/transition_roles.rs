@@ -1,10 +1,8 @@
 //! Recorded transition identities, decoded and checked once at the supplied basis.
 use super::*;
-pub struct WorkflowTransitionRoles
-{
+pub struct WorkflowTransitionRoles {
     pub advancer: EntityId,
-    pub executor:
-        Option<EntityId>,
+    pub executor: Option<EntityId>,
 }
 pub fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

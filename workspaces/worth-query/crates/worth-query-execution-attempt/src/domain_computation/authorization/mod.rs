@@ -4,12 +4,11 @@ pub mod operation_admission;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 pub mod admission;
 pub mod application_commit_authorization;
-pub use worth_query_execution_lineage::facade::domain_computation::authorization::{
-    admitted_request, bridge_binding, capability_binding_lowering,
-    capability_lowering, capability_registry, denial, home_incarnation, lowering,
-    operation_scope_binding,
-};
 pub use home_incarnation::refuse_stale_home_authority;
+pub use worth_query_execution_lineage::facade::domain_computation::authorization::{
+    admitted_request, bridge_binding, capability_binding_lowering, capability_lowering,
+    capability_registry, denial, home_incarnation, lowering, operation_scope_binding,
+};
 pub mod authorization_revalidation;
 pub mod bridge_observation;
 pub mod capability_decision_fact;
@@ -86,7 +85,6 @@ fn authorization_denial(
     )
 }
 
-
 pub use capability_decision_fact::WorthQueryRetainedCapabilityAuthorization;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
@@ -98,12 +96,13 @@ pub use operation_admission::{
     WorthQueryAdmittedApplicationOperation, WorthQueryOperationAdmissionIdentity,
 };
 
-pub use operation_admission::admitted_operation_core::{WorthQueryAdmittedOperation, WorthQueryAdmittedOperationData};
-pub use operation_admission::ReadCompletionAdmission;
-pub use decision_facts::{WorthQueryProviderCommitAuthorization, WorthQueryRegisteredCommitAuthorization};
+pub use decision_facts::{
+    WorthQueryProviderCommitAuthorization, WorthQueryRegisteredCommitAuthorization,
+};
 pub use delegation_progression::binding::WorthQueryDelegationActivationBinding;
-
-pub mod admitted_capability_access;
-pub use admitted_capability_access::WorthQueryAdmittedApplicationCapabilityAccess;
+pub use operation_admission::admitted_operation_core::{
+    WorthQueryAdmittedOperation, WorthQueryAdmittedOperationData,
+};
+pub use operation_admission::ReadCompletionAdmission;
 
 pub use operation_admission::brand_tag::BrandTag;

@@ -140,9 +140,7 @@ impl WorthQueryYieldedWorkflowRun {
         }
     }
 
-    pub fn readmission_stage_identity(
-        &self,
-    ) -> Option<&str> {
+    pub fn readmission_stage_identity(&self) -> Option<&str> {
         self.execution.call.stage_identity()
     }
 

@@ -31,9 +31,7 @@ pub struct PendingProducerPublication {
     slot: Box<Option<ContinuationState>>,
 }
 
-pub
-struct ContinuationState
-{
+pub struct ContinuationState {
     input: Option<Box<dyn Any + Send + Sync>>,
     edition: super::super::InstalledProducerEdition,
     mode: WorthQueryProducerCommitAuthority,
@@ -81,9 +79,7 @@ impl PreparedProducerPublication {
 }
 
 impl PendingProducerPublication {
-    pub fn state_mut(
-        &mut self,
-    ) -> &mut ContinuationState {
+    pub fn state_mut(&mut self) -> &mut ContinuationState {
         self.slot
             .as_mut()
             .as_mut()
@@ -95,19 +91,14 @@ impl PendingProducerPublication {
             .as_ref()
             .expect("only actual unpublished outcomes issue this owner")
     }
-    pub fn retain_original_publication(
-        &mut self,
-        original: Original,
-    ) {
+    pub fn retain_original_publication(&mut self, original: Original) {
         self.state_mut().original_publication = original;
     }
     pub fn is_closed(&self) -> bool {
         let state = self.state();
         matches!(state.state, PublicationState::Closed) && state.prior_cleanup.is_none()
     }
-    pub fn publication(
-        &self,
-    ) -> Option<&WorthQueryCommittedProductPublication> {
+    pub fn publication(&self) -> Option<&WorthQueryCommittedProductPublication> {
         match &self.state().state {
             PublicationState::Performed { custody } => custody
                 .carrier

@@ -36,7 +36,7 @@ pub(in crate::domain_computation::primary_graph) use worth_query_execution_attem
 
 /// The callback cannot retain a coordination grant after the owning lane closes.
 pub fn with_resolved_edit_envelope<S: ApplicationSchema, R>(
-    _access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+    _access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
     phase: &WorthQueryAdvancementPhase<'_>,
     application: &dyn crate::ports::ApplicationRuntimeRef<S>,
     stages: &[CapturedAuthoredEditStage<S>],

@@ -6,7 +6,6 @@
 pub mod history_view;
 pub use history_view::*;
 
-
 pub mod denial;
 
 pub use denial::WorthQueryWorkflowReadDenial;

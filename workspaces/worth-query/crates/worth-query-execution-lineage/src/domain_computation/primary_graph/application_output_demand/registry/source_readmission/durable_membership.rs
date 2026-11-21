@@ -39,9 +39,7 @@ pub struct DurableDemandRecording {
     pub scope: Arc<crate::domain_computation::primary_graph::WorthQueryObservedScopeSelector>,
 }
 impl DurableDemandRecording {
-    pub fn capture(
-        &self,
-    ) -> Result<QueryOutputDemandObligation, WorthQueryOutputDemandDenial> {
+    pub fn capture(&self) -> Result<QueryOutputDemandObligation, WorthQueryOutputDemandDenial> {
         let mut root = [0; 16];
         root[..4].copy_from_slice(&self.root.partition_value().to_le_bytes());
         root[4..12].copy_from_slice(&self.root.local_slot_value().to_le_bytes());
@@ -157,9 +155,7 @@ impl RequiredOutputReadmission {
         }
         Ok(Some(position))
     }
-    pub fn rejoin_durable(
-        &self,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+    pub fn rejoin_durable(&self) -> Result<(), WorthQueryOutputDemandDenial> {
         let Some(recording) = self.recording.get() else {
             return Ok(());
         };
@@ -189,11 +185,7 @@ impl RequiredOutputReadmission {
         }
         Ok(())
     }
-    pub fn adopt_durable(
-        &self,
-        history: Arc<QueryObligationHistory>,
-        position: NonZeroU64,
-    ) {
+    pub fn adopt_durable(&self, history: Arc<QueryObligationHistory>, position: NonZeroU64) {
         let mut held = self
             .durable
             .lock()
@@ -210,9 +202,7 @@ impl RequiredOutputReadmission {
             completed: std::sync::atomic::AtomicBool::new(completed),
         });
     }
-    pub fn durable_position(
-        &self,
-    ) -> Option<NonZeroU64> {
+    pub fn durable_position(&self) -> Option<NonZeroU64> {
         self.durable
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -235,9 +225,7 @@ impl RequiredOutputReadmission {
     }
 }
 impl WorthQueryOutputDemandInterest {
-    pub fn durable_readmission(
-        &self,
-    ) -> Option<Arc<RequiredOutputReadmission>> {
+    pub fn durable_readmission(&self) -> Option<Arc<RequiredOutputReadmission>> {
         self.owner
             .state
             .lock()
@@ -303,9 +291,7 @@ impl RequiredOutputReadmission {
     }
 }
 impl WorthQueryOutputDemandInterest {
-    pub fn readmit_domain_failure(
-        &self,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+    pub fn readmit_domain_failure(&self) -> Result<(), WorthQueryOutputDemandDenial> {
         let Some(source) = self.durable_readmission() else {
             return Ok(());
         };

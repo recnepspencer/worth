@@ -26,7 +26,7 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -64,7 +64,7 @@ where
 
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,
@@ -117,7 +117,7 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
 
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &WorthQueryRequestScope,

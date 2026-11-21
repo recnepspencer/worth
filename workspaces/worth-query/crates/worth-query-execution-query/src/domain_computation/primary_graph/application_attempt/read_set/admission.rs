@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::read_set::source_facts::SourceFacts;
 use super::*;
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -47,7 +48,10 @@ where
             })?;
         let source_facts =
             SourceFacts::Admitted(validate_source_facts(execution, &mut admission, &lease)?);
-        Ok(WorthQueryApplicationReadAttempt::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttemptAttemptParts {
+        use worth_query_execution_attempt::facade::ports::{
+            ApplicationReadAttemptAdmissionPort as _, WorthQueryApplicationReadAttemptInit,
+        };
+        WorthQueryApplicationReadAttempt::admit_read_attempt(WorthQueryApplicationReadAttemptInit {
             execution: *execution,
             value_decode: super::super::super::value_decode::ValueDecodeState::new(self.installed_schema.value_bindings().clone()),
             admission,
@@ -58,44 +62,16 @@ where
             expected_facts: None,
             computation_reads: (crate::domain_computation::primary_graph::invariant_projection::ObservedComputationInputs::None, crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention::Absent(
                 crate::domain_computation::primary_graph::application_contribution::PriorAbsence::NotProduced)),
-            installed_read_scopes: BTreeMap::new(),
-            facts: BTreeMap::new(),
             source_facts,
             consumed_outputs: Vec::new(),
-            native_completion: None,
             _phase: PhantomData,
-        }))
+        })
     }
 
     /// Consumes a projection lease typed for this exact admitted operation.
     ///
     /// A same-schema projection for another operation cannot enter the
     /// application read-set progression:
-    ///
-    /// ```compile_fail
-    /// use worth_query_execution::facade::primary_graph::{
-    ///     WorthQueryAdmittedApplicationOperation,
-    ///     WorthQueryApplicationOperationInvariantProjectionSnapshot,
-    ///     WorthQueryPrimaryGraphApplicationRuntime,
-    /// };
-    /// use worth_query_installation::facade::ApplicationSchema;
-    ///
-    /// struct FirstOperation;
-    /// struct SecondOperation;
-    ///
-    /// fn cannot_cross_operation_projection<'a, Schema: ApplicationSchema, Input, Scope>(
-    ///     phase: &crate::facade::primary_graph::WorthQueryAdvancementPhase<'a>,
-    ///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    ///     admission: WorthQueryAdmittedApplicationOperation<
-    ///         Schema, FirstOperation, Input, Scope,
-    ///     >,
-    ///     projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<
-    ///         Schema, SecondOperation,
-    ///     >,
-    /// ) {
-    ///     let _ = runtime.begin_projected_application_read_attempt(phase, admission, projection, worth_execution::ExecutionAllocationPolicy::SystemAllocation);
-    /// }
-    /// ```
     pub fn begin_projected_application_read_attempt<'scope, Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
@@ -206,7 +182,10 @@ where
             .with_execution(*execution),
         )?;
         let layout = Arc::clone(&lease.layout);
-        Ok(WorthQueryApplicationReadAttempt::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::read_set::WorthQueryApplicationReadAttemptAttemptParts {
+        use worth_query_execution_attempt::facade::ports::{
+            ApplicationReadAttemptAdmissionPort as _, WorthQueryApplicationReadAttemptInit,
+        };
+        WorthQueryApplicationReadAttempt::admit_read_attempt(WorthQueryApplicationReadAttemptInit {
             execution: *execution,
             value_decode: super::super::super::value_decode::ValueDecodeState::new(
                 self.installed_schema.value_bindings().clone(),
@@ -218,12 +197,9 @@ where
             read_scope: WorthQueryApplicationReadScope::projected(root, projected_scope),
             expected_facts: Some(expected_facts),
             computation_reads,
-            installed_read_scopes: BTreeMap::new(),
-            facts: BTreeMap::new(),
             source_facts,
             consumed_outputs,
-            native_completion: None,
             _phase: PhantomData,
-        }))
+        })
     }
 }

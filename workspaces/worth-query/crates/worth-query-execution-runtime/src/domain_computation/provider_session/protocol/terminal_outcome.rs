@@ -49,9 +49,7 @@ impl WorthQueryClosedProviderSessionDisposition {
         self.counters
     }
 
-    pub const fn terminal_binding(
-        &self,
-    ) -> &super::WorthQueryProviderSessionTerminalBinding {
+    pub const fn terminal_binding(&self) -> &super::WorthQueryProviderSessionTerminalBinding {
         &self.terminal_binding
     }
 }

@@ -119,15 +119,10 @@ impl RequiredOutputDemandContext {
 }
 
 impl PreparedPrerequisiteClaims {
-    pub fn work_membership(
-        &self,
-    ) -> Option<Arc<super::required_work::RequiredWorkMembership>> {
+    pub fn work_membership(&self) -> Option<Arc<super::required_work::RequiredWorkMembership>> {
         self.context.work_membership()
     }
-    pub fn retains_reserved_identity(
-        &self,
-        identity: &Arc<RecordedSettlementIdentity>,
-    ) -> bool {
+    pub fn retains_reserved_identity(&self, identity: &Arc<RecordedSettlementIdentity>) -> bool {
         self.reserved_identity
             .as_ref()
             .is_some_and(|held| Arc::ptr_eq(held, identity))

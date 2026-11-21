@@ -10,11 +10,8 @@ use crate::domain_computation::primary_graph::{
 
 /// The exact Ready cue may be certified or may publish a real required
 /// successor. Fresh carries its move-only typed demand/interest custody.
-pub enum RequiredCueProgress<
-    'basis,
-    'owner,
-    Schema,
-> where
+pub enum RequiredCueProgress<'basis, 'owner, Schema>
+where
     Schema: ApplicationSchema,
 {
     Current(Arc<WorthQueryOutputDemandSettlement>),
@@ -47,9 +44,7 @@ impl<'basis, 'owner, Schema: ApplicationSchema> From<ReadyInspection<'basis>>
     }
 }
 /// The frozen door has no execution, scheduling or claim outcome.
-pub enum FrozenCurrentInspection<
-    'basis,
-> {
+pub enum FrozenCurrentInspection<'basis> {
     Current(Arc<WorthQueryOutputDemandSettlement>),
     PendingExact(SelectedPendingConsumedOutput<'basis>),
     NotCurrent,

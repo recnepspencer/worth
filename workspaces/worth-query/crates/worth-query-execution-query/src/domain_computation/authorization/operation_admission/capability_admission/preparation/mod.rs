@@ -28,9 +28,7 @@ pub mod observation;
 mod preflight;
 
 pub use observation::WorthQueryAdmittedApplicationCapabilityAccess;
-pub use observation::{
-    WorthQueryCapabilityContextKey, WorthQueryResolvedCapabilityRequest,
-};
+pub use observation::{WorthQueryCapabilityContextKey, WorthQueryResolvedCapabilityRequest};
 pub use observation::{
     WorthQueryCurrentCapabilityObservation, WorthQueryDelegationResolvedRequest,
     WorthQueryExactCapabilityObservationContext,

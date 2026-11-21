@@ -7,11 +7,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 pub enum ApplicationCommitCausality {
     Ordinary,
-    RecordedCorrection(
-        std::sync::Arc<
-            dyn crate::ports::PreparedCorrectionSourcePort,
-        >,
-    ),
+    RecordedCorrection(std::sync::Arc<dyn crate::ports::PreparedCorrectionSourcePort>),
 }
 
 impl ApplicationCommitCausality {
@@ -28,7 +24,11 @@ impl ApplicationCommitCausality {
                     .mutation_product()
                     .ok_or_else(WorthQueryApplicationCommitDenial::correction_context_mismatch)?;
                 source.admit_receiver(product.observation().owner_identity())?;
-                let target = admission.graph_work().mutation_product().map(|p| crate::basis::WorthQueryProductBranchReadIdentity::from_observation(p.observation()));
+                let target = admission.graph_work().mutation_product().map(|p| {
+                    crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                        p.observation(),
+                    )
+                });
                 if !source.matches_admission_basis(
                     admission.runtime_authority(),
                     &admission.operation_scope_binding().principal(),

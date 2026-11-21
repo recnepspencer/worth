@@ -25,11 +25,7 @@ pub struct Record<P, R, S> {
     _memory: Option<ExecutionMemoryReservation>,
 }
 
-pub struct PredicateTree<
-    P,
-    R,
-    S,
-> {
+pub struct PredicateTree<P, R, S> {
     root: Option<WatchSlot>,
     records: BTreeMap<WatchSlot, Record<P, R, S>>,
 }

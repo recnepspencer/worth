@@ -107,7 +107,6 @@ impl<T> WorthQueryCapabilityObservationSource for T where
 {
 }
 
-
 impl source_seal::SealedCapabilityObservationSource
     for super::capability_revalidation::WorthQueryCapabilityRevalidationObservation<'_>
 {
@@ -163,7 +162,6 @@ impl source_seal::SealedCapabilityObservationSource
         self.sample()
     }
 }
-
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryCapabilityObservationPosture {

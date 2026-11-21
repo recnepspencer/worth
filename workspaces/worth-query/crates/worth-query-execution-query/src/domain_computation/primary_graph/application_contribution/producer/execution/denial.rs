@@ -10,8 +10,8 @@ pub mod content_identity;
 pub mod request_execution;
 pub mod source_readmission;
 pub use content_identity::identity_failed;
-pub use source_readmission::{query_admission_denied, query_execution_denied};
 pub use source_readmission::selected_source_read_denied;
+pub use source_readmission::{query_admission_denied, query_execution_denied};
 
 /// A rejected caller cannot terminally fail the output shared by other callers.
 /// Only actual operation/query admission issues the first variant.
@@ -28,9 +28,7 @@ pub enum ProducerExecutionStop {
 }
 
 impl ProducerExecutionStop {
-    pub fn into_output_denial(
-        self,
-    ) -> WorthQueryOutputDemandDenial {
+    pub fn into_output_denial(self) -> WorthQueryOutputDemandDenial {
         match self {
             Self::RequestAdmissionDenied(rejection) => rejection.into_denial(),
             Self::ExecutionStopped(denial) => denial,
@@ -57,9 +55,7 @@ pub struct ProducerRequestAdmissionRejection {
 }
 
 impl ProducerRequestAdmissionRejection {
-    pub fn into_denial(
-        self,
-    ) -> WorthQueryOutputDemandDenial {
+    pub fn into_denial(self) -> WorthQueryOutputDemandDenial {
         self.denial
     }
 }
@@ -107,9 +103,7 @@ pub fn request_authority_stop(
     )
 }
 
-pub fn request_admission_rejected(
-    denial: WorthQueryOutputDemandDenial,
-) -> ProducerExecutionStop {
+pub fn request_admission_rejected(denial: WorthQueryOutputDemandDenial) -> ProducerExecutionStop {
     // Only this typed pre-effect stop relinquishes the selected execution.
     // The same kinds from a stopped producer/commit keep their native defaults.
     let denial = if matches!(

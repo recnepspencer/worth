@@ -53,9 +53,7 @@ impl WorthQueryApplicationOutputLineage {
     /// Sharing supplies a prior only; the ordinary basis and snapshot checks
     /// still establish whether its calls can be carried. Every lookup is
     /// charged to `admission` before it reads.
-    pub fn computation_prior_at_address<
-        Binding: 'static,
-    >(
+    pub fn computation_prior_at_address<Binding: 'static>(
         &self,
         scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
         observation: &ProductBranchObservation,

@@ -81,13 +81,11 @@ impl DirectYieldTerminalCleanupAssociation {
     }
 }
 
-pub struct DirectYieldRecoveryCleanupLifecycleEvent
-{
+pub struct DirectYieldRecoveryCleanupLifecycleEvent {
     kind: DirectYieldRecoveryCleanupLifecycleEventKind,
 }
 
-pub enum DirectYieldRecoveryCleanupLifecycleEventKind
-{
+pub enum DirectYieldRecoveryCleanupLifecycleEventKind {
     Attempted,
     Completed,
 }
@@ -105,9 +103,7 @@ impl DirectYieldRecoveryCleanupLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> DirectYieldRecoveryCleanupLifecycleEventKind {
+    pub fn into_kind(self) -> DirectYieldRecoveryCleanupLifecycleEventKind {
         self.kind
     }
 }

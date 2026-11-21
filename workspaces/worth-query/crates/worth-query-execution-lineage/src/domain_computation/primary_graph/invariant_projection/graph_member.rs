@@ -66,10 +66,7 @@ impl<S: ApplicationSchema, M> WorthQueryInvariantGraphMember<S, M> {
         }
         Ok(())
     }
-    pub fn from_entity(
-        reader: &Reader<'_, S>,
-        entity: &Entity<S, M>,
-    ) -> Result<Self, Denial> {
+    pub fn from_entity(reader: &Reader<'_, S>, entity: &Entity<S, M>) -> Result<Self, Denial> {
         if !reader.identity_is_local(entity, &entity.entity)
             || reader.layout.entity_kind(&entity.entity) != Some(entity.kind)
         {

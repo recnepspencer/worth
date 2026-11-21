@@ -23,9 +23,7 @@ impl RebaseVerificationFailure {
     pub fn into_reason(self) -> Reason {
         self.reason
     }
-    pub fn into_registration_requirement(
-        self,
-    ) -> Registration {
+    pub fn into_registration_requirement(self) -> Registration {
         self.registration
     }
     pub fn execution(
@@ -53,9 +51,7 @@ impl RebaseVerificationFailure {
             detail: None,
         }
     }
-    pub fn native_fact_unavailable(
-        ordinal: usize,
-    ) -> Self {
+    pub fn native_fact_unavailable(ordinal: usize) -> Self {
         Self {
             reason: Reason::NativeFactRevisionUnavailable,
             registration: Registration::NativeFactRevisionUnavailable(ordinal),
@@ -69,10 +65,7 @@ impl RebaseVerificationFailure {
             detail: None,
         }
     }
-    pub fn indexed_fact_denied(
-        ordinal: usize,
-        cause: Indexed,
-    ) -> Self {
+    pub fn indexed_fact_denied(ordinal: usize, cause: Indexed) -> Self {
         Self {
             reason: Reason::IndexedSelectionFactDenied(cause),
             registration: Registration::IndexedSelectionFactDenied(ordinal, cause),
@@ -96,9 +89,7 @@ impl RebaseVerificationFailure {
             detail: None,
         }
     }
-    pub fn admission_denied(
-        cause: worth_relational::facade::mvcc::CompanionPreflightStop,
-    ) -> Self {
+    pub fn admission_denied(cause: worth_relational::facade::mvcc::CompanionPreflightStop) -> Self {
         // A post-effect stop cannot undo the effect; its registration is incomplete.
         Self {
             reason: Reason::AdmissionDenied(cause),

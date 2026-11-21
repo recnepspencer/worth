@@ -123,10 +123,7 @@ where
 }
 
 /// Invalid canonical encodings never establish equality.
-pub fn same_bits<Value: worth_execution::CanonicalBits>(
-    left: &Value,
-    right: &Value,
-) -> bool {
+pub fn same_bits<Value: worth_execution::CanonicalBits>(left: &Value, right: &Value) -> bool {
     fn bits<Value: worth_execution::CanonicalBits>(value: &Value) -> Option<Vec<u8>> {
         let length = value.canonical_len()?;
         let mut out = Vec::new();

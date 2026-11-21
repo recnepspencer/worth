@@ -8,15 +8,7 @@ use super::super::outcome::{
 use crate::domain_computation::primary_graph::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
 use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAdmissionDenial;
 
-pub fn validate_live_binding<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Scope,
-    Target,
-    Binding,
->(
+pub fn validate_live_binding<Schema, Query, Parameters, QueryResult, Scope, Target, Binding>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
 ) -> Result<
     &worth_query_installation::facade::WorthQueryInstalledApplicationLiveContract,

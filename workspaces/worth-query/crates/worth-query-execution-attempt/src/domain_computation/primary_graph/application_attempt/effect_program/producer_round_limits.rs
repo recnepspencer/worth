@@ -4,7 +4,7 @@ use std::num::NonZeroUsize;
 impl<S, O, I, Scope> WorthQueryApplicationEffectProgram<S, O, I, Scope> {
     pub fn with_producer_round_limits(
         mut self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         per_route: NonZeroUsize,
         per_attempt: NonZeroUsize,
     ) -> Self {

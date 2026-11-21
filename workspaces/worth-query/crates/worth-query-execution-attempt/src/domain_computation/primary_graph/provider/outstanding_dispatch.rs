@@ -23,9 +23,7 @@ pub mod original;
 pub mod readmission;
 pub mod recorded_terminal;
 pub mod retirement;
-pub use in_flight::{
-    OutstandingDispatchInFlightLease, WorthQueryOutstandingInFlightDenial,
-};
+pub use in_flight::{OutstandingDispatchInFlightLease, WorthQueryOutstandingInFlightDenial};
 use original::OutstandingDispatchOriginal;
 
 #[derive(Clone, Default)]

@@ -39,11 +39,7 @@ where
     /// Requires that the program presented for this output source is the one
     /// active on the attempt's own occurrence. The program runtime already
     /// checked its typed root and source-binding inventory before entering here.
-    pub fn require_occurrence_owns_output_source<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn require_occurrence_owns_output_source<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         presented: &WorthQueryPresentedProgram<'_>,
@@ -70,11 +66,7 @@ where
     }
 
     /// Resolves the active occurrence, then checks selection and operation authority.
-    pub fn require_occurrence_program_commit_binding<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn require_occurrence_program_commit_binding<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
@@ -101,11 +93,7 @@ where
         Ok(())
     }
 
-    pub fn compare_and_commit_conditional_operation<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_conditional_operation<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

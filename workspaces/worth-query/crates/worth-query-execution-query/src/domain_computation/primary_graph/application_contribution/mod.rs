@@ -1,9 +1,9 @@
 pub mod authored_edit;
 mod derived_relation;
+pub use derived_relation::WorthQueryDerivedRelationCountOwner;
 pub use worth_query_execution_lineage::facade::primary_graph::application_contribution::{
     computation, execution_denial, native_field_contract,
 };
-pub use derived_relation::WorthQueryDerivedRelationCountOwner;
 pub mod conditional;
 mod coupled_publication;
 pub mod partitioned_computation;
@@ -13,9 +13,6 @@ pub use producer::OwnerPlan;
 pub use producer::PendingProducerPublication;
 pub use producer::{CurrentBasis, CurrentProof};
 pub mod request_execution;
-pub use request_execution::{
-    QueryMemoryReservation, QueryRequestExecution,
-};
 pub use computation::{
     WorthQueryCompletedManagedComputation, WorthQueryInstalledManagedComputation,
     WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationCheckpointDenial,
@@ -94,6 +91,7 @@ pub use request_execution::{
     place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
     WorthQueryExecutionPlacementForTest,
 };
+pub use request_execution::{QueryMemoryReservation, QueryRequestExecution};
 pub use request_execution::{
     WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
 };
@@ -122,9 +120,7 @@ pub use execution_denial::publication_execution_kind;
 pub use request_execution::advancement::observation::application::record_commit as record_advancement_commit;
 
 pub use producer::ProducerOutputEvaluation;
-pub use producer::{
-    ComparedProducerOutput, ProducerOutputEvaluationState,
-};
+pub use producer::{ComparedProducerOutput, ProducerOutputEvaluationState};
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;

@@ -72,8 +72,8 @@ use worth_relational::facade::indexes::{
 
 use super::schema_layout::WorthQueryPrimaryGraphLayout;
 use super::{
-    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind,
-    WorthQueryPrimaryGraph, WorthQueryPrincipalResolutionMode,
+    WorthQueryEntityResolutionDenial, WorthQueryEntityResolutionDenialKind, WorthQueryPrimaryGraph,
+    WorthQueryPrincipalResolutionMode,
 };
 
 #[derive(Clone)]

@@ -1,9 +1,7 @@
 //! Descriptive projection of the exact native successor recorded by this request.
 use super::super::super::WorthQueryApplicationCommitReceipt;
 use super::super::PublishedWorkflowInstanceRef;
-use super::{
-    mismatch, RequiredWorkflowSuccession, WorthQueryApplicationAttemptDenial,
-};
+use super::{mismatch, RequiredWorkflowSuccession, WorthQueryApplicationAttemptDenial};
 impl RequiredWorkflowSuccession {
     pub fn instance_in(
         &self,

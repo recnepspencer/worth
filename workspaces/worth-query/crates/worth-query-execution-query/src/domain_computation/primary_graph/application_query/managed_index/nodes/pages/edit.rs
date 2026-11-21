@@ -23,10 +23,7 @@ struct OpenPage<'a, Node> {
     occupied: usize,
 }
 impl<'a, Node: Clone> PageEdit<'a, Node> {
-    pub fn new(
-        base: NodePages<Node>,
-        execution: ExecutionRequest<'a, 'a>,
-    ) -> Self {
+    pub fn new(base: NodePages<Node>, execution: ExecutionRequest<'a, 'a>) -> Self {
         Self {
             base,
             execution,

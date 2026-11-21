@@ -21,8 +21,7 @@ pub use source_publication::{
 
 #[derive(Clone, Default)]
 pub struct WorthQueryApplicationAttemptOperationControl {
-    pub caller_pass:
-        Arc<caller_pass::CallerPassControl>,
+    pub caller_pass: Arc<caller_pass::CallerPassControl>,
     pub coupled_participant_fault: Arc<std::sync::atomic::AtomicU8>,
     pub pending_registration: Arc<PendingAttemptPause>,
     pub pending_candidate: Arc<PendingAttemptPause>,
@@ -319,9 +318,7 @@ impl WorthQueryApplicationAttemptOperationControl {
             .is_ok()
     }
 
-    pub fn take_withheld_output_witness(
-        &self,
-    ) -> bool {
+    pub fn take_withheld_output_witness(&self) -> bool {
         self.coupled_participant_fault
             .compare_exchange(
                 WITHHELD_OUTPUT_WITNESS,

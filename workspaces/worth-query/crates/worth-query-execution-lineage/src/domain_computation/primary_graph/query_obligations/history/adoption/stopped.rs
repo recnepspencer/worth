@@ -53,9 +53,7 @@ impl QueryObligationHistory {
             request,
         )
     }
-    pub fn stopped_adoptions(
-        &self,
-    ) -> Vec<QueryStoppedBranchSetObligation> {
+    pub fn stopped_adoptions(&self) -> Vec<QueryStoppedBranchSetObligation> {
         self.state()
             .journal
             .as_ref()

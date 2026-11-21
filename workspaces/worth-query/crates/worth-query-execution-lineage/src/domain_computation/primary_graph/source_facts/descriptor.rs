@@ -2,10 +2,7 @@
 use super::*;
 use sha2::{Digest, Sha256};
 impl SourceFacts {
-    pub fn append_descriptor(
-        &self,
-        digest: &mut Sha256,
-    ) {
+    pub fn append_descriptor(&self, digest: &mut Sha256) {
         self.append_descriptor_with_poll(digest, || Ok::<(), std::convert::Infallible>(()))
             .unwrap();
     }

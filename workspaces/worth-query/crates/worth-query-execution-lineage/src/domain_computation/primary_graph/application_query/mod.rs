@@ -51,12 +51,13 @@ pub use managed_index::{
     WorthQueryManagedIndexWorkDenial,
 };
 pub use observed_source::{
-    AppliedSourcePublication, ObservedQueryExpressionContext, RetainedExpressionContext, WorthQueryBoundSourceExpectation,
-    WorthQueryCheckpointSourceIdentity, WorthQueryObservedRootSelection, WorthQueryObservedSource,
-    WorthQueryObservedSourceEpoch, WorthQueryObservedSourceFootprint,
-    WorthQueryObservedSourceSelection, WorthQueryRetainedObservedParameters,
-    WorthQueryRuntimeSourceIdentity, WorthQuerySourceExpectationDenial,
-    WorthQuerySourceExpectationDenialKind, WorthQuerySourceExpectationKind,
+    AppliedSourcePublication, ObservedQueryExpressionContext, RetainedExpressionContext,
+    WorthQueryBoundSourceExpectation, WorthQueryCheckpointSourceIdentity,
+    WorthQueryObservedRootSelection, WorthQueryObservedSource, WorthQueryObservedSourceEpoch,
+    WorthQueryObservedSourceFootprint, WorthQueryObservedSourceSelection,
+    WorthQueryRetainedObservedParameters, WorthQueryRuntimeSourceIdentity,
+    WorthQuerySourceExpectationDenial, WorthQuerySourceExpectationDenialKind,
+    WorthQuerySourceExpectationKind,
 };
 pub use one_shot::{
     WorthQueryAdmittedOneShotStop, WorthQueryApplicationBatchReadDenial,
@@ -73,9 +74,7 @@ pub use projection::{
     WorthQueryApplicationProjectionRow, WorthQueryApplicationProjectionRows,
     WorthQueryPrerequisiteSelection,
 };
-pub use resource_lifecycle::{
-    WorthQueryApplicationBasisSelectionIdentity,
-};
+pub use resource_lifecycle::WorthQueryApplicationBasisSelectionIdentity;
 pub use retained_read::WorthQueryApplicationReadObservation;
 pub use scope_freshness::{WorthQueryScopeFreshnessCheck, WorthQueryScopeFreshnessDiagnostic};
 pub use source_observation_stop::{SourceQueryObservationStop, SourceQueryPreparationPhase};

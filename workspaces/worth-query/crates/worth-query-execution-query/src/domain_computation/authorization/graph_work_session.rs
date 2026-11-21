@@ -21,9 +21,7 @@ use crate::domain_computation::provider_session::{
 use super::{WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind};
 
 mod selected;
-pub use selected::{
-    start_selected_operation_graph_work_admitted, SelectedOperationGraphWorkStop,
-};
+pub use selected::{start_selected_operation_graph_work_admitted, SelectedOperationGraphWorkStop};
 
 pub fn start_operation_graph_work<Schema, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

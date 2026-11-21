@@ -51,10 +51,7 @@ impl WorthQueryRunningWorkflowRun {
             .record_provider_step_admission(counters);
     }
 
-    pub fn record_provider_step_report(
-        &mut self,
-        report: &WorthQueryGraphProviderStepReport,
-    ) {
+    pub fn record_provider_step_report(&mut self, report: &WorthQueryGraphProviderStepReport) {
         self.affinity.provider_work_mut().admit_step(report);
         self.affinity
             .provider_work_mut()
@@ -77,19 +74,13 @@ impl WorthQueryRunningWorkflowRun {
         self.bridge_basis.enqueue_managed_queue(width)
     }
 
-    pub fn record_queue_mutation(
-        &mut self,
-        counters: BridgeManagedQueueMutationCounters,
-    ) {
+    pub fn record_queue_mutation(&mut self, counters: BridgeManagedQueueMutationCounters) {
         self.affinity
             .provider_work_mut()
             .record_queue_mutation(counters);
     }
 
-    pub fn release_projection_bytes(
-        &mut self,
-        retained_bytes: usize,
-    ) -> bool {
+    pub fn release_projection_bytes(&mut self, retained_bytes: usize) -> bool {
         self.affinity
             .provider_work_mut()
             .release_projection_bytes(retained_bytes)
@@ -115,10 +106,7 @@ impl WorthQueryRunningWorkflowRun {
             .transfer_output_to_receipt(envelope_bytes, total_output_bytes)
     }
 
-    pub fn release_output_bytes(
-        &mut self,
-        retained_bytes: usize,
-    ) -> bool {
+    pub fn release_output_bytes(&mut self, retained_bytes: usize) -> bool {
         self.affinity
             .provider_work_mut()
             .release_output_bytes(retained_bytes)
@@ -142,10 +130,7 @@ impl WorthQueryRunningWorkflowRun {
             .observe_active_provider_memory(memory);
     }
 
-    pub fn retain_provider_memory(
-        &mut self,
-        memory: WorthQueryGraphProviderMemoryArena,
-    ) {
+    pub fn retain_provider_memory(&mut self, memory: WorthQueryGraphProviderMemoryArena) {
         self.affinity
             .provider_work_mut()
             .retain_provider_memory(memory);

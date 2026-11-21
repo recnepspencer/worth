@@ -1,18 +1,16 @@
 //! Retrospective complete-tree qualification with genuine read-origin provenance.
-use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort;
-use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::{WorthQueryOutputDemandSettlement, WorthQueryOutputSettlementPosture};
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationReadObservation, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind, WorthQuerySelectedProductOperation,
 };
-use crate::publication_boundary::{
-    discovery_currentness::{
-        WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
-    },
+use crate::publication_boundary::discovery_currentness::{
+    WorthQueryRequiredSetCurrentnessDenial, WorthQueryRetainedQueryDependencies,
 };
 use std::sync::Arc;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::CompositeCommitIdentity;
 
@@ -49,7 +47,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     pub fn qualify_completed_read_outputs<'s>(
         self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        access: &dyn WorthQueryProgramPublicationAccessPort,
+        access: &WorthQueryProgramPublicationAccess,
         scope: &WorthQueryRequestScope,
         source: &Arc<WorthQueryApplicationReadObservation>,
         root: &'s WorthQueryOutputDemandSettlement,

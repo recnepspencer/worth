@@ -49,10 +49,7 @@ impl HistoryProducerCutover<'_> {
 
 impl<'invocation> HistoryProducerInvocation<'invocation> {
     /// Diagnostic subject from an installed typed demand; authority is unchanged.
-    pub fn for_family(
-        self,
-        family: &'static str,
-    ) -> Self {
+    pub fn for_family(self, family: &'static str) -> Self {
         Self { family, ..self }
     }
 

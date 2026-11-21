@@ -10,8 +10,7 @@ use worth_relational::facade::{
     snapshots::SnapshotHandle,
 };
 
-pub struct AppliedManagedSourceSupport
-{
+pub struct AppliedManagedSourceSupport {
     source: Arc<WorthQueryAppliedSourceRead>,
     association: WorthQueryInstalledManagedIndexParent,
     acquisition: super::super::source::projection_support::AppliedSourceAcquisitionSupport,
@@ -65,17 +64,13 @@ impl AppliedManagedSourceSupport {
             _allocation: Arc::clone(allocation),
         }))
     }
-    pub fn authorization(
-        &self,
-    ) -> &Arc<SourceReadAuthorization> {
+    pub fn authorization(&self) -> &Arc<SourceReadAuthorization> {
         let Fact::SourceReadAuthorization { observation } = &self.authorization else {
             unreachable!("Source acquisition retains its authorization")
         };
         observation
     }
-    pub fn commitment(
-        &self,
-    ) -> [u8; 32] {
+    pub fn commitment(&self) -> [u8; 32] {
         self.acquisition.commitment()
     }
     pub fn published(
@@ -86,17 +81,13 @@ impl AppliedManagedSourceSupport {
         self.published.get()
     }
 
-    pub fn candidate(
-        &self,
-    ) -> &RelationalAppliedCandidateReadIdentity {
+    pub fn candidate(&self) -> &RelationalAppliedCandidateReadIdentity {
         self.source.candidate()
     }
     pub fn facts(&self) -> &[Fact] {
         self.acquisition.facts()
     }
-    pub fn authorization_fact(
-        &self,
-    ) -> &Fact {
+    pub fn authorization_fact(&self) -> &Fact {
         &self.authorization
     }
     /// Copy already acquired support into the existing mutation Source fact

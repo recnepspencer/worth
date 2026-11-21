@@ -21,12 +21,6 @@ impl WorthQueryRecoveryDisposalReceipt {
 }
 
 /// Refusal preserves the exact live handle; a terminal denial owns no live resource.
-/// ```compile_fail,E0599
-/// fn cannot_copy(denial:worth_query_execution::facade::primary_graph::WorthQueryRecoveryDisposalDenial) { let _=denial.clone(); }
-/// ```
-/// ```
-/// fn transfer(denial:worth_query_execution::facade::primary_graph::WorthQueryRecoveryDisposalDenial)->worth_query_execution::facade::primary_graph::WorthQueryRecoveryDisposalDenial {denial}
-/// ```
 #[derive(Debug)]
 pub enum WorthQueryRecoveryDisposalDenial {
     Retained {

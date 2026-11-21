@@ -34,7 +34,8 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
         && target.product().observation().basis() == source.ancestry().source().basis()
     {
         return application
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {
@@ -53,47 +54,45 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
             });
     }
     let original = source.ancestry().source().basis().relational_basis();
-    let selection =
-        application
-            .inner.runtime
-            .primary_provider
-            .graph
-            .with_runtime(&execution, |runtime| {
-                with_support_snapshots(
-                    runtime,
-                    original,
-                    target.product().relational_basis(),
-                    |runtime, before, current| {
-                        let original_view = runtime
-                            .read_truth()
-                            .project_snapshot(before)
-                            .ok_or(Denial::SemanticMaterialUnavailable)?;
-                        let target_view = runtime
-                            .read_truth()
-                            .project_snapshot(current)
-                            .ok_or(Denial::SemanticMaterialUnavailable)?;
-                        overlap::select(execution, facts, runtime, &original_view, &target_view)
-                            .map_err(Denial::RestoredSupport)
-                            .inspect_err(|cause| {
-                                correction_rejection("overlap-selection", None, cause)
-                            })
-                    },
-                )
-            })?;
-    let occurrences =
-        application
-            .inner.runtime
-            .primary_provider
-            .graph
-            .with_runtime(&execution, |runtime| {
-                history::collect(
-                    runtime,
-                    execution,
-                    original,
-                    target.product().relational_basis(),
-                    &selection,
-                )
-            })?;
+    let selection = application
+        .inner
+        .runtime
+        .primary_provider
+        .graph
+        .with_runtime(&execution, |runtime| {
+            with_support_snapshots(
+                runtime,
+                original,
+                target.product().relational_basis(),
+                |runtime, before, current| {
+                    let original_view = runtime
+                        .read_truth()
+                        .project_snapshot(before)
+                        .ok_or(Denial::SemanticMaterialUnavailable)?;
+                    let target_view = runtime
+                        .read_truth()
+                        .project_snapshot(current)
+                        .ok_or(Denial::SemanticMaterialUnavailable)?;
+                    overlap::select(execution, facts, runtime, &original_view, &target_view)
+                        .map_err(Denial::RestoredSupport)
+                        .inspect_err(|cause| correction_rejection("overlap-selection", None, cause))
+                },
+            )
+        })?;
+    let occurrences = application
+        .inner
+        .runtime
+        .primary_provider
+        .graph
+        .with_runtime(&execution, |runtime| {
+            history::collect(
+                runtime,
+                execution,
+                original,
+                target.product().relational_basis(),
+                &selection,
+            )
+        })?;
     let occurrences = history::narrow(target, execution, facts, occurrences)
         .inspect_err(|cause| correction_rejection("managed-historical-relevance", None, cause))?;
     cancellation::require(target, execution, &occurrences).inspect_err(|cause| {
@@ -108,7 +107,8 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
         )
     })?;
     application
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .graph
         .with_runtime(&execution, |runtime| {

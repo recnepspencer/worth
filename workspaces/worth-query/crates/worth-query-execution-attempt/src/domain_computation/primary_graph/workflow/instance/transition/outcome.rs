@@ -1,8 +1,6 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 
-pub const fn encode_transition_outcome(
-    outcome: ApplicationWorkflowControlOutcome,
-) -> u64 {
+pub const fn encode_transition_outcome(outcome: ApplicationWorkflowControlOutcome) -> u64 {
     match outcome {
         ApplicationWorkflowControlOutcome::Completed => 0,
         ApplicationWorkflowControlOutcome::Approved => 1,
@@ -18,9 +16,7 @@ pub const fn encode_transition_outcome(
     }
 }
 
-pub const fn decode_transition_outcome(
-    tag: u64,
-) -> Option<ApplicationWorkflowControlOutcome> {
+pub const fn decode_transition_outcome(tag: u64) -> Option<ApplicationWorkflowControlOutcome> {
     match tag {
         0 => Some(ApplicationWorkflowControlOutcome::Completed),
         1 => Some(ApplicationWorkflowControlOutcome::Approved),

@@ -12,9 +12,7 @@ impl SelectedRequiredWork {
     /// position: every stamped publication settled before that check, so the
     /// wave's Current proof covers it. A hint still Prepared here is not
     /// stamped, even if it installs later.
-    pub fn stamp_settled_hints(
-        &self,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+    pub fn stamp_settled_hints(&self) -> Result<(), WorthQueryOutputDemandDenial> {
         let SelectedRequiredWorkKind::Native { branch, .. } = &self.kind else {
             return Ok(());
         };

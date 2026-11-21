@@ -10,8 +10,7 @@ use worth_relational::facade::runtime::RelationalPinnedRead;
 mod created;
 mod removed;
 
-pub enum CoupledSourceReadStop
-{
+pub enum CoupledSourceReadStop {
     Native(worth_relational::facade::mvcc::RelationalCoupledAssemblyFailure),
     Query(ProducerExecutionStop),
 }
@@ -51,25 +50,18 @@ impl From<WorthQueryOutputDemandDenial> for CoupledSourceReadStop {
     }
 }
 
-pub struct ErasedAppliedProducerSource
-{
-    pub scope:
-        worth_relational::facade::identity::EntityId,
+pub struct ErasedAppliedProducerSource {
+    pub scope: worth_relational::facade::identity::EntityId,
     pub partition: [u8; 32],
-    pub predecessor:
-        Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
-    pub profile:
-        &'static str,
-    pub lifecycle:
-        super::super::WorthQueryProducerLifecyclePosture,
-    pub source:
-        Box<dyn std::any::Any>,
+    pub predecessor: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
+    pub profile: &'static str,
+    pub lifecycle: super::super::WorthQueryProducerLifecyclePosture,
+    pub source: Box<dyn std::any::Any>,
 }
 
 /// A source description is distinct from selecting a prepared or current output.
 #[derive(Clone, Copy, Eq, PartialEq)]
-pub enum CoupledSourceReadPurpose
-{
+pub enum CoupledSourceReadPurpose {
     Route,
     OutputPreparation,
 }

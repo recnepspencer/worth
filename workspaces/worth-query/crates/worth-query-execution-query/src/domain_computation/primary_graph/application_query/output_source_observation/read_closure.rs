@@ -66,10 +66,7 @@ impl SourceQueryReadClosure {
         }))
     }
 
-    pub fn admits_source<Query>(
-        &self,
-        source: &WorthQueryObservedSource<Query>,
-    ) -> bool {
+    pub fn admits_source<Query>(&self, source: &WorthQueryObservedSource<Query>) -> bool {
         let SourceQueryReadAuthority::Committed { receipt, support } = &self.authority else {
             return false;
         };

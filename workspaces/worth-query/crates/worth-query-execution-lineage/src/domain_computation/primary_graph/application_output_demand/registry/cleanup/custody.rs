@@ -25,10 +25,7 @@ impl DemandRegistryState {
         self.prune_custody_entry(commit);
     }
 
-    pub fn drain_custody_for_occurrence(
-        &mut self,
-        key: &WorthQueryOutputDemandKey,
-    ) {
+    pub fn drain_custody_for_occurrence(&mut self, key: &WorthQueryOutputDemandKey) {
         let mut visited = None;
         while self.pending_custody_prune() {
             let mut found = None;

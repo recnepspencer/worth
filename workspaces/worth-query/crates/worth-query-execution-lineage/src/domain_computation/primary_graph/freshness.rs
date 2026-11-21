@@ -194,10 +194,7 @@ impl WorthQueryPrincipalFreshnessEvidence {
         }
     }
 
-    pub fn durable_view<'a>(
-        &'a self,
-        binding: &'a str,
-    ) -> DurablePrincipalView<'a> {
+    pub fn durable_view<'a>(&'a self, binding: &'a str) -> DurablePrincipalView<'a> {
         DurablePrincipalView {
             binding,
             mapping: self.mapping.entity_id,

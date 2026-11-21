@@ -3,9 +3,7 @@ use super::*;
 
 /// Basis preparation may refuse its first claim, so no diagnostic allocation
 /// can depend on a budget that has already been exhausted.
-pub fn cutoff_basis_denial(
-    stop: InputCutoffVerificationStop,
-) -> WorthQueryOutputDemandDenial {
+pub fn cutoff_basis_denial(stop: InputCutoffVerificationStop) -> WorthQueryOutputDemandDenial {
     use worth_relational::facade::mvcc::CompanionPreflightStop as Admission;
     let kind = match stop {
         InputCutoffVerificationStop::OutputObservation(stop) => {

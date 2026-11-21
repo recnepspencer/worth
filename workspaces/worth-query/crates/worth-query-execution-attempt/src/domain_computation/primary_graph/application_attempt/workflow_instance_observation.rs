@@ -3,9 +3,7 @@ pub mod ended_admission;
 pub mod read_dependencies;
 pub mod read_fields;
 pub mod recorded_actor;
-pub use recorded_actor::{
-    original_parent, original_scope, original_transition, recorded_approval,
-};
+pub use recorded_actor::{original_parent, original_scope, original_transition, recorded_approval};
 pub mod actors;
 pub mod governed_start_path;
 pub mod transition_roles;
@@ -98,10 +96,8 @@ pub struct ObservedWorkflowAssessmentEvidence {
     pub proposal_identity: String,
     pub subject: EntityId,
     pub source_identity: String,
-    pub publication_identity:
-        String,
-    pub output_content_identity:
-        String,
+    pub publication_identity: String,
+    pub output_content_identity: String,
     /// Required program revision of this current assessment evidence record.
     pub program_revision: String,
 }

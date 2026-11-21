@@ -17,9 +17,7 @@ impl DecisionContextUse {
     pub const fn stage_ordinal(self) -> Self {
         Self(self.0 | Self::STAGE_ORDINAL)
     }
-    pub const fn supports_candidate_planning(
-        self,
-    ) -> bool {
+    pub const fn supports_candidate_planning(self) -> bool {
         self.0
             & (Self::OPAQUE_READER
                 | Self::MANAGED_COMPUTATION
@@ -48,9 +46,7 @@ impl DecisionContextUse {
         Self(self.0 | Self::MANAGED_COMPUTATION)
     }
 
-    pub const fn source_query_permission(
-        self,
-    ) -> Self {
+    pub const fn source_query_permission(self) -> Self {
         Self(self.0 | Self::SOURCE_QUERY_PERMISSION)
     }
 

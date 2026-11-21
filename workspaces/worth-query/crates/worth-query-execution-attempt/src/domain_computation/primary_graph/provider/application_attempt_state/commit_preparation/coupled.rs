@@ -7,19 +7,13 @@ use worth_relational::facade::{mvcc::ValidatedRelationalProposal, transactions::
 
 pub struct CoupledCommitPreparation {
     pub publication_required: bool,
-    pub publication:
-        Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
+    pub publication: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     pub records: ExecutionArray<RecordRef>,
-    pub touched:
-        Option<PreparedTouchedRecords>,
-    pub rebase:
-        Option<relational_commit::PreparedSourceFactRebase>,
-    pub retained_preimage:
-        Option<WorthQueryRetainedPreImage>,
-    pub preimage_work:
-        WorthQueryPreImageRetentionWork,
-    pub required:
-        Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
+    pub touched: Option<PreparedTouchedRecords>,
+    pub rebase: Option<relational_commit::PreparedSourceFactRebase>,
+    pub retained_preimage: Option<WorthQueryRetainedPreImage>,
+    pub preimage_work: WorthQueryPreImageRetentionWork,
+    pub required: Option<crate::domain_computation::primary_graph::PreparedPrerequisiteClaims>,
     pub slot:
         Option<crate::domain_computation::primary_graph::output_lineage::PreparedOutputLineageSlot>,
     pub witness: Option<

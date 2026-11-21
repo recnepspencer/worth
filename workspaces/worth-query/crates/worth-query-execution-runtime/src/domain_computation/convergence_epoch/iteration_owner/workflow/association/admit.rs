@@ -142,9 +142,7 @@ impl WorkflowAdmissionLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> WorkflowAdmissionLifecycleEventKind {
+    pub fn into_kind(self) -> WorkflowAdmissionLifecycleEventKind {
         self.kind
     }
 }

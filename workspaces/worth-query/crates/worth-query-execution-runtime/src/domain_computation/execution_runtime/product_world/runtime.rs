@@ -22,8 +22,7 @@ pub struct WorthQueryProductRootIdentity {
 pub struct WorthQueryProductRuntime {
     pub(super) branch_program_source_owner:
         Option<Arc<worth_proof::InstalledBranchProgramSourceOwner>>,
-    pub home_maintenance:
-        Option<Arc<dyn crate::ports::HomeMaintenanceAfterAdvancement>>,
+    pub home_maintenance: Option<Arc<dyn crate::ports::HomeMaintenanceAfterAdvancement>>,
     pub(super) named_read_probe: Arc<super::read_consult::NamedReadProbe>,
     pub(super) adoption_preparation: Arc<super::adoption_preparation::AdoptionPreparationControl>,
     pub owner: super::world_ports::WorthQueryProductWorldPorts,

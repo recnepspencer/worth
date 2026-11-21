@@ -15,8 +15,7 @@ pub enum WorthQueryManagedGraphRestoreRecoveryKind {
     CheckpointReleasePanicked,
 }
 
-pub struct WorthQueryManagedGraphRestoreRecoveryRequired
-{
+pub struct WorthQueryManagedGraphRestoreRecoveryRequired {
     kind: WorthQueryManagedGraphRestoreRecoveryKind,
     detail: Arc<str>,
     resource: WorthQueryManagedGraphRestoreRecoveryResource,
@@ -29,10 +28,8 @@ pub struct WorthQueryManagedGraphRestoreCleanupRequired {
 
 pub struct WorthQueryManagedGraphRestoreCleanupEvidence {
     pub memory: WorthQueryGraphProviderMemoryArena,
-    pub checkpoint_release:
-        WorthQueryProviderCheckpointReleaseEvidence,
-    pub restored_execution_release:
-        Option<WorthQueryProviderExecutionReleaseEvidence>,
+    pub checkpoint_release: WorthQueryProviderCheckpointReleaseEvidence,
+    pub restored_execution_release: Option<WorthQueryProviderExecutionReleaseEvidence>,
 }
 
 enum WorthQueryManagedGraphRestoreRecoveryResource {
@@ -103,9 +100,7 @@ impl WorthQueryManagedGraphRestoreRecoveryRequired {
         }
     }
 
-    pub const fn kind(
-        &self,
-    ) -> WorthQueryManagedGraphRestoreRecoveryKind {
+    pub const fn kind(&self) -> WorthQueryManagedGraphRestoreRecoveryKind {
         self.kind
     }
 
@@ -113,9 +108,7 @@ impl WorthQueryManagedGraphRestoreRecoveryRequired {
         &self.detail
     }
 
-    pub fn checkpoint_evidence(
-        &self,
-    ) -> &WorthQueryProviderCheckpointEvidence {
+    pub fn checkpoint_evidence(&self) -> &WorthQueryProviderCheckpointEvidence {
         match &self.resource {
             WorthQueryManagedGraphRestoreRecoveryResource::Retained(retained)
             | WorthQueryManagedGraphRestoreRecoveryResource::RetainedAfterRestoredRelease {
@@ -128,9 +121,7 @@ impl WorthQueryManagedGraphRestoreRecoveryRequired {
         }
     }
 
-    pub fn checkpoint_release(
-        &self,
-    ) -> Option<&WorthQueryProviderCheckpointReleaseEvidence> {
+    pub fn checkpoint_release(&self) -> Option<&WorthQueryProviderCheckpointReleaseEvidence> {
         match &self.resource {
             WorthQueryManagedGraphRestoreRecoveryResource::Released { checkpoint, .. } => {
                 Some(checkpoint)
@@ -157,9 +148,7 @@ impl WorthQueryManagedGraphRestoreRecoveryRequired {
         }
     }
 
-    pub fn into_cleanup(
-        self,
-    ) -> WorthQueryManagedGraphRestoreCleanupRequired {
+    pub fn into_cleanup(self) -> WorthQueryManagedGraphRestoreCleanupRequired {
         match self.resource {
             WorthQueryManagedGraphRestoreRecoveryResource::Retained(retained) => {
                 WorthQueryManagedGraphRestoreCleanupRequired::retained(retained, None)
@@ -197,9 +186,7 @@ impl WorthQueryManagedGraphRestoreCleanupRequired {
         }
     }
 
-    pub fn finish(
-        self,
-    ) -> WorthQueryManagedGraphRestoreCleanupEvidence {
+    pub fn finish(self) -> WorthQueryManagedGraphRestoreCleanupEvidence {
         let (checkpoint_release, memory) = match self.checkpoint {
             WorthQueryManagedGraphRestoreCleanupCheckpoint::Retained(retained) => {
                 let memory = retained.memory.clone();

@@ -7,8 +7,7 @@ use worth_relational::facade::{
 };
 
 #[derive(Clone)]
-pub enum PreparedComponentCensus
-{
+pub enum PreparedComponentCensus {
     Entity(PreparedAggregateCensus),
     Projected(PreparedAggregateCensus<NativeMemberKey>),
 }

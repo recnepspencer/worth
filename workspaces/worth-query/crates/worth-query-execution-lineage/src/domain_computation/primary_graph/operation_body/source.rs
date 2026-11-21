@@ -8,19 +8,14 @@ pub struct PreparedBodySource {
 }
 
 impl PreparedBodySource {
-    pub fn new(
-        value: AspectValue,
-        reservation: QueryMemoryReservation,
-    ) -> Self {
+    pub fn new(value: AspectValue, reservation: QueryMemoryReservation) -> Self {
         Self {
             value,
             _reservation: reservation,
         }
     }
 
-    pub fn into_parts(
-        self,
-    ) -> (AspectValue, QueryMemoryReservation) {
+    pub fn into_parts(self) -> (AspectValue, QueryMemoryReservation) {
         (self.value, self._reservation)
     }
 }

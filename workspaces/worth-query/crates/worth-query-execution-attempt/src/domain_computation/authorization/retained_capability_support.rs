@@ -151,9 +151,7 @@ impl WorthQueryRetainedCapabilitySupport {
         self.role
     }
 
-    pub const fn timeline(
-        &self,
-    ) -> ApplicationCapabilityValidityTimeline {
+    pub const fn timeline(&self) -> ApplicationCapabilityValidityTimeline {
         self.sample.timeline()
     }
 

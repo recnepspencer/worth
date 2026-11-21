@@ -6,12 +6,7 @@ pub fn planning_arc_bytes() -> u64 {
     std::mem::size_of::<(usize, usize, std::sync::Mutex<PlanningAdmission>)>() as u64
 }
 
-pub fn frozen_bytes(
-    entities: usize,
-    relations: usize,
-    derived: usize,
-    censuses: usize,
-) -> u64 {
+pub fn frozen_bytes(entities: usize, relations: usize, derived: usize, censuses: usize) -> u64 {
     (std::mem::size_of::<(usize, usize, ApplicationInvariantAdmission)>() as u64)
         .saturating_add((entities as u64).saturating_mul(entity_entry_bytes()))
         .saturating_add((relations as u64).saturating_mul(relation_entry_bytes()))

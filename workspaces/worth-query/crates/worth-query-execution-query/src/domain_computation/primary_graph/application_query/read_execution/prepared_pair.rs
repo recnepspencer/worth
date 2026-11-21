@@ -15,31 +15,25 @@ use worth_relational::facade::identity::EntityId;
 
 pub struct PreparedRead<'a> {
     pub plan: ReadPlan<'a>,
-    pub session:
-        WorthQueryPreparedSessionRead,
+    pub session: WorthQueryPreparedSessionRead,
 
-    pub batch:
-        Option<super::super::batch::PlannedBatchItem>,
+    pub batch: Option<super::super::batch::PlannedBatchItem>,
 }
 
 /// Construction remains with the owner-side admission stage.
 pub struct PreparedPair<'a> {
     pub(crate) root: EntityId,
-    pub(crate) witness:
-        Option<std::sync::Arc<super::dispatch_witness::DispatchWitness>>,
+    pub(crate) witness: Option<std::sync::Arc<super::dispatch_witness::DispatchWitness>>,
     pub(crate) first: PreparedRead<'a>,
     pub(crate) second: PreparedRead<'a>,
     pub(crate) binding_slot: &'a str,
-    pub(crate) binding_value:
-        &'a AspectValue,
+    pub(crate) binding_value: &'a AspectValue,
 }
 
 pub struct ReadOutput {
     pub raw: RawNonLiveKernelOutcome,
-    pub(crate) proof:
-        WorthQueryPreparedReadCompletion,
-    pub(crate) batch_rows:
-        Option<super::super::batch::PlannedBatchItem>,
+    pub(crate) proof: WorthQueryPreparedReadCompletion,
+    pub(crate) batch_rows: Option<super::super::batch::PlannedBatchItem>,
 }
 
 pub struct PairOutput {

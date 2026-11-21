@@ -10,14 +10,14 @@
 #![recursion_limit = "256"]
 
 pub(crate) mod domain_computation;
-pub(crate) mod ports;
 mod lineage_ports;
+pub(crate) mod ports;
 
 pub(crate) use worth_query_execution_foundation::facade::{
     equality_type_id, relational_snapshot_release,
 };
-pub(crate) use worth_query_execution_runtime::facade::basis;
 pub(crate) use worth_query_execution_lineage::facade::test_read_stops;
+pub(crate) use worth_query_execution_runtime::facade::basis;
 
 pub mod facade;
 

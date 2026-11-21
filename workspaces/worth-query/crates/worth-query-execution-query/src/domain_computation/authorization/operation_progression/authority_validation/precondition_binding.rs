@@ -17,17 +17,13 @@ pub mod transition;
 pub use transition::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use transition::WorthQueryAdmittedApplicationOperation;
 pub use transition::WorthQueryOperationAdmissionIdentity;
-pub use transition::{
-    admit_capability_access, admit_encoded_capability_access,
-};
+pub use transition::{admit_capability_access, admit_encoded_capability_access};
 pub use transition::{
     authorize_applied_control_mutation_on_selected, authorize_current_control_mutation_on_selected,
     authorize_historical_control_mutation_on_selected, authorize_public_mutation_on_selected,
     SelectedConventionalAdmissionStop,
 };
-pub use transition::{
-    transition_capability_operation, transition_conventional_operation,
-};
+pub use transition::{transition_capability_operation, transition_conventional_operation};
 pub use transition::{
     WorthQueryCapabilityContextKey, WorthQueryCurrentCapabilityObservation,
     WorthQueryDelegationResolvedRequest, WorthQueryExactCapabilityObservationContext,
@@ -116,25 +112,15 @@ where
     })
 }
 
-pub struct PreconditionBoundCapabilityOperation<
-    'a,
-    Schema,
-    Capability,
-    Operation,
-    Input,
-> where
+pub struct PreconditionBoundCapabilityOperation<'a, Schema, Capability, Operation, Input>
+where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     validated: ValidatedCapabilityOperation<'a, Schema, Capability, Operation, Input>,
     preconditions: WorthQueryBoundMutationPreconditions,
 }
 
-pub fn bind_capability_preconditions<
-    Schema,
-    Capability,
-    Operation,
-    Input,
->(
+pub fn bind_capability_preconditions<Schema, Capability, Operation, Input>(
     validated: ValidatedCapabilityOperation<'_, Schema, Capability, Operation, Input>,
     preconditions: impl std::borrow::Borrow<
         TypedMutationPreconditions<
@@ -162,6 +148,4 @@ where
     })
 }
 
-pub use transition::{
-    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
-};
+pub use transition::{BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation};

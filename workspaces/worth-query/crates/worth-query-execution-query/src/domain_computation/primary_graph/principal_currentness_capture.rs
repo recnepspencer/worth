@@ -12,11 +12,7 @@ pub enum PrincipalCurrentnessCaptureStop {
     MissingBinding,
 }
 
-pub fn capture_principal_currentness_admitted<
-    Schema,
-    Principal,
-    PrincipalIdentity,
->(
+pub fn capture_principal_currentness_admitted<Schema, Principal, PrincipalIdentity>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     session: WorthQueryGraphWorkSessionIdentity,

@@ -10,21 +10,15 @@ pub struct WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Scope> {
 }
 
 impl<Schema, Scope> WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope> {
-    pub fn scope(
-        &self,
-    ) -> &WorthQueryApplicationEntityIdentity<Schema, Scope> {
+    pub fn scope(&self) -> &WorthQueryApplicationEntityIdentity<Schema, Scope> {
         &self.scope
     }
 
-    pub fn issued_root(
-        &self,
-    ) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
+    pub fn issued_root(&self) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
         self.selected.product().relational_basis()
     }
 
-    pub fn issued_snapshot(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+    pub fn issued_snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
         self.selected.application_basis().snapshot_handle()
     }
 
@@ -32,9 +26,7 @@ impl<Schema, Scope> WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope> {
         &self.request
     }
 
-    pub fn selected(
-        &self,
-    ) -> &WorthQuerySelectedProductOperation<'_, Schema> {
+    pub fn selected(&self) -> &WorthQuerySelectedProductOperation<'_, Schema> {
         self.selected
     }
 }
@@ -43,10 +35,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     /// Mint the same exact-root custody for a conventional mutation's typed
     /// equality scope. The selected native resolver remains the acceptance
     /// owner; this wrapper only retains its request and selected root.
-    pub fn resolve_mutation_scope_issued<
-        'selected,
-        Field: RecordSelection,
-    >(
+    pub fn resolve_mutation_scope_issued<'selected, Field: RecordSelection>(
         &'selected self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: Field,
@@ -59,10 +48,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         self.resolve_query_scope_issued_with_native_access(execution, field, value, request, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
 
-    pub fn resolve_query_scope_issued_with_native_access<
-        'selected,
-        Field: RecordSelection,
-    >(
+    pub fn resolve_query_scope_issued_with_native_access<'selected, Field: RecordSelection>(
         &'selected self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: Field,
@@ -134,10 +120,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         })
     }
 
-    pub fn resolve_retained_query_scope_issued<
-        'selected,
-        Field: RecordSelection,
-    >(
+    pub fn resolve_retained_query_scope_issued<'selected, Field: RecordSelection>(
         &'selected self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: Field,

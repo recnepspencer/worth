@@ -1,10 +1,7 @@
 //! Exact-slot removal requires no comparisons, Probe loans or new allocations.
 use super::*;
 impl<P, R, S: Summary> PredicateTree<P, R, S> {
-    pub fn remove(
-        &mut self,
-        id: WatchSlot,
-    ) -> Option<Retired<P, R, S>> {
+    pub fn remove(&mut self, id: WatchSlot) -> Option<Retired<P, R, S>> {
         let node = self.records.get(&id)?;
         let [left, right] = node.children;
         let next = match (left, right) {

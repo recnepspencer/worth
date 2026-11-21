@@ -50,9 +50,7 @@ impl<Schema, Operation, Input, Scope>
 
     /// Only the installed native body may enter this dynamic bridge. The
     /// complete body and its Create membership were readmitted at installation.
-    pub fn create_body_entity_in_context<
-        ContextEntity,
-    >(
+    pub fn create_body_entity_in_context<ContextEntity>(
         &mut self,
         context: &WorthQueryApplicationEffectEntity<Schema, ContextEntity>,
         entity: &str,

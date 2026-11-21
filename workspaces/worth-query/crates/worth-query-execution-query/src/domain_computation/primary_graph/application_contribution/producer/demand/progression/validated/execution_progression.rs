@@ -2,10 +2,7 @@
 use super::*;
 
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn prepare_validated_output_demand_with_schedule<
-        'owner,
-        Family,
-    >(
+    pub fn prepare_validated_output_demand_with_schedule<'owner, Family>(
         &'owner self,
         phase: &'owner WorthQueryAdvancementPhase<'owner>,
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,

@@ -20,12 +20,7 @@ pub use selection::{
     SelectedWorkflowProposal, SelectedWorkflowTransition, SelectedWorkflowTransitionKind,
 };
 
-pub struct AdmittedWorkflowTransition<
-    Schema,
-    Operation,
-    Input,
-    Scope,
-> {
+pub struct AdmittedWorkflowTransition<Schema, Operation, Input, Scope> {
     pub(super) read_set: WorthQueryCompleteApplicationReadSet<
         Schema,
         Operation,
@@ -67,21 +62,15 @@ pub struct WorkflowOperationSettlementBasis {
 }
 
 impl WorkflowOperationSettlementBasis {
-    pub const fn outcome(
-        &self,
-    ) -> ApplicationWorkflowControlOutcome {
+    pub const fn outcome(&self) -> ApplicationWorkflowControlOutcome {
         self.outcome
     }
 
-    pub const fn for_business_return(
-        mut self,
-    ) -> Self {
+    pub const fn for_business_return(mut self) -> Self {
         self.outcome = ApplicationWorkflowControlOutcome::Returned;
         self
     }
-    pub const fn for_business_termination(
-        mut self,
-    ) -> Self {
+    pub const fn for_business_termination(mut self) -> Self {
         self.outcome = ApplicationWorkflowControlOutcome::Terminated;
         self.retire_live_membership = true;
         self
@@ -116,9 +105,7 @@ impl WorkflowOperationSettlementBasis {
 }
 
 impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operation, Input, Scope> {
-    pub fn operation_settlement_basis(
-        &self,
-    ) -> WorkflowOperationSettlementBasis {
+    pub fn operation_settlement_basis(&self) -> WorkflowOperationSettlementBasis {
         WorkflowOperationSettlementBasis {
             outcome: ApplicationWorkflowControlOutcome::Completed,
             advancer: self.advancer,
@@ -227,12 +214,7 @@ impl<Schema, Operation, Input, Scope> AdmittedWorkflowTransition<Schema, Operati
     }
 }
 
-pub fn admit_workflow_transition<
-    Schema,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn admit_workflow_transition<Schema, Operation, Input, Scope>(
     read_set: WorthQueryCompleteApplicationReadSet<
         Schema,
         Operation,

@@ -11,11 +11,7 @@ pub struct StableFactSpans {
     witness_end: usize,
 }
 impl StableFactSpans {
-    pub fn new(
-        body: FactPayload,
-        handler_count: usize,
-        witness_count: usize,
-    ) -> Option<Self> {
+    pub fn new(body: FactPayload, handler_count: usize, witness_count: usize) -> Option<Self> {
         let witness_end = handler_count.checked_add(witness_count)?;
         (witness_end <= body.len()).then_some(Self {
             body,
@@ -23,10 +19,7 @@ impl StableFactSpans {
             witness_end,
         })
     }
-    pub fn matches(
-        &self,
-        body: &FactPayload,
-    ) -> bool {
+    pub fn matches(&self, body: &FactPayload) -> bool {
         self.body.same_backing(body)
     }
     pub fn performed_sequence(

@@ -3,9 +3,9 @@ use super::{
     WorthQueryDocumentHistory, WorthQueryHistoryNavigationDenial as Denial,
     WorthQueryHistoryOutputProfile,
 };
-use crate::domain_computation::primary_graph::product_operation::WorthQueryHistoryOutputReadDenial as ReadDenial;
 use crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding;
 use crate::domain_computation::primary_graph::application_query::request_recipe::CapturedSourceQueryRequest;
+use crate::domain_computation::primary_graph::product_operation::WorthQueryHistoryOutputReadDenial as ReadDenial;
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding,
     application_query::{
@@ -40,7 +40,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         let (step, expected) = {
             let selected = self.selection.lock();
             let step = selected.journal.current_step();
-            if step.id().ordinal != 0 || step.endpoint != selected.expected {
+            if step.id().ordinal != 0 || step.endpoint() != &selected.expected {
                 return Ok(());
             }
             (step.id(), selected.expected.clone())

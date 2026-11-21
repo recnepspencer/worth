@@ -40,7 +40,6 @@ pub struct PreparedReadyBacking {
 #[derive(Clone)]
 pub struct ReadyCompletion(Arc<ReadyCell>);
 
-
 impl PreparedReadyBacking {
     pub fn generation(&self) -> OutputCheckpointGeneration {
         OutputCheckpointGeneration(Arc::downgrade(&self.cell))
@@ -76,10 +75,7 @@ impl PreparedReadyBacking {
 
     /// Bind the mode selected for the actual producer execution before it
     /// publishes either a performed result or a Stable equality result.
-    pub fn bind_execution_mode(
-        self,
-        mode: ProducerMode,
-    ) -> Self {
+    pub fn bind_execution_mode(self, mode: ProducerMode) -> Self {
         assert!(self.cell.producer_mode.set(mode).is_ok());
         self
     }
@@ -128,9 +124,7 @@ impl ReadyCompletion {
 
     /// The mode a required wave executes this output's producer in again.
     /// A restored output has none until an advance reaches it.
-    pub fn producer_mode(
-        &self,
-    ) -> Option<&ProducerMode> {
+    pub fn producer_mode(&self) -> Option<&ProducerMode> {
         self.0.producer_mode.get()
     }
 

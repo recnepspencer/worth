@@ -40,47 +40,54 @@ pub struct WorthQueryPrimaryGraphCommitEvidence {
 impl WorthQueryPrimaryGraphCommitEvidence {
     pub fn performed_output_fields(
         &self,
-    ) -> Option<&Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>> {
+    ) -> Option<&Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>{
         self.performed_output_fields.as_ref()
     }
 
     pub fn performed_input_facts(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload> {
+    ) -> Option<&crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>
+    {
         self.performed_input_facts.as_ref()
     }
 
     pub fn workflow_origin(
         &self,
-    ) -> Option<&crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin> {
+    ) -> Option<&crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>{
         self.workflow_origin.as_ref()
     }
 
     pub fn retain_original_authority(
         &self,
-    ) -> std::sync::Arc<crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding> {
+    ) -> std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding,
+    > {
         std::sync::Arc::clone(&self.original_authority)
     }
 
     pub fn original_authority(
         &self,
-    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding {
+    ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationCommitAuthorityBinding
+    {
         &self.original_authority
     }
 
     pub const fn provider_session_binding(
         &self,
-    ) -> &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding {
+    ) -> &crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding
+    {
         &self.provider_session_binding
     }
 
     pub const fn idempotency(
         &self,
-    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding {
+    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding{
         self.idempotency
     }
 
-    pub const fn commit_reference(&self) -> &worth_relational::facade::history::RelationalCommitReceipt {
+    pub const fn commit_reference(
+        &self,
+    ) -> &worth_relational::facade::history::RelationalCommitReceipt {
         &self.commit
     }
 
@@ -112,7 +119,9 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 
     pub fn retain_output_correspondence(
         &self,
-    ) -> std::sync::Arc<crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence> {
+    ) -> std::sync::Arc<
+        crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
+    > {
         std::sync::Arc::clone(&self.output_correspondence)
     }
 
@@ -136,7 +145,9 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 
     pub fn posting_continuation(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::output_lineage::invalidation::PostingContinuation> {
+    ) -> Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostingContinuation,
+    > {
         self.observed_source_facts.posting_continuation()
     }
 
@@ -146,7 +157,10 @@ impl WorthQueryPrimaryGraphCommitEvidence {
 
     pub fn rebased_source_facts(
         &self,
-    ) -> Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, FailedRebase> {
+    ) -> Result<
+        crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+        FailedRebase,
+    > {
         self.observed_source_facts.retained()
     }
 

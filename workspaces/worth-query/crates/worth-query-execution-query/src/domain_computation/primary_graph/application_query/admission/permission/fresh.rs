@@ -41,12 +41,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// selected root, prepare the retained source, and consume permission in
     /// one scoped callback. Neither access identity can be supplied separately.
     #[allow(clippy::too_many_arguments)]
-    pub fn with_fresh_retained_query_permission<
-        'a,
-        Binding,
-        R,
-        E,
-    >(
+    pub fn with_fresh_retained_query_permission<'a, Binding, R, E>(
         &'a self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &'a WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,

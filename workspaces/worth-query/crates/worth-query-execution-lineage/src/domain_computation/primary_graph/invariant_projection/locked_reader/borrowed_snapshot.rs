@@ -5,23 +5,17 @@ use crate::domain_computation::primary_graph::application_attempt::{
     snapshot_lease::WorthQueryApplicationSnapshotLease,
 };
 
-pub struct CompletedProjectionRead<
-    Output,
-> {
+pub struct CompletedProjectionRead<Output> {
     pub output: Output,
-    pub work:
-        WorthQueryInvariantProjectionWork,
-    pub realized_scope:
-        WorthQueryRealizedProjectionScope,
+    pub work: WorthQueryInvariantProjectionWork,
+    pub realized_scope: WorthQueryRealizedProjectionScope,
     pub applied_consumptions:
         Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
-    pub consumed_outputs:
-        BTreeMap<
-            Arc<super::super::super::output_lineage::RecordedSettlementIdentity>,
-            super::super::ConsumedOutputEvidence,
-        >,
-    pub dependent_source_facts:
-        RetainedSourceFacts,
+    pub consumed_outputs: BTreeMap<
+        Arc<super::super::super::output_lineage::RecordedSettlementIdentity>,
+        super::super::ConsumedOutputEvidence,
+    >,
+    pub dependent_source_facts: RetainedSourceFacts,
 }
 
 pub enum NativeReadAccess<'a> {
@@ -36,9 +30,7 @@ pub enum NativeReadAccess<'a> {
 }
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthority<Schema> {
-    pub fn project_borrowed<
-        Output,
-    >(
+    pub fn project_borrowed<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         lease: &WorthQueryApplicationSnapshotLease,
@@ -83,9 +75,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         )
     }
 
-    pub fn read_native<
-        Output,
-    >(
+    pub fn read_native<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         work_budget: WorthQueryInvariantProjectionWorkBudget,
@@ -116,9 +106,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             retention_control,
         )
     }
-    pub fn read_native_with_access<
-        Output,
-    >(
+    pub fn read_native_with_access<Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         work_budget: WorthQueryInvariantProjectionWorkBudget,

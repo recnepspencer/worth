@@ -1,6 +1,7 @@
 //! Public conventional mutation authority on one issued selected Product.
 
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;

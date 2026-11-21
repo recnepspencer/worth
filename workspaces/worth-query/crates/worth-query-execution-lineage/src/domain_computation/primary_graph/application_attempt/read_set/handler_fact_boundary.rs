@@ -6,11 +6,7 @@ pub struct CompletedHandlerFactBoundary {
 }
 
 impl CompletedHandlerFactBoundary {
-    pub fn insert_input_facts(
-        &mut self,
-        expected: usize,
-        count: usize,
-    ) -> bool {
+    pub fn insert_input_facts(&mut self, expected: usize, count: usize) -> bool {
         if self.handler_fact_count != expected {
             return false;
         }

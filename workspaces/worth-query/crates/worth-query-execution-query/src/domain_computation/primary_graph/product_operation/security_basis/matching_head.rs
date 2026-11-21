@@ -14,9 +14,7 @@ pub struct SelectedPreparedReadSecurityBasis<'basis> {
 }
 
 impl SelectedPreparedReadSecurityBasis<'_> {
-    pub fn snapshot_handle(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+    pub fn snapshot_handle(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
         self.basis.snapshot_handle()
     }
 }
@@ -25,9 +23,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// Check exact selected-index currency before sealing this same
     /// issued Product/Query basis against the current World head. A moved head
     /// or different Native basis cannot authorize the graph read.
-    pub fn admit_matching_head_query_prepared_read_security_basis_with_native_access<
-        'basis,
-    >(
+    pub fn admit_matching_head_query_prepared_read_security_basis_with_native_access<'basis>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductObservationLease,
@@ -56,9 +52,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     /// Bind the selected Product and already inspected Query snapshot to the
     /// exact installed World head. No new Native snapshot or program authority
     /// is issued. The World callback is a short currentness seal only.
-    pub fn admit_matching_head_query_permission_basis<
-        'basis,
-    >(
+    pub fn admit_matching_head_query_permission_basis<'basis>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductObservationLease,
@@ -70,9 +64,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         self.admit_matching_head_query_permission_basis_with_native_access(execution, product, query_basis, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
 
-    pub fn admit_matching_head_query_permission_basis_with_native_access<
-        'basis,
-    >(
+    pub fn admit_matching_head_query_permission_basis_with_native_access<'basis>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductObservationLease,

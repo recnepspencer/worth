@@ -1,4 +1,3 @@
-
 use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::{
     WorthQueryProviderExecutionPlanView, WorthQueryProviderSessionFailure,
@@ -7,7 +6,9 @@ use crate::domain_computation::{
     WorthQueryProviderSessionView,
 };
 
-impl WorthQueryProviderSessionLifecycle for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc {
+impl WorthQueryProviderSessionLifecycle
+    for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc
+{
     fn readmit_provider_plan(
         &self,
         _plan: &WorthQueryProviderExecutionPlanView<'_>,

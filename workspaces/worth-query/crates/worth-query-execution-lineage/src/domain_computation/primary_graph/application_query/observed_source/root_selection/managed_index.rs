@@ -4,14 +4,11 @@ use super::*;
 use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexAccessContract;
 
-pub struct ManagedSourceDependencies
-{
+pub struct ManagedSourceDependencies {
     pub authorization:
         Arc<crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorization>,
-    pub rows:
-        worth_execution::ExecutionArray<Arc<WorthQueryObservedSourceMeaning>>,
-    pub result_set:
-        Option<Arc<WorthQueryObservedSourceMeaning>>,
+    pub rows: worth_execution::ExecutionArray<Arc<WorthQueryObservedSourceMeaning>>,
+    pub result_set: Option<Arc<WorthQueryObservedSourceMeaning>>,
     pub maintained: Option<
         Arc<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>,
     >,
@@ -33,14 +30,10 @@ impl ManagedSourceDependencies {
             .or_else(|| self.applied.as_ref().and_then(|source| source.published()))
     }
 
-    pub fn meanings(
-        &self,
-    ) -> impl Iterator<Item = &Arc<WorthQueryObservedSourceMeaning>> {
+    pub fn meanings(&self) -> impl Iterator<Item = &Arc<WorthQueryObservedSourceMeaning>> {
         self.rows.elements().iter().chain(self.result_set.iter())
     }
-    pub fn accepts(
-        meaning: &WorthQueryObservedSourceMeaning,
-    ) -> bool {
+    pub fn accepts(meaning: &WorthQueryObservedSourceMeaning) -> bool {
         let source = meaning.footprint();
         source.complete
             && source.root_selection.as_ref().is_none_or(|selection| {
@@ -68,13 +61,10 @@ impl std::fmt::Debug for ManagedSourceDependencies {
 }
 
 #[derive(Clone, Debug)]
-pub struct DeclaredManagedIndexSelection
-{
+pub struct DeclaredManagedIndexSelection {
     pub coverage: Option<Arc<dyn std::any::Any + Send + Sync>>,
-    pub access:
-        Arc<WorthQueryInstalledManagedIndexAccessContract>,
-    pub dependencies:
-        Arc<ManagedSourceDependencies>,
+    pub access: Arc<WorthQueryInstalledManagedIndexAccessContract>,
+    pub dependencies: Arc<ManagedSourceDependencies>,
 }
 impl DeclaredManagedIndexSelection {
     fn coverage_is_present(&self) -> bool {
@@ -82,8 +72,7 @@ impl DeclaredManagedIndexSelection {
             worth_query_declaration::facade::application_query::ApplicationManagedIndexMembership::Candidates
             || self.coverage.is_some()
     }
-    pub const fn descriptor_work(
-    ) -> u64 {
+    pub const fn descriptor_work() -> u64 {
         b"declared-managed-index:v1".len() as u64 + 64
     }
     pub fn append_descriptor(&self, digest: &mut Sha256) {
@@ -93,9 +82,7 @@ impl DeclaredManagedIndexSelection {
     }
     /// Only a joined applied Source may bridge its acquisition descriptor to
     /// a positioned descriptor. Both sides retain authentic Native observations.
-    pub fn same_published_source<
-        E: 'static,
-    >(
+    pub fn same_published_source<E: 'static>(
         &self,
         other: &Self,
         current_source: Option<
@@ -158,7 +145,8 @@ impl DeclaredManagedIndexSelection {
                 // has the same meaning. A hash or a matching roster is not proof.
                 match (&self.dependencies.applied, &other.dependencies.applied) {
                     (None, None) => {}
-                    (Some(left), Some(right)) if std::ptr::addr_eq(Arc::as_ptr(left), Arc::as_ptr(right)) => {}
+                    (Some(left), Some(right))
+                        if std::ptr::addr_eq(Arc::as_ptr(left), Arc::as_ptr(right)) => {}
                     _ => return Ok(false),
                 }
             }
@@ -221,7 +209,9 @@ impl PartialEq for DeclaredManagedIndexSelection {
             && self.dependencies.maintained() == other.dependencies.maintained()
             && match (&self.dependencies.applied, &other.dependencies.applied) {
                 (None, None) => true,
-                (Some(left), Some(right)) => std::ptr::addr_eq(Arc::as_ptr(left), Arc::as_ptr(right)),
+                (Some(left), Some(right)) => {
+                    std::ptr::addr_eq(Arc::as_ptr(left), Arc::as_ptr(right))
+                }
                 _ => false,
             }
             && self.dependencies.identity == other.dependencies.identity

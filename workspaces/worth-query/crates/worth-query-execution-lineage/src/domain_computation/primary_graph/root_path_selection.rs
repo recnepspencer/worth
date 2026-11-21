@@ -25,9 +25,7 @@ pub mod ports;
 pub mod step;
 pub mod storage;
 pub use denial::RootPathReadDenial;
-pub use ports::{
-    RootPathReadObservation, RootPathReadPorts,
-};
+pub use ports::{RootPathReadObservation, RootPathReadPorts};
 type Frontier = BTreeMap<EntityId, SourceFactsBuilder>;
 
 #[derive(Clone, Copy)]
@@ -50,8 +48,7 @@ pub struct RootPathSelectionRequest<'a> {
     pub orientation: RootPathOrientation,
     pub capture_set: bool,
     pub subject: &'a str,
-    pub allocation:
-        Option<&'a Arc<SourceFactsAllocation>>,
+    pub allocation: Option<&'a Arc<SourceFactsAllocation>>,
 }
 pub struct RootPathSelection {
     pub roots: BTreeMap<EntityId, SourceFacts>,
@@ -69,11 +66,9 @@ pub struct RootPathReadBasis<
     'request,
     Phase = worth_relational::facade::snapshots::SnapshotHandle,
 > {
-    pub execution:
-        &'a ExecutionRequest<'execution, 'request>,
+    pub execution: &'a ExecutionRequest<'execution, 'request>,
     pub runtime: &'a RelationalPinnedRead<Phase>,
-    pub origin:
-        super::projection_read_origin::ProjectionReadOriginRef<'a>,
+    pub origin: super::projection_read_origin::ProjectionReadOriginRef<'a>,
     pub graph: &'a WorthQueryPrimaryGraphLayout,
     pub projection: VisibilityProjectionView,
 }

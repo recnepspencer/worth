@@ -6,9 +6,7 @@ pub struct EnvelopeCandidates<'a> {
     bindings: &'a [Binding],
 }
 impl<'a> EnvelopeCandidates<'a> {
-    pub fn new(
-        bindings: &'a [Binding],
-    ) -> Result<Self, Denial> {
+    pub fn new(bindings: &'a [Binding]) -> Result<Self, Denial> {
         let first = bindings.first().ok_or(Denial::ForeignAffinity)?;
         if bindings.iter().any(|binding| {
             binding.key_identity != first.key_identity
@@ -22,19 +20,13 @@ impl<'a> EnvelopeCandidates<'a> {
     pub fn first(&self) -> Binding {
         self.bindings[0]
     }
-    pub fn matches(
-        &self,
-        recorded: Binding,
-    ) -> Result<bool, Denial> {
+    pub fn matches(&self, recorded: Binding) -> Result<bool, Denial> {
         if self.first().envelope_intent.is_none() {
             return Ok(recorded == self.first());
         }
         self.match_text(&recorded.intent_text())
     }
-    pub fn match_text(
-        &self,
-        recorded: &str,
-    ) -> Result<bool, Denial> {
+    pub fn match_text(&self, recorded: &str) -> Result<bool, Denial> {
         let mut matched = None;
         let mut unverifiable = false;
         for binding in self.bindings {

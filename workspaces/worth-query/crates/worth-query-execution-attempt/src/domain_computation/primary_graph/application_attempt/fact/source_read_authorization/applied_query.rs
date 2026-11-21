@@ -1,12 +1,10 @@
 //! Successful admitted query READ support; no completion or positioned receipt is issued.
 use super::*;
-use sha2::{Digest, Sha256};
 use crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof;
+use sha2::{Digest, Sha256};
 use worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity;
 
-pub trait SourceReadAuthorizationAppliedQueryExt:
-    Sized
-{
+pub trait SourceReadAuthorizationAppliedQueryExt: Sized {
     #[allow(clippy::too_many_arguments)]
     fn retain_applied_query(
         execution: &worth_execution::ExecutionRequest<'_, '_>,

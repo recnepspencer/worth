@@ -64,23 +64,17 @@ impl SelectedRequiredRefreshClaim {
     /// Transfer the existing exact Ready/source/member pin to the admitted
     /// successor after its predecessor interest has served registration and
     /// replacement. The key ticket outlives the cloned interest key.
-    pub fn into_predecessor(
-        self,
-    ) -> SelectedReadyReadmission {
+    pub fn into_predecessor(self) -> SelectedReadyReadmission {
         let Self { interest, selected } = self;
         drop(interest);
         selected
     }
 
-    pub fn interest(
-        &self,
-    ) -> &super::super::WorthQueryOutputDemandInterest {
+    pub fn interest(&self) -> &super::super::WorthQueryOutputDemandInterest {
         &self.interest
     }
 
-    pub fn selected(
-        &self,
-    ) -> &SelectedReadyReadmission {
+    pub fn selected(&self) -> &SelectedReadyReadmission {
         &self.selected
     }
 

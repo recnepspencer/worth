@@ -36,9 +36,7 @@ impl WorthQueryProviderSessionTerminalBinding {
         }
     }
 
-    pub fn affinity_identity(
-        &self,
-    ) -> WorthQueryProviderSessionAffinityIdentity {
+    pub fn affinity_identity(&self) -> WorthQueryProviderSessionAffinityIdentity {
         self.inner.affinity
     }
 
@@ -63,10 +61,7 @@ impl WorthQueryProviderSessionTerminalBinding {
         self.inner.product.application_product_identity()
     }
 
-    pub fn admits_session_view(
-        &self,
-        session: super::WorthQueryProviderSessionView<'_>,
-    ) -> bool {
+    pub fn admits_session_view(&self, session: super::WorthQueryProviderSessionView<'_>) -> bool {
         self.inner.affinity == session.affinity_identity()
             && self.inner.session.token_identity() == session.identity()
             && self.inner.session.token_generation() == session.generation()

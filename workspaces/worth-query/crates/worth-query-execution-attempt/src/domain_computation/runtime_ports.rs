@@ -15,6 +15,8 @@ impl Deref for PrimaryGraphProviderArc {
     }
 }
 
+use crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal;
+use crate::domain_computation::primary_graph::provider::RegisteredPrimaryRead;
 use std::any::Any;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
@@ -26,8 +28,6 @@ use worth_query_execution_contracts::facade::{
 use worth_query_execution_runtime::facade::ports::{
     PrimaryReadCustody, RecoveryDispatchJournalPort,
 };
-use crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal;
-use crate::domain_computation::primary_graph::provider::RegisteredPrimaryRead;
 
 impl PrimaryReadCustody for RegisteredPrimaryRead {
     fn grouped_count(&self) -> usize {

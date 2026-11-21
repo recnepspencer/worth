@@ -72,18 +72,12 @@ impl NativeCallCarriage {
         Arc::ptr_eq(self.target(), shape)
     }
 
-    pub fn carried(
-        &self,
-        read: ComputationRead,
-    ) -> bool {
+    pub fn carried(&self, read: ComputationRead) -> bool {
         self.target().ordinal(read).is_some()
             && self.binding.shape.ordinal(read).is_some()
             && !self.fresh.contains(&read)
     }
-    pub fn same_native(
-        &self,
-        native: &NativeComputationReads,
-    ) -> bool {
+    pub fn same_native(&self, native: &NativeComputationReads) -> bool {
         self.native.same_native(native)
     }
     pub fn closes(
@@ -100,10 +94,7 @@ impl NativeCallCarriage {
     }
 }
 impl ComputationFactAttribution {
-    pub fn begin_ranges(
-        &mut self,
-        binding: CheckedCallShape,
-    ) {
+    pub fn begin_ranges(&mut self, binding: CheckedCallShape) {
         assert!(
             self.calls.is_empty() && self.carried.is_empty() && self.fresh_calls.is_empty(),
             "range preparation starts before its calls"
@@ -140,11 +131,7 @@ impl ComputationFactAttribution {
         progress.transition = Some(transition);
         true
     }
-    pub fn can_carry_mapped_range(
-        &self,
-        source: &Range<usize>,
-        target: &Range<usize>,
-    ) -> bool {
+    pub fn can_carry_mapped_range(&self, source: &Range<usize>, target: &Range<usize>) -> bool {
         let Some(progress) = self.range_progress.as_ref() else {
             return false;
         };
@@ -160,11 +147,7 @@ impl ComputationFactAttribution {
             }
         }
     }
-    pub fn carry_mapped_range(
-        &mut self,
-        source: Range<usize>,
-        target: Range<usize>,
-    ) -> bool {
+    pub fn carry_mapped_range(&mut self, source: Range<usize>, target: Range<usize>) -> bool {
         if !self.can_carry_mapped_range(&source, &target) {
             return false;
         }

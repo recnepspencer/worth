@@ -17,7 +17,6 @@ pub mod operation_scope_binding;
 pub use crate::domain_computation::runtime_time::{
     WorthQueryRuntimeClock, WorthQueryRuntimeTimeSample,
 };
-pub use worth_query_execution_contracts::facade::WorthQueryOperationAdmissionIdentity;
 pub use bridge_binding::bridge_authorization_binding_identity;
 pub use capability_registry::WorthQueryCapabilityPlanCompilationEvidence;
 pub use denial::{
@@ -30,6 +29,7 @@ pub use operation_scope_binding::{
     WorthQueryDecisionScopeWitness, WorthQueryOperationScopeBinding,
     WorthQueryOperationScopeEntityBinding,
 };
+pub use worth_query_execution_contracts::facade::WorthQueryOperationAdmissionIdentity;
 
 pub fn authorization_denial(
     subject: impl Into<String>,

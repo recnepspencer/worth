@@ -143,7 +143,12 @@ where
         .installed_program_support()
         .ok_or(Denial::UnsupportedTargetProgram)?;
     let record = support
-        .native_program(inspection.revision()).map(|r| crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(r.as_ref()))
+        .native_program(inspection.revision())
+        .map(|r| {
+            crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(
+                r.as_ref(),
+            )
+        })
         .ok_or(Denial::UnsupportedTargetProgram)?;
     if required_root.is_none()
         && record.requires_output_source(crate::equality_type_id::EqualityTypeId::of::<C::Source>())
@@ -207,7 +212,12 @@ where
         .installed_program_support()
         .ok_or(Denial::UnsupportedTargetProgram)?;
     let record = support
-        .native_program(inspection.revision()).map(|r| crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(r.as_ref()))
+        .native_program(inspection.revision())
+        .map(|r| {
+            crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(
+                r.as_ref(),
+            )
+        })
         .ok_or(Denial::UnsupportedTargetProgram)?;
     let declared = original
         .action_inventory()

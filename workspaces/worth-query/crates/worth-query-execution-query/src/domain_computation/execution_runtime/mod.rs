@@ -54,11 +54,13 @@ impl WorthQueryExecutionRuntime {
             .and_then(|any| any.downcast_mut())
     }
 
-    pub fn retain_primary_graph_integration_handle(
+    pub(crate) fn retain_primary_graph_integration_handle(
         &self,
-    ) -> Option<crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle> {
-        self.primary_graph()
-            .map(crate::domain_computation::primary_graph::WorthQueryPrimaryGraph::integration_handle)
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle>
+    {
+        self.primary_graph().map(
+            crate::domain_computation::primary_graph::WorthQueryPrimaryGraph::integration_handle,
+        )
     }
 
     pub fn install_primary_graph(
@@ -76,7 +78,9 @@ impl WorthQueryExecutionRuntime {
 
     pub fn commit_successor_installation(
         &mut self,
-        successor: std::sync::Arc<worth_query_installation::facade::WorthQueryInstalledPackageIndex>,
+        successor: std::sync::Arc<
+            worth_query_installation::facade::WorthQueryInstalledPackageIndex,
+        >,
     ) -> Result<(), WorthQueryExecutionInstallationCommitDenial> {
         self.0.commit_successor_installation(successor)
     }
@@ -140,10 +144,7 @@ impl WorthQueryExecutionRuntimeInstaller {
         Self(self.0.application_query_resources(profile))
     }
 
-    pub fn output_demand_resources(
-        self,
-        profile: WorthQueryOutputDemandResourceProfile,
-    ) -> Self {
+    pub fn output_demand_resources(self, profile: WorthQueryOutputDemandResourceProfile) -> Self {
         Self(self.0.output_demand_resources(profile))
     }
 
@@ -178,6 +179,15 @@ impl WorthQueryExecutionRuntimeInstaller {
 impl Default for WorthQueryExecutionRuntimeInstaller {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl crate::ports::ExecutionRuntimePrimaryGraphPort for WorthQueryExecutionRuntime {
+    fn retain_primary_graph_integration_handle(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle>
+    {
+        Self::retain_primary_graph_integration_handle(self)
     }
 }
 

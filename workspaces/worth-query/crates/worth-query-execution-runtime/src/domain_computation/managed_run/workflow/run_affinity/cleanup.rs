@@ -21,9 +21,7 @@ pub struct WorthQueryWorkflowAffinityCleanupReceipt {
 }
 
 impl WorthQueryWorkflowRunAffinity {
-    pub fn finish_yield(
-        self,
-    ) -> WorthQueryWorkflowYieldReleasePending {
+    pub fn finish_yield(self) -> WorthQueryWorkflowYieldReleasePending {
         WorthQueryWorkflowYieldReleasePending {
             logical: self.logical,
             attempt: self.attempt,
@@ -40,9 +38,7 @@ impl WorthQueryWorkflowRunAffinity {
 }
 
 impl WorthQueryWorkflowYieldReleasePending {
-    pub fn release(
-        self,
-    ) -> WorthQueryWorkflowAffinityCleanupReceipt {
+    pub fn release(self) -> WorthQueryWorkflowAffinityCleanupReceipt {
         WorthQueryWorkflowAffinityCleanupReceipt {
             logical: self.logical,
             attempt_identity: Arc::from(self.attempt.attempt_identity().as_str()),
@@ -61,15 +57,11 @@ impl WorthQueryWorkflowAffinityCleanupReceipt {
         &self.attempt_identity
     }
 
-    pub fn attempt(
-        &self,
-    ) -> &WorthQueryWorkflowExecutionAttemptReleaseReceipt {
+    pub fn attempt(&self) -> &WorthQueryWorkflowExecutionAttemptReleaseReceipt {
         &self.attempt
     }
 
-    pub fn provider_work(
-        &self,
-    ) -> &WorthQueryManagedProviderWorkEvidence {
+    pub fn provider_work(&self) -> &WorthQueryManagedProviderWorkEvidence {
         &self.provider_work
     }
 }

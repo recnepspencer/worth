@@ -19,8 +19,7 @@ pub fn prepare_performed_obligation_slots(
     Ok(prepared)
 }
 
-pub fn performed_obligation_capacity_denial(
-) -> WorthQueryOutputDemandDenial {
+pub fn performed_obligation_capacity_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         "performed output obligation allocation refused",

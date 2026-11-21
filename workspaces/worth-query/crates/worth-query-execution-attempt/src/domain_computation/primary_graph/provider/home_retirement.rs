@@ -27,15 +27,11 @@ enum ProviderRetirementStage {
 }
 
 impl PrimaryProviderCustody {
-    pub fn retained_for_teardown(
-        &self,
-    ) -> Option<Arc<WorthQueryPrimaryGraphProvider>> {
+    pub fn retained_for_teardown(&self) -> Option<Arc<WorthQueryPrimaryGraphProvider>> {
         self.serving.clone()
     }
 
-    pub fn new(
-        provider: Arc<WorthQueryPrimaryGraphProvider>,
-    ) -> Self {
+    pub fn new(provider: Arc<WorthQueryPrimaryGraphProvider>) -> Self {
         Self {
             serving: Some(provider),
             retiring: None,

@@ -42,9 +42,7 @@ pub fn target(
 }
 impl WorthQueryInvariantMutationTarget<(), ()> {
     #[inline(always)]
-    pub fn into_typed<S, E>(
-        self,
-    ) -> WorthQueryInvariantMutationTarget<S, E> {
+    pub fn into_typed<S, E>(self) -> WorthQueryInvariantMutationTarget<S, E> {
         WorthQueryInvariantMutationTarget {
             entity_id: self.entity_id,
             phase: self.phase,

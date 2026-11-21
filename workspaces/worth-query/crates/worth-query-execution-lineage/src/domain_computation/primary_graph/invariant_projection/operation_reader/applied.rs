@@ -10,16 +10,10 @@ use worth_relational::facade::runtime::{
 
 /// Plain decision facts remain qualified by the actual Native proposal and revision.
 /// The independently admitted before product supplies authorization only.
-pub struct AppliedOperationProjection<
-    Schema,
-    Operation,
-> {
-    pub admission:
-        WorthQueryOperationAdmissionIdentity,
-    pub candidate:
-        RelationalAppliedCandidateReadQualification,
-    pub scope:
-        super::super::WorthQueryRealizedProjectionScope,
+pub struct AppliedOperationProjection<Schema, Operation> {
+    pub admission: WorthQueryOperationAdmissionIdentity,
+    pub candidate: RelationalAppliedCandidateReadQualification,
+    pub scope: super::super::WorthQueryRealizedProjectionScope,
     pub facts: DecisionReads,
     pub source_facts: RetainedSourceFacts,
     pub applied_consumptions:
@@ -42,7 +36,12 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         predecessor_access: Option<&dyn SourceQueryReaderPort>,
         projection: impl FnOnce(
-            &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, A::Operation>,
+            &mut WorthQueryApplicationOperationInvariantProjectionReader<
+                '_,
+                '_,
+                Schema,
+                A::Operation,
+            >,
             &WorthQueryInvariantEntityIdentity<Schema, A::Scope>,
         ) -> Output,
         allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -55,7 +54,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         WorthQueryOperationProjectionDenial,
     >
     where
-        A: crate::ports::TypedAdmittedOperationPort<Schema>, {
+        A: crate::ports::TypedAdmittedOperationPort<Schema>,
+    {
         self.project_applied_operation_port(
             execution,
             admission,

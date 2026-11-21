@@ -60,9 +60,7 @@ pub struct AcceptedCurrentCandidate {
 impl AcceptedCurrentCandidate {
     /// The actor mark is keyed by this exact retained recorded row. Its
     /// identity remains pinned by the accepted candidate during the read.
-    pub fn recorded_identity(
-        &self,
-    ) -> &super::RecordedSettlementIdentity {
+    pub fn recorded_identity(&self) -> &super::RecordedSettlementIdentity {
         self.selected.settlement_identity().as_ref()
     }
 

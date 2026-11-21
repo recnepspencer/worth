@@ -98,9 +98,7 @@ pub fn lower_descriptor(
     })
 }
 
-pub fn is_mandatory_candidate_registration(
-    registration: &CustomInvariantRegistration,
-) -> bool {
+pub fn is_mandatory_candidate_registration(registration: &CustomInvariantRegistration) -> bool {
     use worth_relational::facade::runtime::{
         InvariantExecutionPoint as Point, InvariantFailureEffect as Effect, InvariantGroup as Group,
     };

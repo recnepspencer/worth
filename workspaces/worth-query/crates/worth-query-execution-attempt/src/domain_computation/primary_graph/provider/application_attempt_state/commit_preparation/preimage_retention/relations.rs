@@ -1,6 +1,6 @@
 //! Correlate declared relation material with the actor's actual applied lifecycle.
-use crate::domain_computation::primary_graph::RetainedPreImageExt;
 use super::*;
+use crate::domain_computation::primary_graph::RetainedPreImageExt;
 pub mod observation;
 use crate::domain_computation::application_aftermath::{
     WorthQueryRelationPreImageDenial as Cause, WorthQueryRelationPreImageFailure as Failure,

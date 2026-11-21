@@ -10,9 +10,7 @@ use crate::domain_computation::primary_graph::application_query::{
 };
 use worth_query_declaration::facade::{
     application_query::{ApplicationManagedIndexBinding, ApplicationQueryBinding},
-    application_schema::{
-        ApplicationScalarValueBinding, ApplicationSchema,
-    },
+    application_schema::{ApplicationScalarValueBinding, ApplicationSchema},
 };
 use worth_relational::facade::runtime::{
     ManagedIndexSourcePreparationDenial as NativeDenial, ManagedIndexSourceRead,

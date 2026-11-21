@@ -53,10 +53,7 @@ impl NativeComputationReads {
     pub fn facts(&self) -> &SealedComputationFacts {
         &self.prior.facts
     }
-    pub fn at_snapshot(
-        &self,
-        snapshot: &SnapshotHandle,
-    ) -> bool {
+    pub fn at_snapshot(&self, snapshot: &SnapshotHandle) -> bool {
         &self.snapshot == snapshot
     }
 }

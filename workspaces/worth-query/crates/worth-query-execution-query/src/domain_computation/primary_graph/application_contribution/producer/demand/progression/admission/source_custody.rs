@@ -1,5 +1,5 @@
-use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::*;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 pub fn validate_prepared_source_carrier<Query>(
@@ -92,9 +92,7 @@ where
         ))
     }
 
-    pub fn recover_discovered_output_source<
-        Discovery,
-    >(
+    pub fn recover_discovered_output_source<Discovery>(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
         root_type: TypeId,
@@ -152,10 +150,7 @@ where
         Ok((discovery, retained, prepared))
     }
 
-    pub fn bind_prepared_output_source<
-        Query,
-        Value,
-    >(
+    pub fn bind_prepared_output_source<Query, Value>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
@@ -194,10 +189,7 @@ where
         )
     }
 
-    pub fn bind_prepared_output_sources<
-        Query,
-        Value,
-    >(
+    pub fn bind_prepared_output_sources<Query, Value>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,

@@ -258,22 +258,24 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let mut retained = Some(recovery);
         self.with_application_advancement(request, |phase| {
-            let phase_request = match phase.execution_request_for(&self.inner.runtime.product_runtime) {
-                Ok(request) => request,
-                Err(_) => {
-                    return Err((
-                        crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
-                            AdmissionRefusal::ForeignPhase,
-                        ),
-                        retained.take().expect("one retained recovery"),
-                    ))
-                }
-            };
+            let phase_request =
+                match phase.execution_request_for(&self.inner.runtime.product_runtime) {
+                    Ok(request) => request,
+                    Err(_) => {
+                        return Err((
+                            crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                                AdmissionRefusal::ForeignPhase,
+                            ),
+                            retained.take().expect("one retained recovery"),
+                        ))
+                    }
+                };
             let execution = &phase_request;
             let recovery = retained.take().expect("one admitted recovery");
 
             let product = match self
-                .inner.runtime
+                .inner
+                .runtime
                 .product_runtime
                 .admit_product_occurrence(branch.occurrence())
             {

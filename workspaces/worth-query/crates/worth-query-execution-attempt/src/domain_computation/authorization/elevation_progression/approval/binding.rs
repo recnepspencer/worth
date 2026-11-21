@@ -30,14 +30,10 @@ pub struct WorthQueryElevationApprovalBinding {
 }
 
 impl WorthQueryElevationApprovalBinding {
-    pub const fn requested(
-        &self,
-    ) -> &WorthQueryElevationRequestBinding {
+    pub const fn requested(&self) -> &WorthQueryElevationRequestBinding {
         &self.requested
     }
-    pub const fn request_commit(
-        &self,
-    ) -> &WorthQueryApplicationCommitReceipt {
+    pub const fn request_commit(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.request_commit
     }
     pub const fn elevation(&self) -> EntityId {
@@ -64,14 +60,10 @@ impl WorthQueryElevationApprovalBinding {
     pub const fn reviewer_relation(&self) -> KindId {
         self.reviewer_relation
     }
-    pub fn required_decision_reads(
-        &self,
-    ) -> &[ApplicationOperationDecisionReadTarget] {
+    pub fn required_decision_reads(&self) -> &[ApplicationOperationDecisionReadTarget] {
         &self.required_decision_reads
     }
-    pub fn required_program_targets(
-        &self,
-    ) -> &[ApplicationOperationProgramTarget] {
+    pub fn required_program_targets(&self) -> &[ApplicationOperationProgramTarget] {
         &self.required_program_targets
     }
     pub const fn lifecycle_effect(&self) -> Option<&worth_query_declaration::lifecycle_effect_derivation_authority::DerivedApplicationCapabilityLifecycleEffect>{

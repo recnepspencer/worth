@@ -31,10 +31,7 @@ impl QueryObligationHistory {
             })
             .collect()
     }
-    pub fn note_output_demand_completion(
-        &self,
-        position: NonZeroU64,
-    ) {
+    pub fn note_output_demand_completion(&self, position: NonZeroU64) {
         self.state().pending_output_discharges.insert(position);
     }
     pub fn flush_output_discharges(
@@ -153,19 +150,13 @@ impl QueryObligationHistory {
             .get(&ledger_inspect::output_demand_subject(row))?;
         output.demands.get(position).cloned()
     }
-    pub fn output_demand(
-        &self,
-        position: NonZeroU64,
-    ) -> Option<QueryOutputDemandObligation> {
+    pub fn output_demand(&self, position: NonZeroU64) -> Option<QueryOutputDemandObligation> {
         ledger_inspect::output(&self.state().journal.as_ref()?.ledger)
             .demands
             .get(&position)
             .cloned()
     }
-    pub fn output_demand_retained(
-        &self,
-        position: NonZeroU64,
-    ) -> bool {
+    pub fn output_demand_retained(&self, position: NonZeroU64) -> bool {
         self.state().journal.as_ref().is_some_and(|journal| {
             let output = ledger_inspect::output(&journal.ledger);
             output.demands.contains_key(&position) && !output.completed.contains(&position)
@@ -269,10 +260,7 @@ impl QueryObligationHistory {
             request,
         )
     }
-    pub fn output_domain_failure(
-        &self,
-        position: NonZeroU64,
-    ) -> Option<Vec<u8>> {
+    pub fn output_domain_failure(&self, position: NonZeroU64) -> Option<Vec<u8>> {
         ledger_inspect::output(&self.state().journal.as_ref()?.ledger)
             .failures
             .get(&position)

@@ -53,9 +53,7 @@ impl<'charge> OneShotReadWorkObservation<'charge> {
     }
 
     /// Root and tree work: what the read examined.
-    pub fn read(
-        &self,
-    ) -> Option<usize> {
+    pub fn read(&self) -> Option<usize> {
         self.root.get().checked_add(self.tree.get())
     }
 }

@@ -36,9 +36,7 @@ pub struct CheckedManagedFootprintCapture<'a> {
     coverage: &'a RetainedCoverage,
 }
 impl CheckedManagedFootprintCapture<'_> {
-    pub fn frame(
-        &self,
-    ) -> worth_proof::BorrowedRealizedFootprintFrame<'_> {
+    pub fn frame(&self) -> worth_proof::BorrowedRealizedFootprintFrame<'_> {
         self.frame
     }
     pub fn coverage(&self) -> &RetainedCoverage {

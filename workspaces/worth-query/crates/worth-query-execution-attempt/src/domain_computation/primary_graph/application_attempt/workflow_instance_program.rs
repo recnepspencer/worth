@@ -23,12 +23,8 @@ use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
 
 pub mod birth;
 pub mod cancellation;
-pub use birth::{
-    guard_birth, WorkflowBirthBindingProof,
-};
-pub use birth::{
-    RequiredWorkflowBirth, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot,
-};
+pub use birth::{guard_birth, WorkflowBirthBindingProof};
+pub use birth::{RequiredWorkflowBirth, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot};
 pub mod discovery_intent;
 pub use discovery_intent::WorthQueryWorkflowInstanceDiscoveryIntent;
 pub mod intent_identity;
@@ -36,9 +32,7 @@ pub mod migration;
 pub mod performed;
 pub mod start_basis;
 pub mod succession;
-pub use succession::{
-    guard_succession, WorkflowSuccessionBindingProof,
-};
+pub use succession::{guard_succession, WorkflowSuccessionBindingProof};
 pub use succession::{
     RequiredWorkflowSuccession, WorkflowSuccessionAuthority, WorkflowSuccessionAuthoritySlot,
     WorkflowSuccessionTarget,
@@ -63,10 +57,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub fn materialize_workflow_instance_start<
-        Capability,
-        Spec,
-    >(
+    pub fn materialize_workflow_instance_start<Capability, Spec>(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

@@ -5,9 +5,7 @@ use worth_query_execution_attempt::facade::ports::{
     EffectProgramOriginalInputRuntimePort, ProducerIdentityRuntimePort,
     SelectedProductOperationPort, WorkflowOperationAuthorityRuntimePort,
 };
-use worth_query_installation::facade::{
-    ApplicationSchema, WorthQueryInstalledApplicationSchema,
-};
+use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
@@ -15,8 +13,8 @@ use crate::domain_computation::primary_graph::application_attempt::check_request
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationAttemptDenial,
-    WorthQueryApplicationAttemptDenialKind,
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
+    WorthQueryApplicationAttemptDenialKind, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQuerySelectedProductOperation,
 };
 
 impl<Schema> WorkflowOperationAuthorityRuntimePort<Schema>
@@ -80,8 +78,7 @@ where
     }
 }
 
-impl<Schema> SelectedProductOperationPort<Schema>
-    for WorthQuerySelectedProductOperation<'_, Schema>
+impl<Schema> SelectedProductOperationPort<Schema> for WorthQuerySelectedProductOperation<'_, Schema>
 where
     Schema: ApplicationSchema,
 {

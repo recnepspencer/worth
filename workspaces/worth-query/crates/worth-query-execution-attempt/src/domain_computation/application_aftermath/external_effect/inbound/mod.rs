@@ -10,6 +10,7 @@ mod terminal;
 mod verifier;
 
 pub use claims::WorthQueryInboundOccurrenceClaims;
+pub use custody::recovery::WorthQueryInboundRecoveryState;
 pub use custody::WorthQueryInboundCleanupReport;
 pub use custody::{
     WorthQueryAcceptedInboundOccurrence, WorthQueryInboundCustody,
@@ -18,6 +19,5 @@ pub use custody::{
 };
 pub use terminal::WorthQueryInboundTerminalOwnerResult;
 pub use verifier::{WorthQueryInboundOccurrenceVerifier, WorthQueryInboundVerificationDenial};
-pub use custody::recovery::WorthQueryInboundRecoveryState;
 
 pub use custody::publication_permit::WorthQueryTransportPublicationPermit;

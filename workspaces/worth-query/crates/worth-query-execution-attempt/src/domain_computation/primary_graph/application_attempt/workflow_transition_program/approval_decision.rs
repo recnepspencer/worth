@@ -1,7 +1,5 @@
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
-use crate::domain_computation::primary_graph::application_installation::{
-    workflow_approval_authentication_intent,
-};
+use crate::domain_computation::primary_graph::application_installation::workflow_approval_authentication_intent;
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityMarkerIdentity,
     application_program::ApplicationWorkflowSpec,
@@ -38,10 +36,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub fn materialize_workflow_approval<
-        Capability,
-        Spec,
-    >(
+    pub fn materialize_workflow_approval<Capability, Spec>(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         workflow: &dyn crate::ports::WorkflowVocabularyPort<Schema, Spec>,
@@ -364,17 +359,36 @@ where
         .map_err(|cause| cause.into_attempt_denial(required.node_path()))?;
         let signing_basis = evidence_currentness.facts().clone();
         let admitted = admit_workflow_transition(
-            self, selected, instance.entity_id(), subject, live_membership, false, allowance,
+            self,
+            selected,
+            instance.entity_id(),
+            subject,
+            live_membership,
+            false,
+            allowance,
         );
         let mut prepared = materialize_decision(
-            &layout, *compiled.program_revision(), admitted, meaning,
-            &field_basis, &admitted_text, evidence_currentness, approval_projection,
+            &layout,
+            *compiled.program_revision(),
+            admitted,
+            meaning,
+            &field_basis,
+            &admitted_text,
+            evidence_currentness,
+            approval_projection,
         )?;
         let authentication = publication::PreparedWorkflowApprovalAuthentication::pending(
-            workflow.authentication_owner().clone(), authentication_intent, signing_basis, &prepared,
+            workflow.authentication_owner().clone(),
+            authentication_intent,
+            signing_basis,
+            &prepared,
         )
         .map_err(|_| affinity("approval lacks its natively admitted signing principal"))?;
-        if let PreparedWorkflowAdvance::Transition { approval_authentication, .. } = &mut prepared {
+        if let PreparedWorkflowAdvance::Transition {
+            approval_authentication,
+            ..
+        } = &mut prepared
+        {
             *approval_authentication = Some(authentication);
         }
         Ok(prepared.with_replays(replays.with_probe_identity(replay_probe_identity)))

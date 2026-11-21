@@ -17,10 +17,7 @@ where
 impl<'call, 'source, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
     WorthQueryManagedIndexSummarySources<'call, 'source, S, I>
 {
-    pub fn new(
-        context: &'call SummaryContext<'call, 'source, S, I>,
-        region: usize,
-    ) -> Self {
+    pub fn new(context: &'call SummaryContext<'call, 'source, S, I>, region: usize) -> Self {
         Self {
             context,
             ancestry: RefCell::new(ancestry::Ancestry::new(region)),

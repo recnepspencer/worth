@@ -247,9 +247,7 @@ where
         WorthQueryApplicationLiveOutcome::ExecutionRequest(kind)
     }
 
-    pub fn cancelled_outcome(
-        &mut self,
-    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+    pub fn cancelled_outcome(&mut self) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
         self.terminate_stopped_read();
         WorthQueryApplicationLiveOutcome::Cancelled
     }

@@ -32,10 +32,7 @@ impl<'a, 'request, 'authority> MaterialFootprintStorage<'a, 'request, 'authority
         }
         Ok(())
     }
-    pub fn slots<T>(
-        &self,
-        count: usize,
-    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+    pub fn slots<T>(&self, count: usize) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         if self.allocation.is_some() {
             self.claim(
                 count
@@ -91,10 +88,7 @@ impl<'a, 'request, 'authority> MaterialFootprintStorage<'a, 'request, 'authority
         }
         self.next(values)
     }
-    pub fn work(
-        &self,
-        units: usize,
-    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+    pub fn work(&self, units: usize) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
         if self.allocation.is_none() {
             return Ok(());
         }

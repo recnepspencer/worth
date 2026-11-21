@@ -11,7 +11,10 @@ pub struct ExternalEffectPosture {
 }
 
 impl ExternalEffectPosture {
-    pub fn initial(kind: ExternalEffectPostureKind, identity: ExternalEffectPostureIdentity) -> Self {
+    pub fn initial(
+        kind: ExternalEffectPostureKind,
+        identity: ExternalEffectPostureIdentity,
+    ) -> Self {
         Self {
             kind,
             identity,
@@ -44,7 +47,9 @@ impl ExternalEffectPosture {
     }
 }
 
-pub struct CausalConstructionAuthority { pub(crate) _private: () }
+pub struct CausalConstructionAuthority {
+    pub(crate) _private: (),
+}
 
 pub const CAUSAL_CONSTRUCTION: CausalConstructionAuthority =
     CausalConstructionAuthority { _private: () };

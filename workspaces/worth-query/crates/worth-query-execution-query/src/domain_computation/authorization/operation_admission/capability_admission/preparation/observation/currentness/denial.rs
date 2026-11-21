@@ -5,18 +5,14 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
 };
 
-pub fn stale_principal(
-    subject: impl Into<String>,
-) -> WorthQueryOperationAuthorizationDenial {
+pub fn stale_principal(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     authorization_denial(
         WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::StalePrincipal),
         subject,
     )
 }
 
-pub fn projection_rejected(
-    subject: impl Into<String>,
-) -> WorthQueryOperationAuthorizationDenial {
+pub fn projection_rejected(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     authorization_denial(
         WorthQueryOperationAuthorizationDenialKind::Refused(
             AuthorizationRefusal::CapabilityProjectionRejected,

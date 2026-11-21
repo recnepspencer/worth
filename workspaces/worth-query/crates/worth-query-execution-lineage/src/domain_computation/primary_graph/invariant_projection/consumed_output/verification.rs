@@ -48,9 +48,7 @@ pub struct EvidenceView<'a> {
 }
 
 impl<'a> EvidenceView<'a> {
-    pub fn identity(
-        self,
-    ) -> &'a Arc<RecordedSettlementIdentity> {
+    pub fn identity(self) -> &'a Arc<RecordedSettlementIdentity> {
         self.identity
     }
     pub fn source_facts(
@@ -60,19 +58,13 @@ impl<'a> EvidenceView<'a> {
     > {
         self.source_facts.map(|facts| facts.facts())
     }
-    pub fn upstream(
-        self,
-    ) -> &'a [ConsumedOutputEvidence] {
+    pub fn upstream(self) -> &'a [ConsumedOutputEvidence] {
         self.upstream
     }
-    pub fn selected_native_root(
-        self,
-    ) -> &'a PositionedRelationalSnapshot {
+    pub fn selected_native_root(self) -> &'a PositionedRelationalSnapshot {
         self.selected_native_root
     }
-    pub fn native_output_witness(
-        self,
-    ) -> Option<&'a SealedNativeOutputWitness> {
+    pub fn native_output_witness(self) -> Option<&'a SealedNativeOutputWitness> {
         self.native_output_witness.and_then(|witness| witness.get())
     }
 }

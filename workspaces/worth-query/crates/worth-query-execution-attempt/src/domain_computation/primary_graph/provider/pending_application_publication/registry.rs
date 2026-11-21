@@ -61,9 +61,7 @@ pub enum WorthQueryPendingApplicationIdempotency {
 }
 
 impl WorthQueryPendingApplicationPublicationRegistry {
-    pub fn home_close_has_work(
-        &self,
-    ) -> bool {
+    pub fn home_close_has_work(&self) -> bool {
         !self.slots.is_empty() || !self.corrections.is_empty()
     }
     pub fn new(maximum_slots: usize) -> Self {

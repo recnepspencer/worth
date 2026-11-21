@@ -88,11 +88,10 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             return Err(Denial::PolicyMismatch);
         }
         if let Some(prior) = after
-            && (!prior
-                .basis
-                .0
-                .belongs_to_selected_occurrence(self.application().inner(), data.product().observation())
-                || prior.instance != target.instance
+            && (!prior.basis.0.belongs_to_selected_occurrence(
+                self.application().inner(),
+                data.product().observation(),
+            ) || prior.instance != target.instance
                 || prior.subject != target.subject
                 || prior.scope != access.resource_entity_id()
                 || prior.width != width
@@ -108,7 +107,8 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             .map_err(Denial::Phase)?;
         let graph = self
             .application()
-            .inner.runtime
+            .inner
+            .runtime
             .primary_graph()
             .ok_or(Denial::BasisUnavailable)?;
         let index = graph

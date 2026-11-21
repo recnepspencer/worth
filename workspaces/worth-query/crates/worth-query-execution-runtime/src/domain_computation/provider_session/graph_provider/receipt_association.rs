@@ -206,9 +206,7 @@ impl WorthQueryCompletedDomainEvidenceDerivation {
         &self.contract
     }
 
-    pub fn execution(
-        &self,
-    ) -> &WorthQueryBoundGraphExecutionAssociation {
+    pub fn execution(&self) -> &WorthQueryBoundGraphExecutionAssociation {
         &self.execution
     }
 

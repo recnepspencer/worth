@@ -139,9 +139,7 @@ impl<'lane, 'selected> PreparedStableLineageAddress<'lane, 'selected> {
                 .unwrap_or_default(),
             settlement_identity: Arc::clone(&self.identity),
             correspondence: Arc::clone(&origin.correspondence),
-            source_identity: Some(RecordedSourceIdentity::Runtime(
-                recorded_source_identity,
-            )),
+            source_identity: Some(RecordedSourceIdentity::Runtime(recorded_source_identity)),
             source_partition_identity: Some(partition_identity),
             producer_dependency_identity: origin.producer_dependency_identity,
             idempotency_key_identity: origin.idempotency_key_identity,

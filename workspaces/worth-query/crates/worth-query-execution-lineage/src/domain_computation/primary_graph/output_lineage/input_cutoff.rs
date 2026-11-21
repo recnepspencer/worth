@@ -75,9 +75,7 @@ impl RetainedInputCutoffCandidate {
         super::required_publication::head::SelectedRequiredPublicationHead::retain(&self.cell)
     }
 
-    pub fn prepared_input_key(
-        &self,
-    ) -> Option<&PreparedInputReuseKey> {
+    pub fn prepared_input_key(&self) -> Option<&PreparedInputReuseKey> {
         self.recorded().prepared_input_reuse_key.as_ref()
     }
 
@@ -87,26 +85,20 @@ impl RetainedInputCutoffCandidate {
         self.recorded().completed_computation_record()
     }
 
-    pub fn completed_handler_fact_count(
-        &self,
-    ) -> Option<usize> {
+    pub fn completed_handler_fact_count(&self) -> Option<usize> {
         self.completed_computation_record()?
             .completed_handler_facts
             .as_ref()
             .map(|boundary| boundary.handler_fact_count())
     }
 
-    pub fn completed_decision_reuse(
-        &self,
-    ) -> Option<&super::CompletedDecisionReuseProof> {
+    pub fn completed_decision_reuse(&self) -> Option<&super::CompletedDecisionReuseProof> {
         self.completed_computation_record()?
             .completed_decision_reuse
             .as_ref()
     }
 
-    pub fn native_output_witness(
-        &self,
-    ) -> Option<&SealedNativeOutputWitness> {
+    pub fn native_output_witness(&self) -> Option<&SealedNativeOutputWitness> {
         self.completed_computation_record()?.native_output_witness()
     }
 
@@ -117,29 +109,21 @@ impl RetainedInputCutoffCandidate {
             .native_output_witness_cell()
     }
 
-    pub fn settlement_identity(
-        &self,
-    ) -> &Arc<RecordedSettlementIdentity> {
+    pub fn settlement_identity(&self) -> &Arc<RecordedSettlementIdentity> {
         &self.recorded().settlement_identity
     }
 
-    pub fn consumed_outputs(
-        &self,
-    ) -> &[ConsumedOutputEvidence] {
+    pub fn consumed_outputs(&self) -> &[ConsumedOutputEvidence] {
         &self.recorded().consumed_outputs
     }
 
     /// See `RecordedOutput::retains_facts_without_witness`.
-    pub fn retains_facts_without_witness(
-        &self,
-    ) -> bool {
+    pub fn retains_facts_without_witness(&self) -> bool {
         self.recorded().retains_facts_without_witness()
     }
 
     /// The original performed run, not its rebased postconditions, decides this.
-    pub fn requires_own_effect_continuation(
-        &self,
-    ) -> bool {
+    pub fn requires_own_effect_continuation(&self) -> bool {
         self.recorded()
             .computation_source
             .superseded_by_own_effect()
@@ -165,9 +149,7 @@ impl WorthQueryApplicationOutputLineage {
     /// Follow the same product partition and fork ancestry as `producer_head`.
     /// Every index descent, ancestor lookup and Arc pin consumes the caller's
     /// existing admission before the read, including on a later denial.
-    pub fn prior_input_cutoff_candidate<
-        Binding: 'static,
-    >(
+    pub fn prior_input_cutoff_candidate<Binding: 'static>(
         &self,
         scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
         observation: &ProductBranchObservation,

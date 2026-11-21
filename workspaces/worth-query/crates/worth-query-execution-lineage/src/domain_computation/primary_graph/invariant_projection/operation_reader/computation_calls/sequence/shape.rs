@@ -25,10 +25,7 @@ impl CallShape {
     pub fn len(&self) -> usize {
         self.order.len()
     }
-    pub fn lower_bound(
-        &self,
-        read: ComputationRead,
-    ) -> usize {
+    pub fn lower_bound(&self, read: ComputationRead) -> usize {
         self.order
             .first_at_or_after(&read)
             .map_or(self.len(), |(next, _)| {
@@ -120,14 +117,10 @@ impl CallShapeTransition {
     pub fn target(&self) -> &Arc<CallShape> {
         &self.target
     }
-    pub fn inserted(
-        &self,
-    ) -> impl Iterator<Item = ComputationRead> + '_ {
+    pub fn inserted(&self) -> impl Iterator<Item = ComputationRead> + '_ {
         self.inserted.keys().copied()
     }
-    pub fn retired(
-        &self,
-    ) -> impl Iterator<Item = ComputationRead> + '_ {
+    pub fn retired(&self) -> impl Iterator<Item = ComputationRead> + '_ {
         self.retired.keys().copied()
     }
     pub fn closes_fresh(&self, fresh: &BTreeSet<ComputationRead>) -> bool {

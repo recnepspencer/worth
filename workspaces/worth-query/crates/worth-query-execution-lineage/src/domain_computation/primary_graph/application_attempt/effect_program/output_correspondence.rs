@@ -75,9 +75,7 @@ impl WorthQueryApplicationOutputCorrespondence {
         })
     }
 
-    pub fn checkpoint_roles(
-        &self,
-    ) -> Vec<WorthQueryCheckpointOutputRole> {
+    pub fn checkpoint_roles(&self) -> Vec<WorthQueryCheckpointOutputRole> {
         self.storage
             .roles
             .iter()
@@ -90,9 +88,7 @@ impl WorthQueryApplicationOutputCorrespondence {
             .collect()
     }
 
-    pub fn workflow_content_identity(
-        &self,
-    ) -> [u8; 32] {
+    pub fn workflow_content_identity(&self) -> [u8; 32] {
         use sha2::Digest;
         use sha2::Sha256;
 
@@ -160,17 +156,11 @@ impl WorthQueryApplicationOutputCorrespondence {
     }
 
     /// Publication metadata includes retirement; it grants no current identity.
-    pub fn publication_entity_for_role(
-        &self,
-        role: &str,
-    ) -> Option<EntityId> {
+    pub fn publication_entity_for_role(&self, role: &str) -> Option<EntityId> {
         self.storage.binding(role).map(|binding| binding.entity)
     }
 
-    pub fn active_entity_for_role(
-        &self,
-        role: &str,
-    ) -> Option<EntityId> {
+    pub fn active_entity_for_role(&self, role: &str) -> Option<EntityId> {
         self.storage.binding(role).and_then(|binding| {
             (binding.posture != WorthQueryApplicationOutputPosture::Retire)
                 .then_some(binding.entity)
@@ -219,9 +209,7 @@ impl WorthQueryApplicationOutputCorrespondence {
         }
     }
 
-    pub fn entity_for_binding_role<
-        Binding: 'static,
-    >(
+    pub fn entity_for_binding_role<Binding: 'static>(
         &self,
         role: &str,
     ) -> Result<EntityId, WorthQueryApplicationOutputProjectionDenial> {
@@ -234,9 +222,7 @@ impl WorthQueryApplicationOutputCorrespondence {
             .ok_or(WorthQueryApplicationOutputProjectionDenial::MissingRole)
     }
 
-    pub fn posture_for_binding_role<
-        Binding: 'static,
-    >(
+    pub fn posture_for_binding_role<Binding: 'static>(
         &self,
         role: &str,
     ) -> Result<WorthQueryApplicationOutputPosture, WorthQueryApplicationOutputProjectionDenial>

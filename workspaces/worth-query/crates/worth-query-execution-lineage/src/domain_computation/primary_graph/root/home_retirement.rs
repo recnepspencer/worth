@@ -12,8 +12,7 @@ use worth_relational::facade::runtime::RelationalRuntime;
 /// local source share. No live accessor escapes the owning post-seal Query.
 pub struct PrimaryGraphSourceCustody {
     serving: Option<WorthQueryRelationalSourceOwner>,
-    pub invalidation_owner:
-        std::sync::Arc<super::super::SourceInvalidationOwner>,
+    pub invalidation_owner: std::sync::Arc<super::super::SourceInvalidationOwner>,
     retiring: Mutex<Option<PreparedSourceRetirement>>,
 }
 struct PreparedSourceRetirement {

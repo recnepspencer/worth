@@ -16,10 +16,7 @@ pub struct QueryTemporalPredicateSemanticContract {
     provider_identity: &'static str,
 }
 
-pub struct QueryTemporalPredicateProvider<
-    Node,
-    Provider,
-> {
+pub struct QueryTemporalPredicateProvider<Node, Provider> {
     provider: Arc<Provider>,
     semantics: QueryTemporalPredicateSemanticContract,
     marker: PhantomData<fn() -> Node>,
@@ -29,10 +26,7 @@ impl<Node, Provider> QueryTemporalPredicateProvider<Node, Provider>
 where
     Provider: WorthQueryHostConditionalPredicateProvider<Node>,
 {
-    pub fn new(
-        provider: Arc<Provider>,
-        node_authority: impl Into<Arc<str>>,
-    ) -> Self {
+    pub fn new(provider: Arc<Provider>, node_authority: impl Into<Arc<str>>) -> Self {
         Self {
             provider,
             semantics: QueryTemporalPredicateSemanticContract {

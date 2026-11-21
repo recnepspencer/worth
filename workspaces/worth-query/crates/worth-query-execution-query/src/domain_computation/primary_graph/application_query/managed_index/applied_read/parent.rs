@@ -11,13 +11,7 @@ use worth_relational::facade::{
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead},
 };
 
-pub fn prepare<
-    'a,
-    'request,
-    'authority,
-    S,
-    B,
->(
+pub fn prepare<'a, 'request, 'authority, S, B>(
     execution: &ExecutionRequest<'request, 'authority>,
     access: &SourceQueryReaderAccess<'_, S>,
     application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,

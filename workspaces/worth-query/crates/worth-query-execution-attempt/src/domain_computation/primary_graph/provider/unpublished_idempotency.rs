@@ -15,9 +15,7 @@ pub use before_world::BeforeWorldQueryReservation;
 pub mod preparation;
 pub mod release;
 pub mod reservation;
-pub use managed_recovery::{
-    ManagedUnpublishedRecoveryGuard, ManagedUnpublishedRecoveryStop,
-};
+pub use managed_recovery::{ManagedUnpublishedRecoveryGuard, ManagedUnpublishedRecoveryStop};
 pub use release::WorthQueryUnpublishedReleaseReservation;
 
 pub use reservation::QueryDurablePreparationGuard;

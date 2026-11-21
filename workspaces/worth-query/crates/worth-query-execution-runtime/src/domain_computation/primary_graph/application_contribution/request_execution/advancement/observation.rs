@@ -165,9 +165,7 @@ pub fn advancement_requests_on_this_thread_for_test(
         .collect()
 }
 
-pub fn record_event(
-    event: WorthQueryAdvancementEventForTest,
-) {
+pub fn record_event(event: WorthQueryAdvancementEventForTest) {
     if !observing() {
         return;
     }
@@ -178,7 +176,6 @@ pub fn record_event(
     });
 }
 
-
 pub(super) fn record_panicked(report: Option<ExecutionReport>) {
     if let Some(report) = report {
         finish(report, Some(WorthQueryAdvancementDenial::Panicked));
@@ -186,7 +183,6 @@ pub(super) fn record_panicked(report: Option<ExecutionReport>) {
         record_result::<()>(&Err(WorthQueryAdvancementDenial::Panicked));
     }
 }
-
 
 thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
 fn observing() -> bool {

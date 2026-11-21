@@ -46,9 +46,9 @@ pub use group::{
 mod journal;
 pub(crate) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::model;
 pub(crate) mod navigation;
+pub(in crate::domain_computation::primary_graph) use navigation::HistoryDependentSource;
 #[doc(hidden)]
 pub use navigation::WorthQueryHistoryNavigationPauseForTest;
-pub(in crate::domain_computation::primary_graph) use navigation::HistoryDependentSource;
 pub(in crate::domain_computation::primary_graph) use navigation::{
     HistoryOutputLookup, HistoryOutputLookupPhase,
 };

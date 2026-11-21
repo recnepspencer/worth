@@ -117,7 +117,14 @@ impl WorthQueryApplicationPreviewSession {
         let execution = phase
             .execution_request_for(&runtime.runtime().inner.runtime.product_runtime)
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
-        if runtime.runtime().inner.runtime.authority_identity().as_u64() != self.runtime_authority {
+        if runtime
+            .runtime()
+            .inner
+            .runtime
+            .authority_identity()
+            .as_u64()
+            != self.runtime_authority
+        {
             return Err(WorthQueryApplicationPreviewReadmissionDenial::ForeignRuntime);
         }
         let current = runtime
@@ -238,7 +245,8 @@ where
         );
         let handle = self
             .runtime()
-            .inner.runtime
+            .inner
+            .runtime
             .bridge
             .ordinary()
             .speculate(BridgeSpeculativeSessionRequest::new(

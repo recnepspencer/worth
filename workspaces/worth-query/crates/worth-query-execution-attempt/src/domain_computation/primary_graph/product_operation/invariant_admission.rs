@@ -1,7 +1,7 @@
+use crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial as Denial;
 use worth_query_declaration::facade::application_schema::ApplicationInvariantExecutionPoint;
 use worth_relational::facade::mvcc::CustomInvariantNonApplicability;
 use worth_relational::facade::runtime::{InvariantDecisionKind, InvariantExecutionPoint};
-use crate::domain_computation::primary_graph::WorthQueryGeneratedOutputInvariantAdmissionDenial as Denial;
 
 pub fn admit_required_invariants(
     receipts: &[worth_relational::facade::mvcc::CustomInvariantExecutionReceipt],
@@ -97,7 +97,6 @@ fn admit_requirement_facts<'a>(
         }),
     }
 }
-
 
 const fn lower_execution_point(
     point: ApplicationInvariantExecutionPoint,

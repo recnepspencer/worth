@@ -16,7 +16,8 @@ pub(super) fn complete<S: ApplicationSchema + 'static>(
     } = prepared.consume();
     conditional_operations.reconstruct_all(&application)?;
     let mut owner = application
-        .inner.runtime
+        .inner
+        .runtime
         .bridge
         .conditional_lifecycle()
         .map_err(|cause| {

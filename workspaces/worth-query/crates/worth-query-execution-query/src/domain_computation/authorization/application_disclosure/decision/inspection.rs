@@ -41,8 +41,7 @@ impl WorthQueryApplicationQueryGovernance {
                     .is_some_and(|actual| {
                         actual.admits_member_subject(target, scope)
                             && graph_work.principal() == principal
-                            && graph_work.entity_access_context()
-                                == Some(actual.original_subject())
+                            && graph_work.entity_access_context() == Some(actual.original_subject())
                     })
             }),
             Self::Governed { computation, .. } => computation

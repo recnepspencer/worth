@@ -1,4 +1,3 @@
 pub use worth_query_execution_contracts::facade::{
-    WorthQueryPreImageRetentionDenial,
-    WorthQueryRelationPreImageFailure,
+    WorthQueryPreImageRetentionDenial, WorthQueryRelationPreImageFailure,
 };

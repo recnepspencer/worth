@@ -15,7 +15,8 @@ use worth_query_execution_contracts::facade::{
     WorthQueryHomeRetirementOwner,
 };
 use worth_query_execution_obligations::facade::query_obligations::{
-    QueryManagedCleanupOriginal, QueryManagedRunPosture, QueryManagedRunRecovery, QueryObligationDenial,
+    QueryManagedCleanupOriginal, QueryManagedRunPosture, QueryManagedRunRecovery,
+    QueryObligationDenial,
 };
 use worth_relational::facade::branch::RelationalBranchIdentity;
 use worth_relational::facade::mvcc::RelationalPublicationCompanion;
@@ -43,7 +44,9 @@ pub trait RelationalSourceInvalidationPort:
     fn into_any_arc(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>;
 
     #[doc(hidden)]
-    fn latest_position_for_test(&self) -> Option<worth_relational::facade::publication::PatchStreamPosition>;
+    fn latest_position_for_test(
+        &self,
+    ) -> Option<worth_relational::facade::publication::PatchStreamPosition>;
 
     #[doc(hidden)]
     fn touched_commits_after_for_test(
@@ -106,7 +109,10 @@ pub trait ManagedRunObligationPort: Any + Send + Sync {
         request: &ExecutionRequest<'_, '_>,
         logical: &str,
         attempt: &str,
-    ) -> Result<Option<(ManagedRunObligationIdentity, Option<QueryObligationDenial>)>, QueryObligationDenial>;
+    ) -> Result<
+        Option<(ManagedRunObligationIdentity, Option<QueryObligationDenial>)>,
+        QueryObligationDenial,
+    >;
 
     fn settle_managed_run_retention(
         &self,
@@ -221,12 +227,10 @@ impl OpaqueProductPublicationOutcome {
 
     pub fn downcast<T: Any + Send>(self) -> Result<Box<T>, Self> {
         let recovery_required = self.recovery_required;
-        self.payload
-            .downcast::<T>()
-            .map_err(|payload| Self {
-                payload,
-                recovery_required,
-            })
+        self.payload.downcast::<T>().map_err(|payload| Self {
+            payload,
+            recovery_required,
+        })
     }
 
     pub fn downcast_ref<T: Any + Send>(&self) -> Option<&T> {
@@ -283,7 +287,8 @@ pub trait InspectionTargetPort: Any + Send + Sync {
     fn contract(
         &self,
     ) -> &worth_query_installation::facade::WorthQueryInstalledApplicationInspectionContract;
-    fn schema_binding(&self) -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+    fn schema_binding(&self)
+        -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity;
     fn runtime_authority(&self) -> u64;
     fn as_any(&self) -> &(dyn Any + Send + Sync);
 }
@@ -384,6 +389,8 @@ pub trait SessionBoundAttemptBasisPort: Sized {
 
     fn bind_to_session_bound_reads(
         self,
-        reads: &crate::domain_computation::provider_session::WorthQuerySessionBoundReadsAndEffects<'_>,
+        reads: &crate::domain_computation::provider_session::WorthQuerySessionBoundReadsAndEffects<
+            '_,
+        >,
     ) -> Result<Self::Affinity, ()>;
 }

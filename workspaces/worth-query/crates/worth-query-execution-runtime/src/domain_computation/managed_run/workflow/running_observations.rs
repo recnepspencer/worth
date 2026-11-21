@@ -65,9 +65,7 @@ impl WorthQueryRunningWorkflowRun {
         self.affinity.evidence()
     }
 
-    pub fn counters(
-        &self,
-    ) -> &WorthQueryManagedRunCounters {
+    pub fn counters(&self) -> &WorthQueryManagedRunCounters {
         &self.counters
     }
 
@@ -75,9 +73,7 @@ impl WorthQueryRunningWorkflowRun {
         self.affinity.provider_session_description()
     }
 
-    pub fn retained_capacity_reservation_count(
-        &self,
-    ) -> usize {
+    pub fn retained_capacity_reservation_count(&self) -> usize {
         self.affinity.retained_capacity_reservation_count()
     }
 
@@ -93,9 +89,7 @@ impl WorthQueryRunningWorkflowRun {
             .is_some()
     }
 
-    pub fn artifact_registry_evidence(
-        &self,
-    ) -> WorthQueryWorkflowArtifactRegistryEvidence {
+    pub fn artifact_registry_evidence(&self) -> WorthQueryWorkflowArtifactRegistryEvidence {
         self.artifacts.registry().evidence()
     }
 
@@ -141,15 +135,11 @@ impl WorthQueryRunningWorkflowRun {
         )
     }
 
-    pub fn bridge_basis_identity_projection(
-        &self,
-    ) -> &str {
+    pub fn bridge_basis_identity_projection(&self) -> &str {
         self.bridge_basis.identity().as_str()
     }
 
-    pub fn bridge_request_identity_projection(
-        &self,
-    ) -> &str {
+    pub fn bridge_request_identity_projection(&self) -> &str {
         self.bridge_basis.request().digest()
     }
 

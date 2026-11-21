@@ -150,17 +150,13 @@ impl ManagedUnpublishedRecoveryGuard {
         Ok(())
     }
 
-    pub fn attempt_mut(
-        &mut self,
-    ) -> &mut ManagedUnpublishedAttempt {
+    pub fn attempt_mut(&mut self) -> &mut ManagedUnpublishedAttempt {
         self.attempt
             .as_mut()
             .expect("checked-out recovery retains its attempt")
     }
 
-    pub fn take_attempt(
-        &mut self,
-    ) -> ManagedUnpublishedAttempt {
+    pub fn take_attempt(&mut self) -> ManagedUnpublishedAttempt {
         self.attempt
             .take()
             .expect("performed recovery consumes its exact attempt")
@@ -207,10 +203,7 @@ impl ManagedUnpublishedRecoveryGuard {
     /// World returned another partial under the preissued successor handle.
     /// Rebind the existing provider row without allocating or admitting after
     /// the owner effect. The old World record is released by the caller.
-    pub fn retain_successor(
-        mut self,
-        successor: &ProductUnpublishedRecoveryHandle,
-    ) {
+    pub fn retain_successor(mut self, successor: &ProductUnpublishedRecoveryHandle) {
         assert!(self.attempt.is_some());
         assert!(
             successor == &self.handle || self.prepared_successor.as_ref() == Some(successor),

@@ -48,9 +48,7 @@ pub trait CandidateReadSupportPort: Send + Sync {
     ) -> bool {
         false
     }
-    fn read(
-        &self,
-    ) -> Option<crate::domain_computation::primary_graph::provider::ParentRead> {
+    fn read(&self) -> Option<crate::domain_computation::primary_graph::provider::ParentRead> {
         None
     }
 }
@@ -192,8 +190,12 @@ pub trait ManagedDerivedViewExecutionPort: Send + Sync {
 /// Upper-layer installed program record behind `OriginalProgramMeaning`.
 pub trait SupportedProgramRecordPort: Send + Sync + Any {
     fn as_any(&self) -> &dyn Any;
-    fn action_inventory(&self) -> worth_query_installation::facade::WorthQueryInstalledActionInventory<'_>;
-    fn revision(&self) -> &worth_query_declaration::facade::application_program::ApplicationProgramRevision;
+    fn action_inventory(
+        &self,
+    ) -> worth_query_installation::facade::WorthQueryInstalledActionInventory<'_>;
+    fn revision(
+        &self,
+    ) -> &worth_query_declaration::facade::application_program::ApplicationProgramRevision;
     fn declares_binding(&self, binding: std::any::TypeId) -> bool;
 }
 
@@ -216,14 +218,18 @@ impl OpaqueAuthoredEditStage {
 
 pub enum AuthoredCorrectionCandidateDenial {
     Identity(&'static str),
-    Interrupted(worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption),
+    Interrupted(
+        worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption,
+    ),
 }
 
 /// Upper-layer prepared correction source port behind `WorthQueryPendingAftermathCausality`.
 pub trait PreparedCorrectionSourcePort: std::fmt::Debug + Send + Sync + Any {
     fn as_any(&self) -> &dyn Any;
     fn eq_source(&self, other: &dyn PreparedCorrectionSourcePort) -> bool;
-    fn lineage_binding(&self) -> &crate::domain_computation::application_aftermath::WorthQueryCorrectionLineageBinding;
+    fn lineage_binding(
+        &self,
+    ) -> &crate::domain_computation::application_aftermath::WorthQueryCorrectionLineageBinding;
     fn target_parent(&self) -> &worth_relational::facade::history::RelationalCommitReceipt;
     fn target_branch(&self) -> &worth_relational::facade::history::BranchId;
     fn source_world(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity;
@@ -337,53 +343,28 @@ impl OpaqueSynchronousOutputs {
 pub trait WorkflowVocabularyPort<Schema, Spec>
 where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
-    Spec: worth_query_declaration::facade::application_program::ApplicationWorkflowSpec<Schema = Schema>,
+    Spec: worth_query_declaration::facade::application_program::ApplicationWorkflowSpec<
+        Schema = Schema,
+    >,
 {
     fn workflow_spec_at_revision(
         &self,
         revision: &worth_query_declaration::facade::application_program::ApplicationProgramRevision,
-    ) -> Option<&worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>>;
+    ) -> Option<
+        &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+    >;
     fn authentication_owner(
         &self,
     ) -> &worth_query_admission::facade::authentication_event::WorthQueryAuthenticationEventSigningOwner<Schema>;
 }
 
-/// Upper-layer runtime port for `WorthQueryProviderCommitAuthorization::authorize_application_commit`.
-pub trait CommitAuthorizationRuntimePort<Schema>
-where
-    Schema: worth_query_installation::facade::ApplicationSchema,
-{
-    fn authorize_with_commit_basis<'serialization, 'admission, Operation, Input, Scope>(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-        approval_authority: Option<&crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
-        commit_basis: &crate::domain_computation::authorization::WorthQueryCommitAuthorizationBasis,
-        admission: &'admission crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        serialization: &'serialization crate::domain_computation::primary_graph::WorthQueryApplicationBranchCommitCoordination<'_>,
-    ) -> Result<
-        crate::domain_computation::authorization::WorthQueryApplicationCommitAuthorization<
-            'serialization,
-            'admission,
-            Schema,
-            Operation,
-            Input,
-            Scope,
-        >,
-        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
-    >;
-}
-
-/// Unexported crate-boundary seal for constructing opaque `attempt` types from
-/// `worth-query-execution` without exposing struct fields on public facades.
-#[doc(hidden)]
-#[derive(Clone, Copy)]
-pub struct WorthQueryAttemptCrateSeal(());
-
-impl WorthQueryAttemptCrateSeal {
-    #[doc(hidden)]
-    pub const fn new() -> Self {
-        Self(())
-    }
-}
+pub mod admitted_operation_port;
+pub use admitted_operation_port::AdmittedOperationExecutionPort;
+pub mod commit_and_retirement;
+pub use commit_and_retirement::{CommitAuthorizationRuntimePort, WorkflowDefinitionRetirementPort};
+pub mod read_attempt_admission;
+pub use read_attempt_admission::{
+    ApplicationReadAttemptAdmissionPort, WorthQueryApplicationReadAttemptInit,
+};
 pub mod runtime_ports;
 pub use runtime_ports::*;

@@ -34,9 +34,7 @@ pub struct EqualityRecoveryRow {
 }
 
 impl EqualityRecoveryRow {
-    pub fn output_facts(
-        &self,
-    ) -> Option<&[WorthQueryApplicationObservedFact]> {
+    pub fn output_facts(&self) -> Option<&[WorthQueryApplicationObservedFact]> {
         self.output_projection
             .as_ref()
             .map(|projection| projection.facts.as_ref())
@@ -145,9 +143,7 @@ impl EqualityRecoveryImage {
 
     /// Comparisons precede any recovery edit. A same-position actor edit
     /// invalidates this read just as a native publication does.
-    pub fn fence(
-        &self,
-    ) -> Result<(), SettlementVerificationStop> {
+    pub fn fence(&self) -> Result<(), SettlementVerificationStop> {
         let fresh = self.cell.read_image();
         if fresh.root_id() != self.image.root_id()
             || fresh.commit_id() != self.image.commit_id()

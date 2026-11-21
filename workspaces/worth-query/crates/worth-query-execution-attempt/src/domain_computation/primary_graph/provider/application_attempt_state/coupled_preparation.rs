@@ -27,10 +27,8 @@ pub struct CoupledProducerPreparation {
 }
 pub struct AppliedParticipantOutputs {
     pub producer: String,
-    pub meaning:
-        worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
-    pub entities:
-        worth_execution::ExecutionArray<worth_relational::facade::identity::EntityId>,
+    pub meaning: worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+    pub entities: worth_execution::ExecutionArray<worth_relational::facade::identity::EntityId>,
 }
 impl CoupledProducerPreparation {
     pub fn retain_after_own(
@@ -125,8 +123,7 @@ pub struct CoupledApplicationMember {
     pub pending: Option<
         super::super::pending_application_publication::WorthQueryPendingApplicationPublication,
     >,
-    pub owned:
-        Option<OwnedCoupledContribution>,
+    pub owned: Option<OwnedCoupledContribution>,
     pub kind: CoupledApplicationMemberKind,
 }
 pub enum CoupledApplicationMemberKind {
@@ -143,9 +140,7 @@ pub enum CoupledApplicationMemberKind {
     },
 }
 impl CoupledApplicationMember {
-    pub fn extracted_attempt(
-        &self,
-    ) -> &super::super::WorthQueryPrimaryGraphApplicationAttempt {
+    pub fn extracted_attempt(&self) -> &super::super::WorthQueryPrimaryGraphApplicationAttempt {
         &self
             .owned
             .as_ref()
@@ -168,10 +163,7 @@ impl CoupledApplicationMember {
     /// Sequentially this member runs after the stage at `reader`: an
     /// authored stage applied later, or a producer owed by that stage or a
     /// later one. A producer owed earlier belongs before the reader.
-    pub fn settles_after(
-        &self,
-        reader: usize,
-    ) -> bool {
+    pub fn settles_after(&self, reader: usize) -> bool {
         match &self.kind {
             CoupledApplicationMemberKind::AuthoredStage { .. } => self.position > reader,
             CoupledApplicationMemberKind::Producer { .. } => {
@@ -179,9 +171,7 @@ impl CoupledApplicationMember {
             }
         }
     }
-    pub fn source(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub fn source(&self) -> worth_relational::facade::identity::EntityId {
         match &self.kind {
             CoupledApplicationMemberKind::Producer { meaning, .. } => meaning.source_scope,
             CoupledApplicationMemberKind::AuthoredStage { source, .. } => *source,
@@ -233,11 +223,8 @@ impl CoupledApplicationMember {
 
 /// The registered member moves out with the root under the same attempt gate.
 pub struct OwnedCoupledContribution {
-    pub attempt:
-        super::super::WorthQueryPrimaryGraphApplicationAttempt,
-    pub work:
-        super::super::mutation_work::WorthQueryPrimaryMutationWorkCounters,
-    pub commit:
-        Option<super::commit_preparation::CoupledCommitPreparation>,
+    pub attempt: super::super::WorthQueryPrimaryGraphApplicationAttempt,
+    pub work: super::super::mutation_work::WorthQueryPrimaryMutationWorkCounters,
+    pub commit: Option<super::commit_preparation::CoupledCommitPreparation>,
     pub(super) _completion: super::commit_completion::WorthQueryApplicationAttemptCompletion,
 }

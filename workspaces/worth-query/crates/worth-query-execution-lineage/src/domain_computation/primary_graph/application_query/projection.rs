@@ -25,9 +25,7 @@ pub use projected_tree::content::ContentWriter;
 pub use projected_tree::content_storage::ContentScratch;
 pub use projected_tree::content_storage::ProjectionContentStorageFault;
 pub use projected_tree::ProjectionContentComparisonFault;
-pub use projected_tree::{
-    OwnedProjectionRows, ProjectionDisposal,
-};
+pub use projected_tree::{OwnedProjectionRows, ProjectionDisposal};
 pub mod retained_projection;
 
 pub use disclosed::{WorthQueryApplicationDisclosed, WorthQueryApplicationOmission};

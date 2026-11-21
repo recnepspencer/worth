@@ -22,9 +22,7 @@ pub struct WorkflowCapturedInputs {
     pub identity: Option<[u8; 32]>,
     pub facts: Vec<WorthQueryApplicationObservedFact>,
 }
-pub fn inventory_identity(
-    targets: &[WorkflowCapturedTarget],
-) -> Option<[u8; 32]> {
+pub fn inventory_identity(targets: &[WorkflowCapturedTarget]) -> Option<[u8; 32]> {
     if targets.is_empty() {
         return None;
     }
@@ -85,7 +83,7 @@ impl WorkflowCapturedInputs {
         B: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<S>,
         C,
     >(
-        access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         selected: &dyn crate::ports::SelectedProductOperationPort<S>,
         admission: &mut WorthQueryAdmittedApplicationOperation<S, B::Operation, B::Input, C>,
         inputs: Vec<(
@@ -183,7 +181,7 @@ impl WorkflowCapturedInputs {
 
     pub fn bind_idempotency(
         &self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         binding: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationIdempotencyBinding {
         binding.bind_workflow_captured_inputs(self.identity)

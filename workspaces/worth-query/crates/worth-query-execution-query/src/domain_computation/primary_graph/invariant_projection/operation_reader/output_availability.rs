@@ -29,12 +29,7 @@ type Source<S, D> = <Family<S, D> as WorthQueryProducerOutputFamily<S>>::Source;
 type SourceValue<S, D> =
     <<Source<S, D> as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
-pub fn output_availability<
-    Schema: ApplicationSchema + 'static,
-    Operation,
-    Demand,
-    Producer,
->(
+pub fn output_availability<Schema: ApplicationSchema + 'static, Operation, Demand, Producer>(
     reader_self: &mut WorthQueryApplicationOperationInvariantProjectionReader<
         '_,
         '_,
@@ -62,10 +57,11 @@ where
                 Schema,
                 <Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::PrincipalIdentity,
             >,
-    SourceValue<Schema, Demand>: crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
-        Schema,
-        <Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::Query,
-    >,
+    SourceValue<Schema, Demand>:
+        crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+            Schema,
+            <Source<Schema, Demand> as ApplicationQueryBinding<Schema>>::Query,
+        >,
     Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
     <Family<Schema, Demand> as WorthQueryProducerOutputFamily<Schema>>::Entity:
         OperationReads<Operation>,
@@ -144,9 +140,7 @@ where
                     .committed_runtime()
                     .ok_or(Cause::ContextUnavailable)?,
             )
-            .map_err(|cause| {
-                Cause::SourceQuery(SourceQueryObservationStop::Admission(cause))
-            })?;
+            .map_err(|cause| Cause::SourceQuery(SourceQueryObservationStop::Admission(cause)))?;
             let observed = access
                 .read::<Source<Schema, Demand>>(
                     execution,
@@ -235,18 +229,23 @@ where
             Ok((posture, entity))
         })();
         let (posture, entity) = observed.map_err(WorthQueryOutputAvailabilityDenial::from)?;
-        let state = match posture {
-            ObservedOutputPosture::Pending => WorthQueryOutputAvailabilityState::Pending,
-            ObservedOutputPosture::Current => WorthQueryOutputAvailabilityState::Current(
-                reader_self
-                    .live_current_identity(
-                        execution,
-                        <Family<Schema, Demand> as WorthQueryProducerOutputFamily<Schema>>::IDENTITY,
-                        entity.expect("current required target has an entity"),
+        let state =
+            match posture {
+                ObservedOutputPosture::Pending => WorthQueryOutputAvailabilityState::Pending,
+                ObservedOutputPosture::Current => {
+                    WorthQueryOutputAvailabilityState::Current(
+                        reader_self
+                            .live_current_identity(
+                                execution,
+                                <Family<Schema, Demand> as WorthQueryProducerOutputFamily<
+                                    Schema,
+                                >>::IDENTITY,
+                                entity.expect("current required target has an entity"),
+                            )
+                            .map_err(Cause::Current)?,
                     )
-                    .map_err(Cause::Current)?,
-            ),
-        };
+                }
+            };
         Ok(WorthQueryObservedOutputAvailability::from_state(state))
     })();
     if result.is_err() {

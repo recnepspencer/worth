@@ -55,9 +55,7 @@ where
     /// of this wave (`continues_caller`). Every fallible authority check
     /// precedes the pop; a refused typed extraction restores the same
     /// move-only Progress.
-    pub fn promote_caller_successor<
-        Family,
-    >(
+    pub fn promote_caller_successor<Family>(
         &mut self,
         registry: &WorthQueryOutputDemandRegistry,
         caller_ready: &SelectedReadyReadmission,

@@ -131,9 +131,7 @@ impl CompiledWorkflowConnection {
 }
 
 impl CompiledWorkflowDefinition {
-    pub fn structure_identity_material(
-        &self,
-    ) -> String {
+    pub fn structure_identity_material(&self) -> String {
         let mut material = String::new();
         for node in &self.publication.nodes {
             append_framed(&mut material, node.path());

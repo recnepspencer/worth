@@ -99,10 +99,7 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
         self
     }
 
-    pub fn carry_planned_batch_item(
-        &mut self,
-        item: Option<super::batch::PlannedBatchItem>,
-    ) {
+    pub fn carry_planned_batch_item(&mut self, item: Option<super::batch::PlannedBatchItem>) {
         self.planned_batch_item = item;
     }
 
@@ -204,9 +201,7 @@ impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, S
         self.authorization_work
     }
 
-    pub fn take_governance(
-        &mut self,
-    ) -> super::disclosure::WorthQueryApplicationQueryGovernance {
+    pub fn take_governance(&mut self) -> super::disclosure::WorthQueryApplicationQueryGovernance {
         std::mem::replace(
             &mut self.governance,
             super::disclosure::WorthQueryApplicationQueryGovernance::Public,

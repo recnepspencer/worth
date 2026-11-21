@@ -62,10 +62,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub fn materialize_workflow_instance_migration<
-        Capability,
-        Spec,
-    >(
+    pub fn materialize_workflow_instance_migration<Capability, Spec>(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

@@ -131,8 +131,7 @@ pub struct WorthQueryCompleteApplicationReadSet<
     Scope,
     Phase = WorthQueryOrdinaryApplicationRead,
 > {
-    pub admission:
-        Box<WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>>,
+    pub admission: Box<WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>>,
     pub lease: WorthQueryApplicationSnapshotLease,
     pub application_projection: Option<Arc<CompletedFactProjection>>,
     pub original_read: Option<Arc<CompletedOriginalRead>>,
@@ -150,8 +149,7 @@ pub struct WorthQueryCompleteApplicationReadSet<
     /// The ordinals in `facts`, ascending, of the facts an owner call read.
     pub computation_fact_ordinals: Arc<[usize]>,
     pub workflow_authority_binding: Option<WorkflowOperationBindingProof>,
-    pub workflow_birth_binding:
-        Option<super::workflow_instance_program::WorkflowBirthBindingProof>,
+    pub workflow_birth_binding: Option<super::workflow_instance_program::WorkflowBirthBindingProof>,
     pub workflow_succession_binding:
         Option<super::workflow_instance_program::WorkflowSuccessionBindingProof>,
     pub mutation_handler_binding: Option<MutationHandlerBindingProof>,
@@ -180,66 +178,56 @@ pub use denial::denial;
 
 pub mod court_doors_for_test;
 
-#[doc(hidden)]
-pub struct WorthQueryApplicationReadAttemptAttemptParts<
-    'request,
-    'authority,
-    Schema,
-    Operation,
-    Input,
-    Scope,
-    Phase = WorthQueryOrdinaryApplicationRead,
-> {
-    pub execution: worth_execution::ExecutionRequest<'request, 'authority>,
-    pub value_decode: super::super::value_decode::ValueDecodeState,
-    pub admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-    pub lease: WorthQueryApplicationSnapshotLease,
-    pub layout: Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
-    pub entity_resolution: WorthQueryInstalledEntityResolutionContext,
-    pub read_scope: WorthQueryApplicationReadScope,
-    pub expected_facts: Option<crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys>,
-    pub computation_reads: (
-        crate::domain_computation::primary_graph::invariant_projection::ObservedComputationInputs,
-        crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention,
-    ),
-    pub installed_read_scopes: BTreeMap<WorthQueryApplicationFactKey, InstalledScopePosition>,
-    pub facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
-    pub source_facts: SourceFacts,
-    pub consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
-    pub native_completion: Option<computation_routing::NativeReadRefresh>,
-    pub _phase: PhantomData<fn() -> Phase>,
-}
-
-impl<
-    'request,
-    'authority,
-    Schema,
-    Operation,
-    Input,
-    Scope,
-    Phase,
-> WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope, Phase> {
-    #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: WorthQueryApplicationReadAttemptAttemptParts<'request, 'authority, Schema, Operation, Input, Scope, Phase>,
-    ) -> Self {
-        Self {
-            execution: parts.execution,
-            value_decode: parts.value_decode,
-            admission: parts.admission,
-            lease: parts.lease,
-            layout: parts.layout,
-            entity_resolution: parts.entity_resolution,
-            read_scope: parts.read_scope,
-            expected_facts: parts.expected_facts,
-            computation_reads: parts.computation_reads,
-            installed_read_scopes: parts.installed_read_scopes,
-            facts: parts.facts,
-            source_facts: parts.source_facts,
-            consumed_outputs: parts.consumed_outputs,
-            native_completion: parts.native_completion,
-            _phase: parts._phase,
-        }
+impl<'request, 'authority, Schema, Operation, Input, Scope, Phase>
+    crate::ports::ApplicationReadAttemptAdmissionPort<
+        'request,
+        'authority,
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        Phase,
+    >
+    for WorthQueryApplicationReadAttempt<
+        'request,
+        'authority,
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        Phase,
+    >
+{
+    fn admit_read_attempt(
+        init: crate::ports::WorthQueryApplicationReadAttemptInit<
+            'request,
+            'authority,
+            Schema,
+            Operation,
+            Input,
+            Scope,
+            Phase,
+        >,
+    ) -> Result<Self, WorthQueryApplicationAttemptDenial> {
+        init.admission
+            .validate_current_authority()
+            .map_err(WorthQueryApplicationAttemptDenial::request_authority_lost)?;
+        Ok(Self {
+            execution: init.execution,
+            value_decode: init.value_decode,
+            admission: init.admission,
+            lease: init.lease,
+            layout: init.layout,
+            entity_resolution: init.entity_resolution,
+            read_scope: init.read_scope,
+            expected_facts: init.expected_facts,
+            computation_reads: init.computation_reads,
+            installed_read_scopes: BTreeMap::new(),
+            facts: BTreeMap::new(),
+            source_facts: init.source_facts,
+            consumed_outputs: init.consumed_outputs,
+            native_completion: None,
+            _phase: init._phase,
+        })
     }
 }

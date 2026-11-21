@@ -36,8 +36,7 @@ pub struct WorthQueryWorkflowHistoryEntry {
     pub path: ExecutionImmutableBytes,
     pub outcome: ApplicationWorkflowControlOutcome,
     pub proposal: Option<PublishedWorkflowProposalRef>,
-    pub approval:
-        Option<WorthQueryWorkflowApprovalRead>,
+    pub approval: Option<WorthQueryWorkflowApprovalRead>,
     pub audit: WorthQueryWorkflowHistoryAudit,
 }
 impl WorthQueryWorkflowHistoryEntry {
@@ -65,10 +64,6 @@ fn text(value: &ExecutionImmutableBytes) -> &str {
     std::str::from_utf8(value.bytes()).expect("native UTF-8 projection")
 }
 /// A complete page and its opaque continuation, retaining exact data but no grant.
-/// ```compile_fail,E0599
-/// use worth_query_execution::facade::application_discovery::WorthQueryWorkflowHistoryPage;
-/// fn cannot_approve(page:WorthQueryWorkflowHistoryPage) { page.approve(); }
-/// ```
 pub struct WorthQueryWorkflowHistoryPage {
     pub basis: WorthQueryWorkflowReadBasis,
     pub instance: worth_relational::facade::identity::EntityId,

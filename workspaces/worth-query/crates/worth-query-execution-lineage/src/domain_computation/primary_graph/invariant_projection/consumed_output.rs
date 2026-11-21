@@ -109,9 +109,7 @@ impl PartialEq for RecordedConsumedOutput {
 impl Eq for RecordedConsumedOutput {}
 
 impl ConsumedOutputEvidence {
-    pub fn applied(
-        &self,
-    ) -> Option<&AppliedConsumedOutput> {
+    pub fn applied(&self) -> Option<&AppliedConsumedOutput> {
         match self {
             Self::Appended(link) if !link.is_settled() => Some(link),
             Self::Appended(_) | Self::Recorded(_) => None,

@@ -143,10 +143,7 @@ pub struct ComputationFactAttribution {
 }
 
 impl ComputationFactAttribution {
-    pub fn begin_fresh(
-        &mut self,
-        read: ComputationRead,
-    ) {
+    pub fn begin_fresh(&mut self, read: ComputationRead) {
         self.calls.insert(read);
         if let Some(progress) = &mut self.range_progress {
             progress.fresh(read);
@@ -163,10 +160,7 @@ impl ComputationFactAttribution {
         );
         self.native = Some(native);
     }
-    pub fn carry_native(
-        &mut self,
-        read: ComputationRead,
-    ) -> bool {
+    pub fn carry_native(&mut self, read: ComputationRead) -> bool {
         if self.native.is_none() {
             return false;
         }
@@ -198,9 +192,7 @@ impl ComputationFactAttribution {
             }
         }
     }
-    pub fn carried_keys(
-        &self,
-    ) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
+    pub fn carried_keys(&self) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
         self.native
             .iter()
             .flat_map(|native| native.facts().metadata.iter())
@@ -210,9 +202,7 @@ impl ComputationFactAttribution {
             .filter(|(_, fact)| fact.readers.reads().any(|read| self.is_carried(read)))
             .map(|(key, _)| key)
     }
-    pub fn carried_structural_keys(
-        &self,
-    ) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
+    pub fn carried_structural_keys(&self) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
         let has_structural = self.native.as_ref().is_some_and(|native| {
             native.facts().has_structural_walk() || native.facts().has_aggregate()
         });
@@ -312,9 +302,7 @@ impl ComputationFactAttribution {
             })
     }
 
-    pub fn keys(
-        &self,
-    ) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
+    pub fn keys(&self) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
         self.readers.keys()
     }
 }

@@ -192,8 +192,14 @@ where
         let deposit = reader.computation_deposit();
         let (basis, cause) = match begun {
             Begun::Incremental(run) => {
-                let prepared =
-                    run.prepare(owner, reader, source_query, execution, input, preparation_work)?;
+                let prepared = run.prepare(
+                    owner,
+                    reader,
+                    source_query,
+                    execution,
+                    input,
+                    preparation_work,
+                )?;
                 if let Some(prepared) = prepared {
                     return Ok(WorthQueryPreparedPartitionedComputation {
                         installed: self.clone(),

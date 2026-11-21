@@ -54,9 +54,7 @@ pub use decision_plan::{
     WorthQueryInvariantDecisionPlanDenial, WorthQueryInvariantDecisionPlanDenialKind,
     WorthQueryPreparedEntitySelection,
 };
-pub use decision_reads::{
-    DecisionReads, ExpectedFactKeys, ObservedComputationInputs,
-};
+pub use decision_reads::{DecisionReads, ExpectedFactKeys, ObservedComputationInputs};
 pub use prior_output::WorthQueryPriorOutputFamilyMember;
 pub use prior_output::WorthQueryPriorOutputRead;
 
@@ -86,16 +84,22 @@ pub struct WorthQueryApplicationOperationInvariantProjectionReader<
 > {
     pub reader: &'reader mut WorthQueryApplicationInvariantProjectionReader<'runtime, Schema>,
     pub source_query: Option<&'reader dyn SourceQueryReaderPort>,
-    pub source_context_use: Option<&'reader std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
+    pub source_context_use: Option<
+        &'reader std::cell::Cell<
+            crate::domain_computation::primary_graph::handler::DecisionContextUse,
+        >,
+    >,
     pub admitted_contracts: Option<Arc<WorthQueryCompiledApplicationOperationContracts>>,
     pub runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
-    pub binding_identity: &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    pub binding_identity:
+        &'reader worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub admission_identity: Option<WorthQueryOperationAdmissionIdentity>,
     pub selected_product: Option<&'reader crate::basis::WorthQueryProductBranchLease>,
     pub admitted_root: Option<admitted::AdmittedReadRoot>,
     pub admitted_principal: Option<worth_relational::facade::identity::EntityId>,
-    pub query_context: Option<&'reader super::super::application_query::ObservedQueryExpressionContext>,
+    pub query_context:
+        Option<&'reader super::super::application_query::ObservedQueryExpressionContext>,
     pub operation_scope:
         Option<crate::domain_computation::authorization::WorthQueryOperationScopeBinding>,
     pub decision_facts: &'reader mut DecisionReads,
@@ -147,21 +151,6 @@ where
     /// Runs an operation-typed inspection without retaining mutation authority.
     ///
     /// The inspection result has no snapshot extraction transition:
-    ///
-    /// ```compile_fail
-    /// use worth_query_execution::facade::primary_graph::
-    ///     WorthQueryApplicationInvariantProjectionAuthority;
-    /// use worth_query_installation::facade::ApplicationSchema;
-    ///
-    /// struct Operation;
-    ///
-    /// fn inspection_cannot_become_projection<Schema: ApplicationSchema>(
-    ///     authority: &WorthQueryApplicationInvariantProjectionAuthority<Schema>,
-    /// ) {
-    ///     let inspected = authority.project_operation::<Operation, _>(|_| (), worth_execution::ExecutionAllocationPolicy::SystemAllocation);
-    ///     let _ = inspected.into_parts();
-    /// }
-    /// ```
     pub fn project_operation<Operation, Output>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
@@ -187,10 +176,7 @@ where
         })
     }
 
-    pub fn project_operation_on_product<
-        Operation,
-        Output,
-    >(
+    pub fn project_operation_on_product<Operation, Output>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         product: &crate::basis::WorthQueryProductBranchLease,

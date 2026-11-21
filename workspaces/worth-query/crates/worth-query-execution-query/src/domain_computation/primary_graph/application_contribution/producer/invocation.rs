@@ -44,10 +44,7 @@ impl<'invocation> ProducerInvocationAuthority<'invocation> {
         confirm_history_source(self.history, execution, runtime, value)
     }
 
-    pub fn for_mode(
-        &self,
-        mode: WorthQueryProducerCommitAuthority,
-    ) -> Self {
+    pub fn for_mode(&self, mode: WorthQueryProducerCommitAuthority) -> Self {
         Self {
             mode,
             history: self.history,
@@ -64,15 +61,11 @@ impl<'invocation> ProducerInvocationAuthority<'invocation> {
         }
     }
 
-    pub fn mode(
-        &self,
-    ) -> &WorthQueryProducerCommitAuthority {
+    pub fn mode(&self) -> &WorthQueryProducerCommitAuthority {
         &self.mode
     }
 
-    pub fn history_control(
-        &self,
-    ) -> Option<HistoryProducerInvocation<'invocation>> {
+    pub fn history_control(&self) -> Option<HistoryProducerInvocation<'invocation>> {
         self.history
     }
 }

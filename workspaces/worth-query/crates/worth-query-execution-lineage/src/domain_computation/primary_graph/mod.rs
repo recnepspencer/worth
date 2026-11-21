@@ -182,14 +182,13 @@ pub use freshness::{
     WorthQueryPrincipalFreshnessEvidence,
 };
 pub use handler::{DecisionContextUse, HandlerInterruption};
-pub use root::{WorthQueryPrimaryGraph, WorthQueryPrimaryGraphIntegrationHandle};
 pub use index_currency::WorthQueryPrimaryIndexCurrencyDenial;
 pub use initial_schema_denial::*;
 pub use invariant_projection::*;
 pub use observations::principal_target_reads_on_this_thread_for_test;
 pub use operation_body::*;
-pub use output_lineage::{SourceInvalidationOwner, WorthQueryApplicationOutputLineage};
 pub use output_lineage::*;
+pub use output_lineage::{SourceInvalidationOwner, WorthQueryApplicationOutputLineage};
 pub use provider::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryCommittedDispatchOutboxBinding,
     WorthQueryCommittedDispatchOutboxObservation,
@@ -201,6 +200,7 @@ pub use provider::{
 pub use resolution::WorthQueryPrincipalResolutionMode;
 pub use resolution_denial::*;
 pub use retained_correction::WorthQueryCorrectionRetentionDenial;
+pub use root::{WorthQueryPrimaryGraph, WorthQueryPrimaryGraphIntegrationHandle};
 pub use schema_layout::{WorthQueryPrimaryGraphLayout, WorthQueryPrimaryPrincipalBindingLayout};
 pub use source_facts::{validate_source_principal_facts, SourceFactsAllocation};
 pub use value_decode::*;

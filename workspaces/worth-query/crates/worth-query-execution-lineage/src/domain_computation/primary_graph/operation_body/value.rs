@@ -34,17 +34,11 @@ impl PreparedBodyValues {
             .expect("installed value reference")
             .1
     }
-    pub fn snapshot(
-        &self,
-    ) -> &ApplicationOperationBodyValueSnapshot {
+    pub fn snapshot(&self) -> &ApplicationOperationBodyValueSnapshot {
         &self.0.snapshot
     }
 }
-pub fn prepare<
-    S: worth_query_installation::facade::ApplicationSchema,
-    O,
-    E,
->(
+pub fn prepare<S: worth_query_installation::facade::ApplicationSchema, O, E>(
     reader: &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, S, O>,
     scope: &WorthQueryInvariantEntityIdentity<S, E>,
     programs: &[InstalledBodyValue],

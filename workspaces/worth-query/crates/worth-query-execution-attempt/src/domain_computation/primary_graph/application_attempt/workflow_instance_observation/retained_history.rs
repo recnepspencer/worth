@@ -1,13 +1,11 @@
-use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 use super::*;
+use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 
 impl ObservedWorkflowInstance {
     /// Every step the lineage has taken up to this instance's next one: its
     /// sources' and its own. Migration and fork continuation carry it, so a
     /// loop through a successor spends the same budget.
-    pub fn lineage_steps(
-        &self,
-    ) -> u64 {
+    pub fn lineage_steps(&self) -> u64 {
         self.inherited_steps
             .saturating_add(self.progress_basis.progress().next_occurrence())
     }

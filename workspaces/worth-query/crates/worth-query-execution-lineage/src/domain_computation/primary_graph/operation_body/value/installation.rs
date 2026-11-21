@@ -8,9 +8,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreatedField as Created, ApplicationOperationBodyProgram,
     ApplicationOperationBodyScopeField as Scope,
 };
-pub fn install<
-    S: worth_query_installation::facade::ApplicationSchema,
->(
+pub fn install<S: worth_query_installation::facade::ApplicationSchema>(
     schema: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<S>,
     body: &ApplicationOperationBodyProgram,
     operation: &str,

@@ -18,11 +18,7 @@ pub struct WorthQueryApplicationQueryRequestAffinity {
 }
 
 impl WorthQueryApplicationQueryRequestAffinity {
-    pub fn new<
-        Schema,
-        Principal,
-        PrincipalIdentity,
-    >(
+    pub fn new<Schema, Principal, PrincipalIdentity>(
         principal: &super::super::WorthQueryAuthenticatedPrincipal<
             Schema,
             Principal,
@@ -62,19 +58,6 @@ impl WorthQueryApplicationQueryRequestAffinity {
 ///
 /// A consumer holding a terminal receipt still cannot construct an admitted
 /// result and bypass governed projection:
-///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::{
-///     WorthQueryAdmittedDisclosedApplicationResult,
-///     WorthQueryApplicationQueryAccessReceipt,
-/// };
-///
-/// fn counterfeit(
-///     receipt: WorthQueryApplicationQueryAccessReceipt,
-/// ) -> WorthQueryAdmittedDisclosedApplicationResult<(), ()> {
-///     WorthQueryAdmittedDisclosedApplicationResult::new(vec![()], receipt)
-/// }
-/// ```
 pub struct WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {
     rows: Vec<QueryResult>,
     observed_sources: Vec<super::WorthQueryObservedSource<Query>>,
@@ -103,7 +86,7 @@ pub struct WorthQueryApplicationOutputDemandSource<Query, QueryResult> {
 }
 
 impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, QueryResult> {
-    pub fn new(
+    pub(crate) fn new(
         rows: Vec<QueryResult>,
         receipt: WorthQueryApplicationQueryAccessReceipt,
     ) -> Self {
@@ -116,7 +99,7 @@ impl<Query, QueryResult> WorthQueryAdmittedDisclosedApplicationResult<Query, Que
         }
     }
 
-    pub fn new_with_sources(
+    pub(crate) fn new_with_sources(
         rows: Vec<QueryResult>,
         observed_sources: Vec<super::WorthQueryObservedSource<Query>>,
         result_set_observation: super::WorthQueryObservedResultSet<Query>,

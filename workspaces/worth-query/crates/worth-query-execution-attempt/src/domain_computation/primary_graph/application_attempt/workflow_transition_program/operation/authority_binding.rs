@@ -66,9 +66,7 @@ impl<Schema, Operation, Input, Scope>
         Ok(self)
     }
 
-    pub fn matches_workflow_authority_binding<
-        Binding,
-    >(
+    pub fn matches_workflow_authority_binding<Binding>(
         &self,
         idempotency: &crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyBinding,
     ) -> bool

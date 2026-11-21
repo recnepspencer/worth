@@ -9,7 +9,6 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_relational::facade::branch::RelationalBranchBasisDenial;
 use worth_runtime_world::facade::{RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial};
 
-
 #[derive(Debug)]
 pub enum CurrentReadDenial {
     HeadDiverged,
@@ -42,16 +41,10 @@ impl<'a> CurrentReadControl<'a> {
     pub fn current(&self) -> &WorthQueryProductObservationLease {
         self.current
     }
-    pub fn admits_request(
-        &self,
-        request: &WorthQueryRequestScope,
-    ) -> bool {
+    pub fn admits_request(&self, request: &WorthQueryRequestScope) -> bool {
         self.request.same_request(request)
     }
-    pub fn admits_principal(
-        &self,
-        principal: &WorthQueryOperationScopeEntityBinding,
-    ) -> bool {
+    pub fn admits_principal(&self, principal: &WorthQueryOperationScopeEntityBinding) -> bool {
         self.principal == principal
     }
     pub fn request_lapse(&self) -> Option<WorthQueryAdmissionLapse> {

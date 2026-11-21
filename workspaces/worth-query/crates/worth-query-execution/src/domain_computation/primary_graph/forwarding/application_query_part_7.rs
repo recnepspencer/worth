@@ -10,8 +10,9 @@ mod domain_computation_primary_graph_application_query_continuation_mod {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
+    where
+        Schema: ApplicationSchema,
+    {
         pub fn execute_application_query_continuation_page<
             Query,
             Parameters,
@@ -19,7 +20,10 @@ where
             Principal,
             PrincipalIdentity,
             Scope,
-        >(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, plan: WorthQueryAdmittedApplicationQueryPlan<
+        >(
+            &self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            plan: WorthQueryAdmittedApplicationQueryPlan<
                 '_,
                 Schema,
                 Query,
@@ -28,12 +32,20 @@ where
                 Principal,
                 PrincipalIdentity,
                 Scope,
-            >) -> Result<
-            WorthQueryApplicationContinuationPageResult<Schema, Query, Parameters, QueryResult, Scope>,
+            >,
+        ) -> Result<
+            WorthQueryApplicationContinuationPageResult<
+                Schema,
+                Query,
+                Parameters,
+                QueryResult,
+                Scope,
+            >,
             WorthQueryApplicationContinuationDenial,
         >
         where
-            QueryResult: WorthQueryApplicationProjection<Schema, Query>, {
+            QueryResult: WorthQueryApplicationProjection<Schema, Query>,
+        {
             self.inner.execute_application_query_continuation_page::<Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>(phase, plan)
         }
     }
@@ -53,8 +65,9 @@ mod domain_computation_primary_graph_application_query_continuation_readmission 
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
+    where
+        Schema: ApplicationSchema,
+    {
         pub fn readmit_application_query_continuation<
             'a,
             Query,
@@ -63,25 +76,33 @@ where
             Principal,
             PrincipalIdentity,
             Scope,
-        >(&'a self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, query: &'a WorthQueryInstalledApplicationQuery<
+        >(
+            &'a self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            query: &'a WorthQueryInstalledApplicationQuery<
                 Schema,
                 Query,
                 Parameters,
                 QueryResult,
                 Scope,
-            >, access: &WorthQueryApplicationQueryAccessContext<
+            >,
+            access: &WorthQueryApplicationQueryAccessContext<
                 'a,
                 Schema,
                 Principal,
                 PrincipalIdentity,
                 Scope,
-            >, parameters: ApplicationQueryParameterSet<Query>, continuation: WorthQueryApplicationQueryContinuation<
+            >,
+            parameters: ApplicationQueryParameterSet<Query>,
+            continuation: WorthQueryApplicationQueryContinuation<
                 Schema,
                 Query,
                 Parameters,
                 QueryResult,
                 Scope,
-            >, controls: WorthQueryApplicationQueryResumeControls<'a>) -> Result<
+            >,
+            controls: WorthQueryApplicationQueryResumeControls<'a>,
+        ) -> Result<
             WorthQueryAdmittedApplicationQueryPlan<
                 'a,
                 Schema,
@@ -108,30 +129,39 @@ where
             Capability,
             Operation,
             Input,
-        >(&'a self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, query: &'a WorthQueryInstalledApplicationQuery<
+        >(
+            &'a self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            query: &'a WorthQueryInstalledApplicationQuery<
                 Schema,
                 Query,
                 Parameters,
                 QueryResult,
                 Scope,
-            >, access: &WorthQueryApplicationQueryAccessContext<
+            >,
+            access: &WorthQueryApplicationQueryAccessContext<
                 'a,
                 Schema,
                 Principal,
                 PrincipalIdentity,
                 Scope,
-            >, capability: crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<
+            >,
+            capability: crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess<
                 Schema,
                 Capability,
                 Operation,
                 Input,
-            >, parameters: ApplicationQueryParameterSet<Query>, continuation: WorthQueryApplicationQueryContinuation<
+            >,
+            parameters: ApplicationQueryParameterSet<Query>,
+            continuation: WorthQueryApplicationQueryContinuation<
                 Schema,
                 Query,
                 Parameters,
                 QueryResult,
                 Scope,
-            >, controls: WorthQueryApplicationQueryResumeControls<'a>) -> Result<
+            >,
+            controls: WorthQueryApplicationQueryResumeControls<'a>,
+        ) -> Result<
             WorthQueryAdmittedApplicationQueryPlan<
                 'a,
                 Schema,
@@ -145,7 +175,8 @@ where
             WorthQueryApplicationQueryAdmissionDenial,
         >
         where
-            Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>, {
+            Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
+        {
             self.inner.readmit_governed_application_query_continuation::<Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope, Capability, Operation, Input>(phase, query, access, capability, parameters, continuation, controls)
         }
     }
@@ -163,10 +194,20 @@ mod domain_computation_primary_graph_application_query_document_history_retained
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-        pub(crate) fn authorize_retained_history_query<B>(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, history: HistoryProducerInvocation<'_>, observed: &WorthQueryObservedSource<B::Query>, external: &WorthQueryAuthenticatedExternalPrincipal<S>, request: &WorthQueryRequestScope) -> Result<(), HistoryRetainedPermissionStop>
+        pub(crate) fn authorize_retained_history_query<B>(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'_, '_>,
+            history: HistoryProducerInvocation<'_>,
+            observed: &WorthQueryObservedSource<B::Query>,
+            external: &WorthQueryAuthenticatedExternalPrincipal<S>,
+            request: &WorthQueryRequestScope,
+        ) -> Result<(), HistoryRetainedPermissionStop>
         where
-            B: ApplicationQueryBinding<S>, {
-            self.inner.authorize_retained_history_query::<B>(execution, history, observed, external, request)
+            B: ApplicationQueryBinding<S>,
+        {
+            self.inner.authorize_retained_history_query::<B>(
+                execution, history, observed, external, request,
+            )
         }
     }
 }

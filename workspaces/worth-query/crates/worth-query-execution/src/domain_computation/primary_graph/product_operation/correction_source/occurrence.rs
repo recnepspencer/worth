@@ -1,9 +1,9 @@
 //! Historical correction meaning is DATA; it is never a reconstructed live receipt.
-use crate::domain_computation::primary_graph::CommitAuthorityBindingExt;
 use super::*;
 use crate::domain_computation::application_aftermath::{
     OriginalCorrectionDisclosure, WorthQueryCommittedAftermathCausality, WorthQueryRetainedPreImage,
 };
+use crate::domain_computation::primary_graph::CommitAuthorityBindingExt;
 use crate::domain_computation::primary_graph::{
     application_checkpoint::facts::FactPayload, retained_correction::RetainedCorrectionMaterial,
     OriginalProgramMeaning, WorthQueryApplicationOutputCorrespondence,

@@ -10,16 +10,10 @@ use graph::application_attempt::{
 use graph::provider::WorthQueryProviderIdempotencyResolution;
 use graph::provider::WorthQueryProviderIdempotencyResolutionDenial as IdempotencyDenial;
 use graph::WorthQueryApplicationCommitDenialStage as ExecutionDenialStage;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
-pub struct WorthQueryAuthorizedProviderCommit<
-    'run,
-    'a,
-    'provider,
-    Schema,
-    Operation,
-    Input,
-    Scope,
-> {
+pub struct WorthQueryAuthorizedProviderCommit<'run, 'a, 'provider, Schema, Operation, Input, Scope>
+{
     candidate: crate::domain_computation::WorthQueryInvariantApprovedProposedState<'run>,
     authority: &'a super::WorthQueryApplicationCommitProgressionAuthority<
         'a,

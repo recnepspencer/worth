@@ -59,7 +59,7 @@ impl WorthQueryProviderSessionFailure {
     }
     pub fn correction_material_denial(
         &self,
-    ) -> Option<&worth_query_execution_obligations::facade::aftermath::correction_material::QueryCorrectionMaterialDenial> {
+    ) -> Option<&worth_query_execution_obligations::facade::aftermath::correction_material::QueryCorrectionMaterialDenial>{
         self.correction_material.as_ref()
     }
     pub fn relation_preimage_failure(

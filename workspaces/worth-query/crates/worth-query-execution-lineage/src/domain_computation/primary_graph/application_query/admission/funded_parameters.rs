@@ -1,12 +1,12 @@
 //! Admitted immutable query parameter custody.
-use std::sync::Arc;
-use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
-use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
-use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
 use crate::domain_computation::primary_graph::{
     application_contribution::execution_denial::publication_execution_kind,
     WorthQueryApplicationAttemptDenial as Denial,
 };
+use std::sync::Arc;
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, WorkCeilingDenial};
+use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
+use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
 
 pub fn overflow() -> Denial {
     request_stopped(WorkCeilingDenial::Admission(
@@ -54,14 +54,10 @@ impl CapturedApplicationQueryParameters {
             _funding: funding,
         }
     }
-    pub fn query(
-        &self,
-    ) -> &WorthQueryInstalledApplicationQueryIdentity {
+    pub fn query(&self) -> &WorthQueryInstalledApplicationQueryIdentity {
         &self.query
     }
-    pub fn parameters(
-        &self,
-    ) -> &WorthQueryAdmittedApplicationQueryParameters {
+    pub fn parameters(&self) -> &WorthQueryAdmittedApplicationQueryParameters {
         &self.parameters
     }
     pub fn same_capture(&self, other: &Self) -> bool {

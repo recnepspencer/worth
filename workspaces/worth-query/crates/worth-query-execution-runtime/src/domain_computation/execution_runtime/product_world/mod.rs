@@ -16,8 +16,8 @@ pub use creation::{
 };
 mod history;
 mod home_attachment;
-mod maintenance;
 mod installation_denial;
+mod maintenance;
 mod owned_async;
 pub mod owner_cleanup;
 pub mod publication_binding;

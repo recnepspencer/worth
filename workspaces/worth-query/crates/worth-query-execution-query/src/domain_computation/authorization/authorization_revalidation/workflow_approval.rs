@@ -1,6 +1,7 @@
 //! Commit-snapshot readmission of an approval from its durable, descriptive basis.
 
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{

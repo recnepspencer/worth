@@ -125,9 +125,7 @@ impl WorthQueryCanonicalInboundCompletion {
         })
     }
 
-    pub const fn correlation(
-        &self,
-    ) -> &ExternalEffectCorrelationIdentity {
+    pub const fn correlation(&self) -> &ExternalEffectCorrelationIdentity {
         &self.correlation
     }
 
@@ -149,18 +147,13 @@ impl WorthQueryCanonicalInboundCompletion {
             && self.payload == claims.payload
     }
 
-    pub fn matches_message(
-        &self,
-        claims: &WorthQueryInboundOccurrenceClaims,
-    ) -> bool {
+    pub fn matches_message(&self, claims: &WorthQueryInboundOccurrenceClaims) -> bool {
         self.message_identity == Some(claims.message_identity)
             && self.key_epoch == Some(claims.key_epoch)
             && self.signed_meaning_digest == Some(claims.signed_meaning_digest)
     }
 
-    pub const fn authenticated_message_identity(
-        &self,
-    ) -> Option<&[u8; 32]> {
+    pub const fn authenticated_message_identity(&self) -> Option<&[u8; 32]> {
         self.message_identity.as_ref()
     }
 
@@ -168,21 +161,15 @@ impl WorthQueryCanonicalInboundCompletion {
         self.key_epoch
     }
 
-    pub const fn original_world_commit(
-        &self,
-    ) -> &CompositeCommitIdentity {
+    pub const fn original_world_commit(&self) -> &CompositeCommitIdentity {
         &self.original_world_commit
     }
 
-    pub const fn completion_world_commit(
-        &self,
-    ) -> &CompositeCommitIdentity {
+    pub const fn completion_world_commit(&self) -> &CompositeCommitIdentity {
         &self.completion_world_commit
     }
 
-    pub const fn completion_attempt(
-        &self,
-    ) -> &CompositePublicationAttemptIdentity {
+    pub const fn completion_attempt(&self) -> &CompositePublicationAttemptIdentity {
         &self.completion_attempt
     }
 }

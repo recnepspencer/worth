@@ -39,9 +39,7 @@ pub fn principal(cause: Principal) -> Admission {
         }
     }
 }
-pub fn entity(
-    cause: Entity,
-) -> Admission {
+pub fn entity(cause: Entity) -> Admission {
     match cause {
         Entity::Stopped(cause) => match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
             Ok(kind) => Admission::ExecutionRequest(kind),

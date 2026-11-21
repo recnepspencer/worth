@@ -21,10 +21,7 @@ impl QueryReadBacking {
     pub fn belongs_to(&self, original: &Arc<QueryReadProjection>) -> bool {
         matches!(self, Self::Live(projection) if Arc::ptr_eq(projection, original))
     }
-    pub fn detach(
-        &self,
-        key: &FactPostingKey,
-    ) -> Result<Option<Self>, CompanionPreflightStop> {
+    pub fn detach(&self, key: &FactPostingKey) -> Result<Option<Self>, CompanionPreflightStop> {
         let mut keys = match self {
             Self::Live(projection) => projection.keys.clone(),
             Self::Released { keys } => keys.clone(),

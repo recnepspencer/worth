@@ -64,7 +64,12 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         let execution = phase
             .execution_request_for(&self.application().inner.runtime.product_runtime)
             .map_err(Denial::Phase)?;
-        let source = &self.application().inner.runtime.primary_provider.live_delivery;
+        let source = &self
+            .application()
+            .inner
+            .runtime
+            .primary_provider
+            .live_delivery;
         // Both cursors are native owner positions. A retired exact start position is a discontinuity.
         let subscription = source
             .open(data.product().observation())
@@ -74,7 +79,8 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         let touches = match basis.commit_id() {
             Some(commit) => self
                 .application()
-                .inner.runtime
+                .inner
+                .runtime
                 .primary_provider
                 .graph
                 .source_owner
@@ -130,7 +136,8 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         let mut closed = false;
         match self
             .application()
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .live_delivery
             .poll(subscription, interest.cursor)
@@ -155,7 +162,8 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         let basis = self.product().relational_basis().observation();
         let batch = self
             .application()
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .graph
             .source_owner

@@ -10,10 +10,10 @@ pub use relational_read::denial as relational_read_denial;
 pub use relational_read::kernel_stop_kind;
 pub use relational_read::principal_currentness;
 
+pub use worth_query_execution_contracts::facade::WorthQueryAdmissionLapse;
 pub use worth_query_execution_contracts::facade::{
     WorthQueryOperationAuthorizationDenialKind, WorthQueryOperationAuthorizationRefusalKind,
 };
-pub use worth_query_execution_contracts::facade::WorthQueryAdmissionLapse;
 
 pub mod explanation;
 pub use explanation::WorthQueryApplicationAuthorizationExplanationCause;

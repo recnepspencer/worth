@@ -94,8 +94,7 @@ impl DispatchWitness {
         state.expected_point = Some((root, earlier));
         state.interrupt = Some(interruption);
     }
-    pub fn carried(
-    ) -> Option<Arc<Self>> {
+    pub fn carried() -> Option<Arc<Self>> {
         ACTIVE.with(|active| active.borrow().clone())
     }
     pub fn enter(&self, root: EntityId) {
@@ -196,10 +195,7 @@ impl DispatchWitness {
                 .push((root, format!("{dependencies:?}")));
         }
     }
-    pub fn settled(
-        charge: u64,
-        prefix: usize,
-    ) {
+    pub fn settled(charge: u64, prefix: usize) {
         if let Some(witness) = Self::carried() {
             let mut state = witness.state.lock().unwrap();
             state.map_charge = charge;

@@ -23,9 +23,7 @@ pub mod medium;
 pub mod read_limits;
 pub mod recovery;
 pub use custody::WorthQueryDispatchJournal;
-pub use custody::{
-    QueryInboundJournalAdmission, QueryInboundSourceControlObservation,
-};
+pub use custody::{QueryInboundJournalAdmission, QueryInboundSourceControlObservation};
 use generation::QueryDispatchPublicationGenerations;
 pub use inbound::{
     QueryInboundAcceptedMessage, QueryInboundDispatchSource, QueryInboundMessageKey,
@@ -34,9 +32,7 @@ pub use inbound::{
 pub use ledger::QueryDispatchCustody;
 use ledger::QueryDispatchLedger;
 pub use medium::{QueryDispatchMedium, QueryDispatchPublicationOutcome};
-pub use recovery::{
-    QueryRecordedRecoveryClaim, QueryRecoveryClaim, QueryRecoveryRecord,
-};
+pub use recovery::{QueryRecordedRecoveryClaim, QueryRecoveryClaim, QueryRecoveryRecord};
 pub use worth_proof::QueryDispatchCloseCustody;
 #[cfg(test)]
 mod tests;

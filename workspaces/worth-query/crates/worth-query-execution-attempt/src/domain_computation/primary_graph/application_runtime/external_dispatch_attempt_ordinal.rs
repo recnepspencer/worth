@@ -17,4 +17,8 @@ impl WorthQueryExternalDispatchAttemptOrdinal {
     }
 }
 
-impl WorthQueryExternalDispatchAttemptOrdinal { pub const fn value(self) -> u64 { self.0 } }
+impl WorthQueryExternalDispatchAttemptOrdinal {
+    pub const fn value(self) -> u64 {
+        self.0
+    }
+}

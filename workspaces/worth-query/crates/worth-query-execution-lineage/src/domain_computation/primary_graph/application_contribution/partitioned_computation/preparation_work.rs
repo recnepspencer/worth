@@ -63,10 +63,7 @@ pub struct EncodingMeter<'work> {
 }
 
 impl EncodingMeter<'_> {
-    pub fn admit(
-        &mut self,
-        charge: CanonicalEncodingCharge,
-    ) -> Result<(), CheckpointDenial> {
+    pub fn admit(&mut self, charge: CanonicalEncodingCharge) -> Result<(), CheckpointDenial> {
         (self.control)(charge)?;
         match charge {
             CanonicalEncodingCharge::Work(work) => self

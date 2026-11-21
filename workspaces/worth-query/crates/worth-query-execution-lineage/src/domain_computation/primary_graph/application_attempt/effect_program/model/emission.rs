@@ -47,10 +47,7 @@ impl WorthQueryApplicationEmission {
         }
     }
 
-    pub fn new_external<Binding>(
-        effect: &'static str,
-        payload: Binding::Value,
-    ) -> Result<Self, ()>
+    pub fn new_external<Binding>(effect: &'static str, payload: Binding::Value) -> Result<Self, ()>
     where
         Binding: ApplicationExternalEffectBinding,
         Binding::Value: Send + Sync,
@@ -89,9 +86,7 @@ impl WorthQueryApplicationEmission {
             && self.payload_type.is_valid()
             && self.payload_type_id == TypeId::from(self.payload.as_ref().type_id())
     }
-    pub fn effect_name(
-        &self,
-    ) -> &str {
+    pub fn effect_name(&self) -> &str {
         self.effect
     }
     pub fn from_external_projection(
@@ -150,9 +145,7 @@ pub struct WorthQueryAdmittedApplicationEmissionBatch {
 }
 
 impl WorthQueryAdmittedApplicationEmissionBatch {
-    pub fn admit(
-        emissions: Vec<WorthQueryApplicationEmission>,
-    ) -> Result<Self, &'static str> {
+    pub fn admit(emissions: Vec<WorthQueryApplicationEmission>) -> Result<Self, &'static str> {
         if emissions.iter().any(|emission| !emission.is_well_formed()) {
             return Err("application commit carried an invalid typed emission");
         }

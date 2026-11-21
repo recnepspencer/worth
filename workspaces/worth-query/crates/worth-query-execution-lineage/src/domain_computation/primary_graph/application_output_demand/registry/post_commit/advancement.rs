@@ -9,10 +9,7 @@ pub fn release_completed_prerequisites(
 
     state.release_record_prerequisites(key)
 }
-pub fn release_completed_member(
-    state: &mut DemandRegistryState,
-    key: &WorthQueryOutputDemandKey,
-) {
+pub fn release_completed_member(state: &mut DemandRegistryState, key: &WorthQueryOutputDemandKey) {
     // The scheduling/checkpoint outcome was committed to this row before this call.
 
     state.remove_required_member_if_released(key);

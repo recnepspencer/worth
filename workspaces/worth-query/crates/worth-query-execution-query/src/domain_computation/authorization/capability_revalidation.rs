@@ -1,4 +1,5 @@
 //! Current capability re-admission at privileged transitions.
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 mod active_currentness;
 use worth_query_execution_attempt::facade::domain_computation::authorization::capability_revalidation::denial as denial_mod;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
@@ -19,7 +20,6 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 
 pub use worth_query_execution_attempt::facade::domain_computation::authorization::capability_revalidation::observation;
 pub use observation::WorthQueryCapabilityRevalidationObservation;
-
 
 enum WorthQueryCapabilityRefreshTime<'sample> {
     Fresh,

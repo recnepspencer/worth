@@ -1,8 +1,8 @@
-use crate::domain_computation::primary_graph::CommitAuthorityBindingExt;
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryProviderRegistrationInspectionPermit;
 use crate::domain_computation::primary_graph::application_attempt::provider_binding::WorthQueryRegisteredProviderAttemptSeal;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding;
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
+use crate::domain_computation::primary_graph::CommitAuthorityBindingExt;
 
 pub struct WorthQueryRegisteredProviderAttempt<'run> {
     staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
@@ -149,17 +149,22 @@ impl<'run> WorthQueryRegisteredProviderAttempt<'run> {
         (self.staged, self.steps, self.dispatch_outbox)
     }
 
-    pub fn staged_ref(&self) -> &crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
+    pub fn staged_ref(
+        &self,
+    ) -> &crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run> {
         &self.staged
     }
 
-    pub fn steps_ref(&self) -> &std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]> {
+    pub fn steps_ref(
+        &self,
+    ) -> &std::sync::Arc<[crate::domain_computation::WorthQueryProvisionalEffectStep]> {
         &self.steps
     }
 
     pub fn dispatch_outbox_ref(
         &self,
-    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord> {
+    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryDispatchOutboxRecord>
+    {
         self.dispatch_outbox.as_ref()
     }
 }

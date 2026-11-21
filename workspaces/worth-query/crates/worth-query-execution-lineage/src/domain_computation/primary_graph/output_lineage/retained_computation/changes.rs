@@ -32,10 +32,7 @@ impl PriorComputationRecord {
             .computation_changes(runtime, snapshot, &record.settlement_identity, &facts)
             .map(|changes| changes.map(|changes| changes.bind_original(state.original_facts())))
     }
-    pub fn matches_changes(
-        &self,
-        changes: &ComputationChanges,
-    ) -> bool {
+    pub fn matches_changes(&self, changes: &ComputationChanges) -> bool {
         self.cell
             .get()
             .is_some_and(|record| Arc::ptr_eq(&record.settlement_identity, &changes.identity))

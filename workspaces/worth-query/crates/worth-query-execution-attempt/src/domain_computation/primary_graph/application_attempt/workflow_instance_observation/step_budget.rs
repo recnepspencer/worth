@@ -12,8 +12,7 @@ use super::{
 /// transition and needs a free slot of the retained capacity; closing writes
 /// none, so an instance that has used its whole capacity can still close.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorkflowInstanceObservationPurpose
-{
+pub enum WorkflowInstanceObservationPurpose {
     Advance,
     Close,
     ReadOnly,

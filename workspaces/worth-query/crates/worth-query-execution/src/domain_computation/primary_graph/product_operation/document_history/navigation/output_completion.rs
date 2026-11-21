@@ -112,7 +112,8 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
                 .compare(exact.observation())
                 .is_err()
             || !endpoint.same_application_occurrence(source)
-            || !endpoint.belongs_to_selected_occurrence(self.application.inner(), exact.observation())
+            || !endpoint
+                .belongs_to_selected_occurrence(self.application.inner(), exact.observation())
         {
             return Err(Denial::IntentDrift);
         }

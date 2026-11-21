@@ -98,9 +98,7 @@ impl WorthQueryAdmittedOperation {
         })
     }
     #[cfg(test)]
-    pub fn observe_inline_budget(
-        census: &mut crate::inline_type_sizes::Census,
-    ) {
+    pub fn observe_inline_budget(census: &mut crate::inline_type_sizes::Census) {
         let _core=census.owner::<Self>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/admitted_operation_core.rs","WorthQueryAdmittedOperation",128);
         let _data=census.owner::<WorthQueryAdmittedOperationData>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/admitted_operation_core.rs","WorthQueryAdmittedOperationData",16*1024);
     }

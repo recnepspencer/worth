@@ -30,10 +30,7 @@ impl WorthQueryApplicationUnobservedWrite {
 }
 
 impl WorthQueryApplicationAttemptDenial {
-    pub fn unobserved_field_write(
-        entity_id: EntityId,
-        locator: &AspectFieldLocator,
-    ) -> Self {
+    pub fn unobserved_field_write(entity_id: EntityId, locator: &AspectFieldLocator) -> Self {
         Self::from_cause(
             WorthQueryApplicationAttemptDenialKind::UnobservedWrite,
             "existing entity field write".to_owned(),

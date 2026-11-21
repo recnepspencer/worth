@@ -21,10 +21,7 @@ impl WorthQueryDispatchJournal {
     }
 }
 impl QueryInboundJournalAdmission<'_> {
-    pub fn next_message_after(
-        &self,
-        position: u64,
-    ) -> Option<QueryInboundRecordedMessage> {
+    pub fn next_message_after(&self, position: u64) -> Option<QueryInboundRecordedMessage> {
         self.journal
             .state()
             .as_ref()?
@@ -32,10 +29,7 @@ impl QueryInboundJournalAdmission<'_> {
             .inbound
             .next_after(position)
     }
-    pub fn message(
-        &self,
-        key: &QueryInboundMessageKey,
-    ) -> Option<QueryInboundRecordedMessage> {
+    pub fn message(&self, key: &QueryInboundMessageKey) -> Option<QueryInboundRecordedMessage> {
         self.journal
             .state()
             .as_ref()?

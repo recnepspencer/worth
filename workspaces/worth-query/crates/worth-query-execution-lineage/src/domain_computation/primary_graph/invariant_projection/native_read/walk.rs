@@ -17,9 +17,7 @@ pub trait WalkRoots {
     fn root_count(&self) -> usize;
     fn get(&self, index: usize) -> NativeIdentity<'_>;
 }
-pub struct TypedRoots<'a, S, E>(
-    pub &'a [WorthQueryInvariantEntityIdentity<S, E>],
-);
+pub struct TypedRoots<'a, S, E>(pub &'a [WorthQueryInvariantEntityIdentity<S, E>]);
 impl<S, E> WalkRoots for TypedRoots<'_, S, E> {
     fn root_count(&self) -> usize {
         self.0.len()

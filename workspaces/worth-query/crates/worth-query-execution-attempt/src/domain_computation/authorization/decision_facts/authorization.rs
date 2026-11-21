@@ -86,10 +86,7 @@ impl WorthQueryAuthorizationDecisionFact {
         self
     }
 
-    pub fn with_delegation(
-        mut self,
-        delegation: WorthQueryDelegationDecisionFact,
-    ) -> Self {
+    pub fn with_delegation(mut self, delegation: WorthQueryDelegationDecisionFact) -> Self {
         debug_assert!(delegation.belongs_to_session(self.session_identity));
         self.delegation = Some(Arc::new(delegation));
         self
@@ -108,10 +105,7 @@ impl WorthQueryAuthorizationDecisionFact {
         Ok(())
     }
 
-    pub fn retain_delegation_activation_from(
-        &mut self,
-        prior: &Self,
-    ) -> Result<(), ()> {
+    pub fn retain_delegation_activation_from(&mut self, prior: &Self) -> Result<(), ()> {
         if self.delegation_activation.is_some() {
             return Err(());
         }
@@ -137,9 +131,7 @@ impl WorthQueryAuthorizationDecisionFact {
             })
     }
 
-    pub fn relational_counters(
-        &self,
-    ) -> RelationalAuthorizationObservationCounters {
+    pub fn relational_counters(&self) -> RelationalAuthorizationObservationCounters {
         let mut counters = self.preparatory_relational_work;
         add_counters(&mut counters, self.relational.counters());
         if let Some(delegation) = &self.delegation {
@@ -163,10 +155,7 @@ impl WorthQueryAuthorizationDecisionFact {
                 .map_or(0, |activation| activation.signal_dependency_count())
     }
 
-    pub fn bridge_is_retained(
-        &self,
-        bridge: &BridgeAuthorizationRuntime,
-    ) -> bool {
+    pub fn bridge_is_retained(&self, bridge: &BridgeAuthorizationRuntime) -> bool {
         bridge.retains(&self.bridge)
             && bridge_matches(
                 &self.relational,
@@ -246,10 +235,7 @@ impl WorthQueryAuthorizationDecisionFact {
         Ok(true)
     }
 
-    pub fn has_same_lineage(
-        &self,
-        other: &Self,
-    ) -> bool {
+    pub fn has_same_lineage(&self, other: &Self) -> bool {
         match (&self.delegation, &other.delegation) {
             (Some(left), Some(right)) => left.has_same_lineage(right),
             (None, None) => true,

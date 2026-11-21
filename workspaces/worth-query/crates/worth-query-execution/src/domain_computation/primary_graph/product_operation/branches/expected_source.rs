@@ -66,7 +66,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
                             std::sync::Arc::clone(
                                 &self
                                     .application
-                                    .inner.runtime
+                                    .inner
+                                    .runtime
                                     .primary_provider
                                     .graph
                                     .output_lineage,

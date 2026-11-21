@@ -54,10 +54,7 @@ impl ComponentSelection {
             poll,
         )
     }
-    pub fn has_query_origin(
-        &self,
-        binding: &ApplicationSchemaBindingIdentity,
-    ) -> bool {
+    pub fn has_query_origin(&self, binding: &ApplicationSchemaBindingIdentity) -> bool {
         matches!(&self.origin,ComponentSelectionOrigin::Query{binding:installed,..} if installed==binding)
     }
 }

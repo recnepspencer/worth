@@ -33,8 +33,7 @@ pub fn record_caller_pass_for_test<R>(
     });
 }
 
-pub fn caller_pass_reports_on_this_thread_for_test(
-) -> Vec<(
+pub fn caller_pass_reports_on_this_thread_for_test() -> Vec<(
     Result<(), crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind>,
     u64,
 )> {
@@ -44,9 +43,7 @@ pub struct AppliedIdentity {
     previous: Option<Identity>,
     owner_thread: PhantomData<Rc<()>>,
 }
-pub fn apply_identity(
-    identity: Identity,
-) -> AppliedIdentity {
+pub fn apply_identity(identity: Identity) -> AppliedIdentity {
     AppliedIdentity {
         previous: MEMBER.with(|member| member.replace(Some(identity))),
         owner_thread: PhantomData,

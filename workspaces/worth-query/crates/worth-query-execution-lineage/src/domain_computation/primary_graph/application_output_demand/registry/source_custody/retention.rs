@@ -148,9 +148,7 @@ impl WorthQueryOutputDemandRegistry {
         Ok(commit)
     }
 
-    pub fn recover_discovered_source<
-        Discovery: Clone + Send + Sync + 'static,
-    >(
+    pub fn recover_discovered_source<Discovery: Clone + Send + Sync + 'static>(
         &self,
         receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
         root_type: TypeId,

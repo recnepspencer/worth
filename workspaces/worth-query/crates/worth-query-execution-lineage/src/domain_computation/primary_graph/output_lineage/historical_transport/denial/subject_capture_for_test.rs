@@ -55,9 +55,7 @@ impl Drop for Observation {
         });
     }
 }
-pub fn record(
-    publication: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication,
-) {
+pub fn record(publication: &worth_relational::facade::mvcc::RelationalRequiredOutputPublication) {
     ACTIVE.with(|active| {
         if let Some(state) = active.borrow().as_ref().and_then(Weak::upgrade) {
             *state

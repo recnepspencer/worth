@@ -24,7 +24,6 @@ pub mod incremental {
 
     use std::sync::Arc;
 
-
     use super::preparation_work::PreparationWork;
     use crate::domain_computation::primary_graph::application_attempt::ComputationRead;
     pub use worth_query_execution_lineage::facade::primary_graph::application_contribution::partitioned_computation::incremental::*;

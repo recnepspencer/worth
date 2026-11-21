@@ -1,7 +1,9 @@
 //! Live slots refer weakly to their actual journal; Drop queues funded disposition.
 use super::*;
-use worth_query_execution_contracts::facade::{QueryDispatchJournalDenial, QueryRecordedRecoveryClaim};
 use worth_foundational::facade::DurableRecoveryClaimIdentity;
+use worth_query_execution_contracts::facade::{
+    QueryDispatchJournalDenial, QueryRecordedRecoveryClaim,
+};
 
 #[derive(Clone, Copy, Debug)]
 pub struct DeferredRecoveryDisposition {
@@ -52,9 +54,7 @@ impl WorthQueryRecoveryHandleRegistry {
             request,
         )
     }
-    pub fn deferred_dispositions(
-        &self,
-    ) -> Vec<DeferredRecoveryDisposition> {
+    pub fn deferred_dispositions(&self) -> Vec<DeferredRecoveryDisposition> {
         self.state
             .lock()
             .expect("recovery registry lock")
@@ -63,10 +63,7 @@ impl WorthQueryRecoveryHandleRegistry {
             .copied()
             .collect()
     }
-    pub fn acknowledge_deferred(
-        &self,
-        claim: DurableRecoveryClaimIdentity,
-    ) {
+    pub fn acknowledge_deferred(&self, claim: DurableRecoveryClaimIdentity) {
         self.state
             .lock()
             .expect("recovery registry lock")

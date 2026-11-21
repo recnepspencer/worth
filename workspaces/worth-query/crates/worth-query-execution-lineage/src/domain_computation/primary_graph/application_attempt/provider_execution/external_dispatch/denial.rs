@@ -297,9 +297,7 @@ pub fn redispatch_preparation(
 }
 
 impl InstalledTransportPendingReason {
-    pub const fn dispatch_preparation_denial(
-        self,
-    ) -> WorthQueryExternalDispatchPreparationDenial {
+    pub const fn dispatch_preparation_denial(self) -> WorthQueryExternalDispatchPreparationDenial {
         use InstalledTransportPendingReason as Pending;
         use WorthQueryExternalDispatchPreparationDenial as Preparation;
         match self {
@@ -338,9 +336,7 @@ impl InstalledTransportPendingReason {
 }
 
 impl WorthQueryExternalDispatchPreparationDenial {
-    pub fn redispatch_denial(
-        self,
-    ) -> WorthQueryExternalRedispatchDenial {
+    pub fn redispatch_denial(self) -> WorthQueryExternalRedispatchDenial {
         redispatch_preparation(self)
     }
 }

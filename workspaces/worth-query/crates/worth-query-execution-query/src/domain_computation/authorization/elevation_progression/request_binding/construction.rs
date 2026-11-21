@@ -17,12 +17,7 @@ use super::super::request::{denial, projection_denial};
 use super::WorthQueryElevationRequestBinding;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-pub fn bind_request<
-    Schema,
-    Capability,
-    Operation,
-    Input,
->(
+pub fn bind_request<Schema, Capability, Operation, Input>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     capability_identity: [u8; 32],

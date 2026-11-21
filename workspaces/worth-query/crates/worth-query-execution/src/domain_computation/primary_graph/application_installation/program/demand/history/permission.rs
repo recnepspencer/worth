@@ -28,11 +28,12 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         if !authority.profile().matches_program(self) {
             return Err((value, Denial::ForeignDocument));
         }
-        let execution =
-            match phase.checked_execution_request_for(&self.runtime().inner.runtime.product_runtime) {
-                Ok(execution) => execution,
-                Err(stop) => return Err((value, Denial::Stopped(stop))),
-            };
+        let execution = match phase
+            .checked_execution_request_for(&self.runtime().inner.runtime.product_runtime)
+        {
+            Ok(execution) => execution,
+            Err(stop) => return Err((value, Denial::Stopped(stop))),
+        };
         authority
             .producer_invocation()
             .confirm_in_execution_preserving(&execution, self.runtime().inner(), value)

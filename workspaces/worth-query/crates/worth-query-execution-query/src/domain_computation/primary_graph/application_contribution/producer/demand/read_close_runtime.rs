@@ -3,8 +3,7 @@
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
-    WorthQueryAdmittedOutputDemand, WorthQueryOutputReadCloseDenial,
-    WorthQueryProducerOutputFamily,
+    WorthQueryAdmittedOutputDemand, WorthQueryOutputReadCloseDenial, WorthQueryProducerOutputFamily,
 };
 use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::application_contribution::producer::execution::PendingProducerPublication;

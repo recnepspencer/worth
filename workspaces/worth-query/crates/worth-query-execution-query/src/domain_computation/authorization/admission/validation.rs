@@ -16,22 +16,13 @@ use crate::domain_computation::primary_graph::{
 };
 
 mod conventional_preflight;
-pub use conventional_preflight::{
-    validate_conventional_preflight, ConventionalPreflightEntrance,
-};
+pub use conventional_preflight::{validate_conventional_preflight, ConventionalPreflightEntrance};
 mod retained_mutation;
 pub use retained_mutation::{
     validate_static_authority_retained, WorthQueryRetainedMutationStaticStop,
 };
 
-pub fn operation_scope_binding<
-    Schema,
-    Principal,
-    PrincipalIdentity,
-    Operation,
-    Input,
-    Scope,
->(
+pub fn operation_scope_binding<Schema, Principal, PrincipalIdentity, Operation, Input, Scope>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,
@@ -46,11 +37,7 @@ pub fn operation_scope_binding<
     )
 }
 
-pub fn validate_installed_operation<
-    S: ApplicationSchema,
-    O,
-    I,
->(
+pub fn validate_installed_operation<S: ApplicationSchema, O, I>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     operation: &WorthQueryInstalledApplicationOperation<S, O, I>,
 ) -> Result<(), WorthQueryOperationAuthorizationDenial> {

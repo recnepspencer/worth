@@ -38,9 +38,7 @@ impl std::fmt::Display for WorthQueryOutputAvailabilityDenial {
 impl std::error::Error for WorthQueryOutputAvailabilityDenial {}
 
 impl WorthQueryOutputAvailabilityDenial {
-    pub fn source_query_stop(
-        stop: SourceQueryObservationStop,
-    ) -> Self {
+    pub fn source_query_stop(stop: SourceQueryObservationStop) -> Self {
         Cause::SourceQuery(stop).into()
     }
     /// The original source Query admission refusal, if that phase stopped.

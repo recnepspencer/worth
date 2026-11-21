@@ -5,15 +5,15 @@
 //! handle it admitted, so neither cross-runtime nor same-runtime substitution
 //! can open a transition.
 
-use worth_proof::{
-    Artifact, AssumptionBasis, CurrentValidity, FreshnessScopedBasis, NoProofs, PhaseMarker,
-};
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use super::super::recovery_handle::{
     WorthQueryRecoveryHandle, WorthQueryRecoveryHandleAuthorityIdentity,
     WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
 };
 use super::expiry::deny_if_expired;
+use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use worth_proof::{
+    Artifact, AssumptionBasis, CurrentValidity, FreshnessScopedBasis, NoProofs, PhaseMarker,
+};
 
 #[derive(Debug)]
 struct WorthQueryCurrentRecoveryAuthorityPhase;
@@ -132,7 +132,6 @@ pub fn require_inspect_disclosure(
 ) -> Result<(), WorthQueryRecoveryHandleDenial> {
     authority.ensure_for(handle)
 }
-
 
 fn ensure_authority_owns_handle(
     basis: WorthQueryRecoveryAuthorityBasis,

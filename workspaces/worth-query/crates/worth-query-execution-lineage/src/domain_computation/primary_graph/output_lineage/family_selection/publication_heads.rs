@@ -70,9 +70,7 @@ impl<'a> PublicationHeads<'a> {
         }
     }
 
-    pub fn finish(
-        self,
-    ) -> (Vec<(&'a str, &'a RecordedOutput)>, bool) {
+    pub fn finish(self) -> (Vec<(&'a str, &'a RecordedOutput)>, bool) {
         let mut heads = self.unbound;
         let mut ambiguous = false;
         for ((_, role, _), head) in self.members {

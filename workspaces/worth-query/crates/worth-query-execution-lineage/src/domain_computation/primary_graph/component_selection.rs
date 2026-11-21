@@ -110,14 +110,10 @@ impl ComponentSelection {
     pub fn layout(&self) -> &ComponentSetLayout {
         &self.layout
     }
-    pub fn aggregate_bodies(
-        &self,
-    ) -> &ComponentAggregateBodies {
+    pub fn aggregate_bodies(&self) -> &ComponentAggregateBodies {
         &self.aggregates
     }
-    pub fn physical_aggregates(
-        &self,
-    ) -> Option<&[Arc<AggregateObservation>]> {
+    pub fn physical_aggregates(&self) -> Option<&[Arc<AggregateObservation>]> {
         match &self.aggregates {
             ComponentAggregateBodies::Physical(values) => Some(values),
             _ => None,
@@ -127,9 +123,7 @@ impl ComponentSelection {
         self.physical_aggregates()
             .expect("physical-only component fixture")
     }
-    pub fn allocation(
-        &self,
-    ) -> &Arc<super::source_facts::SourceFactsAllocation> {
+    pub fn allocation(&self) -> &Arc<super::source_facts::SourceFactsAllocation> {
         &self.allocation
     }
     pub fn facts(&self) -> &[SourceFacts] {

@@ -1,9 +1,7 @@
 //! One retained nominal demand dispatches preparation and its genuine continuations.
 use super::*;
 
-pub trait RequiredTree<S: ApplicationSchema>:
-    Send + 'static
-{
+pub trait RequiredTree<S: ApplicationSchema>: Send + 'static {
     fn family(&self) -> &'static str;
     fn order(
         &self,

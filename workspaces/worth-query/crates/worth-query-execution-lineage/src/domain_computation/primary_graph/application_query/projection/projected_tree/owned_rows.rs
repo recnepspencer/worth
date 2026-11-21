@@ -22,9 +22,7 @@ struct DropFrame {
     rows: std::vec::IntoIter<WorthQueryApplicationProjectionNode>,
 }
 impl OwnedProjectionRows {
-    pub fn ordinary(
-        rows: Vec<WorthQueryApplicationProjectionNode>,
-    ) -> Self {
+    pub fn ordinary(rows: Vec<WorthQueryApplicationProjectionNode>) -> Self {
         Self {
             rows,
             managed: None,
@@ -45,9 +43,7 @@ impl OwnedProjectionRows {
             }),
         }
     }
-    pub fn payload_bytes(
-        &self,
-    ) -> usize {
+    pub fn payload_bytes(&self) -> usize {
         match &self.managed {
             Some(storage) => storage.payload_bytes,
             None => self.rows.iter().fold(
@@ -89,18 +85,12 @@ impl ProjectionDisposal {
             .map_err(|_| Cause::AllocationFailed)?;
         Ok(Self { stack })
     }
-    pub fn clear_rows(
-        &mut self,
-        rows: &mut Vec<WorthQueryApplicationProjectionNode>,
-    ) {
+    pub fn clear_rows(&mut self, rows: &mut Vec<WorthQueryApplicationProjectionNode>) {
         while let Some(mut row) = rows.pop() {
             self.clear_node(&mut row);
         }
     }
-    pub fn clear_node(
-        &mut self,
-        node: &mut WorthQueryApplicationProjectionNode,
-    ) {
+    pub fn clear_node(&mut self, node: &mut WorthQueryApplicationProjectionNode) {
         self.descend(std::mem::take(&mut node.relations));
         while let Some(frame) = self.stack.last_mut() {
             if let Some(mut child) = frame.rows.next() {

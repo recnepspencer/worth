@@ -1,8 +1,8 @@
 //! Original complete-source backing for walk or material-selection custody.
-use worth_query_execution_foundation::facade::primary_graph::admitted_capture::storage::tree_clone_bytes;
 use crate::structural_walk_memory as memory;
 use std::sync::{Arc, Mutex};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_query_execution_foundation::facade::primary_graph::admitted_capture::storage::tree_clone_bytes;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 #[derive(Debug)]
@@ -18,10 +18,7 @@ pub struct SourceFactsAllocation {
 }
 
 impl SourceFactsAllocation {
-    pub fn work(
-        execution: &ExecutionRequest<'_, '_>,
-        units: u64,
-    ) -> Result<(), Cause> {
+    pub fn work(execution: &ExecutionRequest<'_, '_>, units: u64) -> Result<(), Cause> {
         Self::request_work(execution, units).map_err(Into::into)
     }
     pub fn request_work(

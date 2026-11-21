@@ -9,29 +9,21 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub struct PostingProjection {
     pub id: u64,
-    pub ordinals:
-        OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
-    pub source_len:
-        usize,
-    pub output_len:
-        usize,
-    pub requirement:
-        Option<FullVerificationReason>,
+    pub ordinals: OrdMap<Arc<FactPostingKey>, OrdSet<usize>>,
+    pub source_len: usize,
+    pub output_len: usize,
+    pub requirement: Option<FullVerificationReason>,
 }
 impl PostingProjection {
-    pub fn ordinals(
-        &self,
-    ) -> &OrdMap<Arc<FactPostingKey>, OrdSet<usize>> {
+    pub fn ordinals(&self) -> &OrdMap<Arc<FactPostingKey>, OrdSet<usize>> {
         &self.ordinals
     }
 }
 
 /// Allocation custody selected from the same exact settlement row.
 #[derive(Clone, Debug)]
-pub struct PostingComputationStorage
-{
-    pub projection:
-        Arc<PostingProjection>,
+pub struct PostingComputationStorage {
+    pub projection: Arc<PostingProjection>,
 }
 
 mod court_doors_for_test;

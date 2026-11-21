@@ -21,10 +21,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         )
         .map_err(|cause| Denial::Control(Box::new(self.record_control_refusal(cause))))
     }
-    pub fn record_observation_failure(
-        &self,
-        cause: &Denial,
-    ) {
+    pub fn record_observation_failure(&self, cause: &Denial) {
         // First/cold/restoration unavailability is an explicit data posture.
         // A handler may choose full computation, but cannot swallow admission loss.
         let data_posture = match cause {
@@ -194,7 +191,13 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         native: &RelationalRuntime,
         scope: worth_relational::facade::identity::EntityId,
         partition: [u8; 32],
-    ) -> Result<(RelationalRequiredOutputPublication, RelationalPredecessorInput), Denial> {
+    ) -> Result<
+        (
+            RelationalRequiredOutputPublication,
+            RelationalPredecessorInput,
+        ),
+        Denial,
+    > {
         let access = self
             .predecessor
             .as_ref()

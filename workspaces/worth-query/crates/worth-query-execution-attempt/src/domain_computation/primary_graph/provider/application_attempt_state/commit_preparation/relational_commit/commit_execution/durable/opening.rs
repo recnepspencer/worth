@@ -20,14 +20,12 @@ pub(super) fn prepare(
     let reservation =
         match provider.reserve_query_before_world(&product, query.attempt.idempotency()) {
             Ok(reservation) => reservation,
-            Err(()) => {
-                return Err(Stop::ProductPreparationRefused(
-                    worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
-                        Refused::new(Refusal::QueryPreparationReservationRefused, Box::new(query)),
-                        false,
-                    ),
-                ))
-            }
+            Err(()) => return Err(Stop::ProductPreparationRefused(
+                worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
+                    Refused::new(Refusal::QueryPreparationReservationRefused, Box::new(query)),
+                    false,
+                ),
+            )),
         };
     let mut before = before_world::BeforeWorldPreparation::new(query, reservation);
     // Admission of the actual subject precedes these causal reservations.

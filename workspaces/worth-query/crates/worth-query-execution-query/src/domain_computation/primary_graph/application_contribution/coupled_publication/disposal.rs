@@ -1,16 +1,13 @@
 //! Abandoned real writers retain every refused cleanup until the caller owns it.
-use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::{
     application_attempt::WorthQueryProviderProgressionOutcome as Progression,
     WorthQueryApplicationCleanupRequired, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationUncommitted as Uncommitted,
 };
 impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
-    pub fn abort_writers(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> bool {
+    pub fn abort_writers(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> bool {
         for writer in self.authored.borrow_mut().drain(..) {
             let outcome = match writer.stage {
                 Some(CoupledWriterStage::Inspected(writer)) => {
@@ -44,10 +41,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
             Ok(_) => unreachable!("discarding an unpublished writer cannot perform a publication"),
         }
     }
-    pub fn finish_abort(
-        &self,
-        outcome: Progression,
-    ) -> Progression {
+    pub fn finish_abort(&self, outcome: Progression) -> Progression {
         let mut failures = self.abort_failures.borrow_mut();
         if failures.is_empty() {
             return outcome;

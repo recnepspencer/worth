@@ -8,16 +8,13 @@ use std::num::NonZeroUsize;
 use worth_execution::{ExecutionOrderedMap, ExecutionOrderedMapDenial, ExecutionRequest};
 use worth_relational::facade::identity::EntityId;
 type Route = (EntityId, &'static str, [u8; 32]);
-pub struct ProducerRoundBudget
-{
+pub struct ProducerRoundBudget {
     bounds: (NonZeroUsize, NonZeroUsize),
     routes: ExecutionOrderedMap<Route, usize>,
     total: usize,
 }
 impl ProducerRoundBudget {
-    pub fn new(
-        bounds: (NonZeroUsize, NonZeroUsize),
-    ) -> Self {
+    pub fn new(bounds: (NonZeroUsize, NonZeroUsize)) -> Self {
         Self {
             bounds,
             routes: ExecutionOrderedMap::default(),

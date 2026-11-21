@@ -11,14 +11,10 @@ use worth_relational::facade::mvcc::CompanionPreflightStop;
 pub struct ObservedRetainedOutput {
     pub binding: TypeId,
     pub stable: super::super::PublishedStableLineage,
-    pub facts:
-        Option<super::super::ComparableSourceFacts>,
-    pub consumed_outputs:
-        Arc<[ConsumedOutputEvidence]>,
-    pub verification_requirement:
-        Option<super::super::invalidation::FullVerificationReason>,
-    pub native_output_witness:
-        Option<Arc<OnceLock<super::super::SealedNativeOutputWitness>>>,
+    pub facts: Option<super::super::ComparableSourceFacts>,
+    pub consumed_outputs: Arc<[ConsumedOutputEvidence]>,
+    pub verification_requirement: Option<super::super::invalidation::FullVerificationReason>,
+    pub native_output_witness: Option<Arc<OnceLock<super::super::SealedNativeOutputWitness>>>,
 }
 
 impl WorthQueryApplicationOutputLineage {

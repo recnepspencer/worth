@@ -33,9 +33,7 @@ pub struct RequiredOutputExecution {
 }
 
 impl RequiredOutputExecution {
-    pub fn into_parts(
-        self,
-    ) -> (RequiredOutputDemandContext, PreparedReadyBacking) {
+    pub fn into_parts(self) -> (RequiredOutputDemandContext, PreparedReadyBacking) {
         (self.context, self.ready_backing)
     }
 }
@@ -71,9 +69,7 @@ impl RequiredOutputDemandContext {
     }
 
     /// Fills the slot whose bytes the context reserved when it was issued.
-    pub fn work_membership(
-        &self,
-    ) -> Option<Arc<super::required_work::RequiredWorkMembership>> {
+    pub fn work_membership(&self) -> Option<Arc<super::required_work::RequiredWorkMembership>> {
         self.work_membership.clone()
     }
     pub fn prepare_execution(
@@ -111,10 +107,7 @@ impl RequiredOutputDemandContext {
         self.handler.record_decision_context_use(use_mask)
     }
 
-    pub fn retain_computation_prior(
-        &mut self,
-        prior: ComputationPrior,
-    ) {
+    pub fn retain_computation_prior(&mut self, prior: ComputationPrior) {
         self.handler.retain_computation_prior(prior)
     }
 
@@ -140,9 +133,7 @@ impl RequiredOutputDemandContext {
             .record_completed_handler_facts(boundary, computation)
     }
 
-    pub fn take_completed_handler_facts(
-        &mut self,
-    ) -> Option<CompletedHandlerFactBoundary> {
+    pub fn take_completed_handler_facts(&mut self) -> Option<CompletedHandlerFactBoundary> {
         self.handler.take_completed_handler_facts()
     }
 
@@ -150,11 +141,7 @@ impl RequiredOutputDemandContext {
         self.handler.completed_input_prefix()
     }
 
-    pub fn insert_input_facts(
-        &mut self,
-        expected: usize,
-        count: usize,
-    ) -> bool {
+    pub fn insert_input_facts(&mut self, expected: usize, count: usize) -> bool {
         self.handler.insert_input_facts(expected, count)
     }
 
@@ -172,15 +159,11 @@ impl RequiredOutputDemandContext {
         self.handler.take_prepared_input_reuse_key()
     }
 
-    pub fn key_arc(
-        &self,
-    ) -> &Arc<WorthQueryOutputDemandKey> {
+    pub fn key_arc(&self) -> &Arc<WorthQueryOutputDemandKey> {
         &self.key
     }
 
-    pub fn registry(
-        &self,
-    ) -> &WorthQueryOutputDemandRegistry {
+    pub fn registry(&self) -> &WorthQueryOutputDemandRegistry {
         &self.owner
     }
 

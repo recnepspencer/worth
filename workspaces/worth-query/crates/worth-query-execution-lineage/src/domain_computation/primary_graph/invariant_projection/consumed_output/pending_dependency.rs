@@ -33,9 +33,7 @@ impl<'selected> SelectedPendingConsumedOutput<'selected> {
         self.roots[self.index].matches_output_witness(witness)
     }
 
-    pub fn identity(
-        &self,
-    ) -> &RecordedSettlementIdentity {
+    pub fn identity(&self) -> &RecordedSettlementIdentity {
         self.roots[self.index].identity().as_ref()
     }
 
@@ -50,9 +48,7 @@ impl<'selected> SelectedPendingConsumedOutput<'selected> {
         Ok(Arc::clone(self.roots[self.index].identity()))
     }
 
-    pub fn selected_root(
-        &self,
-    ) -> &PositionedRelationalSnapshot {
+    pub fn selected_root(&self) -> &PositionedRelationalSnapshot {
         self.selected
     }
 
@@ -99,9 +95,7 @@ impl ConsumedOutputEvidence {
     /// Select one immediate consumed edge whose actor mark requires its own
     /// progression. Its own Ready proof may then select a further upstream
     /// edge; skipping that intermediate record would miss its output cutoff.
-    pub fn select_exact_pending_dependency<
-        'selected,
-    >(
+    pub fn select_exact_pending_dependency<'selected>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         roots: &Arc<[Self]>,
         owner: &SourceInvalidationOwner,

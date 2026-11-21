@@ -14,35 +14,37 @@ pub struct WorthQueryClosedResource {
         dead_code,
         reason = "closed receipt retains actual native cleanup evidence without disclosing it"
     )]
-    pub native: Option<worth_runtime_bridge::facade::BridgeOwnedAsyncReleasedResource>,
+    native: Option<worth_runtime_bridge::facade::BridgeOwnedAsyncReleasedResource>,
     #[expect(
         dead_code,
         reason = "clock-only progress stays owned by the opaque cleanup receipt"
     )]
-    pub clock_only: Option<worth_signal::facade::TemporalClockAdvanceSummary>,
+    clock_only: Option<worth_signal::facade::TemporalClockAdvanceSummary>,
     #[expect(
         dead_code,
         reason = "completed action evidence stays owned by the opaque cleanup receipt"
     )]
-    pub action:
-        crate::domain_computation::provider_session::WorthQueryResourceReadCompletion,
-    pub detail: Option<WorthQueryResourceCleanupDetail>,
+    action: crate::domain_computation::provider_session::WorthQueryResourceReadCompletion,
+    detail: Option<WorthQueryResourceCleanupDetail>,
 }
 
 impl WorthQueryClosedResource {
-    pub fn from_parts(
-        _seal: crate::ports::WorthQueryQueryCrateSeal,
+    pub fn from_completed_action(
         native: Option<worth_runtime_bridge::facade::BridgeOwnedAsyncReleasedResource>,
         clock_only: Option<worth_signal::facade::TemporalClockAdvanceSummary>,
         action: crate::domain_computation::provider_session::WorthQueryResourceReadCompletion,
-        detail: Option<WorthQueryResourceCleanupDetail>,
     ) -> Self {
         Self {
             native,
             clock_only,
             action,
-            detail,
+            detail: None,
         }
+    }
+
+    pub fn with_cleanup_detail(mut self, detail: Option<WorthQueryResourceCleanupDetail>) -> Self {
+        self.detail = detail;
+        self
     }
 
     /// Present only when the original Close also admitted CleanupDetail.

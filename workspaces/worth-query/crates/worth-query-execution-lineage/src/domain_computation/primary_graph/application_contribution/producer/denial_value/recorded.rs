@@ -23,9 +23,7 @@ pub enum WorthQueryRecordedProducerDenialEncodingRefusal {
     ExceedsWireBound { maximum: usize, observed: usize },
 }
 impl WorthQueryRecordedProducerDenialValue {
-    pub fn capture(
-        value: &WorthQueryProducerDenialValue,
-    ) -> Self {
+    pub fn capture(value: &WorthQueryProducerDenialValue) -> Self {
         match value {
             WorthQueryProducerDenialValue::Recorded(value) => value.as_ref().clone(),
             WorthQueryProducerDenialValue::Undeclared => Self::Undeclared,

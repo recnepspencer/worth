@@ -104,7 +104,10 @@ impl ManagedDerivedViewExecutionPort for ManagedDerivedViewRegistry {
         };
         let changes = summary.and_then(|summary| changes_from_summary(summary, max_view_changes));
         let (prepared, apply_cold) = match changes.as_deref() {
-            Some(changes) => (self.prepare_publication(local_basis, changes, max_work_units), false),
+            Some(changes) => (
+                self.prepare_publication(local_basis, changes, max_work_units),
+                false,
+            ),
             None => (self.prepare_publication(local_basis, &[], 0), true),
         };
         Some((Box::new(prepared), apply_cold))

@@ -1,7 +1,7 @@
 use super::*;
 
-pub trait PreparedWorkflowAdvanceConditionReplayExt<Schema, Operation, Input, Scope>: Sized
-
+pub trait PreparedWorkflowAdvanceConditionReplayExt<Schema, Operation, Input, Scope>:
+    Sized
 {
     fn resolve_condition_replay(
         &self,
@@ -16,12 +16,12 @@ pub trait PreparedWorkflowAdvanceConditionReplayExt<Schema, Operation, Input, Sc
     where
         Schema: ApplicationSchema,
         Operation: 'static,
-        Input: Clone + Send + Sync + 'static,
-;
+        Input: Clone + Send + Sync + 'static;
 }
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvanceConditionReplayExt<Schema, Operation, Input, Scope> for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
-
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowAdvanceConditionReplayExt<Schema, Operation, Input, Scope>
+    for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
 {
     fn resolve_condition_replay(
         &self,

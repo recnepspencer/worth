@@ -1,5 +1,5 @@
-use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 
 /// One owner of a rostered program on one published host.
@@ -126,7 +126,8 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
     {
         if let Err(cause) = source.admit_receiver(
             self.runtime()
-                .inner.runtime
+                .inner
+                .runtime
                 .product_runtime
                 .owner
                 .owner_identity(),

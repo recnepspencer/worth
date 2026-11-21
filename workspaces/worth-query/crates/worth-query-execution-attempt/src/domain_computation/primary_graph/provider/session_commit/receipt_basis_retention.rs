@@ -24,15 +24,11 @@ impl WorthQueryRetainedApplicationCommitBasis {
         }
     }
 
-    pub fn descriptor(
-        &self,
-    ) -> &RelationalBranchBasisDescriptor {
+    pub fn descriptor(&self) -> &RelationalBranchBasisDescriptor {
         self.lease.descriptor()
     }
 
-    pub fn lease(
-        &self,
-    ) -> &RelationalBranchRetentionLease {
+    pub fn lease(&self) -> &RelationalBranchRetentionLease {
         &self.lease
     }
 }
@@ -63,17 +59,11 @@ pub struct WorthQueryReceiptBasisRetentionStore {
 }
 
 impl WorthQueryReceiptBasisRetentionStore {
-    pub fn has_mandatory(
-        &self,
-        commit: CommitId,
-    ) -> bool {
+    pub fn has_mandatory(&self, commit: CommitId) -> bool {
         self.mandatory.contains_key(&commit)
     }
 
-    pub fn release_mandatory(
-        &mut self,
-        commit: CommitId,
-    ) {
+    pub fn release_mandatory(&mut self, commit: CommitId) {
         let (_, claims) = self
             .mandatory
             .get_mut(&commit)
@@ -83,20 +73,14 @@ impl WorthQueryReceiptBasisRetentionStore {
             self.mandatory.remove(&commit);
         }
     }
-    pub fn release(
-        &mut self,
-        commit: CommitId,
-    ) {
+    pub fn release(&mut self, commit: CommitId) {
         self.by_commit.remove(&commit);
         self.mandatory.remove(&commit);
         self.order.retain(|indexed| *indexed != commit);
     }
 
     /// A mandatory basis belongs to its dispatch terminal, not to history.
-    pub fn release_ordinary(
-        &mut self,
-        commit: CommitId,
-    ) {
+    pub fn release_ordinary(&mut self, commit: CommitId) {
         if self.by_commit.remove(&commit).is_some() {
             self.order.retain(|indexed| *indexed != commit);
         }
@@ -133,10 +117,7 @@ impl WorthQueryReceiptBasisRetentionStore {
         }
     }
 
-    pub fn acquire(
-        &self,
-        commit: CommitId,
-    ) -> Option<WorthQueryRetainedApplicationCommitBasis> {
+    pub fn acquire(&self, commit: CommitId) -> Option<WorthQueryRetainedApplicationCommitBasis> {
         self.mandatory
             .get(&commit)
             .map(|(basis, _)| basis)

@@ -10,10 +10,7 @@ pub struct IssuedSourcePublicationValues {
     values: Vec<Value>,
 }
 impl IssuedSourcePublicationValues {
-    pub fn get(
-        &self,
-        key: &SourcePublicationRead,
-    ) -> Option<&Arc<ObservedSourcePublication>> {
+    pub fn get(&self, key: &SourcePublicationRead) -> Option<&Arc<ObservedSourcePublication>> {
         self.values
             .iter()
             .find(|(issued, _)| issued == key)

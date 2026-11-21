@@ -1,9 +1,7 @@
 //! Pin the selected Query head; native route admission decides whether cold custody is required.
 use super::*;
 pub mod readmission;
-pub use readmission::{
-    ReadmittedRequiredPublication, RequiredPublicationReadmissionStop,
-};
+pub use readmission::{ReadmittedRequiredPublication, RequiredPublicationReadmissionStop};
 use worth_relational::facade::mvcc::CompanionPreflightStop as Stop;
 use worth_relational::facade::mvcc::RelationalRequiredOutputPublication;
 
@@ -12,19 +10,15 @@ pub struct SelectedRequiredPublicationHead {
 }
 
 pub struct RequiredPublicationPredecessor<'head> {
-    pub implementation:
-        worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
-    pub correspondence:
-        Arc<WorthQueryApplicationOutputCorrespondence>,
+    pub implementation: worth_relational::facade::mvcc::RequiredOutputProducingImplementation,
+    pub correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
     pub producer: &'head str,
     pub dependency: [u8; 32],
     pub source_epoch: [u8; 32],
 }
 
 impl SelectedRequiredPublicationHead {
-    pub fn retain(
-        selected: &Arc<OnceLock<RecordedOutput>>,
-    ) -> Result<Self, Stop> {
+    pub fn retain(selected: &Arc<OnceLock<RecordedOutput>>) -> Result<Self, Stop> {
         let row = selected.get().ok_or(Stop::SelectedSourceMismatch)?;
         let origin = match &row.performed_origin {
             Some(alias) => {
@@ -55,9 +49,7 @@ impl SelectedRequiredPublicationHead {
         })
     }
 
-    pub fn warm_publication(
-        &self,
-    ) -> Option<RelationalRequiredOutputPublication> {
+    pub fn warm_publication(&self) -> Option<RelationalRequiredOutputPublication> {
         self.selected
             .get()?
             .required_publication
@@ -65,9 +57,7 @@ impl SelectedRequiredPublicationHead {
             .or_else(|| self.origin().required_publication.clone())
     }
 
-    pub fn cold_predecessor(
-        &self,
-    ) -> Result<RequiredPublicationPredecessor<'_>, Stop> {
+    pub fn cold_predecessor(&self) -> Result<RequiredPublicationPredecessor<'_>, Stop> {
         let origin = self.origin();
         let locator = origin
             .native_prior_checkpoint

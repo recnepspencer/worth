@@ -21,10 +21,7 @@ impl WorthQueryProductActivationGate {
         }
     }
 
-    pub fn with_admission<R, E>(
-        &self,
-        inspect: impl FnOnce() -> Result<R, E>,
-    ) -> Result<R, E>
+    pub fn with_admission<R, E>(&self, inspect: impl FnOnce() -> Result<R, E>) -> Result<R, E>
     where
         E: From<WorthQueryProductActivationDenial>,
     {

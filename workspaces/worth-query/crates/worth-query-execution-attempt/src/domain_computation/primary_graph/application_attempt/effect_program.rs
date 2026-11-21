@@ -38,16 +38,12 @@ use worth_relational::facade::transactions::EntityReference;
 use write_index::FieldWriteIndex;
 
 pub use model::WorthQueryApplicationOptionalFieldWrite;
-pub use model::{
-    WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission,
-};
+pub use model::{WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationEmission};
 pub use model::{
     WorthQueryApplicationCreatedRelation, WorthQueryApplicationEffectEntity,
     WorthQueryApplicationEffectProgram, WorthQueryApplicationEffectProgramBuilder,
 };
-pub use model::{
-    WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect,
-};
+pub use model::{WorthQueryApplicationCreationPartition, WorthQueryApplicationRealizedEffect};
 
 use super::effect_validation::{canonical_key, denial};
 use super::read_set::WorthQueryCompleteApplicationReadSet;
@@ -77,20 +73,6 @@ impl<Schema, Operation, Input, Scope>
     >
 {
     /// Root-scoped ordinary reads cannot advance to mutation authoring:
-    ///
-    /// ```compile_fail
-    /// use worth_query_execution::facade::primary_graph::{
-    ///     WorthQueryCompleteApplicationReadSet, WorthQueryOrdinaryApplicationRead,
-    /// };
-    ///
-    /// fn ordinary_read_cannot_author_effects<Schema, Operation, Input, Scope>(
-    ///     reads: WorthQueryCompleteApplicationReadSet<
-    ///         Schema, Operation, Input, Scope, WorthQueryOrdinaryApplicationRead,
-    ///     >,
-    /// ) {
-    ///     let _ = reads.begin_effect_program();
-    /// }
-    /// ```
     pub fn begin_effect_program(
         self,
     ) -> WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, Scope> {

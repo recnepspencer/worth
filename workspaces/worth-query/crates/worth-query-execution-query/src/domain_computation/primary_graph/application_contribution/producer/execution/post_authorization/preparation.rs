@@ -1,12 +1,9 @@
 //! Prepare a producer once and retain owner completion until canonical apply.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 #[allow(clippy::too_many_arguments)]
-pub fn prepare_authorized<
-    'owner,
-    Schema,
-    Binding,
->(
+pub fn prepare_authorized<'owner, Schema, Binding>(
     phase: &'owner WorthQueryAdvancementPhase<'owner>,
     runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     shared: &'owner crate::domain_computation::primary_graph::SharedSelectedProductOperation<

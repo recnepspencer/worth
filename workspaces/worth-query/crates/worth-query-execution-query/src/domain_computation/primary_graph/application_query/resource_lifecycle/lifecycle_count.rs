@@ -1,9 +1,6 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-pub fn acquire(
-    counter: &AtomicUsize,
-    amount: usize,
-) -> Result<usize, LifecycleCountOverflow> {
+pub fn acquire(counter: &AtomicUsize, amount: usize) -> Result<usize, LifecycleCountOverflow> {
     {
         let update_counter = counter;
         let mut current = update_counter.load(Ordering::Acquire);
@@ -26,10 +23,7 @@ pub fn acquire(
     .map_err(|_| LifecycleCountOverflow)
 }
 
-pub fn release(
-    counter: &AtomicUsize,
-    amount: usize,
-) -> Result<usize, LifecycleCountUnderflow> {
+pub fn release(counter: &AtomicUsize, amount: usize) -> Result<usize, LifecycleCountUnderflow> {
     {
         let update_counter = counter;
         let mut current = update_counter.load(Ordering::Acquire);

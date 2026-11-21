@@ -8,8 +8,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCommitDenial,
 };
 
-pub struct WorkflowBirthBindingProof
-{
+pub struct WorkflowBirthBindingProof {
     binding: &'static str,
     role: &'static str,
     input_identity: [u8; 32],

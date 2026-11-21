@@ -168,7 +168,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         >,
         trees: &[Arc<WorthQueryRetainedHistoryOutputTree>],
     ) -> Result<(), ReadDenial> {
-        self.inner.runtime
+        self.inner
+            .runtime
             .primary_provider
             .graph
             .with_runtime(execution, |native| {

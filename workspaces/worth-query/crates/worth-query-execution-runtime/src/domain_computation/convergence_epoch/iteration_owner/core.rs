@@ -14,9 +14,7 @@ use super::super::{
 };
 
 pub use lifecycle::WorthQueryConvergenceEpochCounters;
-pub use lifecycle::{
-    WorthQueryConvergenceEpochLifecycle, WorthQueryConvergenceLifecycleEvent,
-};
+pub use lifecycle::{WorthQueryConvergenceEpochLifecycle, WorthQueryConvergenceLifecycleEvent};
 pub use report_history::{
     admit_assessed_domain_report, WorthQueryConvergenceReportAdmissionFailure,
 };
@@ -66,36 +64,26 @@ impl WorthQueryConvergenceEpochCore {
         &self.logical_run_identity
     }
 
-    pub fn contract(
-        &self,
-    ) -> &WorthQueryAdmittedConvergenceContract {
+    pub fn contract(&self) -> &WorthQueryAdmittedConvergenceContract {
         &self.contract
     }
 
-    pub fn counters(
-        &self,
-    ) -> &WorthQueryConvergenceEpochCounters {
+    pub fn counters(&self) -> &WorthQueryConvergenceEpochCounters {
         self.lifecycle.counters()
     }
 
-    pub fn record_lifecycle_event<E>(
-        &mut self,
-        event: E,
-    ) where
+    pub fn record_lifecycle_event<E>(&mut self, event: E)
+    where
         E: WorthQueryConvergenceLifecycleEvent,
     {
         self.lifecycle.record(event);
     }
 
-    pub fn incumbents(
-        &self,
-    ) -> &[WorthQueryRetainedConvergenceCandidateEvidence] {
+    pub fn incumbents(&self) -> &[WorthQueryRetainedConvergenceCandidateEvidence] {
         self.report_history.incumbents()
     }
 
-    pub fn latest_report(
-        &self,
-    ) -> Option<&WorthQueryBoundConvergenceReport> {
+    pub fn latest_report(&self) -> Option<&WorthQueryBoundConvergenceReport> {
         self.report_history.latest_report()
     }
 

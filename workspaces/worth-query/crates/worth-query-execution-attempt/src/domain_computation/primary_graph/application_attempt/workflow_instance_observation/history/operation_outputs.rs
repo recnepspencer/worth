@@ -18,11 +18,9 @@ use worth_relational::facade::{
 
 pub struct ObservedOperationOutputs {
     pub binding: String,
-    pub entries:
-        BTreeMap<String, ObservedOperationOutput>,
+    pub entries: BTreeMap<String, ObservedOperationOutput>,
 }
-pub struct ObservedOperationOutput
-{
+pub struct ObservedOperationOutput {
     pub entity: String,
     pub posture: Posture,
     pub target: EntityId,

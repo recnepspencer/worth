@@ -31,3 +31,6 @@ pub(crate) mod inline_type_budget;
 #[cfg(test)]
 mod inline_type_sizes;
 pub use worth_query_execution_lineage::facade::test_read_stops;
+
+#[cfg(doctest)]
+pub mod doctest_boundaries;

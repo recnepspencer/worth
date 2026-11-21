@@ -119,15 +119,10 @@ where
     }
 }
 
-pub struct PreparedApplicationRuntimeContributions<
-    Schema: ApplicationSchema,
-> {
-    pub handlers:
-        PendingMutationHandlerRegistry<Schema>,
-    pub producers:
-        super::producer::PendingProducerRegistry<Schema>,
-    pub conditionals:
-        PendingConditionalRegistry<Schema>,
+pub struct PreparedApplicationRuntimeContributions<Schema: ApplicationSchema> {
+    pub handlers: PendingMutationHandlerRegistry<Schema>,
+    pub producers: super::producer::PendingProducerRegistry<Schema>,
+    pub conditionals: PendingConditionalRegistry<Schema>,
     pub resources:
         super::super::application_resource::installation::PendingResourceRegistry<Schema>,
     pub managed_indexes:

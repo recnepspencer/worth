@@ -1,18 +1,16 @@
 //! C issues permission; the candidate may not change that permission's support.
 use super::*;
-use crate::ports::SourceAuthorizationLocus as Locus;
 use crate::domain_computation::primary_graph::application_attempt::{
     WorthQueryApplicationAttemptDenial as Stop, WorthQueryApplicationAttemptDenialKind as Kind,
 };
+use crate::ports::SourceAuthorizationLocus as Locus;
 use worth_relational::facade::runtime::{
     ProjectionAspectScope, RelationalAdjacencyDirection as Direction,
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
 
 impl SourceReadAuthorization {
-    pub fn applied_candidate(
-        &self,
-    ) -> Option<&RelationalAppliedCandidateReadIdentity> {
+    pub fn applied_candidate(&self) -> Option<&RelationalAppliedCandidateReadIdentity> {
         self.applied.as_ref()
     }
 

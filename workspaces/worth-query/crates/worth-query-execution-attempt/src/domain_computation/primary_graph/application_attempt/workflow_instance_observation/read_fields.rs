@@ -9,8 +9,7 @@ use worth_relational::facade::{
 };
 pub struct ReadFields<'a, 'e, 'r> {
     pub runtime: &'a RelationalRuntime,
-    pub execution:
-        &'a worth_execution::ExecutionRequest<'e, 'r>,
+    pub execution: &'a worth_execution::ExecutionRequest<'e, 'r>,
     pin: RelationalPinnedRead,
 }
 impl<'a, 'e, 'r> ReadFields<'a, 'e, 'r> {
@@ -131,11 +130,7 @@ impl<'a, 'e, 'r> ReadFields<'a, 'e, 'r> {
             _ => Err(Denial::Corrupt),
         }
     }
-    pub fn incoming_one(
-        &self,
-        kind: KindId,
-        anchor: EntityId,
-    ) -> Result<EntityId, Denial> {
+    pub fn incoming_one(&self, kind: KindId, anchor: EntityId) -> Result<EntityId, Denial> {
         let rows = observe_adjacency(
             self.runtime,
             self.execution,
@@ -162,9 +157,7 @@ impl<'a, 'e, 'r> ReadFields<'a, 'e, 'r> {
         Ok(())
     }
 }
-pub fn identity(
-    value: &[u8],
-) -> Result<[u8; 32], Denial> {
+pub fn identity(value: &[u8]) -> Result<[u8; 32], Denial> {
     let text = std::str::from_utf8(value).map_err(|_| Denial::Corrupt)?;
     crate::domain_computation::primary_graph::workflow::proposal::decode_identity(text)
         .ok_or(Denial::Corrupt)

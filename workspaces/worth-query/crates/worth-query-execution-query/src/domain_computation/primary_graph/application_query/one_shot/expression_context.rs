@@ -1,10 +1,8 @@
 //! Expression-context projection from raw one-shot rows into `RetainedExpressionContext`.
 
 use crate::domain_computation::primary_graph::application_query::{
-    observed_source::RetainedExpressionContext,
-    projection::WorthQueryApplicationProjectionNode,
-    read_execution::RawOneShotRows,
-    WorthQueryApplicationOneShotDenialKind as Denial,
+    observed_source::RetainedExpressionContext, projection::WorthQueryApplicationProjectionNode,
+    read_execution::RawOneShotRows, WorthQueryApplicationOneShotDenialKind as Denial,
 };
 use worth_foundational::expression_api::{ExpressionSchema, ExpressionValue};
 use worth_query_admission::facade::authenticated_principal::{

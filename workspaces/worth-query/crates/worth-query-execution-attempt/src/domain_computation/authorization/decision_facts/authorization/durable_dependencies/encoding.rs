@@ -106,10 +106,7 @@ pub(super) fn capture<'a>(
 }
 
 impl WorthQueryDurableAuthorizationDependencies {
-    pub fn matches_view(
-        &self,
-        view: &DurableDependenciesView<'_>,
-    ) -> bool {
+    pub fn matches_view(&self, view: &DurableDependenciesView<'_>) -> bool {
         self.activation.as_deref() == view.activation && self.matches_view_without_activation(view)
     }
 

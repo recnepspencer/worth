@@ -17,9 +17,7 @@ use worth_query_installation::facade::ApplicationSchema;
 
 pub mod binding;
 pub mod publication;
-pub use binding::{
-    guard as guard_birth, WorkflowBirthBindingProof,
-};
+pub use binding::{guard as guard_birth, WorkflowBirthBindingProof};
 
 /// A freshly authorized enrollment of one exact creator request. Clones share
 /// one consumed authority slot; an exact recorded replay needs no fresh slot.
@@ -138,110 +136,103 @@ pub fn mismatch(subject: &str) -> WorthQueryApplicationAttemptDenial {
     )
 }
 
-#[doc(hidden)]
-pub struct WorkflowBirthAuthorityAttemptParts {
-    pub branch: crate::basis::WorthQueryProductBranch,
-    pub scope: WorthQueryOperationScopeBinding,
-    pub binding: &'static str,
-    pub role: &'static str,
-    pub input_identity: [u8; 32],
-    pub key_identity: [u8; 32],
-    pub identity: [u8; 32],
-    pub instance_identity: String,
-    pub capability: [u8; 32],
-    pub facts: Vec<WorthQueryApplicationObservedFact>,
-    pub compiled: CompiledWorkflowDefinition,
-    pub carry: WorkflowLineageCarry,
-    pub refusal: Option<WorthQueryApplicationAttemptDenial>,
-    pub subject: fn(&super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate) -> Result<worth_relational::facade::transactions::CreatedEntityRef, WorthQueryApplicationAttemptDenial>,
-}
-
-impl WorkflowBirthAuthority {
-    #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: WorkflowBirthAuthorityAttemptParts,
-    ) -> Self {
-        Self {
-            branch: parts.branch,
-            scope: parts.scope,
-            binding: parts.binding,
-            role: parts.role,
-            input_identity: parts.input_identity,
-            key_identity: parts.key_identity,
-            identity: parts.identity,
-            instance_identity: parts.instance_identity,
-            capability: parts.capability,
-            facts: parts.facts,
-            compiled: parts.compiled,
-            carry: parts.carry,
-            refusal: parts.refusal,
-            subject: parts.subject,
+impl<Schema, Operation, Input, Scope>
+    super::super::WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        super::super::WorthQueryProjectedApplicationMutation,
+    >
+where
+    Schema: ApplicationSchema,
+    Operation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+{
+    pub fn into_required_workflow_birth<Binding, Role, Spec>(
+        mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
+            Schema,
+            Spec,
+        >,
+        published: &super::super::PublishedWorkflowDefinitionRef,
+        identities: &worth_query_declaration::facade::application_operation::ApplicationMutationIdentities<
+            '_,
+            Schema,
+            Binding,
+        >,
+        clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
+    ) -> Result<RequiredWorkflowBirth, WorthQueryApplicationAttemptDenial>
+    where
+        Binding: ApplicationMutationBinding<Schema, Operation = Operation, Input = Input>,
+        Role: WorthQueryApplicationOutputRole<
+            Schema = Schema,
+            Contract = Binding::Output,
+            Action = worth_query_declaration::facade::application_operation::WorthQueryCreateOutput,
+        >,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        let capability = installed
+            .birth_capability_identity_bytes::<Binding, Role>()
+            .copied()
+            .ok_or_else(|| mismatch("creator enrollment is not installed"))?;
+        if self.admission.installed_capability_identity() != Some(capability)
+            || self.admission.governed_input_identity() != Some(identities.input_identity())
+            || published.branch() != self.lease.product().product_branch()
+        {
+            return Err(mismatch(
+                "birth requires the exact admitted creator capability, input and branch",
+            ));
         }
-    }
-}
-
-#[doc(hidden)]
-pub struct RequiredWorkflowBirthAttemptParts {
-    pub branch: crate::basis::WorthQueryProductBranch,
-    pub binding_type: TypeId,
-    pub role_type: TypeId,
-    pub spec_type: TypeId,
-    pub binding: &'static str,
-    pub input_identity: [u8; 32],
-    pub key_identity: [u8; 32],
-    pub identity: [u8; 32],
-    pub instance_identity: String,
-    pub scope: WorthQueryOperationScopeBinding,
-    pub compiled: CompiledWorkflowDefinition,
-    pub identity_locator: worth_foundational::facade::AspectFieldLocator,
-    pub authority: Arc<WorkflowBirthAuthoritySlot>,
-    pub subject_in_receipt: fn(
-        &super::super::WorthQueryApplicationCommitReceipt,
-    ) -> Result<
-        worth_relational::facade::identity::EntityId,
-        WorthQueryApplicationAttemptDenial,
-    >,
-}
-
-impl RequiredWorkflowBirth {
-    #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: RequiredWorkflowBirthAttemptParts,
-    ) -> Self {
-        Self {
-            branch: parts.branch,
-            binding_type: parts.binding_type,
-            role_type: parts.role_type,
-            spec_type: parts.spec_type,
-            binding: parts.binding,
-            input_identity: parts.input_identity,
-            key_identity: parts.key_identity,
-            identity: parts.identity,
-            instance_identity: parts.instance_identity,
-            scope: parts.scope,
-            compiled: parts.compiled,
-            identity_locator: parts.identity_locator,
-            authority: parts.authority,
-            subject_in_receipt: parts.subject_in_receipt,
-        }
-    }
-}
-
-#[doc(hidden)]
-pub struct WorkflowBirthAuthoritySlotAttemptParts {
-    pub authority: Mutex<Option<WorkflowBirthAuthority>>,
-}
-
-impl WorkflowBirthAuthoritySlot {
-    #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: WorkflowBirthAuthoritySlotAttemptParts,
-    ) -> Self {
-        Self {
-            authority: parts.authority,
-        }
+        let (compiled, carry, _) =
+            self.observe_workflow_start_basis(execution, installed, published, clock)?;
+        let (instance_identity, identity) = super::intent_identity::birth_identity(
+            &compiled,
+            self.admission.scope_entity_id(),
+            *identities.key_identity(),
+            *identities.input_identity(),
+            Binding::IDENTITY,
+            Role::NAME,
+        )
+        .map_err(|()| mismatch("birth intent identity is unavailable"))?;
+        let branch = self.lease.product().product_branch();
+        let scope = self.admission.operation_scope_binding().clone();
+        let authority = WorkflowBirthAuthority {
+            branch,
+            scope: scope.clone(),
+            binding: Binding::IDENTITY,
+            role: Role::NAME,
+            input_identity: *identities.input_identity(),
+            key_identity: *identities.key_identity(),
+            identity,
+            instance_identity: instance_identity.clone(),
+            capability,
+            facts: self.facts.iter().cloned().collect(),
+            compiled: compiled.clone(),
+            carry,
+            refusal: self.new_commit_refusal,
+            subject: super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::birth_subject::<Schema, Binding, Role>,
+        };
+        Ok(RequiredWorkflowBirth {
+            branch,
+            binding_type: TypeId::of::<Binding>(),
+            role_type: TypeId::of::<Role>(),
+            spec_type: TypeId::of::<Spec>(),
+            binding: Binding::IDENTITY,
+            input_identity: *identities.input_identity(),
+            key_identity: *identities.key_identity(),
+            identity,
+            instance_identity,
+            scope,
+            compiled,
+            identity_locator: self.lease.layout.workflow().instance.identity.clone(),
+            authority: Arc::new(WorkflowBirthAuthoritySlot {
+                authority: Mutex::new(Some(authority)),
+            }),
+            subject_in_receipt: publication::subject_in_receipt::<Schema, Binding, Role>,
+        })
     }
 }

@@ -1,10 +1,10 @@
 //! Pure source-query observation stop enums.
 
-use std::sync::Arc;
 use super::{
     WorthQueryAdmittedOneShotStop, WorthQueryApplicationQueryAdmissionDenial,
     WorthQuerySourceExpectationDenial,
 };
+use std::sync::Arc;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum SourceQueryObservationStop {

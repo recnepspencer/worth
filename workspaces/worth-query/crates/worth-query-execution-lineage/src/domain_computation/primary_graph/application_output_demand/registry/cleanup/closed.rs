@@ -64,9 +64,7 @@ impl DemandRegistryState {
 
     /// One foreign attempt after the request's own edit is fully admitted.
     /// A pause has a holder: the head, unchanged because its quote refused.
-    pub fn take_optional_closed_cleanup(
-        &mut self,
-    ) -> Option<RetiredForeignCleanup> {
+    pub fn take_optional_closed_cleanup(&mut self) -> Option<RetiredForeignCleanup> {
         if self.pending_cleanup_head.is_some() {
             return self
                 .take_terminal_cleanup_step()

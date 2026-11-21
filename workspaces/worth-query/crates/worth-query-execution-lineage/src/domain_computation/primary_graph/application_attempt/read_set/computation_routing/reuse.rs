@@ -173,15 +173,10 @@ impl NativeReadRefresh {
     ) -> Option<super::super::InstalledScopePosition> {
         self.layout.scopes.position(self.ordinal(key)?)
     }
-    pub fn decisions(
-        &self,
-    ) -> FactPayload {
+    pub fn decisions(&self) -> FactPayload {
         self.prior.original.slice(0..self.layout.decision_count)
     }
-    pub fn ordinal(
-        &self,
-        key: &WorthQueryApplicationFactKey,
-    ) -> Option<usize> {
+    pub fn ordinal(&self, key: &WorthQueryApplicationFactKey) -> Option<usize> {
         self.prior
             .metadata
             .get(key)
@@ -194,9 +189,7 @@ impl NativeReadRefresh {
     ) -> Option<&super::super::super::WorthQueryApplicationObservedFact> {
         self.prior.original.get(self.ordinal(key)?)
     }
-    pub fn content(
-        &self,
-    ) -> Option<super::super::super::FactContent> {
+    pub fn content(&self) -> Option<super::super::super::FactContent> {
         self.prior
             .content
             .clone()

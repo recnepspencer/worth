@@ -4,9 +4,7 @@ use std::any::Any;
 use worth_relational::facade::{
     authorization::RelationalAuthorizationTraversalDirection,
     identity::{EntityId, KindId, RelationId},
-    runtime::{
-        RelationalAppliedCandidateReadIdentity, RelationalPinnedRead, RelationalRuntime,
-    },
+    runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead, RelationalRuntime},
     snapshots::SnapshotHandle,
 };
 
@@ -80,9 +78,8 @@ pub trait GraphIntegrationPort: Any + Send + Sync {
 /// Applied output selection returned across the source-query reader port.
 pub struct AppliedOutputsSelection {
     pub replaced: Vec<(Option<crate::equality_type_id::EqualityTypeId>, [u8; 32])>,
-    pub outputs: Vec<
-        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
-    >,
+    pub outputs:
+        Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
 }
 
 /// Lower lineage-side port for source-query reader access inside operation projection.
@@ -160,7 +157,13 @@ pub trait SourceQueryReaderPort {
     /// Returns `(installed_schema, mutation_projection, installed_packages, predecessor_access, original_access)` as `'static` `Any` refs.
     fn observation_components_any(
         &self,
-    ) -> (&dyn Any, &dyn Any, &dyn Any, Option<&dyn Any>, Option<&dyn Any>);
+    ) -> (
+        &dyn Any,
+        &dyn Any,
+        &dyn Any,
+        Option<&dyn Any>,
+        Option<&dyn Any>,
+    );
 }
 
 /// Lower lineage-side port for workflow compilation reuse and instance progress retention.
@@ -187,14 +190,14 @@ impl WorkflowRetentionPort for EmptyWorkflowRetentionPort {
     fn compilation_reuse_counters(
         &self,
     ) -> crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowCompilationReuseCounters
-    {
+{
         Default::default()
     }
 
     fn instance_progress_counters(
         &self,
     ) -> crate::domain_computation::primary_graph::workflow::WorthQueryWorkflowInstanceProgressCounters
-    {
+{
         Default::default()
     }
 

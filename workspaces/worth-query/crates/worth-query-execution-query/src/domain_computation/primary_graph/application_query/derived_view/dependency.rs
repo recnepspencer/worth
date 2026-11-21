@@ -17,9 +17,7 @@ pub enum ViewDependency {
 }
 
 impl ViewDependency {
-    pub fn entity(
-        &self,
-    ) -> EntityId {
+    pub fn entity(&self) -> EntityId {
         match self {
             Self::Entity(entity)
             | Self::Aspect(entity, _)
@@ -28,9 +26,7 @@ impl ViewDependency {
         }
     }
 
-    pub fn retained_bytes(
-        &self,
-    ) -> usize {
+    pub fn retained_bytes(&self) -> usize {
         let owned = match self {
             Self::Aspect(_, aspect) => aspect.owned_allocation_capacity_bytes(),
             Self::Field(_, locator) => locator.owned_allocation_capacity_bytes(),

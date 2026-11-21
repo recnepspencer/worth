@@ -17,16 +17,13 @@ impl WorthQueryManagedDerivedMemberToken for String {
     }
 }
 
-pub struct RetainedMemberToken
-{
+pub struct RetainedMemberToken {
     value: Box<dyn Any + Send + Sync>,
     pub charged_bytes: usize,
 }
 
 impl RetainedMemberToken {
-    pub fn clone_admitted<
-        Member: WorthQueryManagedDerivedMemberToken,
-    >(
+    pub fn clone_admitted<Member: WorthQueryManagedDerivedMemberToken>(
         value: &Member,
     ) -> Result<Self, super::WorthQueryManagedDerivedViewDenial> {
         let charged_bytes = Self::clone_quote(value)?;
@@ -36,9 +33,7 @@ impl RetainedMemberToken {
         })
     }
 
-    pub fn clone_quote<
-        Member: WorthQueryManagedDerivedMemberToken,
-    >(
+    pub fn clone_quote<Member: WorthQueryManagedDerivedMemberToken>(
         value: &Member,
     ) -> Result<usize, super::WorthQueryManagedDerivedViewDenial> {
         std::mem::size_of::<Member>()
@@ -49,10 +44,7 @@ impl RetainedMemberToken {
             .ok_or(super::WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded)
     }
 
-    pub fn matches<Member: WorthQueryManagedDerivedMemberToken>(
-        &self,
-        other: &Member,
-    ) -> bool {
+    pub fn matches<Member: WorthQueryManagedDerivedMemberToken>(&self, other: &Member) -> bool {
         self.value.downcast_ref::<Member>() == Some(other)
     }
 }

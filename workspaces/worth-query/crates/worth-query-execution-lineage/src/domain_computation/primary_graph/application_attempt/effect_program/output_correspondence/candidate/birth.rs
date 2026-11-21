@@ -11,11 +11,7 @@ use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::transactions::CreatedEntityRef;
 
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
-    pub fn birth_subject<
-        Schema,
-        Binding,
-        Role,
-    >(
+    pub fn birth_subject<Schema, Binding, Role>(
         &self,
     ) -> Result<CreatedEntityRef, WorthQueryApplicationAttemptDenial>
     where

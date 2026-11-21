@@ -1,8 +1,8 @@
 //! Re-execute recorded query DATA under the installed typed source and fresh authority.
-use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandInterest;
 use crate::domain_computation::primary_graph::query_obligations::QueryOutputDemandObligation;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationReadObservation,
     WorthQueryObservedScopeSelector, WorthQueryProducerOutputFamily,

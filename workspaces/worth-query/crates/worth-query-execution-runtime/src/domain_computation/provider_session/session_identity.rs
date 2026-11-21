@@ -42,15 +42,11 @@ impl WorthQueryExecutionProviderSession {
         self.attempt_identity.as_str()
     }
 
-    pub fn closed_identity(
-        &self,
-    ) -> WorthQueryExecutionProviderSessionIdentity {
+    pub fn closed_identity(&self) -> WorthQueryExecutionProviderSessionIdentity {
         self.identity.clone()
     }
 
-    pub fn closed_attempt_identity(
-        &self,
-    ) -> WorthQueryClosedExecutionAttemptIdentity {
+    pub fn closed_attempt_identity(&self) -> WorthQueryClosedExecutionAttemptIdentity {
         self.attempt_identity.clone()
     }
 

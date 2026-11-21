@@ -7,8 +7,7 @@ use worth_query_declaration::facade::application_program::{
 
 /// Names a producer's pure input preparation and its complete finite parent ports.
 pub struct WorthQueryProducerInputCaptureContract<S> {
-    pub(crate) meaning:
-        InputCaptureMeaning,
+    pub(crate) meaning: InputCaptureMeaning,
     marker: PhantomData<fn() -> S>,
 }
 
@@ -41,9 +40,7 @@ impl<S: ApplicationSchema> WorthQueryProducerInputCaptureContract<S> {
 }
 
 impl InputCaptureMeaning {
-    pub fn validate<S, P>(
-        &self,
-    ) -> bool
+    pub fn validate<S, P>(&self) -> bool
     where
         S: ApplicationSchema,
         P: WorthQueryApplicationProducerBinding<S>,

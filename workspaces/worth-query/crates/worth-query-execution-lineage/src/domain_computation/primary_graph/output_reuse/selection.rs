@@ -123,9 +123,7 @@ pub fn first_moved_fact_in<'fact>(
     Ok(None)
 }
 
-pub fn preflight_stop(
-    stop: CompanionPreflightStop,
-) -> RetainedFactStop<'static> {
+pub fn preflight_stop(stop: CompanionPreflightStop) -> RetainedFactStop<'static> {
     match stop {
         CompanionPreflightStop::Execution(cause) => RetainedFactStop::Execution(cause),
 
@@ -146,8 +144,7 @@ pub fn preflight_stop(
     }
 }
 
-pub fn memory_denial() -> WorthQueryOutputDemandDenial
-{
+pub fn memory_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
         "retained output comparison exceeded preparation memory",

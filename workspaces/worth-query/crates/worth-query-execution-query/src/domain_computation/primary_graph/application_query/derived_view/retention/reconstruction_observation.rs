@@ -1,7 +1,6 @@
 //! Read-only observation of actual retained membership and entry dependencies.
 use super::WorthQueryManagedDerivedView;
-pub type RetentionObservation =
-    (bool, usize, Vec<String>, Vec<String>);
+pub type RetentionObservation = (bool, usize, Vec<String>, Vec<String>);
 impl<Query, Key, Value> WorthQueryManagedDerivedView<Query, Key, Value> {
     pub fn reconstruction_retention_for_test(&self) -> RetentionObservation {
         let retained = self

@@ -14,12 +14,17 @@ where
         || retry.producer.binding_type != TypeId::of::<Producer>()
         || retry.producer.binding_identity != Producer::IDENTITY
         || retry.producer.provider_identity != Producer::Provider::SEMANTIC_IDENTITY
-        || runtime.inner.installed_producers.provider::<Producer>().is_none()
+        || runtime
+            .inner
+            .installed_producers
+            .provider::<Producer>()
+            .is_none()
     {
         return false;
     }
     runtime
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .graph
         .output_lineage

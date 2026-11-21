@@ -24,16 +24,14 @@ use worth_query_installation::facade::{
 
 use super::WorthQueryApplicationCommitDenial;
 
+use crate::domain_computation::primary_graph::query_obligations::history;
 pub use worth_query_execution_lineage::facade::primary_graph::program_occurrence::{
     activation_cell, revision_rendering,
 };
-use crate::domain_computation::primary_graph::query_obligations::history;
 
 pub use activation_cell::WorthQueryProgramActivationCell;
 pub use history::WorthQueryProgramSupportRetirementReceipt;
-pub use history::{
-    WorthQueryProgramSupportCustody, WorthQueryProgramSupportInterpretation,
-};
+pub use history::{WorthQueryProgramSupportCustody, WorthQueryProgramSupportInterpretation};
 pub use revision_rendering::program_revision_rendering;
 
 /// The program support one published application runtime retains.
@@ -43,11 +41,10 @@ pub struct WorthQueryInstalledProgramSupport<Schema> {
     renderings: Box<[AspectValue]>,
     activation: WorthQueryProgramActivationCell,
     lifecycle: Arc<history::QueryObligationHistory>,
-    pub adoption_admissions:
-        std::collections::BTreeMap<
-            ApplicationProgramRevision,
-            Box<dyn std::any::Any + Send + Sync>,
-        >,
+    pub adoption_admissions: std::collections::BTreeMap<
+        ApplicationProgramRevision,
+        Box<dyn std::any::Any + Send + Sync>,
+    >,
 }
 
 impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
@@ -91,7 +88,6 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         self.native_programs
             .iter()
             .find(|program| program.revision() == revision)
-
     }
 
     pub fn adoption_authorization_matches(
@@ -182,10 +178,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
     }
 
     /// Installation completeness includes owner-only bindings, unlike call eligibility.
-    pub fn declares_mutation_binding(
-        &self,
-        binding: TypeId,
-    ) -> bool {
+    pub fn declares_mutation_binding(&self, binding: TypeId) -> bool {
         self.roster
             .entries()
             .iter()
@@ -207,10 +200,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
     }
 
     /// Resolves immutable native provenance to an already admitted revision.
-    pub fn rostered_for_revision_text(
-        &self,
-        text: &str,
-    ) -> Option<&WorthQueryProgramSupportEntry> {
+    pub fn rostered_for_revision_text(&self, text: &str) -> Option<&WorthQueryProgramSupportEntry> {
         self.renderings.iter().position(|value| matches!(value,
             AspectValue::String(worth_foundational::facade::InternedString::Raw(value)) if value == text))
             .and_then(|position| self.roster.entries().get(position))
@@ -238,9 +228,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         self.lifecycle.retain_custody(source, target)
     }
 
-    pub fn obligation_history(
-        &self,
-    ) -> Arc<history::QueryObligationHistory> {
+    pub fn obligation_history(&self) -> Arc<history::QueryObligationHistory> {
         Arc::clone(&self.lifecycle)
     }
     pub fn lifecycle(&self) -> &history::QueryObligationHistory {

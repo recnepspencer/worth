@@ -21,9 +21,7 @@ pub mod result_set;
 pub mod retained_dependencies;
 mod workflow_capture;
 pub use prepared_expectation::WorthQueryPendingSourceExpectation;
-pub use prepared_expectation::{
-    BoundStableObservedSourceFacts, PreparedObservedSourceExpectation,
-};
+pub use prepared_expectation::{BoundStableObservedSourceFacts, PreparedObservedSourceExpectation};
 pub use result_set::WorthQueryObservedResultSet;
 
 mod applied;

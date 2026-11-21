@@ -240,7 +240,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 execution,
                 &self
                     .application()
-                    .inner.runtime
+                    .inner
+                    .runtime
                     .product_runtime
                     .owner
                     .observation_port(),
@@ -341,7 +342,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .execution_request_for(&self.application().inner.runtime.product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
         self.application()
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .owner
             .observation_port()

@@ -43,10 +43,8 @@ pub enum SettlementReadAlignment {
 }
 
 pub struct SettlementRegistration {
-    pub computation:
-        Option<super::ComputationRegistration>,
-    pub work_membership:
-        Option<Arc<RequiredWorkMembership>>,
+    pub computation: Option<super::ComputationRegistration>,
+    pub work_membership: Option<Arc<RequiredWorkMembership>>,
     pub identity: Arc<RecordedSettlementIdentity>,
     pub facts: super::super::RetainedSourceFacts,
     pub output_facts: Option<RegisteredOutputFacts>,
@@ -55,8 +53,7 @@ pub struct SettlementRegistration {
     /// `read_basis`: no delivery after that basis would ever mark them.
     pub stale_at_read_basis: OrdSet<usize>,
     pub requirement: Option<FullVerificationReason>,
-    pub upstream:
-        OrdSet<Arc<RecordedSettlementIdentity>>,
+    pub upstream: OrdSet<Arc<RecordedSettlementIdentity>>,
 }
 
 /// Install exact consumed facts into the selected live reverse index. The

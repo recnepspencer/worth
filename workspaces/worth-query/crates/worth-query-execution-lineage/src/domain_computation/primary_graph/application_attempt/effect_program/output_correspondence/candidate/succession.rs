@@ -25,11 +25,7 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
             && binding.entity_name == matching.producer_role().entity
             && binding.entity == EntityReference::Existing(target)
     }
-    pub fn succession_subject<
-        Schema,
-        Binding,
-        Role,
-    >(
+    pub fn succession_subject<Schema, Binding, Role>(
         &self,
     ) -> Result<worth_relational::facade::identity::EntityId, WorthQueryApplicationAttemptDenial>
     where

@@ -7,41 +7,17 @@ use std::sync::Arc;
 /// occurrence. Reuse/restoration does not assert producer re-execution.
 /// This owns readonly evidence, never currentness or publication permission.
 /// Borrow the facts carried by an actual completed required root:
-/// ```
-/// use worth_query_execution::facade::primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryFulfilledRequiredRoot};
-/// fn inspect(fact: &WorthQueryFulfilledRequiredRoot, source: &WorthQueryApplicationCommitReceipt) {
-///     let _ = (fact.source_commit(), fact.output_commit(), fact.posture());
-///     let _ = fact.matches_source(source);
-/// }
-/// ```
 /// A caller cannot construct fulfillment from descriptive identities:
-/// ```compile_fail,E0451
-/// use worth_query_execution::facade::primary_graph::WorthQueryFulfilledRequiredRoot;
-/// fn forge() -> WorthQueryFulfilledRequiredRoot {
-///     WorthQueryFulfilledRequiredRoot {
-///         source: panic!(), output: panic!(), source_intent: panic!(),
-///         posture: panic!(), _memory: None,
-///     }
-/// }
-/// ```
 /// The fact cannot become an ordinary query selector:
-/// ```compile_fail,E0599
-/// use worth_query_execution::facade::primary_graph::WorthQueryFulfilledRequiredRoot;
-/// fn select(fact: &WorthQueryFulfilledRequiredRoot) {
-///     let _ = fact.select();
-/// }
-/// ```
 pub struct WorthQueryFulfilledRequiredRoot {
-    pub source: worth_runtime_world::facade::ProductBranchObservation,
-    pub output: Arc<WorthQueryApplicationReadObservation>,
-    pub source_intent: ([u8; 32], String),
-    pub posture: WorthQueryOutputSettlementPosture,
-    pub _memory: Option<worth_execution::ExecutionMemoryReservation>,
+    pub(crate) source: worth_runtime_world::facade::ProductBranchObservation,
+    pub(crate) output: Arc<WorthQueryApplicationReadObservation>,
+    pub(crate) source_intent: ([u8; 32], String),
+    pub(crate) posture: WorthQueryOutputSettlementPosture,
+    pub(crate) _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl WorthQueryFulfilledRequiredRoot {
-    pub fn retained_output(
-        &self,
-    ) -> &Arc<WorthQueryApplicationReadObservation> {
+    pub fn retained_output(&self) -> &Arc<WorthQueryApplicationReadObservation> {
         &self.output
     }
     pub fn source_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {

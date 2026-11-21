@@ -5,9 +5,7 @@ use worth_query_installation::facade::{
     AdmittedFieldBindingStop, ApplicationOperationProgramTarget as Target,
     WorthQueryInstalledApplicationValueBinding, WorthQueryInstalledApplicationValueBindingCatalog,
 };
-pub struct CreatedRelation<
-    'a,
-> {
+pub struct CreatedRelation<'a> {
     pub name: &'a str,
     pub from: &'a str,
     pub to: &'a str,

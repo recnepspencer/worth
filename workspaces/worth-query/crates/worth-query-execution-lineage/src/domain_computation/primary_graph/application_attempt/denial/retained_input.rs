@@ -5,9 +5,7 @@ use super::{
 };
 use worth_query_declaration::facade::application_operation::ApplicationRetainedInputDenial;
 impl Denial {
-    pub fn retained_input(
-        cause: ApplicationRetainedInputDenial,
-    ) -> Self {
+    pub fn retained_input(cause: ApplicationRetainedInputDenial) -> Self {
         Self::from_cause(
             Kind::CorrectionCaptureDenied,
             "original canonical input retention".into(),

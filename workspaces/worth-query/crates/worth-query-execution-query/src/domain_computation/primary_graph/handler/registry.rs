@@ -141,9 +141,7 @@ where
     Schema: ApplicationSchema,
 {
     /// Borrow the original configured owner without retaining another Arc.
-    pub fn original_handler<Binding, Handler>(
-        &self,
-    ) -> Option<&Handler>
+    pub fn original_handler<Binding, Handler>(&self) -> Option<&Handler>
     where
         Binding: ApplicationMutationBinding<Schema>,
         Handler: OperationHandler<Schema, Binding>,
@@ -159,11 +157,7 @@ where
         handler.downcast_ref::<Handler>()
     }
 
-    pub fn supports_candidate_planning<
-        B: ApplicationMutationBinding<Schema>,
-    >(
-        &self,
-    ) -> bool {
+    pub fn supports_candidate_planning<B: ApplicationMutationBinding<Schema>>(&self) -> bool {
         self.entries.get(B::IDENTITY).is_some_and(|entry| {
             entry.handler_identity == B::HANDLER_IDENTITY && entry.candidate_planning
         })

@@ -61,10 +61,7 @@ where
     })
 }
 
-pub fn output_readiness_providers<
-    Node: 'static,
-    Predicate,
->(
+pub fn output_readiness_providers<Node: 'static, Predicate>(
     portable_node: Arc<str>,
     condition: Predicate,
 ) -> BridgeConditionalProviderSet

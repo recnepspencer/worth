@@ -198,10 +198,11 @@ impl<S: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_, S> 
                     &mut ApplicationQueryNativeAccess::acquire(),
                 )
                 .map_err(ResourceCause::Scope)?;
-            let parameters = capture_parameters::<S, B::Access>(execution, self.runtime.inner(), 0, || {
-                Ok(B::parameters(input))
-            })
-            .map_err(ResourceCause::ParameterCapture)?;
+            let parameters =
+                capture_parameters::<S, B::Access>(execution, self.runtime.inner(), 0, || {
+                    Ok(B::parameters(input))
+                })
+                .map_err(ResourceCause::ParameterCapture)?;
             let pending = pending(
                 &installed,
                 principal.principal().principal_entity_id(),

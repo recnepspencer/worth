@@ -27,8 +27,7 @@ pub mod signal_decision_reentry {
         product: crate::basis::WorthQueryProductBranchLease,
         _application_basis:
             super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
-        observation:
-            std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
+        observation: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
         _branch: TruthBranchIdentity,
         snapshot: TruthSnapshotIdentity,
         branch_projection: worth_runtime_bridge::facade::BridgeIdentityEvidence,
@@ -85,9 +84,7 @@ pub mod signal_decision_reentry {
             self.product.signal_basis()
         }
 
-        pub fn owner_identity(
-            &self,
-        ) -> worth_runtime_world::facade::RuntimeWorldOwnerIdentity {
+        pub fn owner_identity(&self) -> worth_runtime_world::facade::RuntimeWorldOwnerIdentity {
             self.product
                 .observation()
                 .branch_identity()

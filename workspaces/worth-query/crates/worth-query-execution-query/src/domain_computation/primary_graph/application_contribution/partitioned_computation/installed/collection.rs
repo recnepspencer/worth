@@ -9,9 +9,7 @@ where
     Computation: ApplicationManagedComputation<Schema, Feature>,
     Owner: WorthQueryPartitionedComputationOwner<Schema, Feature, Computation>,
 {
-    pub fn with_collection_check<Completeness>(
-        mut self,
-    ) -> Self
+    pub fn with_collection_check<Completeness>(mut self) -> Self
     where
         Completeness:
             ApplicationCollectionCompleteness<Value = Owner::Output, Stopped = Owner::Stopped>,

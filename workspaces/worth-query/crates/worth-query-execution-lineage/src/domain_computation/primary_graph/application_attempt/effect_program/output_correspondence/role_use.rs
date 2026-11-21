@@ -19,8 +19,7 @@ use worth_query_declaration::facade::application_schema::ApplicationEntityMarker
 pub struct OutputRoleUse {
     pub name: String,
     pub posture: ApplicationMutationOutputPosture,
-    pub cardinality:
-        ApplicationMutationOutputRoleCardinality,
+    pub cardinality: ApplicationMutationOutputRoleCardinality,
     pub entity_name: &'static str,
     pub entity_type: TypeId,
     pub contract_type: TypeId,

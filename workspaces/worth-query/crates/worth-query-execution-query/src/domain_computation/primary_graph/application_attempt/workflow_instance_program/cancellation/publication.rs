@@ -4,8 +4,8 @@ use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationUncommitted,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitReceipt,
+    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationUncommitted,
 };
 use super::super::PublishedWorkflowInstanceRef;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
@@ -53,11 +53,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn compare_and_commit_workflow_instance_cancellation<
-        Operation: 'static,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_workflow_instance_cancellation<Operation: 'static, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

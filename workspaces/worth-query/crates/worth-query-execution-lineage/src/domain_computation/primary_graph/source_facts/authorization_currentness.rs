@@ -12,9 +12,7 @@ use crate::domain_computation::{
         },
     },
 };
-pub fn map_source_authorization_currentness(
-    stop: Support,
-) -> Stop {
+pub fn map_source_authorization_currentness(stop: Support) -> Stop {
     match stop {
         Support::PrincipalStale => {
             Stop::SourceQueryAuthorization(Authorization::Refused(Refusal::StalePrincipal))

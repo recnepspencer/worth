@@ -63,10 +63,7 @@ impl WorthQueryExecutionRuntimeInstaller {
         Self(self.0.application_query_resources(profile))
     }
 
-    pub fn output_demand_resources(
-        self,
-        profile: WorthQueryOutputDemandResourceProfile,
-    ) -> Self {
+    pub fn output_demand_resources(self, profile: WorthQueryOutputDemandResourceProfile) -> Self {
         Self(self.0.output_demand_resources(profile))
     }
 

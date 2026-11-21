@@ -8,18 +8,46 @@ use worth_relational::facade::runtime::RelationalRuntime;
 pub mod head;
 
 pub trait CurrentReadControlRuntimeExt {
-    fn confirm_in_execution<S: ApplicationSchema, T>(&self, execution: &ExecutionRequest<'_, '_>, runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>, value: T) -> Result<T, CurrentReadDenial>;
-    fn confirm_in_execution_preserving<S: ApplicationSchema, T>(&self, execution: &ExecutionRequest<'_, '_>, runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>, value: T) -> Result<T, (T, CurrentReadDenial)>;
-    fn confirm_in_borrowed<S: ApplicationSchema, T>(&self, execution: &ExecutionRequest<'_, '_>, runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>, lane: &WorthQueryApplicationBranchCommitLane, native: &RelationalRuntime, value: T) -> Result<T, CurrentReadDenial>;
-    fn confirm_in_coordinated<S: ApplicationSchema, T>(&self, execution: &ExecutionRequest<'_, '_>, runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>, coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>, native: &RelationalRuntime, value: T) -> Result<T, CurrentReadDenial>;
-    fn confirm_in_borrowed_preserving<S: ApplicationSchema, T>(&self, execution: &ExecutionRequest<'_, '_>, runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>, lane: &WorthQueryApplicationBranchCommitLane, native: &RelationalRuntime, value: T) -> Result<T, (T, CurrentReadDenial)>;
+    fn confirm_in_execution<S: ApplicationSchema, T>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        value: T,
+    ) -> Result<T, CurrentReadDenial>;
+    fn confirm_in_execution_preserving<S: ApplicationSchema, T>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        value: T,
+    ) -> Result<T, (T, CurrentReadDenial)>;
+    fn confirm_in_borrowed<S: ApplicationSchema, T>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        lane: &WorthQueryApplicationBranchCommitLane,
+        native: &RelationalRuntime,
+        value: T,
+    ) -> Result<T, CurrentReadDenial>;
+    fn confirm_in_coordinated<S: ApplicationSchema, T>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        coordination: &crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
+        native: &RelationalRuntime,
+        value: T,
+    ) -> Result<T, CurrentReadDenial>;
+    fn confirm_in_borrowed_preserving<S: ApplicationSchema, T>(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        lane: &WorthQueryApplicationBranchCommitLane,
+        native: &RelationalRuntime,
+        value: T,
+    ) -> Result<T, (T, CurrentReadDenial)>;
 }
 
 impl<'a> CurrentReadControlRuntimeExt for CurrentReadControl<'a> {
-    fn confirm_in_execution<
-        S: ApplicationSchema,
-        T,
-    >(
+    fn confirm_in_execution<S: ApplicationSchema, T>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -28,10 +56,7 @@ impl<'a> CurrentReadControlRuntimeExt for CurrentReadControl<'a> {
         self.confirm_in_execution_preserving(execution, runtime, value)
             .map_err(|(_, cause)| cause)
     }
-    fn confirm_in_execution_preserving<
-        S: ApplicationSchema,
-        T,
-    >(
+    fn confirm_in_execution_preserving<S: ApplicationSchema, T>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -46,10 +71,7 @@ impl<'a> CurrentReadControlRuntimeExt for CurrentReadControl<'a> {
         ))
     }
     /// Native is already borrowed. Never block on an earlier commit lane.
-    fn confirm_in_borrowed<
-        S: ApplicationSchema,
-        T,
-    >(
+    fn confirm_in_borrowed<S: ApplicationSchema, T>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -62,10 +84,7 @@ impl<'a> CurrentReadControlRuntimeExt for CurrentReadControl<'a> {
     }
     /// The edit assembler already holds this occurrence's genuine lane. Do not
     /// re-enter it, and do not acquire Native from inside this borrowed check.
-    fn confirm_in_coordinated<
-        S: ApplicationSchema,
-        T,
-    >(
+    fn confirm_in_coordinated<S: ApplicationSchema, T>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -84,10 +103,7 @@ impl<'a> CurrentReadControlRuntimeExt for CurrentReadControl<'a> {
         ))
         .map_err(|(_, cause)| cause)
     }
-    fn confirm_in_borrowed_preserving<
-        S: ApplicationSchema,
-        T,
-    >(
+    fn confirm_in_borrowed_preserving<S: ApplicationSchema, T>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,

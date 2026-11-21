@@ -29,15 +29,12 @@ use worth_relational::facade::{
 };
 
 #[derive(Debug)]
-pub enum MaterialDenial
-{
+pub enum MaterialDenial {
     Native(ManagedIndexSourcePreparationDenial),
     Storage(RelationalExecutionDenialCause),
 }
 impl MaterialDenial {
-    pub fn into_native(
-        self,
-    ) -> ManagedIndexSourcePreparationDenial {
+    pub fn into_native(self) -> ManagedIndexSourcePreparationDenial {
         match self {
             Self::Native(cause) => cause,
             Self::Storage(cause) => DerivedRelationReadDenial::Request(cause).into(),
@@ -60,8 +57,7 @@ impl From<RelationalExecutionDenialCause> for MaterialDenial {
     }
 }
 
-pub struct PersistentSourceRows
-{
+pub struct PersistentSourceRows {
     owner: WorthQueryGraphWorkSessionIdentity,
     program: ManagedIndexSourceProgram,
     scope: EntityId,
@@ -70,20 +66,13 @@ pub struct PersistentSourceRows
 }
 
 impl PersistentSourceRows {
-    pub fn program(
-        &self,
-    ) -> &ManagedIndexSourceProgram {
+    pub fn program(&self) -> &ManagedIndexSourceProgram {
         &self.program
     }
-    pub fn scope(
-        &self,
-    ) -> EntityId {
+    pub fn scope(&self) -> EntityId {
         self.scope
     }
-    pub fn entry(
-        &self,
-        entity: EntityId,
-    ) -> Option<&Arc<Entry>> {
+    pub fn entry(&self, entity: EntityId) -> Option<&Arc<Entry>> {
         self.entries.get(&entity)
     }
     pub fn acquire(
@@ -319,43 +308,26 @@ impl PersistentSourceRows {
         Ok((rows, delta.finish()))
     }
 
-    pub fn len(
-        &self,
-    ) -> usize {
+    pub fn len(&self) -> usize {
         self.entries.len()
     }
-    pub fn owner(
-        &self,
-    ) -> WorthQueryGraphWorkSessionIdentity {
+    pub fn owner(&self) -> WorthQueryGraphWorkSessionIdentity {
         self.owner
     }
-    pub fn contains(
-        &self,
-        entity: EntityId,
-    ) -> bool {
+    pub fn contains(&self, entity: EntityId) -> bool {
         self.entries.contains_key(&entity)
     }
-    pub fn keys(
-        &self,
-    ) -> impl Iterator<Item = EntityId> + '_ {
+    pub fn keys(&self) -> impl Iterator<Item = EntityId> + '_ {
         self.entries.keys().copied()
     }
-    pub fn at(
-        &self,
-        ordinal: usize,
-    ) -> Option<(EntityId, Node<'_>)> {
+    pub fn at(&self, ordinal: usize) -> Option<(EntityId, Node<'_>)> {
         let (entity, entry) = self.entries.entry_at(ordinal)?;
         Some((*entity, entry.row.only()?))
     }
-    pub fn get(
-        &self,
-        entity: EntityId,
-    ) -> Option<Node<'_>> {
+    pub fn get(&self, entity: EntityId) -> Option<Node<'_>> {
         self.entries.get(&entity)?.row.only()
     }
-    pub fn view<
-        'a,
-    >(
+    pub fn view<'a>(
         &'a self,
         bindings: &'a WorthQueryInstalledApplicationValueBindingCatalog,
         source_budget: Option<&'a worth_relational::facade::runtime::CustomInvariantReadBudget<'a>>,

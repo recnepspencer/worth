@@ -22,11 +22,7 @@ impl WorthQueryOperationScopeEntityBinding {
         }
     }
 
-    pub const fn from_recorded_parts(
-        partition_id: u32,
-        local_slot: u64,
-        generation: u32,
-    ) -> Self {
+    pub const fn from_recorded_parts(partition_id: u32, local_slot: u64, generation: u32) -> Self {
         Self {
             partition_id,
             local_slot,

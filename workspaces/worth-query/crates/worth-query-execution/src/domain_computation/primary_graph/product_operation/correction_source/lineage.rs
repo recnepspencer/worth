@@ -26,7 +26,8 @@ pub(super) fn reverse_lineage<Schema: ApplicationSchema>(
         .map_err(|_| Denial::ForeignPhase)?;
     if target
         .application()
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .reversal_of_source_at_basis(&execution, target.product().relational_basis(), &locator)
         .map_err(Denial::History)?

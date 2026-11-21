@@ -2,9 +2,7 @@
 use super::*;
 use serde::{Serialize, Serializer};
 
-pub struct DurableLineageView<'a>(
-    &'a WorthQueryAuthorizationDecisionFact,
-);
+pub struct DurableLineageView<'a>(&'a WorthQueryAuthorizationDecisionFact);
 
 #[derive(Serialize)]
 enum Lineage<'a> {
@@ -54,10 +52,7 @@ impl Serialize for DurableLineageView<'_> {
 }
 
 impl WorthQueryDurableCapabilityLineage {
-    pub fn matches_view(
-        &self,
-        view: &DurableLineageView<'_>,
-    ) -> bool {
+    pub fn matches_view(&self, view: &DurableLineageView<'_>) -> bool {
         use delegation::WorthQueryDelegationDecisionFact as Native;
         match (self, view.0.delegation.as_deref()) {
             (Self::Unbound, None) => true,

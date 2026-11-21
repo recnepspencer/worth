@@ -33,10 +33,7 @@ impl StructuralWalkKey {
     pub fn direction(&self) -> RelationDirection {
         self.0.direction
     }
-    pub fn write_locator(
-        &self,
-        output: &mut dyn std::fmt::Write,
-    ) -> std::fmt::Result {
+    pub fn write_locator(&self, output: &mut dyn std::fmt::Write) -> std::fmt::Result {
         write!(
             output,
             "application-structural-walk:{}#{}:{}:{}:{:?}:roots#{}",

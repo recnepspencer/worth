@@ -1,6 +1,6 @@
 //! Observe a completed publication without certifying reusable Current output.
-use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use super::*;
+use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use crate::domain_computation::primary_graph::{
     application_output_demand::WorthQueryAcceptedOutputAuthority, WorthQueryOutputDemandSettlement,
     WorthQueryPrimaryGraphApplicationRuntime,

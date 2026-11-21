@@ -46,9 +46,7 @@ impl<Key> PartitionMetadata<Key> {
     pub fn len(&self) -> usize {
         self.entries.len()
     }
-    pub fn iter(
-        &self,
-    ) -> impl Iterator<Item = (&PartitionIdentity, &RetainedPartition<Key>)> {
+    pub fn iter(&self) -> impl Iterator<Item = (&PartitionIdentity, &RetainedPartition<Key>)> {
         self.entries.iter()
     }
     pub fn values(&self) -> impl Iterator<Item = &RetainedPartition<Key>> {

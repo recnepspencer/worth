@@ -1,9 +1,9 @@
 //! Provider compare refusals retain their cause at the application boundary.
-use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use super::provider_execution::WorthQueryProviderProgressionOutcome as Progression;
 use super::{
     WorthQueryApplicationCommitDenial as Denial, WorthQueryApplicationCommitDenialStage as Stage,
 };
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::WorthQueryProviderCompareAndCommitDenial as Compare;
 
 pub fn provider_compare_denied(denial: Compare) -> Progression {

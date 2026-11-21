@@ -1,9 +1,9 @@
 //! Exact continuation of World unpublished transport completion effects.
-use crate::domain_computation::execution_runtime::product_world::ProductPublicationBindingPrimaryExt;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{
     WorthQueryProductPublicationDenial as PublicationDenial,
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
+use crate::domain_computation::execution_runtime::product_world::ProductPublicationBindingPrimaryExt;
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;

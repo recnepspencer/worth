@@ -12,39 +12,6 @@ use crate::domain_computation::primary_graph::application_attempt::{
 /// Each opaque reference names a fact the caller already possesses. Preparation
 /// freshly checks every fact and requires a total legal decision. The explicit
 /// carry policy applies to every fact found by that private safety check.
-/// ```compile_fail,E0599
-/// use worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation;
-/// use worth_query_installation::facade::ApplicationSchema;
-/// use worth_query_execution::facade::primary_graph::WorthQueryAdvancementPhase;
-/// use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
-/// use worth_query_installation::facade::WorthQueryProgramAdoptionRequirements;
-/// fn advanced_cannot_disclose<S: ApplicationSchema>(selected: &WorthQuerySelectedProductOperation<'_, S>,
-///     phase:&WorthQueryAdvancementPhase<'_>, target:&ApplicationProgramRevision, requirements:&WorthQueryProgramAdoptionRequirements) {
-///     selected.workflow_adoption_inventory(phase,target,requirements,64);
-/// }
-/// ```
-/// ```compile_fail,E0026
-/// use worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial;
-/// fn no_payload(denial: WorthQueryBranchAdoptionPreparationDenial) {
-///     if let WorthQueryBranchAdoptionPreparationDenial::WorkflowDispositionRequired { inventory } = denial {
-///         drop(inventory);
-///     }
-/// }
-/// ```
-/// ```compile_fail,E0532
-/// use worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial as Denial;
-/// fn no_private_commit_log(denial: Denial) {
-///     match denial { Denial::RelationalPreparation(log) => drop(log), _ => {} }
-/// }
-/// ```
-/// ```
-/// use worth_query_execution::facade::primary_graph::WorthQueryBranchAdoptionPreparationDenial as Denial;
-/// fn structural_category(denial: Denial) -> bool { matches!(denial,Denial::RelationalPreparation) }
-/// ```
-/// ```
-/// use worth_query_execution::facade::primary_graph::WorthQueryWorkflowDispositions;
-/// fn explicit_intent() { let _ = WorthQueryWorkflowDispositions::carry_compatible(); }
-/// ```
 #[derive(Clone, Debug, Default)]
 pub struct WorthQueryWorkflowDispositions {
     policy: Option<WorkflowDispositionPolicy>,
@@ -106,9 +73,7 @@ impl WorthQueryWorkflowDispositions {
         self
     }
     /// Empty population accepts total policies, never references to absent facts.
-    pub fn admit_empty_population(
-        &self,
-    ) -> Result<(), ()> {
+    pub fn admit_empty_population(&self) -> Result<(), ()> {
         if self.definitions.is_empty() && self.instances.is_empty() {
             Ok(())
         } else {

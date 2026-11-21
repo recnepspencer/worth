@@ -11,9 +11,7 @@ pub fn run_advancement(
     execution: &QueryRequestExecution<'_>,
     owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     source_instance: Option<u64>,
-    maintenance: Option<
-        &dyn crate::ports::HomeMaintenanceAfterAdvancement,
-    >,
+    maintenance: Option<&dyn crate::ports::HomeMaintenanceAfterAdvancement>,
     retain_returned_outcome: bool,
     body: &mut dyn FnMut(WorthQueryAdvancementPhase<'_>),
     discard: &mut dyn FnMut(),
@@ -42,9 +40,7 @@ fn run_admitted_advancement(
     execution: &QueryRequestExecution<'_>,
     owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
     source_instance: Option<u64>,
-    maintenance: Option<
-        &dyn crate::ports::HomeMaintenanceAfterAdvancement,
-    >,
+    maintenance: Option<&dyn crate::ports::HomeMaintenanceAfterAdvancement>,
     retain_returned_outcome: bool,
     body: &mut dyn FnMut(WorthQueryAdvancementPhase<'_>),
     discard: &mut dyn FnMut(),

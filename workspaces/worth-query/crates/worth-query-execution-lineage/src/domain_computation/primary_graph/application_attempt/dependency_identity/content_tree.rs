@@ -50,16 +50,11 @@ impl CompletedFactRoutes {
         let routes = FactRoutes::build(&body, control)?;
         Ok(Self { body, routes })
     }
-    pub fn into_parts(
-        self,
-    ) -> (FactPayload, Arc<FactRoutes>) {
+    pub fn into_parts(self) -> (FactPayload, Arc<FactRoutes>) {
         (self.body, self.routes)
     }
 
-    pub fn matches_body(
-        &self,
-        body: &FactPayload,
-    ) -> bool {
+    pub fn matches_body(&self, body: &FactPayload) -> bool {
         self.body.same_backing(body)
     }
 }
@@ -138,10 +133,7 @@ fn repeated(mut work: Work, part: Work, count: u64) -> Work {
 }
 
 impl FactContent {
-    pub fn effect_routes(
-        &self,
-        body: &FactPayload,
-    ) -> Option<CompletedFactRoutes> {
+    pub fn effect_routes(&self, body: &FactPayload) -> Option<CompletedFactRoutes> {
         self.same_body(body).then(|| CompletedFactRoutes {
             body: body.clone(),
             routes: self.0.fields.clone(),
@@ -275,10 +267,7 @@ impl FactContent {
         ))
     }
 
-    pub fn same_body(
-        &self,
-        body: &FactPayload,
-    ) -> bool {
+    pub fn same_body(&self, body: &FactPayload) -> bool {
         self.0.body.same_backing(body)
     }
     pub fn identity(&self, key: [u8; 32]) -> rule::Derived {

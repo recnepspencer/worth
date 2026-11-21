@@ -76,7 +76,8 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .map_err(Denial::Phase)?;
         let graph = self
             .application()
-            .inner.runtime
+            .inner
+            .runtime
             .primary_graph()
             .ok_or(Denial::BasisUnavailable)?;
         let current_basis = self.product().selected_commit() == data.product().selected_commit();

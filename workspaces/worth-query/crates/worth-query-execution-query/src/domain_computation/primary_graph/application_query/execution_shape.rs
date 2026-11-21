@@ -7,21 +7,13 @@ use super::WorthQueryApplicationQueryAdmissionDenialKind;
 
 /// One installed one-shot shape accepted by the same predicate as ordinary
 /// admission. The exact installed Query and lane must consume this proof.
-pub struct PreparedOneShotShape<
-    'query,
-> {
+pub struct PreparedOneShotShape<'query> {
     query_identity:
         &'query worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity,
 }
 
 impl PreparedOneShotShape<'_> {
-    pub fn consume<
-        Schema,
-        Query,
-        Parameters,
-        QueryResult,
-        Scope,
-    >(
+    pub fn consume<Schema, Query, Parameters, QueryResult, Scope>(
         self,
         query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
         controls: &WorthQueryAdmittedApplicationQueryControls<'_>,
@@ -39,14 +31,7 @@ impl PreparedOneShotShape<'_> {
     }
 }
 
-pub fn prepare_one_shot_shape_admitted<
-    'query,
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Scope,
->(
+pub fn prepare_one_shot_shape_admitted<'query, Schema, Query, Parameters, QueryResult, Scope>(
     query: &'query WorthQueryInstalledApplicationQuery<
         Schema,
         Query,

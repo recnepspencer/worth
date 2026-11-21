@@ -24,9 +24,7 @@ impl SettlementReceiptCustody {
             Self::Ready(completion) => completion.authority.publication_view(),
         }
     }
-    pub fn recovered(
-        &self,
-    ) -> Option<&super::super::WorthQueryRecoveredProducerPublication> {
+    pub fn recovered(&self) -> Option<&super::super::WorthQueryRecoveredProducerPublication> {
         match self {
             Self::Recovered(publication) => Some(publication),
             Self::Owned(_) => None,

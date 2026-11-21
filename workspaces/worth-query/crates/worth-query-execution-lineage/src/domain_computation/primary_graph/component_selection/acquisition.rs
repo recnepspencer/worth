@@ -8,9 +8,7 @@ use std::collections::BTreeMap;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 pub mod coupling;
-pub use coupling::{
-    observe_coupling, CouplingObservationDenial,
-};
+pub use coupling::{observe_coupling, CouplingObservationDenial};
 
 pub trait ComponentAcquisitionReader {
     type Error;

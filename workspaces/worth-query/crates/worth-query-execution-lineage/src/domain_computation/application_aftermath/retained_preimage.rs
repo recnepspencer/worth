@@ -9,9 +9,7 @@ use worth_query_installation::facade::InstalledPreImageLocus;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::transactions::RecordRef;
 pub mod presence;
-pub use presence::{
-    RetainedOutputFields, RetainedPreImageAbsence, RetainedPreImageAbsenceKind,
-};
+pub use presence::{RetainedOutputFields, RetainedPreImageAbsence, RetainedPreImageAbsenceKind};
 
 /// One retained field pre-image bound into the strengthened commit receipt.
 #[derive(Clone, Eq, PartialEq)]
@@ -163,9 +161,7 @@ impl WorthQueryRetainedPreImage {
         self.total_encoded_bytes = total;
         Ok(())
     }
-    pub fn content(
-        &self,
-    ) -> &worth_relational::facade::content::RelationalContentAttachments {
+    pub fn content(&self) -> &worth_relational::facade::content::RelationalContentAttachments {
         &self.content
     }
 

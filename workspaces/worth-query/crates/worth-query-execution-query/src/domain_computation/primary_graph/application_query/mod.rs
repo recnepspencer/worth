@@ -1,7 +1,7 @@
+pub use scope_freshness::{WorthQueryScopeFreshnessCheck, WorthQueryScopeFreshnessDiagnostic};
 pub use worth_query_execution_lineage::facade::primary_graph::application_query::{
     denial, retained_read, scope_freshness, source_observation_stop,
 };
-pub use scope_freshness::{WorthQueryScopeFreshnessCheck, WorthQueryScopeFreshnessDiagnostic};
 mod access_context;
 mod access_receipt;
 pub mod admission;
@@ -87,9 +87,7 @@ pub use output_source_observation::{
 pub mod projection;
 pub use projection::retained_projection::compare_original_projections;
 pub use projection::retained_projection::ProjectionComparisonDenial;
-pub use projection::{
-    ContentScratch, ProjectionContentStorageFault,
-};
+pub use projection::{ContentScratch, ProjectionContentStorageFault};
 pub mod read_execution;
 pub use read_execution::{
     query_read_kernel_entries_by_root_on_this_thread_for_test,
@@ -186,9 +184,7 @@ pub use projection::retained_projection::{
     WorthQueryMaterializedQueryRow, WorthQueryProjectionMaterializationRefusal,
 };
 
-pub use observed_source::{
-    AppliedQuerySource, AppliedQuerySupport, AppliedSourcePublication,
-};
+pub use observed_source::{AppliedQuerySource, AppliedQuerySupport, AppliedSourcePublication};
 pub use projection::ProjectionContentComparisonFault;
 
 pub use read_execution::dispatch_witness::DispatchWitness;

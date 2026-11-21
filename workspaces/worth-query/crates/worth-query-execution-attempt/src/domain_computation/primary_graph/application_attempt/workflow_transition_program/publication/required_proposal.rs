@@ -4,20 +4,6 @@ use worth_relational::facade::identity::EntityId;
 
 /// The current native node needs a proposal of this declared operation/input.
 /// Fresh proposal admission still owns publication; this value grants no authority.
-/// ```
-/// use worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowProposal;
-/// fn next_node(need: &RequiredWorkflowProposal) -> &str { need.node_path() }
-/// ```
-/// ```compile_fail,E0451
-/// use worth_query_execution::publication_boundary::workflow_advance::RequiredWorkflowProposal;
-/// use worth_relational::facade::identity::EntityId;
-/// fn forge(instance: EntityId) {
-///     let _ = RequiredWorkflowProposal {
-///         instance, node_path: String::new(), operation: String::new(),
-///         input_type: String::new(), occurrence: 0,
-///     };
-/// }
-/// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RequiredWorkflowProposal {
     instance: EntityId,

@@ -75,37 +75,33 @@ impl PublishedWorkflowProposalRef {
     }
 }
 
-#[doc(hidden)]
-pub struct PublishedWorkflowProposalRefAttemptParts {
-    pub branch: crate::basis::WorthQueryProductBranch,
-    pub entity: EntityId,
-    pub instance: EntityId,
-    pub definition: EntityId,
-    pub identity: ProposalText,
-    pub operation: ProposalText,
-    pub input_type: ProposalText,
-    pub input_identity: [u8; 32],
-    pub source_identity: Option<[u8; 32]>,
-    pub node_path: ProposalText,
-}
-
 impl PublishedWorkflowProposalRef {
     #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: PublishedWorkflowProposalRefAttemptParts,
-    ) -> Self {
-        Self {
-            branch: parts.branch,
-            entity: parts.entity,
-            instance: parts.instance,
-            definition: parts.definition,
-            identity: parts.identity,
-            operation: parts.operation,
-            input_type: parts.input_type,
-            input_identity: parts.input_identity,
-            source_identity: parts.source_identity,
-            node_path: parts.node_path,
+    pub fn from_committed_proposal(
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        instance: &super::super::super::PublishedWorkflowInstanceRef,
+        entity: EntityId,
+        identity: ProposalText,
+        operation: ProposalText,
+        input_type: ProposalText,
+        input_identity: [u8; 32],
+        source_identity: Option<[u8; 32]>,
+        node_path: ProposalText,
+    ) -> Option<Self> {
+        if receipt.product_branch() != instance.branch() {
+            return None;
         }
+        Some(Self {
+            branch: receipt.product_branch(),
+            entity,
+            instance: instance.entity_id(),
+            definition: instance.definition_entity_id(),
+            identity,
+            operation,
+            input_type,
+            input_identity,
+            source_identity,
+            node_path,
+        })
     }
 }

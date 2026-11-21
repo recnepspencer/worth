@@ -1,12 +1,15 @@
-pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::managed_application_recovery::producer::*;
 use super::*;
+use crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource;
+
+pub struct ProducerRecoveryCustody {
+    pub facts: std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::RecoveredProducerOutputFacts>,
+    pub carrier: Option<WorthQueryRecoveredProgramOutputSource>,
+    pub binding: WorthQueryApplicationIdempotencyBinding,
+    pub cleanup: Option<WorthQueryProductUnpublishedRecovery>,
+}
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
-    pub fn recover_original_producer_publication<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn recover_original_producer_publication<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         recovery: &WorthQueryProductUnpublishedRecovery,

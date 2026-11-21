@@ -4,10 +4,7 @@ use worth_execution::ExecutionRequest;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 impl SourceFacts {
-    pub fn copy_for_observer(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, Cause> {
+    pub fn copy_for_observer(&self, execution: &ExecutionRequest<'_, '_>) -> Result<Self, Cause> {
         if let Some(allocation) = &self.allocation {
             allocation.claim_slice::<EntityId>(execution, self.entities.len())?;
             allocation
@@ -33,10 +30,7 @@ impl SourceFacts {
         })
     }
 
-    pub fn admit_container<T>(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), Cause> {
+    pub fn admit_container<T>(&self, execution: &ExecutionRequest<'_, '_>) -> Result<(), Cause> {
         if let Some(allocation) = &self.allocation {
             allocation.claim(execution, (size_of::<T>() + 2 * size_of::<usize>()) as u64)?;
         }

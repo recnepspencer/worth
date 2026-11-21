@@ -125,9 +125,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     /// The prepared inverse this attempt publishes. Only a recorded reverse has
     /// one: a reapplied source runs its own binding again, so it selects and
     /// retains authored anchors as the forward attempt it is.
-    pub fn recorded_reverse(
-        &self,
-    ) -> Option<&dyn crate::ports::PreparedCorrectionSourcePort> {
+    pub fn recorded_reverse(&self) -> Option<&dyn crate::ports::PreparedCorrectionSourcePort> {
         self.aftermath_causality()
             .filter(|pending| pending.role() == WorthQueryAftermathCausalRole::RecordedReverse)
             .map(|pending| pending.prepared_correction())

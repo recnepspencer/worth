@@ -20,14 +20,10 @@ impl<'candidate> ClosedCoupledInvariantReceipts<'candidate> {
             native_work,
         })
     }
-    pub fn candidate(
-        &self,
-    ) -> &'candidate ValidatedRelationalProposal {
+    pub fn candidate(&self) -> &'candidate ValidatedRelationalProposal {
         self.candidate
     }
-    pub fn native_work(
-        &self,
-    ) -> u64 {
+    pub fn native_work(&self) -> u64 {
         self.native_work
     }
 }

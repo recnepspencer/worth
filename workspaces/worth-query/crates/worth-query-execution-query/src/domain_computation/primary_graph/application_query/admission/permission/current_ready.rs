@@ -15,24 +15,18 @@ pub struct SealedCurrentReadyQueryPermission<'basis> {
 }
 
 impl SealedCurrentReadyQueryPermission<'_> {
-    pub fn validate_request(
-        &self,
-    ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
+    pub fn validate_request(&self) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
         validate_current_request(
             self._request,
             self.authentication_valid_until,
             self.query_name,
         )
     }
-    pub fn product(
-        &self,
-    ) -> &crate::basis::WorthQueryProductObservationLease {
+    pub fn product(&self) -> &crate::basis::WorthQueryProductObservationLease {
         self._product
     }
 
-    pub fn snapshot_handle(
-        &self,
-    ) -> &worth_relational::facade::snapshots::SnapshotHandle {
+    pub fn snapshot_handle(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
         self.truth
             .as_ref()
             .unwrap_or(&self.security)

@@ -84,8 +84,7 @@ pub struct SelectionRows {
     roots: ExecutionArray<EntityId>,
     dependencies: Arc<ManagedSourceDependencies>,
     currency: Arc<dyn RootCurrency>,
-    pub coverage:
-        Option<Arc<RetainedCoverage>>,
+    pub coverage: Option<Arc<RetainedCoverage>>,
 }
 impl SelectionRows {
     pub fn admits(
@@ -100,19 +99,13 @@ impl SelectionRows {
             && self.currency.current(&self.association, self.coverage.as_deref())
             && (self.association.definition().parts().membership == worth_query_declaration::facade::application_query::ApplicationManagedIndexMembership::Candidates || self.coverage.is_some())
     }
-    pub fn roots(
-        &self,
-    ) -> &[EntityId] {
+    pub fn roots(&self) -> &[EntityId] {
         self.roots.elements()
     }
-    pub fn association(
-        &self,
-    ) -> &WorthQueryInstalledManagedIndexParent {
+    pub fn association(&self) -> &WorthQueryInstalledManagedIndexParent {
         &self.association
     }
-    pub fn dependencies(
-        &self,
-    ) -> &Arc<ManagedSourceDependencies> {
+    pub fn dependencies(&self) -> &Arc<ManagedSourceDependencies> {
         &self.dependencies
     }
 }
@@ -124,14 +117,12 @@ pub struct ManagedSelectionLease<'parent, 'request, 'authority> {
 }
 /// Owned evidence is derived only while the real maintained selection loan lives.
 /// It describes opening coverage; fresh requests still admit every later READ.
-pub struct MaintainedWatchSelection
-{
+pub struct MaintainedWatchSelection {
     #[allow(
         dead_code,
         reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
     )]
-    pub association:
-        WorthQueryInstalledManagedIndexParent,
+    pub association: WorthQueryInstalledManagedIndexParent,
     #[allow(
         dead_code,
         reason = "The typed diagnostic or custody payload stays owned through return and Drop; this owner does not inspect it"
@@ -275,9 +266,7 @@ impl Drop for MaintainedWatchSelection {
 }
 
 impl MaintainedWatchSelection {
-    pub fn custody_observer(
-        &self,
-    ) -> impl Fn() -> [bool; 4] + 'static {
+    pub fn custody_observer(&self) -> impl Fn() -> [bool; 4] + 'static {
         let native = Arc::downgrade(self.native_custody.as_ref().expect("live custody"));
         let source = Arc::downgrade(self.source_custody.as_ref().expect("live custody"));
         let coverage = Arc::downgrade(self.coverage_custody.as_ref().expect("live custody"));

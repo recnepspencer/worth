@@ -2,9 +2,7 @@
 use super::WorthQueryApplicationIdempotencyBinding;
 use worth_relational::facade::mvcc::RequiredOutputProducingImplementation;
 impl WorthQueryApplicationIdempotencyBinding {
-    pub const fn producing_implementation(
-        &self,
-    ) -> Option<RequiredOutputProducingImplementation> {
+    pub const fn producing_implementation(&self) -> Option<RequiredOutputProducingImplementation> {
         self.producing_implementation
     }
     pub fn bind_producing_implementation(

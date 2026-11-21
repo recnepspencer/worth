@@ -1,8 +1,8 @@
 //! A synchronous envelope has no post-commit source continuation to register.
-use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_installation::WorthQuerySelectedProgramOwner;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationRequiredOutputConnection,

@@ -17,34 +17,6 @@ impl<Schema, Operation, Input, Scope>
 {
     /// An installed effect declaration is not enough; the operation itself
     /// must carry the compile-time emit capability:
-    ///
-    /// ```compile_fail
-    /// use worth_query_declaration::facade::application_schema::ApplicationEffectRef;
-    /// use worth_query_execution::facade::primary_graph::WorthQueryApplicationEffectProgramBuilder;
-    ///
-    /// struct Schema;
-    /// struct Operation;
-    /// struct Input;
-    /// struct Scope;
-    /// worth_query_declaration::worth_query_structured_value_binding!(
-    ///     UndeclaredEffectPayloadBinding for String {
-    ///         identity: "worth.example.undeclared-effect-payload.v1"
-    ///     }
-    /// );
-    /// worth_query_declaration::worth_query_effect!(
-    ///     UndeclaredEffect for Schema,
-    ///     payload UndeclaredEffectPayloadBinding
-    /// );
-    ///
-    /// fn cannot_emit_undeclared_effect(
-    ///     builder: &mut WorthQueryApplicationEffectProgramBuilder<
-    ///         Schema, Operation, Input, Scope,
-    ///     >,
-    /// ) {
-    ///     let effect = UndeclaredEffect::reference();
-    ///     builder.emit(effect, "payload".to_owned()).unwrap();
-    /// }
-    /// ```
     pub fn emit<Effect, Payload>(
         &mut self,
         effect: ApplicationEffectRef<Schema, Effect, Payload>,

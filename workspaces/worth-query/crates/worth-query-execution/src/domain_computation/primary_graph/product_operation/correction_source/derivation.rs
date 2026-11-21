@@ -59,7 +59,8 @@ where
     if let Some(material) = source.occurrence().home_material()
         && target
             .application()
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .recover_correction_command(material.capture.original, key.identity())
             .map_err(Denial::Material)?

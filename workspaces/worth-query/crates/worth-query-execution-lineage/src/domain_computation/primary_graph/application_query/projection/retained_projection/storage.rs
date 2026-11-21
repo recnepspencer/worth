@@ -12,18 +12,14 @@ pub enum DisclosedRows {
 }
 
 impl DisclosedRows {
-    pub fn rows(
-        &self,
-    ) -> &Vec<WorthQueryApplicationProjectionNode> {
+    pub fn rows(&self) -> &Vec<WorthQueryApplicationProjectionNode> {
         match self {
             Self::Owned(rows) => rows,
             Self::Shared(body) => &body.rows,
         }
     }
 
-    pub fn payload_bytes(
-        &self,
-    ) -> usize {
+    pub fn payload_bytes(&self) -> usize {
         match self {
             Self::Owned(rows) => rows.payload_bytes(),
             Self::Shared(body) => body.rows.payload_bytes(),

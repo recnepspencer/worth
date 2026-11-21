@@ -19,13 +19,7 @@ pub enum WorthQueryRetainedMutationStaticStop {
     Authorization(WorthQueryOperationAuthorizationDenial),
 }
 
-pub fn validate_static_authority_retained<
-    Schema,
-    Binding,
-    Principal,
-    PrincipalIdentity,
-    Scope,
->(
+pub fn validate_static_authority_retained<Schema, Binding, Principal, PrincipalIdentity, Scope>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     scope: &WorthQueryApplicationEntityIdentity<Schema, Scope>,

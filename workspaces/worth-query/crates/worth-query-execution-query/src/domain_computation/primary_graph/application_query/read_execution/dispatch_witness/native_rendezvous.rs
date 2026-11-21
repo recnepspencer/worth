@@ -88,18 +88,12 @@ impl DispatchWitness {
             gate.release_snapshot();
         }
     }
-    pub fn native_read_exit(
-        &self,
-        root: EntityId,
-    ) {
+    pub fn native_read_exit(&self, root: EntityId) {
         if let Some(gate) = self.native_reads.lock().unwrap().clone() {
             gate.exit(root);
         }
     }
-    pub fn native_read_enter(
-        &self,
-        root: EntityId,
-    ) {
+    pub fn native_read_enter(&self, root: EntityId) {
         let gate = self.native_reads.lock().unwrap().clone();
         if let Some(gate) = gate {
             gate.enter(root);

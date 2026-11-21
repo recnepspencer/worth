@@ -19,12 +19,12 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 mod producer_input;
 mod required_successor;
 mod validated;
-pub use required_successor::validate_required_successor;
 pub use producer_input::ValidatedProducerInput;
-pub use validated::FreshOutputDisclosure;
-pub use validated::ValidatedOutputDisclosure;
+pub use required_successor::validate_required_successor;
 use validated::AdmittedDisclosure;
+pub use validated::FreshOutputDisclosure;
 use validated::RetainedProgramOutputDisclosure;
+pub use validated::ValidatedOutputDisclosure;
 
 pub fn validate_disclosure<Schema, Family>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -64,11 +64,7 @@ where
 
 /// This transition accepts only the actual inseparable query result. The
 /// selected row is chosen under the query's original request-affinity proof.
-pub fn validate_readmitted<
-    Schema,
-    Query,
-    Value,
->(
+pub fn validate_readmitted<Schema, Query, Value>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retained: &WorthQueryObservedSource<Query>,
@@ -106,11 +102,7 @@ where
 /// Validate a fresh disclosure against the exact Product already selected for
 /// a required wave. The ordinary and selected routes share the same source,
 /// request-affinity, edition, and observation acceptance core.
-pub fn validate_readmitted_on_selected<
-    Schema,
-    Query,
-    Value,
->(
+pub fn validate_readmitted_on_selected<Schema, Query, Value>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retained: &WorthQueryObservedSource<Query>,

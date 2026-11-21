@@ -19,18 +19,14 @@ impl PreparedCurrentInputs<'_> {
         let basis = self.product.relational_basis_descriptor();
         (basis.runtime_instance_id(), basis.root_identity())
     }
-    pub fn consumed(
-        &self,
-    ) -> impl ExactSizeIterator<Item = &ConsumedOutputEvidence> {
+    pub fn consumed(&self) -> impl ExactSizeIterator<Item = &ConsumedOutputEvidence> {
         self.consumed.values()
     }
 }
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>
 {
-    pub fn prepared_current_inputs(
-        &self,
-    ) -> PreparedCurrentInputs<'_> {
+    pub fn prepared_current_inputs(&self) -> PreparedCurrentInputs<'_> {
         PreparedCurrentInputs {
             product: &self.product,
             consumed: &self.snapshot.consumed_outputs,
@@ -41,9 +37,7 @@ impl<Schema: ApplicationSchema, Operation>
 impl<Schema, Operation> super::AppliedOperationProjection<Schema, Operation> {
     /// These are independently verified before-image inputs, never a Current
     /// assertion for the candidate rows used by the decision.
-    pub fn prepared_current_inputs(
-        &self,
-    ) -> PreparedCurrentInputs<'_> {
+    pub fn prepared_current_inputs(&self) -> PreparedCurrentInputs<'_> {
         PreparedCurrentInputs {
             product: &self.product,
             consumed: &self.consumed_outputs,

@@ -1,11 +1,11 @@
 //! Exact-map branch lookup installation under native head exclusion.
 use super::source_alignment::BranchMarkRoot;
 use super::SourceInvalidationOwner;
+pub use worth_query_execution_contracts::facade::HeadCellRegistrationStop;
 use worth_relational::facade::branch::RelationalBranchIdentity;
 use worth_relational::facade::mvcc::CompanionBranchCell;
 use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop;
 use worth_relational::facade::runtime::RelationalRuntime;
-pub use worth_query_execution_contracts::facade::HeadCellRegistrationStop;
 impl SourceInvalidationOwner {
     pub fn mint_cell_at_head(
         &self,

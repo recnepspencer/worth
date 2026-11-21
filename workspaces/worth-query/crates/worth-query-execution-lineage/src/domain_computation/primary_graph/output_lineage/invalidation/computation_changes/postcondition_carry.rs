@@ -11,8 +11,7 @@ use worth_relational::facade::history::RelationalDescriptiveTouchGraph;
 /// Candidate-derived coverage and its allocation custody move together.
 pub struct SelectedPostconditionRebase {
     pub ordinals: OrdSet<usize>,
-    pub basis:
-        super::super::settlement::PostingRebaseBasis,
+    pub basis: super::super::settlement::PostingRebaseBasis,
 }
 
 #[derive(Clone)]

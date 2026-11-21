@@ -93,9 +93,7 @@ pub const fn interruption_stop(
 }
 
 /// Native lifecycle owners keep the original admitted request's exact stop cause.
-pub fn advancement_scope_stop(
-    denial: WorkCeilingDenial,
-) -> super::WorthQueryAdvancementDenial {
+pub fn advancement_scope_stop(denial: WorkCeilingDenial) -> super::WorthQueryAdvancementDenial {
     match denial {
         WorkCeilingDenial::Admission(denial) => {
             super::WorthQueryAdvancementDenial::Resource(lease_denial(denial))
@@ -105,9 +103,7 @@ pub fn advancement_scope_stop(
     }
 }
 
-pub fn advancement_checkpoint_stop(
-    stop: MapKernelStop,
-) -> super::WorthQueryAdvancementDenial {
+pub fn advancement_checkpoint_stop(stop: MapKernelStop) -> super::WorthQueryAdvancementDenial {
     match checkpoint_denial(stop) {
         WorthQueryManagedComputationCheckpointDenial::Resource(resource) => {
             super::WorthQueryAdvancementDenial::Resource(resource)

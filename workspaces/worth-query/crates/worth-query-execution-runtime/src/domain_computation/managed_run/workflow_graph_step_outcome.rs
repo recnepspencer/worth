@@ -9,8 +9,7 @@ use crate::domain_computation::WorthQueryBoundGraphExecutionReceipt;
 #[must_use = "paused graph execution must be advanced, yielded, or explicitly abandoned"]
 pub struct WorthQueryPausedWorkflowGraphExecution {
     pub active: WorthQueryActiveWorkflowGraphExecution,
-    pub safe_point:
-        super::super::yield_eligibility::WorthQueryManagedYieldSafePoint,
+    pub safe_point: super::super::yield_eligibility::WorthQueryManagedYieldSafePoint,
 }
 
 impl WorthQueryPausedWorkflowGraphExecution {
@@ -99,9 +98,7 @@ impl WorthQueryCompletedWorkflowEvidenceOwner<'_> {
         self.authority
     }
 
-    pub fn session(
-        &self,
-    ) -> &crate::domain_computation::WorthQueryExecutionProviderSession {
+    pub fn session(&self) -> &crate::domain_computation::WorthQueryExecutionProviderSession {
         self.session
     }
 
@@ -113,9 +110,7 @@ impl WorthQueryCompletedWorkflowEvidenceOwner<'_> {
         self.stage_identity
     }
 
-    pub fn execution_snapshot(
-        &self,
-    ) -> &WorthQueryBoundExecutionSnapshotIdentity {
+    pub fn execution_snapshot(&self) -> &WorthQueryBoundExecutionSnapshotIdentity {
         &self.execution_snapshot
     }
 

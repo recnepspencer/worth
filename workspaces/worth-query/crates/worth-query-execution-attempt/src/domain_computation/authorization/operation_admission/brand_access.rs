@@ -27,7 +27,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub const fn runtime_authority(
+    pub(crate) const fn runtime_authority(
         &self,
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.core.runtime_authority()
@@ -44,14 +44,12 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub const fn scope_entity_kind(
-        &self,
-    ) -> worth_relational::facade::identity::KindId {
+    pub(crate) const fn scope_entity_kind(&self) -> worth_relational::facade::identity::KindId {
         self.core.scope_entity_kind()
     }
 
     #[inline]
-    pub fn scope_entity_name(&self) -> &str {
+    pub(crate) fn scope_entity_name(&self) -> &str {
         self.core.scope_entity_name()
     }
 
@@ -91,7 +89,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub const fn has_elevation_lifecycle_binding(&self) -> bool {
+    pub(crate) const fn has_elevation_lifecycle_binding(&self) -> bool {
         self.core.has_elevation_lifecycle_binding()
     }
 
@@ -101,7 +99,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_subject(
+    pub(crate) fn workflow_subject(
         &self,
         selector: &worth_query_declaration::facade::application_program::ApplicationWorkflowSubjectSelector,
     ) -> Option<worth_relational::facade::identity::EntityId> {
@@ -109,7 +107,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn installed_capability_identity(&self) -> Option<[u8; 32]> {
+    pub(crate) fn installed_capability_identity(&self) -> Option<[u8; 32]> {
         self.core.installed_capability_identity()
     }
 
@@ -143,21 +141,19 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn authorization_mut(
+    pub(crate) fn authorization_mut(
         &mut self,
     ) -> Option<&mut WorthQueryRetainedAuthorizationDecisionFacts> {
         self.core.authorization_mut()
     }
 
     #[inline]
-    pub fn authorization(
-        &self,
-    ) -> Option<&WorthQueryRetainedAuthorizationDecisionFacts> {
+    pub(crate) fn authorization(&self) -> Option<&WorthQueryRetainedAuthorizationDecisionFacts> {
         self.core.authorization()
     }
 
     #[inline]
-    pub fn take_authorization_dependencies(
+    pub(crate) fn take_authorization_dependencies(
         &mut self,
         bridge: &worth_runtime_bridge::facade::BridgeAuthorizationRuntime,
     ) -> Result<
@@ -184,12 +180,12 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn retain_installed_operation_fingerprint(&self) -> Arc<str> {
+    pub(crate) fn retain_installed_operation_fingerprint(&self) -> Arc<str> {
         self.core.retain_installed_operation_fingerprint()
     }
 
     #[inline]
-    pub fn retain_resource_binding_identity(&self) -> Arc<str> {
+    pub(crate) fn retain_resource_binding_identity(&self) -> Arc<str> {
         self.core.retain_resource_binding_identity()
     }
 
@@ -204,14 +200,12 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn current_authority_lapse(
-        &self,
-    ) -> Option<WorthQueryAdmissionLapse> {
+    pub(crate) fn current_authority_lapse(&self) -> Option<WorthQueryAdmissionLapse> {
         self.core.current_authority_lapse()
     }
 
     #[inline]
-    pub fn retain_admitted_request(
+    pub(crate) fn retain_admitted_request(
         &self,
     ) -> crate::domain_computation::authorization::admitted_request::AdmittedRequestCurrentness
     {
@@ -219,14 +213,14 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn publication_request(
+    pub(crate) fn publication_request(
         &self,
     ) -> &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope {
         self.core.publication_request()
     }
 
     #[inline]
-    pub fn bind_source_facts(
+    pub(crate) fn bind_source_facts(
         &mut self,
         facts: Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
         context: Option<crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>,
@@ -235,17 +229,17 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn query_context(&self) -> Option<&crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>{
+    pub(crate) fn query_context(&self) -> Option<&crate::domain_computation::primary_graph::application_query::ObservedQueryExpressionContext>{
         self.core.query_context()
     }
 
     #[inline]
-    pub fn bind_source_partition(&mut self, identity: [u8; 32]) {
+    pub(crate) fn bind_source_partition(&mut self, identity: [u8; 32]) {
         self.core.bind_source_partition(identity)
     }
 
     #[inline]
-    pub fn bind_source_expectation_kind(
+    pub(crate) fn bind_source_expectation_kind(
         &mut self,
         kind: crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind,
     ) {
@@ -253,28 +247,26 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub const fn source_expectation_kind(
+    pub(crate) const fn source_expectation_kind(
         &self,
     ) -> Option<crate::domain_computation::primary_graph::WorthQuerySourceExpectationKind> {
         self.core.source_expectation_kind()
     }
 
     #[inline]
-    pub const fn source_partition_identity(
-        &self,
-    ) -> Option<[u8; 32]> {
+    pub(crate) const fn source_partition_identity(&self) -> Option<[u8; 32]> {
         self.core.source_partition_identity()
     }
 
     #[inline]
-    pub fn source_facts(
+    pub(crate) fn source_facts(
         &self,
     ) -> &[crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact] {
         self.core.source_facts()
     }
 
     #[inline]
-    pub fn take_source_facts(
+    pub(crate) fn take_source_facts(
         &mut self,
     ) -> Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact> {
         self.core.take_source_facts()
@@ -289,7 +281,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn signed_creation_principal(
+    pub(crate) fn signed_creation_principal(
         &self,
     ) -> Option<
         &std::sync::Arc<
@@ -300,7 +292,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_approval_signing_principal(
+    pub(crate) fn workflow_approval_signing_principal(
         &self,
     ) -> Option<
         &std::sync::Arc<
@@ -311,7 +303,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_approval_request_snapshot(
+    pub(crate) fn workflow_approval_request_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
@@ -319,7 +311,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_approval_principal_snapshot(
+    pub(crate) fn workflow_approval_principal_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
@@ -327,7 +319,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_approval_lineage_snapshot(
+    pub(crate) fn workflow_approval_lineage_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
@@ -335,7 +327,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_approval_support_snapshot(
+    pub(crate) fn workflow_approval_support_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {
@@ -343,7 +335,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn workflow_approval_dependencies_snapshot(
+    pub(crate) fn workflow_approval_dependencies_snapshot(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<Option<FundedActorText>, WorkflowApprovalRequestEncodingDenial> {

@@ -4,26 +4,18 @@ use super::super::mutation_work::WorthQueryPrimaryMutationWorkCounters;
 use crate::domain_computation::primary_graph::application_query::derived_view::PredicatePreparationOwner;
 use crate::domain_computation::WorthQueryProposedFact;
 
-pub struct WorthQueryApprovedApplicationCandidate
-{
-    pub members:
-        Vec<super::CoupledApplicationMember>,
-    pub native:
-        worth_relational::facade::mvcc::ValidatedRelationalProposal,
-    pub work:
-        WorthQueryPrimaryMutationWorkCounters,
-    pub predicate:
-        Option<PredicatePreparationOwner>,
+pub struct WorthQueryApprovedApplicationCandidate {
+    pub members: Vec<super::CoupledApplicationMember>,
+    pub native: worth_relational::facade::mvcc::ValidatedRelationalProposal,
+    pub work: WorthQueryPrimaryMutationWorkCounters,
+    pub predicate: Option<PredicatePreparationOwner>,
 }
 pub struct ApprovedCoupledContribution {
-    pub evidence:
-        worth_relational::facade::mvcc::RelationalMutationInvariantEvidence,
-    pub work:
-        WorthQueryPrimaryMutationWorkCounters,
+    pub evidence: worth_relational::facade::mvcc::RelationalMutationInvariantEvidence,
+    pub work: WorthQueryPrimaryMutationWorkCounters,
 }
 /// The caller releases the actual retired phase after leaving the attempt gate.
-pub struct WorthQueryRetiredApplicationAttemptPhase
-{
+pub struct WorthQueryRetiredApplicationAttemptPhase {
     phase_custody: Option<PhaseState>,
 }
 impl Drop for WorthQueryRetiredApplicationAttemptPhase {

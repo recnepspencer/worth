@@ -1,6 +1,6 @@
 //! Explicit cancellation of a live workflow instance.
-use worth_query_execution::publication_boundary::WorthQueryAdvancementDenialCommitExt as _;
 use crate::application_entry::WorthQueryApplicationRequestMutationDenial;
+use worth_query_execution::publication_boundary::WorthQueryAdvancementDenialCommitExt as _;
 
 use worth_query_declaration::facade::{
     application_capability::ApplicationCapabilityRequest,

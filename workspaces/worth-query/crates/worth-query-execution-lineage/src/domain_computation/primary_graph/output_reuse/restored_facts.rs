@@ -14,9 +14,7 @@ use worth_relational::facade::runtime::{
 /// revision the evidence proves at the selected step, unchanged since the
 /// restoring commit. Any other moved fact ends reuse. Adjacency correspondence
 /// additionally visits the selected and restored lists under the request.
-pub fn restored_facts_hold<
-    F: FactSequence + ?Sized,
->(
+pub fn restored_facts_hold<F: FactSequence + ?Sized>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &worth_relational::facade::runtime::RelationalRuntime,
     snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
@@ -56,8 +54,7 @@ pub fn evidence_answer(
     }
 }
 
-pub fn evidence_unavailable(
-) -> WorthQueryOutputDemandDenial {
+pub fn evidence_unavailable() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
         WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
         "restored output read evidence could not project the selected basis",

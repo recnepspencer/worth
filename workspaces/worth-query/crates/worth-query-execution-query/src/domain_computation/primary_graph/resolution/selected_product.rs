@@ -174,10 +174,7 @@ where
         self.validate_authenticated_principal_with_request(&execution, principal, scope)
     }
 
-    pub fn validate_authenticated_principal_with_request<
-        Principal,
-        PrincipalIdentity,
-    >(
+    pub fn validate_authenticated_principal_with_request<Principal, PrincipalIdentity>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,

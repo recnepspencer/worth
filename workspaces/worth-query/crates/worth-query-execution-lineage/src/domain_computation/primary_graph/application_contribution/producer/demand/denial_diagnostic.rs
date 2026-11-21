@@ -3,10 +3,7 @@ use super::WorthQueryOutputDemandDenial;
 
 impl WorthQueryOutputDemandDenial {
     /// Names the receiving boundary without replacing original kind or custody.
-    pub fn with_subject(
-        mut self,
-        subject: impl Into<std::borrow::Cow<'static, str>>,
-    ) -> Self {
+    pub fn with_subject(mut self, subject: impl Into<std::borrow::Cow<'static, str>>) -> Self {
         self.subject = subject.into();
         self
     }

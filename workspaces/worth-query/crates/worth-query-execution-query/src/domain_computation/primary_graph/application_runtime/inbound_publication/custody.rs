@@ -86,8 +86,7 @@ struct CustodyEntry {
 }
 
 #[derive(Default)]
-pub struct InstalledTransportCompletionCustody
-{
+pub struct InstalledTransportCompletionCustody {
     entries: BTreeMap<ExternalEffectCorrelationIdentity, CustodyEntry>,
     pending_by_operation: BTreeMap<String, BTreeSet<ExternalEffectCorrelationIdentity>>,
     maintenance_cursor_by_operation: BTreeMap<String, ExternalEffectCorrelationIdentity>,

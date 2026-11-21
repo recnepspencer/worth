@@ -19,10 +19,8 @@ pub struct WorkflowOperationBindingProof
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
 }
 
-pub struct MutationHandlerBindingProof
-{
-    pub coupled_outputs:
-        super::super::coupled_outputs::DeclaredCoupledOutputDemands,
+pub struct MutationHandlerBindingProof {
+    pub coupled_outputs: super::super::coupled_outputs::DeclaredCoupledOutputDemands,
     pub binding: &'static str,
     pub input_identity: [u8; 32],
 }

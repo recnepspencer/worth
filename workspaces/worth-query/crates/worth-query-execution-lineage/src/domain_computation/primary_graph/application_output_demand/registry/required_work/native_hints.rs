@@ -29,9 +29,7 @@ impl NativeBranch {
 }
 
 impl RequiredWorkMembership {
-    pub fn prepared_native_branch(
-        branch: BranchId,
-    ) -> Arc<NativeBranch> {
+    pub fn prepared_native_branch(branch: BranchId) -> Arc<NativeBranch> {
         Arc::new(NativeBranch { branch })
     }
 
@@ -60,6 +58,5 @@ impl Drop for NativeHint {
         }
     }
 }
-
 
 mod court_doors_for_test;

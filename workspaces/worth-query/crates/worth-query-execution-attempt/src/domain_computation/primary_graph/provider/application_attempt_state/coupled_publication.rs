@@ -15,8 +15,7 @@ use worth_relational::facade::{
 pub struct CoupledWriterCommands {
     pub publication: RelationalCoupledProducerPosture,
     pub batch: WorkerIntentBatch,
-    pub content:
-        worth_relational::facade::content::RelationalContentAttachments,
+    pub content: worth_relational::facade::content::RelationalContentAttachments,
 }
 impl WorthQueryPrimaryGraphProvider {
     pub fn authored_stage_commands(

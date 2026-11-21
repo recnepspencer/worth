@@ -214,8 +214,11 @@ impl PageSource<'_> {
                         }
                         Some(_) => Parent::Truncated,
                     },
-                    label: node.step.label.clone(),
-                    endpoint: node.step.endpoint.clone(),
+                    label: {
+                        use worth_query_execution_query::facade::ports::HistoryStepConstructionPort as _;
+                        node.step.label_arc()
+                    },
+                    endpoint: node.step.endpoint().clone(),
                 },
             });
         }

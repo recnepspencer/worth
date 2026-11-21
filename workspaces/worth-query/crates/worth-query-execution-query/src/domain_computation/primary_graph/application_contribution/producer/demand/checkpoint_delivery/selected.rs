@@ -197,9 +197,7 @@ fn finish_selected(
     }
 }
 
-pub fn check_request(
-    request: &WorthQueryRequestScope,
-) -> Result<(), WorthQueryOutputDemandDenial> {
+pub fn check_request(request: &WorthQueryRequestScope) -> Result<(), WorthQueryOutputDemandDenial> {
     match request.interruption() {
         Some(WorthQueryRequestInterruption::Cancelled) => {
             Err(denial(WorthQueryOutputDemandDenialKind::Cancelled, ""))

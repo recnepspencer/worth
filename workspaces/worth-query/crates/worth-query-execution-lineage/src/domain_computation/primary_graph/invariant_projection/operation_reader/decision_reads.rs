@@ -130,9 +130,7 @@ impl DecisionReads {
     }
     /// The reads of a projection a producer runs, handed what its selected
     /// record retained.
-    pub fn with_prior(
-        prior: ComputationPrior,
-    ) -> Self {
+    pub fn with_prior(prior: ComputationPrior) -> Self {
         Self {
             prior: ComputationPriorCustody::Handed(prior),
             deposit: Some(ComputationDeposit::new()),
@@ -302,9 +300,7 @@ impl<Schema, Operation>
 
     /// Where a completed run is left for seal, when a producer runs the
     /// projection.
-    pub fn computation_deposit(
-        &self,
-    ) -> ComputationDeposit {
+    pub fn computation_deposit(&self) -> ComputationDeposit {
         self.decision_facts
             .deposit
             .clone()

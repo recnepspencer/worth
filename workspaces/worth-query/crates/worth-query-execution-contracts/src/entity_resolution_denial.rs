@@ -55,10 +55,7 @@ pub struct WorthQueryEntityResolutionDenial {
 }
 
 impl WorthQueryEntityResolutionDenial {
-    pub fn new(
-        kind: WorthQueryEntityResolutionDenialKind,
-        subject: impl Into<String>,
-    ) -> Self {
+    pub fn new(kind: WorthQueryEntityResolutionDenialKind, subject: impl Into<String>) -> Self {
         Self {
             kind,
             subject: subject.into(),

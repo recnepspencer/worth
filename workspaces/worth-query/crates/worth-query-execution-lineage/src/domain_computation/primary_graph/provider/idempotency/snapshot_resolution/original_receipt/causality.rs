@@ -11,14 +11,10 @@ pub struct WorthQueryRecoveredAftermathCausality {
 }
 
 impl WorthQueryRecoveredAftermathCausality {
-    pub fn from_source_fact(
-        fact: WorthQueryCanonicalCorrectionFact,
-    ) -> Self {
+    pub fn from_source_fact(fact: WorthQueryCanonicalCorrectionFact) -> Self {
         Self { fact }
     }
-    pub fn canonical_fact(
-        &self,
-    ) -> &WorthQueryCanonicalCorrectionFact {
+    pub fn canonical_fact(&self) -> &WorthQueryCanonicalCorrectionFact {
         &self.fact
     }
     pub const fn role(&self) -> WorthQueryAftermathCausalRole {

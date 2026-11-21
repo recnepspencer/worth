@@ -95,9 +95,7 @@ pub fn retain_current_continuation(
     })
 }
 
-pub fn unavailable(
-    subject: &str,
-) -> WorthQueryApplicationAttemptDenial {
+pub fn unavailable(subject: &str) -> WorthQueryApplicationAttemptDenial {
     WorthQueryApplicationAttemptDenial::new(
         WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
         subject,

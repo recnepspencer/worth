@@ -11,7 +11,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         binding_identity: ApplicationSchemaBindingIdentity,
         entity_resolution: WorthQueryInstalledEntityResolutionContext,
-        program_activation: Option<super::super::program_occurrence::WorthQueryProgramActivationCell>,
+        program_activation: Option<
+            super::super::program_occurrence::WorthQueryProgramActivationCell,
+        >,
     ) -> Self {
         Self {
             installed_operations,

@@ -105,9 +105,7 @@ impl<Schema> View<'_, Schema> {
     }
 }
 
-pub fn native_denial(
-    cause: NativeDenial,
-) -> Denial {
+pub fn native_denial(cause: NativeDenial) -> Denial {
     use worth_relational::facade::schema::DerivedRelationDenial as Definition;
     match cause {
         NativeDenial::Structural(cause) => Denial::from_native_read(cause, "derived relation read"),

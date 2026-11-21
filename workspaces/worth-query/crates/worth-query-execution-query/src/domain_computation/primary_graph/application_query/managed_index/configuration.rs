@@ -58,9 +58,7 @@ impl<S> Clone for ManagedIndexProviderCatalog<S> {
 
 impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
     #[doc(hidden)]
-    pub fn configured_instances_for_test(
-        &self,
-    ) -> Vec<*const ()> {
+    pub fn configured_instances_for_test(&self) -> Vec<*const ()> {
         self.in_registration_order()
             .map(|entry| Arc::as_ptr(&entry.executor).cast::<()>())
             .collect()

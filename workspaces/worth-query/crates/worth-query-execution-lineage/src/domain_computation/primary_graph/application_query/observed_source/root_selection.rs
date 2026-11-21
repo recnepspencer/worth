@@ -6,9 +6,7 @@ pub mod components;
 pub mod managed_index;
 pub mod orbit;
 pub use components::DeclaredComponentSelection;
-pub use managed_index::{
-    DeclaredManagedIndexSelection, ManagedSourceDependencies,
-};
+pub use managed_index::{DeclaredManagedIndexSelection, ManagedSourceDependencies};
 pub mod walks;
 pub use orbit::DeclaredOrbitSelection;
 
@@ -16,28 +14,19 @@ pub use orbit::DeclaredOrbitSelection;
 #[derive(Debug)]
 pub struct WorthQueryObservedRootSelection {
     facts: SourceFacts,
-    pub orbit:
-        Option<DeclaredOrbitSelection>,
-    pub components:
-        Option<DeclaredComponentSelection>,
-    pub managed_index:
-        Option<DeclaredManagedIndexSelection>,
+    pub orbit: Option<DeclaredOrbitSelection>,
+    pub components: Option<DeclaredComponentSelection>,
+    pub managed_index: Option<DeclaredManagedIndexSelection>,
     identity: [u8; 32],
 }
 impl WorthQueryObservedRootSelection {
     pub fn new(facts: SourceFacts, orbit: Option<DeclaredOrbitSelection>) -> Self {
         Self::from_parts(facts, orbit, None, None)
     }
-    pub fn with_components(
-        facts: SourceFacts,
-        components: DeclaredComponentSelection,
-    ) -> Self {
+    pub fn with_components(facts: SourceFacts, components: DeclaredComponentSelection) -> Self {
         Self::from_parts(facts, None, Some(components), None)
     }
-    pub fn with_managed_index(
-        facts: SourceFacts,
-        managed: DeclaredManagedIndexSelection,
-    ) -> Self {
+    pub fn with_managed_index(facts: SourceFacts, managed: DeclaredManagedIndexSelection) -> Self {
         Self::from_parts(facts, None, None, Some(managed))
     }
     fn from_parts(

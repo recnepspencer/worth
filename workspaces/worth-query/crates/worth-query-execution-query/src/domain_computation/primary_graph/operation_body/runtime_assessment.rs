@@ -7,11 +7,10 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledApplicationMutationBinding;
 
 use crate::domain_computation::primary_graph::{
-    CandidateWriter, HandlerExecutionDenial, HandlerResult,
-    WorthQueryAdmittedApplicationOperation, WorthQueryAdvancementPhase,
-    WorthQueryApplicationInvariantProjectionAuthority, WorthQueryCurrentBodyRequirementAssessment,
-    WorthQueryOperationBodyAssessmentDenial, WorthQueryOperationBodyDenial,
-    WorthQueryPrimaryGraphApplicationRuntime,
+    CandidateWriter, HandlerExecutionDenial, HandlerResult, WorthQueryAdmittedApplicationOperation,
+    WorthQueryAdvancementPhase, WorthQueryApplicationInvariantProjectionAuthority,
+    WorthQueryCurrentBodyRequirementAssessment, WorthQueryOperationBodyAssessmentDenial,
+    WorthQueryOperationBodyDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 use super::{PreparedBodyPathWrites, PreparedBodyRetirements};

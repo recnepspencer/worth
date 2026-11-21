@@ -54,9 +54,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         }
     }
 
-    pub fn detach_coupled_delivery(
-        &mut self,
-    ) {
+    pub fn detach_coupled_delivery(&mut self) {
         self.committed_product_publication =
             self.committed_product_publication.co_committed_member();
         self.coupled_member = true;
@@ -70,20 +68,14 @@ impl WorthQueryPrimaryGraphCommittedApplication {
     ) {
         assert!(self.coupled_members.replace(members).is_none());
     }
-    pub fn complete_coupled_member(
-        &self,
-        ordinal: usize,
-        member: Self,
-    ) {
+    pub fn complete_coupled_member(&self, ordinal: usize, member: Self) {
         self.coupled_members
             .as_ref()
             .expect("pre-effect group evidence slots")[ordinal]
             .set(member)
             .unwrap_or_else(|_| panic!("each performed writer settles exactly once"));
     }
-    pub fn publication_members(
-        &self,
-    ) -> impl Iterator<Item = &Self> {
+    pub fn publication_members(&self) -> impl Iterator<Item = &Self> {
         std::iter::once(self).chain(
             self.coupled_members
                 .iter()
@@ -177,9 +169,7 @@ impl WorthQueryPrimaryGraphCommittedApplication {
         &self.commit_evidence.commit_reference().branch_id
     }
 
-    pub const fn commit_reference(
-        &self,
-    ) -> &RelationalCommitReceipt {
+    pub const fn commit_reference(&self) -> &RelationalCommitReceipt {
         self.commit_evidence.commit_reference()
     }
 

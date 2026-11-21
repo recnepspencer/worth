@@ -1,12 +1,12 @@
 //! `CandidateReadSupportPort` implementations for applied query and verified parent reads.
 
 use worth_execution::ExecutionRequest;
+use worth_query_execution_attempt::facade::ports::CandidateReadSupportPort;
 use worth_relational::facade::{
     mvcc::RequiredOutputPublicationMeaning,
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead, RelationalRuntime},
     snapshots::SnapshotHandle,
 };
-use worth_query_execution_attempt::facade::ports::CandidateReadSupportPort;
 
 use crate::domain_computation::primary_graph::{
     application_attempt::{

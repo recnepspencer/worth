@@ -6,7 +6,8 @@ use std::sync::Arc;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::basis::{
-    WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal,
+    WorthQueryProductBranchAdmissionDenial,
+    WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal,
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationReadObservation, WorthQueryPrimaryGraphApplicationRuntime,

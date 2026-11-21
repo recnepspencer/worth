@@ -59,6 +59,11 @@ worth-runtime-world.opt-level = 0
 # line tables pass the 4 GiB PDB limit, so rust-lld cannot link it on Windows.
 # Query builds worth-query-execution without debug info for the same reason.
 # Panic locations stay exact.
+worth-query-execution-contracts.debug = false
+worth-query-execution-runtime.debug = false
+worth-query-execution-lineage.debug = false
+worth-query-execution-attempt.debug = false
+worth-query-execution-query.debug = false
 worth-query-execution.debug = false
 worth-query-topology-entry.debug = false
 
@@ -93,5 +98,10 @@ worth-signal.opt-level = 0
 worth-runtime-bridge.opt-level = 0
 worth-runtime-world.opt-level = 0
 # Topology-entry symbols exceed the PDB limit; see [profile.dev.package].
+worth-query-execution-contracts.debug = false
+worth-query-execution-runtime.debug = false
+worth-query-execution-lineage.debug = false
+worth-query-execution-attempt.debug = false
+worth-query-execution-query.debug = false
 worth-query-execution.debug = false
 worth-query-topology-entry.debug = false

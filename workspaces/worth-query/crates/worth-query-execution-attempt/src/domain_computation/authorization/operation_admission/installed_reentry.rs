@@ -13,7 +13,7 @@ impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
     #[inline]
-    pub fn validate_installed_entry(
+    pub(crate) fn validate_installed_entry(
         &self,
         runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
@@ -24,7 +24,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn validate_mutation_entry(
+    pub(crate) fn validate_mutation_entry(
         &self,
         runtime: crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
         binding: &worth_query_installation::facade::ApplicationSchemaBindingIdentity,
@@ -35,7 +35,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn validate_installed_operation(
+    pub(crate) fn validate_installed_operation(
         &self,
         installed: &InstalledOperationCatalog,
     ) -> Result<(), Denial> {

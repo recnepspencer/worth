@@ -1,9 +1,7 @@
 pub use worth_query_execution_lineage::facade::domain_computation::authorization::application_disclosure::{contract, influence_validation, receipt};
 pub mod decision;
 pub mod pending_access;
-pub use pending_access::{
-    prepare_funded_pending_disclosure, prepare_pending_disclosure,
-};
+pub use pending_access::{prepare_funded_pending_disclosure, prepare_pending_disclosure};
 
 pub use contract::DiagnosticContractDenial;
 pub use contract::{

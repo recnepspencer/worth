@@ -9,9 +9,7 @@ pub fn denial(
     WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
 }
 
-pub fn graph_work_denial(
-    subject: impl Into<String>,
-) -> WorthQueryApplicationQueryAdmissionDenial {
+pub fn graph_work_denial(subject: impl Into<String>) -> WorthQueryApplicationQueryAdmissionDenial {
     denial(
         WorthQueryApplicationQueryAdmissionDenialKind::GraphWorkAdmissionUnavailable,
         subject,

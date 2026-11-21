@@ -17,11 +17,7 @@ mod execution_plan;
 /// The selected Execute entry is a separate object-safe installed executor
 /// obligation. Its owner implementation can use the retained mutation binding
 /// and cold graph template without changing ordinary producer execution.
-pub trait InstalledSelectedProducerExecutor<
-    Schema,
->:
-    Send + Sync
-{
+pub trait InstalledSelectedProducerExecutor<Schema>: Send + Sync {
     #[allow(clippy::too_many_arguments)]
     fn advance_ready_on_selected<'basis, 'owner>(
         &self,

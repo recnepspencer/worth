@@ -14,7 +14,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
     pub fn read_recorded_output_discovery<B>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         recipe: &WorthQueryOutputDiscoveryRecipe<B::Input>,
         external: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,

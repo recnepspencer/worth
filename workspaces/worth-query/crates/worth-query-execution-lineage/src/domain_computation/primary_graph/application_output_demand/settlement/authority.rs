@@ -20,10 +20,7 @@ impl WorthQueryOutputDemandSettlement {
         original.require_settlement(execution, self)
     }
 
-    pub fn matches_authority(
-        &self,
-        authority: &WorthQueryAcceptedOutputAuthority,
-    ) -> bool {
+    pub fn matches_authority(&self, authority: &WorthQueryAcceptedOutputAuthority) -> bool {
         match authority {
             WorthQueryAcceptedOutputAuthority::Committed(receipt) => self
                 .application_commit_receipt()
@@ -43,9 +40,7 @@ impl WorthQueryOutputDemandSettlement {
                 .is_some_and(|actual| actual.same_authority(restored)),
         }
     }
-    pub fn retained_read_ref(
-        &self,
-    ) -> &Arc<WorthQueryApplicationReadObservation> {
+    pub fn retained_read_ref(&self) -> &Arc<WorthQueryApplicationReadObservation> {
         &self.observation
     }
 }

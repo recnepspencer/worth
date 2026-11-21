@@ -66,9 +66,7 @@ impl QueryObligationHistory {
             Err(cause) => Err(cause),
         }
     }
-    pub fn managed_run_obligations(
-        &self,
-    ) -> Vec<QueryManagedRunObligation> {
+    pub fn managed_run_obligations(&self) -> Vec<QueryManagedRunObligation> {
         self.state()
             .journal
             .as_ref()

@@ -23,8 +23,6 @@ use crate::domain_computation::primary_graph::workflow::{
     },
 };
 
-
-
 impl<Schema, Operation, Input, Scope>
     WorthQueryCompleteApplicationReadSet<
         Schema,

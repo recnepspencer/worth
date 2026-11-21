@@ -66,9 +66,7 @@ impl WorthQueryProviderProgressionOutcome {
         })
     }
     /// Move unpublished business evidence without issuing graph-work completion.
-    pub fn into_uncommitted(
-        self,
-    ) -> Result<super::super::WorthQueryApplicationUncommitted, Self> {
+    pub fn into_uncommitted(self) -> Result<super::super::WorthQueryApplicationUncommitted, Self> {
         use super::super::WorthQueryApplicationUncommitted as Uncommitted;
         Ok(match self {
             Self::CoupledFailure(outcome) => outcome,

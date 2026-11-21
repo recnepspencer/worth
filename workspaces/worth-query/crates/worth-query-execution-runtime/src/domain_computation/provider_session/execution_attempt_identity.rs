@@ -24,9 +24,7 @@ impl WorthQueryExecutionAttemptIdentity {
         &self.0
     }
 
-    pub fn closed_identity(
-        &self,
-    ) -> WorthQueryClosedExecutionAttemptIdentity {
+    pub fn closed_identity(&self) -> WorthQueryClosedExecutionAttemptIdentity {
         WorthQueryClosedExecutionAttemptIdentity(Arc::clone(&self.0))
     }
 }

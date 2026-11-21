@@ -96,10 +96,7 @@ impl WorthQueryRealizedProjectionScope {
         Ok(())
     }
 
-    pub fn contains(
-        &self,
-        entity_id: EntityId,
-    ) -> bool {
+    pub fn contains(&self, entity_id: EntityId) -> bool {
         self.entity_ids.contains(&entity_id)
             || self
                 .carried

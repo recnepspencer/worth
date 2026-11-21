@@ -340,9 +340,7 @@ where
         Err(stop)
     }
 
-    pub fn advance_output_demand_with_commit_authority<
-        Family,
-    >(
+    pub fn advance_output_demand_with_commit_authority<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

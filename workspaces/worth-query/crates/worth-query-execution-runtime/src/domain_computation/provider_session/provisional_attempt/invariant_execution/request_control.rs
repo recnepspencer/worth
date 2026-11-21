@@ -5,9 +5,7 @@ use worth_query_admission::facade::authenticated_principal::{
     WorthQueryRequestInterruption, WorthQueryRequestScope,
 };
 
-pub fn check_live(
-    request: Option<&WorthQueryRequestScope>,
-) -> Result<(), Failure> {
+pub fn check_live(request: Option<&WorthQueryRequestScope>) -> Result<(), Failure> {
     let Some(stop) = request.and_then(WorthQueryRequestScope::interruption) else {
         return Ok(());
     };

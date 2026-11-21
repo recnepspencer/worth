@@ -35,15 +35,11 @@ pub struct StoppedCurrentSettlementRegistration<'selected> {
 }
 
 impl<'selected> PreparedCurrentSettlementRegistration<'selected> {
-    pub fn identity(
-        &self,
-    ) -> &Arc<RecordedSettlementIdentity> {
+    pub fn identity(&self) -> &Arc<RecordedSettlementIdentity> {
         &self.identity
     }
 
-    pub fn selected_source(
-        &self,
-    ) -> &'selected PositionedRelationalSnapshot {
+    pub fn selected_source(&self) -> &'selected PositionedRelationalSnapshot {
         self.selected
     }
 
@@ -109,9 +105,7 @@ impl SourceInvalidationOwner {
 
     /// Only the sealed stable-publication relation may discharge an old
     /// consumed identity in the same prepared current source image.
-    pub fn prepare_current_stable_settlement<
-        'selected,
-    >(
+    pub fn prepare_current_stable_settlement<'selected>(
         &self,
         registration: SettlementRegistration,
         selected: &'selected PositionedRelationalSnapshot,
@@ -139,9 +133,7 @@ impl SourceInvalidationOwner {
 
     /// Actual executed no-effect evidence supplies fresh source and live output
     /// facts. Unlike cutoff reuse, it does not require an old settlement mark.
-    pub fn prepare_current_executed_settlement<
-        'selected,
-    >(
+    pub fn prepare_current_executed_settlement<'selected>(
         &self,
         registration: SettlementRegistration,
         selected: &'selected PositionedRelationalSnapshot,

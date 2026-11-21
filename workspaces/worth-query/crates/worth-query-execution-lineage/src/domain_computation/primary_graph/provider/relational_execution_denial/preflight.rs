@@ -14,9 +14,7 @@ pub enum PreflightReadRefusal {
     ManagedSourceNotPrepared,
     ManagedSourceChanged,
 }
-pub fn preflight_execution_cause(
-    stop: Stop,
-) -> Result<Cause, PreflightReadRefusal> {
+pub fn preflight_execution_cause(stop: Stop) -> Result<Cause, PreflightReadRefusal> {
     match stop {
         Stop::Execution(cause) => Ok(cause),
 

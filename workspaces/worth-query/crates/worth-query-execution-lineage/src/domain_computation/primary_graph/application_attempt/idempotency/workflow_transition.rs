@@ -36,10 +36,7 @@ impl WorthQueryApplicationIdempotencyBinding {
             && self.source_partition_identity == source.map(|source| source.2)
             && self.intent_identity == input
     }
-    pub const fn bind_workflow_support(
-        mut self,
-        identity: &[u8; 32],
-    ) -> Self {
+    pub const fn bind_workflow_support(mut self, identity: &[u8; 32]) -> Self {
         self.workflow_support_identity = Some(*identity);
         self
     }
@@ -49,10 +46,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         self
     }
 
-    pub const fn bind_workflow_assessment(
-        self,
-        identity: &[u8; 32],
-    ) -> Self {
+    pub const fn bind_workflow_assessment(self, identity: &[u8; 32]) -> Self {
         self.bind_workflow_support(identity)
     }
 
@@ -76,17 +70,11 @@ impl WorthQueryApplicationIdempotencyBinding {
             && self.matches_workflow_operation(transition)
     }
 
-    pub fn matches_workflow_operation(
-        &self,
-        identity: &[u8; 32],
-    ) -> bool {
+    pub fn matches_workflow_operation(&self, identity: &[u8; 32]) -> bool {
         self.workflow_support_identity.as_ref() == Some(identity)
     }
 
-    pub const fn bind_workflow_approval(
-        mut self,
-        identity: &[u8; 32],
-    ) -> Self {
+    pub const fn bind_workflow_approval(mut self, identity: &[u8; 32]) -> Self {
         self.workflow_approval_identity = Some(*identity);
         self
     }

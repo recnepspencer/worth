@@ -14,8 +14,7 @@ pub struct SourceInitializationIssuer {
     _allocation: Arc<SourceFactsAllocation>,
 }
 #[derive(Clone)]
-pub struct SourceInitializationAuthority
-{
+pub struct SourceInitializationAuthority {
     authority: Authority,
     _allocation: Arc<SourceFactsAllocation>,
 }
@@ -89,10 +88,7 @@ pub struct SourceInitializationRequest {
     pub selected: SelectedSources,
 }
 impl SourceInitializationIssuer {
-    pub fn for_batch(
-        &self,
-        selected: SelectedSources,
-    ) -> SourceInitializationRequest {
+    pub fn for_batch(&self, selected: SelectedSources) -> SourceInitializationRequest {
         SourceInitializationRequest {
             proof: self.admit(),
             selected,

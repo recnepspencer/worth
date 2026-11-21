@@ -132,9 +132,7 @@ impl<S> WorthQueryApplicationInvariantReadView<'_, S> {
 }
 
 impl<S> WorthQueryApplicationInvariantScopePlanner<'_, '_, S> {
-    pub fn check_content<
-        Cause,
-    >(
+    pub fn check_content<Cause>(
         &self,
     ) -> Result<(), super::super::WorthQueryApplicationInvariantError<Cause>> {
         self.content_decode.denial().map_or(Ok(()), |cause| {
@@ -145,9 +143,7 @@ impl<S> WorthQueryApplicationInvariantScopePlanner<'_, '_, S> {
     }
 }
 impl<S> WorthQueryApplicationInvariantContext<'_, '_, S> {
-    pub fn check_content<
-        Cause,
-    >(
+    pub fn check_content<Cause>(
         &self,
     ) -> Result<(), super::super::WorthQueryApplicationInvariantError<Cause>> {
         self.content_decode.denial().map_or(Ok(()), |cause| {

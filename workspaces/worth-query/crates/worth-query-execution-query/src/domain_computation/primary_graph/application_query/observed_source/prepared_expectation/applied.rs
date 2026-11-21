@@ -8,11 +8,7 @@ use worth_relational::facade::runtime::{
 };
 
 impl<Query, Value> AppliedQuerySource<Query, Value> {
-    pub fn bind_applied_expectation<
-        Schema,
-        Binding,
-        Scope,
-    >(
+    pub fn bind_applied_expectation<Schema, Binding, Scope>(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

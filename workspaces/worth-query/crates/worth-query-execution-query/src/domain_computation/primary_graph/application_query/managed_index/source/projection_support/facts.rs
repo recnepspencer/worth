@@ -12,23 +12,18 @@ use worth_relational::facade::{
     transactions::RelationalExecutionDenialCause as Cause,
 };
 
-pub struct AppliedSourceAcquisitionSupport
-{
+pub struct AppliedSourceAcquisitionSupport {
     candidate: RelationalAppliedCandidateReadIdentity,
     facts: Vec<Fact>,
     commitment: [u8; 32],
     _allocation: Arc<SourceFactsAllocation>,
 }
 impl AppliedSourceAcquisitionSupport {
-    pub fn commitment(
-        &self,
-    ) -> [u8; 32] {
+    pub fn commitment(&self) -> [u8; 32] {
         self.commitment
     }
 
-    pub fn candidate(
-        &self,
-    ) -> &RelationalAppliedCandidateReadIdentity {
+    pub fn candidate(&self) -> &RelationalAppliedCandidateReadIdentity {
         &self.candidate
     }
     pub fn facts(&self) -> &[Fact] {

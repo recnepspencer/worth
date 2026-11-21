@@ -22,8 +22,7 @@ pub enum PriorOutputOrigin {
 
 /// A recorded checkpoint output and the source facts its verification covers.
 pub struct RestoredRecord {
-    pub identity:
-        Arc<super::RecordedSettlementIdentity>,
+    pub identity: Arc<super::RecordedSettlementIdentity>,
     pub facts: super::RetainedSourceFacts,
 }
 

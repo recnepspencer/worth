@@ -3,9 +3,7 @@
 //! or `&WorthQuerySelectedProductOperation<'_, Schema>` via unsize coercion.
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use worth_query_installation::facade::{
-    ApplicationSchema, WorthQueryInstalledApplicationSchema,
-};
+use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
@@ -66,4 +64,18 @@ pub trait ProducerIdentityRuntimePort {
 /// `WorthQueryApplicationAttemptBasis::capture`.
 pub trait RuntimeAuthorityPort {
     fn runtime_authority_identity(&self) -> WorthQueryRuntimeAuthorityIdentity;
+}
+
+/// Upper-layer port for `WorthQueryAdmittedApplicationCapabilityAccess`
+/// elevation support retention so all capability-access fields remain private
+/// to their owning module in `worth-query-execution-query`.
+pub trait AdmittedCapabilityAccessElevationPort {
+    fn graph_work_session_identity(
+        &self,
+    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity;
+
+    fn retain_observed_support(
+        &mut self,
+        supporting: crate::domain_computation::authorization::WorthQueryRetainedCapabilitySupport,
+    ) -> Result<(), ()>;
 }

@@ -63,10 +63,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     }
 }
 
-pub fn settle_admitted_read<
-    Query,
-    QueryResult,
->(
+pub fn settle_admitted_read<Query, QueryResult>(
     spent: &OneShotReadWorkObservation,
     result: Result<
         super::outcome::CompletedOneShotRead<Query, QueryResult>,

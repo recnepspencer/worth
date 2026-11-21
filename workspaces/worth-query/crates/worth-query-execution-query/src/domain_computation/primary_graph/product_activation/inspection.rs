@@ -31,9 +31,7 @@ impl WorthQuerySelectedProgramInspection {
 /// Why the program carried by a selected product could not be inspected.
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::product_activation_types::WorthQuerySelectedProgramInspectionDenial;
 
-pub fn inspect_selected_program<
-    Schema: ApplicationSchema,
->(
+pub fn inspect_selected_program<Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     basis: &AdmittedRelationalBranchBasis,

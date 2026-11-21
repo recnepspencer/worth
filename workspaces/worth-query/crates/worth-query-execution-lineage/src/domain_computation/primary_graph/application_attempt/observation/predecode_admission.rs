@@ -43,9 +43,7 @@ pub fn observe_field_value_borrowed<Output>(
     })
 }
 
-pub fn observe_field_observation_borrowed_admitted<
-    Output,
->(
+pub fn observe_field_observation_borrowed_admitted<Output>(
     runtime: &RelationalRuntime,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     snapshot: &SnapshotHandle,

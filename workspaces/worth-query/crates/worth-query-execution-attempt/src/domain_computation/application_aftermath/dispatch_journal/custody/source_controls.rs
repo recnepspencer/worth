@@ -23,10 +23,7 @@ fn source_key(source: &str) -> CanonicalDigestId {
 }
 
 impl WorthQueryDispatchJournal {
-    pub fn source_control(
-        &self,
-        source: &str,
-    ) -> QueryInboundSourceControlObservation {
+    pub fn source_control(&self, source: &str) -> QueryInboundSourceControlObservation {
         let source = source_key(source);
         let guard = self.state();
         if let Some(state) = guard.as_ref() {

@@ -1,11 +1,7 @@
 //! Validate complete semantic transitions before any fold mutation or publication.
 use super::*;
 impl MaterialCatalog {
-    pub fn validate(
-        &self,
-        record: &MaterialRecord,
-        position: u64,
-    ) -> Result<(), Denial> {
+    pub fn validate(&self, record: &MaterialRecord, position: u64) -> Result<(), Denial> {
         match record {
             MaterialRecord::RecoveryPin {
                 identity, original, ..

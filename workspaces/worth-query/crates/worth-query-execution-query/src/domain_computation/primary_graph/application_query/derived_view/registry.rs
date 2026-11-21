@@ -11,9 +11,7 @@ mod native_count;
 mod predicate;
 pub use predicate::PredicateNoticeDisposition;
 pub use predicate::PredicateRegistration;
-pub use predicate::{
-    mark_prepared_predicates_unavailable, route_prepared_predicates,
-};
+pub use predicate::{mark_prepared_predicates_unavailable, route_prepared_predicates};
 pub use predicate::{
     PredicatePreparationFactory, PredicatePreparationOwner, PredicatePreparationRetirement,
     PredicateWorld, PreparedPredicateNotices, PreparedPredicatePublication, SourcePredicateAxis,
@@ -23,9 +21,7 @@ pub trait RegisteredManagedIndex: Send + Sync {
     fn dispose(&self);
 }
 
-pub trait RegisteredDerivedView:
-    Send + Sync
-{
+pub trait RegisteredDerivedView: Send + Sync {
     fn dispose(&self);
     fn belongs_to(&self, basis: &super::publication::ViewPublicationBasis<'_>) -> bool;
     fn warm_at(&self, before: &worth_runtime_world::facade::CompositeCommitIdentity) -> bool;
@@ -53,10 +49,7 @@ impl PreparedManagedViewPublication {
         }
     }
 
-    pub fn apply_cold(
-        self,
-        after: &worth_runtime_world::facade::CompositeCommitIdentity,
-    ) {
+    pub fn apply_cold(self, after: &worth_runtime_world::facade::CompositeCommitIdentity) {
         for (view, _) in self.views {
             view.apply_transition(None, after);
         }
@@ -178,10 +171,7 @@ impl ManagedDerivedViewRegistry {
         result
     }
 
-    pub fn unregister(
-        &self,
-        id: u64,
-    ) {
+    pub fn unregister(&self, id: u64) {
         let mut state = self
             .state
             .lock()

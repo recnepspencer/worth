@@ -1,8 +1,7 @@
 //! Source DATA records the exact old basis; fresh query admission recreates proof.
-use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::*;
-use worth_relational::facade::identity::EntityId;
 use crate::basis::WorthQueryProductBranch;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryAccessContext, WorthQueryApplicationReadObservation,
     WorthQueryOriginalOperationDenial as D, WorthQueryPrimaryGraphApplicationRuntime,
@@ -12,6 +11,7 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryBinding,
     application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
 };
+use worth_relational::facade::identity::EntityId;
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct WorthQueryOriginalSourceData {
     owner: worth_foundational::facade::DurableWorldOwnerIdentity,
@@ -31,7 +31,7 @@ pub enum WorthQueryReadmittedOriginalSource<Q> {
 pub fn capture_original_operation_source<Q>(
     source: &WorthQueryObservedSource<Q>,
     result_set: bool,
-    _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+    _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
 ) -> Result<WorthQueryOriginalSourceData, D> {
     let commit = source
         .selected_product_commit()
@@ -69,7 +69,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
     pub fn readmit_original_operation_source<B>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         external: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
         data: &WorthQueryOriginalSourceData,

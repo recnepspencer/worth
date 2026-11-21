@@ -1,6 +1,6 @@
 //! Recover exact prepared DATA through fresh disclosure and current receivers.
-use super::*;
 use super::super::intent::WorthQueryCorrectionIntentRuntimeExt as _;
+use super::*;
 use worth_query_declaration::facade::{
     application_operation::{
         ApplicationMutationScopeBinding, ApplicationMutationScopeResolutionMode,
@@ -52,7 +52,8 @@ impl WorthQueryPreparedCorrectionSource {
             .ok_or(D::UnsupportedSourceMeaning)?;
         let (_, snapshot) = target
             .application()
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .recover_correction_command(material.capture.original, key.identity())
             .map_err(D::Material)?

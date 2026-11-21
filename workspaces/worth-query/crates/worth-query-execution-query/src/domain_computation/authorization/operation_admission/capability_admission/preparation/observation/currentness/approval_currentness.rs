@@ -1,14 +1,7 @@
 use super::*;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
-pub fn validate_approval_lifecycle<
-    Schema,
-    Principal,
-    Identity,
-    Capability,
-    Operation,
-    Input,
->(
+pub fn validate_approval_lifecycle<Schema, Principal, Identity, Capability, Operation, Input>(
     prepared: &PreparedCapabilityAdmission<
         '_,
         Schema,

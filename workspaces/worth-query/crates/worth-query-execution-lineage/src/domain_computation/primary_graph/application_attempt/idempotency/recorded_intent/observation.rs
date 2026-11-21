@@ -11,11 +11,7 @@ pub struct RecordedIntentObservation {
 impl RecordedIntentObservation {
     /// The root names the binding's canonical input. The optional `input`
     /// slot names separately governed admission input and may be absent/different.
-    pub fn matches_mutation_input(
-        &self,
-        name: &str,
-        input: &[u8; 32],
-    ) -> bool {
+    pub fn matches_mutation_input(&self, name: &str, input: &[u8; 32]) -> bool {
         self.root == *input && self.names_mutation(name)
     }
     pub fn names_mutation(&self, name: &str) -> bool {

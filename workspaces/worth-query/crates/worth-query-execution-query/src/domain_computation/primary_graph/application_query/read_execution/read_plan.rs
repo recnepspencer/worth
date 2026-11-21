@@ -10,22 +10,16 @@ use worth_relational::facade::{identity::EntityId, snapshots::SnapshotHandle};
 pub struct ReadPlan<'a> {
     pub(crate) parent_session:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-    pub(crate) managed_rows:
-        Option<&'a super::super::managed_index::selection::SelectionRows>,
+    pub(crate) managed_rows: Option<&'a super::super::managed_index::selection::SelectionRows>,
     pub(crate) applied_managed_rows:
         Option<&'a super::super::managed_index::applied_read::AppliedSelectionRows<'a>>,
-    pub(crate) binding:
-        &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    pub(crate) binding: &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub(crate) name: &'a str,
-    pub(crate) contract:
-        &'a WorthQueryInstalledGraphReadContract,
+    pub(crate) contract: &'a WorthQueryInstalledGraphReadContract,
     pub(crate) root: EntityId,
-    pub(crate) snapshot:
-        &'a SnapshotHandle,
-    pub(crate) parameters:
-        &'a WorthQueryAdmittedApplicationQueryParameters,
-    pub(crate) governance:
-        &'a WorthQueryApplicationQueryGovernance,
+    pub(crate) snapshot: &'a SnapshotHandle,
+    pub(crate) parameters: &'a WorthQueryAdmittedApplicationQueryParameters,
+    pub(crate) governance: &'a WorthQueryApplicationQueryGovernance,
     pub(crate) material_source: Option<
         &'a std::sync::Arc<
             crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation,
@@ -54,15 +48,7 @@ impl<'a> ReadPlan<'a> {
             maximum_result_count: plan.controls.maximum_result_count().get(),
         }
     }
-    pub fn public_worker<
-        S,
-        Q,
-        P,
-        R,
-        A,
-        I,
-        C,
-    >(
+    pub fn public_worker<S, Q, P, R, A, I, C>(
         plan: &'a WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, C>,
     ) -> Self {
         let mut read = Self::of(plan);
@@ -99,10 +85,7 @@ impl ReadPlan<'_> {
     /// After session custody accepts the same exact root/World selection,
     /// Native work uses the shared capability's operational snapshot. The
     /// session retains and seals its own original receipt after the join.
-    pub fn with_snapshot<'b>(
-        &'b self,
-        snapshot: &'b SnapshotHandle,
-    ) -> ReadPlan<'b> {
+    pub fn with_snapshot<'b>(&'b self, snapshot: &'b SnapshotHandle) -> ReadPlan<'b> {
         ReadPlan {
             parent_session: self.parent_session,
             managed_rows: self.managed_rows,
@@ -122,9 +105,7 @@ impl ReadPlan<'_> {
 }
 
 impl ReadPlan<'_> {
-    pub fn snapshot_unavailable_denial(
-        &self,
-    ) -> super::WorthQueryApplicationReadExecutionDenial {
+    pub fn snapshot_unavailable_denial(&self) -> super::WorthQueryApplicationReadExecutionDenial {
         if self.contract.orbit().is_some() || !self.contract.root_paths().is_empty() {
             super::read_execution_denial(
                 super::WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
@@ -137,9 +118,7 @@ impl ReadPlan<'_> {
             )
         }
     }
-    pub fn predicate_unavailable_denial(
-        &self,
-    ) -> super::WorthQueryApplicationReadExecutionDenial {
+    pub fn predicate_unavailable_denial(&self) -> super::WorthQueryApplicationReadExecutionDenial {
         super::read_execution_denial(
             super::WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
             match self.contract.predicates() {

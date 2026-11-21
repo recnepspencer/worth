@@ -29,7 +29,9 @@ impl WorthQueryGranularInvalidationInstallation {
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), super::super::WorthQueryHomeRetirementDenial> {
-        self.integration.preflight_home_retirement(request).map_err(Into::into)
+        self.integration
+            .preflight_home_retirement(request)
+            .map_err(Into::into)
     }
     pub fn advance_home_retirement(
         &mut self,
@@ -39,7 +41,9 @@ impl WorthQueryGranularInvalidationInstallation {
         super::super::WorthQueryOperationHomeRetirementProgress,
         super::super::WorthQueryHomeRetirementDenial,
     > {
-        self.integration.advance_home_retirement(request, native).map_err(Into::into)
+        self.integration
+            .advance_home_retirement(request, native)
+            .map_err(Into::into)
     }
     pub fn new(
         binding_identity: ApplicationSchemaBindingIdentity,

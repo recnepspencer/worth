@@ -9,20 +9,6 @@ pub enum WorthQueryApplicationCommitTerminalKind {
 
 /// Opaque, non-authoritative description of how an application commit became
 /// observable to this caller.
-///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::{
-///     WorthQueryApplicationCommitTerminalEvidence,
-///     WorthQueryApplicationCommitTerminalKind,
-/// };
-/// use worth_relational::facade::history::BranchId;
-///
-/// let forged = WorthQueryApplicationCommitTerminalEvidence {
-///     kind: WorthQueryApplicationCommitTerminalKind::Executed,
-///     branch: BranchId("forged".to_owned()),
-///     attempt_resources_released: None,
-/// };
-/// ```
 #[derive(Clone, Debug, PartialEq)]
 pub struct WorthQueryApplicationCommitTerminalEvidence {
     kind: WorthQueryApplicationCommitTerminalKind,

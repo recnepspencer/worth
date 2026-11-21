@@ -85,10 +85,7 @@ impl PreparedDecisionReuseContext {
 
     /// A fresh invocation can compare its descriptive admitted context with
     /// prior completed evidence without pretending the new handler ran.
-    pub fn matches_completed(
-        &self,
-        prior: &CompletedDecisionReuseProof,
-    ) -> bool {
+    pub fn matches_completed(&self, prior: &CompletedDecisionReuseProof) -> bool {
         self.key == prior.key && self.principal == prior.principal && self.scope == prior.scope
     }
 }

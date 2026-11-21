@@ -11,8 +11,8 @@ pub mod security_basis;
 pub mod shared_query_basis;
 
 pub mod query {
-    use super::WorthQuerySelectedProductOperation;
     pub use super::query_controls::WorthQueryProductQueryControls;
+    use super::WorthQuerySelectedProductOperation;
     pub mod retained;
 
     /// Preserve the original request stop instead of relabeling it as a basis mismatch.

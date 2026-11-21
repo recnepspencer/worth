@@ -1,7 +1,7 @@
 //! Resource actions observe their own installed requirement on the issued root.
-use super::{WorthQueryConventionalAuthorizationObservation};
-use crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFact;
 use super::validation::denial;
+use super::WorthQueryConventionalAuthorizationObservation;
+use crate::domain_computation::authorization::WorthQueryAuthorizationDecisionFact;
 use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
     WorthQueryOperationAuthorizationRefusalKind,

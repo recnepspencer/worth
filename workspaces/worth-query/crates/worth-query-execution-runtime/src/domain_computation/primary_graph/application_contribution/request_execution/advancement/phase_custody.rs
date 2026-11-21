@@ -41,123 +41,12 @@ impl From<WorthQueryForeignAdvancementPhase> for super::WorthQueryAdvancementDen
 /// Completion consumes it; neither a caller nor a product can manufacture it.
 ///
 /// A callback cannot return its phase.
-/// ```compile_fail,E0521
-/// use worth_query_execution::facade::product::WorthQueryPrimaryGraphApplicationRuntime;
-/// use worth_query_installation::facade::ApplicationSchema;
-/// use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-/// fn demonstrate<Schema: ApplicationSchema + 'static>(
-///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-///     request: &WorthQueryRequestScope,
-/// ) {
-///     fn return_to_host<T: 'static>(value: T) -> T { value }
-///     let _ = runtime.with_application_advancement(request, |phase| return_to_host(phase));
-/// }
-/// ```
-/// ```
-/// use worth_query_execution::facade::product::WorthQueryPrimaryGraphApplicationRuntime;
-/// use worth_query_installation::facade::ApplicationSchema;
-/// use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-/// fn demonstrate<Schema: ApplicationSchema + 'static>(
-///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-///     request: &WorthQueryRequestScope,
-/// ) {
-///     fn return_to_host<T: 'static>(value: T) -> T { value }
-///     let _ = runtime.with_application_advancement(request, |phase| return_to_host(phase.complete()));
-/// }
-/// ```
 ///
 /// A paused slot outside the callback cannot retain a phase.
-/// ```compile_fail,E0521
-/// use worth_query_execution::facade::product::WorthQueryPrimaryGraphApplicationRuntime;
-/// use worth_query_installation::facade::ApplicationSchema;
-/// use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-/// fn demonstrate<Schema: ApplicationSchema + 'static>(
-///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-///     request: &WorthQueryRequestScope,
-/// ) {
-///     let mut paused = None;
-///     let _ = runtime.with_application_advancement(request, |phase| {
-///         paused = Some(phase);
-///     });
-/// }
-/// ```
-/// ```
-/// use worth_query_execution::facade::product::WorthQueryPrimaryGraphApplicationRuntime;
-/// use worth_query_installation::facade::ApplicationSchema;
-/// use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-/// fn demonstrate<Schema: ApplicationSchema + 'static>(
-///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-///     request: &WorthQueryRequestScope,
-/// ) {
-///     let mut paused = None;
-///     let _ = runtime.with_application_advancement(request, |phase| {
-///         paused = Some(phase.complete());
-///     });
-/// }
-/// ```
 ///
 /// A host-held product cannot contain borrowed execution custody.
-/// ```compile_fail,E0521
-/// use worth_query_execution::facade::product::WorthQueryPrimaryGraphApplicationRuntime;
-/// use worth_query_installation::facade::ApplicationSchema;
-/// use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-/// struct HostProduct<T: 'static> { evidence: T }
-/// fn hand_to_host<T: 'static>(_: HostProduct<T>) {}
-/// fn demonstrate<Schema: ApplicationSchema + 'static>(
-///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-///     request: &WorthQueryRequestScope,
-/// ) {
-///     let _ = runtime.with_application_advancement(request, |phase| {
-///         hand_to_host(HostProduct { evidence: phase });
-///     });
-/// }
-/// ```
-/// ```
-/// use worth_query_execution::facade::product::WorthQueryPrimaryGraphApplicationRuntime;
-/// use worth_query_installation::facade::ApplicationSchema;
-/// use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-/// struct HostProduct<T: 'static> { evidence: T }
-/// fn hand_to_host<T: 'static>(_: HostProduct<T>) {}
-/// fn demonstrate<Schema: ApplicationSchema + 'static>(
-///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-///     request: &WorthQueryRequestScope,
-/// ) {
-///     let _ = runtime.with_application_advancement(request, |phase| {
-///         hand_to_host(HostProduct { evidence: phase.complete() });
-///     });
-/// }
-/// ```
 ///
 /// Completion consumes custody, so another use of the phase is forbidden.
-/// ```compile_fail,E0382
-/// use worth_query_execution::facade::product::WorthQueryPrimaryGraphApplicationRuntime;
-/// use worth_query_installation::facade::ApplicationSchema;
-/// use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-/// fn complete<Schema: ApplicationSchema + 'static>(
-///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-///     request: &WorthQueryRequestScope,
-/// ) {
-///     let _ = runtime.with_application_advancement(request, |phase| {
-///         phase.complete();
-///         let _ = phase.complete();
-///     });
-/// }
-/// ```
-/// ```
-/// use worth_query_execution::facade::product::WorthQueryPrimaryGraphApplicationRuntime;
-/// use worth_query_installation::facade::ApplicationSchema;
-/// use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-/// fn complete<Schema: ApplicationSchema + 'static>(
-///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-///     request: &WorthQueryRequestScope,
-/// ) {
-///     let _ = runtime.with_application_advancement(request, |phase| {
-///         phase.complete();
-///         let _ = ();
-///     });
-/// }
-/// ```
-#[doc = include_str!("phase_request_contracts.md")]
 pub struct WorthQueryAdvancementPhase<'scope> {
     pub(super) active: &'scope ActiveAdvancement<'scope>,
     pub(super) source: AdvancementSource,
@@ -165,9 +54,7 @@ pub struct WorthQueryAdvancementPhase<'scope> {
 }
 
 impl<'scope> WorthQueryAdvancementPhase<'scope> {
-    pub fn world_owner(
-        &self,
-    ) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
+    pub fn world_owner(&self) -> Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity> {
         self.owner
     }
 

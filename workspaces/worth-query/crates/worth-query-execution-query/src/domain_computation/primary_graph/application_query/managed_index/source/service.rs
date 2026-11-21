@@ -28,12 +28,9 @@ use worth_relational::facade::runtime::{
     ManagedIndexSourceScope, PreparedManagedIndexSourceRoot,
 };
 
-pub type Payload =
-    Arc<dyn Any + Send + Sync>;
+pub type Payload = Arc<dyn Any + Send + Sync>;
 
-pub trait SourceFactory:
-    Send + Sync
-{
+pub trait SourceFactory: Send + Sync {
     fn definition(
         &self,
     ) -> &worth_query_declaration::facade::application_query::ErasedApplicationManagedIndexDefinition;
@@ -48,9 +45,7 @@ pub trait SourceFactory:
         worth_relational::facade::transactions::RelationalExecutionDenialCause,
     >;
 }
-pub trait SourceService:
-    Send + Sync
-{
+pub trait SourceService: Send + Sync {
     fn inspect_pages(
         &self,
         payload: &(dyn Any + Send + Sync),
@@ -78,18 +73,11 @@ pub trait SourceService:
     ) -> Result<PreparedManagedIndexSourceRoot, Denial>;
 }
 
-pub struct ManagedSourceRoot<
-    S: ApplicationSchema,
-    I: ApplicationManagedIndexBinding<S>,
-> {
-    pub installed:
-        WorthQueryInstalledManagedIndex<S, I>,
-    pub rows:
-        PersistentSourceRows,
-    pub nodes:
-        Payload,
-    pub adapter:
-        Arc<dyn InstalledIndexProvider<S, I>>,
+pub struct ManagedSourceRoot<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
+    pub installed: WorthQueryInstalledManagedIndex<S, I>,
+    pub rows: PersistentSourceRows,
+    pub nodes: Payload,
+    pub adapter: Arc<dyn InstalledIndexProvider<S, I>>,
     pub bindings:
         worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
     _allocation: Arc<SourceFactsAllocation>,
@@ -328,10 +316,7 @@ fn entered_rows(
     Ok(worth_relational::facade::runtime::ManagedIndexSourceChanges::new(Vec::new(), entered))
 }
 
-pub fn retain_root<
-    S: ApplicationSchema,
-    I: ApplicationManagedIndexBinding<S>,
->(
+pub fn retain_root<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
     execution: &ExecutionRequest<'_, '_>,
     adapter: Arc<dyn InstalledIndexProvider<S, I>>,
     bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,

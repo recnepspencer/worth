@@ -1,7 +1,6 @@
 //! A pending reservation pins the exact root through insertion or rollback.
 use super::*;
-pub struct PredicateRootReservation
-{
+pub struct PredicateRootReservation {
     axis: Arc<SourcePredicateAxis>,
     key: Key,
     root: Arc<dyn PredicateRoot>,
@@ -57,21 +56,14 @@ impl Drop for PredicateRootReservation {
         let _ = &self.allocation; // Last original directory/name grant follows every share.
     }
 }
-pub struct PredicateRegistration(
-    PredicateRootReservation,
-);
+pub struct PredicateRegistration(PredicateRootReservation);
 impl PredicateRegistration {
-    pub fn slot(
-        &self,
-    ) -> WatchSlot {
+    pub fn slot(&self) -> WatchSlot {
         self.0
             .slot
             .expect("an installed registration owns its exact issued slot")
     }
-    pub fn active(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<bool, Denial> {
+    pub fn active(&self, execution: &ExecutionRequest<'_, '_>) -> Result<bool, Denial> {
         let state = self
             .0
             .axis

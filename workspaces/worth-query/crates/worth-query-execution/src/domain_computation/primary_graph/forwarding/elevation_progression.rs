@@ -15,13 +15,26 @@ mod domain_computation_authorization_elevation_progression_approval {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub fn authorize_elevation_approval<Capability, Operation, Input>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, requested: WorthQueryRequestedElevation, access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>, operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>, preconditions: TypedMutationPreconditions<
+    where
+        Schema: ApplicationSchema,
+    {
+        pub fn authorize_elevation_approval<Capability, Operation, Input>(
+            &self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            requested: WorthQueryRequestedElevation,
+            access: WorthQueryAdmittedApplicationCapabilityAccess<
+                Schema,
+                Capability,
+                Operation,
+                Input,
+            >,
+            operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+            preconditions: TypedMutationPreconditions<
                 Schema,
                 Operation,
                 <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-            >) -> Result<
+            >,
+        ) -> Result<
             WorthQueryAdmittedApplicationOperation<
                 Schema,
                 Operation,
@@ -33,8 +46,16 @@ where
         where
             Operation: ApplicationOperationMarkerIdentity<Schema>,
             Input: ApplicationCapabilityRequest<Schema, Capability>,
-            Input: 'static, {
-            self.inner.authorize_elevation_approval::<Capability, Operation, Input>(phase, requested, access, operation, preconditions)
+            Input: 'static,
+        {
+            self.inner
+                .authorize_elevation_approval::<Capability, Operation, Input>(
+                    phase,
+                    requested,
+                    access,
+                    operation,
+                    preconditions,
+                )
         }
     }
 }
@@ -54,13 +75,26 @@ mod domain_computation_authorization_elevation_progression_elevation_close {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub fn authorize_elevation_close<Capability, Operation, Input>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, approved: WorthQueryApprovedElevation, access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>, operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>, preconditions: TypedMutationPreconditions<
+    where
+        Schema: ApplicationSchema,
+    {
+        pub fn authorize_elevation_close<Capability, Operation, Input>(
+            &self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            approved: WorthQueryApprovedElevation,
+            access: WorthQueryAdmittedApplicationCapabilityAccess<
+                Schema,
+                Capability,
+                Operation,
+                Input,
+            >,
+            operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+            preconditions: TypedMutationPreconditions<
                 Schema,
                 Operation,
                 <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-            >) -> Result<
+            >,
+        ) -> Result<
             WorthQueryAdmittedApplicationOperation<
                 Schema,
                 Operation,
@@ -72,8 +106,16 @@ where
         where
             Operation: ApplicationOperationMarkerIdentity<Schema>,
             Input: ApplicationCapabilityRequest<Schema, Capability>,
-            Input: 'static, {
-            self.inner.authorize_elevation_close::<Capability, Operation, Input>(phase, approved, access, operation, preconditions)
+            Input: 'static,
+        {
+            self.inner
+                .authorize_elevation_close::<Capability, Operation, Input>(
+                    phase,
+                    approved,
+                    access,
+                    operation,
+                    preconditions,
+                )
         }
     }
 }
@@ -94,11 +136,31 @@ mod domain_computation_authorization_elevation_progression_idempotency_observati
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-        pub fn resolve_capability_lifecycle_idempotency<Capability, Operation, Input>(&self, phase: &WorthQueryAdvancementPhase<'_>, access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>, operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>, preconditions: TypedMutationPreconditions<Schema, Operation, Input::Scope>, idempotency: WorthQueryApplicationIdempotencyBinding) -> Result<WorthQueryApplicationIdempotencyResolution, Denial>
+        pub fn resolve_capability_lifecycle_idempotency<Capability, Operation, Input>(
+            &self,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            access: WorthQueryAdmittedApplicationCapabilityAccess<
+                Schema,
+                Capability,
+                Operation,
+                Input,
+            >,
+            operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+            preconditions: TypedMutationPreconditions<Schema, Operation, Input::Scope>,
+            idempotency: WorthQueryApplicationIdempotencyBinding,
+        ) -> Result<WorthQueryApplicationIdempotencyResolution, Denial>
         where
             Operation: ApplicationOperationMarkerIdentity<Schema>,
-            Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static, {
-            self.inner.resolve_capability_lifecycle_idempotency::<Capability, Operation, Input>(phase, access, operation, preconditions, idempotency)
+            Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
+        {
+            self.inner
+                .resolve_capability_lifecycle_idempotency::<Capability, Operation, Input>(
+                    phase,
+                    access,
+                    operation,
+                    preconditions,
+                    idempotency,
+                )
         }
     }
 }
@@ -118,13 +180,26 @@ mod domain_computation_authorization_elevation_progression_mandatory_review {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub fn authorize_mandatory_review<Capability, Operation, Input>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, mandatory: WorthQueryMandatoryReview, access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>, operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>, preconditions: TypedMutationPreconditions<
+    where
+        Schema: ApplicationSchema,
+    {
+        pub fn authorize_mandatory_review<Capability, Operation, Input>(
+            &self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            mandatory: WorthQueryMandatoryReview,
+            access: WorthQueryAdmittedApplicationCapabilityAccess<
+                Schema,
+                Capability,
+                Operation,
+                Input,
+            >,
+            operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+            preconditions: TypedMutationPreconditions<
                 Schema,
                 Operation,
                 <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-            >) -> Result<
+            >,
+        ) -> Result<
             WorthQueryAdmittedApplicationOperation<
                 Schema,
                 Operation,
@@ -136,8 +211,16 @@ where
         where
             Operation: ApplicationOperationMarkerIdentity<Schema>,
             Input: ApplicationCapabilityRequest<Schema, Capability>,
-            Input: 'static, {
-            self.inner.authorize_mandatory_review::<Capability, Operation, Input>(phase, mandatory, access, operation, preconditions)
+            Input: 'static,
+        {
+            self.inner
+                .authorize_mandatory_review::<Capability, Operation, Input>(
+                    phase,
+                    mandatory,
+                    access,
+                    operation,
+                    preconditions,
+                )
         }
     }
 }
@@ -157,13 +240,25 @@ mod domain_computation_authorization_elevation_progression_request {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub fn authorize_elevation_request<Capability, Operation, Input>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>, operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>, preconditions: TypedMutationPreconditions<
+    where
+        Schema: ApplicationSchema,
+    {
+        pub fn authorize_elevation_request<Capability, Operation, Input>(
+            &self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            access: WorthQueryAdmittedApplicationCapabilityAccess<
+                Schema,
+                Capability,
+                Operation,
+                Input,
+            >,
+            operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+            preconditions: TypedMutationPreconditions<
                 Schema,
                 Operation,
                 <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-            >) -> Result<
+            >,
+        ) -> Result<
             WorthQueryAdmittedApplicationOperation<
                 Schema,
                 Operation,
@@ -176,8 +271,15 @@ where
             Operation: ApplicationOperationMarkerIdentity<Schema>,
             Input: ApplicationCapabilityRequest<Schema, Capability>
                 + ApplicationCapabilityElevationRequest<Schema, Operation>
-                + 'static, {
-            self.inner.authorize_elevation_request::<Capability, Operation, Input>(phase, access, operation, preconditions)
+                + 'static,
+        {
+            self.inner
+                .authorize_elevation_request::<Capability, Operation, Input>(
+                    phase,
+                    access,
+                    operation,
+                    preconditions,
+                )
         }
     }
 }
@@ -199,13 +301,27 @@ mod domain_computation_authorization_elevation_progression_approval_replay {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub fn replay_elevation_approval_after_fresh_denial<Capability, Operation, Input>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, requested: WorthQueryRequestedElevation, access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>, operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>, preconditions: TypedMutationPreconditions<
+    where
+        Schema: ApplicationSchema,
+    {
+        pub fn replay_elevation_approval_after_fresh_denial<Capability, Operation, Input>(
+            &self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+            requested: WorthQueryRequestedElevation,
+            access: WorthQueryAdmittedApplicationCapabilityAccess<
+                Schema,
+                Capability,
+                Operation,
+                Input,
+            >,
+            operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+            preconditions: TypedMutationPreconditions<
                 Schema,
                 Operation,
                 <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
-            >, idempotency: WorthQueryApplicationIdempotencyBinding) -> Result<
+            >,
+            idempotency: WorthQueryApplicationIdempotencyBinding,
+        ) -> Result<
             WorthQueryElevationApprovalOutcome,
             (
                 Option<WorthQueryApplicationIdempotencyResolutionDenial>,
@@ -214,8 +330,17 @@ where
         >
         where
             Operation: ApplicationOperationMarkerIdentity<Schema>,
-            Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static, {
-            self.inner.replay_elevation_approval_after_fresh_denial::<Capability, Operation, Input>(phase, requested, access, operation, preconditions, idempotency)
+            Input: ApplicationCapabilityRequest<Schema, Capability> + Clone + Send + Sync + 'static,
+        {
+            self.inner
+                .replay_elevation_approval_after_fresh_denial::<Capability, Operation, Input>(
+                    phase,
+                    requested,
+                    access,
+                    operation,
+                    preconditions,
+                    idempotency,
+                )
         }
     }
 }

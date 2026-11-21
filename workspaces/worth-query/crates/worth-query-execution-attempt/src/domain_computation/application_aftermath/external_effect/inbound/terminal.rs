@@ -18,14 +18,10 @@ pub struct WorthQueryInboundTerminalOwnerResult {
 }
 
 impl WorthQueryInboundTerminalOwnerResult {
-    pub fn publication_mut(
-        &mut self,
-    ) -> &mut WorthQueryProductPublicationReceipt {
+    pub fn publication_mut(&mut self) -> &mut WorthQueryProductPublicationReceipt {
         self.performed.publication_mut()
     }
-    pub fn from_performed(
-        performed: WorthQueryPerformedInboundCompletion,
-    ) -> Self {
+    pub fn from_performed(performed: WorthQueryPerformedInboundCompletion) -> Self {
         Self {
             performed,
             delivery_settled: AtomicBool::new(false),
@@ -54,9 +50,7 @@ impl WorthQueryInboundTerminalOwnerResult {
         self.delivery_settled.load(Ordering::Acquire)
     }
 
-    pub fn accepted(
-        &self,
-    ) -> &Arc<WorthQueryAcceptedInboundOccurrence> {
+    pub fn accepted(&self) -> &Arc<WorthQueryAcceptedInboundOccurrence> {
         self.performed.accepted()
     }
 
@@ -64,9 +58,7 @@ impl WorthQueryInboundTerminalOwnerResult {
         self.performed.original_incarnation()
     }
 
-    pub fn publication(
-        &self,
-    ) -> &WorthQueryProductPublicationReceipt {
+    pub fn publication(&self) -> &WorthQueryProductPublicationReceipt {
         self.performed.publication()
     }
 }

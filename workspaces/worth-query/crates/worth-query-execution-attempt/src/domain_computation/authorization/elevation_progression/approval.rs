@@ -7,7 +7,6 @@ use worth_query_installation::facade::{
 };
 use worth_relational::facade::identity::{EntityId, KindId};
 
-
 pub mod binding;
 pub use binding::WorthQueryElevationApprovalBinding;
 
@@ -54,21 +53,11 @@ impl WorthQueryElevationApprovalAuthorizationDenial {
     }
 }
 
-#[doc(hidden)]
-pub struct WorthQueryElevationApprovalAuthorizationDenialAttemptParts {
-    pub denial: WorthQueryOperationAuthorizationDenial,
-    pub requested: WorthQueryRequestedElevation,
-}
-
 impl WorthQueryElevationApprovalAuthorizationDenial {
-    #[doc(hidden)]
-    pub fn from_attempt_parts(
-        _seal: crate::ports::WorthQueryAttemptCrateSeal,
-        parts: WorthQueryElevationApprovalAuthorizationDenialAttemptParts,
+    pub fn new(
+        denial: WorthQueryOperationAuthorizationDenial,
+        requested: WorthQueryRequestedElevation,
     ) -> Self {
-        Self {
-            denial: parts.denial,
-            requested: parts.requested,
-        }
+        Self { denial, requested }
     }
 }

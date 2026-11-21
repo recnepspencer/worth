@@ -177,7 +177,8 @@ where
         let source_preparation = self
             .backing
             .runtime()
-            .inner.runtime
+            .inner
+            .runtime
             .output_demands
             .begin_source_preparation(program.product_branch().occurrence());
         let branch = program.product_branch();
@@ -203,7 +204,13 @@ where
         };
         let pending = WorthQueryUnpublishedProgramOutputSource {
             correction,
-            runtime_authority: self.backing.runtime().inner.runtime.authority_identity().as_u64(),
+            runtime_authority: self
+                .backing
+                .runtime()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64(),
             revision: worth_foundational::facade::CanonicalDigestId::new(
                 *presented.revision().as_bytes(),
             ),

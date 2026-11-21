@@ -68,9 +68,7 @@ impl WorkflowTransitionReplayRetention {
         }
     }
 
-    pub fn materialize(
-        &self,
-    ) -> Box<[WorkflowTransitionReplayProjection]> {
+    pub fn materialize(&self) -> Box<[WorkflowTransitionReplayProjection]> {
         let mut replays = Vec::with_capacity(self.len);
         let mut current = self.tail.as_deref();
         while let Some(retained) = current {

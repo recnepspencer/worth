@@ -47,9 +47,7 @@ impl<'a> HistoricalOutputRead<'a> {
             upstream: &row.consumed_outputs,
         })
     }
-    pub fn is_current<
-        Schema: worth_query_installation::facade::ApplicationSchema,
-    >(
+    pub fn is_current<Schema: worth_query_installation::facade::ApplicationSchema>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &worth_relational::facade::runtime::RelationalRuntime,

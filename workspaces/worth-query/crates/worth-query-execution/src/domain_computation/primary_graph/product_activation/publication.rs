@@ -60,7 +60,12 @@ where
         WorthQueryProductConditionalPublicationDenial,
     > {
         let identity = product.branch_identity();
-        let gate = self.inner.runtime.product_runtime.activations.gate(identity)?;
+        let gate = self
+            .inner
+            .runtime
+            .product_runtime
+            .activations
+            .gate(identity)?;
         gate.publish(|| {
             let owner=self.inner.runtime.bridge.conditional();
             if let crate::domain_computation::primary_graph::managed_bridge::conditional_execution::ConditionalExecutionOwner::Authored(bridge)=&owner {

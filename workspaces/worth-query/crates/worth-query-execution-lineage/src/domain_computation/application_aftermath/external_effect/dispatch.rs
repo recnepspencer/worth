@@ -216,10 +216,11 @@ impl WorthQueryExternalEffectDispatch {
         let Some(observation) = ladder.observation() else {
             return false;
         };
-        let expected = match super::identity_derivation::provider_commit_identity(runtime, committed) {
-            Ok(expected) => expected,
-            Err(_) => return false,
-        };
+        let expected =
+            match super::identity_derivation::provider_commit_identity(runtime, committed) {
+                Ok(expected) => expected,
+                Err(_) => return false,
+            };
         self.is_external_completion()
             && self.correlation == *committed.record().correlation()
             && ladder.provider_commit().kind() == super::ExternalEffectPostureKind::ProviderCommit

@@ -2,9 +2,7 @@
 use super::*;
 use worth_runtime_bridge::facade::UnattachedRelationalBridgeBuilder;
 
-pub fn prepare_home_program_mappings<
-    Schema: ApplicationSchema,
->(
+pub fn prepare_home_program_mappings<Schema: ApplicationSchema>(
     incumbent: &RuntimeBridge,
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     layout: &super::super::schema_layout::WorthQueryPrimaryGraphLayout,
@@ -17,9 +15,7 @@ pub fn prepare_home_program_mappings<
         .map_err(|cause| bridge_denial(format!("Home successor mappings refused: {cause:?}")))
 }
 
-pub fn prepare_home_bridge_definition<
-    Schema: ApplicationSchema,
->(
+pub fn prepare_home_bridge_definition<Schema: ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     layout: &super::super::schema_layout::WorthQueryPrimaryGraphLayout,
 ) -> Result<UnattachedRelationalBridgeBuilder, WorthQueryPrimaryGraphInstallationDenial> {

@@ -92,9 +92,7 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
     }
 
     /// A handler cannot swallow a control refusal or turn it into domain denial.
-    pub fn take_control_failure(
-        &self,
-    ) -> Option<WorthQueryOutputDemandDenial> {
+    pub fn take_control_failure(&self) -> Option<WorthQueryOutputDemandDenial> {
         if let Some(cause) = self.observation_refused.borrow_mut().take() {
             if let super::predecessor::Denial::Control(stop) = cause {
                 return Some(crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial::source_query_stop(*stop).demand_stop());

@@ -11,11 +11,8 @@ use crate::domain_computation::primary_graph::{
 pub trait RetainedPreImageExt: Sized {
     fn from_retention_seal(seal: WorthQueryRetainedPreImageSeal) -> Self;
 
-    fn with_relation_seal(
-        self,
-        seal: WorthQueryRetainedRelationPreImageSeal,
-        bytes: usize,
-    ) -> Self;
+    fn with_relation_seal(self, seal: WorthQueryRetainedRelationPreImageSeal, bytes: usize)
+        -> Self;
 }
 
 impl RetainedPreImageExt for WorthQueryRetainedPreImage {

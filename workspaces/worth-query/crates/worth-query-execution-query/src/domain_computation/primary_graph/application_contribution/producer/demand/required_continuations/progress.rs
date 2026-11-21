@@ -6,9 +6,7 @@ impl<Schema> RequiredFreshProgress<Schema>
 where
     Schema: ApplicationSchema + 'static,
 {
-    pub fn interest(
-        &self,
-    ) -> &WorthQueryOutputDemandInterest {
+    pub fn interest(&self) -> &WorthQueryOutputDemandInterest {
         self.successor.interest()
     }
 
@@ -27,9 +25,7 @@ where
         self.successor.family_type() == TypeId::of::<Family>()
     }
 
-    pub fn predecessor(
-        &self,
-    ) -> &SelectedReadyReadmission {
+    pub fn predecessor(&self) -> &SelectedReadyReadmission {
         self.successor.predecessor()
     }
 

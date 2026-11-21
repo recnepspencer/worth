@@ -2,9 +2,7 @@ mod counters;
 mod event;
 
 pub use counters::WorthQueryConvergenceEpochCounters;
-pub use event::{
-    WorthQueryConvergenceAdmissionStartEvent, WorthQueryConvergenceLifecycleEvent,
-};
+pub use event::{WorthQueryConvergenceAdmissionStartEvent, WorthQueryConvergenceLifecycleEvent};
 
 pub struct WorthQueryConvergenceEpochLifecycle {
     counters: WorthQueryConvergenceEpochCounters,
@@ -29,15 +27,11 @@ impl WorthQueryConvergenceEpochLifecycle {
         event.apply(&mut self.counters);
     }
 
-    pub fn counters(
-        &self,
-    ) -> &WorthQueryConvergenceEpochCounters {
+    pub fn counters(&self) -> &WorthQueryConvergenceEpochCounters {
         &self.counters
     }
 
-    pub fn into_counters(
-        self,
-    ) -> WorthQueryConvergenceEpochCounters {
+    pub fn into_counters(self) -> WorthQueryConvergenceEpochCounters {
         self.counters
     }
 }

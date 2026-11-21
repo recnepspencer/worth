@@ -39,10 +39,7 @@ pub struct WorthQueryApplicationLiveOpenDenial {
 }
 
 impl WorthQueryApplicationLiveOpenDenial {
-    pub fn new(
-        kind: WorthQueryApplicationLiveOpenDenialKind,
-        subject: impl Into<String>,
-    ) -> Self {
+    pub fn new(kind: WorthQueryApplicationLiveOpenDenialKind, subject: impl Into<String>) -> Self {
         Self {
             kind,
             authorization_denial: None,

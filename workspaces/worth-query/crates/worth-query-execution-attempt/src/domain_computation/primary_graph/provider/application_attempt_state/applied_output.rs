@@ -17,8 +17,7 @@ pub trait AppliedOutputParticipants {
 }
 pub struct AppliedFamilyOutputs {
     pub outputs: Vec<ConsumedOutputEvidence>,
-    pub replaced:
-        Vec<(Option<crate::equality_type_id::EqualityTypeId>, [u8; 32])>,
+    pub replaced: Vec<(Option<crate::equality_type_id::EqualityTypeId>, [u8; 32])>,
 }
 impl super::super::WorthQueryPrimaryGraphProvider {
     pub fn applied_outputs(

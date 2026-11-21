@@ -146,10 +146,7 @@ impl WorkflowActorDependencies {
             &mut Vec::new(),
         )
     }
-    pub fn restore(
-        execution: &ExecutionRequest<'_, '_>,
-        bytes: &[u8],
-    ) -> Result<Self, Denial> {
+    pub fn restore(execution: &ExecutionRequest<'_, '_>, bytes: &[u8]) -> Result<Self, Denial> {
         let mut output = ExecutionByteBuffer::allocate(bytes.len(), execution.allocation_policy())
             .map_err(|cause| super::storage_denial(cause, "workflow actor wire"))?;
         output

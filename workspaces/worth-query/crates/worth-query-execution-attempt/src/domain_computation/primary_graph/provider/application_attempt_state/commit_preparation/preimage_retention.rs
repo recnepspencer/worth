@@ -231,33 +231,23 @@ pub(super) fn retain_attempt_preimage(
 }
 
 impl WorthQueryPreImageRetentionWork {
-    pub const fn validated_intents_examined(
-        self,
-    ) -> usize {
+    pub const fn validated_intents_examined(self) -> usize {
         self.validated_intents_examined
     }
 
-    pub const fn mutation_targets_materialized(
-        self,
-    ) -> usize {
+    pub const fn mutation_targets_materialized(self) -> usize {
         self.mutation_targets_materialized
     }
 
-    pub const fn decision_facts_examined(
-        self,
-    ) -> usize {
+    pub const fn decision_facts_examined(self) -> usize {
         self.decision_facts_examined
     }
 
-    pub const fn candidates_materialized(
-        self,
-    ) -> usize {
+    pub const fn candidates_materialized(self) -> usize {
         self.candidates_materialized
     }
 
-    pub const fn demanded_loci_examined(
-        self,
-    ) -> usize {
+    pub const fn demanded_loci_examined(self) -> usize {
         self.demanded_loci_examined
     }
 }

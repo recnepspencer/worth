@@ -33,9 +33,7 @@ pub enum WorthQueryLivePredicatePoll {
     Unavailable,
 }
 impl WorthQueryLivePredicateQueue {
-    pub fn new(
-        subscription: WorthQueryLivePredicateSubscription,
-    ) -> Self {
+    pub fn new(subscription: WorthQueryLivePredicateSubscription) -> Self {
         let cursor = subscription.subscription().cursor();
         Self {
             subscription,
@@ -43,9 +41,7 @@ impl WorthQueryLivePredicateQueue {
             pending: None,
         }
     }
-    pub fn subscription(
-        &self,
-    ) -> &WorthQueryLivePredicateSubscription {
+    pub fn subscription(&self) -> &WorthQueryLivePredicateSubscription {
         &self.subscription
     }
     pub fn front(

@@ -88,12 +88,14 @@ where
         policy.check_live()?;
         let occurrence = self.inner.runtime.product_runtime.default_occurrence;
         let lane = self
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .application_branch_commit_lane_for_occurrence(occurrence);
         let _coordination = lane.enter();
         let lease = self
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .admit_product_occurrence(occurrence)
             .map_err(|_| {
@@ -118,7 +120,8 @@ where
                         .map_err(WorthQueryCheckpointCaptureDenial::from)
                         .and_then(|(checkpoint, admission)| {
                             let port = self
-                                .inner.runtime
+                                .inner
+                                .runtime
                                 .product_runtime
                                 .interim_checkpoint_port()
                                 .ok_or(
@@ -149,11 +152,15 @@ where
                                     policy,
                                 );
                             }
-                            let accepted =
-                                self.inner.runtime.output_demands.accepted_checkpoint_records();
+                            let accepted = self
+                                .inner
+                                .runtime
+                                .output_demands
+                                .accepted_checkpoint_records();
 
                             let lineage = self
-                                .inner.runtime
+                                .inner
+                                .runtime
                                 .primary_provider
                                 .graph
                                 .output_lineage

@@ -25,10 +25,7 @@ pub enum WorthQueryRecoveryMintClaim {
     },
 }
 impl WorthQueryRecoveryMintClaim {
-    pub fn new(
-        provider_runtime_instance_id: u64,
-        product_commit: CompositeCommitIdentity,
-    ) -> Self {
+    pub fn new(provider_runtime_instance_id: u64, product_commit: CompositeCommitIdentity) -> Self {
         match product_commit.owner_identity().durable() {
             Some(owner) => Self::Home(
                 worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
@@ -68,8 +65,14 @@ struct RecoveryRegistryState {
     claims_by_slot: HashMap<WorthQueryRecoveryRegistrySlot, WorthQueryRecoveryMintClaim>,
     terminal_by_claim: HashMap<WorthQueryRecoveryMintClaim, RecoveryClaimDisposition>,
     live: BTreeMap<WorthQueryRecoveryRegistrySlot, ()>,
-    durable: HashMap<WorthQueryRecoveryRegistrySlot, worth_query_execution_contracts::facade::QueryRecordedRecoveryClaim>,
-    deferred: std::collections::BTreeMap<worth_foundational::facade::DurableRecoveryClaimIdentity, DeferredRecoveryDisposition>,
+    durable: HashMap<
+        WorthQueryRecoveryRegistrySlot,
+        worth_query_execution_contracts::facade::QueryRecordedRecoveryClaim,
+    >,
+    deferred: std::collections::BTreeMap<
+        worth_foundational::facade::DurableRecoveryClaimIdentity,
+        DeferredRecoveryDisposition,
+    >,
     terminated: HashMap<WorthQueryRecoveryRegistrySlot, RecoveryClaimDisposition>,
 }
 
@@ -169,7 +172,10 @@ impl WorthQueryRecoveryHandleRegistry {
     pub fn claim_state(
         &self,
         claim: &WorthQueryRecoveryMintClaim,
-    ) -> Result<(bool, Option<RecoveryClaimDisposition>), worth_query_execution_contracts::facade::QueryDispatchJournalDenial>{
+    ) -> Result<
+        (bool, Option<RecoveryClaimDisposition>),
+        worth_query_execution_contracts::facade::QueryDispatchJournalDenial,
+    > {
         if let Some(recorded) = self.journal_claim_state(claim)? {
             return Ok(recorded);
         }

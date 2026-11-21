@@ -6,10 +6,7 @@ use worth_foundational::facade::{
 };
 use worth_relational::facade::mvcc::RequiredOutputProducingImplementation;
 
-pub fn identity(
-    facts: [u8; 32],
-    implementation: RequiredOutputProducingImplementation,
-) -> Derived {
+pub fn identity(facts: [u8; 32], implementation: RequiredOutputProducingImplementation) -> Derived {
     let mut entries = Vec::with_capacity(4);
     push(
         &mut entries,

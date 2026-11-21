@@ -61,9 +61,7 @@ impl<Schema, Relation, Entity> WorthQueryInvariantProjectionWalk<Schema, Relatio
         self.authority_identity
     }
 
-    pub fn observation(
-        &self,
-    ) -> &Arc<StructuralWalkObservation> {
+    pub fn observation(&self) -> &Arc<StructuralWalkObservation> {
         &self.observation
     }
 

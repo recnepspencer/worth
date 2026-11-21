@@ -1,6 +1,6 @@
 //! Finish projection only after the authoritative commit frame has returned.
-use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 use super::*;
+use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 
 pub struct WorkflowAdvanceCompletion {
     pub transition_identity: String,

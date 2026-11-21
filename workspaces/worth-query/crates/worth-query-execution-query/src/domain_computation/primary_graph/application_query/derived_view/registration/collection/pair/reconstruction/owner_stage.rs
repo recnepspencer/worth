@@ -121,10 +121,7 @@ pub fn reserve_entry_slots<Key, Value>(
         .ok_or(Denial::ChargedBytesOverflow)?;
     retain(hold, bytes)
 }
-pub fn retain_entry_payload<
-    Key: Clone + Ord,
-    Value: WorthQueryManagedDerivedValue,
->(
+pub fn retain_entry_payload<Key: Clone + Ord, Value: WorthQueryManagedDerivedValue>(
     hold: &mut ExecutionMemoryReservation,
     _key: &Key,
     value: &Value,

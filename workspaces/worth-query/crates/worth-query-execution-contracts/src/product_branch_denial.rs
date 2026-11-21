@@ -94,7 +94,8 @@ impl std::fmt::Display for WorthQueryProductBranchAdmissionDenial {
 }
 impl std::error::Error for WorthQueryProductBranchAdmissionDenial {}
 impl From<crate::product_activation_denial::WorthQueryProductActivationDenial>
-    for WorthQueryProductBranchAdmissionDenial {
+    for WorthQueryProductBranchAdmissionDenial
+{
     fn from(_denial: crate::product_activation_denial::WorthQueryProductActivationDenial) -> Self {
         Self::Refused(WorthQueryProductBranchAdmissionRefusalKind::ProductActivationUnavailable)
     }

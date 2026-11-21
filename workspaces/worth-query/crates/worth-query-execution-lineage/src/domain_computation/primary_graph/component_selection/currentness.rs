@@ -14,10 +14,7 @@ use worth_relational::facade::{
     runtime::RelationalRuntime, transactions::RelationalExecutionDenialCause as Cause,
 };
 impl ComponentSelection {
-    pub fn visit_physical<E>(
-        &self,
-        mut visit: impl FnMut(Fact) -> Result<(), E>,
-    ) -> Result<(), E> {
+    pub fn visit_physical<E>(&self, mut visit: impl FnMut(Fact) -> Result<(), E>) -> Result<(), E> {
         for source in &self.facts {
             for entity in &source.entities {
                 visit(Fact::SourceEntity { entity_id: *entity })?;
@@ -46,10 +43,7 @@ impl ComponentSelection {
         }
         Ok(())
     }
-    pub fn touches_entity(
-        &self,
-        entity: EntityId,
-    ) -> bool {
+    pub fn touches_entity(&self, entity: EntityId) -> bool {
         self.key.root() == entity
             || self
                 .facts

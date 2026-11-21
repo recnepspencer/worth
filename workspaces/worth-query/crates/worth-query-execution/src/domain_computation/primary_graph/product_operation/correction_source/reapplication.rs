@@ -68,7 +68,8 @@ where
         .map_err(|_| Denial::ForeignPhase)?;
     if target
         .application()
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .consumption_of_reversal_at_basis(&execution, target.product().relational_basis(), active)
         .map_err(Denial::History)?

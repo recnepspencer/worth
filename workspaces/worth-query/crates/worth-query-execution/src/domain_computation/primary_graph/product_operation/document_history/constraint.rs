@@ -15,6 +15,7 @@ use crate::{
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 #[must_use = "retain the original restriction for every native attempt preparation"]
 pub struct WorthQueryDocumentHistoryOperationConstraint {
@@ -136,7 +137,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::ForeignRecording);
         }
         let current = self
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .admit_product_occurrence(restriction.original_source().occurrence())
             .map_err(Denial::CandidateSelection)?;
@@ -144,7 +146,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::HeadDiverged);
         }
         drop(current);
-        confirm_document_head(self.inner(), phase, &restriction.source, ()).map_err(|(_, denial)| denial)
+        confirm_document_head(self.inner(), phase, &restriction.source, ())
+            .map_err(|(_, denial)| denial)
     }
 }
 

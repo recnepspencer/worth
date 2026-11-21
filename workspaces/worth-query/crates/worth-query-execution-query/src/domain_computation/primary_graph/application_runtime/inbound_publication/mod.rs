@@ -9,16 +9,12 @@ pub mod transport_progression;
 
 pub use custody::InstalledTransportCloseCustody;
 pub use custody::InstalledTransportCompletionCustody;
-pub use custody::{
-    InstalledTransportPendingReason, InstalledTransportResumeOutcome,
-};
+pub use custody::{InstalledTransportPendingReason, InstalledTransportResumeOutcome};
 pub use installed_transport::InstalledTransportCompletion;
 pub use installed_transport::PerformedInstalledTransportCompletion;
 pub use outcome::WorthQueryPerformedInboundCompletion;
 pub use outcome::WorthQueryUnpublishedInboundCompletion;
-pub use outcome::{
-    WorthQueryInboundPublicationDenial, WorthQueryInboundPublicationOutcome,
-};
+pub use outcome::{WorthQueryInboundPublicationDenial, WorthQueryInboundPublicationOutcome};
 
 mod completion_publication;
 

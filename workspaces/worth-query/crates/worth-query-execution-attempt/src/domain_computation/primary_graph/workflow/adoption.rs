@@ -26,15 +26,11 @@ pub use occurrence::{
     WorthQueryWorkflowDefinitionOccurrence, WorthQueryWorkflowIncompatibility,
     WorthQueryWorkflowInstanceCustody, WorthQueryWorkflowInstanceOccurrence,
 };
-pub use preparation::{
-    prepare_workflow_dispositions, WorkflowDispositionPreparationDenial,
-};
+pub use preparation::{prepare_workflow_dispositions, WorkflowDispositionPreparationDenial};
 pub use request::WorthQueryWorkflowDispositions;
 pub use selected_population::workflow_record_population_is_empty;
 pub use truth::WorkflowAdoptionReadDenial;
-pub use truth::{
-    WorkflowAdoptionEntity, WorkflowAdoptionTruth,
-};
+pub use truth::{WorkflowAdoptionEntity, WorkflowAdoptionTruth};
 
 pub use occurrence::{
     WorthQueryWorkflowDefinitionDisposition, WorthQueryWorkflowInstanceDisposition,

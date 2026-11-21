@@ -11,9 +11,7 @@ use std::{
 
 pub mod candidate_read_support;
 pub mod candidate_support_store;
-pub use candidate_read_support::{
-    CandidateReadSupport, ParentRead,
-};
+pub use candidate_read_support::{CandidateReadSupport, ParentRead};
 pub mod applied_output;
 pub use applied_output::AppliedOutputParticipants;
 pub mod commit_completion;
@@ -342,9 +340,7 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
 #[cfg(test)]
 mod tests;
 
-pub use commit_preparation::{
-    PreparedRebaseDenial, PreparedSourceFactRebase,
-};
+pub use commit_preparation::{PreparedRebaseDenial, PreparedSourceFactRebase};
 
 pub use commit_preparation::QueryPreparingApplicationCommit;
 pub use commit_preparation::RetainedQueryDurablePreparation;

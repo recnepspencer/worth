@@ -25,6 +25,7 @@ pub use incremental::{
     WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,
     WorthQueryPartitionedTreeRun, WorthQueryPublishedComputationStateForTest,
 };
+pub use incremental::{observe_discarded, observe_published};
 pub use incremental::{
     Comparator, CompletedComputationRetention, ComputationDeposit, NativeComputationReads,
 };
@@ -36,7 +37,6 @@ pub use plan::{
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
     WorthQueryComputationPartitionView,
 };
-pub use incremental::{observe_discarded, observe_published};
 
 /// How partition results become one result.
 ///

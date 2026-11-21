@@ -77,7 +77,8 @@ where
     };
     let pin = target
         .application()
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .prepare_correction_command(material.capture.original, snapshot, request)
         .map_err(D::Material)?;

@@ -7,8 +7,7 @@ use worth_relational::facade::runtime::{
 
 /// An unconsumed selection keeps its actual candidate and any Native proof.
 /// It has not registered that proof as a used input of the final publication.
-pub struct SelectedCoupledSource
-{
+pub struct SelectedCoupledSource {
     pub read: execution::CoupledSourceRead,
     pub pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
 }

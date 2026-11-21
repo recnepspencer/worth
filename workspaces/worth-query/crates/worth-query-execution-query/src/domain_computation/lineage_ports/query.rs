@@ -1,6 +1,5 @@
 //! Authorization-support, governance, and diagnostic-admission port implementations.
 
-
 use worth_query_execution_lineage::facade::ports::{
     DiagnosticComparisonAdmissionPort, QueryGovernancePort,
 };

@@ -57,10 +57,7 @@ impl CheckpointMetadataFunding {
             ))
         })
     }
-    pub fn release_slots<T>(
-        &mut self,
-        count: usize,
-    ) -> Result<(), CheckpointDecodeDenial> {
+    pub fn release_slots<T>(&mut self, count: usize) -> Result<(), CheckpointDecodeDenial> {
         let bytes = count
             .checked_mul(std::mem::size_of::<T>())
             .and_then(|bytes| u64::try_from(bytes).ok())

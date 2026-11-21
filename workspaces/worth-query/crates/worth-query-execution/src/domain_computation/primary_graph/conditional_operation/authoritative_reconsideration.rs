@@ -40,7 +40,8 @@ pub(super) fn relevant_authoritative_commits<Schema>(
     interest: CommitTouchInterest<'_>,
 ) -> WorthQueryRelevantAuthoritativeCommits {
     let batch = runtime
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .graph
         .source_owner

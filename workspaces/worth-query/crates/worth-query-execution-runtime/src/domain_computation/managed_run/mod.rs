@@ -94,9 +94,7 @@ pub use direct_yield_cleanup::{
     WorthQueryDirectYieldCleanupReceipt,
 };
 pub use direct_yield_recovery::WorthQueryDirectYieldRecoveryRequired;
-pub use lower_admission::{
-    admit_live_lower_execution_basis, WorthQueryManagedLowerExecutionBasis,
-};
+pub use lower_admission::{admit_live_lower_execution_basis, WorthQueryManagedLowerExecutionBasis};
 pub use managed_graph_suspension::{
     WorthQueryProviderCheckpointSuspensionFailureEvidence,
     WorthQueryProviderCheckpointSuspensionFailureKind,

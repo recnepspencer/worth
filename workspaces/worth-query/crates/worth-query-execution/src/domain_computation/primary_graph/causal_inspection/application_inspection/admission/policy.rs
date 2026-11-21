@@ -89,7 +89,8 @@ where
             .map_err(InspectionAdmissionDenial::Capability)?;
     }
     let graph = runtime
-        .inner.runtime
+        .inner
+        .runtime
         .primary_graph()
         .ok_or(InspectionAdmissionDenial::MissingGraph)?;
     let security = runtime

@@ -21,13 +21,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 
 #[allow(clippy::too_many_arguments)]
-pub fn select<
-    'a,
-    'request,
-    'authority,
-    S,
-    I,
->(
+pub fn select<'a, 'request, 'authority, S, I>(
     execution: &ExecutionRequest<'request, 'authority>,
     application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
     parent: &'a WorthQueryManagedGraphWorkSession,

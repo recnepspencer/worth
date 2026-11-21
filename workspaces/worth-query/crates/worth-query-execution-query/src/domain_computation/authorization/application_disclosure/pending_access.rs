@@ -11,14 +11,7 @@ use worth_relational::facade::identity::EntityId;
 pub mod funded;
 pub use funded::prepare_funded_pending_disclosure;
 
-pub fn prepare_pending_disclosure<
-    Schema,
-    Scope,
-    Capability,
-    Operation,
-    Input,
-    E,
->(
+pub fn prepare_pending_disclosure<Schema, Scope, Capability, Operation, Input, E>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     binding: &ApplicationSchemaBindingIdentity,
     principal: EntityId,

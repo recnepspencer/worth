@@ -79,16 +79,19 @@ where
     }
 }
 
-pub trait ConventionalAuthorizationObservationRuntimeExt<Schema, Principal, PrincipalIdentity, Scope>: Sized
-where
+pub trait ConventionalAuthorizationObservationRuntimeExt<
+    Schema,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+>: Sized where
     Schema: ApplicationSchema,
 {
     fn validate_all(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
-    ) -> Result<Vec<WorthQueryAuthorizationDecisionFact>, WorthQueryOperationAuthorizationDenial>
-;
+    ) -> Result<Vec<WorthQueryAuthorizationDecisionFact>, WorthQueryOperationAuthorizationDenial>;
     fn observe_one(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -116,7 +119,15 @@ where
     >;
 }
 
-impl<Schema, Principal, PrincipalIdentity, Scope> ConventionalAuthorizationObservationRuntimeExt<Schema, Principal, PrincipalIdentity, Scope> for WorthQueryConventionalAuthorizationObservation<'_, Schema, Principal, PrincipalIdentity, Scope>
+impl<Schema, Principal, PrincipalIdentity, Scope>
+    ConventionalAuthorizationObservationRuntimeExt<Schema, Principal, PrincipalIdentity, Scope>
+    for WorthQueryConventionalAuthorizationObservation<
+        '_,
+        Schema,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >
 where
     Schema: ApplicationSchema,
 {

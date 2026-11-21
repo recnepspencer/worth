@@ -29,13 +29,9 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
         Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
-        self.discover_as_at::<B, Row<S, B>>(
-            candidate,
-            &parent.pin,
-            parent.source(),
-            intent,
-            |s| CandidateReadSupport::Query(Box::new(s)),
-        )
+        self.discover_as_at::<B, Row<S, B>>(candidate, &parent.pin, parent.source(), intent, |s| {
+            CandidateReadSupport::Query(Box::new(s))
+        })
     }
     pub fn discover_outgoing<B>(
         &self,
@@ -49,13 +45,9 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
         Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
-        self.discover_as_at::<B, Row<S, B>>(
-            candidate,
-            &parent.pin,
-            parent.source(),
-            intent,
-            |s| CandidateReadSupport::Outgoing(Box::new(s)),
-        )
+        self.discover_as_at::<B, Row<S, B>>(candidate, &parent.pin, parent.source(), intent, |s| {
+            CandidateReadSupport::Outgoing(Box::new(s))
+        })
     }
     pub fn discover_authored<B>(
         &self,
@@ -69,13 +61,9 @@ impl<S: ApplicationSchema> SynchronousOutputAssembly<'_, '_, '_, '_, S> {
         B::ScopeBinding: ApplicationQueryScopeResolution<S, B::PrincipalIdentity>,
         Row<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
-        self.discover_as_at::<B, Row<S, B>>(
-            candidate,
-            &source.pin,
-            source.source,
-            intent,
-            |s| CandidateReadSupport::Query(Box::new(s)),
-        )
+        self.discover_as_at::<B, Row<S, B>>(candidate, &source.pin, source.source, intent, |s| {
+            CandidateReadSupport::Query(Box::new(s))
+        })
     }
     pub fn discover_as_at<B, V>(
         &self,

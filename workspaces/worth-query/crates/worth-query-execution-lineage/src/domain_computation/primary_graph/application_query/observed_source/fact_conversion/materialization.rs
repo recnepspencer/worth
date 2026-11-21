@@ -2,9 +2,7 @@
 use super::*;
 
 impl PreparedSourceFactMaterialization<'_, '_, '_> {
-    pub fn into_facts(
-        self,
-    ) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
+    pub fn into_facts(self) -> Result<Vec<Fact>, WorthQuerySourceExpectationDenial> {
         let subject = self.subject;
         let control = self.control;
         control.poll(subject)?;

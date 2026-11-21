@@ -58,9 +58,7 @@ impl OriginalCompletionSlot for PendingOriginalSlot {
     }
 }
 type OriginalSlot = Arc<dyn OriginalCompletionSlot>;
-pub struct OriginalCompletionPublisher(
-    Mutex<Option<OriginalSlot>>,
-);
+pub struct OriginalCompletionPublisher(Mutex<Option<OriginalSlot>>);
 pub struct OriginalCompletionReceiver {
     slot: OriginalSlot,
     envelope: Box<CleanupRequired>,
@@ -106,10 +104,7 @@ impl OriginalCompletionPublisher {
 impl OriginalCompletionReceiver {
     /// Observe only this performing attempt's preallocated one-shot slot.
     /// This read neither takes the original nor issues receipt authority.
-    pub fn has_completion(
-        &self,
-        session: &WorthQueryProviderSessionTerminalBinding,
-    ) -> bool {
+    pub fn has_completion(&self, session: &WorthQueryProviderSessionTerminalBinding) -> bool {
         self.slot.has_completion(session)
     }
 
@@ -122,16 +117,11 @@ impl OriginalCompletionReceiver {
             &self.slot,
         ))
     }
-    pub fn cleanup_envelope(
-        self,
-    ) -> Box<CleanupRequired> {
+    pub fn cleanup_envelope(self) -> Box<CleanupRequired> {
         self.envelope
     }
 
-    pub fn take(
-        &self,
-        session: &WorthQueryProviderSessionTerminalBinding,
-    ) -> Option<Completed> {
+    pub fn take(&self, session: &WorthQueryProviderSessionTerminalBinding) -> Option<Completed> {
         let completed = self.slot.take()?;
         assert!(
             completed

@@ -13,15 +13,12 @@ use crate::domain_computation::primary_graph::{
 /// This is deliberately not the public prepared publication. It only carries
 /// the selected-program and branch affinity needed by the application-attempt
 /// owner to prepare the real governed mutation.
-pub struct BoundWorkflowDefinitionContract<
-    Schema,
-    Spec,
-> where
+pub struct BoundWorkflowDefinitionContract<Schema, Spec>
+where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
-    pub contract:
-        WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
+    pub contract: WorthQueryInstalledWorkflowDefinitionContract<Schema, Spec>,
     pub branch: WorthQueryProductBranch,
     pub occurrence: WorthQueryProductBranchReadIdentity,
 }
@@ -31,10 +28,7 @@ where
     Schema: ApplicationSchema,
     Spec: ApplicationWorkflowSpec<Schema = Schema>,
 {
-    pub fn belongs_to_branch(
-        &self,
-        branch: WorthQueryProductBranch,
-    ) -> bool {
+    pub fn belongs_to_branch(&self, branch: WorthQueryProductBranch) -> bool {
         self.branch == branch
     }
 

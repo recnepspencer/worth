@@ -15,7 +15,12 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Binding: ApplicationMutationBinding<Schema>,
     {
         if required.original_runtime()
-            != workflow.runtime().inner.runtime.authority_identity().as_u64()
+            != workflow
+                .runtime()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64()
         {
             return Err(affinity("foreign workflow actor runtime"));
         }
@@ -30,7 +35,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
     /// Publication alone supplies the original typed command before admission.
     /// The context is an untrusted locator; native selection checks its facts.
     pub fn bind_approval_actor_context<Schema, Spec, Binding>(
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         selected: &WorthQuerySelectedProductOperation<'_, Schema>,
         workflow: WorthQueryWorkflowVocabulary<'_, Schema, Spec>,
         instance: &PublishedWorkflowInstanceRef,
@@ -47,7 +52,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             proposal: proposal.clone(),
         };
         WorthQueryWorkflowActorContext::build::<Schema, Spec, Binding>(
-            worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(),
+            access,
             selected
                 .application()
                 .inner

@@ -81,11 +81,7 @@ impl<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> ManagedIndexSta
         }
         Ok(())
     }
-    pub fn finish_maintained_build(
-        &self,
-        epoch: u64,
-        observation: ManagedIndexSourceObservation,
-    ) {
+    pub fn finish_maintained_build(&self, epoch: u64, observation: ManagedIndexSourceObservation) {
         let image = RetainedIndexImage::Maintained {
             native_custody: observation,
         };

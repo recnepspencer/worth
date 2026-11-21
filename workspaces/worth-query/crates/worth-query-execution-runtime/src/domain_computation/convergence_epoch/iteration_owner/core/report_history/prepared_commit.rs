@@ -4,8 +4,7 @@ use crate::domain_computation::{
     WorthQueryRetainedConvergenceCandidateEvidence,
 };
 
-pub struct WorthQueryPreparedConvergenceReportCommit
-{
+pub struct WorthQueryPreparedConvergenceReportCommit {
     kind: PreparedReportHistoryKind,
     report: WorthQueryBoundConvergenceReport,
 }
@@ -106,13 +105,11 @@ impl WorthQueryConvergenceReportHistory {
     }
 }
 
-pub struct ReportHistoryLifecycleEvent
-{
+pub struct ReportHistoryLifecycleEvent {
     kind: ReportHistoryLifecycleEventKind,
 }
 
-pub enum ReportHistoryLifecycleEventKind
-{
+pub enum ReportHistoryLifecycleEventKind {
     Retained,
     IncumbentSetReplaced,
 }
@@ -130,9 +127,7 @@ impl ReportHistoryLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> ReportHistoryLifecycleEventKind {
+    pub fn into_kind(self) -> ReportHistoryLifecycleEventKind {
         self.kind
     }
 }

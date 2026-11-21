@@ -12,6 +12,7 @@ use worth_query_declaration::facade::{
     },
     application_schema::ApplicationOperationRef,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>

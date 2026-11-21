@@ -87,15 +87,11 @@ impl WorthQueryApplicationOutputCorrespondenceCandidate {
             .map(|(role, binding)| (role.as_str(), binding.posture, binding.entity_name.as_str()))
     }
 
-    pub const fn binding_type(
-        &self,
-    ) -> Option<TypeId> {
+    pub const fn binding_type(&self) -> Option<TypeId> {
         self.binding_type
     }
 
-    pub fn is_empty(
-        &self,
-    ) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.expected_roles.is_empty() && self.expected_families.is_empty() && self.roles.is_empty()
     }
 

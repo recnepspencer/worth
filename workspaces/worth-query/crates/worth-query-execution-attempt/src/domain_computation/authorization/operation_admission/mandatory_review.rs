@@ -52,18 +52,14 @@ impl WorthQueryAdmittedOperation {
         Ok(self)
     }
 
-    pub fn mandatory_review_binding(
-        &self,
-    ) -> Option<&WorthQueryMandatoryReviewBinding> {
+    pub fn mandatory_review_binding(&self) -> Option<&WorthQueryMandatoryReviewBinding> {
         match &self.data.authorization_basis {
             ErasedAuthorizationBasis::MandatoryReview { binding, .. } => Some(binding),
             _ => None,
         }
     }
 
-    pub fn take_mandatory_review_binding(
-        &mut self,
-    ) -> Option<WorthQueryMandatoryReviewBinding> {
+    pub fn take_mandatory_review_binding(&mut self) -> Option<WorthQueryMandatoryReviewBinding> {
         match std::mem::replace(
             &mut self.data.authorization_basis,
             ErasedAuthorizationBasis::Capability,

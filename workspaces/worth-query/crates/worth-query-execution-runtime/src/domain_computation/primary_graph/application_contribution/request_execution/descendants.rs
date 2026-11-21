@@ -28,33 +28,25 @@ impl<'authority> QueryRequestExecution<'authority> {
             form,
         }
     }
-    pub fn wave(
-        &self,
-    ) -> WaveRequestExecution<'authority> {
+    pub fn wave(&self) -> WaveRequestExecution<'authority> {
         WaveRequestExecution {
             execution: self.descendant(),
         }
     }
 }
 impl<'authority> WaveRequestExecution<'authority> {
-    pub fn request(
-        &self,
-    ) -> &QueryRequestExecution<'_> {
+    pub fn request(&self) -> &QueryRequestExecution<'_> {
         &self.execution
     }
 
-    pub fn member(
-        &self,
-    ) -> MemberRequestExecution<'authority> {
+    pub fn member(&self) -> MemberRequestExecution<'authority> {
         MemberRequestExecution {
             execution: self.execution.descendant(),
         }
     }
 }
 impl MemberRequestExecution<'_> {
-    pub fn request(
-        &self,
-    ) -> &QueryRequestExecution<'_> {
+    pub fn request(&self) -> &QueryRequestExecution<'_> {
         &self.execution
     }
 }

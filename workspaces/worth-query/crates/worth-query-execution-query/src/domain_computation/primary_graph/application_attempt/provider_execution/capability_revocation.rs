@@ -54,11 +54,7 @@ where
         .unwrap_or_else(|denial| denial.into_commit_outcome())
     }
 
-    pub fn compare_and_commit_capability_revocation_for_program<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_capability_revocation_for_program<Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

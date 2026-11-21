@@ -15,8 +15,9 @@ mod domain_computation_authorization_capability_revocation_progression {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
+    where
+        Schema: ApplicationSchema,
+    {
         pub fn authorize_capability_revocation<Capability, Operation, Input>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>, access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>, capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>, operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>, preconditions: TypedMutationPreconditions<
                 Schema,
                 Operation,
@@ -36,8 +37,15 @@ where
                     Schema,
                 >,
             Input: ApplicationCapabilityRequest<Schema, Capability>
-                + ApplicationCapabilityRevocationRequest<Schema, Capability>, {
-            self.inner.authorize_capability_revocation::<Capability, Operation, Input>(phase, access, capability, operation, preconditions)
+        + ApplicationCapabilityRevocationRequest<Schema, Capability>,{
+            self.inner
+                .authorize_capability_revocation::<Capability, Operation, Input>(
+                    phase,
+                    access,
+                    capability,
+                    operation,
+                    preconditions,
+                )
         }
     }
 }

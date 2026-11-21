@@ -17,26 +17,17 @@ pub struct RetainedPredicateProbe {
     pub parent: Parent,
     pub parameters: Parameters,
     ordinal: usize,
-    pub retained_bytes:
-        u64,
+    pub retained_bytes: u64,
     _allocation: Arc<SourceFactsAllocation>,
 }
 impl RetainedPredicateProbe {
-    pub fn parent(
-        &self,
-    ) -> &Parent {
+    pub fn parent(&self) -> &Parent {
         &self.parent
     }
-    pub fn parameters(
-        &self,
-    ) -> &Parameters {
+    pub fn parameters(&self) -> &Parameters {
         &self.parameters
     }
-    pub fn matches_probe_borrow(
-        &self,
-        parameters: &Parameters,
-        probe: &AspectValue,
-    ) -> bool {
+    pub fn matches_probe_borrow(&self, parameters: &Parameters, probe: &AspectValue) -> bool {
         self.parameters.identity() == parameters.identity()
             && parameters
                 .bindings()
@@ -106,9 +97,7 @@ impl RetainedPredicateProbe {
             _allocation: allocation,
         }))
     }
-    pub fn raw(
-        &self,
-    ) -> &AspectValue {
+    pub fn raw(&self) -> &AspectValue {
         // Capture resolved this ordinal against the actual immutable full parameter set.
         &self.parameters.bindings()[self.ordinal].1
     }

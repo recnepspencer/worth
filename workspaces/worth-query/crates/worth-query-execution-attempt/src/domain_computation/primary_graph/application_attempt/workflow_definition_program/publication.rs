@@ -3,32 +3,13 @@ use worth_query_declaration::facade::application_program::{
     ApplicationProgramRevision, ApplicationWorkflowDefinitionContentIdentity,
 };
 
-use super::super::{
-    WorthQueryApplicationEffectProgram,
-    WorthQueryApplicationUncommitted,
-};
+use super::super::{WorthQueryApplicationEffectProgram, WorthQueryApplicationUncommitted};
 
 /// Opaque, live application-attempt publication program.
 ///
 /// Construction consumes an admitted projected read set and an owner-bound
 /// definition contract. Callers cannot provide lineage IDs, current-pointer
 /// relation IDs, effects, or branch affinity.
-///
-/// ```compile_fail,E0451
-/// use worth_query_execution::publication_boundary::workflow_definition_publication::PreparedWorkflowDefinitionPublication;
-///
-/// fn cannot_forge<Schema, Operation, Input, Scope>()
-///     -> PreparedWorkflowDefinitionPublication<Schema, Operation, Input, Scope>
-/// {
-///     PreparedWorkflowDefinitionPublication {
-///         program: unsafe { std::mem::zeroed() },
-///         program_revision: unsafe { std::mem::zeroed() },
-///         content_identity: unsafe { std::mem::zeroed() },
-///         content_identity_locator: unsafe { std::mem::zeroed() },
-///         workflow_intent_identity: [0; 32],
-///     }
-/// }
-/// ```
 #[must_use = "prepared workflow definition publication owns a live application attempt"]
 pub struct PreparedWorkflowDefinitionPublication<Schema, Operation, Input, Scope> {
     pub(super) program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,

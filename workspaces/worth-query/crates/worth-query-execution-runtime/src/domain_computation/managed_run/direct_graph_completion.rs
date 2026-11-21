@@ -64,9 +64,7 @@ impl WorthQueryCompletedDirectEvidenceOwner<'_> {
         self.authority
     }
 
-    pub fn session(
-        &self,
-    ) -> &crate::domain_computation::WorthQueryExecutionProviderSession {
+    pub fn session(&self) -> &crate::domain_computation::WorthQueryExecutionProviderSession {
         self.session
     }
 
@@ -74,9 +72,7 @@ impl WorthQueryCompletedDirectEvidenceOwner<'_> {
         self.logical_run_identity
     }
 
-    pub fn execution_snapshot(
-        &self,
-    ) -> &WorthQueryBoundExecutionSnapshotIdentity {
+    pub fn execution_snapshot(&self) -> &WorthQueryBoundExecutionSnapshotIdentity {
         &self.execution_snapshot
     }
 

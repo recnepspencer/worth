@@ -13,9 +13,7 @@ use crate::domain_computation::primary_graph::workflow::instance::{
 };
 
 pub mod proposal_need;
-pub use proposal_need::{
-    select_current_proposal_need, SelectedWorkflowProposal,
-};
+pub use proposal_need::{select_current_proposal_need, SelectedWorkflowProposal};
 pub mod approval;
 pub mod back_action;
 pub mod termination_action;
@@ -106,16 +104,11 @@ impl SelectedWorkflowTransition {
         &self.node_path
     }
 
-    pub const fn kind(
-        &self,
-    ) -> &SelectedWorkflowTransitionKind {
+    pub const fn kind(&self) -> &SelectedWorkflowTransitionKind {
         &self.kind
     }
 
-    pub fn matches_settlement(
-        &self,
-        settled: SettledWorkflowTransition,
-    ) -> bool {
+    pub fn matches_settlement(&self, settled: SettledWorkflowTransition) -> bool {
         settled.node() == self.node
             && settled.occurrence() == self.occurrence
             && matches!(

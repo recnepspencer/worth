@@ -4,9 +4,7 @@ use super::super::application_attempt::WorthQueryPendingApplicationCommitReceipt
 use super::WorthQueryPrimaryGraphCommittedApplication as Completed;
 use crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding;
 
-pub trait OriginalCompletionSlot:
-    Send + Sync
-{
+pub trait OriginalCompletionSlot: Send + Sync {
     fn complete(&self, completed: Completed);
     fn take(&self) -> Option<Completed>;
     fn has_completion(&self, session: &WorthQueryProviderSessionTerminalBinding) -> bool;

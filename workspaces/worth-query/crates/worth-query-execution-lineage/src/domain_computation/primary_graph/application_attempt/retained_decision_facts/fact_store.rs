@@ -116,9 +116,7 @@ impl RetainedSourceFacts {
     pub fn len(&self) -> usize {
         self.0.len()
     }
-    pub fn into_values(
-        self,
-    ) -> RetainedSourceFactValues {
+    pub fn into_values(self) -> RetainedSourceFactValues {
         RetainedSourceFactValues(self.0.into_iter())
     }
 }

@@ -45,9 +45,7 @@ impl WorthQueryApplicationIdempotencyBinding {
         observation::read(recorded)
     }
     /// Select only the derived lookup namespace from the validated original grammar.
-    pub fn recorded_correction_scope(
-        recorded: &str,
-    ) -> Result<bool, &'static str> {
+    pub fn recorded_correction_scope(recorded: &str) -> Result<bool, &'static str> {
         validate(recorded)?;
         Ok(recorded
             .split(':')

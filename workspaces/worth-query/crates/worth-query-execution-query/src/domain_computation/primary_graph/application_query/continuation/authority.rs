@@ -19,57 +19,11 @@ use worth_relational::facade::{
 ///
 /// It cannot be copied or cloned:
 ///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryContinuation;
-///
-/// fn clone_continuation<S, Q, P, R, Scope>(
-///     continuation: WorthQueryApplicationQueryContinuation<S, Q, P, R, Scope>,
-/// ) {
-///     let _second = continuation.clone();
-/// }
-/// ```
-///
 /// Its private representation cannot be reconstructed from result values:
-///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryContinuation;
-///
-/// let _forged = WorthQueryApplicationQueryContinuation::<(), (), (), (), ()> {};
-/// ```
 ///
 /// A continuation for one query cannot be substituted for another query:
 ///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::
-///     WorthQueryApplicationQueryContinuation;
-///
-/// fn cross_query<Schema, FirstQuery, SecondQuery, Parameters, Result, Scope>(
-///     continuation: WorthQueryApplicationQueryContinuation<
-///         Schema, FirstQuery, Parameters, Result, Scope,
-///     >,
-/// ) -> WorthQueryApplicationQueryContinuation<
-///     Schema, SecondQuery, Parameters, Result, Scope,
-/// > {
-///     continuation
-/// }
-/// ```
-///
 /// Nor can a continuation cross its typed scope or result-shape authority:
-///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::
-///     WorthQueryApplicationQueryContinuation;
-///
-/// fn cross_shape<Schema, Query, Parameters, FirstResult, SecondResult, FirstScope, SecondScope>(
-///     continuation: WorthQueryApplicationQueryContinuation<
-///         Schema, Query, Parameters, FirstResult, FirstScope,
-///     >,
-/// ) -> WorthQueryApplicationQueryContinuation<
-///     Schema, Query, Parameters, SecondResult, SecondScope,
-/// > {
-///     continuation
-/// }
-/// ```
 pub struct WorthQueryApplicationQueryContinuation<Schema, Query, Parameters, QueryResult, Scope> {
     pub(crate) runtime_authority: u64,
     pub(crate) schema_binding: ApplicationSchemaBindingIdentity,

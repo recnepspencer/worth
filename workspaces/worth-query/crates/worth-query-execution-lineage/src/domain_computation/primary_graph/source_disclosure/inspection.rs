@@ -25,9 +25,7 @@ impl OriginalSourceInspectionDisclosure {
             disclosure,
         }
     }
-    pub fn schema(
-        &self,
-    ) -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity {
+    pub fn schema(&self) -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity {
         &self.schema
     }
     pub fn association(&self) -> &InstalledSourceDisclosureBinding {

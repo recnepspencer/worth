@@ -45,7 +45,8 @@ pub(super) fn admit<Schema: ApplicationSchema>(
         admit_application_inspection_graph_work(
             contract,
             runtime
-                .inner.runtime
+                .inner
+                .runtime
                 .primary_provider
                 .application_resource_support_ref(),
             &mut admit,

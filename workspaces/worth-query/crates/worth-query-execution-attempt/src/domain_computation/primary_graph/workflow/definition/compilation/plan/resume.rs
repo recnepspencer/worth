@@ -12,10 +12,7 @@ use super::{
 impl CompiledWorkflowDefinition {
     /// The same definition read from `path` as its first node. Progress,
     /// replay and history of a migration successor all begin there.
-    pub fn resumed_at(
-        &self,
-        path: &str,
-    ) -> Option<Self> {
+    pub fn resumed_at(&self, path: &str) -> Option<Self> {
         let [node] = self.nodes_with_path(path) else {
             return None;
         };

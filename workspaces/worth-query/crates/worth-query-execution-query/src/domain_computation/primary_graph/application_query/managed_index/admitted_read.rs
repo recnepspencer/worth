@@ -198,9 +198,8 @@ where
     ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
 {
     use super::denial::{managed_index_denial, ReceiverCause};
-    let allocation = SourceFactsAllocation::open(execution).map_err(|cause| {
-        managed_index_denial(ReceiverCause::Execution(cause), None)
-    })?;
+    let allocation = SourceFactsAllocation::open(execution)
+        .map_err(|cause| managed_index_denial(ReceiverCause::Execution(cause), None))?;
     let result =
         access.with_plan::<B, _, Denial>(execution, intent, context, native, |plan, native| {
             if crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(plan.scope.entity_id()) != operation_scope.scope()
@@ -218,9 +217,7 @@ where
             let dependency = Arc::clone(dependency);
             Ok((completed.read.into_rows(), dependency))
         });
-    result.map_err(|cause| {
-        managed_index_denial(ReceiverCause::Provider(cause), Some(allocation))
-    })
+    result.map_err(|cause| managed_index_denial(ReceiverCause::Provider(cause), Some(allocation)))
 }
 
 /// The already resolved selected Source consumes the same Native transport.

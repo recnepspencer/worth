@@ -31,9 +31,7 @@ impl WorthQueryInvalidationResources {
             &self.oracle,
         );
     }
-    pub fn oracle_receiver(
-        &self,
-    ) -> &Arc<InvalidationOracleReceiver> {
+    pub fn oracle_receiver(&self) -> &Arc<InvalidationOracleReceiver> {
         &self.oracle
     }
     pub fn invalidation_equivalence_is_armed(&self) -> bool {

@@ -50,17 +50,13 @@ impl<'bytes, 'scope, 'authority> FactDecoder<'bytes, 'scope, 'authority> {
             count,
         })
     }
-    pub fn funding(
-        &self,
-    ) -> Arc<CodecPayloadReservation> {
+    pub fn funding(&self) -> Arc<CodecPayloadReservation> {
         Arc::clone(&self.funding)
     }
     pub fn count(&self) -> usize {
         self.count
     }
-    pub fn next_fact(
-        &mut self,
-    ) -> Result<Option<Fact>, FactDecodeDenial> {
+    pub fn next_fact(&mut self) -> Result<Option<Fact>, FactDecodeDenial> {
         self.control
             .check_live()
             .map_err(FactDecodeDenial::Retention)?;

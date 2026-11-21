@@ -13,21 +13,13 @@ use worth_relational::facade::{
     identity::EntityId, runtime::RelationalRuntime, snapshots::SnapshotHandle,
 };
 
-pub
-struct RecordedWorkflowPublication
-{
-    pub content:
-        ApplicationWorkflowDefinitionContentIdentity,
-    pub published_under:
-        CanonicalDigestId,
-    pub carried_to:
-        Option<CanonicalDigestId>,
-    pub lineage:
-        EntityId,
-    pub spec:
-        String,
-    pub facts:
-        Vec<WorthQueryApplicationObservedFact>,
+pub struct RecordedWorkflowPublication {
+    pub content: ApplicationWorkflowDefinitionContentIdentity,
+    pub published_under: CanonicalDigestId,
+    pub carried_to: Option<CanonicalDigestId>,
+    pub lineage: EntityId,
+    pub spec: String,
+    pub facts: Vec<WorthQueryApplicationObservedFact>,
 }
 
 pub fn observe(

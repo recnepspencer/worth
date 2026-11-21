@@ -19,7 +19,8 @@ use super::{
     WorthQueryMutationHandlerExecutionReport, WorthQueryMutationHandlerWork,
 };
 use crate::domain_computation::primary_graph::{
-    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationAttemptDenial,
+    WorthQueryPrimaryGraphApplicationRuntime,
 };
 
 pub use worth_query_execution_lineage::facade::primary_graph::application_entry::mutation::execution::MutationHandlerExecutionDenial;

@@ -30,9 +30,7 @@ pub fn principal_currentness(
     }
 }
 
-pub fn kernel_stop_kind(
-    stop: worth_execution::MapKernelStop,
-) -> Kind {
+pub fn kernel_stop_kind(stop: worth_execution::MapKernelStop) -> Kind {
     use worth_execution::MapKernelStop as Stop;
     use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
     let cause = match stop {

@@ -13,8 +13,8 @@ use crate::domain_computation::primary_graph::{
 };
 use restoration::{decode_fields, required_fields};
 
-pub use worth_query_execution_lineage::facade::primary_graph::provider::committed_dispatch_outbox::*;
 pub use worth_query_execution_lineage::facade::primary_graph::provider::committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadDenial as Denial;
+pub use worth_query_execution_lineage::facade::primary_graph::provider::committed_dispatch_outbox::*;
 pub mod correlation;
 pub mod original_attempt;
 pub mod original_row;
@@ -104,9 +104,6 @@ impl WorthQueryPrimaryGraphProvider {
         })
     }
 }
-
-
-
 
 impl super::WorthQueryPrimaryGraphProvider {
     #[doc(hidden)]

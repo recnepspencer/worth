@@ -1,4 +1,5 @@
 //! Conservative support of one finished existing-record scalar candidate.
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use crate::domain_computation::primary_graph::application_attempt::effect_program::installed_reentry::EffectProgramInstalledEntryExt as _;
 use std::sync::Arc;
 use worth_foundational::facade::AspectFieldLocator;
@@ -219,9 +220,7 @@ fn copy_scalar_writes(
     }
     Ok(Some(writes))
 }
-pub trait EffectProgramCandidatePlanningExt<S, O, I, E>: Sized
-
-{
+pub trait EffectProgramCandidatePlanningExt<S, O, I, E>: Sized {
     fn is_admitted_envelope_prefix(
         &self,
         unseen: &crate::domain_computation::primary_graph::application_contribution::authored_edit::UnseenAuthoredEnvelope<'_>,
@@ -242,12 +241,11 @@ pub trait EffectProgramCandidatePlanningExt<S, O, I, E>: Sized
         >,
     ) -> Result<(), WorthQueryApplicationAttemptDenial>
     where
-        S: ApplicationSchema,
-;
+        S: ApplicationSchema;
 }
 
-impl<S, O, I, E> EffectProgramCandidatePlanningExt<S, O, I, E> for WorthQueryApplicationEffectProgram<S, O, I, E>
-
+impl<S, O, I, E> EffectProgramCandidatePlanningExt<S, O, I, E>
+    for WorthQueryApplicationEffectProgram<S, O, I, E>
 {
     fn is_admitted_envelope_prefix(
         &self,

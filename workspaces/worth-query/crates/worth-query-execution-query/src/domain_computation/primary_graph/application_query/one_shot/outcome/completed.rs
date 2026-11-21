@@ -1,13 +1,8 @@
 //! Native query completion before selecting its public result or source closure.
 use super::*;
 
-pub struct CompletedOneShotRead<
-    Query,
-    QueryResult,
-    Capture = (),
-> {
-    pub read:
-        WorthQueryApplicationOneShotResult<Query, QueryResult>,
+pub struct CompletedOneShotRead<Query, QueryResult, Capture = ()> {
+    pub read: WorthQueryApplicationOneShotResult<Query, QueryResult>,
     pub capture: Capture,
     pub source_context:
         Option<crate::domain_computation::provider_session::WorthQueryQuerySourceContext>,
@@ -20,9 +15,7 @@ pub struct CompletedOneShotRead<
         crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
 }
 
-pub struct CompletedSourceParts<
-    Query,
-> {
+pub struct CompletedSourceParts<Query> {
     pub authorization:
         crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
     pub sources: Vec<super::super::super::WorthQueryObservedSource<Query>>,

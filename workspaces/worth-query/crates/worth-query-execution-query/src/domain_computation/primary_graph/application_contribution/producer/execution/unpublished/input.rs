@@ -4,10 +4,7 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationEncodedInput, ApplicationOwnedMutationIdentities,
 };
 
-pub fn prepare_input<
-    S,
-    B,
->(
+pub fn prepare_input<S, B>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     key: <Operation<S, B> as ApplicationMutationBinding<S>>::IdempotencyKey,
     input: <Operation<S, B> as ApplicationMutationBinding<S>>::Input,

@@ -13,8 +13,7 @@ use execution_preparation::{OutputPreparation, RunningOutputPreparation};
 pub mod schedule_progression;
 mod source_guard;
 pub use execution_completion::CompletionRefusal;
-pub
-enum ExecutionPreparation<'owner, Query, Value> {
+pub enum ExecutionPreparation<'owner, Query, Value> {
     Reached(OwnStages<Query, Value>),
     Planned(crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan<'owner, CheckpointProgress, CompletionRefusal>),
 }

@@ -16,9 +16,7 @@ impl WorthQueryOutputAvailabilityDenial {
         self.demand_stop().kind()
     }
 
-    pub fn demand_stop(
-        &self,
-    ) -> WorthQueryOutputDemandDenial {
+    pub fn demand_stop(&self) -> WorthQueryOutputDemandDenial {
         use Cause::*;
         let kind = match self.cause.as_ref() {
             Verification(stop) => {

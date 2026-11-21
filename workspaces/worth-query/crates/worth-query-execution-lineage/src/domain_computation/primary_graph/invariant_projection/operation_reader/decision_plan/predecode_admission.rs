@@ -12,13 +12,7 @@ where
     Schema: ApplicationSchema,
 {
     #[allow(clippy::type_complexity)]
-    pub fn decision_field_with_predecode_admission<
-        Entity,
-        Aspect,
-        Field,
-        Value,
-        Denied,
-    >(
+    pub fn decision_field_with_predecode_admission<Entity, Aspect, Field, Value, Denied>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         field: Field,

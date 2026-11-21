@@ -44,16 +44,11 @@ impl SourceReadSupport {
         })
     }
 
-    pub fn belongs_to_session(
-        &self,
-        session: WorthQueryGraphWorkSessionIdentity,
-    ) -> bool {
+    pub fn belongs_to_session(&self, session: WorthQueryGraphWorkSessionIdentity) -> bool {
         self.authorization.belongs_to_session(session)
     }
 
-    pub fn principal_facts(
-        &self,
-    ) -> &[WorthQueryApplicationObservedFact] {
+    pub fn principal_facts(&self) -> &[WorthQueryApplicationObservedFact] {
         &self.principal_facts
     }
 

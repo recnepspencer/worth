@@ -28,7 +28,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .as_ref()
                 .expect("new historical work retains its original source");
             self.application
-                .inner.runtime
+                .inner
+                .runtime
                 .product_runtime
                 .require_live_product_occurrence(
                     source.source.product_observation().lifecycle_incarnation(),

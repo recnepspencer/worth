@@ -27,9 +27,7 @@ impl RequiredWorkQueue {
     }
 
     /// Inactive native observers may outlive the last queued demand.
-    pub fn is_quiescent(
-        &self,
-    ) -> bool {
+    pub fn is_quiescent(&self) -> bool {
         self.state
             .lock()
             .is_ok_and(|state| state.head.is_none() && state.tail.is_none() && state.len == 0)

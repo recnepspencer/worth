@@ -10,32 +10,31 @@ pub use worth_query_execution_obligations::facade::aftermath::derivation_failure
 pub mod external_effect;
 pub mod retained_preimage;
 pub mod retained_relations;
-pub use retained_relations::{
-    WorthQueryRelationPreImageDenial, WorthQueryRelationPreImageFailure,
-    WorthQueryRetainedPreImageRelation,
-};
-pub use derivation_failure::WorthQueryAftermathDerivationFailure;
 pub use causal_fact::{
     WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
     WorthQueryCorrectionLineageBinding, WorthQueryRecordedCorrectionSource,
 };
+pub use derivation_failure::WorthQueryAftermathDerivationFailure;
 pub use external_effect::{
     bind_dispatch_outbox_create_intent, WorthQueryDispatchOutboxRestoredFields,
     WorthQueryPendingDispatchOutbox,
 };
 pub use external_effect::{
     derive_external_effect_correlation_identity, ExternalEffectCausalLink,
-    ExternalEffectCorrelationBasis,
-    ExternalEffectCorrelationIdentity, ExternalEffectNoEffectCause, ExternalEffectPostureIdentity,
-    ExternalEffectPostureKind, ExternalEffectProvenNoEffect, ExternalRailTransportFault,
-    WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord,
+    ExternalEffectCorrelationBasis, ExternalEffectCorrelationIdentity, ExternalEffectNoEffectCause,
+    ExternalEffectPostureIdentity, ExternalEffectPostureKind, ExternalEffectProvenNoEffect,
+    ExternalRailTransportFault, WorthQueryDispatchOutboxLayout, WorthQueryDispatchOutboxRecord,
     WorthQueryExternalDispatchCausalRelation, WorthQueryExternalDispatchPosture,
-    WorthQueryExternalDispatchPostureKind, WorthQueryExternalEffectCausalLadder,
-    WorthQueryExternalEffectDispatch, WorthQueryExternalDispatchRequest,
+    WorthQueryExternalDispatchPostureKind, WorthQueryExternalDispatchRequest,
+    WorthQueryExternalEffectCausalLadder, WorthQueryExternalEffectDispatch,
     WorthQueryExternalEffectTransport, WorthQueryExternalTransportOutcome,
 };
 pub use retained_preimage::{
     demanded_field_slot, WorthQueryPreImageRetentionDenial, WorthQueryRetainedPreImage,
+};
+pub use retained_relations::{
+    WorthQueryRelationPreImageDenial, WorthQueryRelationPreImageFailure,
+    WorthQueryRetainedPreImageRelation,
 };
 #[cfg(test)]
 mod retained_preimage_tests;

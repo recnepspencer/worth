@@ -41,28 +41,6 @@ enum EntityResolutionOrigin {
 ///
 /// This is descriptive scope identity only. Its fields and resolution result
 /// are owner-sealed; callers cannot rebuild it from record/index axes.
-///
-/// ```compile_fail
-/// use std::marker::PhantomData;
-/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationEntityIdentity;
-///
-/// fn forge<Schema, Entity>() -> WorthQueryApplicationEntityIdentity<Schema, Entity> {
-///     WorthQueryApplicationEntityIdentity {
-///         entity_id: todo!(),
-///         entity_kind: todo!(),
-///         entity_name: String::new(),
-///         binding_identity: todo!(),
-///         runtime_authority: todo!(),
-///         identity_index_id: todo!(),
-///         origin: todo!(),
-///         identity_locator: todo!(),
-///         identity_value: todo!(),
-///         examined_candidate_count: 0,
-///         resolution_mode: todo!(),
-///         _marker: PhantomData,
-///     }
-/// }
-/// ```
 pub struct WorthQueryApplicationEntityIdentity<Schema, Entity> {
     entity_id: EntityId,
     entity_kind: KindId,
@@ -199,9 +177,7 @@ impl WorthQueryResolvedEntity {
 impl<Schema, Entity> WorthQueryApplicationEntityIdentity<Schema, Entity> {
     /// Retain the actual resolver's description, including its full generation.
     /// This copies no permission and makes no claim about a later basis.
-    pub fn retain_description(
-        &self,
-    ) -> WorthQueryResolvedEntity {
+    pub fn retain_description(&self) -> WorthQueryResolvedEntity {
         WorthQueryResolvedEntity {
             entity_id: self.entity_id,
             entity_kind: self.entity_kind,

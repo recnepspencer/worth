@@ -1,7 +1,12 @@
-//! Compiler-visible access trait for the execution <-> publication seam.
+//! Compiler-visible concrete access token for the execution <-> publication seam.
 
-/// Marker trait implemented by `worth-query-execution`'s
-/// `WorthQueryProgramPublicationAccess` so lower crates can accept
-/// `&dyn WorthQueryProgramPublicationAccessPort` via unsize coercion without
-/// breaking inherent methods on `WorthQueryProgramPublicationAccess`.
-pub trait WorthQueryProgramPublicationAccessPort {}
+/// Compiler-visible access to program-output progression owned by the
+/// publication crate. The host facade intentionally does not re-export this
+/// type or its issuer.
+pub struct WorthQueryProgramPublicationAccess {
+    _private: (),
+}
+
+pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
+    WorthQueryProgramPublicationAccess { _private: () }
+}

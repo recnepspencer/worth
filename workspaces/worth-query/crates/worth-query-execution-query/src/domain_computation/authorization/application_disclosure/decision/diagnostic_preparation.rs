@@ -17,13 +17,7 @@ pub enum DiagnosticPreparationDenial {
     Governance(WorthQueryApplicationQueryGovernanceDenialKind),
 }
 
-pub fn prepare_application_diagnostic_governance<
-    Schema,
-    Query,
-    Parameters,
-    QueryResult,
-    Scope,
->(
+pub fn prepare_application_diagnostic_governance<Schema, Query, Parameters, QueryResult, Scope>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
     contract: WorthQueryAdmittedApplicationDisclosureContract,
     pending: WorthQueryPendingApplicationQueryGovernance,

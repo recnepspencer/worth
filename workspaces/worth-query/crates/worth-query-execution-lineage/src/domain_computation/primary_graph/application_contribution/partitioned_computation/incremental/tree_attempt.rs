@@ -41,10 +41,7 @@ impl<T, E> TreeAttempt<EditDisposition<T>, Denial<E>> {
 
 impl<T, E> TreeAttempt<T, E> {
     /// Preparation has not entered any tree operation yet.
-    pub fn unstarted(
-        beginning: super::tree_update::TreeBeginning,
-        outcome: Result<T, E>,
-    ) -> Self {
+    pub fn unstarted(beginning: super::tree_update::TreeBeginning, outcome: Result<T, E>) -> Self {
         Self {
             outcome,
             work: Metrics::from_native(if beginning.0 {
@@ -65,10 +62,7 @@ impl<T, E> TreeAttempt<T, E> {
         }
     }
 
-    pub fn and_then<U>(
-        self,
-        next: impl FnOnce(T) -> TreeAttempt<U, E>,
-    ) -> TreeAttempt<U, E> {
+    pub fn and_then<U>(self, next: impl FnOnce(T) -> TreeAttempt<U, E>) -> TreeAttempt<U, E> {
         match self.outcome {
             Ok(value) => {
                 let next = next(value);

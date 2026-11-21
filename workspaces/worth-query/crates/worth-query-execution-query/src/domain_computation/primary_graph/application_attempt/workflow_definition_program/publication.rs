@@ -2,10 +2,7 @@ pub use worth_query_execution_attempt::facade::domain_computation::primary_graph
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_installation::facade::ApplicationSchema;
 
-use super::super::{
-    WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationUncommitted,
-};
+use super::super::{WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationUncommitted};
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 /// Opaque, live application-attempt publication program.
@@ -15,11 +12,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn compare_and_commit_workflow_definition_publication<
-        Operation: 'static,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_workflow_definition_publication<Operation: 'static, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,

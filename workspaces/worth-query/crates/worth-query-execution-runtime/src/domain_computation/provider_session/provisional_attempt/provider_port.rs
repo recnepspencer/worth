@@ -212,10 +212,7 @@ impl WorthQueryProvisionalOverlayEvidence {
             && self.generation == generation
     }
 
-    pub fn matches_program(
-        &self,
-        program: &WorthQueryLoweredProvisionalEffectProgram,
-    ) -> bool {
+    pub fn matches_program(&self, program: &WorthQueryLoweredProvisionalEffectProgram) -> bool {
         let mut expected = BTreeMap::new();
         for step in program.steps() {
             let (identity, origin) = expected_proposed_fact(step.action());
@@ -274,9 +271,7 @@ pub struct WorthQueryProvisionalOverlayEvidenceView<'a> {
 }
 
 impl<'a> WorthQueryProvisionalOverlayEvidenceView<'a> {
-    pub const fn cleanup_binding(
-        self,
-    ) -> &'a WorthQueryProvisionalOverlayCleanupBinding {
+    pub const fn cleanup_binding(self) -> &'a WorthQueryProvisionalOverlayCleanupBinding {
         &self.evidence.cleanup
     }
 

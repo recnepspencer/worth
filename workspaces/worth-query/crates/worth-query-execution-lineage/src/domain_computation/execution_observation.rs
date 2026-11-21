@@ -1,9 +1,9 @@
 //! Owned observation lifetime for Query execution, independent of request authority.
 
+use worth_query_execution_contracts::facade::execution_observation::ExecutionObservationGuard;
 pub use worth_query_execution_contracts::facade::execution_observation::{
     is_installed, owned_control_scope, register_cleanup,
 };
-use worth_query_execution_contracts::facade::execution_observation::ExecutionObservationGuard;
 
 /// Records this thread's Query work while an owned listener exists.
 /// It grants no execution, publication or installation authority.

@@ -80,9 +80,7 @@ impl WorthQueryApplicationIdempotencyResolutionDenial {
         }
     }
 
-    pub fn from_authorization(
-        denial: WorthQueryOperationAuthorizationDenial,
-    ) -> Self {
+    pub fn from_authorization(denial: WorthQueryOperationAuthorizationDenial) -> Self {
         Self {
             kind: WorthQueryApplicationIdempotencyResolutionDenialKind::Authorization(
                 denial.kind(),

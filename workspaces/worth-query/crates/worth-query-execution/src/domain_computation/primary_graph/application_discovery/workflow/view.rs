@@ -1,7 +1,7 @@
 //! Governed data values. No view or historical actor grants command authority.
-use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::ReadOnlyWorkflowHistory;
 use crate::domain_computation::primary_graph::application_attempt::PublishedWorkflowInstanceRef;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::application_discovery::{
@@ -32,7 +32,12 @@ pub enum WorthQueryWorkflowInstanceRead {
 /// Owns the exact data basis even when no instance exists; carries no admission.
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_discovery::workflow::WorthQueryWorkflowReadBasis;
 pub(super) trait WorthQueryWorkflowReadBasisRuntimeExt {
-    fn retained<Schema: worth_query_installation::facade::ApplicationSchema>(selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<'_, Schema>) -> Self;
+    fn retained<Schema: worth_query_installation::facade::ApplicationSchema>(
+        selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
+    ) -> Self;
 }
 impl WorthQueryWorkflowReadBasisRuntimeExt for WorthQueryWorkflowReadBasis {
     fn retained<Schema: worth_query_installation::facade::ApplicationSchema>(

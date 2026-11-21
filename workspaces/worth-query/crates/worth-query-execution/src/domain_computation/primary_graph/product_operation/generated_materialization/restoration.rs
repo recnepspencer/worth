@@ -148,7 +148,8 @@ where
         &self,
         observation: worth_runtime_world::facade::ProductBranchObservation,
     ) -> WorthQueryProductPublicationBinding {
-        self.inner.runtime
+        self.inner
+            .runtime
             .product_runtime
             .publication_binding(observation)
     }
@@ -169,7 +170,8 @@ where
         crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
             effects,
             publication.recovery(),
-            self.inner.runtime
+            self.inner
+                .runtime
                 .primary_provider
                 .unpublished_idempotency_disposition(),
         )

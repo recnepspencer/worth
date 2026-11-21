@@ -4,11 +4,7 @@ use crate::domain_computation::primary_graph::application_query::managed_index::
 };
 use worth_execution::{ExecutionOrderedMap as Map, ExecutionRequest};
 
-pub fn lookup(
-    control: &Control<'_>,
-    count: usize,
-    key_bytes: usize,
-) -> Result<(), Stop> {
+pub fn lookup(control: &Control<'_>, count: usize, key_bytes: usize) -> Result<(), Stop> {
     let levels = usize::BITS
         - count
             .checked_add(1)

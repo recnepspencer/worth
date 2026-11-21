@@ -172,10 +172,10 @@ pub fn capture_applied(
         authorization: Arc::clone(observation.authorization()),
         result_set: None,
         maintained: None,
-        applied: Some(
-            Arc::clone(observation)
-                as Arc<dyn worth_query_execution_lineage::facade::ports::AppliedManagedSourcePort>,
-        ),
+        applied: Some(Arc::clone(observation)
+            as Arc<
+                dyn worth_query_execution_lineage::facade::ports::AppliedManagedSourcePort,
+            >),
         identity: digest.finalize().into(),
         fact_count: 2,
         field_count: 0,

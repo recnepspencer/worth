@@ -8,9 +8,7 @@ pub mod evaluation;
 pub mod value;
 pub use evaluation::evaluate_requirement;
 pub use evaluation::evaluate_requirements;
-pub use value::{
-    field_value, PreparedRequirementOperand,
-};
+pub use value::{field_value, PreparedRequirementOperand};
 
 fn expression_denial(
     cause: worth_foundational::expression_api::ExpressionDenial,

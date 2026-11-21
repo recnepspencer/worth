@@ -72,9 +72,7 @@ impl WorthQueryApplicationIdempotencyBinding {
     }
 
     /// Names `Binding` as the mutation this request runs.
-    pub fn bind_mutation<Schema, Binding>(
-        mut self,
-    ) -> Self
+    pub fn bind_mutation<Schema, Binding>(mut self) -> Self
     where
         Schema: ApplicationSchema,
         Binding: ApplicationMutationBinding<Schema>,

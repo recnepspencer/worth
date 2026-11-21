@@ -39,8 +39,7 @@ pub struct SourceImageView<'a> {
     pub rows: SourceImageRows<'a>,
     pub governance: &'a WorthQueryApplicationQueryGovernance,
     pub bindings: &'a WorthQueryInstalledApplicationValueBindingCatalog,
-    pub source_budget:
-        Option<&'a worth_relational::facade::runtime::CustomInvariantReadBudget<'a>>,
+    pub source_budget: Option<&'a worth_relational::facade::runtime::CustomInvariantReadBudget<'a>>,
 }
 
 /// Query-bound source rows borrowed during one controlled provider invocation.

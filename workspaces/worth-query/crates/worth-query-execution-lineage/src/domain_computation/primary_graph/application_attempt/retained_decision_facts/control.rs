@@ -30,9 +30,7 @@ impl<'scope, 'authority> StorageControl<'scope, 'authority> {
         self.execution = Some(execution);
         self
     }
-    pub fn execution(
-        self,
-    ) -> Option<worth_execution::ExecutionRequest<'scope, 'authority>> {
+    pub fn execution(self) -> Option<worth_execution::ExecutionRequest<'scope, 'authority>> {
         self.execution
     }
     pub fn policy(self) -> ExecutionAllocationPolicy<'scope, 'authority> {

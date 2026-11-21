@@ -1,4 +1,5 @@
 //! Original occurrence, installed association and target incarnation form one retry intent.
+mod canonical_identity;
 use super::WorthQueryCorrectionCommandKey;
 
 /// Immutable descriptive intent; this value grants no permission to publish.
@@ -10,16 +11,39 @@ pub struct WorthQueryCorrectionIntent {
 }
 
 impl WorthQueryCorrectionIntent {
-    pub fn from_parts(
-        _seal: crate::ports::WorthQueryQueryCrateSeal,
-        identity: [u8; 32],
-        command_key: WorthQueryCorrectionCommandKey,
-        replay_definition_identity: Option<[u8; 32]>,
+    pub fn derive_for_source(
+        bindings: [&str; 3],
+        occurrence: &worth_runtime_world::facade::CompositeCommitIdentity,
+        branch: &worth_runtime_world::facade::ProductBranchObservation,
+        original_intent: &[u8; 32],
+        command_key: &WorthQueryCorrectionCommandKey,
+        lineage: &crate::domain_computation::application_aftermath::WorthQueryCorrectionLineageBinding,
     ) -> Self {
+        use canonical_identity::{Coordinate, CorrectionIntentFields};
+        let owner = occurrence.owner_identity();
+        let lifecycle = branch.lifecycle_incarnation();
+        let target_owner = lifecycle.owner_identity();
+        let identity = canonical_identity::encode(CorrectionIntentFields {
+            bindings,
+            role: lineage.role(),
+            source_owner: canonical_identity::scope(owner.durable(), owner.get()),
+            source_commit: occurrence.ordinal(),
+            target_owner: canonical_identity::scope(target_owner.durable(), target_owner.get()),
+            target_branch: branch.branch_identity().name().as_str(),
+            target_lifecycle: lifecycle.ordinal(),
+            original_intent,
+            lineage: [
+                Some(lineage.root()),
+                lineage.selected_alternative(),
+                lineage.active_reversal(),
+                lineage.prior_transition(),
+            ]
+            .map(|coordinate| coordinate.map(Coordinate::from_source)),
+        });
         Self {
             identity,
-            command_key,
-            replay_definition_identity,
+            command_key: *command_key,
+            replay_definition_identity: None,
         }
     }
 

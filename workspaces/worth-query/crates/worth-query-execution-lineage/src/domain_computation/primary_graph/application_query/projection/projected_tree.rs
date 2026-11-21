@@ -21,9 +21,7 @@ pub use content_comparison::ProjectionContentComparisonFault;
 pub mod disclosure_boundary;
 pub mod field;
 pub mod owned_rows;
-pub use owned_rows::{
-    OwnedProjectionRows, ProjectionDisposal,
-};
+pub use owned_rows::{OwnedProjectionRows, ProjectionDisposal};
 
 pub use disclosure_boundary::{
     WorthQueryApplicationDisclosedProjectionNode, WorthQueryApplicationDisclosedProjectionTree,
@@ -78,16 +76,11 @@ impl WorthQueryApplicationProjectionNode {
         self.entity_id
     }
 
-    pub const fn incoming_relation(
-        &self,
-    ) -> Option<RelationId> {
+    pub const fn incoming_relation(&self) -> Option<RelationId> {
         self.incoming_relation
     }
 
-    pub fn attach_incoming_relation(
-        &mut self,
-        relation: RelationId,
-    ) -> bool {
+    pub fn attach_incoming_relation(&mut self, relation: RelationId) -> bool {
         if self.incoming_relation.is_some() {
             return false;
         }
@@ -95,21 +88,15 @@ impl WorthQueryApplicationProjectionNode {
         true
     }
 
-    pub fn result_path(
-        &self,
-    ) -> &str {
+    pub fn result_path(&self) -> &str {
         self.source_path.as_deref().unwrap_or("root")
     }
 
-    pub const fn source_dependencies_complete(
-        &self,
-    ) -> bool {
+    pub const fn source_dependencies_complete(&self) -> bool {
         self.source_dependencies_complete
     }
 
-    pub fn relations(
-        &self,
-    ) -> &[WorthQueryApplicationProjectedRelation] {
+    pub fn relations(&self) -> &[WorthQueryApplicationProjectedRelation] {
         &self.relations
     }
 
@@ -119,19 +106,13 @@ impl WorthQueryApplicationProjectionNode {
             .find(|field| field.slot_type.as_ref() == slot_type)
     }
 
-    pub fn relation(
-        &self,
-        slot_type: &str,
-    ) -> Option<&WorthQueryApplicationProjectedRelation> {
+    pub fn relation(&self, slot_type: &str) -> Option<&WorthQueryApplicationProjectedRelation> {
         self.relations
             .iter()
             .find(|relation| relation.slot_type.as_ref() == slot_type)
     }
 
-    pub fn insert_relation(
-        &mut self,
-        relation: WorthQueryApplicationProjectedRelation,
-    ) -> bool {
+    pub fn insert_relation(&mut self, relation: WorthQueryApplicationProjectedRelation) -> bool {
         if self
             .relations
             .iter()
@@ -144,9 +125,7 @@ impl WorthQueryApplicationProjectionNode {
         }
     }
 
-    pub fn owned_shallow_bytes(
-        &self,
-    ) -> usize {
+    pub fn owned_shallow_bytes(&self) -> usize {
         self.fields
             .iter()
             .fold(
@@ -210,33 +189,23 @@ impl WorthQueryApplicationProjectedRelation {
         }
     }
 
-    pub fn result_path(
-        &self,
-    ) -> &str {
+    pub fn result_path(&self) -> &str {
         &self.result_path
     }
 
-    pub fn slot_type(
-        &self,
-    ) -> &str {
+    pub fn slot_type(&self) -> &str {
         &self.slot_type
     }
 
-    pub fn slot_key(
-        &self,
-    ) -> &ApplicationQueryResultSlotKey {
+    pub fn slot_key(&self) -> &ApplicationQueryResultSlotKey {
         self.slot_key.as_ref()
     }
 
-    pub fn rows(
-        &self,
-    ) -> &[WorthQueryApplicationProjectionNode] {
+    pub fn rows(&self) -> &[WorthQueryApplicationProjectionNode] {
         &self.rows
     }
 
-    pub fn predicate_sources(
-        &self,
-    ) -> &[EntityId] {
+    pub fn predicate_sources(&self) -> &[EntityId] {
         &self.predicate_sources
     }
 
@@ -264,16 +233,7 @@ impl WorthQueryApplicationProjectedRelation {
             )
     }
 
-    pub fn matches<
-        Query,
-        Slot,
-        Schema,
-        Relation,
-        From,
-        To,
-        Direction,
-        Cardinality,
-    >(
+    pub fn matches<Query, Slot, Schema, Relation, From, To, Direction, Cardinality>(
         &self,
         selector: &ApplicationQueryResultRelationRef<
             Query,

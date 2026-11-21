@@ -32,9 +32,7 @@ impl WorthQueryAdmittedOperation {
         Ok(self)
     }
 
-    pub fn delegation_activation_binding(
-        &self,
-    ) -> Option<&WorthQueryDelegationActivationBinding> {
+    pub fn delegation_activation_binding(&self) -> Option<&WorthQueryDelegationActivationBinding> {
         match &self.data.authorization_basis {
             ErasedAuthorizationBasis::DelegationActivation { binding } => Some(binding),
             _ => None,

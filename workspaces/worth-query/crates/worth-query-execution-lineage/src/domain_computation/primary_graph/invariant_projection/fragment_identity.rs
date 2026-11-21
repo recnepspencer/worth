@@ -14,9 +14,7 @@ impl<S, E> WorthQueryInvariantEntityIdentity<S, E> {
             marker: PhantomData,
         }
     }
-    pub fn fragment_schema<Schema>(
-        &self,
-    ) -> WorthQueryInvariantEntityIdentity<Schema, ()> {
+    pub fn fragment_schema<Schema>(&self) -> WorthQueryInvariantEntityIdentity<Schema, ()> {
         WorthQueryInvariantEntityIdentity {
             entity_id: self.entity_id,
             kind: self.kind,
@@ -29,9 +27,7 @@ impl<S, E> WorthQueryInvariantEntityIdentity<S, E> {
 }
 
 impl<S, E> WorthQueryInvariantMutationTarget<S, E> {
-    pub fn fragment_schema<Schema>(
-        &self,
-    ) -> WorthQueryInvariantMutationTarget<Schema, ()> {
+    pub fn fragment_schema<Schema>(&self) -> WorthQueryInvariantMutationTarget<Schema, ()> {
         WorthQueryInvariantMutationTarget {
             entity_id: self.entity_id,
             entity: Arc::clone(&self.entity),

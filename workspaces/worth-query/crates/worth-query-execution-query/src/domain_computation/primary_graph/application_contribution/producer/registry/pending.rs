@@ -1,7 +1,7 @@
-use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
 use super::super::WorthQueryProducerDenialDeclaration;
 use super::pending_factory::{PendingProducerExecutor, TypedPendingProducer};
 use super::*;
+use crate::domain_computation::primary_graph::InstalledProducerEditionExt;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 
 pub struct PendingProducerRegistry<Schema> {
@@ -22,9 +22,7 @@ impl<Schema> PendingProducerRegistry<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn new(
-        declared: BTreeMap<String, DeclaredProducerBinding>,
-    ) -> Self {
+    pub fn new(declared: BTreeMap<String, DeclaredProducerBinding>) -> Self {
         Self {
             declared,
             retaining: std::collections::HashSet::new(),
@@ -55,11 +53,7 @@ where
     /// computation is being installed; when one does, that producer's runs
     /// retain the computation's state. Every producer is declared before any
     /// contribution installs, so the answer is final.
-    pub fn retain_computation_of<
-        Operation: 'static,
-    >(
-        &mut self,
-    ) -> bool {
+    pub fn retain_computation_of<Operation: 'static>(&mut self) -> bool {
         let operation = TypeId::of::<Operation>();
         let runs = self
             .declared
@@ -71,9 +65,7 @@ where
         runs
     }
 
-    pub fn register<
-        Binding,
-    >(
+    pub fn register<Binding>(
         &mut self,
         owner: &str,
         provider: Binding::Provider,
@@ -246,9 +238,7 @@ where
         })
     }
 
-    pub fn validate_complete(
-        &self,
-    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    pub fn validate_complete(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         if let Some(identity) = self
             .declared
             .keys()

@@ -12,9 +12,7 @@ where
 {
     /// Each output family's operation bindings, with the output role each
     /// binding's producer reads as the family's current output.
-    pub fn output_family_bindings(
-        &self,
-    ) -> BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>> {
+    pub fn output_family_bindings(&self) -> BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>> {
         declared_output_family_bindings(self.entries.values().map(|entry| &entry.declaration))
     }
 }

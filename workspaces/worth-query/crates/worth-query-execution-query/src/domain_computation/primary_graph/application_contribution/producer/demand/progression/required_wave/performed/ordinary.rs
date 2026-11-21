@@ -39,9 +39,7 @@ impl<Schema: ApplicationSchema + 'static> DecisionInput<'_, '_, '_, Schema> {
 impl PerformedMembers {
     /// Capture the accepted input of an ordinary publication before its caller
     /// can refresh the Ready. A nested required resume shares this same record.
-    pub fn capture_ordinary<
-        Schema: ApplicationSchema + 'static,
-    >(
+    pub fn capture_ordinary<Schema: ApplicationSchema + 'static>(
         &mut self,
         key: &WorthQueryOutputDemandKey,
         completion: &crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion,
@@ -70,9 +68,7 @@ impl PerformedMembers {
         Ok(())
     }
 
-    pub fn ordinary<
-        Schema: ApplicationSchema + 'static,
-    >(
+    pub fn ordinary<Schema: ApplicationSchema + 'static>(
         &mut self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         key: &WorthQueryOutputDemandKey,

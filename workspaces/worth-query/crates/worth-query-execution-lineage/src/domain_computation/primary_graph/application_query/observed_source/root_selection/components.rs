@@ -5,8 +5,7 @@ use std::sync::Arc;
 use worth_query_declaration::facade::application_query::ApplicationQueryComponentMeaning;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct DeclaredComponentSelection
-{
+pub struct DeclaredComponentSelection {
     pub meaning: Arc<ApplicationQueryComponentMeaning>,
     pub body: Arc<ComponentSelection>,
     pub binding: ApplicationSchemaBindingIdentity,
@@ -20,10 +19,7 @@ impl DeclaredComponentSelection {
         });
         digest.update(self.body.commitment());
     }
-    pub fn matches_rows(
-        &self,
-        rows: impl IntoIterator<Item = EntityId>,
-    ) -> bool {
+    pub fn matches_rows(&self, rows: impl IntoIterator<Item = EntityId>) -> bool {
         let Some(aggregates) = self.body.physical_aggregates() else {
             return false;
         };

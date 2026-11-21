@@ -65,21 +65,15 @@ impl CoveredSourcePublication<'_> {
         &self.publication
     }
 
-    pub fn primary_aliases(
-        &self,
-    ) -> &[(SemanticSource, [u8; 32])] {
+    pub fn primary_aliases(&self) -> &[(SemanticSource, [u8; 32])] {
         &self.aliases[..self.primary_alias_count]
     }
 
-    pub fn take_candidate(
-        &mut self,
-    ) -> Option<WorthQueryCurrentOutputCandidate> {
+    pub fn take_candidate(&mut self) -> Option<WorthQueryCurrentOutputCandidate> {
         self.candidate.take()
     }
 
-    pub fn aliases(
-        &self,
-    ) -> &[(SemanticSource, [u8; 32])] {
+    pub fn aliases(&self) -> &[(SemanticSource, [u8; 32])] {
         &self.aliases
     }
 }
@@ -87,9 +81,7 @@ impl CoveredSourcePublication<'_> {
 impl WorthQueryApplicationOutputLineage {
     /// Native checkpoint owners call this before restoring a row. No stored
     /// omission can reset a completed source to AwaitingFirst.
-    pub fn invalidate_source_publication_coverage(
-        &mut self,
-    ) {
+    pub fn invalidate_source_publication_coverage(&mut self) {
         self.source_publication_coverage.invalidate();
     }
 

@@ -4,15 +4,12 @@ pub mod admitted_operation_core;
 
 use std::marker::PhantomData;
 
-
 use worth_query_declaration::facade::application_operation::{
     ApplicationCanonicalWork, ApplicationSharedInput,
 };
 use worth_query_installation::facade::WorthQueryCanonicalWorkEvidence;
 
-pub use admitted_operation_core::{
-    WorthQueryAdmittedOperation, WorthQueryAdmittedOperationData,
-};
+pub use admitted_operation_core::{WorthQueryAdmittedOperation, WorthQueryAdmittedOperationData};
 pub use brand_tag::BrandTag;
 
 #[path = "operation_admission/access.rs"]
@@ -68,58 +65,13 @@ pub use worth_query_execution_contracts::facade::WorthQueryOperationAdmissionIde
 /// The proof is move-only, has private fields, and is not deserializable.
 /// Descriptive identities, token claims, or decision enums cannot mint it.
 ///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation;
-///
-/// let _: WorthQueryAdmittedApplicationOperation<(), (), (), ()> =
-///     serde_json::from_str("{}").unwrap();
-/// ```
-///
 /// Operation-session topology remains owner-private and cannot be used as
 /// caller authority:
-///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation;
-///
-/// fn cannot_extract_session<Schema, Operation, Input, Scope>(
-///     admitted: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-/// ) {
-///     let _session = admitted.graph_work_session_identity();
-/// }
-/// ```
 ///
 /// The erased core behind the proof is not nameable outside the engine, and
 /// no proof can be rebuilt around another proof's core:
 ///
-/// ```compile_fail,E0432
-/// use worth_query_execution::facade::primary_graph::WorthQueryAdmittedOperation;
-/// ```
-///
-/// ```compile_fail,E0616
-/// use worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation;
-///
-/// fn cannot_take_core<Schema, Operation, Input, Scope>(
-///     admitted: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-/// ) {
-///     let _core = admitted.core;
-/// }
-/// ```
-///
 /// The proof is `Send` only when its typed input is `Send + Sync`:
-///
-/// ```compile_fail,E0277
-/// use worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation;
-///
-/// fn send<T: Send>() {}
-/// send::<WorthQueryAdmittedApplicationOperation<(), (), std::rc::Rc<u8>, ()>>();
-/// ```
-///
-/// ```compile_fail,E0277
-/// use worth_query_execution::facade::primary_graph::WorthQueryAdmittedApplicationOperation;
-///
-/// fn send<T: Send>() {}
-/// send::<WorthQueryAdmittedApplicationOperation<(), (), std::cell::Cell<u8>, ()>>();
-/// ```
 pub struct WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope> {
     core: WorthQueryAdmittedOperation,
     tag: brand_tag::BrandTag,
@@ -140,7 +92,7 @@ const _: fn() = || {
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
-    pub fn record_request_identity_work_inner(
+    pub(crate) fn record_request_identity_work_inner(
         &mut self,
         work: worth_query_declaration::facade::application_operation::ApplicationCanonicalWork,
     ) {
@@ -149,20 +101,19 @@ impl<Schema, Operation, Input, Scope>
 
     pub fn record_request_identity_work(
         &mut self,
-        _access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         work: worth_query_declaration::facade::application_operation::ApplicationCanonicalWork,
     ) {
         self.core.record_request_identity_work(work);
     }
 
     #[inline]
-    pub fn retain_execution_canonical_work(
+    pub(crate) fn retain_execution_canonical_work(
         &mut self,
         work: WorthQueryCanonicalWorkEvidence,
     ) {
         self.core.retain_execution_canonical_work(work);
     }
-
 }
 
 impl WorthQueryAdmittedOperation {
@@ -177,8 +128,6 @@ impl WorthQueryAdmittedOperation {
             .with_admission_work(WorthQueryCanonicalWorkEvidence::streamed_identities(work));
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {

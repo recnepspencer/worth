@@ -174,7 +174,11 @@ impl WorthQueryRegisteredCommitAuthorization {
     where
         Schema: worth_query_installation::facade::ApplicationSchema,
     {
-        self.authorization()
-            .authorize_application_commit(execution, application, admission, serialization)
+        self.authorization().authorize_application_commit(
+            execution,
+            application,
+            admission,
+            serialization,
+        )
     }
 }

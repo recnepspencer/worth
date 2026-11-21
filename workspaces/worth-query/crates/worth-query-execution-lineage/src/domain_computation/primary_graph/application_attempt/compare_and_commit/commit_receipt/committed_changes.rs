@@ -32,10 +32,7 @@ impl WorthQueryApplicationCommittedChanges {
         self.envelope.semantic_result() == recorded.semantic()
     }
 
-    pub fn shares_original(
-        &self,
-        other: &Self,
-    ) -> bool {
+    pub fn shares_original(&self, other: &Self) -> bool {
         std::ptr::eq(self.envelope.as_ref(), other.envelope.as_ref())
     }
 

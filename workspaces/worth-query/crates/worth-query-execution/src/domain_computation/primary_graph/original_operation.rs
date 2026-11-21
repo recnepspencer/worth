@@ -25,7 +25,7 @@ impl<S: ApplicationSchema, P> WorthQueryProgramApplicationRuntime<S, P> {
     pub fn retain_original_operation_in_advancement(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        _: &WorthQueryProgramPublicationAccess,
+        access: &WorthQueryProgramPublicationAccess,
         data: QueryOriginalOperationData,
     ) -> Result<
         (
@@ -48,15 +48,10 @@ impl<S: ApplicationSchema, P> WorthQueryProgramApplicationRuntime<S, P> {
             .retain_original_operation(&request, data)
             .map_err(D::Obligation)?;
         Ok((
-            WorthQueryOriginalOperationOwner::from_parts(
-                worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
+            WorthQueryOriginalOperationOwner::from_retained_obligation(
+                access,
+                &self.runtime().inner,
                 identity,
-                self.runtime()
-                    .inner
-                    .runtime
-                    .product_runtime
-                    .owner
-                    .owner_identity(),
             ),
             pending,
         ))
@@ -65,7 +60,7 @@ impl<S: ApplicationSchema, P> WorthQueryProgramApplicationRuntime<S, P> {
     pub fn readmit_original_operation_in_advancement(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
-        _: &WorthQueryProgramPublicationAccess,
+        access: &WorthQueryProgramPublicationAccess,
         identity: ProgramSupportObligationIdentity,
     ) -> Result<
         (
@@ -92,15 +87,10 @@ impl<S: ApplicationSchema, P> WorthQueryProgramApplicationRuntime<S, P> {
             return Err(D::OwnershipMaterialUnavailable);
         }
         Ok((
-            WorthQueryOriginalOperationOwner::from_parts(
-                worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
+            WorthQueryOriginalOperationOwner::from_retained_obligation(
+                access,
+                &self.runtime().inner,
                 identity,
-                self.runtime()
-                    .inner
-                    .runtime
-                    .product_runtime
-                    .owner
-                    .owner_identity(),
             ),
             row,
         ))

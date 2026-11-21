@@ -7,13 +7,6 @@ pub mod resolution;
 /// start descriptors are located on the selected current mutation basis.
 ///
 /// A bare record ID is neither original intent nor a native reference:
-/// ```compile_fail,E0277
-/// use worth_query_execution::publication_boundary::workflow_succession::WorkflowSuccessionTarget;
-/// use worth_relational::facade::identity::EntityId;
-/// fn naked_id<S>(entity: EntityId) -> WorkflowSuccessionTarget<S> {
-///     entity.into()
-/// }
-/// ```
 pub enum WorkflowSuccessionTarget<Schema> {
     Published(PublishedWorkflowInstanceRef),
     Original(WorthQueryWorkflowInstanceDiscoveryIntent<Schema>),

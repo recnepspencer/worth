@@ -61,11 +61,7 @@ impl WorthQueryCompleteDecisionReadSetReceipt {
     }
 
     pub fn fact_count(&self) -> usize {
-        self.evidence.len()
-            + self
-                .primary
-                .as_ref()
-                .map_or(0, |read| read.grouped_count())
+        self.evidence.len() + self.primary.as_ref().map_or(0, |read| read.grouped_count())
     }
 
     pub fn counters(&self) -> WorthQueryDecisionReadSetCounters {

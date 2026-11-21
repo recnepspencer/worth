@@ -6,10 +6,7 @@ use crate::domain_computation::primary_graph::application_query::{
     projection::ContentWriter,
 };
 impl Entry {
-    pub fn content(
-        &self,
-        control: &Control<'_>,
-    ) -> Result<[u8; 32], Stop> {
+    pub fn content(&self, control: &Control<'_>) -> Result<[u8; 32], Stop> {
         control.checkpoint(1)?;
         if let Some(value) = self.content.get() {
             return Ok(*value);
@@ -68,9 +65,7 @@ impl Entry {
 impl Entry {
     /// The caller supplies the original paid comparison checkpoint. A cached
     /// commitment can reject a candidate, but can never establish equality.
-    pub fn same_content<
-        E,
-    >(
+    pub fn same_content<E>(
         &self,
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,
@@ -91,9 +86,7 @@ impl Entry {
     /// The same row and facts under any receiving scope, which is what a
     /// Source rule observes of it: an entry inherited from a predecessor names
     /// that predecessor's scope, yet is unchanged when its row and facts are.
-    pub fn same_facts<
-        E,
-    >(
+    pub fn same_facts<E>(
         &self,
         other: &Self,
         admit: &mut impl FnMut(u64) -> Result<(), E>,

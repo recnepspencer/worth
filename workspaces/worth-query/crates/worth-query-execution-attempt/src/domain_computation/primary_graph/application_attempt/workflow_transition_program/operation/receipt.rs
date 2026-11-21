@@ -2,8 +2,7 @@ use sha2::{Digest, Sha256};
 
 use super::*;
 
-pub struct ValidatedWorkflowOperationReceipt<'receipt>
-{
+pub struct ValidatedWorkflowOperationReceipt<'receipt> {
     pub receipt: &'receipt WorthQueryApplicationCommitReceipt,
     pub identity: [u8; 32],
 }
@@ -13,9 +12,7 @@ impl ValidatedWorkflowOperationReceipt<'_> {
     ) -> &crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence {
         self.receipt.output_correspondence()
     }
-    pub fn principal(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub fn principal(&self) -> worth_relational::facade::identity::EntityId {
         let principal = self.receipt.principal_scope().principal();
         worth_relational::facade::identity::EntityId::new(
             worth_relational::facade::identity::PartitionId::new(principal.partition_id()),
@@ -23,13 +20,10 @@ impl ValidatedWorkflowOperationReceipt<'_> {
             principal.generation(),
         )
     }
-    pub fn identity(
-        &self,
-    ) -> [u8; 32] {
+    pub fn identity(&self) -> [u8; 32] {
         self.identity
     }
 }
-
 
 pub fn operation_receipt_requires_recovery(receipt: &WorthQueryApplicationCommitReceipt) -> bool {
     receipt.dispatch_outbox().is_some()

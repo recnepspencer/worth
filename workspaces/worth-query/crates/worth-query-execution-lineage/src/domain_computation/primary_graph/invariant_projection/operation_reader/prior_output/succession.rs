@@ -19,12 +19,7 @@ impl std::error::Error for PriorPublicationSelectionStop {}
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn prior_output_preserved_or_created<
-        Preserve,
-        Preserved,
-        Create,
-        Created,
-    >(
+    pub fn prior_output_preserved_or_created<Preserve, Preserved, Create, Created>(
         &mut self,
     ) -> Result<WorthQueryInvariantEntityIdentity<Schema, Preserved::Entity>, HandlerExecutionDenial>
     where

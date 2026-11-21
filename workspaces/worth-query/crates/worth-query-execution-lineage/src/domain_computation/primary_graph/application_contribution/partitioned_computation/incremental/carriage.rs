@@ -57,9 +57,7 @@ impl ComputationPrior {
         changes.for_snapshot(runtime, snapshot)
     }
     /// The record the state was selected from.
-    pub fn into_record(
-        self,
-    ) -> Option<PriorComputationRecord> {
+    pub fn into_record(self) -> Option<PriorComputationRecord> {
         self.record
     }
 }

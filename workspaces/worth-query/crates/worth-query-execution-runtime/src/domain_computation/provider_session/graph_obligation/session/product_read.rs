@@ -13,9 +13,7 @@ pub(super) struct ProductReadBasis {
 
 pub(super) enum ProductReadIntent {
     Query,
-    Inspection(std::sync::Arc<
-        dyn crate::ports::InspectionTargetPort,
-    >),
+    Inspection(std::sync::Arc<dyn crate::ports::InspectionTargetPort>),
     Resource(std::sync::Arc<WorthQueryInstalledResourceAccessContract>),
 }
 
@@ -26,8 +24,7 @@ pub struct WorthQueryPreparedProductReadSessionIdentity {
 }
 
 impl WorthQueryPreparedProductReadSessionIdentity {
-    pub fn reserve(
-    ) -> Result<Self, WorthQueryManagedGraphWorkSessionStartDenial> {
+    pub fn reserve() -> Result<Self, WorthQueryManagedGraphWorkSessionStartDenial> {
         Ok(Self {
             identity: WorthQueryGraphWorkSessionIdentity::mint()
                 .ok_or(WorthQueryManagedGraphWorkSessionStartDenial::IdentityExhausted)?,
@@ -44,9 +41,7 @@ impl WorthQueryPreparedProductReadSessionIdentity {
     ) {
         (self.identity, self.managed_run)
     }
-    pub const fn identity(
-        &self,
-    ) -> WorthQueryGraphWorkSessionIdentity {
+    pub const fn identity(&self) -> WorthQueryGraphWorkSessionIdentity {
         self.identity
     }
 }

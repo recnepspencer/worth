@@ -13,16 +13,13 @@ pub use visit::QueuedClosedRow;
 pub struct ClosedCleanupLinks(Arc<ClosedNoteBacking>);
 pub struct ClosedNoteBacking {
     pub claim_owner: super::super::claim_readthrough::OwnerState,
-    pub claimants:
-        std::sync::Mutex<super::super::claim_readthrough::IncomingClaims>,
+    pub claimants: std::sync::Mutex<super::super::claim_readthrough::IncomingClaims>,
     key: std::sync::Mutex<Option<ClosedNoteKey>>,
     closed_note: std::sync::Mutex<ClosedNoteLinks>,
     order: Mutex<Weak<Mutex<ClosedOrder>>>,
 }
 impl ClosedCleanupLinks {
-    pub fn new(
-        key: Arc<super::super::required_work::RequiredWorkMembership>,
-    ) -> Self {
+    pub fn new(key: Arc<super::super::required_work::RequiredWorkMembership>) -> Self {
         Self(Arc::new(ClosedNoteBacking {
             claim_owner: Default::default(),
             claimants: Default::default(),
@@ -242,10 +239,7 @@ impl DemandRegistryState {
         drop(member);
         Some(row)
     }
-    pub fn take_closed_note(
-        &mut self,
-        note: QueuedClosedRow,
-    ) -> ClosedRowNote<'_> {
+    pub fn take_closed_note(&mut self, note: QueuedClosedRow) -> ClosedRowNote<'_> {
         let node = note.into_node();
         self.closed_cleanup.unlink(&node);
         node.closed_note.lock().unwrap().visiting = true;

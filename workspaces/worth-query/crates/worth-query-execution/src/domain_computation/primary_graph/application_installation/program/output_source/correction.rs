@@ -59,7 +59,8 @@ where
     {
         if let Err(cause) = source.admit_receiver(
             self.runtime()
-                .inner.runtime
+                .inner
+                .runtime
                 .product_runtime
                 .owner
                 .owner_identity(),
@@ -106,7 +107,8 @@ where
     {
         if let Err(cause) = source.admit_receiver(
             self.runtime()
-                .inner.runtime
+                .inner
+                .runtime
                 .product_runtime
                 .owner
                 .owner_identity(),

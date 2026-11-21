@@ -50,9 +50,7 @@ impl WorthQueryApplicationOutputLineage {
         })
     }
 
-    pub fn has_output_at_or_before<
-        Binding: 'static,
-    >(
+    pub fn has_output_at_or_before<Binding: 'static>(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
         generation: u64,

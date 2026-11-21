@@ -132,9 +132,7 @@ pub fn observe_actor_fields(
 
 /// One decoder for current native records and passive corruption inspection.
 /// All absent is the typed not-yet state; a partial triplet is corrupt.
-pub fn decode_actor_components(
-    components: [Option<u64>; 3],
-) -> Result<Option<EntityId>, ()> {
+pub fn decode_actor_components(components: [Option<u64>; 3]) -> Result<Option<EntityId>, ()> {
     match components {
         [None, None, None] => Ok(None),
         [Some(partition), Some(slot), Some(generation)] => Ok(Some(EntityId::new(

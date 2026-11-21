@@ -3,9 +3,7 @@
 use super::*;
 
 impl SelectedReadyReadmission {
-    pub fn retain(
-        &self,
-    ) -> Result<Self, WorthQueryOutputDemandDenial> {
+    pub fn retain(&self) -> Result<Self, WorthQueryOutputDemandDenial> {
         Ok(Self {
             completion: self.completion.clone(),
             readmission: Arc::clone(&self.readmission),
@@ -20,10 +18,7 @@ impl SelectedReadyReadmission {
 
     /// Authenticate the exact pinned Ready, source and membership against the
     /// row selected under the registry guard. No receipt traversal is needed.
-    pub fn matches_ready_record(
-        &self,
-        record: &super::super::super::DemandRecord,
-    ) -> bool {
+    pub fn matches_ready_record(&self, record: &super::super::super::DemandRecord) -> bool {
         record
             .work_membership
             .as_ref()
@@ -43,10 +38,7 @@ impl SelectedReadyReadmission {
     /// Conservative physical-row cycle check for a pending prerequisite walk.
     /// A reopened Ready row may retain this token; reporting a repeat only
     /// defers the walk and never certifies a settlement as current.
-    pub fn same_record(
-        &self,
-        other: &Self,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+    pub fn same_record(&self, other: &Self) -> Result<bool, WorthQueryOutputDemandDenial> {
         Ok(Arc::ptr_eq(&self.membership, &other.membership))
     }
 
@@ -63,9 +55,7 @@ impl SelectedReadyReadmission {
         &self.completion
     }
 
-    pub fn source(
-        &self,
-    ) -> &(dyn std::any::Any + Send + Sync) {
+    pub fn source(&self) -> &(dyn std::any::Any + Send + Sync) {
         self.readmission.source.as_ref()
     }
 
@@ -88,10 +78,7 @@ impl SelectedReadyReadmission {
 
     /// A physical row may be reopened with another Ready cell. Member
     /// identity alone cannot authorize moving its successor into the caller.
-    pub fn same_ready_cell(
-        &self,
-        other: &Self,
-    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+    pub fn same_ready_cell(&self, other: &Self) -> Result<bool, WorthQueryOutputDemandDenial> {
         Ok(Arc::ptr_eq(&self.membership, &other.membership)
             && Arc::ptr_eq(&self.readmission, &other.readmission)
             && self.completion.same_cell(&other.completion))

@@ -21,9 +21,7 @@ impl WorthQueryDirectRunTerminalAffinity {
         }
     }
 
-    pub fn custody(
-        &self,
-    ) -> Option<Arc<super::super::durable_custody::ManagedRunCustody>> {
+    pub fn custody(&self) -> Option<Arc<super::super::durable_custody::ManagedRunCustody>> {
         self.custody.clone()
     }
 
@@ -35,9 +33,7 @@ impl WorthQueryDirectRunTerminalAffinity {
         self.attempt.attempt_identity().as_str()
     }
 
-    pub fn terminal_descriptions(
-        &self,
-    ) -> (Arc<str>, Arc<str>) {
+    pub fn terminal_descriptions(&self) -> (Arc<str>, Arc<str>) {
         (
             Arc::clone(&self.logical),
             Arc::from(self.attempt.attempt_identity().as_str()),

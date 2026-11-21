@@ -229,11 +229,7 @@ impl WorthQueryArtifactNativeAccessAdmission<'_> {
         &mut self.counters
     }
 
-    pub fn denial(
-        &self,
-        kind: Kind,
-        detail: &'static str,
-    ) -> WorthQueryArtifactNativeAccessDenial {
+    pub fn denial(&self, kind: Kind, detail: &'static str) -> WorthQueryArtifactNativeAccessDenial {
         WorthQueryArtifactNativeAccessDenial::new(
             kind,
             Some(self.owner.binding().contract.contract().family().as_str()),

@@ -128,10 +128,7 @@ impl CoupledOutputCompletion {
     pub fn source(&self) -> &AppliedSourcePublication {
         &self.source
     }
-    pub fn complete(
-        &self,
-        receipt: WorthQueryApplicationLandedCommit,
-    ) {
+    pub fn complete(&self, receipt: WorthQueryApplicationLandedCommit) {
         assert!(
             self.receipt[0].receipt.set(receipt).is_ok(),
             "one actual managed completion for the coupled writer"
@@ -161,9 +158,7 @@ impl input_cutoff::RetainedInputCutoffCandidate {
 }
 
 impl current_output::retained_candidates::WorthQueryRetainedOutputCandidate {
-    pub fn completed_coupled_receipt_for_source<
-        Query,
-    >(
+    pub fn completed_coupled_receipt_for_source<Query>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &application_query::WorthQueryObservedSource<Query>,

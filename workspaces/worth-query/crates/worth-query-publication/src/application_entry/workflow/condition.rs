@@ -1,4 +1,3 @@
-use worth_query_execution::publication_boundary::WorthQueryAdvancementDenialCommitExt as _;
 use worth_query_declaration::facade::{
     application_program::{ApplicationExpressionOperandValue, ApplicationWorkflowSpec},
     application_query::{ApplicationQueryBinding, ApplicationQueryMarkerIdentity},
@@ -8,6 +7,7 @@ use worth_query_execution::publication_boundary::workflow_advance::{
     PreparedWorkflowAdvance, RequiredWorkflowCondition, WorkflowProgressOutcome,
     WorthQueryWorkflowAdvanceAdapter, WorthQueryWorkflowConditionSources,
 };
+use worth_query_execution::publication_boundary::WorthQueryAdvancementDenialCommitExt as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::progress::{

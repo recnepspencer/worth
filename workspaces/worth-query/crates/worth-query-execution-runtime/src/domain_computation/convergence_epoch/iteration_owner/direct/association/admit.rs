@@ -140,9 +140,7 @@ impl DirectAdmissionLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> DirectAdmissionLifecycleEventKind {
+    pub fn into_kind(self) -> DirectAdmissionLifecycleEventKind {
         self.kind
     }
 }

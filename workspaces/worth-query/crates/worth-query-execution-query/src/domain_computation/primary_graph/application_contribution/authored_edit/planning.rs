@@ -1,4 +1,5 @@
 //! One-use typed candidates retained before the independent authored prefix.
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use super::capture::TypedStage;
 use super::*;
 use crate::domain_computation::primary_graph::{WorthQueryCompletedMutationCandidate, WorthQueryMutationHandlerWork};
@@ -175,7 +176,7 @@ where
 impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
     pub fn prepare_prefix_candidate<B: ApplicationMutationBinding<S>>(
         &self,
-        _access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,
         application: &dyn crate::ports::ApplicationRuntimeRef<S>,
         unseen: &UnseenAuthoredEnvelope<'_>,

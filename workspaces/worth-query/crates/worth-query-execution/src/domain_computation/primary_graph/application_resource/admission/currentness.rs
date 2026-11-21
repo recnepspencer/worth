@@ -48,7 +48,8 @@ impl<Schema: ApplicationSchema, Scope> ResourceActionRead<'_, Schema, Scope> {
             .map_err(ResourceAdmissionDenial::Security)?;
         let graph = self
             .runtime
-            .inner.runtime
+            .inner
+            .runtime
             .primary_graph()
             .ok_or(ResourceAdmissionDenial::MissingGraph)?;
         let resolution = graph.retain_entity_resolution_context();

@@ -32,8 +32,7 @@ pub enum WorthQueryManagedIndexSessionDenial {
 }
 
 /// No Native read port: the borrowed Parent retains its own Product loan.
-pub struct WorthQueryManagedIndexReadSession<'a, 'request, 'authority>
-{
+pub struct WorthQueryManagedIndexReadSession<'a, 'request, 'authority> {
     execution: worth_execution::ExecutionRequest<'request, 'authority>,
     parent: &'a WorthQueryManagedGraphWorkSession,
     product: &'a WorthQueryProductRuntime,
@@ -51,11 +50,7 @@ pub struct WorthQueryManagedIndexCallbackProof {
 }
 
 /// Callback completion only; the root owner must still bind epoch and slots.
-pub struct WorthQueryManagedIndexSelectionProof<
-    'a,
-    'request,
-    'authority,
-> {
+pub struct WorthQueryManagedIndexSelectionProof<'a, 'request, 'authority> {
     execution: worth_execution::ExecutionRequest<'request, 'authority>,
     parent: &'a WorthQueryManagedGraphWorkSession,
     request: &'a WorthQueryRequestScope,
@@ -224,14 +219,10 @@ impl<'a, 'request, 'authority> WorthQueryManagedIndexReadSession<'a, 'request, '
     }
 }
 impl<'request, 'authority> WorthQueryManagedIndexSelectionProof<'_, 'request, 'authority> {
-    pub fn execution(
-        &self,
-    ) -> worth_execution::ExecutionRequest<'request, 'authority> {
+    pub fn execution(&self) -> worth_execution::ExecutionRequest<'request, 'authority> {
         self.execution
     }
-    pub fn consult(
-        &self,
-    ) -> Result<(), WorthQueryManagedIndexSessionDenial> {
+    pub fn consult(&self) -> Result<(), WorthQueryManagedIndexSessionDenial> {
         self.execution
             .consult()
             .map_err(WorthQueryManagedIndexSessionDenial::Request)?;

@@ -7,18 +7,13 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 
 /// Owns the admitted source until the selected executor borrows it. Its edition
 /// is issued once from the final demand, independently of source-admission provenance.
-pub struct PreparedProducerInput<
-    Query,
-    Value,
-> {
+pub struct PreparedProducerInput<Query, Value> {
     edition: InstalledProducerEdition,
     disclosure: ValidatedOutputDisclosure<Query, Value>,
 }
 
 /// Borrowed, single-consumption transport inspected before runtime erasure opens.
-pub struct ValidatedProducerInput<
-    'a,
-> {
+pub struct ValidatedProducerInput<'a> {
     edition: InstalledProducerEdition,
     proof: &'a mut dyn Any,
 }
@@ -75,9 +70,7 @@ where
 }
 
 impl<Query: 'static, Value: 'static> PreparedProducerInput<Query, Value> {
-    pub fn with_erased<
-        Result,
-    >(
+    pub fn with_erased<Result>(
         self,
         execute: impl FnOnce(ValidatedProducerInput<'_>) -> Result,
     ) -> Result {
@@ -90,10 +83,7 @@ impl<Query: 'static, Value: 'static> PreparedProducerInput<Query, Value> {
 }
 
 impl ValidatedProducerInput<'_> {
-    pub fn take<
-        Query: 'static,
-        Value: 'static,
-    >(
+    pub fn take<Query: 'static, Value: 'static>(
         self,
         installed: InstalledProducerEdition,
     ) -> Option<ValidatedOutputDisclosure<Query, Value>> {

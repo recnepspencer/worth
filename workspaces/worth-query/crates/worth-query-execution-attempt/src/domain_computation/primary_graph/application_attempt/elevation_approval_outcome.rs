@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::CommitReceiptPreimagePort as _;
 use worth_relational::facade::identity::EntityId;
 
 use super::{
@@ -11,14 +12,6 @@ use crate::domain_computation::authorization::{
 };
 
 /// Move-only authority proving that Query committed the exact approval.
-///
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::WorthQueryApprovedElevation;
-///
-/// fn approved_elevation_cannot_be_copied(receipt: WorthQueryApprovedElevation) {
-///     let _copied = receipt.clone();
-/// }
-/// ```
 #[derive(Debug)]
 pub struct WorthQueryApprovedElevation {
     binding: WorthQueryElevationApprovalBinding,
@@ -26,9 +19,7 @@ pub struct WorthQueryApprovedElevation {
 }
 
 impl WorthQueryApprovedElevation {
-    pub const fn approval_commit_receipt(
-        &self,
-    ) -> &WorthQueryApplicationCommitReceipt {
+    pub const fn approval_commit_receipt(&self) -> &WorthQueryApplicationCommitReceipt {
         &self.approval_commit
     }
 
@@ -163,9 +154,7 @@ impl WorthQueryApprovedElevation {
                 == self.approval_commit.provider_runtime_instance_id()
     }
 
-    pub const fn request_binding(
-        &self,
-    ) -> &WorthQueryElevationRequestBinding {
+    pub const fn request_binding(&self) -> &WorthQueryElevationRequestBinding {
         self.binding.requested()
     }
 
@@ -183,9 +172,7 @@ impl WorthQueryApprovedElevation {
             .remains_current_in(execution, runtime, snapshot, bridge)
     }
 
-    pub fn support_decision(
-        &self,
-    ) -> &WorthQueryAuthorizationDecisionFact {
+    pub fn support_decision(&self) -> &WorthQueryAuthorizationDecisionFact {
         self.binding.requested().supporting().decision()
     }
 

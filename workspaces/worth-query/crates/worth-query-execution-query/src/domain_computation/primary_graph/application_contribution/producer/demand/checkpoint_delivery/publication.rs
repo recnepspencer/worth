@@ -23,11 +23,7 @@ impl Publication {
             Self::Recovered(publication) => publication.view(),
         }
     }
-    pub fn published(
-        self,
-        delivery: Delivery,
-        ready_backing: PreparedReadyBacking,
-    ) -> Checkpoint {
+    pub fn published(self, delivery: Delivery, ready_backing: PreparedReadyBacking) -> Checkpoint {
         match self {
             Self::Fresh(receipt) => Checkpoint::Published {
                 receipt,

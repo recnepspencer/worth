@@ -1,4 +1,3 @@
-
 use super::WorthQueryPrimaryLogicalGraph;
 use crate::domain_computation::{
     WorthQueryCooperativeGraphProviderExecution, WorthQueryGraphParticipationProvider,

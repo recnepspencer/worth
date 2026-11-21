@@ -11,9 +11,7 @@ pub struct ApplicationPublication {
 }
 
 impl ApplicationPublication {
-    pub fn installed(
-        receipt: &RelationalInitialSchemaInstallationReceipt,
-    ) -> Self {
+    pub fn installed(receipt: &RelationalInitialSchemaInstallationReceipt) -> Self {
         let (owner, native) = receipt.issue_application_publication_owner();
         Self { owner, native }
     }

@@ -33,9 +33,9 @@ pub use storage_quote::WorthQueryManagedDerivedStorageQuote;
 pub use denial::{
     WorthQueryManagedDerivedCollectionBatchRefreshDenial, WorthQueryManagedDerivedViewDenial,
 };
-pub use member_token::WorthQueryManagedDerivedMemberToken;
-pub use member_token::RetainedMemberToken;
 use member_token::token_charge;
+pub use member_token::RetainedMemberToken;
+pub use member_token::WorthQueryManagedDerivedMemberToken;
 
 /// A projected value declares its retained heap footprint. Query charges
 /// entry and source-provenance overhead in addition to this payload.

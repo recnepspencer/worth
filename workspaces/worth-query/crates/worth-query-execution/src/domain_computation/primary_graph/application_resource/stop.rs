@@ -182,7 +182,7 @@ impl ResourceCausePort for ResourceCause {
     fn advancement_denial(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial>
-    {
+{
         match self {
             ResourceCause::Advancement(cause) => Some(cause),
             _ => None,
@@ -222,11 +222,7 @@ impl ResourceCausePort for ResourceCause {
 
 impl From<ResourceCause> for WorthQueryResourceActionDenial {
     fn from(cause: ResourceCause) -> Self {
-        Self::from_cause_port(
-            worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
-            Box::new(cause),
-            None,
-        )
+        Self::from_cause_port(Box::new(cause), None)
     }
 }
 

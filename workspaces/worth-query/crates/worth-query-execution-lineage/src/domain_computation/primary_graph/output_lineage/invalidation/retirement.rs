@@ -29,10 +29,7 @@ impl SourceInvalidationOwner {
     /// identities no branch retains any more. Every branch edit is admitted
     /// before any installs, so an admission stop retires nothing; a later
     /// supersession or cleanup retries it.
-    pub fn retire_settlements(
-        &self,
-        candidates: &[Identity],
-    ) -> Vec<Identity> {
+    pub fn retire_settlements(&self, candidates: &[Identity]) -> Vec<Identity> {
         self.retire_settlements_admitted(candidates)
             .unwrap_or_default()
     }

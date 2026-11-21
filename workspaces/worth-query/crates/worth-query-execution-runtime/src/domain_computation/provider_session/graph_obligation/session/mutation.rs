@@ -5,9 +5,7 @@ use crate::basis::WorthQueryProductObservationLease;
 pub(super) struct MutationProductBasis {
     pub(super) lease: Option<Box<dyn crate::ports::PrimaryMutationLease>>,
     control: Option<WorthQueryProductObservationLease>,
-    coupled_handler: Option<
-        Box<dyn std::any::Any + Send + Sync>,
-    >,
+    coupled_handler: Option<Box<dyn std::any::Any + Send + Sync>>,
     authentication: Option<std::sync::Arc<dyn std::any::Any + Send + Sync>>,
 }
 
@@ -41,32 +39,25 @@ impl WorthQueryManagedGraphWorkSession {
         let WorthQueryGraphWorkBasis::Mutation(basis) = &mut self.basis else {
             unreachable!("typed mutation admission")
         };
-        assert!(basis.coupled_handler.is_none(), "one producer handler preparation");
+        assert!(
+            basis.coupled_handler.is_none(),
+            "one producer handler preparation"
+        );
         basis.coupled_handler = Some(handler);
     }
-    pub fn coupled_handler(
-        &self,
-    ) -> Option<&(dyn std::any::Any + Send + Sync)>
-    {
+    pub fn coupled_handler(&self) -> Option<&(dyn std::any::Any + Send + Sync)> {
         let WorthQueryGraphWorkBasis::Mutation(basis) = &self.basis else {
             return None;
         };
         basis.coupled_handler.as_deref()
     }
-    pub fn coupled_handler_mut(
-        &mut self,
-    ) -> Option<
-        &mut Box<dyn std::any::Any + Send + Sync>,
-    > {
+    pub fn coupled_handler_mut(&mut self) -> Option<&mut Box<dyn std::any::Any + Send + Sync>> {
         let WorthQueryGraphWorkBasis::Mutation(basis) = &mut self.basis else {
             return None;
         };
         basis.coupled_handler.as_mut()
     }
-    pub fn take_coupled_handler(
-        &mut self,
-    ) -> Option<Box<dyn std::any::Any + Send + Sync>>
-    {
+    pub fn take_coupled_handler(&mut self) -> Option<Box<dyn std::any::Any + Send + Sync>> {
         let WorthQueryGraphWorkBasis::Mutation(basis) = &mut self.basis else {
             return None;
         };

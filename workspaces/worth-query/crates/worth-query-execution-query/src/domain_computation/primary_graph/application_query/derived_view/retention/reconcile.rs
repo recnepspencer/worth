@@ -13,8 +13,7 @@ use super::{
 };
 use crate::domain_computation::primary_graph::application_query::derived_view::WorthQueryManagedDerivedViewKey;
 
-pub struct MembershipReconciliationPlan
-{
+pub struct MembershipReconciliationPlan {
     revision: u64,
     commit: CompositeCommitIdentity,
     membership_key: WorthQueryManagedDerivedViewKey,
@@ -24,22 +23,15 @@ pub struct MembershipReconciliationPlan
 }
 
 impl MembershipReconciliationPlan {
-    pub fn needs_read(
-        &self,
-        root: EntityId,
-    ) -> bool {
+    pub fn needs_read(&self, root: EntityId) -> bool {
         self.required.contains(&root)
     }
 
-    pub fn read_count(
-        &self,
-    ) -> usize {
+    pub fn read_count(&self) -> usize {
         self.required.len()
     }
 
-    pub fn retained_count(
-        &self,
-    ) -> usize {
+    pub fn retained_count(&self) -> usize {
         self.members.len() - self.required.len()
     }
 }
@@ -48,9 +40,7 @@ impl<Value> ManagedDerivedViewState<WorthQueryManagedDerivedViewKey, Value>
 where
     Value: WorthQueryManagedDerivedValue,
 {
-    pub fn plan_membership_reconciliation<
-        Member: WorthQueryManagedDerivedMemberToken,
-    >(
+    pub fn plan_membership_reconciliation<Member: WorthQueryManagedDerivedMemberToken>(
         &self,
         membership_key: &WorthQueryManagedDerivedViewKey,
         members: &BTreeMap<EntityId, Member>,

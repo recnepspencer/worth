@@ -1,8 +1,7 @@
 //! Acknowledged recovery claims and their one terminal disposition.
 use super::*;
 use worth_foundational::facade::{
-    DurableCompositeCommitIdentity, DurableRecoveryClaimIdentity,
-    RecoveryClaimDisposition,
+    DurableCompositeCommitIdentity, DurableRecoveryClaimIdentity, RecoveryClaimDisposition,
 };
 
 pub use worth_query_execution_contracts::facade::{

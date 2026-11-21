@@ -59,7 +59,11 @@ where
     let mut mutation_proof = read_set.mutation_handler_binding;
     let mut coupled_outputs = aftermath_causality
         .as_ref()
-        .and_then(|causality| causality.prepared_correction().capture_coupled_outputs(execution))
+        .and_then(|causality| {
+            causality
+                .prepared_correction()
+                .capture_coupled_outputs(execution)
+        })
         .unwrap_or_else(|| {
             mutation_proof
                 .as_mut()

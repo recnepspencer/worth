@@ -125,10 +125,7 @@ impl WorthQuerySourceExpectationDenial {
         )
     }
 
-    pub fn new(
-        kind: WorthQuerySourceExpectationDenialKind,
-        subject: impl Into<String>,
-    ) -> Self {
+    pub fn new(kind: WorthQuerySourceExpectationDenialKind, subject: impl Into<String>) -> Self {
         Self::from_kind(kind, subject.into())
     }
 

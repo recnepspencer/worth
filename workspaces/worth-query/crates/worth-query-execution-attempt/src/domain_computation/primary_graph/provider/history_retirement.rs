@@ -10,10 +10,7 @@ use crate::domain_computation::execution_runtime::product_world::WorthQueryProdu
 impl WorthQueryPrimaryGraphProvider {
     /// The provider reads one product World's history and follows every
     /// history release that product's branch and recovery cleanups make.
-    pub fn install_world_history(
-        self: &Arc<Self>,
-        product: &WorthQueryProductRuntime,
-    ) {
+    pub fn install_world_history(self: &Arc<Self>, product: &WorthQueryProductRuntime) {
         assert!(
             self.world_history
                 .set(product.owner.recovery_port())

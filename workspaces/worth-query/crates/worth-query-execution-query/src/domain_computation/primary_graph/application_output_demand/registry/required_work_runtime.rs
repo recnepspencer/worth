@@ -4,7 +4,8 @@
 use std::sync::Arc;
 
 use worth_query_execution_lineage::facade::primary_graph::application_output_demand::registry::{
-    checkpoint::WorthQueryOutputAdvancement, join_observation::{self, StableJoinPauseForTest},
+    checkpoint::WorthQueryOutputAdvancement,
+    join_observation::{self, StableJoinPauseForTest},
     record_map, DemandState, WorthQueryAcceptedOutputAuthority,
     WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
     WorthQueryOutputCheckpoint,

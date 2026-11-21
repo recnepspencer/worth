@@ -31,12 +31,8 @@ type Completion<'authority, Schema, Binding> = Box<
         + 'authority,
 >;
 
-pub struct PreparedMutationHandler<
-    'advance,
-    'authority,
-    Schema,
-    Binding,
-> where
+pub struct PreparedMutationHandler<'advance, 'authority, Schema, Binding>
+where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
@@ -117,11 +113,8 @@ where
     }
 }
 
-pub struct MutationCompletion<
-    'authority,
-    Schema,
-    Binding,
-> where
+pub struct MutationCompletion<'authority, Schema, Binding>
+where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {

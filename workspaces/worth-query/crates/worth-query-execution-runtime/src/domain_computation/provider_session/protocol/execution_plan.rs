@@ -86,9 +86,7 @@ impl WorthQueryValidatedProviderPlan<'_> {
 }
 
 mod owned_direct;
-pub use owned_direct::{
-    CoupledProviderPlanAdmission, ReturnedProviderDirectRun,
-};
+pub use owned_direct::{CoupledProviderPlanAdmission, ReturnedProviderDirectRun};
 mod direct;
 
 pub(super) enum WorthQueryProviderRunCustody<'run> {
@@ -220,15 +218,11 @@ impl<'run> WorthQueryAdmittedProviderExecutionPlan<'run> {
         })
     }
 
-    pub fn provider_grant_control(
-        &self,
-    ) -> &Arc<super::ProviderSessionGrantControl> {
+    pub fn provider_grant_control(&self) -> &Arc<super::ProviderSessionGrantControl> {
         &self.provider.session_grant_control
     }
 
-    pub fn preparation_provider(
-        &self,
-    ) -> Arc<WorthQueryGraphProviderAnchor> {
+    pub fn preparation_provider(&self) -> Arc<WorthQueryGraphProviderAnchor> {
         Arc::clone(&self.provider)
     }
 

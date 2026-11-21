@@ -1,12 +1,12 @@
 //! Exact-data locator shared by original-intent discovery and indexed enumeration.
-use crate::domain_computation::primary_graph::application_discovery::workflow::view::WorthQueryWorkflowReadBasisRuntimeExt as _;
-use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::admission::admit;
 use super::admission::WorthQueryWorkflowReadDenial as Denial;
 use super::original_intent::OriginalWorkflowCandidate;
 use super::view::WorthQueryWorkflowReadBasis;
 use crate::domain_computation::primary_graph::application_attempt::observe_adjacency;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
+use crate::domain_computation::primary_graph::application_discovery::workflow::view::WorthQueryWorkflowReadBasisRuntimeExt as _;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
@@ -84,11 +84,10 @@ impl WorthQueryWorkflowReadTarget {
     {
         // Fresh security precedes even locator affinity and existence-dependent reads.
         let access = admit(current, phase, binding, principal, input, request)?;
-        if !self
-            .basis
-            .0
-            .belongs_to_selected_occurrence(current.application().inner(), data.product().observation())
-            || !std::ptr::eq(current.application(), data.application())
+        if !self.basis.0.belongs_to_selected_occurrence(
+            current.application().inner(),
+            data.product().observation(),
+        ) || !std::ptr::eq(current.application(), data.application())
             || current.product().branch_identity() != data.product().branch_identity()
             || self.basis.selected_commit() != data.product().selected_commit()
             || self.basis.branch_identity() != data.product().branch_identity()
@@ -101,7 +100,8 @@ impl WorthQueryWorkflowReadTarget {
             .map_err(Denial::Phase)?;
         let graph = current
             .application()
-            .inner.runtime
+            .inner
+            .runtime
             .primary_graph()
             .ok_or(Denial::BasisUnavailable)?;
         graph

@@ -3,8 +3,7 @@ use super::super::{
     application_contribution::QueryMemoryReservation, WorthQueryApplicationEffectEntity,
 };
 pub struct PreparedBodyChildren<S> {
-    pub targets:
-        Vec<WorthQueryApplicationEffectEntity<S, ()>>,
+    pub targets: Vec<WorthQueryApplicationEffectEntity<S, ()>>,
     pub _memory: QueryMemoryReservation,
 }
 pub fn parent_indices(

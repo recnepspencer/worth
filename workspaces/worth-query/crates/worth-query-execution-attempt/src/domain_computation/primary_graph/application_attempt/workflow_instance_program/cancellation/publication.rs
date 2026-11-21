@@ -2,8 +2,7 @@ use worth_foundational::facade::AspectFieldLocator;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 
 use super::super::super::{
-    WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationEffectProgram,
+    WorthQueryApplicationCommitReceipt, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationUncommitted,
 };
 use super::super::PublishedWorkflowInstanceRef;
@@ -54,7 +53,6 @@ pub enum WorkflowInstanceCancellationOutcome {
     Application(WorthQueryApplicationUncommitted),
     ProjectionDenied(WorthQueryApplicationCommitReceipt),
 }
-
 
 impl<Schema, Operation, Input, Scope>
     PreparedWorkflowInstanceCancellation<Schema, Operation, Input, Scope>

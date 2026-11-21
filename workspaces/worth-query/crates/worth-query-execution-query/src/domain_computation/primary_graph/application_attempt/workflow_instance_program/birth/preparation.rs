@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 pub struct WorthQueryWorkflowBirthAdapter;
 
 impl WorthQueryWorkflowBirthAdapter {
@@ -69,51 +70,14 @@ impl WorthQueryWorkflowBirthAdapter {
         let execution = phase
             .execution_request_for(&selected.application().runtime.product_runtime)
             .map_err(|_| denied("foreign birth phase"))?;
-        let mut read = selected.begin_instance_read_set(&execution, installed, admission)?;
-        let (compiled, carry, _) = read
-            .observe_workflow_start_basis(
-                &execution,
-                installed,
-                &published,
-                &selected.application().runtime.authorization_clock,
-            )
-            .map_err(WorkflowInstancePreparationDenial::Attempt)?;
-        let (instance_identity, identity) = super::super::intent_identity::birth_identity(
-            &compiled,
-            read.admission.scope_entity_id(),
-            *identities.key_identity(),
-            *identities.input_identity(),
-            Binding::IDENTITY,
-            Role::NAME,
+        let read = selected.begin_instance_read_set(&execution, installed, admission)?;
+        read.into_required_workflow_birth::<Binding, Role, Spec>(
+            &execution,
+            installed,
+            &published,
+            identities,
+            &selected.application().runtime.authorization_clock,
         )
-        .map_err(|()| denied("birth intent identity is unavailable"))?;
-        let branch = read.lease.product().product_branch();
-        let scope = read.admission.operation_scope_binding().clone();
-        let authority = WorkflowBirthAuthority::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_instance_program::birth::WorkflowBirthAuthorityAttemptParts {
-            branch, scope: scope.clone(), binding: Binding::IDENTITY, role: Role::NAME,
-            input_identity: *identities.input_identity(), key_identity: *identities.key_identity(), identity,
-            instance_identity: instance_identity.clone(), capability,
-            facts: read.facts.iter().cloned().collect(), compiled: compiled.clone(), carry,
-            refusal: read.new_commit_refusal,
-            subject: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::birth_subject::<Schema, Binding, Role>,
-        });
-        Ok(RequiredWorkflowBirth::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_instance_program::birth::RequiredWorkflowBirthAttemptParts {
-            branch,
-            binding_type: TypeId::of::<Binding>(),
-            role_type: TypeId::of::<Role>(),
-            spec_type: TypeId::of::<Spec>(),
-            binding: Binding::IDENTITY,
-            input_identity: *identities.input_identity(),
-            key_identity: *identities.key_identity(),
-            identity,
-            instance_identity,
-            scope,
-            compiled,
-            identity_locator: read.lease.layout.workflow().instance.identity.clone(),
-            authority: Arc::new(WorkflowBirthAuthoritySlot::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_instance_program::birth::WorkflowBirthAuthoritySlotAttemptParts {
-                authority: Mutex::new(Some(authority)),
-            })),
-            subject_in_receipt: super::publication::subject_in_receipt::<Schema, Binding, Role>,
-        }))
+        .map_err(WorkflowInstancePreparationDenial::Attempt)
     }
 }

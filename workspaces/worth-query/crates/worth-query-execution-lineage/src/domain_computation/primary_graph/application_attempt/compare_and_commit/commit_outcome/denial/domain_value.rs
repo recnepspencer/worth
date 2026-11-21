@@ -6,9 +6,7 @@ use super::{
 use crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial as Admission;
 use worth_query_installation::facade::ApplicationValueDecodeDenial;
 impl Denial {
-    pub fn domain_value_rejected(
-        cause: ApplicationValueDecodeDenial,
-    ) -> Self {
+    pub fn domain_value_rejected(cause: ApplicationValueDecodeDenial) -> Self {
         Self {
             kind: Kind::DomainValueRejected,
             stage: Stage::EffectLowering,
@@ -16,9 +14,7 @@ impl Denial {
             cause: Some(Box::new(Cause::DomainValue(cause))),
         }
     }
-    pub fn domain_value_admission_rejected(
-        cause: Admission,
-    ) -> Self {
+    pub fn domain_value_admission_rejected(cause: Admission) -> Self {
         if let Some(request) =
             crate::domain_computation::primary_graph::value_decode::decode_request_cause(cause)
         {

@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHistoryOutputNavigationDenial as Denial, WorthQueryHistoryOutputProfile,
     WorthQueryHistoryOutputReadDenial,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     fn validate_navigation_source<H, N, B>(
@@ -159,9 +160,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         // A stopped callback leaves its SDK owners in the document registry.
         // The actual Native transition remains authoritative if its delivery lapses.
         if let Some(source) = &source {
-            validate_execution_lifetimes(self.inner(), &source.controls, source.principal).map_err(
-                |cause| Denial::Source(super::super::output_read::control_denial(cause)),
-            )?;
+            validate_execution_lifetimes(self.inner(), &source.controls, source.principal)
+                .map_err(|cause| {
+                    Denial::Source(super::super::output_read::control_denial(cause))
+                })?;
         }
         read.confirm(document, ())
             .map_err(|cause| Denial::Navigation(NavigationDenial::Document(cause)))?;

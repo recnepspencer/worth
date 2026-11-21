@@ -1,10 +1,10 @@
 //! External effects, recovery custody, and canonical recorded correction causality.
 
+pub use correction::OriginalCorrectionDisclosure;
 pub use worth_query_execution_lineage::facade::domain_computation::application_aftermath::*;
 pub use worth_query_execution_lineage::facade::domain_computation::application_aftermath::{
     correction, correction_coordinates, retained_preimage, retained_relations,
 };
-pub use correction::OriginalCorrectionDisclosure;
 pub use worth_query_execution_obligations::facade::aftermath::correction_material;
 pub mod commit_causality;
 pub use commit_causality::ApplicationCommitCausality;
@@ -23,12 +23,12 @@ pub use retained_relations::{
 
 pub use derivation_failure::WorthQueryAftermathDerivationFailure;
 
+pub use causal_fact::CommittedAftermathCausalityExt;
 pub use causal_fact::WorthQueryPendingAftermathCausality;
 pub use causal_fact::{
     WorthQueryAftermathCausalRole, WorthQueryCommittedAftermathCausality,
     WorthQueryCorrectionLineageBinding, WorthQueryRecordedCorrectionSource,
 };
-pub use causal_fact::CommittedAftermathCausalityExt;
 pub use external_effect::dispatch_external_effect;
 
 pub use external_effect::WorthQueryInboundCleanupReport;

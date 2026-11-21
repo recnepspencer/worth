@@ -116,9 +116,7 @@ impl WorthQueryRetainedCapabilityAuthorization {
                 .is_none_or(|supporting| supporting.decision().session_identity() == session)
     }
 
-    pub fn relational_counters(
-        &self,
-    ) -> RelationalAuthorizationObservationCounters {
+    pub fn relational_counters(&self) -> RelationalAuthorizationObservationCounters {
         let mut counters = self.decision.relational_counters();
         if let Some(supporting) = &self.supporting {
             super::decision_facts::authorization::add_counters(

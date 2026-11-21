@@ -6,10 +6,7 @@ impl WorthQueryOutputDemandDenial {
     pub fn authored_retirement_error(&self) -> Option<&PublicationError> {
         self.evidence.as_ref()?.retirement.as_deref()
     }
-    pub fn with_retirement_error(
-        mut self,
-        error: Option<&PublicationError>,
-    ) -> Self {
+    pub fn with_retirement_error(mut self, error: Option<&PublicationError>) -> Self {
         if let Some(error) = error {
             self.evidence_mut().retirement = Some(std::sync::Arc::new(error.clone()));
         }

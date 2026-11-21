@@ -5,10 +5,7 @@ pub struct QueuedMember<'frontier, Ready> {
     member: &'frontier mut RequiredMember<Ready>,
 }
 impl<Ready> RequiredFrontier<Ready> {
-    pub fn queued_member(
-        &mut self,
-        index: usize,
-    ) -> Option<QueuedMember<'_, Ready>> {
+    pub fn queued_member(&mut self, index: usize) -> Option<QueuedMember<'_, Ready>> {
         let member = &mut self.members[index];
         (!member.caller).then_some(QueuedMember { member })
     }

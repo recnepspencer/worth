@@ -62,7 +62,7 @@ where
 {
     fn prepare_body<Binding>(
         self,
-        access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
@@ -78,11 +78,12 @@ where
             Denial = WorthQueryOperationBodyDenial,
             Decision = WorthQueryOperationBodyDecision<Schema, Scope>,
         >,
-        Binding::ScopeBinding: ApplicationMutationScopeBinding<Schema, Scope = Scope>,
-;
+        Binding::ScopeBinding: ApplicationMutationScopeBinding<Schema, Scope = Scope>;
 }
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvanceBodyExt<Schema, Operation, Input, Scope> for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowAdvanceBodyExt<Schema, Operation, Input, Scope>
+    for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
 where
     Schema: ApplicationSchema,
     Operation: 'static,
@@ -93,7 +94,7 @@ where
 {
     fn prepare_body<Binding>(
         self,
-        access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,

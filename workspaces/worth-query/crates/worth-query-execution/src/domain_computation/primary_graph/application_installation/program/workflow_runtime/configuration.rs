@@ -52,7 +52,8 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
             supported: Vec::new(),
             owner: self
                 .runtime()
-                .inner.runtime
+                .inner
+                .runtime
                 .product_runtime
                 .owner
                 .owner_identity(),
@@ -95,7 +96,8 @@ where
             self.authority,
             runtime
                 .runtime()
-                .inner.runtime
+                .inner
+                .runtime
                 .product_runtime
                 .owner
                 .owner_identity(),

@@ -59,9 +59,7 @@ impl IssuedManagedSourceValues {
     }
 }
 impl DecisionReads {
-    pub fn fail_managed_source(
-        &mut self,
-    ) {
+    pub fn fail_managed_source(&mut self) {
         self.failed_managed_source = true;
     }
     pub fn record_managed_source(

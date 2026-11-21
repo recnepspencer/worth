@@ -35,8 +35,7 @@ pub struct WorthQueryApplicationOperationBindingInput<'a> {
         crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity,
     pub operation_attempt:
         crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
-    pub schema_binding:
-        &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    pub schema_binding: &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     pub snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,
     pub product: &'a crate::basis::WorthQueryProductBranchLease,
     pub effect_posture: WorthQueryApplicationEffectPosture,

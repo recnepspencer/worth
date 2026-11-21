@@ -12,10 +12,10 @@ pub use worth_query_execution_lineage::facade::primary_graph::application_entry:
 
 mod completed_candidate;
 mod execution;
-pub use execution::PreparedMutationInputs;
 pub use completed_candidate::WorthQueryCompletedMutationCandidate;
 pub use execution::build_handler_candidate;
 pub use execution::MutationHandlerExecutionDenial;
+pub use execution::PreparedMutationInputs;
 
 pub trait OperationHandler<Schema, Binding>: std::any::Any + Send + Sync + 'static
 where

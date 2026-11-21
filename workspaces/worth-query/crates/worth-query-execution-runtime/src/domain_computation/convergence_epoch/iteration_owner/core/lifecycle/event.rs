@@ -34,16 +34,11 @@ mod sealed {
     pub trait Sealed {}
 }
 
-pub trait WorthQueryConvergenceLifecycleEvent:
-    sealed::Sealed
-{
+pub trait WorthQueryConvergenceLifecycleEvent: sealed::Sealed {
     fn apply(self, counters: &mut WorthQueryConvergenceEpochCounters);
 }
 
-pub trait WorthQueryConvergenceAdmissionStartEvent:
-    WorthQueryConvergenceLifecycleEvent
-{
-}
+pub trait WorthQueryConvergenceAdmissionStartEvent: WorthQueryConvergenceLifecycleEvent {}
 
 impl sealed::Sealed for DirectAdmissionLifecycleEvent {}
 

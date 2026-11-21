@@ -22,9 +22,7 @@ pub enum CapturedInfluenceComparison<'a, 'b> {
 }
 
 /// Only the installed managed adapter implements this consistency execution.
-pub trait RetainedManagedInfluence:
-    Send + Sync
-{
+pub trait RetainedManagedInfluence: Send + Sync {
     fn as_any(&self) -> &dyn std::any::Any;
     fn comparison_work(&self) -> u64;
     fn content(&self) -> worth_foundational::facade::ProjectedCandidateContentV1;
@@ -65,8 +63,7 @@ pub trait RetainedManagedInfluence:
 }
 
 pub struct RevalidatedManagedSource {
-    pub observation:
-        Arc<ManagedIndexSourceObservation>,
+    pub observation: Arc<ManagedIndexSourceObservation>,
     pub proof: VerifiedRealizedFootprint,
     pub allocation: Arc<SourceFactsAllocation>,
 }
@@ -84,9 +81,7 @@ pub struct CheckedRealizedSource {
     _allocation: Arc<SourceFactsAllocation>,
 }
 impl CheckedRealizedSource {
-    pub fn native(
-        &self,
-    ) -> &ManagedIndexSourceObservation {
+    pub fn native(&self) -> &ManagedIndexSourceObservation {
         &self.observation
     }
 }
@@ -94,9 +89,7 @@ impl CapturedManagedInfluence {
     pub fn comparison_work(&self) -> u64 {
         self.support.comparison_work()
     }
-    pub fn content(
-        &self,
-    ) -> worth_foundational::facade::ProjectedCandidateContentV1 {
+    pub fn content(&self) -> worth_foundational::facade::ProjectedCandidateContentV1 {
         self.support.content()
     }
     pub fn audience(&self) -> [u8; 32] {

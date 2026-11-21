@@ -13,8 +13,7 @@ use worth_relational::facade::{
 pub struct ResolvedAppliedEntity {
     pub entity: EntityId,
     pub kind: KindId,
-    pub candidate:
-        RelationalAppliedCandidateReadQualification,
+    pub candidate: RelationalAppliedCandidateReadQualification,
 }
 
 impl WorthQueryInstalledEntityResolutionContext {

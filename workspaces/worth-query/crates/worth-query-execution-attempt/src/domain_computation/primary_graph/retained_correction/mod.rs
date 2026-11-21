@@ -61,10 +61,7 @@ impl CorrectionMaterialOwner {
         self.publication()?
             .finish_pending(self.medium()?.as_ref(), request)
     }
-    pub fn admit_medium(
-        &self,
-        presented: &dyn QueryCorrectionsMedium,
-    ) -> Result<(), Denial> {
+    pub fn admit_medium(&self, presented: &dyn QueryCorrectionsMedium) -> Result<(), Denial> {
         self.medium()?
             .authority()
             .admit(presented.authority())
@@ -99,9 +96,7 @@ impl CorrectionMaterialOwner {
             Err(std::sync::TryLockError::WouldBlock) => Err(Denial::PublicationPending),
         }
     }
-    pub fn admission(
-        &self,
-    ) -> Result<worth_proof::AdmittedHomeQueryCorrections, Denial> {
+    pub fn admission(&self) -> Result<worth_proof::AdmittedHomeQueryCorrections, Denial> {
         let medium = self.medium()?;
         let state = self.state();
         if state.pending.is_some() {
@@ -113,10 +108,7 @@ impl CorrectionMaterialOwner {
             state.catalog.payload_digest,
         ))
     }
-    pub fn discharge_unperformed(
-        &self,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), Denial> {
+    pub fn discharge_unperformed(&self, request: &ExecutionRequest<'_, '_>) -> Result<(), Denial> {
         let driver = self.publication()?;
         let medium = self.medium()?;
         driver.finish_pending(medium.as_ref(), request)?;
@@ -156,10 +148,7 @@ impl CorrectionMaterialOwner {
         }
         Ok(())
     }
-    pub fn finish_retirement(
-        &mut self,
-        request: &ExecutionRequest<'_, '_>,
-    ) -> Result<(), Denial> {
+    pub fn finish_retirement(&mut self, request: &ExecutionRequest<'_, '_>) -> Result<(), Denial> {
         self.discharge_unperformed(request)?;
         self.medium
             .lock()

@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 pub use worth_query_execution_attempt::facade::domain_computation::authorization::authorization_revalidation::currentness;
 pub use worth_query_execution_attempt::facade::domain_computation::authorization::authorization_revalidation::observation;
 mod retained_authorization;
@@ -20,7 +21,6 @@ use crate::domain_computation::primary_graph::{
 use currentness::*;
 use worth_query_execution_attempt::facade::domain_computation::authorization::authorization_revalidation::RevalidationObservationAxes;
 pub use observation::WorthQueryAuthorizationRevalidationObservation;
-
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -66,13 +66,7 @@ where
             })
     }
 
-    pub fn authorize_retained_idempotency<
-        'serialization,
-        'admission,
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn authorize_retained_idempotency<'serialization, 'admission, Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &'admission mut WorthQueryAdmittedApplicationOperation<
@@ -111,13 +105,7 @@ where
         ))
     }
 
-    pub fn authorize_idempotency_inspection<
-        'serialization,
-        'admission,
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn authorize_idempotency_inspection<'serialization, 'admission, Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &'admission WorthQueryAdmittedApplicationOperation<
@@ -154,13 +142,7 @@ where
         ))
     }
 
-    pub fn authorize_application_commit<
-        'serialization,
-        'admission,
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn authorize_application_commit<'serialization, 'admission, Operation, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &'admission WorthQueryAdmittedApplicationOperation<

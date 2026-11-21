@@ -22,9 +22,7 @@ pub mod recovered;
 pub mod source_read;
 pub mod transport;
 pub use read::WorthQueryInboundCompletionReadDenial;
-pub use read::{
-    WorthQueryCanonicalCompletionRow, WorthQueryCompletionProvenance,
-};
+pub use read::{WorthQueryCanonicalCompletionRow, WorthQueryCompletionProvenance};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryInboundCompletionPreparationDenial {

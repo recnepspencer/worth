@@ -9,15 +9,10 @@ use crate::{
 };
 use std::collections::BTreeMap;
 
-pub struct BorrowedOperationProjection<
-    Schema,
-    Operation,
-> {
-    pub admission:
-        WorthQueryOperationAdmissionIdentity,
+pub struct BorrowedOperationProjection<Schema, Operation> {
+    pub admission: WorthQueryOperationAdmissionIdentity,
     pub basis: WorthQueryProductBranchReadIdentity,
-    pub scope:
-        super::super::WorthQueryRealizedProjectionScope,
+    pub scope: super::super::WorthQueryRealizedProjectionScope,
     pub facts: DecisionReads,
     pub source_facts: RetainedSourceFacts,
     pub consumed_outputs: BTreeMap<
@@ -34,7 +29,12 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         admission: &A,
         lease: &WorthQueryApplicationSnapshotLease,
         projection: impl FnOnce(
-            &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, A::Operation>,
+            &mut WorthQueryApplicationOperationInvariantProjectionReader<
+                '_,
+                '_,
+                Schema,
+                A::Operation,
+            >,
             &WorthQueryInvariantEntityIdentity<Schema, A::Scope>,
         ) -> Output,
         allocation: worth_execution::ExecutionAllocationPolicy<'_, '_>,

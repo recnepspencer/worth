@@ -153,15 +153,16 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             });
         }
         let expected = pending.identity();
-        let execution = match phase.checked_execution_request_for(&self.inner.runtime.product_runtime) {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return Err(WorthQueryDocumentHistoryAttachmentFailure {
-                    head,
-                    denial: Denial::Stopped(cause),
-                })
-            }
-        };
+        let execution =
+            match phase.checked_execution_request_for(&self.inner.runtime.product_runtime) {
+                Ok(execution) => execution,
+                Err(cause) => {
+                    return Err(WorthQueryDocumentHistoryAttachmentFailure {
+                        head,
+                        denial: Denial::Stopped(cause),
+                    })
+                }
+            };
         let application = head.application();
         let selection = match crate::domain_computation::primary_graph::product_operation::document_history::HistorySelectionCell::attach(
             &execution, head, expected, pending.product().retained_clone(), pending.retained_source(self), navigation_resources, retention_resources,

@@ -20,28 +20,18 @@ use worth_relational::facade::identity::EntityId;
 /// a callback cannot substitute a result or read a second branch in this stage.
 /// The context has no public constructor and grants no plan admission authority.
 pub struct WorthQueryDependentPairReadContext<'stage, 'request, 'lease, 'map, 'kernel, S, Q, R> {
-    pub(crate) application:
-        &'stage WorthQueryPrimaryGraphApplicationRuntime<S>,
-    pub(crate) request:
-        &'stage ExecutionRequest<'request, 'lease>,
-    pub(crate) product:
-        &'stage WorthQueryProductBranchLease,
-    pub(crate) query:
-        &'stage WorthQueryInstalledApplicationQueryIdentity,
+    pub(crate) application: &'stage WorthQueryPrimaryGraphApplicationRuntime<S>,
+    pub(crate) request: &'stage ExecutionRequest<'request, 'lease>,
+    pub(crate) product: &'stage WorthQueryProductBranchLease,
+    pub(crate) query: &'stage WorthQueryInstalledApplicationQueryIdentity,
     pub(crate) root: EntityId,
-    pub(crate) scope_root:
-        Option<EntityId>,
-    pub(crate) batch:
-        &'stage WorthQueryApplicationQueryBatchAdmission,
-    pub(crate) lease:
-        Option<&'stage ExecutionResourceLease<'lease>>,
-    pub(crate) context:
-        &'stage mut MapKernelContext<'map, 'kernel>,
-    pub(crate) request_scope:
-        Option<WorthQueryRequestScope>,
+    pub(crate) scope_root: Option<EntityId>,
+    pub(crate) batch: &'stage WorthQueryApplicationQueryBatchAdmission,
+    pub(crate) lease: Option<&'stage ExecutionResourceLease<'lease>>,
+    pub(crate) context: &'stage mut MapKernelContext<'map, 'kernel>,
+    pub(crate) request_scope: Option<WorthQueryRequestScope>,
     pub(crate) attempted: bool,
-    pub(crate) result:
-        Option<WorthQueryApplicationBatchResult<Q, R>>,
+    pub(crate) result: Option<WorthQueryApplicationBatchResult<Q, R>>,
 }
 
 impl<S: ApplicationSchema, Q, R: WorthQueryApplicationProjection<S, Q>>

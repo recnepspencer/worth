@@ -1,7 +1,7 @@
 //! Command/target binding for one exact capability revocation.
 
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 pub use worth_query_execution_attempt::facade::domain_computation::authorization::capability_revocation_progression::*;
-
 
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, CanonicalDigestWorkBudget};
@@ -15,7 +15,8 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::{
     derive_capability_revocation_proposal_identity, ApplicationSchema,
     WorthQueryCanonicalWorkEvidence, WorthQueryCapabilityRevocationProposalBasis,
-    WorthQueryInstalledApplicationCapability, WorthQueryInstalledApplicationOperation, WorthQueryOperationTouchScope,
+    WorthQueryInstalledApplicationCapability, WorthQueryInstalledApplicationOperation,
+    WorthQueryOperationTouchScope,
 };
 use worth_relational::facade::identity::{EntityId, KindId};
 
@@ -73,11 +74,7 @@ where
         )
     }
 
-    pub fn authorize_capability_revocation_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+    pub fn authorize_capability_revocation_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,

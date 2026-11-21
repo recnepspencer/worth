@@ -134,7 +134,9 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
         principal: &WorthQueryAuthenticatedExternalPrincipal<S>,
         request: &WorthQueryRequestScope,
         invocation: &ProducerInvocationAuthority<'_>,
-        owner: Box<dyn worth_query_execution_lineage::facade::ports::PendingProducerPublicationPort>,
+        owner: Box<
+            dyn worth_query_execution_lineage::facade::ports::PendingProducerPublicationPort,
+        >,
         ready_backing: crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
         finish: impl FnOnce(Checkpoint) -> Result<(), WorthQueryOutputDemandDenial>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {

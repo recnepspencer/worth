@@ -52,7 +52,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             .map_err(Denial::Stopped)?;
         let record = document.model.record();
         let proof = self
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |native| {

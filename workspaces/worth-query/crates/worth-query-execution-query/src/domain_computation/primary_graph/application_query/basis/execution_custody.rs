@@ -37,15 +37,11 @@ impl WorthQueryApplicationQueryBasisCustody {
         Ok(Self::new(product, basis))
     }
 
-    pub fn retained_product(
-        &self,
-    ) -> crate::basis::WorthQueryProductObservationLease {
+    pub fn retained_product(&self) -> crate::basis::WorthQueryProductObservationLease {
         self.product.retained_clone()
     }
 
-    pub fn selected_product(
-        &self,
-    ) -> &crate::basis::WorthQueryProductObservationLease {
+    pub fn selected_product(&self) -> &crate::basis::WorthQueryProductObservationLease {
         &self.product
     }
 
@@ -104,9 +100,7 @@ impl WorthQueryApplicationQueryBasisCustody {
         self.application_basis.identity()
     }
 
-    pub fn version_id(
-        &self,
-    ) -> worth_relational::facade::identity::VersionId {
+    pub fn version_id(&self) -> worth_relational::facade::identity::VersionId {
         self.application_basis.version_id()
     }
 
@@ -114,10 +108,7 @@ impl WorthQueryApplicationQueryBasisCustody {
         self.application_basis.snapshot_handle()
     }
 
-    pub fn is_live(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> bool {
+    pub fn is_live(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> bool {
         self.application_basis.is_live(execution)
     }
 
@@ -128,9 +119,7 @@ impl WorthQueryApplicationQueryBasisCustody {
         self.application_basis.is_live_at(runtime)
     }
 
-    pub fn release(
-        self,
-    ) -> WorthQueryApplicationBasisReleaseReceipt {
+    pub fn release(self) -> WorthQueryApplicationBasisReleaseReceipt {
         self.application_basis.release()
     }
 }

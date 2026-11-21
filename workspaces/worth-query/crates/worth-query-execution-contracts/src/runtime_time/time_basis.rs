@@ -46,9 +46,7 @@ impl WorthQueryRuntimeClock {
         Self::from_source(WorthQuerySystemRuntimeTimeSource)
     }
 
-    pub fn from_source(
-        source: impl WorthQueryRuntimeTimeSource,
-    ) -> Self {
+    pub fn from_source(source: impl WorthQueryRuntimeTimeSource) -> Self {
         Self {
             admission_clock: source.admission_clock(),
             source: Box::new(source),

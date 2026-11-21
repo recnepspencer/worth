@@ -15,7 +15,7 @@ use worth_query_installation::facade::{
 
 impl WorthQueryWorkflowAdvanceAdapter {
     pub fn bind_operation_actor_context<Schema, Spec, Binding>(
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
         required: &RequiredWorkflowOperation,
     ) -> Result<Option<WorthQueryWorkflowActorContext>, WorthQueryApplicationAttemptDenial>
@@ -25,7 +25,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         Binding: ApplicationMutationBinding<Schema>,
     {
         WorthQueryWorkflowActorContext::build::<Schema, Spec, Binding>(
-            worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(),
+            access,
             required.original_runtime(),
             installed,
             required.original_instance(),

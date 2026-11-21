@@ -5,9 +5,7 @@ pub struct PreparedSelectedReadIndexes {
     basis: worth_relational::facade::branch::RelationalBranchBasisAdmissionIdentity,
 }
 impl PreparedSelectedReadIndexes {
-    pub fn for_query(
-        basis: AdmittedRelationalBranchBasis,
-    ) -> Self {
+    pub fn for_query(basis: AdmittedRelationalBranchBasis) -> Self {
         Self {
             basis: basis.admission_identity().clone(),
         }
@@ -27,10 +25,7 @@ impl PreparedSelectedReadIndexes {
             basis: access.read_security_basis_identity().clone(),
         }
     }
-    pub fn matches_basis(
-        &self,
-        actual: &AdmittedRelationalBranchBasis,
-    ) -> bool {
+    pub fn matches_basis(&self, actual: &AdmittedRelationalBranchBasis) -> bool {
         &self.basis == actual.admission_identity()
     }
 }

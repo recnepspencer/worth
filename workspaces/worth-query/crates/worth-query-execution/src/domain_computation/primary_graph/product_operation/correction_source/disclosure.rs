@@ -117,7 +117,8 @@ where
         .execution_request_for(&application.inner.runtime.product_runtime)
         .map_err(|_| Denial::ForeignPhase)?;
     let ancestry = application
-        .inner.runtime
+        .inner
+        .runtime
         .product_runtime
         .owner
         .observation_port()
@@ -130,7 +131,8 @@ where
         .map_err(Denial::Ancestry)?;
     if source.occurrence().home_material().is_some() {
         application
-            .inner.runtime
+            .inner
+            .runtime
             .primary_provider
             .observe_correction_material(source.occurrence().commit_reference())
             .map_err(Denial::Material)?;

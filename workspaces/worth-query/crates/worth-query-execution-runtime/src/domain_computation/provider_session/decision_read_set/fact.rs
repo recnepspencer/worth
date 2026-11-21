@@ -145,10 +145,7 @@ pub struct WorthQueryDecisionFactAdmission {
 }
 
 impl WorthQueryDecisionFactAdmission {
-    pub fn new(
-        request: WorthQueryDecisionFactRequest,
-        binding: &WorthQuerySessionBinding,
-    ) -> Self {
+    pub fn new(request: WorthQueryDecisionFactRequest, binding: &WorthQuerySessionBinding) -> Self {
         Self {
             request,
             binding_identity: binding.retain_canonical_identity(),

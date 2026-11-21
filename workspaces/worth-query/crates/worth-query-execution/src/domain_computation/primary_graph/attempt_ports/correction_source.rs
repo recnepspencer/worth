@@ -104,7 +104,12 @@ impl PreparedCorrectionSourcePort for WorthQueryPreparedCorrectionSource {
 
     fn authored_restoration_anchor(
         &self,
-        roles: &[(&str, ApplicationMutationOutputPosture, &str, &EntityReference)],
+        roles: &[(
+            &str,
+            ApplicationMutationOutputPosture,
+            &str,
+            &EntityReference,
+        )],
         batch: &WorkerIntentBatch,
         request: &WorthQueryRequestScope,
     ) -> Result<Option<(EntityId, CreatedEntityRef)>, PortCandidateDenial> {
@@ -114,7 +119,12 @@ impl PreparedCorrectionSourcePort for WorthQueryPreparedCorrectionSource {
 
     fn authored_restoration_co_anchors(
         &self,
-        roles: &[(&str, ApplicationMutationOutputPosture, &str, &EntityReference)],
+        roles: &[(
+            &str,
+            ApplicationMutationOutputPosture,
+            &str,
+            &EntityReference,
+        )],
     ) -> Vec<(EntityId, CreatedEntityRef)> {
         self.authored_restoration_co_anchors(roles.iter().copied())
     }
@@ -149,7 +159,12 @@ impl PreparedCorrectionSourcePort for WorthQueryPreparedCorrectionSource {
 
     fn validate_authored_candidate(
         &self,
-        roles: &[(&str, ApplicationMutationOutputPosture, &str, &EntityReference)],
+        roles: &[(
+            &str,
+            ApplicationMutationOutputPosture,
+            &str,
+            &EntityReference,
+        )],
         batch: &WorkerIntentBatch,
         request: &WorthQueryRequestScope,
     ) -> Result<(), PortCandidateDenial> {
@@ -181,7 +196,7 @@ impl PreparedCorrectionSourcePort for WorthQueryPreparedCorrectionSource {
         &self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Option<crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>
-    {
+{
         self.capture_coupled_outputs(execution)
     }
 

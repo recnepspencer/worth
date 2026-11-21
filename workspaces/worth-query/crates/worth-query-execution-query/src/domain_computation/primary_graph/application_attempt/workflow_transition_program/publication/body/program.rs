@@ -7,9 +7,10 @@ use crate::domain_computation::primary_graph::{
     DecisionContextUse,
 };
 use std::cell::Cell;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 pub fn compose<Schema, Binding>(
-    access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+    access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     phase: &WorthQueryAdvancementPhase<'_>,
     identities: &ApplicationMutationIdentities<'_, Schema, Binding>,

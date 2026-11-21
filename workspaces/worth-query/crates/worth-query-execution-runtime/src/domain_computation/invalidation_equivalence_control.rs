@@ -79,9 +79,7 @@ impl Drop for WorthQueryInvalidationEquivalenceForTest {
     }
 }
 /// Cold construction only. No verification or row path reads thread ambient state.
-pub fn attach_constructed_receiver(
-    receiver: &Arc<InvalidationOracleReceiver>,
-) {
+pub fn attach_constructed_receiver(receiver: &Arc<InvalidationOracleReceiver>) {
     FACTORIES.with(|factories| {
         let mut factories = factories.borrow_mut();
         factories.retain(|factory| factory.strong_count() != 0);

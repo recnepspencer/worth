@@ -36,11 +36,7 @@ pub struct SourceTree {
     owner: WorthQueryGraphWorkSessionIdentity,
 }
 impl SourceTree {
-    pub fn source_node(
-        &self,
-        slot: Slot,
-        control: &Control<'_>,
-    ) -> Result<Option<usize>, Stop> {
+    pub fn source_node(&self, slot: Slot, control: &Control<'_>) -> Result<Option<usize>, Stop> {
         maps::lookup(control, self.sources.len(), size_of::<Slot>())?;
         Ok(self.sources.get(&slot).copied())
     }
@@ -53,11 +49,7 @@ impl SourceTree {
     pub fn source_len(&self) -> usize {
         self.sources.len()
     }
-    pub fn region(
-        &self,
-        ordinal: usize,
-        control: &Control<'_>,
-    ) -> Result<Region, Stop> {
+    pub fn region(&self, ordinal: usize, control: &Control<'_>) -> Result<Region, Stop> {
         self.region_at(ordinal, control)?
             .ok_or_else(|| control.refuse(Stop::IncompleteTraversal))
     }
@@ -67,11 +59,7 @@ impl SourceTree {
             .get(ordinal, control)
             .map(|region| region.copied())
     }
-    pub fn parent(
-        &self,
-        ordinal: usize,
-        control: &Control<'_>,
-    ) -> Result<Option<usize>, Stop> {
+    pub fn parent(&self, ordinal: usize, control: &Control<'_>) -> Result<Option<usize>, Stop> {
         control.checkpoint(1)?;
         self.parents
             .get(ordinal, control)

@@ -8,7 +8,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         use WorthQueryHomeRetirementDenial as Denial;
         use WorthQueryHomeRetirementOwner as Owner;
         let mut custody = self
-            .inner.runtime
+            .inner
+            .runtime
             .inbound_custody
             .try_lock()
             .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?;
@@ -23,11 +24,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     terminal.publication().publication().commit().identity(),
                 )
                 .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?;
-            self.inner.runtime
+            self.inner
+                .runtime
                 .primary_provider
                 .retain_canonical_inbound_terminal(terminal, protection)
                 .map_err(|_| Denial::Busy(Owner::PublicationReceipts))?;
         }
-        custody.preflight_home_retirement(request).map_err(Into::into)
+        custody
+            .preflight_home_retirement(request)
+            .map_err(Into::into)
     }
 }

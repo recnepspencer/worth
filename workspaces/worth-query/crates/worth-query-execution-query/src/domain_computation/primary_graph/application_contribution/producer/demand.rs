@@ -23,11 +23,11 @@ mod fulfillment;
 pub use durable::WorthQueryOriginalOutputDemand;
 pub mod progression;
 pub use progression::DecisionInput;
-pub use progression::PerformedMembers;
-pub use progression::SelectedDecisionInput;
 pub use progression::MatchedRequiredPredecessors;
+pub use progression::PerformedMembers;
 pub use progression::ReboundConsumedOutput;
 pub use progression::ResolvedRequiredPredecessors;
+pub use progression::SelectedDecisionInput;
 mod readiness;
 pub mod required_continuations;
 pub mod required_provenance;
@@ -266,7 +266,6 @@ where
         ))
     }
 }
-
 
 mod own_effect_assertions;
 mod own_effect_observation;

@@ -43,11 +43,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         entry.compare_and_commit_application_in_advancement(idempotency, allocation_policy)
     }
 
-    pub fn compare_and_commit_application_in_advancement_with_history<
-        Operation,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_application_in_advancement_with_history<Operation, Input, Scope>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,

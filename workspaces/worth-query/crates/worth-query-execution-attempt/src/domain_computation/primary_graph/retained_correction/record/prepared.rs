@@ -17,8 +17,7 @@ pub struct PreparedCorrectionSnapshot {
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RecordedCorrectionTarget {
-    pub owner:
-        worth_foundational::facade::DurableWorldOwnerIdentity,
+    pub owner: worth_foundational::facade::DurableWorldOwnerIdentity,
     pub branch: String,
     pub incarnation: u64,
     pub generation: u64,
@@ -28,10 +27,7 @@ pub struct RecordedCorrectionTarget {
 }
 
 impl RecordedCorrectionTarget {
-    pub fn matches(
-        &self,
-        target: &worth_runtime_world::facade::ProductBranchObservation,
-    ) -> bool {
+    pub fn matches(&self, target: &worth_runtime_world::facade::ProductBranchObservation) -> bool {
         target.owner_identity().durable() == Some(self.owner)
             && target.branch_identity().name().as_str() == self.branch
             && target.lifecycle_incarnation().ordinal() == self.incarnation

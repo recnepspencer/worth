@@ -16,8 +16,8 @@ pub use worth_query_execution_lineage::facade::primary_graph::provider::applicat
     PreparedRebaseDenial, RebaseVerificationFailure, RebaseVerificationReason, RebasedSourceFacts,
 };
 
-pub mod executed_adoption;
 pub mod adjacency;
+pub mod executed_adoption;
 pub mod predecessor_output;
 pub mod resolution;
 pub mod retirement;

@@ -10,9 +10,7 @@ fn node<T>(len: usize) -> Option<u64> {
     )
 }
 impl ComputationFactAttribution {
-    pub fn historical_handler_keys(
-        &self,
-    ) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
+    pub fn historical_handler_keys(&self) -> impl Iterator<Item = &WorthQueryApplicationFactKey> {
         self.handler.iter().flat_map(|keys| keys.iter())
     }
 

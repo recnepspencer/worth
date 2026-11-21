@@ -1,7 +1,7 @@
 //! Pure workflow history view wrapper structs.
+use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 use std::sync::Arc;
 use worth_relational::facade::identity::EntityId;
-use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryWorkflowRecordedActor(pub EntityId);

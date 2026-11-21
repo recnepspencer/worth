@@ -38,9 +38,7 @@ pub struct WorthQueryWorkflowApprovalAuthority {
 }
 
 impl WorthQueryAdmittedOperation {
-    pub fn binding_identity(
-        &self,
-    ) -> &ApplicationSchemaBindingIdentity {
+    pub fn binding_identity(&self) -> &ApplicationSchemaBindingIdentity {
         &self.data.binding_identity
     }
 
@@ -59,21 +57,15 @@ impl WorthQueryAdmittedOperation {
         self.data.runtime_authority
     }
 
-    pub const fn admission_identity(
-        &self,
-    ) -> WorthQueryOperationAdmissionIdentity {
+    pub const fn admission_identity(&self) -> WorthQueryOperationAdmissionIdentity {
         self.data.admission_identity
     }
 
-    pub const fn scope_entity_id(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    pub const fn scope_entity_id(&self) -> worth_relational::facade::identity::EntityId {
         self.data.scope_entity_id
     }
 
-    pub const fn scope_entity_kind(
-        &self,
-    ) -> worth_relational::facade::identity::KindId {
+    pub const fn scope_entity_kind(&self) -> worth_relational::facade::identity::KindId {
         self.data.scope_entity_kind
     }
 
@@ -85,29 +77,21 @@ impl WorthQueryAdmittedOperation {
         &self.data.operation
     }
 
-    pub fn allowed_graph_contract(
-        &self,
-    ) -> &WorthQueryCompiledApplicationOperationContracts {
+    pub fn allowed_graph_contract(&self) -> &WorthQueryCompiledApplicationOperationContracts {
         &self.data.contracts
     }
 
     /// Retain the actual installed immutable descriptor for checked read
     /// layout reuse. Identity grants no source, session or currentness custody.
-    pub fn retain_graph_contract(
-        &self,
-    ) -> Arc<WorthQueryCompiledApplicationOperationContracts> {
+    pub fn retain_graph_contract(&self) -> Arc<WorthQueryCompiledApplicationOperationContracts> {
         Arc::clone(&self.data.contracts)
     }
 
-    pub const fn mutation_preconditions(
-        &self,
-    ) -> &WorthQueryBoundMutationPreconditions {
+    pub const fn mutation_preconditions(&self) -> &WorthQueryBoundMutationPreconditions {
         &self.data.mutation_preconditions
     }
 
-    pub const fn canonical_work(
-        &self,
-    ) -> WorthQueryCanonicalWorkPhases {
+    pub const fn canonical_work(&self) -> WorthQueryCanonicalWorkPhases {
         self.data.canonical_work
     }
 
@@ -129,9 +113,7 @@ impl WorthQueryAdmittedOperation {
         self.data.authorization_basis.is_elevation_lifecycle()
     }
 
-    pub fn installed_capability_authority_identity(
-        &self,
-    ) -> Option<&str> {
+    pub fn installed_capability_authority_identity(&self) -> Option<&str> {
         self.data
             .authorization
             .as_ref()?
@@ -171,9 +153,7 @@ impl WorthQueryAdmittedOperation {
             .map(WorthQueryRetainedCapabilityAuthorization::timeline)
     }
 
-    pub fn capability_time_sample(
-        &self,
-    ) -> Option<&worth_foundational::facade::AspectValue> {
+    pub fn capability_time_sample(&self) -> Option<&worth_foundational::facade::AspectValue> {
         self.data
             .authorization
             .as_ref()?
@@ -181,9 +161,7 @@ impl WorthQueryAdmittedOperation {
             .map(WorthQueryRetainedCapabilityAuthorization::sampled_value)
     }
 
-    pub fn workflow_approval_authority(
-        &self,
-    ) -> Option<WorthQueryWorkflowApprovalAuthority> {
+    pub fn workflow_approval_authority(&self) -> Option<WorthQueryWorkflowApprovalAuthority> {
         let authorization = self
             .data
             .authorization
@@ -202,9 +180,7 @@ impl WorthQueryAdmittedOperation {
         })
     }
 
-    pub fn relational_counters(
-        &self,
-    ) -> RelationalAuthorizationObservationCounters {
+    pub fn relational_counters(&self) -> RelationalAuthorizationObservationCounters {
         self.data
             .authorization
             .as_ref()
@@ -226,9 +202,7 @@ impl WorthQueryAdmittedOperation {
         self.data.authorization.as_mut()
     }
 
-    pub fn authorization(
-        &self,
-    ) -> Option<&WorthQueryRetainedAuthorizationDecisionFacts> {
+    pub fn authorization(&self) -> Option<&WorthQueryRetainedAuthorizationDecisionFacts> {
         self.data.authorization.as_ref()
     }
 
@@ -268,9 +242,7 @@ impl WorthQueryAdmittedOperation {
     ///
     /// Carried onto commit receipts (R8.62 / C1). Descriptive fingerprints are
     /// not a substitute for this identity.
-    pub const fn installed_operation_identity_bytes(
-        &self,
-    ) -> &[u8; 32] {
+    pub const fn installed_operation_identity_bytes(&self) -> &[u8; 32] {
         &self.data.operation_authority_identity_bytes
     }
 
@@ -310,9 +282,7 @@ impl WorthQueryAdmittedOperation {
         self.data.source_expectation_kind
     }
 
-    pub const fn source_partition_identity(
-        &self,
-    ) -> Option<[u8; 32]> {
+    pub const fn source_partition_identity(&self) -> Option<[u8; 32]> {
         self.data.source_partition_identity
     }
 
@@ -331,9 +301,7 @@ impl WorthQueryAdmittedOperation {
     /// Stable identity of the authenticated runtime, installed operation,
     /// principal, and typed scope. It intentionally excludes snapshot identity
     /// so an equivalent authorized retry can retain one idempotency intent.
-    pub const fn operation_scope_binding(
-        &self,
-    ) -> &WorthQueryOperationScopeBinding {
+    pub const fn operation_scope_binding(&self) -> &WorthQueryOperationScopeBinding {
         &self.data.operation_scope_binding
     }
 }

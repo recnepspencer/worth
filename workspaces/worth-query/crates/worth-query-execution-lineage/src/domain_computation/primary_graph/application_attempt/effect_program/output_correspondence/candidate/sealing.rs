@@ -1,10 +1,7 @@
 //! Seal already admitted canonical roles and separately typed closure evidence.
 use super::*;
 impl WorthQueryApplicationOutputCorrespondenceCandidate {
-    pub fn seal(
-        self,
-        commit: &CommitResult,
-    ) -> WorthQueryApplicationOutputCorrespondence {
+    pub fn seal(self, commit: &CommitResult) -> WorthQueryApplicationOutputCorrespondence {
         self.seal_with(|created| commit.created_entity(created))
     }
 

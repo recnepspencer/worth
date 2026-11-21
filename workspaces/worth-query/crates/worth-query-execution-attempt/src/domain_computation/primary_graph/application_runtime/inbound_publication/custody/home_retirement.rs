@@ -1,6 +1,6 @@
 //! Close-custody correlation set for installed transport completion.
-use std::collections::BTreeSet;
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
+use std::collections::BTreeSet;
 
 #[derive(Default)]
 pub struct InstalledTransportCloseCustody {

@@ -15,6 +15,5 @@ pub use handle::WorthQueryRecoveryHandle;
 pub use identity::WorthQueryOpaqueRecoveryWireIdentity;
 pub use identity::WorthQueryRecoveryHandleAuthorityIdentity;
 
-
 pub mod transition_denial;
 pub use transition_denial::WorthQueryRecoveryTransitionDenial;

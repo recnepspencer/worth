@@ -22,8 +22,7 @@ use index_installation::primary_index_inventory;
 /// Query integration code receives a separate hidden handle so product
 /// consumers cannot bypass installed Query authority.
 pub struct WorthQueryPrimaryGraph {
-    pub application_publication:
-        Option<Arc<application_publication::ApplicationPublication>>,
+    pub application_publication: Option<Arc<application_publication::ApplicationPublication>>,
     runtime_authority:
         crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     relational_runtime_instance_id: u64,
@@ -101,10 +100,7 @@ impl WorthQueryPrimaryGraph {
         self
     }
 
-    pub fn bind_truth_partition(
-        &mut self,
-        role: worth_foundational::facade::TruthPartitionRole,
-    ) {
+    pub fn bind_truth_partition(&mut self, role: worth_foundational::facade::TruthPartitionRole) {
         self.source_owner
             .bind_truth_partition(
                 "primary",
@@ -137,9 +133,7 @@ impl WorthQueryPrimaryGraph {
         Arc::clone(&self.layout)
     }
 
-    pub fn managed_derived_views(
-        &self,
-    ) -> Arc<dyn crate::ports::ManagedDerivedViewPort> {
+    pub fn managed_derived_views(&self) -> Arc<dyn crate::ports::ManagedDerivedViewPort> {
         Arc::clone(&self.managed_derived_views)
     }
 
@@ -196,9 +190,7 @@ pub struct WorthQueryPrimaryGraphIntegrationHandle {
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
-    pub fn managed_derived_views(
-        &self,
-    ) -> Arc<dyn crate::ports::ManagedDerivedViewPort> {
+    pub fn managed_derived_views(&self) -> Arc<dyn crate::ports::ManagedDerivedViewPort> {
         Arc::clone(&self.managed_derived_views)
     }
 

@@ -39,15 +39,11 @@ impl WorthQueryApplicationConditionalPackageContract {
         self
     }
 
-    pub fn domain_operation(
-        &self,
-    ) -> &WorthQueryPortableDomainOperationDefinition {
+    pub fn domain_operation(&self) -> &WorthQueryPortableDomainOperationDefinition {
         &self.domain_operation
     }
 
-    pub fn operation_binding(
-        &self,
-    ) -> &WorthQueryPortableApplicationConditionalOperationBinding {
+    pub fn operation_binding(&self) -> &WorthQueryPortableApplicationConditionalOperationBinding {
         &self.operation_binding
     }
 

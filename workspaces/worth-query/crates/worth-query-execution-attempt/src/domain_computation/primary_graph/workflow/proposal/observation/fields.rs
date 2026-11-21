@@ -83,9 +83,7 @@ pub(super) fn optional_identity(
     Ok(Some(identity))
 }
 
-pub fn decode_identity(
-    text: &str,
-) -> Option<[u8; 32]> {
+pub fn decode_identity(text: &str) -> Option<[u8; 32]> {
     if text.len() != 64 || !text.is_ascii() {
         return None;
     }

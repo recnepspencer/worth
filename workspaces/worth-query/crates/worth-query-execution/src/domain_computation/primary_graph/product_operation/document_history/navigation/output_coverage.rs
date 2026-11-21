@@ -17,7 +17,12 @@ pub(super) fn require<'s, S: ApplicationSchema>(
     if authority.selected_graph().is_none() {
         return Ok(());
     }
-    let graph = &selected_output.application().inner.runtime.primary_provider.graph;
+    let graph = &selected_output
+        .application()
+        .inner
+        .runtime
+        .primary_provider
+        .graph;
     graph.with_runtime(execution, |native| {
         let evidence = authority.selected_output_read(execution, native)
             .map_err(Denial::SelectionRead)?;

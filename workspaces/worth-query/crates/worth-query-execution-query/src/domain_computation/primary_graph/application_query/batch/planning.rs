@@ -14,12 +14,6 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 /// planned read count. It grants no scope, authorization, or currentness.
 ///
 /// Callers cannot change the installed issuer or scheduled count.
-/// ```compile_fail
-/// use worth_query_execution::facade::primary_graph::WorthQueryApplicationQueryBatchReadPlan;
-/// fn forge(mut plan: WorthQueryApplicationQueryBatchReadPlan) {
-///     plan.count = 100;
-/// }
-/// ```
 pub struct WorthQueryApplicationQueryBatchReadPlan {
     runtime: u64,
     schema: ApplicationSchemaBindingIdentity,

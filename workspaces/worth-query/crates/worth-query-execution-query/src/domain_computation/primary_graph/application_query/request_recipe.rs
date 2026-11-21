@@ -116,18 +116,13 @@ impl CapturedSourceQueryRequest {
     pub fn corrupt_seal_for_test(&mut self) {
         self.seal[0] ^= 1;
     }
-    pub fn parameters(
-        &self,
-    ) -> &WorthQueryAdmittedApplicationQueryParameters {
+    pub fn parameters(&self) -> &WorthQueryAdmittedApplicationQueryParameters {
         self.parameters.parameters()
     }
     pub fn scope(&self) -> Option<&AspectValue> {
         self.request.scope()
     }
-    pub fn matches_binding<
-        S: ApplicationSchema,
-        B: ApplicationQueryBinding<S>,
-    >(
+    pub fn matches_binding<S: ApplicationSchema, B: ApplicationQueryBinding<S>>(
         &self,
         _installed: &worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding<
             S,
@@ -141,10 +136,7 @@ impl CapturedSourceQueryRequest {
         self.binding == EqualityTypeId::of::<B>()
             && self.field == (field.entity(), field.aspect(), field.field())
     }
-    pub fn validate(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<bool, Cause> {
+    pub fn validate(&self, execution: &ExecutionRequest<'_, '_>) -> Result<bool, Cause> {
         let work = self
             .field
             .0

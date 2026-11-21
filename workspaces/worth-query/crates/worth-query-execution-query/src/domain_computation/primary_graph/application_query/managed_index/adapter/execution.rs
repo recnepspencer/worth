@@ -28,11 +28,7 @@ use worth_query_declaration::facade::{
 };
 use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
 
-pub trait ErasedIndexExecutor<
-    S,
->:
-    Send + Sync
-{
+pub trait ErasedIndexExecutor<S>: Send + Sync {
     fn admits(&self, association: &WorthQueryInstalledManagedIndexParent) -> bool;
     #[allow(clippy::too_many_arguments)]
     fn select<'a, 'request, 'authority>(
@@ -155,9 +151,10 @@ where
             .primary_graph()
             .ok_or(Denial::ForeignAssociation)?;
         let views = graph.managed_derived_views();
-        let state = crate::domain_computation::primary_graph::downcast_managed_views(views.as_ref())
-            .find_index(execution, &candidate)
-            .map_err(Denial::Lifecycle)?;
+        let state =
+            crate::domain_computation::primary_graph::downcast_managed_views(views.as_ref())
+                .find_index(execution, &candidate)
+                .map_err(Denial::Lifecycle)?;
         // Only the same configured allocation can match this candidate. The
         // registry owns the live state; this temporary header is not a root.
         execution::select(

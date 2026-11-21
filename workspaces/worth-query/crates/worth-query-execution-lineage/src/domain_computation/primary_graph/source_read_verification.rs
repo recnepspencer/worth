@@ -77,11 +77,7 @@ impl<'runtime> SourceReadVerification<'runtime> {
         }
     }
 
-    pub fn answers_image(
-        &self,
-        runtime: &RelationalRuntime,
-        snapshot: &SnapshotHandle,
-    ) -> bool {
+    pub fn answers_image(&self, runtime: &RelationalRuntime, snapshot: &SnapshotHandle) -> bool {
         std::ptr::eq(self.runtime, runtime)
             && matches!(&self.pin, image::VerificationImage::Committed(pin) if pin.snapshot() == snapshot)
     }

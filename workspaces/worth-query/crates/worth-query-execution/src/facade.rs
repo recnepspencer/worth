@@ -320,6 +320,7 @@ pub mod integration {
     pub fn retain_primary_graph_integration_handle(
         runtime: &WorthQueryExecutionRuntime,
     ) -> Option<WorthQueryPrimaryGraphIntegrationHandle> {
+        use worth_query_execution_query::facade::ports::ExecutionRuntimePrimaryGraphPort as _;
         runtime.retain_primary_graph_integration_handle()
     }
 

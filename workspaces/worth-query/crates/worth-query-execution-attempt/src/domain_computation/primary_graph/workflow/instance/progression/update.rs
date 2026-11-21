@@ -33,15 +33,11 @@ impl WorkflowTransitionProgressBasis {
         }
     }
 
-    pub const fn progress(
-        &self,
-    ) -> &WorkflowInstanceProgress {
+    pub const fn progress(&self) -> &WorkflowInstanceProgress {
         &self.progress
     }
 
-    pub const fn replay_retention(
-        &self,
-    ) -> (WorkflowInstanceProgressKey, Option<VersionId>) {
+    pub const fn replay_retention(&self) -> (WorkflowInstanceProgressKey, Option<VersionId>) {
         (self.key, self.revision)
     }
 
@@ -136,18 +132,13 @@ impl PreparedWorkflowProgressUpdate {
         self.captured_inputs = support;
         self
     }
-    pub const fn key(
-        &self,
-    ) -> WorkflowInstanceProgressKey {
+    pub const fn key(&self) -> WorkflowInstanceProgressKey {
         self.key
     }
 
     /// Charges the assessment evidence this step writes to the progress it
     /// commits.
-    pub const fn charging_evidence(
-        mut self,
-        bytes: u64,
-    ) -> Self {
+    pub const fn charging_evidence(mut self, bytes: u64) -> Self {
         self.evidence_bytes = bytes;
         self
     }

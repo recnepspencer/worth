@@ -21,9 +21,7 @@ fn posture_code(posture: ApplicationMutationOutputPosture) -> u8 {
     }
 }
 
-pub trait InstalledProducerEditionExt:
-    Sized + Copy
-{
+pub trait InstalledProducerEditionExt: Sized + Copy {
     fn admits_binding<Schema, Binding>(self) -> bool
     where
         Schema: worth_query_installation::facade::ApplicationSchema + 'static,
@@ -43,9 +41,8 @@ impl InstalledProducerEditionExt for InstalledProducerEdition {
     {
         self.matches_types(
             TypeId::of::<Binding>(),
-            TypeId::of::<
-                <Binding::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source,
-            >(),
+            TypeId::of::<<Binding::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source>(
+            ),
             TypeId::of::<Binding::Operation>(),
             TypeId::of::<Binding::Provider>(),
         )

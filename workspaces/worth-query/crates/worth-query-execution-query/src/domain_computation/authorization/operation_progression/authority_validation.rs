@@ -1,5 +1,6 @@
 //! Exact operation-authority validation phase owner.
 
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
@@ -20,9 +21,7 @@ pub mod precondition_binding;
 pub use precondition_binding::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use precondition_binding::WorthQueryAdmittedApplicationOperation;
 pub use precondition_binding::WorthQueryOperationAdmissionIdentity;
-pub use precondition_binding::{
-    admit_capability_access, admit_encoded_capability_access,
-};
+pub use precondition_binding::{admit_capability_access, admit_encoded_capability_access};
 pub use precondition_binding::{
     authorize_applied_control_mutation_on_selected, authorize_current_control_mutation_on_selected,
     authorize_historical_control_mutation_on_selected, authorize_public_mutation_on_selected,
@@ -102,13 +101,8 @@ where
     })
 }
 
-pub struct ValidatedCapabilityOperation<
-    'a,
-    Schema,
-    Capability,
-    Operation,
-    Input,
-> where
+pub struct ValidatedCapabilityOperation<'a, Schema, Capability, Operation, Input>
+where
     Input: ApplicationCapabilityRequest<Schema, Capability>,
 {
     runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -138,6 +132,4 @@ where
     })
 }
 
-pub use precondition_binding::{
-    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
-};
+pub use precondition_binding::{BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation};

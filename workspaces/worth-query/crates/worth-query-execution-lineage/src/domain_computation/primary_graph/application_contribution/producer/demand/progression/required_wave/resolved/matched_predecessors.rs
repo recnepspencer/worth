@@ -1,12 +1,11 @@
 //! Exact consumer custody and the successors matched to its consumed roots.
+use crate::domain_computation::primary_graph::{
+    invariant_projection::ConsumedOutputEvidence, output_lineage::RecordedSettlementIdentity,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+};
 use std::sync::Arc;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
-use crate::domain_computation::primary_graph::{
-    invariant_projection::ConsumedOutputEvidence,
-    output_lineage::RecordedSettlementIdentity,
-    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
-};
 
 fn capacity_denial() -> WorthQueryOutputDemandDenial {
     WorthQueryOutputDemandDenial::new(
@@ -85,9 +84,7 @@ impl<'a> MatchedRequiredPredecessors<'a> {
         Ok(self._custody.matches(identity))
     }
 
-    pub fn old_identities(
-        &self,
-    ) -> impl Iterator<Item = &Arc<RecordedSettlementIdentity>> {
+    pub fn old_identities(&self) -> impl Iterator<Item = &Arc<RecordedSettlementIdentity>> {
         self.roots.iter().map(|root| &root.old)
     }
     pub fn replacement(

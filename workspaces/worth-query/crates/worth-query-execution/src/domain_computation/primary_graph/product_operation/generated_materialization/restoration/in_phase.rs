@@ -43,7 +43,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         if !suspended.matches_provider_version::<Schema, Producer>()
-            || self.inner.installed_producers.provider::<Producer>().is_none()
+            || self
+                .inner
+                .installed_producers
+                .provider::<Producer>()
+                .is_none()
         {
             return Err(restoration_failure(
                 suspended,
@@ -57,7 +61,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         let gate = match self
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .activations
             .gate(suspended.publication.observation().branch_identity())
@@ -86,22 +91,23 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             correspondence,
             producer,
         } = suspended;
-        let prepared = self
-            .inner.runtime
-            .primary_provider
-            .graph
-            .with_runtime(&execution, |runtime| {
-                runtime
-                    .owner_component_services()
-                    .materialization_port()
-                    .prepare_generated_rematerialization(
-                        &execution,
-                        publication.observation().basis().relational_basis(),
-                        custody,
-                        entities,
-                        relations,
-                    )
-            });
+        let prepared =
+            self.inner
+                .runtime
+                .primary_provider
+                .graph
+                .with_runtime(&execution, |runtime| {
+                    runtime
+                        .owner_component_services()
+                        .materialization_port()
+                        .prepare_generated_rematerialization(
+                            &execution,
+                            publication.observation().basis().relational_basis(),
+                            custody,
+                            entities,
+                            relations,
+                        )
+                });
         let prepared = match prepared {
             Ok(prepared) => prepared,
             Err(failure) => {

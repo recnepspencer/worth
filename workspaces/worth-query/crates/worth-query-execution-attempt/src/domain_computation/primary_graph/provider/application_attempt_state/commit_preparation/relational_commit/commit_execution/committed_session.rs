@@ -28,29 +28,21 @@ impl WorthQueryCommittedApplicationSession {
     ) -> crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource{
         crate::domain_computation::primary_graph::application_installation::WorthQueryRecoveredProgramOutputSource::take_original(&self.product_publication)
     }
-    pub fn take_prepared_touched_records(
-        &mut self,
-    ) -> PreparedTouchedRecords {
+    pub fn take_prepared_touched_records(&mut self) -> PreparedTouchedRecords {
         self.prepared_touched_records
             .take()
             .expect("pre-effect native touched-record receipt storage follows publication")
     }
-    pub fn take_source_fact_rebase(
-        &mut self,
-    ) -> super::super::PreparedSourceFactRebase {
+    pub fn take_source_fact_rebase(&mut self) -> super::super::PreparedSourceFactRebase {
         self.source_fact_rebase
             .take()
             .expect("pre-effect source-fact rebase capacity follows the committed candidate")
     }
-    pub const fn attempt(
-        &self,
-    ) -> &WorthQueryPrimaryGraphApplicationAttempt {
+    pub const fn attempt(&self) -> &WorthQueryPrimaryGraphApplicationAttempt {
         &self.attempt
     }
 
-    pub const fn work(
-        &self,
-    ) -> WorthQueryPrimaryMutationWorkCounters {
+    pub const fn work(&self) -> WorthQueryPrimaryMutationWorkCounters {
         self.work
     }
 
@@ -66,15 +58,11 @@ impl WorthQueryCommittedApplicationSession {
         self.retained_preimage.as_ref()
     }
 
-    pub const fn preimage_retention_work(
-        &self,
-    ) -> WorthQueryPreImageRetentionWork {
+    pub const fn preimage_retention_work(&self) -> WorthQueryPreImageRetentionWork {
         self.preimage_retention_work
     }
 
-    pub fn changed_records(
-        &self,
-    ) -> &[worth_relational::facade::transactions::RecordRef] {
+    pub fn changed_records(&self) -> &[worth_relational::facade::transactions::RecordRef] {
         self.own_records
             .as_ref()
             .map(|records| records.elements())
@@ -99,9 +87,7 @@ impl WorthQueryCommittedApplicationSession {
             None => self.attempt.seal_output_correspondence(&self.committed),
         }
     }
-    pub fn committed(
-        &self,
-    ) -> &worth_relational::facade::transactions::CommitResult {
+    pub fn committed(&self) -> &worth_relational::facade::transactions::CommitResult {
         self.committed.as_ref()
     }
 

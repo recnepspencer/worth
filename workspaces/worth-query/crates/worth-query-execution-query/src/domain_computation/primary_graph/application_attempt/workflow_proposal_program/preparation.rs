@@ -1,5 +1,5 @@
-use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::{
     application_program::ApplicationWorkflowSpec,
@@ -13,7 +13,8 @@ use super::{PreparedWorkflowProposal, WorkflowProposalOutcome};
 use crate::domain_computation::primary_graph::{
     PublishedWorkflowInstanceRef, WorthQueryAdmittedApplicationOperation,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryOperationProjectionDenial, WorthQuerySelectedProductOperation,
+    WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryOperationProjectionDenial,
+    WorthQuerySelectedProductOperation,
 };
 
 /// Why a workflow proposal could not bind to the branch's program: the installed spec
@@ -49,12 +50,7 @@ where
     Schema: ApplicationSchema,
 {
     #[allow(clippy::too_many_arguments)]
-    pub fn prepare_workflow_proposal<
-        Operation,
-        Input,
-        Scope,
-        Spec,
-    >(
+    pub fn prepare_workflow_proposal<Operation, Input, Scope, Spec>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

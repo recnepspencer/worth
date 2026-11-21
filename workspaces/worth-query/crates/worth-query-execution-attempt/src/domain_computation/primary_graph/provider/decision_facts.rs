@@ -1,4 +1,3 @@
-
 pub mod comparison;
 pub use comparison::PrimaryDecisionReadSetComparison;
 
@@ -11,7 +10,9 @@ use crate::domain_computation::{
     WorthQueryProviderSessionView,
 };
 
-impl WorthQueryDecisionFactProvider for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc {
+impl WorthQueryDecisionFactProvider
+    for crate::domain_computation::runtime_ports::PrimaryGraphProviderArc
+{
     fn observe_decision_fact(
         &self,
         session: WorthQueryProviderSessionView<'_>,

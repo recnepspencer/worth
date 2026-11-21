@@ -5,9 +5,7 @@ pub struct PredicateWorld {
     pub incarnation: worth_runtime_world::facade::ProductBranchIncarnation,
 }
 impl PredicateWorld {
-    pub fn of(
-        observation: &worth_runtime_world::facade::ProductBranchObservation,
-    ) -> Self {
+    pub fn of(observation: &worth_runtime_world::facade::ProductBranchObservation) -> Self {
         Self {
             branch: observation.branch_identity().clone(),
             incarnation: observation.lifecycle_incarnation(),

@@ -232,10 +232,7 @@ impl WorthQueryDispatchJournal {
 
     /// The latest durable custody of one effect. `None` for a memory-only
     /// runtime and for an effect no attempt has been recorded for.
-    pub fn custody(
-        &self,
-        correlation: &CanonicalDigestId,
-    ) -> Option<QueryDispatchCustody> {
+    pub fn custody(&self, correlation: &CanonicalDigestId) -> Option<QueryDispatchCustody> {
         self.state()
             .as_ref()
             .and_then(|state| state.ledger.custody(correlation))

@@ -1,7 +1,7 @@
 //! Original World publication and candidate-affine recovery retain exact D.
-use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::ProductPublicationBindingPrimaryExt;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::{
     execution_runtime::product_world::{
         publication_denial::{
@@ -40,17 +40,18 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         candidate: WorthQueryExpectedProductBranch<'runtime, S>,
         publication: WorthQueryPreparedProductPublication,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
-        let execution =
-            match phase.checked_execution_request_for(&self.application.inner.runtime.product_runtime) {
-                Ok(execution) => execution,
-                Err(cause) => {
-                    self.phase = NavigationPhase::Publication {
-                        candidate,
-                        publication,
-                    };
-                    return Err(WorthQueryHistoryNavigationDenial::Stopped(cause));
-                }
-            };
+        let execution = match phase
+            .checked_execution_request_for(&self.application.inner.runtime.product_runtime)
+        {
+            Ok(execution) => execution,
+            Err(cause) => {
+                self.phase = NavigationPhase::Publication {
+                    candidate,
+                    publication,
+                };
+                return Err(WorthQueryHistoryNavigationDenial::Stopped(cause));
+            }
+        };
         match publication.execute(execution) {
             Ok(Outcome::Performed(performed)) => {
                 self.performed(candidate, performed);
@@ -96,7 +97,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .finish(committed)
                 .expect("World performed the prepared selection envelope");
             self.application
-                .inner.runtime
+                .inner
+                .runtime
                 .primary_provider
                 .graph
                 .output_lineage
@@ -155,12 +157,14 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         WorthQueryProductUnpublishedApplication::new(
             effects,
             self.application
-                .inner.runtime
+                .inner
+                .runtime
                 .product_runtime
                 .owner
                 .recovery_port(),
             self.application
-                .inner.runtime
+                .inner
+                .runtime
                 .primary_provider
                 .unpublished_idempotency_disposition(),
         )
@@ -181,7 +185,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .map_err(Denial::Stopped)?;
             let product = self
                 .application
-                .inner.runtime
+                .inner
+                .runtime
                 .product_runtime
                 .admit_product_occurrence(candidate.branch().occurrence())
                 .map_err(Denial::ProductAdmission)?;
@@ -223,18 +228,19 @@ PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
                 return Err(cause);
             }
         };
-        let execution =
-            match phase.checked_execution_request_for(&self.application.inner.runtime.product_runtime) {
-                Ok(execution) => execution,
-                Err(cause) => {
-                    drop(publication);
-                    self.phase = NavigationPhase::Unpublished {
-                        candidate,
-                        recovery,
-                    };
-                    return Err(Denial::Stopped(cause));
-                }
-            };
+        let execution = match phase
+            .checked_execution_request_for(&self.application.inner.runtime.product_runtime)
+        {
+            Ok(execution) => execution,
+            Err(cause) => {
+                drop(publication);
+                self.phase = NavigationPhase::Unpublished {
+                    candidate,
+                    recovery,
+                };
+                return Err(Denial::Stopped(cause));
+            }
+        };
         match publication.execute(execution) {
             Ok(Outcome::Performed(performed)) => {
                 self.performed(candidate, performed);

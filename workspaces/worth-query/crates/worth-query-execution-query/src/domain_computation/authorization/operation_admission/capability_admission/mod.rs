@@ -23,9 +23,7 @@ pub use preparation::WorthQueryAdmittedApplicationCapabilityAccess;
 use preparation::{
     complete_capability_admission, prepare_capability_admission, CapabilityAdmissionInput,
 };
-pub use preparation::{
-    WorthQueryCapabilityContextKey, WorthQueryResolvedCapabilityRequest,
-};
+pub use preparation::{WorthQueryCapabilityContextKey, WorthQueryResolvedCapabilityRequest};
 pub use preparation::{
     WorthQueryCurrentCapabilityObservation, WorthQueryDelegationResolvedRequest,
     WorthQueryExactCapabilityObservationContext,

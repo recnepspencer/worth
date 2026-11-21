@@ -17,11 +17,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn compare_and_commit_workflow_advance<
-        Operation: 'static,
-        Input,
-        Scope,
-    >(
+    pub fn compare_and_commit_workflow_advance<Operation: 'static, Input, Scope>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -237,7 +233,7 @@ pub fn project(
             let [evidence] = candidates.as_slice() else {
                 return WorkflowProgressOutcome::ProjectionDenied(receipt);
             };
-            Some(PerformedWorkflowAssessmentEvidence::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::assessment_evidence::PerformedWorkflowAssessmentEvidenceAttemptParts {
+            Some(PerformedWorkflowAssessmentEvidence {
                 evidence: *evidence,
                 identity: assessment.identity,
                 producer: assessment.producer,
@@ -253,7 +249,7 @@ pub fn project(
                 passing: assessment.passing,
                 publication_identity: assessment.publication_identity,
                 output_content_identity: assessment.output_content_identity,
-            }))
+            })
         }
         None => None,
     };
@@ -269,7 +265,7 @@ pub fn project(
         }
         None => None,
     };
-    WorkflowProgressOutcome::Completed(PerformedWorkflowTransition::from_attempt_parts(worth_query_execution_attempt::facade::ports::WorthQueryAttemptCrateSeal::new(), worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::performed::PerformedWorkflowTransitionAttemptParts {
+    WorkflowProgressOutcome::Completed(PerformedWorkflowTransition {
         transition,
         node_path,
         terminal,
@@ -278,7 +274,7 @@ pub fn project(
         assessment_evidence,
         approval,
         operation_receipt_identity,
-    }))
+    })
 }
 
 #[path = "commit/approval_projection.rs"]

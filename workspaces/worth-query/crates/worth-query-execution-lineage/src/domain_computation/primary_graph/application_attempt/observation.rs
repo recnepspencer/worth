@@ -11,9 +11,7 @@ use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDeni
 
 pub mod aspect_presence;
 pub mod predecode_admission;
-pub use aspect_presence::{
-    observe_aspect_presence, observe_aspect_presence_in_view,
-};
+pub use aspect_presence::{observe_aspect_presence, observe_aspect_presence_in_view};
 pub mod read_rendezvous;
 
 std::thread_local! {
@@ -35,9 +33,7 @@ pub enum WorthQueryApplicationFieldObservation {
     UnsupportedAspectShape,
 }
 impl WorthQueryApplicationFieldObservation {
-    pub fn into_value(
-        self,
-    ) -> Option<worth_foundational::facade::AspectValue> {
+    pub fn into_value(self) -> Option<worth_foundational::facade::AspectValue> {
         match self {
             Self::Present(value) => Some(value),
             Self::Absent | Self::AspectAbsent | Self::UnsupportedAspectShape => None,

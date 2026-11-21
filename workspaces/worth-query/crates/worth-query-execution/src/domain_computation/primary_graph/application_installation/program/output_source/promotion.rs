@@ -96,7 +96,14 @@ where
                     "selected program does not own the original required source",
                 )
             })?;
-        if source.runtime_authority != self.backing.runtime().inner.runtime.authority_identity().as_u64()
+        if source.runtime_authority
+            != self
+                .backing
+                .runtime()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64()
             || source.program != *presented.rendering()
             || source.binding != TypeId::of::<Source>()
             || source.payload.root_kind() != PreparedOutputRootKind::Required(TypeId::of::<Root>())
@@ -138,7 +145,13 @@ where
                     )
                 })?;
             if source.runtime_authority
-                != self.backing.runtime().inner.runtime.authority_identity().as_u64()
+                != self
+                    .backing
+                    .runtime()
+                    .inner
+                    .runtime
+                    .authority_identity()
+                    .as_u64()
                 || source.branch != receipt.product_branch()
                 || carrier.publication.composite_commit()
                     != receipt.committed_product_publication().composite_commit()

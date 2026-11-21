@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::provider_execution::registered::*;
 
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;

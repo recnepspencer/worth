@@ -26,9 +26,7 @@ enum AppliedReadState {
     Published(PositionedRelationalSnapshot),
 }
 impl SourceQueryReadClosure {
-    pub fn retain_applied<
-        Schema: ApplicationSchema,
-    >(
+    pub fn retain_applied<Schema: ApplicationSchema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         proof: WorthQuerySessionGraphReadProof,
@@ -62,9 +60,7 @@ impl SourceQueryReadClosure {
             }),
         }))
     }
-    pub fn applied_candidate(
-        &self,
-    ) -> Option<&RelationalAppliedCandidateReadIdentity> {
+    pub fn applied_candidate(&self) -> Option<&RelationalAppliedCandidateReadIdentity> {
         match &self.authority {
             SourceQueryReadAuthority::Applied(applied) => Some(&applied.candidate),
             SourceQueryReadAuthority::Committed { .. } => None,

@@ -78,7 +78,12 @@ where
                 self.change
                     .program
                     .refuse_stale_home_authority(
-                        application.inner.runtime.product_runtime.owner.owner_identity(),
+                        application
+                            .inner
+                            .runtime
+                            .product_runtime
+                            .owner
+                            .owner_identity(),
                     )
                     .map_err(|_| WorthQueryProductTransactionCommitError::StaleIncarnation)?;
                 if !self.change.program.belongs_to_application(

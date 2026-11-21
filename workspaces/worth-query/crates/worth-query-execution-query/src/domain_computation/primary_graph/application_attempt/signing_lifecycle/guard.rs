@@ -2,9 +2,7 @@
 use super::{attempt, refused, unavailable, Effect, EntityId, Kind, Lease, Outcome};
 use worth_relational::facade::{runtime::ProjectionAspectScope, transactions::EntityReference};
 
-pub fn validate_incoming<
-    Schema,
->(
+pub fn validate_incoming<Schema>(
     lease: &Lease,
     effects: &[Effect],
     signing: Option<&super::super::signed_creation::SignedCreationState<Schema>>,

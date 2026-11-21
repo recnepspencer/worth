@@ -12,9 +12,7 @@ pub use subscription::WorthQueryLiveSubscriptionCapacityExhausted;
 pub mod testing;
 
 use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
-pub use custody::{
-    WorthQueryLivePublicationReservation, WorthQueryLiveSubscription,
-};
+pub use custody::{WorthQueryLivePublicationReservation, WorthQueryLiveSubscription};
 pub use predicate::{
     WorthQueryLivePredicateOpening, WorthQueryLivePredicatePreparation,
     WorthQueryLivePredicateSubscription,

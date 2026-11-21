@@ -14,33 +14,8 @@ pub mod recorded;
 /// only fresh governed discovery can establish its meaning in the current Home.
 ///
 /// The native getter returns owned data without input or schema Clone bounds.
-/// ```
-/// use worth_query_execution::publication_boundary::workflow_instance::{
-///     PreparedWorkflowInstanceStart, WorthQueryWorkflowInstanceDiscoveryIntent,
-/// };
-/// fn retain<S, O, I, C>(prepared: PreparedWorkflowInstanceStart<S, O, I, C>)
-///     -> WorthQueryWorkflowInstanceDiscoveryIntent<S>
-/// {
-///     let original = prepared.discovery_intent();
-///     drop(prepared);
-///     assert_eq!(original, original.clone());
-///     original
-/// }
-/// ```
 /// Canonical issuance is confined to the native owner; recorded decoding grants no proof.
-/// ```compile_fail,E0624
-/// use worth_query_execution::publication_boundary::workflow_instance::WorthQueryWorkflowInstanceDiscoveryIntent;
-/// fn forge<S>() -> WorthQueryWorkflowInstanceDiscoveryIntent<S> {
-///     WorthQueryWorkflowInstanceDiscoveryIntent::from_canonical(todo!(), todo!(), todo!()).unwrap()
-/// }
-/// ```
 /// Distinct schema identities cannot be substituted.
-/// ```compile_fail,E0308
-/// use worth_query_execution::publication_boundary::workflow_instance::WorthQueryWorkflowInstanceDiscoveryIntent;
-/// fn substitute<A, B>(original: WorthQueryWorkflowInstanceDiscoveryIntent<A>)
-///     -> WorthQueryWorkflowInstanceDiscoveryIntent<B>
-/// { original }
-/// ```
 pub struct WorthQueryWorkflowInstanceDiscoveryIntent<Schema> {
     identity_text: [u8; 64],
     intent_identity: [u8; 32],

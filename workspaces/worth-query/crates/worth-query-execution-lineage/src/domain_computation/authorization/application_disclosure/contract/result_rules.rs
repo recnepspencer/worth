@@ -2,9 +2,7 @@
 use super::admission::{pay, CompilationStop, CompilationWork};
 use super::*;
 
-pub fn selector_parts(
-    selector: &ApplicationQueryDisclosureSelector,
-) -> [&str; 7] {
+pub fn selector_parts(selector: &ApplicationQueryDisclosureSelector) -> [&str; 7] {
     match selector {
         ApplicationQueryDisclosureSelector::Field {
             query_type,

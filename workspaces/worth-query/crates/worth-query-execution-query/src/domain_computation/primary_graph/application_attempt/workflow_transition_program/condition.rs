@@ -1,4 +1,5 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{PreparedWorkflowAdvance, PreparedWorkflowCondition};

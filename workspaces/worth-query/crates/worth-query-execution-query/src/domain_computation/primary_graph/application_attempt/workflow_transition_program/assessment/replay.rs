@@ -9,17 +9,14 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryWorkflowAssessmentPosture,
 };
 
-pub trait PreparedWorkflowAdvanceAssessmentReplayExt<Schema, Operation, Input, Scope>: Sized
+pub trait PreparedWorkflowAdvanceAssessmentReplayExt<Schema, Operation, Input, Scope>:
+    Sized
 where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    fn requested_instance(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId;
-    fn resolve_assessment_replay<
-        Query,
-    >(
+    fn requested_instance(&self) -> worth_relational::facade::identity::EntityId;
+    fn resolve_assessment_replay<Query>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -30,18 +27,17 @@ where
         idempotency: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
     where
-        Input: Clone + Send + Sync + 'static,
-;
+        Input: Clone + Send + Sync + 'static;
 }
 
-impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvanceAssessmentReplayExt<Schema, Operation, Input, Scope> for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
+impl<Schema, Operation, Input, Scope>
+    PreparedWorkflowAdvanceAssessmentReplayExt<Schema, Operation, Input, Scope>
+    for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
 where
     Schema: ApplicationSchema,
     Operation: 'static,
 {
-    fn requested_instance(
-        &self,
-    ) -> worth_relational::facade::identity::EntityId {
+    fn requested_instance(&self) -> worth_relational::facade::identity::EntityId {
         match self {
             Self::Transition { instance, .. }
             | Self::AwaitingProposal { instance, .. }
@@ -54,9 +50,7 @@ where
         }
     }
 
-    fn resolve_assessment_replay<
-        Query,
-    >(
+    fn resolve_assessment_replay<Query>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

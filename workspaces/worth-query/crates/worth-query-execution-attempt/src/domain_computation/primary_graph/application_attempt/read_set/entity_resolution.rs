@@ -31,12 +31,7 @@ impl<Schema, Operation, Input, Scope, Phase>
         self.resolve_entity_with_request(&phase_request, field, value)
     }
 
-    pub fn resolve_entity_with_request<
-        Aspect,
-        Entity,
-        Field,
-        Value,
-    >(
+    pub fn resolve_entity_with_request<Aspect, Entity, Field, Value>(
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: Field,

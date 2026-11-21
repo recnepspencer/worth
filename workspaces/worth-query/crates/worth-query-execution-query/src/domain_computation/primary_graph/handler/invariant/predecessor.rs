@@ -1,7 +1,7 @@
 //! The admitted producer's sealed old-input observation door.
+use super::*;
 use crate::domain_computation::primary_graph::invariant_projection::operation_reader::original::OperationReaderOriginalExt;
 use crate::domain_computation::primary_graph::invariant_projection::operation_reader::predecessor::OperationReaderPredecessorExt;
-use super::*;
 use crate::domain_computation::primary_graph::{
     application_contribution::producer::observation_reads::WorthQueryProducerObservationReadDenial,
     invariant_projection::operation_reader::BeforeDecisionReader,

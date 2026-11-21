@@ -28,27 +28,19 @@ impl DerivedSourceObservation {
     pub fn key(&self) -> &DerivedSourceKey {
         &self.key
     }
-    pub fn native(
-        &self,
-    ) -> &PinnedDerivedRelationRead {
+    pub fn native(&self) -> &PinnedDerivedRelationRead {
         &self.native
     }
-    pub fn definition(
-        &self,
-    ) -> &DerivedRelationHandle {
+    pub fn definition(&self) -> &DerivedRelationHandle {
         &self.definition
     }
     pub fn commitment(&self) -> [u8; 32] {
         self.commitment
     }
-    pub fn source(
-        &self,
-    ) -> &super::projection_read_origin::ProjectionReadOrigin {
+    pub fn source(&self) -> &super::projection_read_origin::ProjectionReadOrigin {
         &self.snapshot
     }
-    pub fn checkpoint(
-        context: &mut MapKernelContext<'_, '_>,
-    ) -> Result<(), Cause> {
+    pub fn checkpoint(context: &mut MapKernelContext<'_, '_>) -> Result<(), Cause> {
         (if context.has_accounting() {
             context.checkpoint(1)
         } else {

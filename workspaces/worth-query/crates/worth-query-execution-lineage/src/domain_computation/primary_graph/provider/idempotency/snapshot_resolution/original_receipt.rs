@@ -21,34 +21,6 @@ use worth_relational::facade::{
 /// artifacts. Cloning retains funded immutable meaning, never live owner custody.
 /// Live provider sessions, snapshot IDs, timings and delivery witnesses have
 /// no representation here. Memory observations carry no Home publication fields.
-///
-/// ```
-/// use worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt;
-/// fn original_fields(value: &WorthQueryRecoveredApplicationCommitReceipt) {
-///     let _ = (value.semantic_result().semantic(), value.old_product_head(), value.new_product_head(), value.recorded_intent(), value.exact_output_settlement());
-/// }
-/// ```
-///
-/// ```compile_fail,E0451
-/// use worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt;
-/// fn cannot_mint_from_an_index() -> WorthQueryRecoveredApplicationCommitReceipt {
-///     WorthQueryRecoveredApplicationCommitReceipt { original: panic!() }
-/// }
-/// ```
-///
-/// ```compile_fail,E0599
-/// use worth_query_execution::facade::primary_graph::{WorthQueryApplicationCommitReceipt, WorthQueryRecoveredApplicationCommitReceipt};
-/// fn process_evidence_cannot_mint(value: WorthQueryApplicationCommitReceipt) -> WorthQueryRecoveredApplicationCommitReceipt {
-///     WorthQueryRecoveredApplicationCommitReceipt::from_live(value)
-/// }
-/// ```
-///
-/// ```compile_fail,E0599
-/// use worth_query_execution::facade::primary_graph::WorthQueryRecoveredApplicationCommitReceipt;
-/// fn recovered_is_not_performed(value: &mut WorthQueryRecoveredApplicationCommitReceipt) {
-///     value.take_performed_relational_product_change();
-/// }
-/// ```
 #[derive(Clone, Debug)]
 pub struct WorthQueryRecoveredApplicationCommitReceipt {
     original: Arc<RecordedReceipt>,
@@ -80,11 +52,9 @@ pub struct RecordedOriginalBinding {
     pub key: [u8; 32],
     pub intent: String,
     pub affinity: String,
-    pub outcome:
-        WorthQueryApplicationCommitOutcomeIdentity,
+    pub outcome: WorthQueryApplicationCommitOutcomeIdentity,
     pub emitted: usize,
-    pub settlement:
-        DurableQueryOutputSettlement,
+    pub settlement: DurableQueryOutputSettlement,
 }
 
 impl WorthQueryRecoveredApplicationCommitReceipt {

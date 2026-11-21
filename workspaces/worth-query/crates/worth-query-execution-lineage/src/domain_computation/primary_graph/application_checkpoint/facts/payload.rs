@@ -116,16 +116,12 @@ impl FactPayload {
                 _ => false,
             }
     }
-    pub fn retained_storage_bytes(
-        &self,
-    ) -> Option<u64> {
+    pub fn retained_storage_bytes(&self) -> Option<u64> {
         self.storage_bytes
     }
     /// Whole retained backing and nested payload, conservatively counting
     /// shared owners per held path; no global deduplication promise.
-    pub fn retained_resident_bytes(
-        &self,
-    ) -> Option<u64> {
+    pub fn retained_resident_bytes(&self) -> Option<u64> {
         self.resident_bytes
     }
     pub fn len(&self) -> usize {
@@ -144,18 +140,12 @@ impl FactPayload {
     pub fn iter(&self) -> FactIter<'_> {
         FactIter::new(self)
     }
-    pub fn checked_slice(
-        &self,
-        range: std::ops::Range<usize>,
-    ) -> Option<Self> {
+    pub fn checked_slice(&self, range: std::ops::Range<usize>) -> Option<Self> {
         (range.start <= range.end && range.end <= self.length).then(|| self.slice(range))
     }
     /// A view retains the complete original backing and all of its admission.
     /// Neither a range nor data equality establishes a new source binding.
-    pub fn slice(
-        &self,
-        range: std::ops::Range<usize>,
-    ) -> Self {
+    pub fn slice(&self, range: std::ops::Range<usize>) -> Self {
         assert!(range.start <= range.end && range.end <= self.length);
         Self {
             storage_bytes: self.storage_bytes,

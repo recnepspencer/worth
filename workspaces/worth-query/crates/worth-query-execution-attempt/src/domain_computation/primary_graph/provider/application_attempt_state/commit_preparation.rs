@@ -147,9 +147,7 @@ fn commit_failure(detail: &'static str) -> WorthQueryProviderSessionFailure {
     )
 }
 
-pub use relational_commit::{
-    PreparedRebaseDenial, PreparedSourceFactRebase,
-};
+pub use relational_commit::{PreparedRebaseDenial, PreparedSourceFactRebase};
 
 // Every stop here precedes the Native transaction. A read control stop keeps
 // its control posture; every other typed refusal (a content or read rejection,

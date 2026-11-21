@@ -11,9 +11,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 impl WorthQueryApplicationCommitDenial {
     /// Carries exact missing-observation and unique-value refusals through lowering.
     /// Other refusals keep their existing binding rejection and diagnostic subject.
-    pub fn effect_lowering_denied(
-        denial: &WorthQueryApplicationAttemptDenial,
-    ) -> Self {
+    pub fn effect_lowering_denied(denial: &WorthQueryApplicationAttemptDenial) -> Self {
         if let Some(cause) = denial.unobserved_write() {
             return Self::unobserved_write_denied(cause.clone());
         }

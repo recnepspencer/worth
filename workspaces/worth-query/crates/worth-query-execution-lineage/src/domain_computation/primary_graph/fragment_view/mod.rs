@@ -29,10 +29,7 @@ pub struct View<'a, F: Fragment, Access> {
 }
 
 impl<'a, F: Fragment> View<'a, F, Reading<'a>> {
-    pub fn reading(
-        definition: &'a FragmentDefinition,
-        access: &'a mut dyn ReadPort,
-    ) -> Self {
+    pub fn reading(definition: &'a FragmentDefinition, access: &'a mut dyn ReadPort) -> Self {
         Self {
             definition,
             access: Reading { port: access },
@@ -41,10 +38,7 @@ impl<'a, F: Fragment> View<'a, F, Reading<'a>> {
     }
 }
 impl<'a, F: Fragment> View<'a, F, Writing<'a>> {
-    pub fn writing(
-        definition: &'a FragmentDefinition,
-        access: &'a mut dyn WritePort,
-    ) -> Self {
+    pub fn writing(definition: &'a FragmentDefinition, access: &'a mut dyn WritePort) -> Self {
         Self {
             definition,
             access: Writing { port: access },

@@ -3,8 +3,7 @@ pub(crate) use worth_query_execution_contracts::facade::{
     execution_observation, runtime_time, WorthQueryProductStaleApplication,
 };
 pub(crate) use worth_query_execution_foundation::facade::domain_computation::{
-    artifact_identity,
-    evidence_material,
+    artifact_identity, evidence_material,
 };
 
 pub(crate) mod artifact_owner;

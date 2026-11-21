@@ -5,9 +5,7 @@ use crate::domain_computation::{
     WorthQueryDecisionReadSetDenialKind as BindingKind,
     WorthQueryDecisionReadSetFailure as BindingFailure,
 };
-pub use application_facts::{
-    CompletedApplicationFacts, SharedObservedFact, SharedReadScope,
-};
+pub use application_facts::{CompletedApplicationFacts, SharedObservedFact, SharedReadScope};
 pub use application_table::ApplicationFactTable;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
@@ -40,9 +38,7 @@ impl WorthQueryPrimaryGraphApplicationDecisionFact {
         Self::Application { read_scope, fact }
     }
 
-    pub const fn principal(
-        dependency: WorthQueryPrincipalCurrentnessDependency,
-    ) -> Self {
+    pub const fn principal(dependency: WorthQueryPrincipalCurrentnessDependency) -> Self {
         Self::Principal(dependency)
     }
 

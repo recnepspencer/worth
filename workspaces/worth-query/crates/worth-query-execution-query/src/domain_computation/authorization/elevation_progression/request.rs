@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use std::collections::BTreeSet;
@@ -64,11 +65,7 @@ where
         self.authorize_elevation_request_with_request(&execution, access, operation, preconditions)
     }
 
-    pub fn authorize_elevation_request_with_request<
-        Capability,
-        Operation,
-        Input,
-    >(
+    pub fn authorize_elevation_request_with_request<Capability, Operation, Input>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         mut access: WorthQueryAdmittedApplicationCapabilityAccess<
@@ -316,9 +313,7 @@ const fn cardinality_admitted(
     }
 }
 
-pub fn projection_denial(
-    subject: impl Into<String>,
-) -> WorthQueryOperationAuthorizationDenial {
+pub fn projection_denial(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
     denial(
         WorthQueryOperationAuthorizationDenialKind::Refused(
             AuthorizationRefusal::ElevationRequestRejected,

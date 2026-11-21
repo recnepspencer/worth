@@ -54,10 +54,30 @@ pub struct WorthQueryHistoryNodeId {
 /// A completed framework-issued binding. Copied metadata holds no snapshot lease.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryHistoryStep {
-    pub id: WorthQueryHistoryNodeId,
-    pub parent: Option<WorthQueryHistoryNodeId>,
-    pub label: Option<Arc<str>>,
-    pub endpoint: WorthQueryProductBranchReadIdentity,
+    id: WorthQueryHistoryNodeId,
+    parent: Option<WorthQueryHistoryNodeId>,
+    label: Option<Arc<str>>,
+    endpoint: WorthQueryProductBranchReadIdentity,
+}
+
+impl crate::ports::HistoryStepConstructionPort for WorthQueryHistoryStep {
+    fn new_history_step(
+        id: WorthQueryHistoryNodeId,
+        parent: Option<WorthQueryHistoryNodeId>,
+        label: Option<Arc<str>>,
+        endpoint: WorthQueryProductBranchReadIdentity,
+    ) -> Self {
+        Self {
+            id,
+            parent,
+            label,
+            endpoint,
+        }
+    }
+
+    fn label_arc(&self) -> Option<Arc<str>> {
+        self.label.clone()
+    }
 }
 
 impl WorthQueryHistoryStep {

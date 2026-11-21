@@ -22,9 +22,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
     Schema: worth_query_installation::facade::ApplicationSchema + 'static,
 {
-    pub fn schedule_selected_output_producer<
-        Query,
-    >(
+    pub fn schedule_selected_output_producer<Query>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -104,9 +102,7 @@ where
     /// Use the already selected Product and its owner-issued bridge identity
     /// projections for a required wave. The ordinary and selected entries
     /// share route, attempt, performed-source and Signal classification.
-    pub fn schedule_selected_output_producer_on_selected<
-        Query,
-    >(
+    pub fn schedule_selected_output_producer_on_selected<Query>(
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
 

@@ -1,6 +1,6 @@
 //! Installed parent target and artifact meaning; each posture owns its diagnosis.
-use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use super::*;
+use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind as Kind;
 
 pub(in crate::domain_computation::primary_graph) enum ParentMeaningMismatch {

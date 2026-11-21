@@ -36,10 +36,7 @@ impl AggregateKey {
     pub fn member(&self) -> EntityId {
         self.member
     }
-    pub fn write_locator(
-        &self,
-        output: &mut dyn std::fmt::Write,
-    ) -> std::fmt::Result {
+    pub fn write_locator(&self, output: &mut dyn std::fmt::Write) -> std::fmt::Result {
         if let Some(relation) = self.orbit_relation() {
             write!(
                 output,
@@ -81,9 +78,7 @@ impl<Member> AggregateKey<Member> {
     pub fn orbit_relation(&self) -> Option<KindId> {
         self.selection.orbit_relation()
     }
-    pub fn definition(
-        &self,
-    ) -> AggregateDefinitionIdentity {
+    pub fn definition(&self) -> AggregateDefinitionIdentity {
         self.definition
     }
 }

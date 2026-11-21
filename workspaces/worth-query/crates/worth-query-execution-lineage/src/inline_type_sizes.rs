@@ -40,10 +40,16 @@ fn lineage_owned_carriers_stay_within_declared_inline_ceilings() {
     let mut census = Census {
         exceeded: Vec::new(),
     };
-    crate::domain_computation::application_aftermath::causal_fact::inline_type_budget::collect(&mut census);
+    crate::domain_computation::application_aftermath::causal_fact::inline_type_budget::collect(
+        &mut census,
+    );
     crate::domain_computation::authorization::denial::inline_type_budget::collect(&mut census);
-    crate::domain_computation::authorization::operation_scope_binding::inline_type_budget::collect(&mut census);
-    crate::domain_computation::product_publication::unpublished::inline_type_budget::collect(&mut census);
+    crate::domain_computation::authorization::operation_scope_binding::inline_type_budget::collect(
+        &mut census,
+    );
+    crate::domain_computation::product_publication::unpublished::inline_type_budget::collect(
+        &mut census,
+    );
     crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_outcome::inline_type_budget::collect(&mut census);
     crate::domain_computation::primary_graph::application_attempt::compare_and_commit::commit_receipt::inline_type_budget::collect(&mut census);
     crate::domain_computation::primary_graph::application_attempt::denial::inline_type_budget::collect(&mut census);

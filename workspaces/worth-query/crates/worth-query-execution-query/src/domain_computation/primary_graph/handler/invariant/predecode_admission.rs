@@ -34,22 +34,6 @@ where
     /// before decoding and after completion, including callback denial.
     ///
     /// The borrowed raw value cannot become retained handler state:
-    /// ```compile_fail
-    /// use worth_foundational::facade::AspectValue;
-    /// use worth_query_execution::facade::primary_graph::{DecisionReader,WorthQueryInvariantEntityIdentity};
-    /// use worth_query_declaration::facade::{application_operation::ApplicationMutationBinding,application_schema::{ApplicationSchema,fragment::RecordSelection}};
-    /// fn retain_raw<'owner,S,B,E,F>(
-    ///     reader:&mut DecisionReader<'_,'_,'_,S,B>,
-    ///     identity:&WorthQueryInvariantEntityIdentity<S,E>,field:F,
-    ///     retained:&mut Option<&'owner AspectValue>,
-    /// ) where S:ApplicationSchema,B:ApplicationMutationBinding<S>,F:RecordSelection<Entity=E>,
-    /// {
-    ///     reader.field_with_predecode_admission(identity,field,|raw,_|{
-    ///         *retained=Some(raw); // the loan belongs only to this callback
-    ///         Ok::<(),()>(())
-    ///     }).unwrap().unwrap();
-    /// }
-    /// ```
     #[allow(clippy::type_complexity)]
     pub fn field_with_predecode_admission<Entity, Aspect, Field, Value, Denied>(
         &mut self,

@@ -58,10 +58,7 @@ impl WorthQueryGraphWorkAccessContextAffinity {
         Self::InstalledCapability(identity)
     }
 
-    pub const fn governed_entity(
-        entity: EntityId,
-        installed_capability: [u8; 32],
-    ) -> Self {
+    pub const fn governed_entity(entity: EntityId, installed_capability: [u8; 32]) -> Self {
         Self::GovernedEntity {
             entity,
             installed_capability,
@@ -150,15 +147,11 @@ impl WorthQueryManagedGraphWorkSession {
         Ok(session)
     }
 
-    pub const fn identity(
-        &self,
-    ) -> WorthQueryGraphWorkSessionIdentity {
+    pub const fn identity(&self) -> WorthQueryGraphWorkSessionIdentity {
         self.identity
     }
 
-    pub const fn managed_run_identity(
-        &self,
-    ) -> WorthQueryGraphWorkManagedRunIdentity {
+    pub const fn managed_run_identity(&self) -> WorthQueryGraphWorkManagedRunIdentity {
         self.managed_run
     }
 
@@ -173,16 +166,13 @@ impl WorthQueryManagedGraphWorkSession {
     ) -> Option<&worth_relational::facade::snapshots::SnapshotHandle> {
         match &self.basis {
             WorthQueryGraphWorkBasis::ProductRead { .. } => None,
-            WorthQueryGraphWorkBasis::Mutation(basis) => basis
-                .lease
-                .as_deref().map(|l| l.snapshot()),
+            WorthQueryGraphWorkBasis::Mutation(basis) => {
+                basis.lease.as_deref().map(|l| l.snapshot())
+            }
         }
     }
 
-
-    pub fn take_mutation_lease(
-        &mut self,
-    ) -> Option<Box<dyn crate::ports::PrimaryMutationLease>> {
+    pub fn take_mutation_lease(&mut self) -> Option<Box<dyn crate::ports::PrimaryMutationLease>> {
         match &mut self.basis {
             WorthQueryGraphWorkBasis::ProductRead { .. } => None,
             WorthQueryGraphWorkBasis::Mutation(basis) => basis.lease.take(),
@@ -198,9 +188,7 @@ impl WorthQueryManagedGraphWorkSession {
         }
     }
 
-    pub fn mutation_lease(
-        &self,
-    ) -> Option<&dyn crate::ports::PrimaryMutationLease> {
+    pub fn mutation_lease(&self) -> Option<&dyn crate::ports::PrimaryMutationLease> {
         match &self.basis {
             WorthQueryGraphWorkBasis::ProductRead { .. } => None,
             WorthQueryGraphWorkBasis::Mutation(basis) => basis.lease.as_deref(),
@@ -208,8 +196,7 @@ impl WorthQueryManagedGraphWorkSession {
     }
 
     pub fn mutation_product(&self) -> Option<&crate::basis::WorthQueryProductBranchLease> {
-        self.mutation_lease()
-            .map(|l| l.product())
+        self.mutation_lease().map(|l| l.product())
     }
 
     /// Query truth can remain historical while authorization uses the exact
@@ -246,9 +233,7 @@ impl WorthQueryManagedGraphWorkSession {
         &self.binding
     }
 
-    pub const fn obligation(
-        &self,
-    ) -> &WorthQueryInstalledGraphObligationSetIdentity {
+    pub const fn obligation(&self) -> &WorthQueryInstalledGraphObligationSetIdentity {
         &self.obligation
     }
 
@@ -279,9 +264,7 @@ impl WorthQueryManagedGraphWorkSession {
             && !self.provider.is_empty()
     }
 
-    pub fn query_basis(
-        &self,
-    ) -> Option<&WorthQueryApplicationBasisIdentity> {
+    pub fn query_basis(&self) -> Option<&WorthQueryApplicationBasisIdentity> {
         match &self.basis {
             WorthQueryGraphWorkBasis::ProductRead {
                 intent: ProductReadIntent::Query,
@@ -299,9 +282,7 @@ impl WorthQueryManagedGraphWorkSession {
         self.runtime.as_u64()
     }
 
-    pub const fn runtime_authority(
-        &self,
-    ) -> WorthQueryRuntimeAuthorityIdentity {
+    pub const fn runtime_authority(&self) -> WorthQueryRuntimeAuthorityIdentity {
         self.runtime
     }
 
@@ -319,9 +300,7 @@ impl WorthQueryManagedGraphWorkSession {
         }
     }
 
-    pub const fn capability_access_context(
-        &self,
-    ) -> Option<[u8; 32]> {
+    pub const fn capability_access_context(&self) -> Option<[u8; 32]> {
         match self.access {
             WorthQueryGraphWorkAccessContextAffinity::InstalledCapability(identity) => {
                 Some(identity)

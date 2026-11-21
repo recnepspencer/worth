@@ -22,19 +22,14 @@ use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt
 pub struct RetainedOutputCurrentnessRead {
     pub required_publication:
         Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
-    pub identity:
-        Arc<super::RecordedSettlementIdentity>,
+    pub identity: Arc<super::RecordedSettlementIdentity>,
     pub facts: Option<super::ComparableSourceFacts>,
-    pub consumed_outputs:
-        Arc<[ConsumedOutputEvidence]>,
-    pub native_output_witness:
-        Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
-    pub historical_selection:
-        Option<Arc<super::HistoricalSelectionCoordinate>>,
+    pub consumed_outputs: Arc<[ConsumedOutputEvidence]>,
+    pub native_output_witness: Option<Arc<OnceLock<super::SealedNativeOutputWitness>>>,
+    pub historical_selection: Option<Arc<super::HistoricalSelectionCoordinate>>,
     /// The facts and the witness are everything this output depends on.
     pub consumed_nothing: bool,
-    pub verification_requirement:
-        Option<super::invalidation::FullVerificationReason>,
+    pub verification_requirement: Option<super::invalidation::FullVerificationReason>,
 }
 
 impl WorthQueryApplicationOutputLineage {

@@ -1,8 +1,7 @@
 //! Read-only assessment borrows resources from the exact native runtime phase.
 use super::WorthQueryOperationBodyRequirementFinding;
 use crate::domain_computation::primary_graph::{
-    HandlerExecutionDenial, WorthQueryForeignAdvancementPhase,
-    WorthQueryOperationProjectionDenial,
+    HandlerExecutionDenial, WorthQueryForeignAdvancementPhase, WorthQueryOperationProjectionDenial,
 };
 
 /// Descriptive findings retain their native memory claim for their whole lifetime.

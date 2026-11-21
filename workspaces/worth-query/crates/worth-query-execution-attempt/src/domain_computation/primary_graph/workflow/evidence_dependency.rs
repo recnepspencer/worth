@@ -38,18 +38,14 @@ impl WorkflowEvidenceDependencyKind {
     }
 }
 
-pub const fn encode_direction(
-    direction: RelationalAdjacencyDirection,
-) -> &'static str {
+pub const fn encode_direction(direction: RelationalAdjacencyDirection) -> &'static str {
     match direction {
         RelationalAdjacencyDirection::Outgoing => "outgoing",
         RelationalAdjacencyDirection::Incoming => "incoming",
     }
 }
 
-pub fn decode_direction(
-    value: &str,
-) -> Option<RelationalAdjacencyDirection> {
+pub fn decode_direction(value: &str) -> Option<RelationalAdjacencyDirection> {
     match value {
         "outgoing" => Some(RelationalAdjacencyDirection::Outgoing),
         "incoming" => Some(RelationalAdjacencyDirection::Incoming),

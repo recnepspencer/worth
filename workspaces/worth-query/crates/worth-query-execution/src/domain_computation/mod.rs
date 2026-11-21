@@ -1,15 +1,15 @@
 pub(crate) use worth_query_execution_query::facade::domain_computation::{
-    application_aftermath, authorization, managed_run, product_publication,
-    provider_session, runtime_ports,
+    application_aftermath, authorization, managed_run, product_publication, provider_session,
+    runtime_ports,
 };
 pub(crate) mod execution_observation;
 pub(crate) mod execution_runtime;
-pub(crate) use worth_query_execution_foundation::facade::domain_computation::evidence_material;
 pub(crate) use worth_query_execution_contracts::facade::runtime_time;
 pub(crate) use worth_query_execution_diagnostics::facade::evidence_identity;
+pub(crate) use worth_query_execution_foundation::facade::domain_computation::evidence_material;
 pub(crate) use worth_query_execution_runtime::facade::{
-    artifact_owner, convergence_epoch, domain_evidence_binding,
-    invalidation_equivalence_control, operation_binding,
+    artifact_owner, convergence_epoch, domain_evidence_binding, invalidation_equivalence_control,
+    operation_binding,
 };
 
 pub(crate) mod primary_graph;

@@ -6,9 +6,7 @@ use crate::domain_computation::execution_runtime::product_world::WorthQueryDurab
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
-    pub fn admit_directory_mutation<
-        Binding: ApplicationMutationBinding<Schema>,
-    >(
+    pub fn admit_directory_mutation<Binding: ApplicationMutationBinding<Schema>>(
         &self,
     ) -> Result<(), Denial> {
         if !self.runtime.product_runtime.is_directory_home() {

@@ -34,8 +34,7 @@ impl WorthQueryWorkflowYieldedAssociation {
     }
 }
 
-pub struct WorthQueryWorkflowBridgePreflightTransition
-{
+pub struct WorthQueryWorkflowBridgePreflightTransition {
     outcome: WorthQueryWorkflowBridgePreflightOutcome,
 }
 
@@ -175,8 +174,7 @@ impl WorthQueryWorkflowProvisionalAssociation {
     }
 }
 
-pub struct WorthQueryWorkflowBridgeReadmissionTransition
-{
+pub struct WorthQueryWorkflowBridgeReadmissionTransition {
     outcome: WorthQueryWorkflowBridgeReadmissionOutcome,
 }
 

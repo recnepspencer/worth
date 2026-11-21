@@ -12,16 +12,11 @@ use super::{
     WorthQueryExecutionResourceAttemptEvidence,
 };
 pub struct WorthQueryWorkflowExecutionResourceAttempt {
-    pub reserved:
-        WorthQueryCapacityReservedWorkflowResourcePlan,
-    pub attempt_identity:
-        WorthQueryExecutionAttemptIdentity,
-    pub provider_session:
-        WorthQueryExecutionProviderSession,
-    pub evidence:
-        WorthQueryExecutionResourceAttemptEvidence,
-    pub artifact_run:
-        Mutex<WorthQueryWorkflowArtifactRunState>,
+    pub reserved: WorthQueryCapacityReservedWorkflowResourcePlan,
+    pub attempt_identity: WorthQueryExecutionAttemptIdentity,
+    pub provider_session: WorthQueryExecutionProviderSession,
+    pub evidence: WorthQueryExecutionResourceAttemptEvidence,
+    pub artifact_run: Mutex<WorthQueryWorkflowArtifactRunState>,
 }
 
 pub struct WorthQueryWorkflowArtifactRunState {

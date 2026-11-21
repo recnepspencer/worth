@@ -57,9 +57,7 @@ impl<'basis> BoundCurrentAcceptedOutput<'basis> {
         &self._proof.candidate.ready
     }
 
-    pub fn product(
-        &self,
-    ) -> &'basis WorthQueryProductObservationLease {
+    pub fn product(&self) -> &'basis WorthQueryProductObservationLease {
         self._proof.product
     }
 }

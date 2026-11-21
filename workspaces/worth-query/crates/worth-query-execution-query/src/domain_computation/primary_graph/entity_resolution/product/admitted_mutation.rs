@@ -5,9 +5,7 @@ use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalK
 use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
-    pub fn resolve_entity_admitted_with_native_access<
-        Field: RecordSelection,
-    >(
+    pub fn resolve_entity_admitted_with_native_access<Field: RecordSelection>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: Field,
@@ -24,9 +22,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         )
     }
 
-    pub fn resolve_entity_selector_admitted_with_native_access<
-        Field: RecordSelection,
-    >(
+    pub fn resolve_entity_selector_admitted_with_native_access<Field: RecordSelection>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         field: Field,

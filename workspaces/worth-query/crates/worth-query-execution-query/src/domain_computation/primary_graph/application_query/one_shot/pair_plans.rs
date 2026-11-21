@@ -10,16 +10,11 @@ use super::super::{
 /// scope must be the first row's declared identity field on the same basis.
 /// No callback can select a new basis or issue another read on a worker.
 pub struct WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C> {
-    pub(crate) first:
-        WorthQueryAdmittedApplicationQueryPlan<'a, S, FQ, FP, FR, A, I, C>,
-    pub(crate) second:
-        WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, C>,
-    pub(crate) batch:
-        Option<WorthQueryApplicationQueryBatchAdmission>,
-    pub(crate) first_batch:
-        Option<PlannedBatchItem>,
-    pub(crate) second_batch:
-        Option<PlannedBatchItem>,
+    pub(crate) first: WorthQueryAdmittedApplicationQueryPlan<'a, S, FQ, FP, FR, A, I, C>,
+    pub(crate) second: WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, C>,
+    pub(crate) batch: Option<WorthQueryApplicationQueryBatchAdmission>,
+    pub(crate) first_batch: Option<PlannedBatchItem>,
+    pub(crate) second_batch: Option<PlannedBatchItem>,
 }
 
 impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>

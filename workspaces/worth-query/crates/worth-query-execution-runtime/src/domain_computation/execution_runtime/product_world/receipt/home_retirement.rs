@@ -1,10 +1,9 @@
 //! Retire the original unique receipt only after all live readers preflight.
 use super::*;
-use crate::ports::RuntimeHomeRetirementDenial as Denial;
 use crate::domain_computation::primary_graph::{
-     WorthQueryHomeRetirementOwner as Owner,
-    WorthQueryOperationHomeRetirementProgress as Progress,
+    WorthQueryHomeRetirementOwner as Owner, WorthQueryOperationHomeRetirementProgress as Progress,
 };
+use crate::ports::RuntimeHomeRetirementDenial as Denial;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_runtime_world::facade::{

@@ -1,11 +1,11 @@
 //! The original local effect's binding-selected admission owns completion, not Advance.
+use super::super::super::application_attempt::workflow_transition_program::local_actions::VerifiedLocalActionCompletion;
+use super::super::super::application_attempt::workflow_transition_program::operation::settlement::PreparedWorkflowOperationSettlementExt as _;
 use super::super::super::application_attempt::workflow_transition_program::{
     operation, publication, PreparedWorkflowAdvance, RequiredWorkflowOperation,
     WorkflowLocalActionKind, WorkflowProgressOutcome, WorkflowTransitionPreparationDenial,
     WorkflowTransitionRequestKind,
 };
-use super::super::super::application_attempt::workflow_transition_program::local_actions::VerifiedLocalActionCompletion;
-use super::super::super::application_attempt::workflow_transition_program::operation::settlement::PreparedWorkflowOperationSettlementExt as _;
 use super::*;
 use crate::domain_computation::primary_graph::{
     workflow::instance::SelectedWorkflowOperation, WorthQueryApplicationCommitReceipt,
@@ -144,7 +144,13 @@ where
         .local_action
         .as_ref()
         .ok_or_else(|| D::Attempt(local_mismatch("not an issued local action")))?;
-    if required.original_runtime() != selected.application().inner.runtime.authority_identity().as_u64()
+    if required.original_runtime()
+        != selected
+            .application()
+            .inner
+            .runtime
+            .authority_identity()
+            .as_u64()
         || required.original_program_revision() != installed.program_revision()
         || origin.spec != Spec::IDENTITY.as_str()
         || &origin.support != installed.support_identity_bytes()

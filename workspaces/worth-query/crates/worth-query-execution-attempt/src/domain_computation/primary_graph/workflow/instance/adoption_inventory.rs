@@ -25,8 +25,7 @@ pub struct WorkflowLiveInstance {
     pub lineage: EntityId,
     pub definition: EntityId,
     pub live_membership: RelationId,
-    pub transitions:
-        Vec<WorkflowInventoriedTransition>,
+    pub transitions: Vec<WorkflowInventoriedTransition>,
     /// A migration successor carries performed effects of an earlier
     /// definition. They make it performed but never settle its approvals.
     pub inherits_effects: bool,

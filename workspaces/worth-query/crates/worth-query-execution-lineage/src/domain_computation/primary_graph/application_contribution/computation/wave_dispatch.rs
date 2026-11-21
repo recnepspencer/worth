@@ -127,10 +127,7 @@ fn settle_outcome(
     }
 }
 impl ComputedMember {
-    pub fn finish<T>(
-        self,
-        complete: impl FnOnce(Vec<ComputedSlot>) -> T,
-    ) -> T {
+    pub fn finish<T>(self, complete: impl FnOnce(Vec<ComputedSlot>) -> T) -> T {
         complete(self.slots)
     }
     pub fn into_slots(self) -> Vec<ComputedSlot> {

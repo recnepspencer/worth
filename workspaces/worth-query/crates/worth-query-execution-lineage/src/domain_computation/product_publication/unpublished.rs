@@ -35,9 +35,7 @@ impl WorthQueryProductUnpublishedApplication {
         )
     }
 
-    pub fn recovery_handle(
-        &self,
-    ) -> ProductUnpublishedRecoveryHandle {
+    pub fn recovery_handle(&self) -> ProductUnpublishedRecoveryHandle {
         match &self.effects {
             WorthQueryProductUnpublishedOwnerEffects::Application(effects) => {
                 effects.recovery_handle()

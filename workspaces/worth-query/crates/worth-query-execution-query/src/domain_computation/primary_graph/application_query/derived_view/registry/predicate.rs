@@ -4,12 +4,8 @@ mod preparation;
 pub use preparation::PredicateNoticeDisposition;
 mod world;
 pub use axis::SourcePredicateAxis;
-pub use axis::{
-    PredicateRegistration, PredicateRootReservation,
-};
-pub use preparation::{
-    mark_prepared_predicates_unavailable, route_prepared_predicates,
-};
+pub use axis::{PredicateRegistration, PredicateRootReservation};
+pub use preparation::{mark_prepared_predicates_unavailable, route_prepared_predicates};
 pub use preparation::{
     PredicatePreparationFactory, PredicatePreparationOwner, PredicatePreparationRetirement,
     PreparedPredicateNotices, PreparedPredicatePublication,

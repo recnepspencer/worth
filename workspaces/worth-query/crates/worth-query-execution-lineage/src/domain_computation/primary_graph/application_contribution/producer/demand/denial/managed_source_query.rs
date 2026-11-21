@@ -7,13 +7,10 @@ use crate::domain_computation::primary_graph::{
     },
     output_reuse, WorthQueryOutputDemandRecoveryPosture,
 };
-use worth_query_execution_contracts::facade::managed_index_denial::WorthQueryManagedIndexStop as Stop;
 use std::sync::Arc;
+use worth_query_execution_contracts::facade::managed_index_denial::WorthQueryManagedIndexStop as Stop;
 impl WorthQueryOutputDemandDenial {
-    pub fn managed_source_query(
-        cause: Arc<Cause>,
-        subject: &'static str,
-    ) -> Self {
+    pub fn managed_source_query(cause: Arc<Cause>, subject: &'static str) -> Self {
         let mut denial = match cause.cause() {
             Detail::CurrentControl(stop) => stop.clone(),
             Detail::SourceVerification { execution: Some(stop), .. } =>

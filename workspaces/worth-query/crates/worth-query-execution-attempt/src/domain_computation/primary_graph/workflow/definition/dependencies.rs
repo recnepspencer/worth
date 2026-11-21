@@ -20,8 +20,7 @@ pub struct WorkflowRetainedNode {
     pub path: String,
     pub inbound_origin: Option<String>,
     /// Node member dependencies, plus any requested Back action attached to it.
-    pub dependencies:
-        Vec<WorthQueryWorkflowNodeDependency>,
+    pub dependencies: Vec<WorthQueryWorkflowNodeDependency>,
 }
 
 pub struct WorkflowDefinitionDependencies {
@@ -30,15 +29,11 @@ pub struct WorkflowDefinitionDependencies {
         Box<[worth_query_installation::facade::WorthQueryWorkflowGlobalActionDependency]>,
     pub nodes: Vec<WorkflowRetainedNode>,
     /// `(approval, operation)` node pairs joined by approval authority.
-    pub approval_authorities:
-        Vec<(EntityId, EntityId)>,
+    pub approval_authorities: Vec<(EntityId, EntityId)>,
 }
 
 impl WorkflowDefinitionDependencies {
-    pub fn node(
-        &self,
-        entity: EntityId,
-    ) -> Option<&WorkflowRetainedNode> {
+    pub fn node(&self, entity: EntityId) -> Option<&WorkflowRetainedNode> {
         self.nodes.iter().find(|node| node.entity == entity)
     }
 }

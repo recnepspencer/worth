@@ -76,9 +76,7 @@ impl PerformedMembers {
         Ok(())
     }
 
-    pub fn fresh<
-        Schema: ApplicationSchema + 'static,
-    >(
+    pub fn fresh<Schema: ApplicationSchema + 'static>(
         &mut self,
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         key: &WorthQueryOutputDemandKey,

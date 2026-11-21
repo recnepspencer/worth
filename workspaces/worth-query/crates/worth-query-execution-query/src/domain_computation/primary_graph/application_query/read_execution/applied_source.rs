@@ -12,14 +12,10 @@ use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
 
-pub struct AppliedSourceProjection<
-    Value,
-> {
-    pub identity:
-        RelationalAppliedCandidateReadIdentity,
+pub struct AppliedSourceProjection<Value> {
+    pub identity: RelationalAppliedCandidateReadIdentity,
     pub value: Value,
-    pub footprint:
-        WorthQueryObservedSourceFootprint,
+    pub footprint: WorthQueryObservedSourceFootprint,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -29,11 +25,7 @@ pub enum AppliedSourceReadStop {
     Native(worth_relational::facade::transactions::RelationalExecutionDenialCause),
 }
 
-pub fn read_applied_source<
-    Schema,
-    Query,
-    Value,
->(
+pub fn read_applied_source<Schema, Query, Value>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     decode: &ValueDecodeState,
     pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
@@ -104,10 +96,7 @@ where
 }
 
 impl AppliedSourceReadStop {
-    pub fn into_source_query_stop(
-        self,
-        query: &str,
-    ) -> super::super::SourceQueryObservationStop {
+    pub fn into_source_query_stop(self, query: &str) -> super::super::SourceQueryObservationStop {
         use super::super::{
             authorized_read::WorthQueryAuthorizedApplicationReadDenial as Read, one_shot,
         };

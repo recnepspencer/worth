@@ -8,11 +8,7 @@ use worth_query_declaration::facade::application_schema::{
 impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Schema>>
     WorthQueryComputationReader<'_, '_, '_, Schema, Operation>
 {
-    pub fn derived_relation_count<
-        Relation: OperationReads<Operation>,
-        From,
-        To,
-    >(
+    pub fn derived_relation_count<Relation: OperationReads<Operation>, From, To>(
         &mut self,
         relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
         root: &WorthQueryInvariantEntityIdentity<Schema, From>,

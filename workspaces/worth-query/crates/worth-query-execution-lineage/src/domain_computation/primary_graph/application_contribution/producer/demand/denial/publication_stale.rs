@@ -85,10 +85,7 @@ impl ProducerPublicationStale {
 }
 
 impl WorthQueryOutputDemandDenial {
-    pub fn with_publication_stale(
-        mut self,
-        cause: Option<ProducerPublicationStale>,
-    ) -> Self {
+    pub fn with_publication_stale(mut self, cause: Option<ProducerPublicationStale>) -> Self {
         if let Some(cause) = cause {
             self.evidence_mut().publication_stale = Some(cause);
         }

@@ -7,10 +7,7 @@ pub enum ContactAttribution {
 }
 
 impl<Schema: ApplicationSchema> RequiredFreshProgress<Schema> {
-    pub fn attribute_to_caller(
-        &mut self,
-        total: &mut usize,
-    ) {
+    pub fn attribute_to_caller(&mut self, total: &mut usize) {
         assert!(matches!(self.contacts, ContactAttribution::Unowned));
         self.contacts = ContactAttribution::Caller { reported: 0 };
         self.report_caller_contacts(Some(total));

@@ -14,39 +14,48 @@ mod domain_computation_primary_graph_application_attempt_workflow_transition_pro
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQuerySelectedProductOperation<'_, Schema>
-where
-    Schema: ApplicationSchema, {
-        pub(crate) fn prepare_workflow_advance<
-            Capability,
-            Operation,
-            Input,
-            Scope,
-            Spec,
-        >(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>, instance: PublishedWorkflowInstanceRef, admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>) -> Result<
+    where
+        Schema: ApplicationSchema,
+    {
+        pub(crate) fn prepare_workflow_advance<Capability, Operation, Input, Scope, Spec>(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'_, '_>,
+            installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+            instance: PublishedWorkflowInstanceRef,
+            admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        ) -> Result<
             PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
             WorkflowTransitionPreparationDenial,
         >
         where
             Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
             Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-            Spec: ApplicationWorkflowSpec<Schema = Schema>, {
-            self.inner.prepare_workflow_advance::<Capability, Operation, Input, Scope, Spec>(execution, installed, instance, admission)
+            Spec: ApplicationWorkflowSpec<Schema = Schema>,
+        {
+            self.inner
+                .prepare_workflow_advance::<Capability, Operation, Input, Scope, Spec>(
+                    execution, installed, instance, admission,
+                )
         }
-        pub(crate) fn prepare_workflow_navigate_back<
-            Capability,
-            Operation,
-            Input,
-            Scope,
-            Spec,
-        >(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>, instance: PublishedWorkflowInstanceRef, admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>) -> Result<
+        pub(crate) fn prepare_workflow_navigate_back<Capability, Operation, Input, Scope, Spec>(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'_, '_>,
+            installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+            instance: PublishedWorkflowInstanceRef,
+            admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        ) -> Result<
             PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
             WorkflowTransitionPreparationDenial,
         >
         where
             Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
             Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-            Spec: ApplicationWorkflowSpec<Schema = Schema>, {
-            self.inner.prepare_workflow_navigate_back::<Capability, Operation, Input, Scope, Spec>(execution, installed, instance, admission)
+            Spec: ApplicationWorkflowSpec<Schema = Schema>,
+        {
+            self.inner
+                .prepare_workflow_navigate_back::<Capability, Operation, Input, Scope, Spec>(
+                    execution, installed, instance, admission,
+                )
         }
         pub(crate) fn prepare_workflow_collect_assessment<
             Capability,
@@ -54,15 +63,26 @@ where
             Input,
             Scope,
             Spec,
-        >(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>, instance: PublishedWorkflowInstanceRef, node_path: String, admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>) -> Result<
+        >(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'_, '_>,
+            installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+            instance: PublishedWorkflowInstanceRef,
+            node_path: String,
+            admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        ) -> Result<
             PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
             WorkflowTransitionPreparationDenial,
         >
         where
             Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
             Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
-            Spec: ApplicationWorkflowSpec<Schema = Schema>, {
-            self.inner.prepare_workflow_collect_assessment::<Capability, Operation, Input, Scope, Spec>(execution, installed, instance, node_path, admission)
+            Spec: ApplicationWorkflowSpec<Schema = Schema>,
+        {
+            self.inner
+                .prepare_workflow_collect_assessment::<Capability, Operation, Input, Scope, Spec>(
+                    execution, installed, instance, node_path, admission,
+                )
         }
     }
 }
@@ -72,20 +92,30 @@ mod domain_computation_primary_graph_application_attempt_workflow_transition_pro
     use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::transition_replay::PreparedWorkflowAdvanceTransitionReplayExt as _;
     use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
     use worth_query_installation::facade::ApplicationSchema;
-    use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::*;
+    use worth_query_execution_query::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::*;
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub(crate) fn compare_and_commit_workflow_advance<
-            Operation: 'static,
-            Input,
-            Scope,
-        >(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, phase: &WorthQueryAdvancementPhase<'_>, prepared: PreparedWorkflowAdvance<Schema, Operation, Input, Scope>, idempotency: worth_query_execution_query::facade::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding) -> WorkflowProgressOutcome
+    where
+        Schema: ApplicationSchema,
+    {
+        pub(crate) fn compare_and_commit_workflow_advance<Operation: 'static, Input, Scope>(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'_, '_>,
+            phase: &WorthQueryAdvancementPhase<'_>,
+            prepared: PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+            idempotency: worth_query_execution_query::facade::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+        ) -> WorkflowProgressOutcome
         where
-            Input: Clone + Send + Sync + 'static, {
-            self.inner.compare_and_commit_workflow_advance::<Operation, Input, Scope>(execution, phase, prepared, idempotency)
+            Input: Clone + Send + Sync + 'static,
+        {
+            self.inner
+                .compare_and_commit_workflow_advance::<Operation, Input, Scope>(
+                    execution,
+                    phase,
+                    prepared,
+                    idempotency,
+                )
         }
     }
 }
@@ -104,11 +134,26 @@ mod domain_computation_primary_graph_application_attempt_workflow_transition_pro
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
-        pub(crate) fn prepare_local_workflow_transition<O, I, Scope, Spec>(&self, execution: &worth_execution::ExecutionRequest<'_, '_>, installed: &WorthQueryInstalledApplicationWorkflowSpec<S, Spec>, instance: PublishedWorkflowInstanceRef, admission: WorthQueryAdmittedApplicationOperation<S, O, I, Scope>, request_kind: WorkflowTransitionRequestKind) -> Result<PreparedWorkflowAdvance<S, O, I, Scope>, WorkflowTransitionPreparationDenial>
+        pub(crate) fn prepare_local_workflow_transition<O, I, Scope, Spec>(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'_, '_>,
+            installed: &WorthQueryInstalledApplicationWorkflowSpec<S, Spec>,
+            instance: PublishedWorkflowInstanceRef,
+            admission: WorthQueryAdmittedApplicationOperation<S, O, I, Scope>,
+            request_kind: WorkflowTransitionRequestKind,
+        ) -> Result<PreparedWorkflowAdvance<S, O, I, Scope>, WorkflowTransitionPreparationDenial>
         where
             O: ApplicationOperationMarkerIdentity<S> + 'static,
-            Spec: ApplicationWorkflowSpec<Schema = S>, {
-            self.inner.prepare_local_workflow_transition::<O, I, Scope, Spec>(execution, installed, instance, admission, request_kind)
+            Spec: ApplicationWorkflowSpec<Schema = S>,
+        {
+            self.inner
+                .prepare_local_workflow_transition::<O, I, Scope, Spec>(
+                    execution,
+                    installed,
+                    instance,
+                    admission,
+                    request_kind,
+                )
         }
     }
 }
@@ -124,15 +169,30 @@ mod domain_computation_primary_graph_application_attempt_read_set_admission {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
-where
-    Schema: ApplicationSchema, {
-        pub fn begin_application_read_attempt<'request, 'authority, Operation, Input, Scope>(&self, execution: &worth_execution::ExecutionRequest<'request, 'authority>, admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>) -> Result<
+    where
+        Schema: ApplicationSchema,
+    {
+        pub fn begin_application_read_attempt<'request, 'authority, Operation, Input, Scope>(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'request, 'authority>,
+            admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        ) -> Result<
             WorthQueryApplicationReadAttempt<'request, 'authority, Schema, Operation, Input, Scope>,
             WorthQueryApplicationAttemptDenial,
         > {
-            self.inner.begin_application_read_attempt::<Operation, Input, Scope>(execution, admission)
+            self.inner
+                .begin_application_read_attempt::<Operation, Input, Scope>(execution, admission)
         }
-        pub fn begin_projected_application_read_attempt<'scope, Operation, Input, Scope>(&self, phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>, admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>, projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>, allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>) -> Result<
+        pub fn begin_projected_application_read_attempt<'scope, Operation, Input, Scope>(
+            &self,
+            phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope>,
+            admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+            projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<
+                Schema,
+                Operation,
+            >,
+            allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        ) -> Result<
             WorthQueryApplicationReadAttempt<
                 'scope,
                 'scope,
@@ -144,7 +204,13 @@ where
             >,
             WorthQueryApplicationAttemptDenial,
         > {
-            self.inner.begin_projected_application_read_attempt::<Operation, Input, Scope>(phase, admission, projection, allocation_policy)
+            self.inner
+                .begin_projected_application_read_attempt::<Operation, Input, Scope>(
+                    phase,
+                    admission,
+                    projection,
+                    allocation_policy,
+                )
         }
         pub(crate) fn begin_projected_application_read_attempt_with_request<
             'request,
@@ -152,7 +218,16 @@ where
             Operation,
             Input,
             Scope,
-        >(&self, execution: &worth_execution::ExecutionRequest<'request, 'authority>, admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>, projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<Schema, Operation>, allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>) -> Result<
+        >(
+            &self,
+            execution: &worth_execution::ExecutionRequest<'request, 'authority>,
+            admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+            projection: WorthQueryApplicationOperationInvariantProjectionSnapshot<
+                Schema,
+                Operation,
+            >,
+            allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        ) -> Result<
             WorthQueryApplicationReadAttempt<
                 'request,
                 'authority,
@@ -164,7 +239,13 @@ where
             >,
             WorthQueryApplicationAttemptDenial,
         > {
-            self.inner.begin_projected_application_read_attempt_with_request::<Operation, Input, Scope>(execution, admission, projection, allocation_policy)
+            self.inner
+                .begin_projected_application_read_attempt_with_request::<Operation, Input, Scope>(
+                    execution,
+                    admission,
+                    projection,
+                    allocation_policy,
+                )
         }
 
         pub fn durable_dispatch_custody(
@@ -172,7 +253,7 @@ where
             correlation_token: &[u8; 32],
         ) -> Option<
             crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchCustody,
-        > {
+        >{
             self.inner.durable_dispatch_custody(correlation_token)
         }
     }

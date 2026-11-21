@@ -7,6 +7,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryAuthentica
 use worth_query_declaration::facade::application_operation::{
     ApplicationEditEnvelopeKey, ApplicationEncodedInput,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
@@ -216,7 +217,7 @@ pub(super) struct TypedStage<S: ApplicationSchema, B: ApplicationMutationBinding
 }
 impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
     pub fn capture<B>(
-        _access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,
         application: &dyn crate::ports::ApplicationRuntimeRef<S>,
         key: Arc<ApplicationEditEnvelopeKey<B::IdempotencyKey>>,
@@ -260,7 +261,7 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
     }
 
     pub fn capture_admitted<B>(
-        _access: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         application: &dyn crate::ports::ApplicationRuntimeRef<S>,
         key: Arc<ApplicationEditEnvelopeKey<B::IdempotencyKey>>,
         input: ApplicationEncodedInput<B::InputBinding>,
@@ -355,7 +356,7 @@ impl<S: ApplicationSchema> CapturedAuthoredEditStage<S> {
 impl<S> CapturedAuthoredEditStage<S> {
     pub fn with_correction_intent(
         self,
-        _: &dyn worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         intent: crate::domain_computation::primary_graph::WorthQueryCorrectionIntent,
     ) -> Self {
         self.executor.bind_correction(intent);

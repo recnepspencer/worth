@@ -2,11 +2,7 @@
 use super::*;
 
 impl WorthQueryInspectionReadCompletion {
-    pub fn exchange_report_fact(
-        &mut self,
-        other: &mut Self,
-        fact: &str,
-    ) {
+    pub fn exchange_report_fact(&mut self, other: &mut Self, fact: &str) {
         assert_ne!(self.managed_run, other.managed_run);
         assert_ne!(self.basis, other.basis);
         assert_eq!(

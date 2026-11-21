@@ -4,7 +4,9 @@ use super::*;
 pub fn collect(census: &mut crate::inline_type_sizes::Census) {
     {
         let mut owner = census.owner::<WorthQueryOutputCheckpoint>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_output_demand/registry/checkpoint.rs", "WorthQueryOutputCheckpoint", 128 * 1024);
-        owner.field::<Box<dyn crate::ports::PendingProducerPublicationPort>>("PublicationPending.owner");
+        owner.field::<Box<dyn crate::ports::PendingProducerPublicationPort>>(
+            "PublicationPending.owner",
+        );
         owner.field::<super::super::PreparedReadyBacking>("PublicationPending.ready_backing");
         owner.field::<WorthQueryApplicationCommitReceipt>("Published.receipt");
         owner.field::<WorthQueryPendingOutputDelivery>("Published.delivery");

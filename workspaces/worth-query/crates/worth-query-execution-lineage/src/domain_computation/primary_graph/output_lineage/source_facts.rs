@@ -69,10 +69,7 @@ impl RetainedSourceFacts {
     pub fn is_empty(&self) -> bool {
         self.facts.is_empty()
     }
-    pub fn for_test(
-        stale: bool,
-        facts: Arc<[Fact]>,
-    ) -> Self {
+    pub fn for_test(stale: bool, facts: Arc<[Fact]>) -> Self {
         Self::retain(ComputationSourceEvidence::for_test(stale), facts)
     }
 }

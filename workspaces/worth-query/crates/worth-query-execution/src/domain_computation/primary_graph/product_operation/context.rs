@@ -246,7 +246,7 @@ where
             .map(|inner| WorthQuerySelectedProductOperation::from_inner(self.application, inner))
     }
 
-    pub fn select_with_request(
+    pub(crate) fn select_with_request(
         self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<

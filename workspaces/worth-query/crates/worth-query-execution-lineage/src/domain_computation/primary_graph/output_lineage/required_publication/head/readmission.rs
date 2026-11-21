@@ -27,15 +27,10 @@ pub struct ReadmittedRequiredPublication {
     publication: RelationalRequiredOutputPublication,
 }
 impl ReadmittedRequiredPublication {
-    pub fn publication(
-        &self,
-    ) -> &RelationalRequiredOutputPublication {
+    pub fn publication(&self) -> &RelationalRequiredOutputPublication {
         &self.publication
     }
-    pub fn matches_cell(
-        &self,
-        cell: &Arc<OnceLock<RecordedOutput>>,
-    ) -> bool {
+    pub fn matches_cell(&self, cell: &Arc<OnceLock<RecordedOutput>>) -> bool {
         Arc::ptr_eq(&self.selected, cell)
     }
 }

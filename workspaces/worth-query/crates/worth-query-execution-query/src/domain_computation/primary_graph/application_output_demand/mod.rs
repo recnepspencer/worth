@@ -1,31 +1,27 @@
-pub use worth_query_execution_lineage::facade::primary_graph::application_output_demand::{
-    fulfilled_root, original_endpoint, publication, readiness_delivery, recovered_outputs,
-    registry as lineage_registry, settlement as lineage_settlement, source_evidence, source_replay,
-};
 pub use registry::ConsumerCustody;
 pub use registry::LivePublicationHead;
 pub use registry::PublicationHeadSelection;
 pub use registry::RunningSelectedExecution;
+pub use worth_query_execution_lineage::facade::primary_graph::application_output_demand::{
+    fulfilled_root, original_endpoint, publication, readiness_delivery, recovered_outputs,
+    registry as lineage_registry, settlement as lineage_settlement, source_evidence, source_replay,
+};
 pub mod completed_outputs;
 pub mod completed_read;
 mod completed_set;
 mod original_outputs;
-pub use original_outputs::{
-    qualify_output_collection, OriginalOutputTree,
-};
+pub use original_outputs::{qualify_output_collection, OriginalOutputTree};
 pub use original_outputs::{
     WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,
 };
 pub mod currentness;
-pub use source_replay::WorthQueryOutputSourceReplay;
 pub use completed_outputs::WorthQueryCompletedRequiredOutputs;
 pub use completed_read::WorthQueryCompletedReadOutputs;
 pub use currentness::CurrentOwnedRouteDenial;
-pub use publication::WorthQueryRecoveredProducerPublication;
-pub use publication::{
-    OutputPublicationView, RecoveredProducerOutputFacts,
-};
 pub use fulfilled_root::WorthQueryFulfilledRequiredRoot;
+pub use publication::WorthQueryRecoveredProducerPublication;
+pub use publication::{OutputPublicationView, RecoveredProducerOutputFacts};
+pub use source_replay::WorthQueryOutputSourceReplay;
 pub mod registry {
     pub use worth_query_execution_lineage::facade::primary_graph::application_output_demand::registry::*;
     pub mod required_work_runtime;
@@ -38,8 +34,8 @@ pub mod settlement {
     use receipt_custody::SettlementReceiptCustody;
     use std::sync::Arc;
 
-    use crate::basis::WorthQueryProductObservationLease;
     use super::registry::WorthQueryAcceptedOutputAuthority;
+    use crate::basis::WorthQueryProductObservationLease;
     use crate::domain_computation::primary_graph::output_lineage::BoundCurrentAcceptedOutput;
 
     use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
@@ -59,9 +55,7 @@ pub mod settlement {
     mod runtime_selection;
     pub use current_accepted::OutputDemandSettlementCurrentExt;
     pub use reused::OutputDemandSettlementReusedExt;
-    pub use runtime::{
-        OriginalSettledProducerObservationExt, OutputDemandSettlementRuntimeExt,
-    };
+    pub use runtime::{OriginalSettledProducerObservationExt, OutputDemandSettlementRuntimeExt};
 }
 pub use settlement::OriginalProducingPublication;
 

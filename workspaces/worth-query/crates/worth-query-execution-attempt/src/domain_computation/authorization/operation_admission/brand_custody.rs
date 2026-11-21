@@ -39,7 +39,7 @@ impl<Schema, Operation, Input, Scope>
 {
     /// Consume the operation brand when a completed pure read becomes Source
     /// support. The original decisions move; no successor write brand is issued.
-    pub fn into_read_authorization(
+    pub(crate) fn into_read_authorization(
         mut self,
     ) -> Option<
         crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
@@ -49,7 +49,7 @@ impl<Schema, Operation, Input, Scope>
 
     /// Brands a freshly admitted core. A conventional admission carries no
     /// typed capability input; every capability mode carries exactly one.
-    pub fn mint(
+    pub(crate) fn mint(
         core: WorthQueryAdmittedOperation,
         tag: BrandTag,
         capability_input: Option<ApplicationSharedInput<Input>>,
@@ -93,13 +93,11 @@ impl<Schema, Operation, Input, Scope>
 
     /// Borrow only the existing proof metadata for concrete validation. No input or owned core escapes.
     #[inline]
-    pub fn reentry_parts(
-        &self,
-    ) -> (&WorthQueryAdmittedOperation, &BrandTag) {
+    pub(crate) fn reentry_parts(&self) -> (&WorthQueryAdmittedOperation, &BrandTag) {
         (&self.core, &self.tag)
     }
 
-    pub fn belongs_to(
+    pub(crate) fn belongs_to(
         &self,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
@@ -108,7 +106,7 @@ impl<Schema, Operation, Input, Scope>
             && self.tag.admits(&self.core).is_ok()
     }
 
-    pub fn validate_projection_authority(
+    pub(crate) fn validate_projection_authority(
         &self,
         runtime_authority: WorthQueryRuntimeAuthorityIdentity,
         binding_identity: &ApplicationSchemaBindingIdentity,
@@ -122,7 +120,7 @@ impl<Schema, Operation, Input, Scope>
         )
     }
 
-    pub fn validate_installed_mutation_binding(
+    pub(crate) fn validate_installed_mutation_binding(
         &self,
         descriptor: Option<&ApplicationMutationBindingDescriptor>,
     ) -> Result<(), MutationHandlerExecutionDenial> {
@@ -135,9 +133,7 @@ impl<Schema, Operation, Input, Scope>
     }
 
     #[inline]
-    pub fn shared_capability_input(
-        &self,
-    ) -> Option<&ApplicationSharedInput<Input>> {
+    pub(crate) fn shared_capability_input(&self) -> Option<&ApplicationSharedInput<Input>> {
         self.capability_input.as_ref()
     }
 
@@ -145,7 +141,7 @@ impl<Schema, Operation, Input, Scope>
         clippy::disallowed_methods,
         reason = "Type identity and names serve point lookup or diagnostics; canonical order uses declared identity"
     )]
-    pub fn retain_original_input<Binding>(
+    pub(crate) fn retain_original_input<Binding>(
         &mut self,
         input: ApplicationRetainedInput<Binding::InputBinding>,
         correction: Option<
@@ -175,16 +171,14 @@ impl<Schema, Operation, Input, Scope>
         self.original_input = Some(input.into_shared_input());
     }
 
-    pub fn original_input(
-        &self,
-    ) -> Option<(&ApplicationSharedInput<Input>, [u8; 32])> {
+    pub(crate) fn original_input(&self) -> Option<(&ApplicationSharedInput<Input>, [u8; 32])> {
         match (&self.original_input, self.core.original_input_identity()) {
             (Some(input), Some(identity)) => Some((input, identity)),
             _ => None,
         }
     }
 
-    pub fn bind_delegation_activation(
+    pub(crate) fn bind_delegation_activation(
         self,
         binding: WorthQueryDelegationActivationBinding,
     ) -> Result<Self, Denial> {
@@ -207,7 +201,7 @@ impl<Schema, Operation, Input, Scope>
         .map_err(|(denial, _)| denial)
     }
 
-    pub fn bind_capability_revocation(
+    pub(crate) fn bind_capability_revocation(
         self,
         binding: WorthQueryCapabilityRevocationBinding,
         work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
@@ -231,7 +225,7 @@ impl<Schema, Operation, Input, Scope>
         .map_err(|(denial, _)| denial)
     }
 
-    pub fn bind_elevation_request(
+    pub(crate) fn bind_elevation_request(
         self,
         binding: WorthQueryElevationRequestBinding,
     ) -> Result<Self, Denial> {
@@ -254,7 +248,7 @@ impl<Schema, Operation, Input, Scope>
         .map_err(|(denial, _)| denial)
     }
 
-    pub fn bind_elevation_approval(
+    pub(crate) fn bind_elevation_approval(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryElevationApprovalBinding,
@@ -283,7 +277,7 @@ impl<Schema, Operation, Input, Scope>
         })
     }
 
-    pub fn bind_elevation_close(
+    pub(crate) fn bind_elevation_close(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryElevationCloseBinding,
@@ -312,7 +306,7 @@ impl<Schema, Operation, Input, Scope>
         })
     }
 
-    pub fn bind_mandatory_review(
+    pub(crate) fn bind_mandatory_review(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         binding: WorthQueryMandatoryReviewBinding,

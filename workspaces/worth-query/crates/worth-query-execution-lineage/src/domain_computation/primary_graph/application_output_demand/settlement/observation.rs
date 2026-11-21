@@ -3,14 +3,14 @@
 mod court_doors_for_test;
 pub mod provenance;
 
-use std::sync::Arc;
-use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use crate::basis::WorthQueryProductBranchReadIdentity;
 use crate::domain_computation::primary_graph::{
     output_lineage::{HistoricalAcceptedOrigin, RecordedSettlementIdentity},
     source_disclosure::OriginalSourceInspectionDisclosure,
     WorthQueryApplicationCommittedChanges, WorthQueryApplicationOutputCorrespondence,
 };
+use std::sync::Arc;
+use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 
 #[derive(Clone)]
 pub enum OriginalSettledProducerSource {
@@ -92,7 +92,7 @@ impl OriginalSettledProducerObservation {
         &self,
     ) -> Option<
         &[crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead],
-    > {
+    >{
         self.historical_reads.as_deref()
     }
 
@@ -100,7 +100,7 @@ impl OriginalSettledProducerObservation {
         &self,
     ) -> Option<
         &[crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead],
-    > {
+    >{
         self.historical_reads.as_deref()
     }
 }

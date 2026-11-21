@@ -23,10 +23,7 @@ impl SourceFactsBuilder {
         Ok(())
     }
 
-    pub fn copy_for_step(
-        &self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<Self, Cause> {
+    pub fn copy_for_step(&self, execution: &ExecutionRequest<'_, '_>) -> Result<Self, Cause> {
         if let Some(allocation) = &self.allocation {
             allocation.claim(execution, self.copy_bytes()?)?;
         }

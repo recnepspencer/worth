@@ -3,7 +3,7 @@ use super::WorthQueryAdmittedApplicationOperation;
 impl<Schema, Operation, Input, Scope>
     WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
 {
-    pub fn refuse_stale_home_authority(
+    pub(crate) fn refuse_stale_home_authority(
         &self,
         current: worth_runtime_world::facade::RuntimeWorldOwnerIdentity,
     ) -> Result<(), crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial>

@@ -98,18 +98,14 @@ pub use pending::PendingProducerRegistry;
 pub use semantic_edition::InstalledProducerEdition;
 
 pub struct InstalledProducerProvider<Schema> {
-    pub(crate) declaration:
-        DeclaredProducerBinding,
-    pub(crate) edition:
-        InstalledProducerEdition,
+    pub(crate) declaration: DeclaredProducerBinding,
+    pub(crate) edition: InstalledProducerEdition,
     value: Arc<dyn Any + Send + Sync>,
     pub(crate) executor: Arc<dyn InstalledProducerExecutor<Schema>>,
 }
 
 impl<S> InstalledProducerProvider<S> {
-    pub fn coupled_executor(
-        &self,
-    ) -> &dyn super::execution::InstalledCoupledProducerExecutor<S> {
+    pub fn coupled_executor(&self) -> &dyn super::execution::InstalledCoupledProducerExecutor<S> {
         self.executor.as_ref()
     }
 }
@@ -210,11 +206,7 @@ where
             })
     }
 
-    pub fn family_output_bindings<
-        Family,
-    >(
-        &self,
-    ) -> Vec<TypeId>
+    pub fn family_output_bindings<Family>(&self) -> Vec<TypeId>
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
@@ -228,9 +220,7 @@ where
             .collect()
     }
 
-    pub fn family_output_role<
-        Family,
-    >(
+    pub fn family_output_role<Family>(
         &self,
         output_binding: TypeId,
     ) -> Result<&str, WorthQueryOutputDemandDenial>

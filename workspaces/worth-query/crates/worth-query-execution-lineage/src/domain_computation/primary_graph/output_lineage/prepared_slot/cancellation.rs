@@ -5,9 +5,7 @@ use crate::domain_computation::primary_graph::output_lineage::WorthQueryApplicat
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
 
 impl WorthQueryApplicationOutputLineage {
-    pub fn drain_cancelled_slots(
-        &mut self,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+    pub fn drain_cancelled_slots(&mut self) -> Result<(), WorthQueryOutputDemandDenial> {
         while let Some(cue) = self.cancelled_slots.as_ref() {
             let coordinate = cue.identity.coordinate();
 

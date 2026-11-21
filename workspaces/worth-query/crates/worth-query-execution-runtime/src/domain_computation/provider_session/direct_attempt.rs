@@ -67,9 +67,7 @@ impl WorthQueryDirectExecutionResourceAttempt {
         self.reserved.resources()
     }
 
-    pub fn managed_provider_session(
-        &self,
-    ) -> &WorthQueryExecutionProviderSession {
+    pub fn managed_provider_session(&self) -> &WorthQueryExecutionProviderSession {
         &self.provider_session
     }
 

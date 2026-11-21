@@ -4,10 +4,7 @@ use crate::domain_computation::primary_graph::source_facts::SourceFactReadDenial
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 impl RootPathSelectionBuilder {
-    pub fn finish(
-        self,
-        execution: &ExecutionRequest<'_, '_>,
-    ) -> Result<RootPathSelection, Cause> {
+    pub fn finish(self, execution: &ExecutionRequest<'_, '_>) -> Result<RootPathSelection, Cause> {
         if let Some(allocation) = &self.allocation {
             allocation.claim_tree_copy::<(EntityId, SourceFacts)>(execution, self.roots.len())?;
         }

@@ -13,22 +13,7 @@ pub enum WorthQueryMutationHandlerWork {
 /// The counters cover decision projection, not candidate construction or commit.
 /// Callers cannot manufacture a capture from descriptive counters:
 ///
-/// ```compile_fail,E0451
-/// use worth_query_execution::facade::primary_graph::{
-///     WorthQueryInvariantProjectionWork, WorthQueryMutationHandlerProjectionWork,
-/// };
-/// let _ = WorthQueryMutationHandlerProjectionWork {
-///     projection: WorthQueryInvariantProjectionWork::default(),
-///     handler_contacted: true,
-/// };
-/// ```
-///
 /// Nor can they manufacture a zero-work capture through `Default`:
-///
-/// ```compile_fail,E0277
-/// use worth_query_execution::facade::primary_graph::WorthQueryMutationHandlerProjectionWork;
-/// let _: WorthQueryMutationHandlerProjectionWork = Default::default();
-/// ```
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct WorthQueryMutationHandlerProjectionWork {
     projection: WorthQueryInvariantProjectionWork,

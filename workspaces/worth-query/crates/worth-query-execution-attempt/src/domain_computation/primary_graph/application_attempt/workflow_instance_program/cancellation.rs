@@ -4,8 +4,8 @@
 //! and a step admitted before the cancellation commits goes stale in turn.
 
 pub mod publication;
-pub use publication::PreparedWorkflowInstanceCancellation;
 use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+pub use publication::PreparedWorkflowInstanceCancellation;
 
 pub mod close;
 pub mod recorded;
@@ -58,10 +58,7 @@ where
     Schema: ApplicationSchema,
     Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
 {
-    pub fn materialize_workflow_instance_cancellation<
-        Capability,
-        Spec,
-    >(
+    pub fn materialize_workflow_instance_cancellation<Capability, Spec>(
         mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,

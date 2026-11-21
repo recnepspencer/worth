@@ -12,9 +12,7 @@ pub use admitted_operation::transition_conventional_operation;
 pub use admitted_operation::WorthQueryAdmittedApplicationCapabilityAccess;
 pub use admitted_operation::WorthQueryAdmittedApplicationOperation;
 pub use admitted_operation::WorthQueryOperationAdmissionIdentity;
-pub use admitted_operation::{
-    admit_capability_access, admit_encoded_capability_access,
-};
+pub use admitted_operation::{admit_capability_access, admit_encoded_capability_access};
 pub use admitted_operation::{
     WorthQueryCapabilityContextKey, WorthQueryCurrentCapabilityObservation,
     WorthQueryDelegationResolvedRequest, WorthQueryExactCapabilityObservationContext,
@@ -52,6 +50,4 @@ where
     access.transition_operation(execution, runtime, operation, preconditions)
 }
 
-pub use admitted_operation::{
-    BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation,
-};
+pub use admitted_operation::{BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation};

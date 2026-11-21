@@ -73,7 +73,8 @@ where
         .map_err(Denial::Phase)?;
     let graph = current
         .application()
-        .inner.runtime
+        .inner
+        .runtime
         .primary_graph()
         .ok_or(Denial::BasisUnavailable)?;
     let snapshot = data.application_basis().snapshot_handle();

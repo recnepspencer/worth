@@ -4,10 +4,8 @@
 /// the read evidence Native constructs from the actual committed selection;
 /// they are never authority, and a mismatched pair yields no evidence.
 pub struct HistoricalSelectionCoordinate {
-    pub selected:
-        worth_relational::facade::mvcc::RelationalBranchObservation,
-    pub restored:
-        worth_relational::facade::mvcc::RelationalBranchObservation,
+    pub selected: worth_relational::facade::mvcc::RelationalBranchObservation,
+    pub restored: worth_relational::facade::mvcc::RelationalBranchObservation,
     pub prior: Option<std::sync::Arc<Self>>,
 }
 

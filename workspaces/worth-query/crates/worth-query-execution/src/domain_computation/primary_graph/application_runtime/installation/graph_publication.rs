@@ -71,6 +71,7 @@ pub(super) fn install_bridge<S: ApplicationSchema>(
     } = seed.consume();
     let request = phase.execution_request();
     let execution = &request;
+    use worth_query_execution_query::facade::ports::ExecutionRuntimePrimaryGraphPort as _;
     let graph = runtime
         .retain_primary_graph_integration_handle()
         .expect("publishing the primary graph installs its integration authority");

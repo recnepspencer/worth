@@ -18,16 +18,12 @@ impl WorthQueryManagedDerivedStorageQuote {
     }
 }
 
-pub enum ManagedStoragePolicy
-{
+pub enum ManagedStoragePolicy {
     Bounded(ApplicationDerivedViewLimits),
     OwnerSized,
 }
 impl ManagedStoragePolicy {
-    pub fn rejects_entries(
-        &self,
-        count: usize,
-    ) -> bool {
+    pub fn rejects_entries(&self, count: usize) -> bool {
         matches!(self, Self::Bounded(limits) if count > limits.maximum_entries())
     }
     pub fn rejects_bytes(&self, bytes: usize) -> bool {
@@ -35,11 +31,7 @@ impl ManagedStoragePolicy {
     }
 }
 
-pub fn image_quote<
-    'a,
-    Key: Clone + Ord,
-    Value: WorthQueryManagedDerivedValue,
->(
+pub fn image_quote<'a, Key: Clone + Ord, Value: WorthQueryManagedDerivedValue>(
     entries: impl Iterator<Item = (&'a Value, &'a BTreeSet<ViewDependency>)>,
     count: usize,
     membership: &BTreeSet<ViewDependency>,
@@ -90,10 +82,7 @@ fn dependency_quote<Key: Clone + Ord>(
         .ok_or(WorthQueryManagedDerivedViewDenial::RetainedBytesExceeded)
 }
 
-pub fn entry_quote<
-    Key: Clone + Ord,
-    Value: WorthQueryManagedDerivedValue,
->(
+pub fn entry_quote<Key: Clone + Ord, Value: WorthQueryManagedDerivedValue>(
     value: &Value,
     dependencies: &BTreeSet<ViewDependency>,
 ) -> Result<usize, WorthQueryManagedDerivedViewDenial> {

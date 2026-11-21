@@ -23,9 +23,7 @@ pub mod domain_evidence_binding {
     pub use crate::domain_computation::domain_evidence_binding::*;
 }
 
-pub mod execution_resource_attempt {
-
-}
+pub mod execution_resource_attempt {}
 
 pub mod execution_runtime {
     pub use crate::domain_computation::execution_runtime::*;

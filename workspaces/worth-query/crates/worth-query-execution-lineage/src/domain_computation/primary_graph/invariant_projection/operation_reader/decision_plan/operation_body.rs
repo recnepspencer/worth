@@ -141,9 +141,7 @@ impl<Schema: ApplicationSchema, Operation>
         Ok(identity)
     }
 
-    pub fn tracked_body_locator<
-        Entity,
-    >(
+    pub fn tracked_body_locator<Entity>(
         &mut self,
         identity: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,

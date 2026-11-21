@@ -13,8 +13,7 @@ use std::sync::OnceLock;
 /// An absent address has only an empty hidden vacancy. An existing address
 /// remains unchanged until the source installation succeeds. The caller holds
 /// the lineage guard from preparation through publication or inverse removal.
-pub struct PreparedStablePartitionLocator
-{
+pub struct PreparedStablePartitionLocator {
     cell: Arc<OnceLock<usize>>,
     inserted_vacancy: bool,
 }

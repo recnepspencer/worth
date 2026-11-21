@@ -7,7 +7,7 @@ pub mod preparation;
 pub mod publication;
 
 pub use operation::operation_receipt_requires_recovery;
+pub use operation::receipt_identity_from_outcome;
 pub use preparation::*;
 pub use publication::transition_entity_in_receipt;
-pub use operation::receipt_identity_from_outcome;
 pub use publication::*;

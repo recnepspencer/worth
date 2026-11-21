@@ -72,9 +72,7 @@ impl WorthQueryApplicationRuntimeCore {
             .expect("a live application owns its source meanings")
     }
 
-    pub fn execution_mut(
-        &mut self,
-    ) -> &mut WorthQueryExecutionRuntime {
+    pub fn execution_mut(&mut self) -> &mut WorthQueryExecutionRuntime {
         self.execution
             .as_mut()
             .expect("a live application owns its execution runtime")
@@ -89,9 +87,7 @@ impl WorthQueryApplicationRuntimeCore {
     ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
         self.execution().authority_identity()
     }
-    pub fn primary_graph(
-        &self,
-    ) -> Option<&super::super::WorthQueryPrimaryGraph> {
+    pub fn primary_graph(&self) -> Option<&super::super::WorthQueryPrimaryGraph> {
         self.execution().primary_graph()
     }
     pub fn installed_packages(
@@ -118,10 +114,7 @@ impl WorthQueryApplicationRuntimeCore {
 }
 
 impl WorthQueryApplicationRuntimeCore {
-    pub fn authentication_is_expired(
-        &self,
-        valid_until: std::time::Instant,
-    ) -> bool {
+    pub fn authentication_is_expired(&self, valid_until: std::time::Instant) -> bool {
         self.authorization_clock.admission_clock.now() >= valid_until
     }
 }
@@ -209,9 +202,7 @@ impl WorthQueryApplicationRuntimeCore {
 }
 
 impl WorthQueryApplicationRuntimeCore {
-    pub fn close_live_delivery(
-        &self,
-    ) -> WorthQueryApplicationLiveDeliveryCloseReceipt {
+    pub fn close_live_delivery(&self) -> WorthQueryApplicationLiveDeliveryCloseReceipt {
         WorthQueryApplicationLiveDeliveryCloseReceipt {
             remaining_live_consumers: self.primary_provider.live_delivery.close(),
         }

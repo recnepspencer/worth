@@ -3,7 +3,6 @@ use super::super::{
     application_contribution::QueryMemoryReservation, WorthQueryInvariantMutationTarget,
 };
 pub struct PreparedBodyPathLinks<S> {
-    pub targets:
-        Vec<WorthQueryInvariantMutationTarget<S, ()>>,
+    pub targets: Vec<WorthQueryInvariantMutationTarget<S, ()>>,
     pub _memory: Option<QueryMemoryReservation>,
 }

@@ -67,7 +67,8 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     }
     let application = current.application();
     if application
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .graph
         .layout
@@ -76,7 +77,8 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         return Err(correction(Eligibility::LiveControlDomain));
     }
     application
-        .inner.runtime
+        .inner
+        .runtime
         .product_runtime
         .require_live_product_occurrence(
             source.source.product_observation().lifecycle_incarnation(),
@@ -111,7 +113,13 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     }
     let supported = application
         .installed_program_support()
-        .and_then(|support| support.native_program(current_program.revision()).map(|r| crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(r.as_ref())))
+        .and_then(|support| {
+            support.native_program(current_program.revision()).map(|r| {
+                crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(
+                    r.as_ref(),
+                )
+            })
+        })
         .ok_or_else(|| correction(Eligibility::ProgramUnavailable))?;
     let access = ApplicationHistoryAccessBinding::<S, H>::descriptor();
     let expected_output = if let Some(profile) = outputs {
@@ -200,7 +208,8 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     // This real admission on C catches medium/schema/source eligibility before
     // fork. Actual preparation later repeats admission on the new C-derived target.
     application
-        .inner.runtime
+        .inner
+        .runtime
         .primary_provider
         .graph
         .with_runtime(&execution, |native| {
@@ -232,7 +241,8 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                     &execution,
                     native,
                     application
-                        .inner.runtime
+                        .inner
+                        .runtime
                         .primary_provider
                         .graph
                         .application_publication

@@ -15,12 +15,7 @@ use crate::domain_computation::primary_graph::application_contribution::{
 };
 
 impl DeclaredProducerBinding {
-    pub fn of<
-        Schema,
-        Binding,
-    >(
-        owner: &str,
-    ) -> Self
+    pub fn of<Schema, Binding>(owner: &str) -> Self
     where
         Schema: ApplicationSchema,
         Binding: WorthQueryApplicationProducerBinding<Schema>,
@@ -74,12 +69,7 @@ impl DeclaredProducerBinding {
         }
     }
 
-    pub fn meaning_matches<
-        Schema,
-        Binding,
-    >(
-        &self,
-    ) -> bool
+    pub fn meaning_matches<Schema, Binding>(&self) -> bool
     where
         Schema: ApplicationSchema,
         Binding: WorthQueryApplicationProducerBinding<Schema>,

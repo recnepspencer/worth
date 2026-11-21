@@ -12,10 +12,7 @@ use super::super::{
 
 /// First matching sealed fact for each effect target. Indexing preserves the
 /// previous first-match semantics while avoiding a full fact scan per effect.
-pub struct ObservedFactIndex<
-    'facts,
-    Facts: FactSequence + ?Sized,
-> {
+pub struct ObservedFactIndex<'facts, Facts: FactSequence + ?Sized> {
     facts: &'facts Facts,
     routes:
         std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::FactRoutes>,
@@ -23,9 +20,7 @@ pub struct ObservedFactIndex<
 
 impl<'facts, Facts: FactSequence + ?Sized> ObservedFactIndex<'facts, Facts> {
     #[cfg(test)]
-    pub fn new(
-        facts: &'facts Facts,
-    ) -> Self {
+    pub fn new(facts: &'facts Facts) -> Self {
         use crate::domain_computation::primary_graph::application_attempt::{
             retained_decision_facts::StorageControl, FactRoutes,
         };

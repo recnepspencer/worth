@@ -2,9 +2,7 @@
 use super::*;
 use worth_query_declaration::facade::{
     application_aftermath::ApplicationInverseBinding,
-    application_operation::{
-        application_value_identity, ApplicationValueIdentityDomain,
-    },
+    application_operation::{application_value_identity, ApplicationValueIdentityDomain},
 };
 
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::correction_source::WorthQueryCorrectionCommandKey;
@@ -12,28 +10,29 @@ pub use worth_query_execution_query::facade::domain_computation::primary_graph::
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn correction_command_key<C: ApplicationCorrectionBinding<Schema>>(
         &self,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         wire_key: &str,
     ) -> Result<WorthQueryCorrectionCommandKey, WorthQueryCorrectionDerivationDenial> {
         self.action_command_key::<ApplicationInverseBinding<Schema, C>>(
-            phase, principal, request, wire_key,
+            access, phase, principal, request, wire_key,
         )
     }
     pub fn reapplication_command_key<C: ApplicationCorrectionBinding<Schema>>(
         &self,
-        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
         wire_key: &str,
     ) -> Result<WorthQueryCorrectionCommandKey, WorthQueryCorrectionDerivationDenial> {
-        self.action_command_key::<C::Source>(phase, principal, request, wire_key)
+        self.action_command_key::<C::Source>(access, phase, principal, request, wire_key)
     }
     fn action_command_key<Binding: ApplicationMutationBinding<Schema>>(
         &self,
+        access: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,
         principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request: &WorthQueryRequestScope,
@@ -64,8 +63,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         )
         .map_err(Denial::CommandKey)?;
         Ok(WorthQueryCorrectionCommandKey::from_canonical(
-            worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
-            canonical,
+            access, canonical,
         ))
     }
 }

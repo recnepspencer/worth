@@ -6,9 +6,7 @@ use crate::domain_computation::{
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Interruption;
 
 impl WorthQueryApplicationAttemptDenial {
-    pub fn into_decision_read_set_failure(
-        self,
-    ) -> WorthQueryDecisionReadSetFailure {
+    pub fn into_decision_read_set_failure(self) -> WorthQueryDecisionReadSetFailure {
         use WorthQueryApplicationAttemptDenialKind as Attempt;
         let kind = match self.kind() {
             Attempt::ExecutionRequest(kind) => Kind::ExecutionRequest(kind),

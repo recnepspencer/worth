@@ -12,7 +12,7 @@ mod input_preparation;
 mod preparation;
 mod source_selection;
 mod verified_parents;
-pub use input_preparation::{PreparedCoupledInputs, PlannedOutput};
+pub use input_preparation::{PlannedOutput, PreparedCoupledInputs};
 pub use source_selection::SelectedCoupledSource;
 mod validation;
 use crate::domain_computation::primary_graph::{
@@ -64,25 +64,16 @@ pub struct CoupledApplicationAssembly<
 /// demand also reaches lowers it to that demand, so the position is a lower
 /// bound: settlement by position can only refuse more, never accept a stale read.
 #[derive(Clone)]
-pub struct OwedDemand(
-    std::rc::Rc<std::cell::Cell<usize>>,
-);
+pub struct OwedDemand(std::rc::Rc<std::cell::Cell<usize>>);
 impl OwedDemand {
-    pub fn at(
-        position: usize,
-    ) -> Self {
+    pub fn at(position: usize) -> Self {
         Self(std::rc::Rc::new(std::cell::Cell::new(position)))
     }
-    pub fn position(
-        &self,
-    ) -> usize {
+    pub fn position(&self) -> usize {
         self.0.get()
     }
     /// Coalesce another demand for the same route: the earliest one owes it.
-    pub fn coalesce(
-        &self,
-        other: &Self,
-    ) {
+    pub fn coalesce(&self, other: &Self) {
         self.0.set(self.position().min(other.position()));
     }
 }
@@ -151,23 +142,15 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             consuming: RefCell::new(Vec::new()),
         }
     }
-    pub fn owing(
-        &self,
-    ) -> OwedDemand {
+    pub fn owing(&self) -> OwedDemand {
         self.owing.borrow().clone()
     }
     /// The work prepared next is owed by this demand.
-    pub fn owe(
-        &self,
-        demand: &OwedDemand,
-    ) {
+    pub fn owe(&self, demand: &OwedDemand) {
         *self.owing.borrow_mut() = demand.clone();
     }
     /// The work prepared next is owed by a new demand at this position.
-    pub fn owe_at(
-        &self,
-        position: usize,
-    ) {
+    pub fn owe_at(&self, position: usize) {
         *self.owing.borrow_mut() = OwedDemand::at(position);
     }
     pub fn retain_discovery_support(
@@ -198,9 +181,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .refresh_outgoing_read_support(execution, &self.root_session)
             .map_err(execution::denial::candidate_support_denied)
     }
-    pub fn take_denial(
-        &self,
-    ) -> Option<WorthQueryOutputDemandDenial> {
+    pub fn take_denial(&self) -> Option<WorthQueryOutputDemandDenial> {
         self.denial.borrow_mut().take()
     }
     /// The last round ended the edit and left neither a refusing subject nor

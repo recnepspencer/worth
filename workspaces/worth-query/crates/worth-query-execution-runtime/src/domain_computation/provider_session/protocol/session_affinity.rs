@@ -100,9 +100,7 @@ impl<'run> WorthQueryProviderSessionAffinity<'run> {
         }
     }
 
-    pub fn terminal_binding(
-        &self,
-    ) -> super::WorthQueryProviderSessionTerminalBinding {
+    pub fn terminal_binding(&self) -> super::WorthQueryProviderSessionTerminalBinding {
         super::WorthQueryProviderSessionTerminalBinding::from_affinity(self)
     }
 }

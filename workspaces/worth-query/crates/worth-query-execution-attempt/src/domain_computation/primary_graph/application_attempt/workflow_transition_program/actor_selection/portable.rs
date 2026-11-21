@@ -108,10 +108,7 @@ impl WorkflowRecordedActorObservation {
             },
         })
     }
-    pub fn combined_identity(
-        &self,
-        relational: &[u8; 32],
-    ) -> [u8; 32] {
+    pub fn combined_identity(&self, relational: &[u8; 32]) -> [u8; 32] {
         let mut digest = Sha256::new();
         self.visit_identity_material(relational, &mut |bytes| {
             digest.update(bytes);

@@ -74,9 +74,7 @@ impl<Schema, Relation> WorthQueryAggregateIdentity<Schema, Relation> {
             AggregateSource::Component,
         )
     }
-    pub fn from_invariant_derived_orbit_read<
-        Member,
-    >(
+    pub fn from_invariant_derived_orbit_read<Member>(
         native: &AggregateRead<Member>,
         binding: ApplicationSchemaBindingIdentity,
     ) -> Self {

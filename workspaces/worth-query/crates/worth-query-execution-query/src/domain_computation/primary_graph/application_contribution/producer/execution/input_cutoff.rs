@@ -1,5 +1,6 @@
 //! Producer input preparation consumed by fresh execution or stable publication.
 
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 mod computation_prior;
 mod refusal;
 pub use computation_prior::prepare_computation_prior;

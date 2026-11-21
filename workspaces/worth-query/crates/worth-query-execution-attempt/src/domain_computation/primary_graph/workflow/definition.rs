@@ -15,17 +15,11 @@ pub use compilation::{
     WorkflowDefinitionCompilationPosture, WorkflowDefinitionCompilationReuse,
 };
 pub use condition::WorkflowConditionOperand;
-pub use condition::{
-    encode_draft, encode_operands, CompiledWorkflowConditionExpression,
-};
+pub use condition::{encode_draft, encode_operands, CompiledWorkflowConditionExpression};
 #[cfg(test)]
 pub use dependencies::WorkflowRetainedNode;
-pub use dependencies::{
-    read_definition_dependencies, WorkflowDefinitionDependencies,
-};
-pub use facts::{
-    visit_definition_facts, WorkflowLineagePublicationTarget,
-};
+pub use dependencies::{read_definition_dependencies, WorkflowDefinitionDependencies};
+pub use facts::{visit_definition_facts, WorkflowLineagePublicationTarget};
 
 pub use condition::CompiledWorkflowCondition;
 

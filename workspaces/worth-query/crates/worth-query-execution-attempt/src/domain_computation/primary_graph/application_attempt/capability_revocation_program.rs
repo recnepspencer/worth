@@ -79,9 +79,7 @@ impl<Schema, Operation, Input, Scope>
         &self.program
     }
 
-    pub fn into_inner(
-        self,
-    ) -> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
+    pub fn into_inner(self) -> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         self.program
     }
 }

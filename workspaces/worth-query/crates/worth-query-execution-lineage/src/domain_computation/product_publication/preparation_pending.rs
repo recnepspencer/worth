@@ -33,8 +33,7 @@ pub struct WorthQueryProductPreparationPending {
     recovery: WorthQueryProductUnpublishedRecovery,
     // The checked-out preparation contains the full Native and World phases.
     // Keep that original owner out of every ordinary commit-result stack frame.
-    preparation:
-        Option<Box<dyn std::any::Any + Send>>,
+    preparation: Option<Box<dyn std::any::Any + Send>>,
 }
 impl WorthQueryProductPreparationPending {
     pub fn new(
@@ -49,10 +48,7 @@ impl WorthQueryProductPreparationPending {
             preparation: None,
         }
     }
-    pub fn retaining_preparation(
-        mut self,
-        preparation: Box<dyn std::any::Any + Send>,
-    ) -> Self {
+    pub fn retaining_preparation(mut self, preparation: Box<dyn std::any::Any + Send>) -> Self {
         self.preparation = Some(preparation);
         self
     }

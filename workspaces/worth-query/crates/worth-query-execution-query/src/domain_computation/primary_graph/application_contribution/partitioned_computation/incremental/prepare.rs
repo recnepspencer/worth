@@ -175,7 +175,10 @@ where
             )
         } else {
             let (plan, charge) = reader.measured(ComputationRead::Membership, |reader| {
-                owner.partitions(&mut WorthQueryComputationReader::lend(reader, source_query), input)
+                owner.partitions(
+                    &mut WorthQueryComputationReader::lend(reader, source_query),
+                    input,
+                )
             });
             let PlanShape::Keyed(entries) = plan?.shape;
             let items = planned_items(entries)?;
@@ -222,7 +225,11 @@ where
                 continue;
             }
             let (key, charge) = reader.measured(read, |reader| {
-                owner.partition_key(&mut WorthQueryComputationReader::lend(reader, source_query), input, value)
+                owner.partition_key(
+                    &mut WorthQueryComputationReader::lend(reader, source_query),
+                    input,
+                    value,
+                )
             });
             let key = key?;
             let before = preparation_work;

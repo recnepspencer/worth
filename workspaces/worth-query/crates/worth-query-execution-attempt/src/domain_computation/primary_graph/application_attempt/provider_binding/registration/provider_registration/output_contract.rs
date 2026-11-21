@@ -7,16 +7,12 @@ use crate::domain_computation::primary_graph::application_attempt::WorthQueryApp
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey;
 
 impl WorthQueryPrimaryGraphApplicationAttempt {
-    pub fn required_output_key(
-        &self,
-    ) -> Option<std::sync::Arc<WorthQueryOutputDemandKey>> {
+    pub fn required_output_key(&self) -> Option<std::sync::Arc<WorthQueryOutputDemandKey>> {
         self.required_output_demand
             .as_ref()
             .map(|context| std::sync::Arc::clone(context.key_arc()))
     }
-    pub fn output_family(
-        &self,
-    ) -> Option<&'static str> {
+    pub fn output_family(&self) -> Option<&'static str> {
         self.required_output_demand
             .as_ref()
             .map(|context| context.publication_family())
@@ -28,15 +24,11 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             .map(|context| context.native_producer())
     }
 
-    pub fn is_required_output_completion(
-        &self,
-    ) -> bool {
+    pub fn is_required_output_completion(&self) -> bool {
         self.required_output_demand.is_some()
     }
 
-    pub fn has_nonrelational_completion_effects(
-        &self,
-    ) -> bool {
+    pub fn has_nonrelational_completion_effects(&self) -> bool {
         self.emitted_effect_count() != 0
             || self.conditional_definition.is_some()
             || self.dispatch_outbox().is_some()
@@ -72,9 +64,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         self.effects.native_witness_roles()
     }
 
-    pub const fn output_binding_type(
-        &self,
-    ) -> Option<TypeId> {
+    pub const fn output_binding_type(&self) -> Option<TypeId> {
         self.effects.output_binding_type()
     }
 }

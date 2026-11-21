@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::provider::{
     WorthQueryApplicationBranchCommitCoordination, WorthQueryPrimaryGraphProvider,
 };
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 
 pub mod authorized;
 pub mod commit_resolution;
@@ -158,9 +159,7 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
         self.idempotency
     }
 
-    pub fn coordination(
-        &self,
-    ) -> &'a WorthQueryApplicationBranchCommitCoordination<'provider> {
+    pub fn coordination(&self) -> &'a WorthQueryApplicationBranchCommitCoordination<'provider> {
         self.coordination
     }
 

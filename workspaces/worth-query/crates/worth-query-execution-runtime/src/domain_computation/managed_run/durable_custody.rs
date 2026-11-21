@@ -1,13 +1,13 @@
 //! Home custody follows the actual affinity; native owners alone report release.
 use crate::ports::ManagedRunObligationPort;
-use worth_query_execution_obligations::facade::query_obligations::{
-    QueryManagedRunPosture, QueryObligationDenial,
-};
 use std::{
     collections::BTreeMap,
     sync::{Arc, Mutex, OnceLock},
 };
 use worth_foundational::facade::ManagedRunObligationIdentity;
+use worth_query_execution_obligations::facade::query_obligations::{
+    QueryManagedRunPosture, QueryObligationDenial,
+};
 
 pub fn observe_managed_execution_release(
     release: &crate::domain_computation::WorthQueryProviderExecutionReleaseEvidence,

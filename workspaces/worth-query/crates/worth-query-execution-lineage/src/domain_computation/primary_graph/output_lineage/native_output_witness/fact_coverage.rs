@@ -4,10 +4,7 @@ use super::*;
 impl SealedNativeOutputWitness {
     /// Reading a consumed entity's installed content does not make it an
     /// independent consumer fact. Its consumed edge still requires currentness.
-    pub fn covers_content_fact(
-        &self,
-        fact: &Fact,
-    ) -> Result<bool, CompanionPreflightStop> {
+    pub fn covers_content_fact(&self, fact: &Fact) -> Result<bool, CompanionPreflightStop> {
         let (entity, aspect) = match fact {
             Fact::SourceEntity { entity_id } | Fact::Entity { entity_id, .. } => (*entity_id, None),
             Fact::SourceAspectRevision {

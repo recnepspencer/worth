@@ -16,10 +16,7 @@ pub struct WorthQueryElevationCloseBinding {
 }
 
 impl WorthQueryElevationCloseDraft {
-    pub fn bind(
-        self,
-        approved: WorthQueryApprovedElevation,
-    ) -> WorthQueryElevationCloseBinding {
+    pub fn bind(self, approved: WorthQueryApprovedElevation) -> WorthQueryElevationCloseBinding {
         WorthQueryElevationCloseBinding {
             approved,
             draft: self,
@@ -40,9 +37,7 @@ impl WorthQueryElevationCloseBinding {
     pub const fn closer(&self) -> EntityId {
         self.draft.closer
     }
-    pub const fn closure_kind(
-        &self,
-    ) -> WorthQueryElevationClosureKind {
+    pub const fn closure_kind(&self) -> WorthQueryElevationClosureKind {
         self.draft.closure_kind
     }
     pub const fn closed_at(&self) -> &AspectValue {
@@ -63,24 +58,16 @@ impl WorthQueryElevationCloseBinding {
     pub const fn status_field(&self) -> &AspectFieldLocator {
         &self.draft.status_field
     }
-    pub const fn approver_relation(
-        &self,
-    ) -> worth_relational::facade::identity::KindId {
+    pub const fn approver_relation(&self) -> worth_relational::facade::identity::KindId {
         self.draft.approver_relation
     }
-    pub const fn reviewer_relation(
-        &self,
-    ) -> worth_relational::facade::identity::KindId {
+    pub const fn reviewer_relation(&self) -> worth_relational::facade::identity::KindId {
         self.draft.reviewer_relation
     }
-    pub fn required_decision_reads(
-        &self,
-    ) -> &[ApplicationOperationDecisionReadTarget] {
+    pub fn required_decision_reads(&self) -> &[ApplicationOperationDecisionReadTarget] {
         &self.draft.required_decision_reads
     }
-    pub fn required_program_targets(
-        &self,
-    ) -> &[ApplicationOperationProgramTarget] {
+    pub fn required_program_targets(&self) -> &[ApplicationOperationProgramTarget] {
         &self.draft.required_program_targets
     }
     pub const fn lifecycle_effect(&self) -> Option<&worth_query_declaration::lifecycle_effect_derivation_authority::DerivedApplicationCapabilityLifecycleEffect>{

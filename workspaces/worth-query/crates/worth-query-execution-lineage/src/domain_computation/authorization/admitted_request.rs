@@ -21,10 +21,7 @@ impl AdmittedRequestCurrentness {
     pub fn request(&self) -> &WorthQueryRequestScope {
         &self.request
     }
-    pub fn same_request(
-        &self,
-        request: &WorthQueryRequestScope,
-    ) -> bool {
+    pub fn same_request(&self, request: &WorthQueryRequestScope) -> bool {
         self.request.same_request(request)
     }
 

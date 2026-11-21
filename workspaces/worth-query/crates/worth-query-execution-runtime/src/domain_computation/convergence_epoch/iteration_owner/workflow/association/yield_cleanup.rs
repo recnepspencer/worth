@@ -101,9 +101,7 @@ impl WorkflowYieldCleanupLifecycleEvent {
         }
     }
 
-    pub fn into_kind(
-        self,
-    ) -> WorkflowYieldCleanupLifecycleEventKind {
+    pub fn into_kind(self) -> WorkflowYieldCleanupLifecycleEventKind {
         self.kind
     }
 }

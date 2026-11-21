@@ -8,11 +8,11 @@ use super::lifecycle_count::{acquire, record_one_saturating};
 pub mod lease;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
 pub use lease::WorthQueryApplicationBasisLease;
-use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 pub use worth_query_execution_runtime::facade::basis_identities::{
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisReleaseOutcome,
     WorthQueryApplicationBasisReleaseReceipt, WorthQueryApplicationBasisSelectionIdentity,
 };
+use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
 
 #[derive(Default)]
 struct WorthQueryApplicationBasisRegistryState {

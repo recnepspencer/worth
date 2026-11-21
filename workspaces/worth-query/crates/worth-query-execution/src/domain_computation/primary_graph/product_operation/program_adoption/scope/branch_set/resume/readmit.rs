@@ -19,7 +19,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             QueryObligationDenial::SupportUnavailable,
         ))?;
         let observed = self
-            .inner.runtime
+            .inner
+            .runtime
             .product_runtime
             .owner
             .observation_port()

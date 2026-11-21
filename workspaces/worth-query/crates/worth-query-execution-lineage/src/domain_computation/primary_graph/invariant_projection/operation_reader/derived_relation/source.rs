@@ -6,11 +6,7 @@ use worth_relational::facade::{
 impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Schema>>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
-    pub fn read_derived<
-        Relation: OperationReads<Operation>,
-        From,
-        To,
-    >(
+    pub fn read_derived<Relation: OperationReads<Operation>, From, To>(
         &mut self,
         relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
         root: &WorthQueryInvariantEntityIdentity<Schema, From>,
@@ -35,11 +31,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
             Shape::Adjacency { reverse: false },
         )
     }
-    pub fn read_derived_key<
-        Relation: OperationReads<Operation>,
-        From,
-        To,
-    >(
+    pub fn read_derived_key<Relation: OperationReads<Operation>, From, To>(
         &mut self,
         relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
         root: NativeMemberKey,
@@ -172,9 +164,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
         Ok(native)
     }
 
-    pub fn fail_derived<
-        Entity,
-    >(
+    pub fn fail_derived<Entity>(
         &mut self,
         root: &WorthQueryInvariantEntityIdentity<Schema, Entity>,
         entity: &str,
@@ -187,11 +177,7 @@ impl<Schema: ApplicationSchema, Operation: ApplicationOperationMarkerIdentity<Sc
             DecisionReadOutcome::Failed,
         );
     }
-    pub fn derived_denial(
-        &mut self,
-        cause: NativeDenial,
-        subject: &str,
-    ) -> Denial {
+    pub fn derived_denial(&mut self, cause: NativeDenial, subject: &str) -> Denial {
         match cause {
             NativeDenial::Request(cause) => self.reader.walk_stop(cause, subject),
             NativeDenial::Definition(DefinitionDenial::WorkBudgetExceeded) => {

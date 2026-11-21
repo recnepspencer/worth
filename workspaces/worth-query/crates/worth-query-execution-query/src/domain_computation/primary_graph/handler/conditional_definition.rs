@@ -88,7 +88,12 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             })?;
         let bridge_root = context.application.runtime.bridge.conditional_operations();
         let (predecessor, authored) = port
-            .resolve_predecessor(&bridge_root, product, handle.binding_identity(), handle.lease())
+            .resolve_predecessor(
+                &bridge_root,
+                product,
+                handle.binding_identity(),
+                handle.lease(),
+            )
             .map_err(HandlerExecutionDenial::new)?;
         let request = if authored {
             let source =

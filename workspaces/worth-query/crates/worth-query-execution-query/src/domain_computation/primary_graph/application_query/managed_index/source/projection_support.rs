@@ -11,8 +11,7 @@ use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::runtime::DerivedRelationData;
 
-pub struct SourceProjectionSupport
-{
+pub struct SourceProjectionSupport {
     dependencies: BTreeSet<ViewDependency>,
     _allocation: Arc<SourceFactsAllocation>,
 }

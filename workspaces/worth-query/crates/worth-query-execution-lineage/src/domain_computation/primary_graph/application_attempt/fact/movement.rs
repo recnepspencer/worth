@@ -21,16 +21,11 @@ pub enum Movement {
 /// The fact the comparator observed for a retained key. It has no equality
 /// of its own: only [`FactMovement::between`] compares it.
 #[derive(Debug)]
-pub struct ObservedRetained(
-    WorthQueryApplicationObservedFact,
-);
+pub struct ObservedRetained(WorthQueryApplicationObservedFact);
 
 impl ObservedRetained {
     /// Only the holder of the comparator's key observes a retained fact.
-    pub const fn new(
-        _: &Comparator,
-        observed: WorthQueryApplicationObservedFact,
-    ) -> Self {
+    pub const fn new(_: &Comparator, observed: WorthQueryApplicationObservedFact) -> Self {
         Self(observed)
     }
 }

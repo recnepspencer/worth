@@ -9,9 +9,7 @@ pub struct CheckpointProducerFacts {
 }
 
 impl CheckpointProducerFacts {
-    pub fn into_parts(
-        self,
-    ) -> (facts::FactPayload, ComputationSourceEvidence) {
+    pub fn into_parts(self) -> (facts::FactPayload, ComputationSourceEvidence) {
         let evidence = ComputationSourceEvidence::from_checkpoint_facts(&self);
         (self.facts, evidence)
     }

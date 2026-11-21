@@ -62,10 +62,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .validate_recovery_root_kind(receipt, kind)
     }
 
-    pub fn complete_prepared_output_source(
-        &self,
-        receipt: &WorthQueryOutputSourceEvidence,
-    ) {
+    pub fn complete_prepared_output_source(&self, receipt: &WorthQueryOutputSourceEvidence) {
         self.runtime
             .output_demands
             .complete_prepared_source(receipt);
@@ -98,10 +95,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         ))
     }
 
-    pub fn ensure_recovered_output_source_bound<
-        Query,
-        Value,
-    >(
+    pub fn ensure_recovered_output_source_bound<Query, Value>(
         &self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         prepared: &WorthQueryPreparedRequiredOutputSource,
@@ -137,10 +131,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         )
     }
 
-    pub fn validate_recovered_output_source_currentness<
-        Query,
-        Value,
-    >(
+    pub fn validate_recovered_output_source_currentness<Query, Value>(
         &self,
         prepared: &WorthQueryPreparedRequiredOutputSource,
         retained: &WorthQueryApplicationOutputDemandSource<Query, Value>,

@@ -3,9 +3,7 @@ use crate::domain_computation::primary_graph::{
     OriginalSettledProducerObservationExt, ReadObservationRuntimeExt,
 };
 
-pub trait OutputDemandSettlementCurrentExt:
-    Sized
-{
+pub trait OutputDemandSettlementCurrentExt: Sized {
     fn from_current_accepted<Schema>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,

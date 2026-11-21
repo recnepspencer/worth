@@ -5,9 +5,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 pub mod cached_successor;
 pub mod durable_membership;
-pub use durable_membership::{
-    DurableDemandMembership, DurableDemandRecording,
-};
+pub use durable_membership::{DurableDemandMembership, DurableDemandRecording};
 
 use super::WorthQueryOutputDemandInterest;
 use super::WorthQueryOutputDemandRegistry;
@@ -32,9 +30,7 @@ impl<Query> Deref for RetainedOutputReadmissionSource<Query> {
 }
 
 impl<Query> RetainedOutputReadmissionSource<Query> {
-    pub fn source(
-        &self,
-    ) -> &WorthQueryObservedSource<Query> {
+    pub fn source(&self) -> &WorthQueryObservedSource<Query> {
         &self.source
     }
 }
@@ -42,12 +38,9 @@ impl<Query> RetainedOutputReadmissionSource<Query> {
 /// Erasure transports an owner-issued source to its installed typed executor.
 /// It does not authorize a read, a branch selection, or producer execution.
 pub struct RequiredOutputReadmission {
-    pub recorded_prerequisites:
-        std::sync::Mutex<Option<Vec<std::num::NonZeroU64>>>,
-    pub durable:
-        std::sync::Mutex<Option<DurableDemandMembership>>,
-    pub recording:
-        std::sync::OnceLock<DurableDemandRecording>,
+    pub recorded_prerequisites: std::sync::Mutex<Option<Vec<std::num::NonZeroU64>>>,
+    pub durable: std::sync::Mutex<Option<DurableDemandMembership>>,
+    pub recording: std::sync::OnceLock<DurableDemandRecording>,
     pub source: Arc<dyn Any + Send + Sync>,
     /// Transport the immutable installed entry selected for this exact row.
     /// The typed demand validates its family and identity after downcasting.
@@ -72,9 +65,7 @@ impl<Query> Deref for PreparedOutputReadmissionSource<Query> {
 }
 
 impl WorthQueryOutputDemandRegistry {
-    pub fn retain_readmission_source<
-        Query: 'static,
-    >(
+    pub fn retain_readmission_source<Query: 'static>(
         &self,
         source: WorthQueryObservedSource<Query>,
         limits: WorthQueryOutputDemandLimits,
@@ -108,9 +99,7 @@ impl WorthQueryOutputDemandRegistry {
 impl<Query: 'static> PreparedOutputReadmissionSource<Query> {
     /// The retained source of a demand that holds no registry row, so no
     /// row readmits it.
-    pub fn without_row(
-        self,
-    ) -> Arc<RetainedOutputReadmissionSource<Query>> {
+    pub fn without_row(self) -> Arc<RetainedOutputReadmissionSource<Query>> {
         self.source
     }
 

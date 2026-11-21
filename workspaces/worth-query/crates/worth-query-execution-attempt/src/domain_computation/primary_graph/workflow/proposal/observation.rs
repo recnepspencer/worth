@@ -16,9 +16,7 @@ pub mod captured_inventory;
 pub use captured_history::observe as observe_captured_workflow_history;
 pub mod coverage;
 pub use captured::target as observe_captured_workflow_input;
-pub use captured::{
-    profile as read_recorded_captured_profile, read_recorded_target,
-};
+pub use captured::{profile as read_recorded_captured_profile, read_recorded_target};
 use coverage::observe_coverages;
 pub use coverage::observe_recorded_coverages;
 pub use coverage::observe_workflow_proposal_coverages;

@@ -8,7 +8,12 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
         admission: &A,
         projection: impl FnOnce(
-            &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, A::Operation>,
+            &mut WorthQueryApplicationOperationInvariantProjectionReader<
+                '_,
+                '_,
+                Schema,
+                A::Operation,
+            >,
             &WorthQueryInvariantEntityIdentity<Schema, A::Scope>,
         ) -> Output,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -42,7 +47,12 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &A,
         projection: impl FnOnce(
-            &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, A::Operation>,
+            &mut WorthQueryApplicationOperationInvariantProjectionReader<
+                '_,
+                '_,
+                Schema,
+                A::Operation,
+            >,
             &WorthQueryInvariantEntityIdentity<Schema, A::Scope>,
         ) -> Output,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
@@ -68,7 +78,12 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         admission: &A,
         projection: impl FnOnce(
-            &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, A::Operation>,
+            &mut WorthQueryApplicationOperationInvariantProjectionReader<
+                '_,
+                '_,
+                Schema,
+                A::Operation,
+            >,
             &WorthQueryInvariantEntityIdentity<Schema, A::Scope>,
         ) -> Output,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,

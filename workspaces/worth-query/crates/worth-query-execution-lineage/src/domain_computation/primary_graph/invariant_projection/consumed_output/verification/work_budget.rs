@@ -2,9 +2,7 @@
 
 use super::*;
 
-pub fn map_admission_stop(
-    stop: CompanionPreflightStop,
-) -> ConsumedOutputVerificationStop {
+pub fn map_admission_stop(stop: CompanionPreflightStop) -> ConsumedOutputVerificationStop {
     match stop {
         CompanionPreflightStop::Execution(cause) => {
             ConsumedOutputVerificationStop::Execution(cause)
@@ -37,9 +35,7 @@ pub fn map_admission_stop(
     }
 }
 
-pub fn map_verification_stop(
-    stop: SettlementVerificationStop,
-) -> ConsumedOutputVerificationStop {
+pub fn map_verification_stop(stop: SettlementVerificationStop) -> ConsumedOutputVerificationStop {
     match stop {
         SettlementVerificationStop::SourceRead(
             WorthQuerySourceCurrentnessFailure::ManagedIndex(cause),

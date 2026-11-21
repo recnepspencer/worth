@@ -347,8 +347,7 @@ pub struct WorthQueryOutputDemandInterest {
 
 #[derive(Clone)]
 pub struct WorthQueryReadmittedAcceptedOutput {
-    pub observation:
-        Option<worth_runtime_world::facade::ProductBranchObservation>,
+    pub observation: Option<worth_runtime_world::facade::ProductBranchObservation>,
     pub checkpoint: WorthQueryAcceptedOutputCheckpointIdentity,
     pub correspondence: std::sync::Arc<
         crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence,
@@ -376,9 +375,7 @@ pub mod home_retirement;
 pub mod source_custody_court_doors_for_test;
 
 impl WorthQueryAcceptedOutputAuthority {
-    pub fn publication_view(
-        &self,
-    ) -> Option<super::OutputPublicationView<'_>> {
+    pub fn publication_view(&self) -> Option<super::OutputPublicationView<'_>> {
         match self {
             Self::Committed(receipt) => Some(receipt.into()),
             Self::Recovered(publication) => Some(publication.view()),

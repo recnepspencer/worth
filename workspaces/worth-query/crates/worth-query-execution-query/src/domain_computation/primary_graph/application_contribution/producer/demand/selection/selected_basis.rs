@@ -1,8 +1,8 @@
 //! Exact selected Product checks for a fresh required-output continuation.
 
-use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
@@ -12,9 +12,7 @@ where
     /// The required wave has already selected and retained this Product.
     /// Its fresh disclosed source must name that exact read; predecessor
     /// program custody may name an older head of the same occurrence.
-    pub fn select_output_producer_with_remaining_on_selected<
-        Family,
-    >(
+    pub fn select_output_producer_with_remaining_on_selected<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &WorthQueryObservedSource<
@@ -30,9 +28,7 @@ where
     {
         self.select_output_producer_with_remaining_core::<Family>(execution, source, profile_kind, retained_program_basis, Some(shared), SelectionPurpose::OutputDelivery, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
     }
-    pub fn select_output_producer_for_observation<
-        Family,
-    >(
+    pub fn select_output_producer_for_observation<Family>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: &WorthQueryObservedSource<

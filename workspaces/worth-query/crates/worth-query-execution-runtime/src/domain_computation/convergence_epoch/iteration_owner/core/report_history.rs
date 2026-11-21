@@ -8,9 +8,7 @@ use super::super::super::{
     WorthQueryBoundConvergenceReport, WorthQueryRetainedConvergenceCandidateEvidence,
 };
 
-pub use admission::{
-    admit_assessed_domain_report, WorthQueryConvergenceReportAdmissionFailure,
-};
+pub use admission::{admit_assessed_domain_report, WorthQueryConvergenceReportAdmissionFailure};
 pub use prepared_commit::{
     ReportHistoryLifecycleEvent, ReportHistoryLifecycleEventKind,
     WorthQueryPreparedConvergenceReportCommit,

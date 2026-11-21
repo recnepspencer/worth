@@ -71,10 +71,7 @@ pub fn prepare_world<Schema: ApplicationSchema>(
 
 impl WorldTransition {
     /// Called only after fresh SubjectRead and metadata admission on the genuine graph session.
-    pub fn finish<
-        Schema: ApplicationSchema,
-        History: ApplicationHistoryQueryBinding<Schema>,
-    >(
+    pub fn finish<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>(
         self,
         runtime: &RelationalRuntime,
         execution: worth_execution::ExecutionRequest<'_, '_>,

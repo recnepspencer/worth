@@ -53,9 +53,7 @@ impl WorthQueryAdmittedOperation {
         Ok(self)
     }
 
-    pub fn elevation_approval_binding(
-        &self,
-    ) -> Option<&WorthQueryElevationApprovalBinding> {
+    pub fn elevation_approval_binding(&self) -> Option<&WorthQueryElevationApprovalBinding> {
         match &self.data.authorization_basis {
             ErasedAuthorizationBasis::ElevationApproval { binding, .. } => Some(binding),
             _ => None,

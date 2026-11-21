@@ -26,9 +26,7 @@ pub struct OutputCurrentnessFacts {
 }
 
 impl OutputCurrentnessFacts {
-    pub fn retains_output_field_evidence(
-        &self,
-    ) -> bool {
+    pub fn retains_output_field_evidence(&self) -> bool {
         self.retain_output_field_evidence
     }
     pub fn retaining_output_field_evidence(mut self, requested: bool) -> Self {
@@ -95,9 +93,7 @@ impl OutputCurrentnessFacts {
         &self.facts
     }
 
-    pub fn moved_by_own_effect(
-        &self,
-    ) -> std::sync::Arc<[usize]> {
+    pub fn moved_by_own_effect(&self) -> std::sync::Arc<[usize]> {
         std::sync::Arc::clone(&self.moved_by_own_effect)
     }
 }

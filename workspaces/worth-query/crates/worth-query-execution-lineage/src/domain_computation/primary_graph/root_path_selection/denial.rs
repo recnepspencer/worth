@@ -30,10 +30,7 @@ pub enum RootPathReadDenial<E> {
     },
 }
 impl<E> RootPathReadDenial<E> {
-    pub fn native(
-        subject: &str,
-        cause: RelationalExecutionDenialCause,
-    ) -> Self {
+    pub fn native(subject: &str, cause: RelationalExecutionDenialCause) -> Self {
         Self::Native {
             subject: subject.to_owned(),
             cause,

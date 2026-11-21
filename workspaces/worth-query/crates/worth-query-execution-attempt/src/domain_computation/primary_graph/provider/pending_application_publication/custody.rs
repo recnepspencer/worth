@@ -76,9 +76,7 @@ impl WorthQueryPendingApplicationPublication {
         self.members = members;
         self.group_emissions = emissions;
     }
-    pub fn omit_shared_before_lease(
-        &mut self,
-    ) {
+    pub fn omit_shared_before_lease(&mut self) {
         self.before = None;
     }
     pub(super) fn release_before(

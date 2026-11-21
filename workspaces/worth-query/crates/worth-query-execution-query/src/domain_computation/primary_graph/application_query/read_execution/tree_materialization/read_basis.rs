@@ -13,19 +13,14 @@ pub struct ResultTreeRead<'a> {
 }
 
 impl<'a> ResultTreeRead<'a> {
-    pub fn committed(
-        read: &'a RelationalPinnedRead,
-        snapshot: &SnapshotHandle,
-    ) -> Option<Self> {
+    pub fn committed(read: &'a RelationalPinnedRead, snapshot: &SnapshotHandle) -> Option<Self> {
         Some(Self {
             projection: read.project_snapshot(snapshot)?,
             committed_ordering: Some(read),
         })
     }
 
-    pub fn applied(
-        read: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
-    ) -> Self {
+    pub fn applied(read: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>) -> Self {
         Self {
             projection: read.project_candidate(),
             committed_ordering: None,

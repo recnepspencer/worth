@@ -42,9 +42,7 @@ impl PendingExecutedOutputAdoption {
 }
 
 impl WorthQueryApplicationOutputAdoption {
-    pub fn into_publication(
-        self,
-    ) -> PublishedStableLineage {
+    pub fn into_publication(self) -> PublishedStableLineage {
         self.publication
     }
 }
