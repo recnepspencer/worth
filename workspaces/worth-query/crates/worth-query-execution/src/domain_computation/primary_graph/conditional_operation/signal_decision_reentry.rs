@@ -227,7 +227,8 @@ pub(super) fn retained_decision_counts(
                 counts.failed += 1;
             }
             WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
-            | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _) => {}
+            | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_) => {}
             WorthQueryRetainedConditionalDecision::InterruptedDuringReentry => {
                 counts.failed += 1;
             }

@@ -122,6 +122,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     Original::Recovered(_) => Err(Denial::ConditionalOriginalMismatch),
                 }
             }
+            Fate::LiveUnpublishedOrPending => Err(Denial::UnclassifiedWorldCustody),
             Fate::OtherIntent => Err(Denial::ConditionalOriginalMismatch),
         }
     }

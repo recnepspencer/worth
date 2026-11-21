@@ -83,10 +83,8 @@ pub(super) fn resolve_live_indeterminate_world_fate<Schema>(
     use crate::domain_computation::primary_graph::provider::WorthQueryConditionalKeyFate as Fate;
     let provider = &runtime.runtime.primary_provider;
     let publication = product.publication_binding();
-    if provider.has_live_unpublished_or_pending_conditional_key(&publication, key) {
-        return unresolved("live unpublished or pending original still held for indeterminate key");
-    }
     match provider.conditional_key_fate(execution, &publication, key, intent) {
+        Ok(Fate::LiveUnpublishedOrPending) => live_unpublished_unresolved(),
         Ok(Fate::Published(receipt)) => Outcome::AlreadyCommitted(
             receipt
                 .new_product_head()
@@ -94,7 +92,7 @@ pub(super) fn resolve_live_indeterminate_world_fate<Schema>(
                 .map(|head| head.selected_commit()),
         ),
         Ok(Fate::Released) => Outcome::AlreadyCommitted(None),
-        Ok(Fate::Absent) => Outcome::Obsolete,
+        Ok(Fate::Absent) => Outcome::RetiredNoEffect,
         Ok(Fate::RecoveredUnpublished(_)) => {
             let joined = runtime
                 .installed_program_support()
@@ -120,6 +118,10 @@ pub(super) fn resolve_live_indeterminate_world_fate<Schema>(
             unresolved("World did not resolve the indeterminate key")
         }
     }
+}
+
+pub(super) fn live_unpublished_unresolved() -> Outcome {
+    unresolved("live unpublished or pending original still held for indeterminate key")
 }
 
 /// The decision stays indeterminate; its row keeps the original association.

@@ -41,6 +41,7 @@ pub enum WorthQueryTemporalReentryOutcome {
     Committed(Option<worth_foundational::facade::DurableCompositeCommitIdentity>),
     AlreadyCommitted(Option<worth_foundational::facade::DurableCompositeCommitIdentity>),
     Obsolete,
+    RetiredNoEffect,
     RetryableFailure(super::WorthQueryConditionalReentryFailure),
     RetryableCommitFailure(
         crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind,
@@ -270,6 +271,20 @@ where
     ) {
         return Ok(WorthQueryTemporalReentryAttempt {
             outcome,
+            continuation_identity,
+            admission_canonical_work,
+        });
+    }
+    if runtime
+        .runtime
+        .primary_provider
+        .has_live_unpublished_or_pending_conditional_key(
+            &product.publication_binding(),
+            *idempotency.binding().key_identity(),
+        )
+    {
+        return Ok(WorthQueryTemporalReentryAttempt {
+            outcome: recovered_original::live_unpublished_unresolved(),
             continuation_identity,
             admission_canonical_work,
         });

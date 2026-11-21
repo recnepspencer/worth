@@ -16,6 +16,9 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryConditionalKeyFa
     Published(super::WorthQueryRecoveredApplicationCommitReceipt),
     /// The original is recovered unpublished custody under this handle.
     RecoveredUnpublished(ProductUnpublishedRecoveryHandle),
+    /// This live process still holds unpublished or pending publication
+    /// custody for the key on the selected branch incarnation.
+    LiveUnpublishedOrPending,
     /// World released an original that kept its owner effect.
     Released,
     /// No original exists: no committed open, or an empty one World released.
@@ -59,6 +62,9 @@ impl WorthQueryPrimaryGraphProvider {
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
         if let Some(fate) = self.recovered_key_fate(&affinity, binding)? {
             return Ok(fate);
+        }
+        if self.has_live_unpublished_or_pending_conditional_key(product, key) {
+            return Ok(WorthQueryConditionalKeyFate::LiveUnpublishedOrPending);
         }
         let layout = self.graph.layout.provider_idempotency().clone();
         self.graph.with_runtime(execution, |runtime| {

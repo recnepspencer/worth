@@ -193,6 +193,7 @@ where
             | WorthQueryRetainedConditionalDecision::OperationPreparationRefused(_, _)
             | WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
             | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_)
             | WorthQueryRetainedConditionalDecision::Failed(_)
             | WorthQueryRetainedConditionalDecision::InterruptedDuringReentry) => {
                 wake.decision = other;

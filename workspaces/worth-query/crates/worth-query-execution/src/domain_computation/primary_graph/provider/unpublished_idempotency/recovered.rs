@@ -227,6 +227,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             }
             Ok(Some(
                 super::super::WorthQueryConditionalKeyFate::Published(_)
+                | super::super::WorthQueryConditionalKeyFate::LiveUnpublishedOrPending
                 | super::super::WorthQueryConditionalKeyFate::Released
                 | super::super::WorthQueryConditionalKeyFate::Absent
                 | super::super::WorthQueryConditionalKeyFate::OtherIntent,

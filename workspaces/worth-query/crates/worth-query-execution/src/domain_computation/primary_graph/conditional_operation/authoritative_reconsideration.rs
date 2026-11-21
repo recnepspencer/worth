@@ -222,7 +222,8 @@ fn retained_decision_evidence_mut(
         | Decision::OperationNoEffect(evidence, _)
         | Decision::OperationIndeterminate(evidence, _)
         | Decision::OperationCommitted(evidence, _)
-        | Decision::OperationAlreadyCommitted(evidence, _) => Some(evidence),
+        | Decision::OperationAlreadyCommitted(evidence, _)
+        | Decision::OperationRetiredNoEffect(evidence) => Some(evidence),
         Decision::OperationCommitRetryable(evidence, _)
         | Decision::OperationExecutionControlRetryable(evidence, _) => Some(evidence),
         Decision::Failed(_) | Decision::InterruptedDuringReentry => None,

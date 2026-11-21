@@ -66,6 +66,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) enum Wor
         BridgeConditionalDecisionEvidence,
         Option<worth_foundational::facade::DurableCompositeCommitIdentity>,
     ),
+    OperationRetiredNoEffect(BridgeConditionalDecisionEvidence),
     Failed(worth_runtime_bridge::facade::BridgeConditionalDenial),
     InterruptedDuringReentry,
 }

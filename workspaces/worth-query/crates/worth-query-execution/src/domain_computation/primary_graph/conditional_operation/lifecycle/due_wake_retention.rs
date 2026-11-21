@@ -108,6 +108,7 @@ pub(super) fn complete_clock_receipt(
                 wake.decision,
                 WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
                     | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
+                    | WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_)
             )
     });
     let decisions = retained_decision_counts(retained_wakes);

@@ -115,7 +115,41 @@ fn indeterminate_decision_resolves_through_world_on_unpublished_and_candidate_re
             primary_graph::QueryConditionalOriginal::Unclassified
         )
     );
-    drop(observe(&home, &execution));
+    let contacts_after_first = home
+        .runtime()
+        .conditional::<TemporalConditional>()
+        .unwrap()
+        .as_ref()
+        .as_ref()
+        .unwrap()
+        .contacts
+        .snapshot()
+        .3;
+    assert_eq!(contacts_after_first, 1);
+    assert!(matches!(
+        retry_original_intent_on_branch(&home, home.runtime().current_world(), &execution),
+        primary_graph::WorthQueryConditionalOriginalResolution::Unresolved
+    ));
+    let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(live_retry) =
+        observe(&home, &execution)
+    else {
+        panic!("live retry observes");
+    };
+    assert_eq!(live_retry.indeterminate_operation_count(), 2);
+    drop(live_retry);
+    assert_eq!(
+        home.runtime()
+            .conditional::<TemporalConditional>()
+            .unwrap()
+            .as_ref()
+            .as_ref()
+            .unwrap()
+            .contacts
+            .snapshot()
+            .3,
+        contacts_after_first,
+        "live unpublished original fences fresh authored invocation"
+    );
     assert_eq!(
         home.runtime().conditional_decision_obligations(),
         original,
@@ -229,6 +263,14 @@ fn indeterminate_decision_resolves_through_world_on_unpublished_and_candidate_re
             panic!("retired candidate re-observes");
         };
         assert_eq!(retired.committed_operation_count(), 0);
+        assert_eq!(retired.already_committed_operation_count(), 0);
+        assert_eq!(retired.execution_provenance().len(), 1);
+        assert_eq!(
+            retired.execution_provenance()[0].terminal(),
+            primary_graph::WorthQueryConditionalExecutionTerminal::NoEffect,
+            "proved no-effect candidate retirement must not report AlreadyCommitted"
+        );
+        assert!(retired.execution_provenance()[0].published_commit().is_none());
         drop(retired);
         assert!(app.conditional_decision_obligations().is_empty());
     }
@@ -241,141 +283,39 @@ fn cancel_intent_independently(
     home: &Home,
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
+    use primary_graph::WorthQueryPrincipalResolutionMode::Ordinary;
     use temporal::*;
-    let application = home.runtime().runtime();
-    let installed = home
-        .runtime()
-        .conditional::<TemporalConditional>()
-        .unwrap();
-    let invariant = Arc::clone(&installed.as_ref().as_ref().unwrap().invariant);
-    let schema = application.installed_schema();
-    let principal_binding = schema
-        .principal_binding(TemporalPrincipalBinding::reference())
-        .unwrap();
-    let authentication = admit_identity_adapter(schema);
+    use worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation;
+    let app = home.runtime().runtime();
+    let invariant = Arc::clone(&home.runtime().conditional::<TemporalConditional>().unwrap().as_ref().as_ref().unwrap().invariant);
+    let schema = app.installed_schema();
     let request = request_scope();
-    let external = block_on(authentication.authenticate((), &request)).unwrap();
-    let branch = application.current_world();
-    let selected = application
-        .with_host_advancement(|phase| application.on_branch(branch).select(&phase).unwrap())
-        .unwrap();
-    let principal = application
-        .with_host_advancement(|phase| {
-            selected
-                .resolve_authenticated_principal(
-                    &phase,
-                    &principal_binding,
-                    &external,
-                    &request,
-                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    let intent = application
-        .with_host_advancement(|phase| {
-            selected
-                .resolve_entity(
-                    &phase,
-                    IntentIdentityField::at("IntentIdentityField"),
-                    "intent-1".to_string(),
-                    &request,
-                    primary_graph::WorthQueryPrincipalResolutionMode::Ordinary,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    let operation = schema
-        .installed_operation(AmendTemporal::reference())
-        .unwrap();
-    let admission = application
-        .with_host_advancement(|phase| {
-            selected
-                .authorize_operation(
-                    &phase,
-                    &principal,
-                    &intent,
-                    &operation,
-                    Default::default(),
-                    &request,
-                )
-                .unwrap()
-        })
-        .unwrap();
-    let (_, projection, _) = application
-        .with_host_advancement(|phase| {
-            invariant
-                .project_admitted_operation(
-                    &phase,
-                    &admission,
-                    |reader, scope| {
-                        reader
-                            .decision_field(scope, IntentRevisionField::at("IntentRevisionField"))
-                            .unwrap();
-                        reader
-                            .decision_field(scope, IntentLifecycleField::at("IntentLifecycleField"))
-                            .unwrap();
-                        reader
-                            .decision_field(scope, IntentGateField::at("IntentGateField"))
-                            .unwrap();
-                    },
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .unwrap()
-                .into_parts()
-        })
-        .unwrap();
-    let mut effects = application
-        .with_host_advancement(|phase| {
-            let reads = application
-                .begin_projected_application_read_attempt(
-                    &phase,
-                    admission,
-                    projection,
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .unwrap();
-            reads
-                .complete_projected_dependencies(
-                    &phase,
-                    worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
-                )
-                .unwrap()
-                .begin_effect_program()
-        })
-        .unwrap();
+    let external = block_on(admit_identity_adapter(schema).authenticate((), &request)).unwrap();
+    let branch = app.current_world();
+    let (intent, mut effects) = app.with_host_advancement(|p| {
+        let selected = app.on_branch(branch).select(&p).unwrap();
+        let principal = selected.resolve_authenticated_principal(&p, &schema.principal_binding(TemporalPrincipalBinding::reference()).unwrap(), &external, &request, Ordinary).unwrap();
+        let intent = selected.resolve_entity(&p, IntentIdentityField::at("IntentIdentityField"), "intent-1".to_string(), &request, Ordinary).unwrap();
+        let op = schema.installed_operation(AmendTemporal::reference()).unwrap();
+        let admission = selected.authorize_operation(&p, &principal, &intent, &op, Default::default(), &request).unwrap();
+        let (_, projection, _) = invariant.project_admitted_operation(&p, &admission, |reader, scope| {
+            reader.decision_field(scope, IntentRevisionField::at("IntentRevisionField")).unwrap();
+            reader.decision_field(scope, IntentLifecycleField::at("IntentLifecycleField")).unwrap();
+            reader.decision_field(scope, IntentGateField::at("IntentGateField")).unwrap();
+        }, SystemAllocation).unwrap().into_parts();
+        let effects = app.begin_projected_application_read_attempt(&p, admission, projection, SystemAllocation).unwrap()
+            .complete_projected_dependencies(&p, SystemAllocation).unwrap().begin_effect_program();
+        (intent, effects)
+    }).unwrap();
     let target = effects.existing_entity(&intent).unwrap();
-    effects
-        .write_field(&target, IntentRevisionField::at("IntentRevisionField"), 2_u64)
+    effects.write_field(&target, IntentRevisionField::at("IntentRevisionField"), 2_u64).unwrap();
+    effects.write_field(&target, IntentLifecycleField::at("IntentLifecycleField"), "cancelled".to_string()).unwrap();
+    let idempotency = primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<TemporalHostSchema, AmendTemporal, _, _>(
+        &("independent-cancel", 1_u8), &("independent-cancel", 1_u8),
+    ).unwrap();
+    let outcome = app.on_branch(branch).transaction()
+        .apply(product::WorthQueryAdmittedChange::new(effects.finish().unwrap(), idempotency))
+        .commit_for_program(request_execution, home.runtime().admit_program_operation::<AmendTemporal>().unwrap())
         .unwrap();
-    effects
-        .write_field(
-            &target,
-            IntentLifecycleField::at("IntentLifecycleField"),
-            "cancelled".to_string(),
-        )
-        .unwrap();
-    let idempotency = primary_graph::WorthQueryApplicationIdempotencyBinding::for_host_commit::<
-        TemporalHostSchema,
-        AmendTemporal,
-        _,
-        _,
-    >(&("independent-cancel", 1_u8), &("independent-cancel", 1_u8))
-    .unwrap();
-    let change = product::WorthQueryAdmittedChange::new(effects.finish().unwrap(), idempotency);
-    let outcome = application
-        .on_branch(branch)
-        .transaction()
-        .apply(change)
-        .commit_for_program(
-            request_execution,
-            home.runtime()
-                .admit_program_operation::<AmendTemporal>()
-                .unwrap(),
-        )
-        .unwrap();
-    assert!(
-        matches!(outcome, primary_graph::WorthQueryApplicationCommitOutcome::Committed(_)),
-        "independent cancellation commits: {outcome:?}"
-    );
+    assert!(matches!(outcome, primary_graph::WorthQueryApplicationCommitOutcome::Committed(_)), "independent cancellation commits: {outcome:?}");
 }

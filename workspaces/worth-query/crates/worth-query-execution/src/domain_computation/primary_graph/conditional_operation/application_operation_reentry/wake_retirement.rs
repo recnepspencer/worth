@@ -74,6 +74,30 @@ pub(super) fn retire_obsolete<Clock, Input>(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
+pub(super) fn retire_no_effect<Clock, Input>(
+    bridge: &BridgeConditionalExecutionView<'_>,
+    clock: &BridgeManagedClockBinding,
+    candidates: &mut BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
+    wake: &mut WorthQueryRetainedConditionalWake,
+    identity: String,
+    evidence: BridgeConditionalDecisionEvidence,
+    counts: &mut WorthQueryTemporalReentryCounts,
+) {
+    match retire_committed_wake(bridge, clock, wake) {
+        Ok(()) => {
+            candidates.remove(&identity);
+            wake.decision =
+                WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(evidence);
+        }
+        Err(detail) => {
+            wake.decision =
+                WorthQueryRetainedConditionalDecision::OperationRetryable(evidence, detail);
+            counts.failed += 1;
+        }
+    }
+}
+
 pub(super) fn wake_matches_candidate<Clock, Input>(
     wake: &WorthQueryRetainedConditionalWake,
     candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,

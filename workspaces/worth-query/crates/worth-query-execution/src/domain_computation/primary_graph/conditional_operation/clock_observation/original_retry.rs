@@ -22,6 +22,10 @@ use worth_query_installation::facade::ApplicationSchema;
 pub enum WorthQueryConditionalOriginalResolution {
     /// The original occurrence is published on this selected product branch.
     Published(WorthQueryRecoveredApplicationCommitReceipt),
+    /// This live process still holds unpublished or pending publication
+    /// custody for the original key; fresh execution stays fenced until World
+    /// resolves it.
+    Unresolved,
     /// World released the original keeping its owner effect.
     Released,
     /// No original exists on this selected product branch.
@@ -56,6 +60,9 @@ where
                 self.finish_conditional_decision_if_present(execution, key, intent);
                 Ok(WorthQueryConditionalOriginalResolution::Released)
             }
+            Fate::LiveUnpublishedOrPending => {
+                Ok(WorthQueryConditionalOriginalResolution::Unresolved)
+            }
             Fate::Absent => Ok(WorthQueryConditionalOriginalResolution::Absent),
             Fate::OtherIntent => Ok(WorthQueryConditionalOriginalResolution::OtherIntent),
             Fate::RecoveredUnpublished(_) => {
@@ -86,9 +93,9 @@ where
                             Fate::OtherIntent => {
                                 Ok(WorthQueryConditionalOriginalResolution::OtherIntent)
                             }
-                            Fate::Absent | Fate::RecoveredUnpublished(_) => {
-                                Err(Denial::Unavailable)
-                            }
+                            Fate::Absent
+                            | Fate::RecoveredUnpublished(_)
+                            | Fate::LiveUnpublishedOrPending => Err(Denial::Unavailable),
                         }
                     }
                     _ => Err(Denial::Unavailable),

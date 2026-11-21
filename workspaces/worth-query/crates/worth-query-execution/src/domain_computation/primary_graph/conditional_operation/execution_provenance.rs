@@ -223,7 +223,8 @@ fn cause(
         | Decision::OperationPreparationPending(_, _)
         | Decision::OperationPreparationRefused(_, _)
         | Decision::OperationCommitted(_, _)
-        | Decision::OperationAlreadyCommitted(_, _) => None,
+        | Decision::OperationAlreadyCommitted(_, _)
+        | Decision::OperationRetiredNoEffect(_) => None,
         Decision::OperationRetryable(_, cause) | Decision::OperationIndeterminate(_, cause) => {
             Some(Cause::Reentry(cause.clone()))
         }
@@ -355,7 +356,8 @@ fn terminal(
         WorthQueryRetainedConditionalDecision::OperationProductStale(_, _) => {
             WorthQueryConditionalExecutionTerminal::ProductStale
         }
-        WorthQueryRetainedConditionalDecision::OperationNoEffect(_, _) => {
+        WorthQueryRetainedConditionalDecision::OperationNoEffect(_, _)
+        | WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_) => {
             WorthQueryConditionalExecutionTerminal::NoEffect
         }
         WorthQueryRetainedConditionalDecision::OperationCommitted(_, _) => {

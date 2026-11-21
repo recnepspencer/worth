@@ -78,7 +78,9 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
         Decision::OperationIndeterminate(_, _) => {
             Posture::Indeterminate(history.retained_indeterminate_original(&key))
         }
-        Decision::OperationCommitted(_, _) | Decision::OperationAlreadyCommitted(_, _) => {
+        Decision::OperationCommitted(_, _)
+        | Decision::OperationAlreadyCommitted(_, _)
+        | Decision::OperationRetiredNoEffect(_) => {
             history.record_conditional_decision(request, Record::Finish { key, intent })?;
             wake.continuation_identity = None;
             return Ok(());
