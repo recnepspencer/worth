@@ -1,5 +1,6 @@
 //! Declared aspect merge-policy registration, shared by its denial units.
 mod aspect_merge_policy_denials;
+mod merge_descriptive_touches;
 
 use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use crate::facade::identity::KindId;
