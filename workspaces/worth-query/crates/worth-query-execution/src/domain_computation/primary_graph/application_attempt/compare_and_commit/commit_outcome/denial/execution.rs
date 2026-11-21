@@ -60,6 +60,7 @@ impl Denial {
                 Invariant::AllocationDenied
                 | Invariant::CoupledSettlementMissing
                 | Invariant::CoupledReadSupportChanged
+                | Invariant::CoupledConsumptionCycle
                 | Invariant::CoupledReadSupportUnavailable { .. }
                 | Invariant::ManagedPredicatePreparationUnavailable
                 | Invariant::InvariantNotInstalled

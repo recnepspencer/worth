@@ -224,7 +224,12 @@ fn publish_with_snapshot(
                 .expect("one group receipt basis"),
             dispatch_claims,
         );
-    for ordinal in consumption_order(&pending.members) {
+    // Final support ranked the group in consumption order before the World
+    // commit, refusing a cycle: each member finishes after every member its
+    // consumptions settle against.
+    let mut order = (0..pending.members.len()).collect::<Vec<_>>();
+    order.sort_by_key(|&ordinal| pending.members[ordinal].consumption_rank);
+    for ordinal in order {
         let member = &mut pending.members[ordinal];
         let leaf = member
             .pending
@@ -318,71 +323,3 @@ fn prepare_writer(
 }
 
 mod court_doors_for_test;
-
-/// Group members in the order their lineage slots must record: a member
-/// finishes after every member whose completion one of its consumptions
-/// settles against (R3 may settle a consumer to a replacement appended after
-/// it), and otherwise in position order.
-fn consumption_order(members: &[super::CoupledApplicationMember]) -> Vec<usize> {
-    // Lineage preparation moved each producer's completion into its slot.
-    let completion = |member: &super::CoupledApplicationMember| {
-        member
-            .pending
-            .as_ref()
-            .and_then(|pending| pending.prepared_lineage_slot.as_ref())
-            .and_then(|slot| slot.coupled_completion())
-            .cloned()
-    };
-    let completions = members.iter().map(completion).collect::<Vec<_>>();
-    let parents = members
-        .iter()
-        .map(|member| {
-            let Some(attempt) = member
-                .pending
-                .as_ref()
-                .and_then(|pending| pending.attempt.as_ref())
-            else {
-                return Vec::new();
-            };
-            attempt
-                .consumed_outputs()
-                .iter()
-                .filter_map(|consumed| consumed.applied())
-                .flat_map(|link| {
-                    let settling = link.settling_completion();
-                    completions
-                        .iter()
-                        .enumerate()
-                        .filter(move |(_, parent)| {
-                            parent
-                                .as_ref()
-                                .is_some_and(|parent| parent.same_writer(&settling))
-                        })
-                        .map(|(index, _)| index)
-                        .collect::<Vec<_>>()
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
-    let mut order = Vec::with_capacity(members.len());
-    let mut done = vec![false; members.len()];
-    while order.len() < members.len() {
-        // The first unfinished member, in position order, whose parents
-        // finished. R3 settles a consumer only to its parent's later round,
-        // so there is no cycle; never panic after commit, fall back to
-        // position order.
-        let ready = |index: usize| {
-            !done[index]
-                && parents[index]
-                    .iter()
-                    .all(|&parent| parent == index || done[parent])
-        };
-        let next = (0..members.len())
-            .find(|&index| ready(index))
-            .or_else(|| (0..members.len()).find(|&index| !done[index]))
-            .expect("an unfinished member remains");
-        done[next] = true;
-        order.push(next);
-    }
-    order
-}

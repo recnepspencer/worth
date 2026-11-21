@@ -27,6 +27,7 @@ pub(in crate::domain_computation::primary_graph) use coupled_preparation::{
     AppliedParticipantOutputs, CoupledApplicationMember, CoupledApplicationMemberKind,
     CoupledAttemptPreparation, CoupledProducerPreparation, SupersededRound,
 };
+pub(in crate::domain_computation::primary_graph::provider) use coupled_preparation::rank_consumption;
 pub(crate) mod commit_preparation;
 pub(in crate::domain_computation::primary_graph::provider) mod coupled_publication;
 pub(in crate::domain_computation::primary_graph::provider) use commit_preparation::publish_recovered;

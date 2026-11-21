@@ -85,6 +85,20 @@ pub(super) fn prepare_members(
             .map_err(Denial::CoupledSupport)?;
         }
     }
+    // Publication finishes members in consumption order; a cycle has none.
+    if let Err(cycle) =
+        crate::domain_computation::primary_graph::provider::application_attempt_state::rank_consumption(
+            members,
+        )
+    {
+        return Err(Denial::CoupledSupport(
+            CoupledSupportPreparationDenial::Changed(
+                crate::domain_computation::WorthQueryInvariantExecutionFailure::coupled_consumption_cycle(
+                    cycle.into_iter().map(|index| members[index].source()),
+                ),
+            ),
+        ));
+    }
     for member in members {
         let producer = member.producer_route().is_some();
         let owned = member.owned.as_mut().expect("atomic group extraction");

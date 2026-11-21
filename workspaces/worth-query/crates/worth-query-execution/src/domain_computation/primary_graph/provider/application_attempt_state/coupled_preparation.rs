@@ -1,5 +1,7 @@
 //! One registered writer retains the source and handler it actually executed.
 use super::*;
+mod consumption_order;
+pub(in crate::domain_computation::primary_graph::provider) use consumption_order::rank_consumption;
 use crate::domain_computation::primary_graph::{
     application_query::AppliedSourcePublication, output_lineage::ProducerHandlerPreparation,
 };
@@ -190,6 +192,9 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationMember
     pub(in crate::domain_computation::primary_graph::provider) owned:
         Option<OwnedCoupledContribution>,
     pub(in crate::domain_computation::primary_graph::provider) kind: CoupledApplicationMemberKind,
+    /// Where publication finishes this member: final support ranks the group
+    /// in consumption order before the World commit (`consumption_order`).
+    pub(in crate::domain_computation::primary_graph::provider) consumption_rank: usize,
 }
 pub(in crate::domain_computation::primary_graph) enum CoupledApplicationMemberKind {
     Producer {
@@ -264,6 +269,7 @@ impl CoupledApplicationMember {
             terminal,
             owned: None,
             pending: None,
+            consumption_rank: 0,
             kind: CoupledApplicationMemberKind::AuthoredStage {
                 stage,
                 identity,
@@ -285,6 +291,7 @@ impl CoupledApplicationMember {
             terminal,
             owned: None,
             pending: None,
+            consumption_rank: 0,
             kind: CoupledApplicationMemberKind::Producer {
                 producer: producer.to_owned(),
                 meaning,

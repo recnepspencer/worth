@@ -13,6 +13,8 @@ pub(in super::super) fn feature_specs(
         saturated_consumer::feature(),
         capped_reader::feature(),
         capped_consumer::feature(),
+        super::c3b::cycle_parent::feature(),
+        super::c3b::cycle_consumer::feature(),
         self_write::feature(),
         cross_reader::feature(),
         cross_converge::feature(),

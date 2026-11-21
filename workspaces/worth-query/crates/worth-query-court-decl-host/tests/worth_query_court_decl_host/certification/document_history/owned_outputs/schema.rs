@@ -123,6 +123,8 @@ fn declare(
     let schema = family::saturated_consumer::declare(schema);
     let schema = family::capped_reader::declare(schema);
     let schema = family::capped_consumer::declare(schema);
+    let schema = family::c3b::cycle_parent::declare(schema);
+    let schema = family::c3b::cycle_consumer::declare(schema);
     let schema = family::self_write::declare(schema);
     let schema = family::cross_reader::declare(schema);
     let schema = family::cross_converge::declare(schema);
