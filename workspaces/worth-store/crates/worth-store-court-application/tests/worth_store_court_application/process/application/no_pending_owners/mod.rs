@@ -26,6 +26,7 @@ mod transition_step_affinity;
 mod transition_steps;
 mod transition_unopened_resume;
 mod unresolved;
+mod workflow_transition_seams;
 
 use worth_execution::ExecutionRequest;
 use worth_store::physical_runtime::{

@@ -1675,6 +1675,8 @@ workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/wo
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/interrupted_close/killed_checkpoint.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_seams.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_seams.rs
+workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/workflow_transition_seams.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/workflow_transition_seams.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/opening.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/delivery.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/selection.rs

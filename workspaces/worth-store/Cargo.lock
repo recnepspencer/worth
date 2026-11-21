@@ -1487,6 +1487,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-testkit-document-retention"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+]
+
+[[package]]
 name = "worth-query-testkit-host"
 version = "0.1.0"
 dependencies = [
@@ -1781,8 +1791,10 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-proof",
+ "worth-query-decl",
  "worth-query-execution",
  "worth-query-host",
+ "worth-query-testkit-document-retention",
  "worth-query-testkit-host",
  "worth-query-testkit-installation",
  "worth-relational",

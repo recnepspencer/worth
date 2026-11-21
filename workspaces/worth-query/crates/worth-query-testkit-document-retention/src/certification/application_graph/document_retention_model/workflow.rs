@@ -24,6 +24,8 @@ pub mod program_adoption;
 pub mod retry_definition;
 #[path = "workflow/review_requirement.rs"]
 pub mod review_requirement;
+#[path = "workflow/home_transition.rs"]
+pub mod home_transition;
 #[path = "workflow/runtime.rs"]
 pub mod runtime;
 #[path = "workflow/start_outcome.rs"]
