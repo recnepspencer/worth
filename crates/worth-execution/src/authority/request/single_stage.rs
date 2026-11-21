@@ -14,7 +14,9 @@
 //! there exactly as its own scope would. Only an accounted stage joins one.
 use super::{ExecutionRequest, ExecutionResourceLease, RequestBacking};
 use crate::authority::StageOrigin;
-use crate::backend::{contain, KernelFailure, KernelStop, ScopeOutcome, ScopeStop};
+use crate::backend::{
+    contain, KernelFailure, KernelStop, NestedStopOwner, ScopeOutcome, ScopeStop,
+};
 use crate::{ChargedBytes, ExecutionMemoryReservation, ExecutionResultMemory, LeaseDenial};
 use crate::{MapKernelContext, WorkCeilingDenial};
 use std::panic::AssertUnwindSafe;
@@ -72,7 +74,29 @@ pub(super) fn run_joined<R, E>(
     operation: impl FnOnce(&mut MapKernelContext<'_, '_>) -> Result<R, KernelFailure<E>>,
 ) -> ScopeOutcome<R, E> {
     let cost = stage.cost();
-    let pending = stage.refusal_pending();
+    let result = settled(|| invoke(stage, operation).map_err(ScopeStop::Failure));
+    ScopeOutcome {
+        result,
+        report: report(stage, cost),
+    }
+}
+
+/// Settles one joined call on the stage, the invoking meter, as a scope
+/// carried on that meter settles: refusals pending before it stay the
+/// stage's, and a failure or a refusal it raised records its owner there.
+fn settled<R, E>(call: impl FnOnce() -> Result<R, ScopeStop<E>>) -> Result<R, ScopeStop<E>> {
+    crate::backend::run_invoking_scope(call, |stage, stop| match stop {
+        ScopeStop::Admission(_) => NestedStopOwner::Request,
+        ScopeStop::Failure(failure) => stage.failure_owner(failure),
+    })
+}
+
+/// A latched or control stop refuses the kernel before entry; a panic is
+/// contained; a stop the kernel swallowed still ends it, discarding its payload.
+fn invoke<R, E>(
+    stage: &mut MapKernelContext<'_, '_>,
+    operation: impl FnOnce(&mut MapKernelContext<'_, '_>) -> Result<R, KernelFailure<E>>,
+) -> Result<R, KernelFailure<E>> {
     let invoked = match stage
         .checkpoint_stop()
         .map_or_else(|| stage.safe_point(), Err)
@@ -82,22 +106,15 @@ pub(super) fn run_joined<R, E>(
         }
         Err(stop) => Err(KernelFailure::Stop(stop)),
     };
-    // A stop the kernel swallowed still ends it; its payload is discarded.
     let stop = stage.checkpoint_stop().or_else(|| {
         (stage.nested_stopped() && invoked.is_ok()).then_some(KernelStop::NestedStopped)
     });
-    let invoked = match (stop, invoked) {
+    match (stop, invoked) {
         (Some(stop), invoked) => {
             discard(invoked);
             Err(KernelFailure::Stop(stop))
         }
         (None, invoked) => invoked,
-    };
-    let result = invoked.map_err(ScopeStop::Failure);
-    stage.settle_joined(pending, result.as_ref().err());
-    ScopeOutcome {
-        result,
-        report: report(stage, cost),
     }
 }
 
@@ -121,10 +138,10 @@ fn report(stage: &MapKernelContext<'_, '_>, (work, span): (u64, u64)) -> Executi
     }
 }
 
-/// A measured result on the joined stage: the caller's reservation is taken
-/// over for its retained bytes before the kernel, holds its result memory
-/// during it and its value's or domain error's heap after it; any other end
-/// leaves it holding nothing.
+/// A measured result on the joined stage, settled once: the caller's
+/// reservation is taken over for its retained bytes before the kernel, holds
+/// its result memory during it and its value's or domain error's heap after
+/// it; any other end leaves it holding nothing.
 pub(super) fn run_measured_joined<R: ChargedBytes, E: ChargedBytes>(
     stage: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
@@ -136,48 +153,38 @@ pub(super) fn run_measured_joined<R: ChargedBytes, E: ChargedBytes>(
     ) -> Result<R, KernelFailure<E>>,
 ) -> ScopeOutcome<R, E> {
     let cost = stage.cost();
-    let pending = stage.refusal_pending();
-    if let Err(denial) = stage.hold_joined(memory, lease, retained_bytes) {
-        let result = Err(ScopeStop::Admission(denial));
-        stage.settle_joined(pending, result.as_ref().err());
-        return ScopeOutcome {
-            result,
-            report: report(stage, cost),
+    let result = settled(|| {
+        stage
+            .hold_joined(memory, lease, retained_bytes)
+            .map_err(ScopeStop::Admission)?;
+        let invoked = invoke(stage, |stage| {
+            kernel(
+                stage,
+                &mut ExecutionResultMemory::new(memory, retained_bytes),
+            )
+        });
+        let measured = match &invoked {
+            Ok(value) => contain(AssertUnwindSafe(|| value.additional_charged_bytes())),
+            Err(KernelFailure::Domain(error)) => {
+                contain(AssertUnwindSafe(|| error.additional_charged_bytes()))
+            }
+            Err(_) => return invoked.map_err(ScopeStop::Failure),
         };
-    }
-    let mut outcome = run_joined(stage, |stage| {
-        kernel(
-            stage,
-            &mut ExecutionResultMemory::new(memory, retained_bytes),
-        )
+        let refusal = match measured {
+            Err(()) => ScopeStop::Failure(KernelFailure::Panic),
+            Ok(payload) => match retained_bytes
+                .checked_add(payload)
+                .ok_or_else(LeaseDenial::charged_bytes_overflow)
+                .and_then(|total| memory.resize(total).map_err(LeaseDenial::MemoryExhausted))
+            {
+                Ok(()) => return invoked.map_err(ScopeStop::Failure),
+                Err(denial) => ScopeStop::Admission(denial),
+            },
+        };
+        discard(invoked);
+        Err(refusal)
     });
-    let measured = match &outcome.result {
-        Ok(value) => Some(contain(AssertUnwindSafe(|| {
-            value.additional_charged_bytes()
-        }))),
-        Err(ScopeStop::Failure(KernelFailure::Domain(error))) => {
-            Some(contain(AssertUnwindSafe(|| {
-                error.additional_charged_bytes()
-            })))
-        }
-        Err(_) => None,
-    };
-    let pending = stage.refusal_pending();
-    let refusal = match measured {
-        None => None,
-        Some(Err(())) => Some(ScopeStop::Failure(KernelFailure::Panic)),
-        Some(Ok(payload)) => retained_bytes
-            .checked_add(payload)
-            .ok_or_else(LeaseDenial::charged_bytes_overflow)
-            .and_then(|total| memory.resize(total).map_err(LeaseDenial::MemoryExhausted))
-            .err()
-            .map(ScopeStop::Admission),
-    };
-    if let Some(refusal) = refusal {
-        discard(std::mem::replace(&mut outcome.result, Err(refusal)));
-        stage.settle_joined(pending, outcome.result.as_ref().err());
-    }
-    let kept = match &outcome.result {
+    let kept = match &result {
         Ok(_) | Err(ScopeStop::Failure(KernelFailure::Domain(_))) => {
             memory.bytes() - retained_bytes
         }
@@ -186,5 +193,8 @@ pub(super) fn run_measured_joined<R: ChargedBytes, E: ChargedBytes>(
     memory
         .resize(kept)
         .expect("measured settlement only releases bytes");
-    outcome
+    ScopeOutcome {
+        result,
+        report: report(stage, cost),
+    }
 }

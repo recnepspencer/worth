@@ -2,11 +2,10 @@
 //! which narrow nothing, run on its meter instead of setting up another.
 use std::{cell::RefCell, marker::PhantomData, rc::Rc};
 
-use super::{KernelContext, KernelState, NestedStopOwner, ACTIVE_METER};
+use super::{KernelContext, KernelState, ACTIVE_METER};
 use crate::authority::{
     ExecutionMemoryReservation, ExecutionResourceLease, LeaseDenial, StageOrigin,
 };
-use crate::backend::ScopeStop;
 
 thread_local! {
     static SINGLE_STAGES: RefCell<Vec<(StageOrigin, Rc<RefCell<KernelState>>)>> =
@@ -59,33 +58,6 @@ impl KernelContext<'_, '_> {
 }
 
 impl KernelContext<'_, '_> {
-    /// Whether a memory refusal is already pending on this stage.
-    pub(crate) fn refusal_pending(&self) -> bool {
-        self.meter.borrow().pending_request_refusal
-    }
-
-    /// Ends a joined call as its own scope ends on this stage as its parent:
-    /// a refusal the call raised is owned by the request when the call failed
-    /// and dropped with it when the call recovered, and a failure records its
-    /// owner here, so the stage stops as it would after a failed child.
-    pub(crate) fn settle_joined<E>(&self, pending_before: bool, failure: Option<&ScopeStop<E>>) {
-        let raised = {
-            let mut meter = self.meter.borrow_mut();
-            let raised = meter.pending_request_refusal && !pending_before;
-            if raised {
-                meter.pending_request_refusal = false;
-            }
-            raised
-        };
-        let owner = match failure {
-            None => return,
-            Some(_) if raised => NestedStopOwner::Request,
-            Some(ScopeStop::Admission(_)) => NestedStopOwner::Request,
-            Some(ScopeStop::Failure(failure)) => self.failure_owner(failure),
-        };
-        self.meter.borrow_mut().nested_stop.record(owner);
-    }
-
     /// Holds a joined measured result's reservation on this stage's lineage,
     /// as a scope's admission takes it over: a foreign reservation is refused.
     pub(crate) fn hold_joined(

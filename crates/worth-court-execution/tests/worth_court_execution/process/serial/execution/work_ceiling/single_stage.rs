@@ -269,3 +269,34 @@ fn a_latched_stop_refuses_a_joined_stage_before_its_effect() {
     assert!(!ran, "a stopped stage runs no joined effect");
     assert!(outcome.is_err());
 }
+
+#[test]
+fn a_refusal_pending_before_a_joined_call_does_not_hide_the_calls_own_refusal() {
+    let backing = serial(Some(1 << 12), Some(100));
+    let request = ExecutionRequest::serial(&backing);
+    let outcome = request.run_single_stage(|stage| {
+        // The stage itself swallowed a memory refusal before the call.
+        assert!(ExecutionMemoryReservation::reserve_in_scope(None, 1 << 20).is_err());
+        let mut memory = ExecutionMemoryReservation::reserve_in_scope(None, 0).unwrap();
+        let refused = request.run_measured_result::<Kept, Kept>(
+            ExecutionWorkCeiling::new(None),
+            0,
+            &mut memory,
+            |_, result| match result.resize(1 << 20) {
+                Ok(()) => Ok(Kept(0)),
+                Err(_) => Err(worth_execution::MapKernelFailure::Domain(Kept(0))),
+            },
+        );
+        assert!(matches!(
+            refused.result,
+            Err(ScopeStop::Failure(
+                worth_execution::MapKernelFailure::Domain(_)
+            ))
+        ));
+        // The call's own refusal belongs to the request: no computation stop
+        // can be taken to clear it.
+        assert_eq!(stage.take_nested_computation_stop(), None);
+    });
+    assert!(outcome.is_err(), "the call's refusal stops the stage");
+    assert_eq!(backing.memory().unwrap().charged_memory_bytes(), 0);
+}
