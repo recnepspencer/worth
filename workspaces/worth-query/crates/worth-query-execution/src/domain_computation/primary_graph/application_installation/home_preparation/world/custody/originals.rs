@@ -141,7 +141,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     }
 }
 
-fn original_binding_denial(
+pub(super) fn original_binding_denial(
     cause: crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial,
 ) -> QueryHomeCustodyReadmissionDenial {
     use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Source;

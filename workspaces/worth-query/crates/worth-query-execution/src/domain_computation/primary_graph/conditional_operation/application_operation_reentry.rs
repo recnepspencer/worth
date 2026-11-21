@@ -7,6 +7,7 @@ mod invoker_isolation;
 mod outcome_application;
 mod processing;
 mod provider_commit_deferred;
+mod recovered_original;
 mod reentry_counts;
 pub(crate) mod sealed_commit;
 mod temporal_idempotency;
@@ -230,14 +231,38 @@ where
                 })
             }
         };
-    if let Some(support) = runtime.installed_program_support() {
-        support.lifecycle().admit_conditional_retry(
-            request_execution,
-            *idempotency.binding().key_identity(),
-            *idempotency.binding().intent_identity(),
-        )?;
-    }
+    let continuation_identity = Some((
+        *idempotency.binding().key_identity(),
+        *idempotency.binding().intent_identity(),
+    ));
     let admission_canonical_work = idempotency.canonical_work();
+    let joined = match runtime.installed_program_support() {
+        Some(support) => {
+            use super::super::query_obligations::history::QueryConditionalRetryAdmission as Admission;
+            match support.lifecycle().admit_conditional_retry(
+                request_execution,
+                *idempotency.binding().key_identity(),
+                *idempotency.binding().intent_identity(),
+            )? {
+                Admission::Ordinary => None,
+                Admission::JoinedOriginal(original) => Some(original),
+            }
+        }
+        None => None,
+    };
+    if let Some(outcome) = recovered_original::continue_recovered_original(
+        request_execution,
+        runtime,
+        product,
+        idempotency.binding(),
+        joined,
+    ) {
+        return Ok(WorthQueryTemporalReentryAttempt {
+            outcome,
+            continuation_identity,
+            admission_canonical_work,
+        });
+    }
     let result = attempt_progression::try_reentry(
         request_execution,
         phase,
@@ -276,10 +301,6 @@ where
             )
         }
     };
-    let continuation_identity = Some((
-        *idempotency.binding().key_identity(),
-        *idempotency.binding().intent_identity(),
-    ));
     Ok(WorthQueryTemporalReentryAttempt {
         outcome,
         continuation_identity,

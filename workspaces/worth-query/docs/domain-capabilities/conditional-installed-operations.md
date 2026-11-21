@@ -8,6 +8,21 @@ association. It re-derives eligibility from current graph truth and fresh
 host-fed time; no clock lease survives reopen. Temporal retry uses the durable
 Home-scoped intent key and resolves to the same World occurrence.
 
+An Indeterminate decision (the commit's answer was lost, R9
+`OperationIndeterminate`) is retained too, as
+`QueryConditionalPosture::Indeterminate`. After a reopen, before service and
+after World readmitted every original, the row takes exactly one of three
+states by World's state for its original key: a published original finishes
+the row (a retry returns that occurrence); no committed open, or an empty open
+World released, finishes the row as proven no-effect (the key may execute
+fresh, once); a recovered unpublished original joins the row
+(`QueryConditionalOriginal::Recovered`), and the retry continues that exact
+original through World's recovery port without invoking the operation. A
+joined row never moves to another original. Any retry whose key holds an
+original recovered from an ended incarnation continues it the same way, so a
+temporal operation killed between its commit and its response resolves to its
+original occurrence on re-execution.
+
 Live cleanup releases before graceful handoff. Its durable logical association
 remains inspectable through `conditional_decision_obligations()` and the managed
 cleanup inspection/discharge doors. A retained failure or unrecorded live release
@@ -246,8 +261,10 @@ branch incarnation, stable definition identity and the host idempotency
 relation. Per-process runtime identity is used only for process-local execution.
 The commit advances the durable intent revision and lifecycle together with its
 effect, so loss of its response cannot create another occurrence after reopen.
-Other retained decision kinds continue to refuse graceful handoff until their
-own durable consuming route is available.
+Indeterminate decisions are durable as described above. Other retained
+decision kinds (preparation pending or refused, product unpublished, execution
+control retryable, interrupted reentry) continue to refuse graceful handoff
+until their own durable consuming route is available.
 
 #### Temporal identity and canonical work
 

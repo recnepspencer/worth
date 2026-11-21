@@ -120,3 +120,5 @@ fn conditional_temporal_custody_keeps_keys_and_requires_logical_cleanup_discharg
     }
     assert_eq!(ledger.conditional_decisions().count(), 0);
 }
+#[path = "conditional_decision/indeterminate.rs"]
+mod indeterminate;

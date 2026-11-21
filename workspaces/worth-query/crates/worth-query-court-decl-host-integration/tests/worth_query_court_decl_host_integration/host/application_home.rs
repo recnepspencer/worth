@@ -5,7 +5,7 @@ pub(crate) mod managed_cleanup;
 pub(crate) mod managed_runs;
 mod original_fixed;
 mod program_support;
-mod temporal;
+pub(crate) mod temporal;
 mod workflow_configuration;
 use std::{
     sync::{

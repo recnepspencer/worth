@@ -1,4 +1,6 @@
 //! Retain only continuation data that the fresh temporal owner consumes.
+//! An indeterminate answer keeps the original World association the cold
+//! consumer joined, or stays unclassified until World's readmission decides it.
 use super::super::super::{
     query_obligations::{
         QueryConditionalDecision, QueryConditionalDecisionRecord as Record,
@@ -41,6 +43,9 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
         Decision::OperationRetryable(_, _) => Posture::Retryable,
         Decision::OperationCommitRetryable(_, _) => Posture::CommitRetryable,
         Decision::OperationProductStale(_, _) => Posture::ProductStale,
+        Decision::OperationIndeterminate(_, _) => {
+            Posture::Indeterminate(history.retained_indeterminate_original(&key))
+        }
         Decision::OperationCommitted(_) | Decision::OperationAlreadyCommitted(_) => {
             history.record_conditional_decision(request, Record::Finish { key, intent })?;
             wake.continuation_identity = None;
@@ -57,7 +62,6 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn flush
         | Decision::OperationBackpressured(_, _)
         | Decision::OperationTerminalFailure(_, _)
         | Decision::OperationControlStopped(_, _)
-        | Decision::OperationIndeterminate(_, _)
         | Decision::InterruptedDuringReentry
         | Decision::Failed(_) => return Ok(()),
     };

@@ -165,6 +165,55 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         });
         prepared.map_err(|cause| crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_provider(cause).kind())
     }
+    /// A bare key's recovered original, matched by its recorded root intent.
+    pub(in crate::domain_computation::primary_graph::provider) fn recovered_key_fate(
+        &self,
+        product: &WorthQueryProductIdempotencyAffinity,
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<Option<super::super::WorthQueryConditionalKeyFate>, Denial> {
+        use super::super::WorthQueryConditionalKeyFate as Fate;
+        let store = self
+            .unpublished_idempotency
+            .lock()
+            .unwrap_or_else(|e| e.into_inner());
+        let key = WorthQueryUnpublishedIdempotencyKey::for_binding(product, &binding);
+        let Some(entry) = store.recovered.get(&key) else {
+            return Ok(None);
+        };
+        let root = super::super::idempotency::conditional_key::recorded_root(
+            &entry.binding.binding.intent,
+        )?;
+        Ok(Some(if root != *binding.intent_identity() {
+            Fate::OtherIntent
+        } else {
+            match &entry.fate {
+                OriginalFate::Unpublished(handle) => Fate::RecoveredUnpublished(handle.clone()),
+                OriginalFate::Released(_) => Fate::Released,
+            }
+        }))
+    }
+    /// The recovered unpublished original a conditional retry must continue.
+    /// An in-memory lookup: originals recovered at Home preparation only.
+    pub(in crate::domain_computation::primary_graph) fn recovered_conditional_original(
+        &self,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> Option<ProductUnpublishedRecoveryHandle> {
+        let affinity = WorthQueryProductIdempotencyAffinity::from_observation(product);
+        match self.recovered_key_fate(&affinity, binding) {
+            Ok(Some(super::super::WorthQueryConditionalKeyFate::RecoveredUnpublished(handle))) => {
+                Some(handle)
+            }
+            Ok(Some(
+                super::super::WorthQueryConditionalKeyFate::Published
+                | super::super::WorthQueryConditionalKeyFate::Released
+                | super::super::WorthQueryConditionalKeyFate::Absent
+                | super::super::WorthQueryConditionalKeyFate::OtherIntent,
+            ))
+            | Ok(None)
+            | Err(_) => None,
+        }
+    }
     pub(in crate::domain_computation::primary_graph) fn resolve_recovered_envelope_idempotency(
         &self,
         product: &WorthQueryProductIdempotencyAffinity,

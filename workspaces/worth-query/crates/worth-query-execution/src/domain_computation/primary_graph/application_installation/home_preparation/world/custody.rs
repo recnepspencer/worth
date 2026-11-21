@@ -26,6 +26,9 @@ pub enum QueryHomeCustodyReadmissionDenial {
     UndecidedBranchCreation,
     OriginalBindingUnavailable,
     ForeignOriginalAffinity,
+    /// An indeterminate conditional row and World disagree on its original:
+    /// another intent holds the key, or the row is joined to another original.
+    ConditionalOriginalMismatch,
     OriginalMemoryAdmission,
     ReleasedSource(worth_runtime_world::facade::WorldDurableMediumDenial),
 }
@@ -231,6 +234,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         if let Err(cause) = self.admit_original_custody(execution) {
             return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
         }
+        if let Err(cause) = self.settle_indeterminate_decisions(execution) {
+            return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
+        }
         if let Err(cause) = self
             .runtime
             .runtime()
@@ -299,4 +305,5 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     }
 }
 
+mod conditional_indeterminate;
 mod originals;

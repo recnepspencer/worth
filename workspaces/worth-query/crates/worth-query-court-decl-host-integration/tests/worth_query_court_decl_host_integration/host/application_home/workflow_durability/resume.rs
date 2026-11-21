@@ -7,7 +7,10 @@ fn directory_workflow_resumes_original_keys_and_required_approval_to_reference_t
     let actual = journey(Location::Directory(super::super::fixture::location()), true);
     assert_eq!(actual, reference);
 }
-fn journey(location: Location, reopen: bool) -> (WorthQueryWorkflowObservedState, Vec<String>) {
+pub(super) fn journey(
+    location: Location,
+    reopen: bool,
+) -> (WorthQueryWorkflowObservedState, Vec<String>) {
     let (mut home, mut auth) = open(&location);
     let (definition, target) = publish(&home);
     let (mut instance, original) = start(&home, definition, 1002);
@@ -79,7 +82,10 @@ fn journey(location: Location, reopen: bool) -> (WorthQueryWorkflowObservedState
         .workflow_execution_requirements()
         .approval()
         .is_some());
-    perform(&home, &instance, &required);
+    assert_eq!(
+        perform(&home, &instance, &required),
+        GuardedOperation::Committed
+    );
     if reopen {
         close(home);
         (home, auth) = open(&location);
@@ -106,11 +112,17 @@ fn journey(location: Location, reopen: bool) -> (WorthQueryWorkflowObservedState
     }
     result
 }
-fn perform(
+/// How the guarded operation's original key answered.
+#[derive(Debug, PartialEq, Eq)]
+pub(super) enum GuardedOperation {
+    Committed,
+    RecoveredCommitted,
+}
+pub(super) fn perform(
     home: &Home,
     instance: &PublishedWorkflowInstanceRef,
     required: &RequiredWorkflowOperation,
-) {
+) -> GuardedOperation {
     let runtime = home.runtime().runtime();
     let scope = request_scope();
     let principal = authenticate_operator(runtime.installed_schema(), &scope);
@@ -133,11 +145,11 @@ fn perform(
             worth_query_host::facade::runtime::ExecutionAllocationPolicy::SystemAllocation,
         )
         .unwrap();
-    assert!(
-        matches!(
-            result,
-            WorthQueryApplicationMutationOutcome::Committed { .. }
-        ),
-        "{result:?}"
-    );
+    match result {
+        WorthQueryApplicationMutationOutcome::Committed { .. } => GuardedOperation::Committed,
+        WorthQueryApplicationMutationOutcome::RecoveredCommitted(_) => {
+            GuardedOperation::RecoveredCommitted
+        }
+        other => panic!("the guarded operation answers its original key: {other:?}"),
+    }
 }

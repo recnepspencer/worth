@@ -77,6 +77,14 @@ authorized workflow discovery, such as `read_original_workflow` with the origina
 start discovery intent; old runtime references and signing authority do not
 become current authority. Each continuation receives fresh request admission.
 
+The same records survive a process kill, between steps or mid-step. A managed
+computation running at the kill (for example a guarded operation whose
+candidate was prepared) is cold-released with terminal `Abandoned` before the
+reopened Home serves; ending the computation does not cancel the instance.
+Continue with the original keys: the interrupted step runs once, a completed
+step's key answers `RecoveredCommitted`, and a recorded approval stays
+recorded.
+
 For a Home program transition, use `with_workflow_dispositions` on the transition
 request. The ordinary adoption inventory, legality and staging owner decides
 whether each definition and instance can carry, retire or cancel. Home opening

@@ -192,6 +192,7 @@ pub const fn mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::FailedOutputReadinessEvaluation => 1 << 10,
         WorthQueryPrimaryGraphFault::ReadyReadSnapshotPressure => 1 << 11,
         WorthQueryPrimaryGraphFault::ReadinessSnapshotPressure => 1 << 12,
+        WorthQueryPrimaryGraphFault::LostCommitAnswer => 1 << 3,
     }
 }
 

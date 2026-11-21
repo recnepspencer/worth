@@ -7,6 +7,9 @@ use cancellation::BoundaryCancellation;
 #[derive(Clone, Copy)]
 pub enum WorthQueryPrimaryGraphFault {
     LostCommitResponse,
+    /// The application commit's answer is lost before Query classifies it,
+    /// whatever World did: the decision is R9 `OperationIndeterminate`.
+    LostCommitAnswer,
     RejectedSessionPreparation,
     RejectedCommitBeforeTransaction,
     SkippedInvariantOwnerExecution,
@@ -127,12 +130,23 @@ const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
         WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget => 1 << 13,
         WorthQueryPrimaryGraphFault::DuplicateQueryPreparationSlot => 1 << 14,
+        WorthQueryPrimaryGraphFault::LostCommitAnswer => 1 << 3,
     }
 }
 
 impl super::WorthQueryPrimaryGraphProvider {
     pub(super) fn take_lost_commit_response(&self) -> bool {
         self.take_fault(WorthQueryPrimaryGraphFault::LostCommitResponse)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn take_lost_commit_answer(&self) -> bool {
+        self.take_fault(WorthQueryPrimaryGraphFault::LostCommitAnswer)
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn lose_next_commit_answer_for_test(&self) {
+        assert!(self
+            .fault_port
+            .schedule_for_test(WorthQueryPrimaryGraphFault::LostCommitAnswer));
     }
 
     pub(super) fn take_rejected_session_prepare(&self) -> bool {

@@ -18,22 +18,30 @@ pub(super) fn journey(after_checkpoint: bool) {
     drive(behavior, || writer(after_checkpoint), reader);
 }
 
+/// Drive a kill case named relative to `durable_retry`.
 pub(super) fn drive(behavior: &str, writer: impl FnOnce(), reader: impl FnOnce()) {
+    let parent = module_path!().rsplit_once("::").unwrap().0;
+    let parent = parent.split_once("::").unwrap().1;
+    drive_test(&format!("{parent}::{behavior}"), writer, reader);
+}
+/// Drive the kill case whose test path (without the crate) is `test`: the
+/// parent spawns that test as a killed writer, then as a fresh reader.
+pub(crate) fn drive_test(test: &str, writer: impl FnOnce(), reader: impl FnOnce()) {
     match std::env::var(MODE).as_deref() {
         Ok("writer") => writer(),
         Ok("reader") => reader(),
         Ok(mode) => panic!("unknown original receipt child mode {mode}"),
-        Err(_) => kill_and_read(behavior),
+        Err(_) => kill_and_read(test),
     }
 }
-pub(super) fn location() -> std::path::PathBuf {
+pub(crate) fn location() -> std::path::PathBuf {
     std::env::var_os(LOCATION).unwrap().into()
 }
 /// The writer's expectation file, read back by the fresh reader process.
 pub(super) fn expected() -> std::path::PathBuf {
     std::env::var_os(EXPECTED).unwrap().into()
 }
-pub(super) fn wait_for_kill() {
+pub(crate) fn wait_for_kill() {
     println!("{READY}");
     std::io::stdout().flush().unwrap();
     let mut input = String::new();
@@ -41,22 +49,20 @@ pub(super) fn wait_for_kill() {
     panic!("writer must be killed; it cannot return or close normally");
 }
 
-fn child(location: &Path, expected: &Path, mode: &str, behavior: &str) -> Command {
-    let parent = module_path!().rsplit_once("::").unwrap().0;
-    let test = format!("{}::{behavior}", parent.split_once("::").unwrap().1);
+fn child(location: &Path, expected: &Path, mode: &str, test: &str) -> Command {
     let mut command = Command::new(std::env::current_exe().unwrap());
     command
-        .args(["--exact", &test, "--nocapture"])
+        .args(["--exact", test, "--nocapture"])
         .env(MODE, mode)
         .env(LOCATION, location)
         .env(EXPECTED, expected);
     command
 }
 
-fn kill_and_read(behavior: &str) {
+fn kill_and_read(test: &str) {
     let location = fixture::location();
     let expected = location.with_extension("receipt-expectation");
-    let mut writer = child(&location, &expected, "writer", behavior)
+    let mut writer = child(&location, &expected, "writer", test)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::inherit())
@@ -88,12 +94,12 @@ fn kill_and_read(behavior: &str) {
     );
     killed.expect("kill the writer without closing the Home");
     assert!(!status.success());
-    let reader = child(&location, &expected, "reader", behavior)
+    let reader = child(&location, &expected, "reader", test)
         .output()
         .expect("fresh reader process starts");
     assert!(
         reader.status.success(),
-        "reader for {behavior} exited {}: {}\n{}",
+        "reader for {test} exited {}: {}\n{}",
         reader.status,
         String::from_utf8_lossy(&reader.stdout),
         String::from_utf8_lossy(&reader.stderr)

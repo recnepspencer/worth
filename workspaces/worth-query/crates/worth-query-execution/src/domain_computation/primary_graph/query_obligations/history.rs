@@ -13,6 +13,7 @@ use worth_foundational::facade::ProgramSupportStatus;
 mod accepted_output;
 mod adoption;
 mod conditional_decision;
+pub(in crate::domain_computation::primary_graph) use conditional_decision::QueryConditionalRetryAdmission;
 mod durable_retirement;
 mod interpretation_membership;
 mod managed_run;

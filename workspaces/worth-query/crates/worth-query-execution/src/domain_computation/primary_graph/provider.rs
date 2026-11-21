@@ -118,6 +118,7 @@ pub use committed_dispatch_outbox::WorthQueryCommittedDispatchOutboxReadWork;
 pub(super) use idempotency::WorthQueryProductIdempotencyAffinity;
 pub(in crate::domain_computation::primary_graph) use idempotency::WorthQueryProviderGuardedWorkflowOperationCustody;
 pub(super) use idempotency::WorthQueryProviderIdempotencyResolution;
+pub(super) use idempotency::WorthQueryConditionalKeyFate;
 pub(super) use idempotency::WorthQueryProviderIdempotencyResolutionDenial;
 pub use mutation_work::WorthQueryPrimaryMutationWorkEvidence;
 pub use mutation_work::WorthQueryTouchedRecordIdentity;

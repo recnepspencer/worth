@@ -32,7 +32,8 @@ pub use cold_release::{
 };
 mod conditional_decision;
 pub use conditional_decision::{
-    QueryConditionalDecision, QueryConditionalDecisionRecord, QueryConditionalPosture,
+    QueryConditionalDecision, QueryConditionalDecisionRecord, QueryConditionalOriginal,
+    QueryConditionalPosture,
 };
 mod resource;
 pub use resource::{

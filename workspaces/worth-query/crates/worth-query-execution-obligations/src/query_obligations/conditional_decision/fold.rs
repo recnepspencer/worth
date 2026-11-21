@@ -28,6 +28,13 @@ impl QueryObligationLedger {
                         return Err(QueryObligationDenial::UnknownObligation);
                     }
                 }
+                if let QueryConditionalPosture::Indeterminate(QueryConditionalOriginal::Recovered(
+                    original,
+                )) = row.posture
+                    && original.owner().home() != self.home()
+                {
+                    return Err(QueryObligationDenial::ForeignHome);
+                }
                 (&row.key, &row.intent)
             }
             QueryConditionalDecisionRecord::Finish { key, intent } => {
@@ -41,6 +48,12 @@ impl QueryObligationLedger {
             .conditional
             .get(key)
             .is_some_and(|known| &known.intent != intent)
+        {
+            return Err(QueryObligationDenial::ObligationSubjectMismatch);
+        }
+        if let (Some(known), QueryConditionalDecisionRecord::Retain(row)) =
+            (self.conditional.get(key), record)
+            && joined_elsewhere(known.posture, row.posture)
         {
             return Err(QueryObligationDenial::ObligationSubjectMismatch);
         }
@@ -70,5 +83,22 @@ impl QueryObligationLedger {
                 self.conditional.remove(&key);
             }
         }
+    }
+}
+
+/// A row joined to its recovered World original stays joined to exactly that
+/// original until it is finished; no retain may unjoin or rejoin it.
+fn joined_elsewhere(known: QueryConditionalPosture, next: QueryConditionalPosture) -> bool {
+    match known {
+        QueryConditionalPosture::Indeterminate(QueryConditionalOriginal::Recovered(original)) => {
+            next != QueryConditionalPosture::Indeterminate(QueryConditionalOriginal::Recovered(
+                original,
+            ))
+        }
+        QueryConditionalPosture::Indeterminate(QueryConditionalOriginal::Unclassified)
+        | QueryConditionalPosture::CleanupRequired(_)
+        | QueryConditionalPosture::Retryable
+        | QueryConditionalPosture::CommitRetryable
+        | QueryConditionalPosture::ProductStale => false,
     }
 }

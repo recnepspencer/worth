@@ -80,7 +80,8 @@ fn prepare_wake<Schema: worth_query_installation::facade::ApplicationSchema>(
         | Decision::OperationAlreadyCommitted(_) => Ok(()),
         Decision::OperationRetryable(_, _)
         | Decision::OperationCommitRetryable(_, _)
-        | Decision::OperationProductStale(_, _) => match wake.continuation_identity {
+        | Decision::OperationProductStale(_, _)
+        | Decision::OperationIndeterminate(_, _) => match wake.continuation_identity {
             Some(_) => Ok(()),
             None => Err(Denial::Unsupported(Owner::ConditionalRuntime)),
         },
@@ -98,7 +99,6 @@ fn prepare_wake<Schema: worth_query_installation::facade::ApplicationSchema>(
         | Decision::OperationExecutionControlRetryable(_, _)
         | Decision::OperationTerminalFailure(_, _)
         | Decision::OperationControlStopped(_, _)
-        | Decision::OperationIndeterminate(_, _)
         | Decision::InterruptedDuringReentry
         | Decision::Failed(_) => Err(Denial::Unsupported(Owner::ConditionalRuntime)),
     }

@@ -216,6 +216,20 @@ fixed owner order before the Home serves anything.
   proven no effect. A Signal leg supplied as a closure cannot be recorded, so a
   Directory Home refuses such a commit with `UnrecordableSignalLeg` before any
   owner effect.
+- **A kill during a conditional or temporal operation:** its retained decision
+  keeps its original key and intent. A decision whose commit answer was lost
+  (`Indeterminate`) is classified before service by World's state for that
+  key: published, it finishes and a retry returns the original occurrence; no
+  committed open, it is released as no-effect and the key executes fresh once;
+  a recovered unpublished original joins it, and the retry continues that
+  original without running the operation again. A temporal operation killed
+  between its commit and its response re-executes to its original occurrence,
+  once.
+- **A kill during a workflow** (between steps, or mid-step while a step's
+  managed computation runs): the instance, its approvals and its original keys
+  are graph records and survive; the running computation is cold-released
+  (`Abandoned`) before service and the instance is not cancelled. Continue the
+  workflow under its original keys; each step's effect happens exactly once.
 - **An unfinished branch creation:** opening the Home decides it before
   service, under its original identity. With no owner fork it is released;
   once any fork is durable it continues. A kill between Native's fork and

@@ -6,9 +6,12 @@ use temporal::{
 use worth_query_host::facade::WorthQueryApplicationHome;
 use worth_query_testkit_host::facade::host::temporal_conditional_operation::contribution_installation as temporal;
 
-type Home = WorthQueryApplicationHome<TemporalHostSchema, TemporalInstallationProgram>;
+pub(crate) type Home = WorthQueryApplicationHome<TemporalHostSchema, TemporalInstallationProgram>;
 
-fn open(location: &std::path::Path, request: &worth_execution::ExecutionRequest<'_, '_>) -> Home {
+pub(crate) fn open(
+    location: &std::path::Path,
+    request: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Home {
     with_bootstrap_advancement_from_request(*request, |phase| {
         temporal::directory::request(location.to_path_buf()).open_in_advancement(&phase)
     })
@@ -16,7 +19,7 @@ fn open(location: &std::path::Path, request: &worth_execution::ExecutionRequest<
     .unwrap_or_else(|refused| panic!("temporal Home open: {refused:?}"))
 }
 
-fn observe(
+pub(crate) fn observe(
     home: &Home,
     request: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> primary_graph::WorthQueryConditionalClockObservationOutcome<temporal::CourtroomClock> {
