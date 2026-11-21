@@ -78,6 +78,9 @@ pub(crate) fn storage_stats(
         reusable_relation_slots: relation_counts.reusable,
         snapshot_count: runtime.visibility.active_snapshot_count(),
         published_snapshot_handle_count: runtime.visibility.published_snapshot_handle_count(),
+        published_snapshot_slot_count: runtime
+            .preparation_runtime_snapshot()
+            .published_snapshot_count(),
         cached_visibility_version_count: runtime.visibility.cached_visibility_version_count(),
         protected_visibility_version_count: runtime.visibility.protected_visibility_version_count(
             runtime
