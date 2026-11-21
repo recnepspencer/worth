@@ -348,9 +348,11 @@ is fixed at its owner, never refitted to the observed value.
   physical-medium content. A restored court stays in `src/` only when it tests
   module-private logic, as Iteration Law 2 allows. It keeps the
   `src-court-baseline.json` row its restore SHA recorded for that file, as a
-  restored door keeps its caller row; no other baseline row is added. A
-  restored source closure that constructs a runtime root and had no row at its
-  restore SHA moves to its owner's court crate.
+  restored door keeps its caller row. A restored source closure that had no
+  row at its restore SHA keeps its ledger path with an exact row only when its
+  claim is module-private and no public court observes it (the C2 ruling of
+  2026-11-21 in the ledger); otherwise it is deleted, naming the public guard.
+  No other baseline row is added.
 - **Restore reference.** Where the ledger records a later refresh reference
   for the same file (the `22e638d638` integration protocol restoration
   refreshes), restore from the refresh.
@@ -1930,6 +1932,16 @@ The following original claims move under Delivery tracks; mixed courts retain th
 - **C2** `repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy`: `restore from 9ed22bccaa:crates/worth-relational/src/validation/engine/tests/acyclicity_resources.rs`. 128-node repeated-reachability workload under fixed 1MiB/4M policy, live-scratch budget reuse and final exact refund. Underlying current memory-denial cause remains unknown.
 - **C4** `checkpoint_restore_rejects_incomplete_field_revision_column`: `restore from 9ed22bccaa:crates/worth-relational/src/visibility/materialization/read_records/projection/field_revisions/restore_tests.rs`. Intentionally shorten field_revisions SoA column and reseal root; require typed corruption refusal and diagnostic. Recovery already refuses CorruptCheckpoint at generic arena column-length check; detail substring expectation is stale.
 - **C2 metadata accompanying already moved private courts**: `runtime.merge.topology_region_detection` and `runtime.merge.execution_verification`, `restore from 73ce80ebfc:crates/worth-relational/src/performance/data/complexity_contract_inventory.rs`. Their only registered proof bodies moved with P-A; do not publish them as Verified until C2 restores the actual counter/verification evidence. Other contracts keep their actual registered proofs. The proof registry checker remains unchanged.
+- **C2 ruling 2026-11-21:** restored as existing source courts with exact
+  src-court-baseline rows (BC9002); Law 2 debt carried for C5's boundary
+  re-audit. The six restored source closures that had no row at their restore
+  SHA, each a module-private funding claim no public court observes:
+  `crates/worth-relational/src/authority/mutation/intents/field_authoring_candidate/tests/storage_footprint.rs`,
+  `crates/worth-relational/src/branch/root_schema/readmission/tests.rs`,
+  `crates/worth-relational/src/content/schema/retention_tests.rs`,
+  `crates/worth-relational/src/storage/substrate/digest_index/funding_tests.rs`,
+  `crates/worth-relational/src/storage/substrate/record_arena/values/tests/historical_selection_funding.rs`,
+  `crates/worth-relational/src/storage/substrate/record_arena/values/tests/optional_output_funding.rs`.
 - **C2 source-unit claim closures**: `controlled_field_lowering_refuses_before_copy_and_preserves_typed_causes` (its finite lowerer/readmitter phase-admission block) and `controlled_field_lowering_releases_scratch_before_retaining_small_patch` (all private exact/backing/peak assertions), `restore from 73ce80ebfc:crates/worth-relational/src/authority/mutation/intents/field_authoring_candidate/tests.rs`; restore the same-SHA `tests/storage_footprint.rs` and `tests/fixture.rs`. Original winner, typed cancellation/zero-memory refusal, scalar/struct content and portable wire-copy assertions remain in their semantic unit courts.
 - **C2** `cleared_entity_and_relation_extras_keep_only_their_fixed_original_bills`: `restore from 73ce80ebfc:crates/worth-relational/src/storage/substrate/record_arena/values/tests/optional_output_funding.rs`, with its same-SHA parent fixtures. This is the exact private EntityExtra/RelationExtra bill and last-drop campaign. The independent optional reconstruction semantics remain in their own unit court with a lawful optional contract.
 
