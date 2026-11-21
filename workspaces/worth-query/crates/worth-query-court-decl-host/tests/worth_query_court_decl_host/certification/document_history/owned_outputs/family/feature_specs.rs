@@ -9,6 +9,7 @@ pub(in super::super) fn feature_specs(
         diamond::feature(),
         decision_input::feature(),
         parity_input::feature(),
+        saturated_input::feature(),
         convergent::feature(),
         ordinary_input::feature(),
         decision_write::feature(),
