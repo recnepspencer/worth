@@ -198,7 +198,7 @@ impl<S: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_, S> 
                     &mut ApplicationQueryNativeAccess::acquire(),
                 )
                 .map_err(ResourceCause::Scope)?;
-            let parameters = capture_parameters::<S, B::Access>(execution, self.runtime, 0, || {
+            let parameters = capture_parameters::<S, B::Access>(execution, self.runtime.inner(), 0, || {
                 Ok(B::parameters(input))
             })
             .map_err(ResourceCause::ParameterCapture)?;

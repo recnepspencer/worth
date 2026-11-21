@@ -133,7 +133,11 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
         });
         match result {
             Ok(()) => Ok(closed.expect("successful Close retains actual cleanup evidence")),
-            Err(cause) => Err(WorthQueryResourceActionDenial { cause, closed }),
+            Err(cause) => Err(WorthQueryResourceActionDenial::from_cause_port(
+                worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
+                Box::new(cause),
+                closed,
+            )),
         }
     }
 

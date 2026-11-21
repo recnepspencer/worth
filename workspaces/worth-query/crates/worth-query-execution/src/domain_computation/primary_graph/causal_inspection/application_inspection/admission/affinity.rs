@@ -27,7 +27,7 @@ where
         .binding_observation()
         .and_then(|binding| binding.inspection_contract())
         .ok_or(InspectionAdmissionDenial::MissingInspection)?;
-    if original.source.runtime_authority != runtime.runtime.authority_identity().as_u64()
+    if original.source.runtime_authority != runtime.inner.runtime.authority_identity().as_u64()
         || &original.source.schema_binding != contract.graph_obligations().binding_identity()
         || original.source.original_binding() != Some(contract.binding_observation())
     {

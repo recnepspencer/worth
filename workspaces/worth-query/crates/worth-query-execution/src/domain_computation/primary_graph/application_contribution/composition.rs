@@ -96,7 +96,7 @@ impl<Schema> WorthQueryConfiguredApplicationContributions<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(in crate::domain_computation::primary_graph) fn into_parts(
+    pub fn into_parts(
         self,
     ) -> Result<
         (
@@ -119,18 +119,18 @@ where
     }
 }
 
-pub(in crate::domain_computation::primary_graph) struct PreparedApplicationRuntimeContributions<
+pub struct PreparedApplicationRuntimeContributions<
     Schema: ApplicationSchema,
 > {
-    pub(in crate::domain_computation::primary_graph) handlers:
+    pub handlers:
         PendingMutationHandlerRegistry<Schema>,
-    pub(in crate::domain_computation::primary_graph) producers:
+    pub producers:
         super::producer::PendingProducerRegistry<Schema>,
-    pub(in crate::domain_computation::primary_graph) conditionals:
+    pub conditionals:
         PendingConditionalRegistry<Schema>,
-    pub(in crate::domain_computation::primary_graph) resources:
+    pub resources:
         super::super::application_resource::installation::PendingResourceRegistry<Schema>,
-    pub(in crate::domain_computation::primary_graph) managed_indexes:
+    pub managed_indexes:
         super::super::application_query::managed_index::ManagedIndexProviderCatalog<Schema>,
 }
 

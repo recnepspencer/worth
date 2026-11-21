@@ -294,6 +294,11 @@ pub trait PreparedCorrectionSourcePort: std::fmt::Debug + Send + Sync + Any {
         )>,
         (),
     >;
+    fn capture_coupled_outputs(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Option<crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>;
+    fn content(&self) -> &worth_relational::facade::content::RelationalContentAttachments;
 }
 
 /// Borrowed upper-layer history cutover handle behind `HistoryProducerCutover<'call>`.

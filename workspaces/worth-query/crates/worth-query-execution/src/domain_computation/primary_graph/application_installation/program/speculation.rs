@@ -115,9 +115,9 @@ impl WorthQueryApplicationPreviewSession {
         Program: ApplicationProgramDefinition<Schema>,
     {
         let execution = phase
-            .execution_request_for(&runtime.runtime().runtime.product_runtime)
+            .execution_request_for(&runtime.runtime().inner.runtime.product_runtime)
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
-        if runtime.runtime().runtime.authority_identity().as_u64() != self.runtime_authority {
+        if runtime.runtime().inner.runtime.authority_identity().as_u64() != self.runtime_authority {
             return Err(WorthQueryApplicationPreviewReadmissionDenial::ForeignRuntime);
         }
         let current = runtime
@@ -193,7 +193,7 @@ where
     ) -> Result<WorthQueryApplicationPreviewSession, WorthQueryApplicationPreviewReadmissionDenial>
     {
         let phase_request = phase
-            .execution_request_for(&self.runtime().runtime.product_runtime)
+            .execution_request_for(&self.runtime().inner.runtime.product_runtime)
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
         let execution = &phase_request;
         let selected = self
@@ -238,7 +238,7 @@ where
         );
         let handle = self
             .runtime()
-            .runtime
+            .inner.runtime
             .bridge
             .ordinary()
             .speculate(BridgeSpeculativeSessionRequest::new(
@@ -253,7 +253,7 @@ where
             handle,
             _source: source,
             _runtime: Box::new(self.clone()),
-            runtime_authority: self.runtime().runtime.authority_identity().as_u64(),
+            runtime_authority: self.runtime().inner.runtime.authority_identity().as_u64(),
             source_commit: observation.selected_commit().clone(),
             discard_fault: Default::default(),
         })

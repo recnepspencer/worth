@@ -1,0 +1,77 @@
+use super::super::super::registry::InstalledProducerProvider;
+use super::super::disclosure::ValidatedOutputDisclosure;
+use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+mod entry;
+mod ready;
+use ready::ReadyCertification;
+mod execution_completion;
+mod execution_preparation;
+mod execution_progression;
+mod running_execution;
+use execution_preparation::{OutputPreparation, RunningOutputPreparation};
+pub mod schedule_progression;
+mod source_guard;
+pub use execution_completion::CompletionRefusal;
+pub
+enum ExecutionPreparation<'owner, Query, Value> {
+    Reached(OwnStages<Query, Value>),
+    Planned(crate::domain_computation::primary_graph::application_contribution::producer::execution::prepared_plan::OwnerPlan<'owner, CheckpointProgress, CompletionRefusal>),
+}
+
+use schedule_progression::CheckpointProgress;
+pub use schedule_progression::OwnPublication;
+use schedule_progression::OwnStages;
+use schedule_progression::ScheduleProgression;
+use source_guard::SourceGuard;
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    fn advance_ordinary_validated_output_demand<Family>(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        request_scope: &WorthQueryRequestScope,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        disclosure: ValidatedOutputDisclosure<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
+        entry: &InstalledProducerProvider<Schema>,
+        commit_authority: ProducerInvocationAuthority<'_>,
+
+        performed: &std::cell::RefCell<PerformedMembers>,
+    ) -> Result<
+        OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
+        WorthQueryOutputDemandDenial,
+    >
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        let prepared = self.prepare_validated_output_demand_with_schedule(
+            phase,
+            demand,
+            principal,
+            request_scope,
+            delivery_branch,
+            disclosure,
+            entry,
+            commit_authority,
+            ScheduleProgression::Ordinary,
+            performed,
+        )?;
+        match prepared {
+            ExecutionPreparation::Reached(stages) => Ok(stages),
+            ExecutionPreparation::Planned(_) => Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSettlement,
+                "ordinary progression cannot dispatch a required compute plan",
+            )),
+        }
+    }
+}

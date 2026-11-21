@@ -305,3 +305,5 @@ impl WorthQueryApplicationAttemptAffinity {
 #[cfg(test)]
 #[path = "application_attempt_affinity_inline_type_budget.rs"]
 pub mod inline_type_budget;
+
+mod court_doors_for_test;

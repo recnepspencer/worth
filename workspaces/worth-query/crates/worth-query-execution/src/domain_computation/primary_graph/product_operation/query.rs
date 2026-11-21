@@ -17,24 +17,10 @@ pub use history_outputs::WorthQueryHistoryOutputControlDenial;
 pub use history_outputs::WorthQueryHistoryOutputReadDenial;
 pub use history_outputs::WorthQueryHistoryRootOutputRead;
 mod preview;
-mod retained;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::query::retained;
 pub use batch::WorthQueryRetainedBatchQueryAdmissionDenial;
 
-/// Result cardinality and request scope for an already selected product. These controls
-/// cannot select a second basis or change the operation's retained occurrence.
-pub struct WorthQueryProductQueryControls<'request> {
-    maximum_results: NonZeroUsize,
-    request: &'request WorthQueryRequestScope,
-}
-
-impl<'request> WorthQueryProductQueryControls<'request> {
-    pub fn new(maximum_results: NonZeroUsize, request: &'request WorthQueryRequestScope) -> Self {
-        Self {
-            maximum_results,
-            request,
-        }
-    }
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::WorthQueryProductQueryControls;
 
 impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
     pub fn admit_application_query<
@@ -76,7 +62,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        let request = match phase.execution_request_for(&self.application().runtime.product_runtime) {
+        let request = match phase.execution_request_for(&self.application().inner.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
@@ -144,7 +130,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        let request = match phase.execution_request_for(&self.application().runtime.product_runtime) {
+        let request = match phase.execution_request_for(&self.application().inner.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
@@ -194,7 +180,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryApplicationQueryAdmissionDenial,
     > {
-        let request = match phase.execution_request_for(&self.application().runtime.product_runtime) {
+        let request = match phase.execution_request_for(&self.application().inner.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
@@ -269,7 +255,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
-        let request = match phase.execution_request_for(&self.application().runtime.product_runtime) {
+        let request = match phase.execution_request_for(&self.application().inner.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };
@@ -347,7 +333,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     where
         Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
     {
-        let request = match phase.execution_request_for(&self.application().runtime.product_runtime) {
+        let request = match phase.execution_request_for(&self.application().inner.runtime.product_runtime) {
             Ok(request) => request,
             Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name())),
         };

@@ -56,7 +56,7 @@ pub(super) fn admit<Schema: ApplicationSchema, Binding: ApplicationResourceBindi
     ResourceAdmissionDenial,
 > {
     let support = runtime
-        .runtime
+        .inner.runtime
         .primary_provider
         .application_resource_support_ref();
     let (capture, memory) =

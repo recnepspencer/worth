@@ -116,7 +116,7 @@ where
     )?;
     drop(current);
     let execution = phase
-        .checked_execution_request_for(&application.runtime.product_runtime)
+        .checked_execution_request_for(&application.inner.runtime.product_runtime)
         .map_err(Denial::Stopped)?;
     let allocation =
         reserve_arc::<NavigationAttempt<'runtime, S>>(&execution).map_err(|cause| {
@@ -189,7 +189,7 @@ where
             model: document.model.clone(),
             ownership: (installed.definition().parts().model_domain
                 == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph)
-                .then(|| application.runtime.primary_provider.graph.layout.history_ownership(
+                .then(|| application.inner.runtime.primary_provider.graph.layout.history_ownership(
                     &installed.definition().parts().identity).expect("eligibility admitted the installed recipe")),
             source: Some(source),
             requested,

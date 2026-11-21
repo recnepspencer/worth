@@ -59,7 +59,7 @@ where
     if let Some(material) = source.occurrence().home_material()
         && target
             .application()
-            .runtime
+            .inner.runtime
             .primary_provider
             .recover_correction_command(material.capture.original, key.identity())
             .map_err(Denial::Material)?
@@ -87,7 +87,7 @@ where
     let input =
         super::material::recorded_input::recover_bytes(bytes, identity, C::recover_source_input)?;
     let execution = phase
-        .execution_request_for(&target.application().runtime.product_runtime)
+        .execution_request_for(&target.application().inner.runtime.product_runtime)
         .map_err(|_| Denial::ForeignPhase)?;
     let inverse = super::material::derive::<Schema, C>(source, execution, input.input())?;
     let input = target.application().capture_operation_input_in_advancement::<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>(

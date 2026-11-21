@@ -120,7 +120,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         let request = match phase.request_for_source(
-            self.runtime
+            self.inner.runtime
                 .primary_provider
                 .graph
                 .relational_runtime_instance_id(),
@@ -136,7 +136,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let execution = &request;
         if !Arc::ptr_eq(
             &suspended.publication.root_identity(),
-            &self.runtime.product_runtime.root_identity(),
+            &self.inner.runtime.product_runtime.root_identity(),
         ) || !suspended.matches_runtime(self)
         {
             return Err(reconstruction_failure(
@@ -151,7 +151,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         if !suspended.matches_provider_version::<Schema, Producer>()
-            || self.installed_producers.provider::<Producer>().is_none()
+            || self.inner.installed_producers.provider::<Producer>().is_none()
         {
             return Err(reconstruction_failure(
                 suspended,
@@ -164,13 +164,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryGeneratedOutputReconstructionDenial::StaleOutputLineage,
             ));
         }
-        let retained_entities = match self.runtime.primary_provider.graph.with_runtime(execution, |runtime| {
+        let retained_entities = match self.inner.runtime.primary_provider.graph.with_runtime(execution, |runtime| {
             let port = runtime.owner_component_services().materialization_port();
             suspended.correspondence().checkpoint_roles().into_iter()
                 .filter(|role| role.posture ==
                     crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture::Preserve)
                 .map(|role| {
-                    let expected = self.runtime.primary_provider.graph.layout.entity_kind(&role.entity_name)
+                    let expected = self.inner.runtime.primary_provider.graph.layout.entity_kind(&role.entity_name)
                         .ok_or(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch)?;
                     let actual = port.retained_entity_kind(
                         execution,
@@ -190,7 +190,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Err(denial) => return Err(reconstruction_failure(suspended, denial)),
         };
         Ok(WorthQueryGeneratedOutputReconstruction::new(
-            &self.runtime.primary_provider.graph.layout,
+            &self.inner.runtime.primary_provider.graph.layout,
             suspended,
             retained_entities,
         ))

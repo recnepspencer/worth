@@ -71,7 +71,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         }
         let first = profiles.first().ok_or(Denial::IntentDrift)?;
         let execution = phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(&self.application().inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let resource = |cause| {
             Denial::Document(

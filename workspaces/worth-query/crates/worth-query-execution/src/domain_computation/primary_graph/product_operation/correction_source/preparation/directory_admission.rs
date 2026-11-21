@@ -5,7 +5,7 @@ pub(super) fn admit<Schema: ApplicationSchema>(
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
 ) -> Result<(), WorthQueryCorrectionDerivationDenial> {
     use WorthQueryCorrectionDerivationDenial as Denial;
-    let runtime = &target.application().runtime.product_runtime;
+    let runtime = &target.application().inner.runtime.product_runtime;
     if !runtime.is_directory_home() {
         return Ok(());
     }

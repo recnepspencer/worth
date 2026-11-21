@@ -125,13 +125,14 @@ where
     pub fn inspect_conditional_runtime(&self) -> WorthQueryConditionalRuntimeInspection {
         let registry = self
             .conditional_cleanup
+            .routes
             .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();
         let retained = registry.retained_resource_counts();
         let bridge = self
-            .runtime
+            .inner.runtime
             .bridge
             .conditional()
             .conditional_lifecycle_probe();
@@ -153,12 +154,13 @@ where
         &self,
     ) -> super::WorthQueryConditionalRuntimeLifecycleProbe {
         let bridge = self
-            .runtime
+            .inner.runtime
             .bridge
             .conditional()
             .conditional_lifecycle_probe();
         let registry = self
             .conditional_cleanup
+            .routes
             .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

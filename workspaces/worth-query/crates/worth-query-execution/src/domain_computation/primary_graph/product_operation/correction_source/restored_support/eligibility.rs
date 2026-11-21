@@ -25,7 +25,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
 ) -> Result<(), Denial> {
     let application = target.application();
     let execution = phase
-        .execution_request_for(&application.runtime.product_runtime)
+        .execution_request_for(&application.inner.runtime.product_runtime)
         .map_err(|_| Denial::ForeignPhase)?;
     // Direct-head correction preserves its existing strict comparison for ALL
     // fact classes. Equality is the actual World occurrence AND admitted basis,
@@ -34,7 +34,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
         && target.product().observation().basis() == source.ancestry().source().basis()
     {
         return application
-            .runtime
+            .inner.runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {
@@ -55,7 +55,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
     let original = source.ancestry().source().basis().relational_basis();
     let selection =
         application
-            .runtime
+            .inner.runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {
@@ -82,7 +82,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
             })?;
     let occurrences =
         application
-            .runtime
+            .inner.runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {
@@ -108,7 +108,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
         )
     })?;
     application
-        .runtime
+        .inner.runtime
         .primary_provider
         .graph
         .with_runtime(&execution, |runtime| {

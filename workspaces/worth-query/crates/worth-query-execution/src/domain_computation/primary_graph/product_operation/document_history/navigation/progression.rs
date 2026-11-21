@@ -28,7 +28,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .as_ref()
                 .expect("new historical work retains its original source");
             self.application
-                .runtime
+                .inner.runtime
                 .product_runtime
                 .require_live_product_occurrence(
                     source.source.product_observation().lifecycle_incarnation(),
@@ -140,7 +140,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
     > {
         use WorthQueryHistoryNavigationDenial as Denial;
         let execution = phase
-            .checked_execution_request_for(&self.application.runtime.product_runtime)
+            .checked_execution_request_for(&self.application.inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let current = self
             .application
@@ -155,7 +155,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .application
             .select_application_read_observation(phase, &source.source)
             .map_err(Denial::ProductAdmission)?;
-        let graph = &self.application.runtime.primary_provider.graph;
+        let graph = &self.application.inner.runtime.primary_provider.graph;
         let publisher = graph.application_publication.as_deref();
         let (prepared, custody) = graph.with_runtime(&execution, |native| {
             let transaction = native
@@ -210,8 +210,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
                     .prepare_historical_transport(
                         &execution,
-                        self.application.runtime.authority_identity().as_u64(),
-                        &self.application.installed_schema.binding_identity(),
+                        self.application.inner.runtime.authority_identity().as_u64(),
+                        &self.application.inner.installed_schema.binding_identity(),
                         &graph.layout,
                         historical.product().observation(),
                         custody.routes.iter(),

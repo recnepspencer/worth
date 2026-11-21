@@ -1,0 +1,234 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use std::any::Any;
+use std::collections::{BTreeMap, HashMap};
+use std::marker::PhantomData;
+use std::sync::Arc;
+mod operation_body;
+mod registration;
+mod retirement;
+use registration::HandlerOrigin;
+pub use retirement::HandlerRetirementCursor;
+
+use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_declaration::facade::application_program::{
+    ApplicationComputationExecution, DeterminismContract,
+};
+use worth_query_installation::facade::{
+    ApplicationSchema, ApplicationSchemaBindingIdentity,
+    WorthQueryInstalledApplicationMutationBinding, WorthQueryInstalledApplicationSchema,
+};
+
+mod collections;
+mod computations;
+use computations::InstalledManagedComputationOwner;
+
+use super::super::{
+    application_entry::mutation::{MutationHandlerExecutionDenial, OperationHandler},
+    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
+    WorthQueryPrimaryGraphInstallationDenialKind as DenialKind,
+};
+
+#[derive(Clone)]
+pub struct PendingMutationHandler {
+    candidate_planning: bool,
+    origin: HandlerOrigin,
+    durable_capabilities: Option<&'static [super::super::application_entry::mutation::WorthQueryOperationDurableCapability]>,
+    identity: &'static str,
+    handler_identity: String,
+    decision_type: TypeId,
+    denial_type: TypeId,
+    value: Arc<dyn Any + Send + Sync>,
+    preflight_home_retirement: retirement::PreflightHandlerRetirement,
+    advance_home_retirement: retirement::AdvanceHandlerRetirement,
+}
+
+pub struct TypedHandlerSlot<Schema, Binding>
+where
+    Schema: ApplicationSchema,
+    Binding: ApplicationMutationBinding<Schema>,
+{
+    handler: Arc<dyn OperationHandler<Schema, Binding>>,
+}
+
+pub struct PendingMutationHandlerRegistry<Schema> {
+    entries: BTreeMap<String, PendingMutationHandler>,
+    computations: HashMap<TypeId, InstalledManagedComputationOwner>,
+    // Locates a typed setup owner; seal still verifies that owner's actual binding.
+    rule_readable_owners: BTreeMap<worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation, TypeId>,
+    _schema: PhantomData<fn() -> Schema>,
+}
+
+pub struct InstalledMutationHandlerRegistry<Schema> {
+    entries: BTreeMap<String, PendingMutationHandler>,
+    _schema: PhantomData<fn() -> Schema>,
+}
+
+impl<Schema> Default for PendingMutationHandlerRegistry<Schema> {
+    fn default() -> Self {
+        Self {
+            entries: BTreeMap::new(),
+            computations: HashMap::new(),
+            rule_readable_owners: BTreeMap::new(),
+            _schema: PhantomData,
+        }
+    }
+}
+
+impl<Schema> PendingMutationHandlerRegistry<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    pub fn seal(
+        &self,
+        installed_schema: &WorthQueryInstalledApplicationSchema<Schema>,
+        binding_identity: &ApplicationSchemaBindingIdentity,
+    ) -> Result<InstalledMutationHandlerRegistry<Schema>, WorthQueryPrimaryGraphInstallationDenial>
+    {
+        if &installed_schema.binding_identity() != binding_identity {
+            return Err(denial(
+                DenialKind::ForeignMutationHandler,
+                "installed schema",
+            ));
+        }
+        let handled = || {
+            installed_schema
+                .installed_mutation_binding_inventory()
+                .filter(|descriptor| {
+                    !descriptor.workflow_control()
+                        || self
+                            .entries
+                            .get(descriptor.identity())
+                            .is_some_and(|entry| entry.origin == HandlerOrigin::CompiledBody)
+                })
+        };
+        if handled().count() != self.entries.len() {
+            return Err(denial(
+                DenialKind::MissingMutationHandler,
+                handled()
+                    .find(|descriptor| !self.entries.contains_key(descriptor.identity()))
+                    .map_or("mutation handler inventory", |descriptor| {
+                        descriptor.identity()
+                    }),
+            ));
+        }
+        for descriptor in handled() {
+            let entry = self
+                .entries
+                .get(descriptor.identity())
+                .ok_or_else(|| denial(DenialKind::MissingMutationHandler, descriptor.identity()))?;
+            if entry.identity != descriptor.identity()
+                || entry.handler_identity != descriptor.handler().identity()
+                || entry.decision_type != TypeId::from(descriptor.handler().decision_type())
+                || entry.denial_type != TypeId::from(descriptor.handler().denial_type())
+            {
+                return Err(denial(
+                    DenialKind::MutationHandlerMeaningMismatch,
+                    descriptor.identity(),
+                ));
+            }
+        }
+        self.require_operation_body_coverage(installed_schema)?;
+        self.validate_rule_readable_collections(installed_schema)?;
+        Ok(InstalledMutationHandlerRegistry {
+            entries: self.entries.clone(),
+            _schema: PhantomData,
+        })
+    }
+}
+
+impl<Schema> InstalledMutationHandlerRegistry<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    /// Borrow the original configured owner without retaining another Arc.
+    pub fn original_handler<Binding, Handler>(
+        &self,
+    ) -> Option<&Handler>
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Handler: OperationHandler<Schema, Binding>,
+    {
+        let entry = self.entries.get(Binding::IDENTITY)?;
+        if entry.handler_identity != Binding::HANDLER_IDENTITY {
+            return None;
+        }
+        let slot = entry
+            .value
+            .downcast_ref::<TypedHandlerSlot<Schema, Binding>>()?;
+        let handler: &dyn Any = slot.handler.as_ref();
+        handler.downcast_ref::<Handler>()
+    }
+
+    pub fn supports_candidate_planning<
+        B: ApplicationMutationBinding<Schema>,
+    >(
+        &self,
+    ) -> bool {
+        self.entries.get(B::IDENTITY).is_some_and(|entry| {
+            entry.handler_identity == B::HANDLER_IDENTITY && entry.candidate_planning
+        })
+    }
+    pub fn declared_durable_capabilities<Binding>(
+        &self,
+    ) -> Result<
+        Option<&'static [super::super::application_entry::mutation::WorthQueryOperationDurableCapability]>,
+        MutationHandlerExecutionDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+{
+        self.entries
+            .get(Binding::IDENTITY)
+            .map(|entry| entry.durable_capabilities)
+            .ok_or(MutationHandlerExecutionDenial::HandlerNotInstalled)
+    }
+
+    fn get<Binding>(&self) -> Option<Arc<dyn OperationHandler<Schema, Binding>>>
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        self.entries
+            .get(Binding::IDENTITY)
+            .filter(|entry| entry.handler_identity == Binding::HANDLER_IDENTITY)
+            .and_then(|entry| {
+                entry
+                    .value
+                    .downcast_ref::<TypedHandlerSlot<Schema, Binding>>()
+                    .map(|slot| Arc::clone(&slot.handler))
+            })
+    }
+}
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    /// The installed handler for `Binding`.
+    ///
+    /// A workflow control binding has no handler and is refused as
+    /// `WorkflowControl`; a binding this runtime installed no handler for is
+    /// refused as `HandlerNotInstalled`. Both refusals are deterministic, so
+    /// no retry of the same request can succeed.
+    pub fn mutation_handler_for_attempt<Binding>(
+        &self,
+    ) -> Result<Arc<dyn OperationHandler<Schema, Binding>>, MutationHandlerExecutionDenial>
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        if Binding::WORKFLOW_CONTROL {
+            return Err(MutationHandlerExecutionDenial::WorkflowControl);
+        }
+        self.mutation_handlers
+            .get::<Binding>()
+            .ok_or(MutationHandlerExecutionDenial::HandlerNotInstalled)
+    }
+}
+
+fn denial(
+    kind: DenialKind,
+    subject: impl Into<String>,
+) -> WorthQueryPrimaryGraphInstallationDenial {
+    WorthQueryPrimaryGraphInstallationDenial::new(kind, subject)
+}
+
+mod court_doors_for_test;

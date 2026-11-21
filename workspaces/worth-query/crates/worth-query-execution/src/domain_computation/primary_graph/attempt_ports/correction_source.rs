@@ -46,7 +46,7 @@ fn map_candidate_denial(denial: AuthoredCorrectionCandidateDenial) -> PortCandid
     }
 }
 
-pub(crate) fn downcast_prepared_correction_source(
+pub fn downcast_prepared_correction_source(
     port: &dyn PreparedCorrectionSourcePort,
 ) -> &WorthQueryPreparedCorrectionSource {
     port.as_any()
@@ -175,5 +175,17 @@ impl PreparedCorrectionSourcePort for WorthQueryPreparedCorrectionSource {
 
     fn changed_field_capture(&self) -> Result<Option<(InstalledPreImageDemand, EntityId)>, ()> {
         self.changed_field_capture()
+    }
+
+    fn capture_coupled_outputs(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Option<crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands>
+    {
+        self.capture_coupled_outputs(execution)
+    }
+
+    fn content(&self) -> &worth_relational::facade::content::RelationalContentAttachments {
+        self.content()
     }
 }

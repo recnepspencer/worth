@@ -107,8 +107,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         binding: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<(), Denial> {
         if !admitted.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
+            self.inner.runtime.authority_identity(),
+            &self.inner.installed_schema.binding_identity(),
         ) {
             return Err(Denial::ForeignRuntime);
         }
@@ -116,7 +116,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::ForeignModel);
         }
         admitted
-            .validate_installed_operation(&self.runtime.installed_operations)
+            .validate_installed_operation(&self.inner.runtime.installed_operations)
             .map_err(Denial::OperationAdmission)?;
         admitted
             .validate_current_authority()
@@ -136,7 +136,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::ForeignRecording);
         }
         let current = self
-            .runtime
+            .inner.runtime
             .product_runtime
             .admit_product_occurrence(restriction.original_source().occurrence())
             .map_err(Denial::CandidateSelection)?;
@@ -144,7 +144,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::HeadDiverged);
         }
         drop(current);
-        confirm_document_head(self, phase, &restriction.source, ()).map_err(|(_, denial)| denial)
+        confirm_document_head(self.inner(), phase, &restriction.source, ()).map_err(|(_, denial)| denial)
     }
 }
 

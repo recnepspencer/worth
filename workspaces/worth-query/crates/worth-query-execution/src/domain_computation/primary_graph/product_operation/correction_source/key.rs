@@ -7,19 +7,7 @@ use worth_query_declaration::facade::{
     },
 };
 
-/// Canonically encoded client command key. This descriptive value grants no execution authority.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryCorrectionCommandKey {
-    canonical: ApplicationCanonicalIdentity,
-}
-impl WorthQueryCorrectionCommandKey {
-    pub fn identity(&self) -> [u8; 32] {
-        self.canonical.identity()
-    }
-    pub fn canonical(&self) -> ApplicationCanonicalIdentity {
-        self.canonical
-    }
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::correction_source::WorthQueryCorrectionCommandKey;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn correction_command_key<C: ApplicationCorrectionBinding<Schema>>(
@@ -75,6 +63,9 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             ),
         )
         .map_err(Denial::CommandKey)?;
-        Ok(WorthQueryCorrectionCommandKey { canonical })
+        Ok(WorthQueryCorrectionCommandKey::from_canonical(
+            worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
+            canonical,
+        ))
     }
 }

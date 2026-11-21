@@ -1,0 +1,142 @@
+//! Fresh Query permission retained across a Clean probe or one graph read.
+
+use worth_query_declaration::facade::application_query::ApplicationQueryDisclosurePosture;
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
+use worth_query_installation::facade::WorthQueryInstalledApplicationQueryAuthorization;
+
+use super::super::basis::WorthQueryApplicationQueryBasisCustody;
+use super::super::controls::WorthQueryAdmittedApplicationQueryControls;
+use super::super::disclosure::compile_disclosure_contract;
+use super::super::disclosure::WorthQueryAdmittedApplicationDisclosureContract;
+use super::super::WorthQueryApplicationAuthorizationWorkEvidence;
+use super::super::WorthQueryApplicationQueryAccessContext;
+use super::super::WorthQueryApplicationQueryAdmissionDenial;
+use super::super::WorthQueryApplicationQueryAdmissionDenialKind;
+use super::source_readmission::PreparedApplicationQuerySourceReadmission;
+use crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts;
+
+use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedPrincipal;
+use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedScope;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use crate::domain_computation::provider_session::WorthQueryPreparedProductReadSessionIdentity;
+
+mod applied_source;
+mod current_ready;
+pub mod fresh;
+mod principal_dependency;
+mod read_authorization;
+pub mod selected_access;
+mod source_parameters;
+mod source_preparation;
+pub use fresh::FreshQueryPermissionStop;
+pub use selected_access::SelectedIssuedAccessRoot;
+
+/// Query-owned permission for the exact prepared source, access and Product.
+/// Its fields cannot be separated into reusable raw decisions by a caller.
+pub struct PreparedApplicationQueryPermission<
+    'a,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+> {
+    pub issuer: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub query:
+        &'a WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+    pub access:
+        WorthQueryApplicationQueryAccessContext<'a, Schema, Principal, PrincipalIdentity, Scope>,
+    pub parameters:
+        worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters,
+    pub controls: WorthQueryAdmittedApplicationQueryControls<'a>,
+    pub basis: WorthQueryApplicationQueryBasisCustody,
+    pub security_basis: Option<WorthQueryApplicationQueryBasisCustody>,
+    pub security_product: crate::basis::WorthQueryProductObservationLease,
+    pub session: WorthQueryPreparedProductReadSessionIdentity,
+    pub disclosure: WorthQueryAdmittedApplicationDisclosureContract,
+    pub authorization: WorthQueryRetainedAuthorizationDecisionFacts,
+    pub authorization_work: WorthQueryApplicationAuthorizationWorkEvidence,
+    pub selected_access: SelectedIssuedAccessRoot<'a, Schema, Principal, PrincipalIdentity, Scope>,
+    pub shape: super::super::execution_shape::PreparedOneShotShape<'a>,
+}
+
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[allow(clippy::too_many_arguments)]
+    fn prepare_application_query_permission<
+        'a,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >(
+        &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        query: &'a WorthQueryInstalledApplicationQuery<
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Scope,
+        >,
+        access: WorthQueryApplicationQueryAccessContext<
+            'a,
+            Schema,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        source: PreparedApplicationQuerySourceReadmission<'a, Schema>,
+        selected: &'a WorthQuerySelectedProductOperation<'_, Schema>,
+        truth: Option<&'a WorthQuerySelectedProductOperation<'_, Schema>>,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        issued_principal: &'a WorthQueryIssuedSelectedPrincipal<
+            '_,
+            '_,
+            Schema,
+            Principal,
+            PrincipalIdentity,
+        >,
+        issued_scope: &'a WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope>,
+    ) -> Result<
+        PreparedApplicationQueryPermission<
+            'a,
+            Schema,
+            Query,
+            Parameters,
+            QueryResult,
+            Principal,
+            PrincipalIdentity,
+            Scope,
+        >,
+        WorthQueryApplicationQueryAdmissionDenial,
+    > {
+        let (query_identity, parameters, controls) = source.into_permission_parts();
+        self.prepare_application_query_permission_with_parameters(
+            execution,
+            query,
+            access,
+            &query_identity,
+            parameters,
+            controls,
+            selected,
+            truth,
+            request,
+            issued_principal,
+            issued_scope,
+            &mut super::super::ApplicationQueryNativeAccess::acquire(),
+        )
+    }
+}
+
+fn denial(
+    kind: WorthQueryApplicationQueryAdmissionDenialKind,
+    subject: &str,
+) -> WorthQueryApplicationQueryAdmissionDenial {
+    WorthQueryApplicationQueryAdmissionDenial::new(kind, subject)
+}

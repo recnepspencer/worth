@@ -15,34 +15,9 @@ use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding
 type Rows<S, B> =
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
-/// Keep the original read, admission and authority causes distinct.
-#[derive(Debug)]
-pub enum WorthQueryHistoryOutputReadDenial {
-    Authority(WorthQueryHistoryNavigationDenial),
-    RecipeCapture(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
-    Admission(WorthQueryApplicationQueryAdmissionDenial),
-    Read(crate::domain_computation::primary_graph::WorthQueryManagedIndexDenial),
-    Control(WorthQueryHistoryOutputControlDenial),
-    Demand(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial),
-    Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
-    Scope(crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial),
-    Resource(worth_relational::facade::mvcc::CompanionPreflightStop),
-    Preparation(worth_relational::facade::transactions::RelationalExecutionDenialCause),
-    Dependencies(
-        crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial,
-    ),
-}
-
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryHistoryOutputControlDenial {
-    ForeignPlan,
-    StaleInstalledQuery,
-    StalePrincipal,
-    Cancelled,
-    DeadlineExceeded,
-    ExpiredBasis,
-    BasisUnavailable,
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::{
+    WorthQueryHistoryOutputControlDenial, WorthQueryHistoryOutputReadDenial,
+};
 
 /// The original completed root read remains tied to its actual live callback.
 /// Readonly rows/receipt cannot manufacture the linear claim source.
@@ -108,7 +83,7 @@ impl<S: ApplicationSchema>
             ));
         }
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(&self.inner.runtime.product_runtime)
             .map_err(|cause| {
                 Denial::Authority(WorthQueryHistoryNavigationDenial::Stopped(cause))
             })?;
@@ -166,18 +141,4 @@ impl<S: ApplicationSchema>
     }
 }
 
-impl From<crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop>
-    for WorthQueryHistoryOutputReadDenial
-{
-    fn from(
-        cause: crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop,
-    ) -> Self {
-        use crate::domain_computation::primary_graph::application_query::SourceQueryObservationStop as Stop;
-        match cause {
-            Stop::Admission(cause) | Stop::Preparation { cause, .. } => Self::Admission(cause),
-            Stop::Principal(cause) => Self::Principal(cause),
-            Stop::Scope(cause) => Self::Scope(cause),
-            cause => Self::Demand(crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial::source_query_stop(cause).demand_stop()),
-        }
-    }
-}
+

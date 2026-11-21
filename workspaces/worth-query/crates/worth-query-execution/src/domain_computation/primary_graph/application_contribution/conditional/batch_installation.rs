@@ -1,10 +1,10 @@
 //! Refusal retains the exact completed prefix and all untouched configurations.
 use super::*;
-pub(super) struct RefusedConditionalConfiguration {
-    pub(super) cause: WorthQueryConditionalRuntimeInstallationDenial,
-    pub(super) installed: Option<InstalledConditionalBinding>,
+pub struct RefusedConditionalConfiguration {
+    pub cause: WorthQueryConditionalRuntimeInstallationDenial,
+    pub installed: Option<InstalledConditionalBinding>,
 }
-pub(in crate::domain_computation::primary_graph) struct RefusedConditionalBatch<
+pub struct RefusedConditionalBatch<
     Schema: ApplicationSchema + 'static,
 > {
     _pending: PendingConditionalRegistry<Schema>,
@@ -13,19 +13,19 @@ pub(in crate::domain_computation::primary_graph) struct RefusedConditionalBatch<
     cause: WorthQueryConditionalRuntimeInstallationDenial,
 }
 impl<Schema: ApplicationSchema + 'static> RefusedConditionalBatch<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn reason(
+    pub fn reason(
         &self,
     ) -> &WorthQueryConditionalRuntimeInstallationDenial {
         &self.cause
     }
-    pub(in crate::domain_computation::primary_graph) fn into_cause(
+    pub fn into_cause(
         self,
     ) -> WorthQueryConditionalRuntimeInstallationDenial {
         self.cause
     }
 }
 impl<Schema: ApplicationSchema + 'static> PendingConditionalRegistry<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn install_all(
+    pub fn install_all(
         mut self,
         producers: &WorthQueryInstalledApplicationProducerRegistry<Schema>,
         installation: &mut WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
@@ -53,9 +53,9 @@ impl<Schema: ApplicationSchema + 'static> PendingConditionalRegistry<Schema> {
                 }
             }
         }
-        Ok(WorthQueryInstalledApplicationConditionalRegistry {
-            entries: Arc::new(completed),
-            marker: PhantomData,
-        })
+        Ok(WorthQueryInstalledApplicationConditionalRegistry::from_entries(
+            worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
+            completed,
+        ))
     }
 }

@@ -27,7 +27,7 @@ where
     {
         let runtime = program.backing.runtime();
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(&runtime.inner.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(Kind::ExecutionRequest(cause.into()), "")
             })?;
@@ -35,9 +35,9 @@ where
             <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>() {
             return Err(WorthQueryOutputDemandDenial::new(Kind::ForeignDemand, ""));
         }
-        runtime.runtime.output_demands.validate_owned_root_kind(prepared,
+        runtime.inner.runtime.output_demands.validate_owned_root_kind(prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()))?;
         self.admitted
-            .retain_fulfilled_root(runtime, &execution, prepared, receipt, settlement)
+            .retain_fulfilled_root(runtime.inner(), &execution, prepared, receipt, settlement)
     }
 }

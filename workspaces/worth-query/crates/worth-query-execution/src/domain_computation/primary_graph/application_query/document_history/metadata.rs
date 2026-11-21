@@ -121,7 +121,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             WorthQueryApplicationQueryAccessContext::new(self.plan.principal, self.plan.scope);
         self.metadata = Some(
             prepare_governed_access(
-                runtime,
+                runtime.inner(),
                 self.plan.query,
                 &access,
                 capability,
@@ -173,7 +173,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::InstalledBindingMismatch);
         }
         let execution = phase
-            .checked_execution_request_for(&runtime.runtime.product_runtime)
+            .checked_execution_request_for(&runtime.inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let contract =
             compile_document_history_disclosure_contract(self.history).map_err(|cause| {
@@ -185,7 +185,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
                 ))
             })?;
         let metadata = admit_metadata::<H, _, _, _, _, _, _, _>(
-            runtime,
+            runtime.inner(),
             &execution,
             &mut self.plan,
             contract,

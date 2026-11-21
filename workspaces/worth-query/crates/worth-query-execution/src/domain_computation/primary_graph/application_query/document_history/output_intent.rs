@@ -163,8 +163,8 @@ impl WorthQueryHistoryOutputIntent {
         control: &HistoryOutputControlPlan<'_, S, B>,
     ) -> Result<(), WorthQueryHistoryOutputReadDenial> {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
-        validate_execution_plan(runtime, control).map_err(control_denial)?;
-        validate_execution_lifetimes(runtime, &control.controls, control.principal)
+        validate_execution_plan(runtime.inner(), control).map_err(control_denial)?;
+        validate_execution_lifetimes(runtime.inner(), &control.controls, control.principal)
             .map_err(control_denial)?;
         let _comparison = fund_comparison(
             execution,
@@ -211,8 +211,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         control: HistoryOutputControlPlan<'_, S, B>,
     ) -> Result<WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputReadDenial> {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
-        validate_execution_plan(self, &control).map_err(control_denial)?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
+        validate_execution_plan(self.inner(), &control).map_err(control_denial)?;
+        validate_execution_lifetimes(self.inner(), &control.controls, control.principal)
             .map_err(control_denial)?;
         if !std::ptr::eq(self, document.application())
             || control.query.identity() != binding.query().identity()
@@ -225,7 +225,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             ));
         }
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(&self.inner.runtime.product_runtime)
             .map_err(|cause| {
                 ReadDenial::Authority(WorthQueryHistoryNavigationDenial::Stopped(cause))
             })?;

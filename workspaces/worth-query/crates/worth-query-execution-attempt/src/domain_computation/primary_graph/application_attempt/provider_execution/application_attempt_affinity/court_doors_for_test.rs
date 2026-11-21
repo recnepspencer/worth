@@ -25,7 +25,9 @@ impl WorthQueryApplicationAttemptBasis {
     #[doc(hidden)]
     pub fn take_original_completion_for_test(
         &mut self,
-    ) -> crate::domain_computation::primary_graph::OriginalCompletionReceiver {
-        self.take_original_completion()
+    ) -> crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver {
+        self.original_completion
+            .take()
+            .expect("only the active original progression receives its result")
     }
 }

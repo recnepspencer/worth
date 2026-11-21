@@ -232,7 +232,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?
             .prepare_shared_query_basis().map_err(|(_, cause)| Denial::Resource(cause))?;
         let reader = SourceQueryReaderAccess::new(
-            runtime,
+            runtime.inner(),
             &selected,
             Some(&current),
             Some(authority.producer_invocation().for_family(meaning.family)),

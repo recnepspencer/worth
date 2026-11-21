@@ -31,7 +31,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 _ => unreachable!("definition preparation does not publish"),
             })?;
         Ok(WorthQueryAdmittedApplicationConditionalDefinition::new(
-            self,
+            self.inner(),
             product,
             *handle.binding_identity_digest(),
             anchor,
@@ -55,13 +55,16 @@ pub(super) fn definition_request<Schema: ApplicationSchema, Node: 'static, Clock
 where
     Provider: WorthQueryAuthoredHostConditionalPredicateProvider<Node>,
 {
-    let bridge_root = application.runtime.bridge.conditional_operations();
+    let bridge_root = application.inner.runtime.bridge.conditional_operations();
     let bridge = bridge_root
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let (predecessor, authored) = if let Some(route) = application
         .conditional_cleanup
+        .routes
         .definitions
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .route(handle.binding_identity(), handle.lease())
     {
         (
@@ -74,6 +77,7 @@ where
     } else {
         let operation = application
             .conditional_cleanup
+            .routes
             .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -116,13 +120,3 @@ where
     };
     Ok((predecessor, request))
 }
-
-impl std::fmt::Display for WorthQueryApplicationConditionalDefinitionAdmissionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "conditional definition admission refused: {self:?}"
-        )
-    }
-}
-impl std::error::Error for WorthQueryApplicationConditionalDefinitionAdmissionDenial {}

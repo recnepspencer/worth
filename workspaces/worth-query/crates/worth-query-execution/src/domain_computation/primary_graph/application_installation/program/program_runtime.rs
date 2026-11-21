@@ -194,7 +194,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             let barrier = match self
                 .backing
                 .runtime()
-                .runtime
+                .inner.runtime
                 .product_runtime
                 .activations
                 .begin_program_retirement(revision)
@@ -209,7 +209,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             let occurrences = match self
                 .backing
                 .runtime()
-                .runtime
+                .inner.runtime
                 .product_runtime
                 .activations
                 .live_occurrences()
@@ -226,7 +226,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                 let selected = match self
                     .backing
                     .runtime()
-                    .runtime
+                    .inner.runtime
                     .product_runtime
                     .admit_product_occurrence(occurrence)
                 {
@@ -274,7 +274,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                     }
                 };
                 let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution,
-                    self.backing.runtime(),
+                    self.backing.runtime().inner(),
                     selected.relational_basis(),
                 ) {
                     Ok(inspection) => inspection,
@@ -337,29 +337,7 @@ where
     }
 }
 
-/// A retirement's inventory denial or the exact request that stopped reading it.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryProgramSupportRetirementFailure {
-    Durability(super::super::super::query_obligations::QueryObligationDenial),
-    Policy(worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial),
-    ReadExecution {
-        stop: Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-        >,
-        inventory:
-            worth_query_installation::facade::WorthQueryProgramSupportPartialRetirementInventory,
-    },
-}
-impl From<worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial>
-    for WorthQueryProgramSupportRetirementFailure
-{
-    fn from(
-        denial: worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial,
-    ) -> Self {
-        Self::Policy(denial)
-    }
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::application_installation::WorthQueryProgramSupportRetirementFailure;
 
 impl<Schema, Program> Clone for WorthQueryProgramApplicationRuntime<Schema, Program> {
     fn clone(&self) -> Self {

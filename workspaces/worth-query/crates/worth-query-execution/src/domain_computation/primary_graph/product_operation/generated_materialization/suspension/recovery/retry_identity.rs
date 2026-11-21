@@ -9,17 +9,17 @@ where
     Schema: ApplicationSchema,
     Producer: WorthQueryApplicationProducerBinding<Schema>,
 {
-    if retry.producer.runtime_authority != runtime.runtime.authority_identity().as_u64()
-        || retry.producer.schema != runtime.installed_schema.binding_identity()
+    if retry.producer.runtime_authority != runtime.inner.runtime.authority_identity().as_u64()
+        || retry.producer.schema != runtime.inner.installed_schema.binding_identity()
         || retry.producer.binding_type != TypeId::of::<Producer>()
         || retry.producer.binding_identity != Producer::IDENTITY
         || retry.producer.provider_identity != Producer::Provider::SEMANTIC_IDENTITY
-        || runtime.installed_producers.provider::<Producer>().is_none()
+        || runtime.inner.installed_producers.provider::<Producer>().is_none()
     {
         return false;
     }
     runtime
-        .runtime
+        .inner.runtime
         .primary_provider
         .graph
         .output_lineage

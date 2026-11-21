@@ -87,7 +87,7 @@ impl WorthQueryWorkflowReadTarget {
         if !self
             .basis
             .0
-            .belongs_to_selected_occurrence(current.application(), data.product().observation())
+            .belongs_to_selected_occurrence(current.application().inner(), data.product().observation())
             || !std::ptr::eq(current.application(), data.application())
             || current.product().branch_identity() != data.product().branch_identity()
             || self.basis.selected_commit() != data.product().selected_commit()
@@ -97,11 +97,11 @@ impl WorthQueryWorkflowReadTarget {
             return Err(Denial::PolicyMismatch);
         }
         let execution = phase
-            .execution_request_for(&current.application().runtime.product_runtime)
+            .execution_request_for(&current.application().inner.runtime.product_runtime)
             .map_err(Denial::Phase)?;
         let graph = current
             .application()
-            .runtime
+            .inner.runtime
             .primary_graph()
             .ok_or(Denial::BasisUnavailable)?;
         graph

@@ -136,7 +136,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             && profile.root == crate::equality_type_id::EqualityTypeId::of::<R>().into_external()
             && profile.program == *self.installed_program().revision()
             && original
-                .belongs_to_selected_occurrence(self.runtime(), original.product_observation())
+                .belongs_to_selected_occurrence(self.runtime().inner(), original.product_observation())
             && actual.owner_identity() == original.product_observation().owner_identity()
             && actual.branch_identity() == original.product_observation().branch_identity()
             && actual.lifecycle_incarnation()

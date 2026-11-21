@@ -22,7 +22,7 @@ impl PendingDocumentRead {
         crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
     > {
         crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
-            runtime,
+            runtime.inner(),
             self.product.retained_clone(),
         )
     }
@@ -58,7 +58,7 @@ impl PendingDocumentRead {
         if self.identity().product_branch() != branch {
             return Err((value, Denial::HeadDiverged));
         }
-        confirm_document_head(runtime, phase, &self.product, value)
+        confirm_document_head(runtime.inner(), phase, &self.product, value)
     }
 
     /// Native/World checks run outside the cell. Rechecking the same physical

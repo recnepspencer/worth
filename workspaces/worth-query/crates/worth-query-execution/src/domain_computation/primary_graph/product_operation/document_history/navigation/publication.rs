@@ -41,7 +41,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         publication: WorthQueryPreparedProductPublication,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
         let execution =
-            match phase.checked_execution_request_for(&self.application.runtime.product_runtime) {
+            match phase.checked_execution_request_for(&self.application.inner.runtime.product_runtime) {
                 Ok(execution) => execution,
                 Err(cause) => {
                     self.phase = NavigationPhase::Publication {
@@ -96,7 +96,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .finish(committed)
                 .expect("World performed the prepared selection envelope");
             self.application
-                .runtime
+                .inner.runtime
                 .primary_provider
                 .graph
                 .output_lineage
@@ -111,7 +111,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         let exact = crate::basis::WorthQueryProductObservationLease::new(observation);
         if self.output_profile.is_some() || self.ownership.is_some() {
             let original = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product_with_memory(
-                self.application, exact.retained_clone(), self.output_source_memory.take(),
+                self.application.inner(), exact.retained_clone(), self.output_source_memory.take(),
             );
             let selected = self.ownership.map(|_| {
                 self.source
@@ -155,12 +155,12 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         WorthQueryProductUnpublishedApplication::new(
             effects,
             self.application
-                .runtime
+                .inner.runtime
                 .product_runtime
                 .owner
                 .recovery_port(),
             self.application
-                .runtime
+                .inner.runtime
                 .primary_provider
                 .unpublished_idempotency_disposition(),
         )
@@ -177,11 +177,11 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         use WorthQueryHistoryNavigationDenial as Denial;
         let prepared = (|| {
             let execution = phase
-                .checked_execution_request_for(&self.application.runtime.product_runtime)
+                .checked_execution_request_for(&self.application.inner.runtime.product_runtime)
                 .map_err(Denial::Stopped)?;
             let product = self
                 .application
-                .runtime
+                .inner.runtime
                 .product_runtime
                 .admit_product_occurrence(candidate.branch().occurrence())
                 .map_err(Denial::ProductAdmission)?;
@@ -224,7 +224,7 @@ PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
             }
         };
         let execution =
-            match phase.checked_execution_request_for(&self.application.runtime.product_runtime) {
+            match phase.checked_execution_request_for(&self.application.inner.runtime.product_runtime) {
                 Ok(execution) => execution,
                 Err(cause) => {
                     drop(publication);

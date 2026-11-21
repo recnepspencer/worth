@@ -111,6 +111,23 @@ impl worth_query_execution_runtime::facade::ports::RelationalSourceInvalidationP
     fn into_any_arc(self: Arc<Self>) -> Arc<dyn std::any::Any + Send + Sync> {
         self
     }
+
+    fn latest_position_for_test(
+        &self,
+    ) -> Option<worth_relational::facade::publication::PatchStreamPosition> {
+        SourceInvalidationOwner::latest_position(self)
+    }
+
+    fn touched_commits_after_for_test(
+        &self,
+        branch: &worth_relational::facade::history::BranchId,
+        cursor: Option<worth_relational::facade::publication::PatchStreamPosition>,
+        ceiling: Option<worth_relational::facade::history::CommitId>,
+        limit: usize,
+        interest: super::commit_touches::CommitTouchInterest<'_>,
+    ) -> super::commit_touches::TouchedCommits {
+        SourceInvalidationOwner::touched_commits_after(self, branch, cursor, ceiling, limit, interest)
+    }
 }
 
 mod court_doors_for_test;

@@ -1,0 +1,377 @@
+use super::{
+    PreparedWorkflowAdvance, RequiredWorkflowCondition, RequiredWorkflowOperation,
+    WorkflowProgressOutcome,
+};
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryApplicationUncommitted, WorthQueryPrimaryGraphApplicationRuntime,
+};
+use worth_query_installation::facade::ApplicationSchema;
+
+#[path = "transition_replay/condition.rs"]
+pub mod condition;
+#[path = "transition_replay/descriptor_retention.rs"]
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::transition_replay::descriptor_retention;
+pub use descriptor_retention::PreparedWorkflowTransitionReplays;
+
+pub trait PreparedWorkflowAdvanceTransitionReplayExt<Schema, Operation, Input, Scope>: Sized
+
+{
+    fn resolve_transition_replay(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+;
+    fn resolve_operation_replay<
+        Binding,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        required: &RequiredWorkflowOperation,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        recovery: Option<
+            &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+        >,
+    ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+;
+}
+
+impl<Schema, Operation, Input, Scope> PreparedWorkflowAdvanceTransitionReplayExt<Schema, Operation, Input, Scope> for PreparedWorkflowAdvance<Schema, Operation, Input, Scope>
+
+{
+    fn resolve_transition_replay(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+    {
+        let (admission, approval_identity, replays) = match self {
+            Self::Transition {
+                program,
+                approval_identity,
+                approval_authentication,
+                replays,
+                ..
+            } => (
+                &program.read_set.admission,
+                *approval_identity,
+                approval_authentication
+                    .as_ref()
+                    .and_then(|authentication| authentication.trusted_replays())
+                    .unwrap_or(replays),
+            ),
+            Self::AwaitingAssessment(prepared) => (
+                &prepared.admitted.read_set().admission,
+                None,
+                &prepared.replays,
+            ),
+            Self::AwaitingCondition(prepared) => (
+                &prepared.admitted.read_set().admission,
+                None,
+                &prepared.replays,
+            ),
+            Self::AwaitingOperation(prepared) => (
+                &prepared.admitted.read_set().admission,
+                None,
+                &prepared.replays,
+            ),
+            Self::AwaitingEvidence {
+                read_set, replays, ..
+            }
+            | Self::AwaitingProposal {
+                read_set, replays, ..
+            }
+            | Self::AwaitingApproval {
+                read_set, replays, ..
+            }
+            | Self::ReplayOnly {
+                read_set, replays, ..
+            } => (
+                &read_set.admission,
+                match self {
+                    Self::ReplayOnly {
+                        approval_identity, ..
+                    } => *approval_identity,
+                    _ => None,
+                },
+                replays,
+            ),
+        };
+        if let Some(probe_identity) = replays.probe_identity {
+            let probe = runtime.resolve_admitted_application_idempotency_with_request(
+                execution,
+                admission,
+                idempotency.bind_workflow_transition(&probe_identity),
+            )?;
+            match probe.into_resolution() {
+                WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
+            WorthQueryApplicationIdempotencyResolution::Unseen => return Ok(None),
+                WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                    )))
+                }
+                WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+                    )))
+                }
+                WorthQueryApplicationIdempotencyResolution::IntentDrift
+                | WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(_) => {}
+            }
+        }
+        let replays = replays.materialize();
+        if replays.is_empty() {
+            return Ok(None);
+        }
+        let mut drift = false;
+        let bindings = replays.iter().map(|replay| {
+            approval_identity.map_or_else(
+                || idempotency.bind_workflow_transition(&replay.identity_bytes),
+                |approval| {
+                    idempotency
+                        .bind_workflow_transition(&replay.identity_bytes)
+                        .bind_workflow_approval(&approval)
+                },
+            )
+        });
+        let resolutions =
+            runtime.resolve_admitted_application_idempotencies(execution, admission, bindings)?;
+        for resolution in resolutions {
+            match resolution.into_resolution() {
+                WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
+            WorthQueryApplicationIdempotencyResolution::Unseen => {}
+                WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                    )))
+                }
+                WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                    return Ok(Some(WorkflowProgressOutcome::Application(
+                        WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+                    )))
+                }
+                WorthQueryApplicationIdempotencyResolution::IntentDrift => drift = true,
+                WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+                    return Ok(Some(WorkflowProgressOutcome::RecoveredCommitted(receipt)))
+                }
+            }
+        }
+        Ok(drift.then(|| {
+            WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
+                WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
+            ))
+        }))
+    }
+
+    /// Projects exact prior operation settlement; an unseen confirmation key is sufficient
+    /// only for installed local effects whose original receipt created that transition.
+    fn resolve_operation_replay<
+        Binding,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        required: &RequiredWorkflowOperation,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        recovery: Option<
+            &crate::domain_computation::application_aftermath::WorthQueryRecoverySafeRetryAdmission,
+        >,
+    ) -> Result<Option<WorkflowProgressOutcome>, WorthQueryApplicationIdempotencyResolutionDenial>
+    where
+        Schema: ApplicationSchema,
+        Operation: 'static,
+        Input: Clone + Send + Sync + 'static,
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+    {
+        let (admission, branch, locator, replays) = match self {
+            Self::Transition {
+                program,
+                transition_identity_locator,
+                replays,
+                ..
+            } => (
+                &program.read_set.admission,
+                program.read_set.lease.product().product_branch(),
+                transition_identity_locator,
+                replays,
+            ),
+            Self::AwaitingAssessment(prepared) => (
+                &prepared.admitted.read_set().admission,
+                prepared
+                    .admitted
+                    .read_set()
+                    .lease
+                    .product()
+                    .product_branch(),
+                &prepared.layout.transition.identity,
+                &prepared.replays,
+            ),
+            Self::AwaitingCondition(prepared) => (
+                &prepared.admitted.read_set().admission,
+                prepared
+                    .admitted
+                    .read_set()
+                    .lease
+                    .product()
+                    .product_branch(),
+                &prepared.layout.transition.identity,
+                &prepared.replays,
+            ),
+            Self::AwaitingOperation(prepared) => (
+                &prepared.admitted.read_set().admission,
+                prepared
+                    .admitted
+                    .read_set()
+                    .lease
+                    .product()
+                    .product_branch(),
+                &prepared.layout.transition.identity,
+                &prepared.replays,
+            ),
+            Self::AwaitingEvidence {
+                read_set,
+                transition_identity_locator,
+                replays,
+                ..
+            }
+            | Self::AwaitingProposal {
+                read_set,
+                transition_identity_locator,
+                replays,
+                ..
+            }
+            | Self::AwaitingApproval {
+                read_set,
+                transition_identity_locator,
+                replays,
+                ..
+            }
+            | Self::ReplayOnly {
+                read_set,
+                transition_identity_locator,
+                replays,
+                ..
+            } => (
+                &read_set.admission,
+                read_set.lease.product().product_branch(),
+                transition_identity_locator,
+                replays,
+            ),
+        };
+        let replays = replays.materialize();
+        let Some(replay) = replays
+            .iter()
+            .find(|replay| replay.identity == required.transition_identity())
+        else {
+            return Ok(None);
+        };
+        let Ok(receipt_identity) =
+            super::super::operation::validate_operation_receipt::<Schema, Binding>(
+                runtime,
+                required,
+                admission.scope_entity_id(),
+                branch,
+                receipt,
+                recovery,
+            )
+        else {
+            return Ok(None);
+        };
+        let receipt_identity = receipt_identity.identity();
+        if replay.operation_receipt_identity != Some(receipt_identity) {
+            return Ok(None);
+        }
+        let binding = idempotency
+            .bind_workflow_transition(&replay.identity_bytes)
+            .bind_workflow_operation(&receipt_identity);
+        let [resolution] = runtime
+            .resolve_admitted_application_idempotencies(execution, admission, [binding])?
+            .try_into()
+            .expect("one operation replay binding returns one resolution");
+        let project_original = |receipt| {
+            runtime
+                .runtime
+                .primary_provider
+                .graph
+                .with_runtime(execution, |relational| {
+                    super::project(
+                        execution,
+                        relational,
+                        receipt,
+                        replay.identity.clone(),
+                        locator.clone(),
+                        replay.node_path.clone(),
+                        replay.terminal,
+                        None,
+                        None,
+                        Some(receipt_identity),
+                        true,
+                    )
+                })
+        };
+        Ok(match resolution.into_resolution() {
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
+            WorthQueryApplicationIdempotencyResolution::Unseen => {
+                // Local effects settle this original transition atomically. A fresh
+                // confirmation key observes that settlement without recording a command.
+                let local = receipt.dispatch_outbox().is_none();
+                let original_guarded_key = receipt
+                    .authority_binding()
+                    .idempotency_binding()
+                    .matches_guarded_workflow_effect(required.transition_identity_bytes());
+                if local
+                    && original_guarded_key
+                    && super::transition_entity_in_receipt(receipt, &replay.identity, locator)
+                        .is_some()
+                {
+                    Some(project_original(receipt.clone()))
+                } else {
+                    None
+                }
+            }
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(owner) => {
+                Some(WorkflowProgressOutcome::Application(
+                    WorthQueryApplicationUncommitted::ProductUnpublished(owner),
+                ))
+            }
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(owner) => {
+                Some(WorkflowProgressOutcome::Application(
+                    WorthQueryApplicationUncommitted::ProductPreparationPending(owner),
+                ))
+            }
+            WorthQueryApplicationIdempotencyResolution::IntentDrift => Some(
+                WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(
+                    WorthQueryApplicationCommitDenial::idempotency_intent_drift(),
+                )),
+            ),
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => {
+                return Ok(Some(WorkflowProgressOutcome::RecoveredCommitted(receipt)))
+            }
+        })
+    }
+}

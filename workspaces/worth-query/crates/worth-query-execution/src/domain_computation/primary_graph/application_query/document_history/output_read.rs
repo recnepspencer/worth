@@ -46,8 +46,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         authority
             .validate(phase, self, request)
             .map_err(ReadDenial::Authority)?;
-        validate_execution_plan(self, control).map_err(control_denial)?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
+        validate_execution_plan(self.inner(), control).map_err(control_denial)?;
+        validate_execution_lifetimes(self.inner(), &control.controls, control.principal)
             .map_err(control_denial)?;
         let access = WorthQueryApplicationQueryAccessContext::new(control.principal, control.scope);
         if control.query.identity() != binding.query().identity()
@@ -86,7 +86,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let request = control.controls.request_scope();
         self.validate_history_output_control(phase, authority, binding, &control)?;
         let access = WorthQueryApplicationQueryAccessContext::new(control.principal, control.scope);
-        let execution = phase.checked_execution_request_for(&self.runtime.product_runtime)
+        let execution = phase.checked_execution_request_for(&self.inner.runtime.product_runtime)
             .map_err(|cause| ReadDenial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         let producer = retained.original_settled_producer().cloned();
         let (_, product, basis) = retained.into_parts();
@@ -114,12 +114,12 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let result = self
             .execute_application_query_binding_one_shot(phase, binding, external, plan)
             .map_err(ReadDenial::Read)?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
+        validate_execution_lifetimes(self.inner(), &control.controls, control.principal)
             .map_err(control_denial)?;
         let result = authority
             .confirm_read(phase, self, request, result)
             .map_err(ReadDenial::Authority)?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
+        validate_execution_lifetimes(self.inner(), &control.controls, control.principal)
             .map_err(control_denial)?;
         Ok(result)
     }

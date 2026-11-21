@@ -173,7 +173,7 @@ where
         )?;
         let projection = runtime
             .runtime()
-            .mutation_projection
+            .inner.mutation_projection
             .retain_for_installation();
         Ok((runtime, projection))
     }

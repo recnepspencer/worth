@@ -11,7 +11,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     ) -> Result<std::collections::BTreeSet<worth_relational::facade::history::CommitId>, Denial>
     {
         let application = self.runtime.runtime();
-        let owner = &application.runtime.product_runtime.owner;
+        let owner = &application.inner.runtime.product_runtime.owner;
         let recovery = owner.recovery_port();
         let mut commits = std::collections::BTreeSet::new();
         let mut after = None;

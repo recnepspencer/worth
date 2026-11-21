@@ -38,7 +38,7 @@ impl InspectionSubject<'_> {
                     && original.source.retained_scope_selector().subject() == scope
             }
             Self::Source(original) => {
-                original.runtime == runtime.runtime.authority_identity().as_u64()
+                original.runtime == runtime.inner.runtime.authority_identity().as_u64()
                     && original.disclosure.schema()
                         == contract.graph_obligations().binding_identity()
                     && original

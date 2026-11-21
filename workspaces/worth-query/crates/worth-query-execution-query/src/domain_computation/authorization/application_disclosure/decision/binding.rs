@@ -1,0 +1,226 @@
+//! Exact session correspondence for each real application read subject.
+use super::*;
+use std::sync::Arc;
+use worth_query_installation::facade::{
+    WorthQueryInstalledResourceAccessContract, WorthQueryResourceAccessPurpose,
+};
+
+enum DisclosureSubject {
+    Query(WorthQueryInstalledApplicationQueryIdentity),
+    Resource(Arc<WorthQueryInstalledResourceAccessContract>),
+    Inspection(Arc<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>),
+}
+
+pub struct WorthQueryApplicationGovernanceBinding {
+    runtime: WorthQueryRuntimeAuthorityIdentity,
+    subject: DisclosureSubject,
+    parameters: CanonicalDigestId,
+    principal: EntityId,
+    scope: EntityId,
+    session: WorthQueryGraphWorkSessionIdentity,
+    managed_run: WorthQueryGraphWorkManagedRunIdentity,
+    branch: BranchId,
+    basis: crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+    provider: String,
+}
+
+impl WorthQueryApplicationGovernanceBinding {
+    pub fn is_resource(&self) -> bool {
+        matches!(&self.subject, DisclosureSubject::Resource(_))
+    }
+    pub fn from_session(
+        graph_work: &WorthQueryManagedGraphWorkSession,
+        query: WorthQueryInstalledApplicationQueryIdentity,
+        parameters: CanonicalDigestId,
+        principal: EntityId,
+        scope: EntityId,
+    ) -> Self {
+        Self::bound(
+            graph_work,
+            DisclosureSubject::Query(query),
+            parameters,
+            principal,
+            scope,
+            graph_work
+                .query_basis()
+                .expect("application Query disclosure requires a Query session")
+                .clone(),
+        )
+    }
+
+    pub fn from_resource_session(
+        graph_work: &WorthQueryManagedGraphWorkSession,
+        contract: &Arc<WorthQueryInstalledResourceAccessContract>,
+        parameters: CanonicalDigestId,
+        principal: EntityId,
+        scope: EntityId,
+    ) -> Option<Self> {
+        let (actual, basis) = graph_work.resource_read_binding()?;
+        if !Arc::ptr_eq(actual, contract) {
+            return None;
+        }
+        Some(Self::bound(
+            graph_work,
+            DisclosureSubject::Resource(Arc::clone(actual)),
+            parameters,
+            principal,
+            scope,
+            basis.clone(),
+        ))
+    }
+
+    pub fn inspection_backing_bytes(
+        graph_work: &WorthQueryManagedGraphWorkSession,
+    ) -> Option<u64> {
+        let (_, basis) = graph_work.inspection_binding()?;
+        let names = graph_work
+            .branch()
+            .relational()
+            .0
+            .len()
+            .checked_add(graph_work.provider().len())?;
+        basis
+            .retained_clone_heap_bytes()?
+            .checked_add(u64::try_from(names).ok()?)
+    }
+
+    pub fn from_inspection_session(
+        graph_work: &WorthQueryManagedGraphWorkSession,
+        target: &Arc<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>,
+        parameters: CanonicalDigestId,
+        principal: EntityId,
+        scope: EntityId,
+    ) -> Option<Self> {
+        let (actual, basis) = graph_work.inspection_binding()?;
+        let actual = actual
+            .as_any()
+            .downcast_ref::<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>()
+            .expect("inspection target is WorthQueryApplicationInspectionTarget");
+        if !actual.admits_member_subject(target, scope)
+            || graph_work.principal() != principal
+            || graph_work.entity_access_context() != Some(actual.original_subject())
+        {
+            return None;
+        }
+        Some(Self::bound(
+            graph_work,
+            DisclosureSubject::Inspection(Arc::clone(target)),
+            parameters,
+            principal,
+            scope,
+            basis.clone(),
+        ))
+    }
+
+    pub fn is_inspection(&self) -> bool {
+        matches!(&self.subject, DisclosureSubject::Inspection(_))
+    }
+
+    pub fn matches_inspection(
+        &self,
+        graph_work: &WorthQueryManagedGraphWorkSession,
+        target: &Arc<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>,
+        parameters: &CanonicalDigestId,
+        principal: EntityId,
+        scope: EntityId,
+    ) -> bool {
+        let Some((actual, basis)) = graph_work.inspection_binding() else {
+            return false;
+        };
+        let actual = actual
+            .as_any()
+            .downcast_ref::<crate::domain_computation::primary_graph::causal_inspection::WorthQueryApplicationInspectionTarget>()
+            .expect("inspection target is WorthQueryApplicationInspectionTarget");
+        matches!(&self.subject, DisclosureSubject::Inspection(retained) if Arc::ptr_eq(retained, target))
+            && actual.admits_member_subject(target, scope)
+            && graph_work.entity_access_context() == Some(actual.original_subject())
+            && basis == &self.basis
+            && self.matches_session(graph_work)
+            && &self.parameters == parameters
+            && self.principal == principal
+            && self.scope == scope
+    }
+
+    fn bound(
+        graph_work: &WorthQueryManagedGraphWorkSession,
+        subject: DisclosureSubject,
+        parameters: CanonicalDigestId,
+        principal: EntityId,
+        scope: EntityId,
+        basis: crate::domain_computation::primary_graph::WorthQueryApplicationBasisIdentity,
+    ) -> Self {
+        Self {
+            runtime: graph_work.runtime_authority(),
+            subject,
+            parameters,
+            principal,
+            scope,
+            session: graph_work.identity(),
+            managed_run: graph_work.managed_run_identity(),
+            branch: graph_work.branch().relational().clone(),
+            basis,
+            provider: graph_work.provider().to_string(),
+        }
+    }
+
+    pub fn matches(
+        &self,
+        graph_work: &WorthQueryManagedGraphWorkSession,
+        runtime: WorthQueryRuntimeAuthorityIdentity,
+        query: &WorthQueryInstalledApplicationQueryIdentity,
+        parameters: &CanonicalDigestId,
+        principal: EntityId,
+        scope: EntityId,
+    ) -> bool {
+        self.readmission_matches(runtime, query, parameters, principal, scope)
+            && self.matches_session(graph_work)
+            && graph_work.query_basis() == Some(&self.basis)
+    }
+
+    pub fn readmission_matches(
+        &self,
+        runtime: WorthQueryRuntimeAuthorityIdentity,
+        query: &WorthQueryInstalledApplicationQueryIdentity,
+        parameters: &CanonicalDigestId,
+        principal: EntityId,
+        scope: EntityId,
+    ) -> bool {
+        self.runtime == runtime
+            && matches!(&self.subject, DisclosureSubject::Query(actual) if actual == query)
+            && &self.parameters == parameters
+            && self.principal == principal
+            && self.scope == scope
+    }
+
+    pub fn matches_resource(
+        &self,
+        graph_work: &WorthQueryManagedGraphWorkSession,
+        contract: &Arc<WorthQueryInstalledResourceAccessContract>,
+        purpose: WorthQueryResourceAccessPurpose,
+        parameters: &CanonicalDigestId,
+        principal: EntityId,
+        scope: EntityId,
+    ) -> bool {
+        let Some((actual, basis)) = graph_work.resource_read_binding() else {
+            return false;
+        };
+        matches!(&self.subject, DisclosureSubject::Resource(retained) if Arc::ptr_eq(retained, contract))
+            && Arc::ptr_eq(actual, contract)
+            && contract.purpose() == purpose
+            && basis == &self.basis
+            && self.matches_session(graph_work)
+            && &self.parameters == parameters
+            && self.principal == principal
+            && self.scope == scope
+    }
+
+    fn matches_session(&self, graph_work: &WorthQueryManagedGraphWorkSession) -> bool {
+        self.runtime == graph_work.runtime_authority()
+            && self.session == graph_work.identity()
+            && self.managed_run == graph_work.managed_run_identity()
+            && self.branch == *graph_work.branch().relational()
+            && self.provider == graph_work.provider()
+    }
+}
+
+mod court_doors_for_test;

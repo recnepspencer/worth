@@ -10,7 +10,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(&self.inner.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(restoration_failure(
@@ -28,7 +28,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         } = completed;
         if !std::sync::Arc::ptr_eq(
             &suspended.publication.root_identity(),
-            &self.runtime.product_runtime.root_identity(),
+            &self.inner.runtime.product_runtime.root_identity(),
         ) || !suspended.matches_runtime(self)
         {
             return Err(restoration_failure(
@@ -43,7 +43,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         if !suspended.matches_provider_version::<Schema, Producer>()
-            || self.installed_producers.provider::<Producer>().is_none()
+            || self.inner.installed_producers.provider::<Producer>().is_none()
         {
             return Err(restoration_failure(
                 suspended,
@@ -57,7 +57,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         let gate = match self
-            .runtime
+            .inner.runtime
             .product_runtime
             .activations
             .gate(suspended.publication.observation().branch_identity())
@@ -87,7 +87,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             producer,
         } = suspended;
         let prepared = self
-            .runtime
+            .inner.runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |runtime| {

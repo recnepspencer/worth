@@ -1,0 +1,347 @@
+pub use worth_query_execution_attempt::facade::domain_computation::authorization::authorization_revalidation::currentness;
+pub use worth_query_execution_attempt::facade::domain_computation::authorization::authorization_revalidation::observation;
+mod retained_authorization;
+mod supporting_capability;
+mod workflow_approval;
+use worth_query_installation::facade::ApplicationSchema;
+
+use super::{
+    decision_facts::WorthQueryObservedCommitBasis,
+    delegation_admission::WorthQueryCapabilityObservationSource,
+};
+use super::{
+    WorthQueryApplicationCommitAuthorization, WorthQueryCapabilityCommitBasis,
+    WorthQueryCommitAuthorizationBasis, WorthQueryOperationAuthorizationDenial,
+    WorthQueryOperationAuthorizationDenialKind, WorthQueryRetainedAuthorizationDecisionFacts,
+};
+use crate::domain_computation::primary_graph::{
+    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationBranchCommitCoordination,
+    WorthQueryPrimaryGraphApplicationRuntime,
+};
+use currentness::*;
+use worth_query_execution_attempt::facade::domain_computation::authorization::authorization_revalidation::RevalidationObservationAxes;
+pub use observation::WorthQueryAuthorizationRevalidationObservation;
+
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    fn readmit_admitted_non_capability_authorization<Operation, Input, Scope>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        let session = admission.graph_work_session_identity();
+        let operation = admission.operation().to_owned();
+        let product = admission
+            .graph_work()
+            .authorization_product()
+            .map(crate::basis::WorthQueryProductObservationLease::retained_clone)
+            .ok_or_else(|| WorthQueryOperationAuthorizationDenial::inconsistent(&operation))?;
+        let security = self
+            .admit_product_security_basis(execution, &product)
+            .map_err(|denial| super::denial::product_security_basis_denial(denial, &operation))?;
+        let authorization = admission
+            .authorization_mut()
+            .ok_or_else(|| WorthQueryOperationAuthorizationDenial::inconsistent(&operation))?;
+        if !authorization.belongs_to_session(session) {
+            return Err(inconsistent_authorization());
+        }
+        if authorization.capability_authorization().is_some() {
+            return Err(inconsistent_authorization());
+        }
+        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
+        graph
+            .integration_handle()
+            .with_runtime(execution, |runtime| {
+                let snapshot = security.snapshot_handle();
+
+                validate_retained_currentness(
+                    execution,
+                    authorization,
+                    runtime,
+                    snapshot,
+                    self.runtime.authorization.bridge(),
+                )
+            })
+    }
+
+    pub fn authorize_retained_idempotency<
+        'serialization,
+        'admission,
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admission: &'admission mut WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
+        coordination: &'serialization WorthQueryApplicationBranchCommitCoordination<'_>,
+    ) -> Result<
+        WorthQueryApplicationCommitAuthorization<
+            'serialization,
+            'admission,
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
+        WorthQueryOperationAuthorizationDenial,
+    > {
+        let _read = self.runtime.product_runtime.enter_authority_revalidation();
+        if !self.refresh_admitted_capability_authorization(execution, admission)? {
+            self.readmit_admitted_non_capability_authorization(execution, admission)?;
+        }
+        let product = admission.graph_work().mutation_product().ok_or_else(|| {
+            WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
+        })?;
+        if !coordination.admits(product.observation()) {
+            return Err(WorthQueryOperationAuthorizationDenial::inconsistent(
+                admission.operation(),
+            ));
+        }
+        Ok(WorthQueryApplicationCommitAuthorization::mint(
+            coordination,
+            admission,
+        ))
+    }
+
+    pub fn authorize_idempotency_inspection<
+        'serialization,
+        'admission,
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admission: &'admission WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
+        coordination: &'serialization WorthQueryApplicationBranchCommitCoordination<'_>,
+    ) -> Result<
+        WorthQueryApplicationCommitAuthorization<
+            'serialization,
+            'admission,
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
+        WorthQueryOperationAuthorizationDenial,
+    > {
+        let _read = self.runtime.product_runtime.enter_authority_revalidation();
+        self.validate_admitted_authorization(execution, admission)?;
+        let product = admission.graph_work().mutation_product().ok_or_else(|| {
+            WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
+        })?;
+        if !coordination.admits(product.observation()) {
+            return Err(WorthQueryOperationAuthorizationDenial::inconsistent(
+                admission.operation(),
+            ));
+        }
+        Ok(WorthQueryApplicationCommitAuthorization::mint(
+            coordination,
+            admission,
+        ))
+    }
+
+    pub fn authorize_application_commit<
+        'serialization,
+        'admission,
+        Operation,
+        Input,
+        Scope,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        admission: &'admission WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
+        basis: &WorthQueryCommitAuthorizationBasis,
+        coordination: &'serialization WorthQueryApplicationBranchCommitCoordination<'_>,
+    ) -> Result<
+        WorthQueryApplicationCommitAuthorization<
+            'serialization,
+            'admission,
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
+        WorthQueryOperationAuthorizationDenial,
+    > {
+        let _read = self.runtime.product_runtime.enter_authority_revalidation();
+        if self.runtime.authority_identity() != admission.runtime_authority() {
+            return Err(foreign_runtime());
+        }
+        if basis.admission_identity() != admission.admission_identity()
+            || !basis.belongs_to_session(admission.graph_work_session_identity())
+        {
+            return Err(WorthQueryOperationAuthorizationDenial::inconsistent(
+                admission.operation(),
+            ));
+        }
+        let product = admission.graph_work().mutation_product().ok_or_else(|| {
+            WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
+        })?;
+        let security_product = admission
+            .graph_work()
+            .authorization_product()
+            .ok_or_else(|| {
+                WorthQueryOperationAuthorizationDenial::inconsistent(admission.operation())
+            })?;
+        self.readmit_commit_basis(execution, basis, product, security_product)?;
+        if !coordination.admits(product.observation()) {
+            return Err(WorthQueryOperationAuthorizationDenial::inconsistent(
+                admission.operation(),
+            ));
+        }
+        Ok(WorthQueryApplicationCommitAuthorization::mint(
+            coordination,
+            admission,
+        ))
+    }
+
+    fn readmit_commit_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &WorthQueryCommitAuthorizationBasis,
+        product: &crate::basis::WorthQueryProductBranchLease,
+        security_product: &crate::basis::WorthQueryProductObservationLease,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        match basis {
+            WorthQueryCommitAuthorizationBasis::Observed {
+                authorization: observed,
+                ..
+            } => self.readmit_observed_commit_basis(execution, observed, security_product),
+            WorthQueryCommitAuthorizationBasis::Capability {
+                authorization: capability,
+                ..
+            } => self.readmit_capability_commit_basis(execution, capability, product),
+        }
+    }
+
+    fn readmit_observed_commit_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        observed: &WorthQueryObservedCommitBasis,
+        product: &crate::basis::WorthQueryProductObservationLease,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        let security = self
+            .admit_product_security_basis(execution, product)
+            .map_err(|denial| {
+                super::denial::product_security_basis_denial(
+                    denial,
+                    "observed commit authorization",
+                )
+            })?;
+        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
+        graph
+            .integration_handle()
+            .with_runtime(execution, |runtime| {
+                let snapshot = security.snapshot_handle();
+
+                validate_observed_currentness(
+                    execution,
+                    observed,
+                    runtime,
+                    snapshot,
+                    self.runtime.authorization.bridge(),
+                )
+            })
+    }
+
+    fn readmit_capability_commit_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        capability: &WorthQueryCapabilityCommitBasis,
+        product: &crate::basis::WorthQueryProductBranchLease,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        let installed = self.installed_capability_plan(capability.request())?;
+        if capability.capability_authority_identity()
+            != installed.capability_authority_identity().as_ref()
+        {
+            return Err(stale_authorization());
+        }
+        let sample = self.sample_capability_time(installed)?;
+        let security = self
+            .admit_product_security_basis(execution, product)
+            .map_err(|denial| {
+                super::denial::product_security_basis_denial(
+                    denial,
+                    "capability commit authorization",
+                )
+            })?;
+        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
+        graph
+            .integration_handle()
+            .with_runtime(execution, |runtime| {
+                let snapshot = security.snapshot_handle();
+                let principal_current = capability
+                    .principal()
+                    .remains_current_in(execution, runtime, snapshot)
+                    .map_err(|kind| {
+                        WorthQueryOperationAuthorizationDenial::new(kind, "principal currentness")
+                    })?;
+                let decision_current = capability
+                    .decision()
+                    .remains_current_in(
+                        execution,
+                        runtime,
+                        snapshot,
+                        self.runtime.authorization.bridge(),
+                    )
+                    .map_err(|cause| {
+                        crate::domain_computation::authorization::denial::relational_read_denial(
+                            cause,
+                            "authorization currentness",
+                        )
+                    })?;
+                let result = if !principal_current {
+                    Err(stale_principal())
+                } else if !decision_current {
+                    Err(stale_authorization())
+                } else {
+                    WorthQueryAuthorizationRevalidationObservation::from_axes(
+                        RevalidationObservationAxes {
+                            session: capability.decision().session_identity(),
+                            relational: runtime,
+                            snapshot,
+                            bridge: self.runtime.authorization.bridge(),
+                            installed,
+                            request: capability.request(),
+                            sample: &sample,
+                        },
+                    )
+                    .observe_active_capability(
+                        execution,
+                        Some(capability.grant()),
+                        Some(capability.decision()),
+                    )
+                    .map(drop)
+                };
+
+                result.and_then(|()| {
+                    self.readmit_capability_commit_support(
+                        execution,
+                        capability.supporting(),
+                        runtime,
+                        snapshot,
+                    )
+                })
+            })
+    }
+}

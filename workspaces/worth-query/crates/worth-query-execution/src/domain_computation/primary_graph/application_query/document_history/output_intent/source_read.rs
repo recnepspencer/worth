@@ -94,7 +94,7 @@ impl WorthQueryHistoryOutputIntent {
             ));
         }
         let execution = phase
-            .checked_execution_request_for(&runtime.runtime.product_runtime)
+            .checked_execution_request_for(&runtime.inner.runtime.product_runtime)
             .map_err(|cause| Stop::Authority(WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         let current = runtime
             .on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
@@ -167,11 +167,11 @@ impl WorthQueryHistoryOutputIntent {
             ).map_err(Stop::Admission)?;
             let mut native = ApplicationQueryNativeAccess::acquire();
             let permission = match issued {
-                Some(issued) => runtime.prepare_application_query_permission_with_parameters(
+                Some(issued) => runtime.inner.prepare_application_query_permission_with_parameters(
                     &execution, query, access, query.identity(), parameters, controls,
                     current, Some(truth.selected()), request, &principal, issued, &mut native,
                 ),
-                None => runtime.prepare_historical_source_query_permission_with_parameters(
+                None => runtime.inner.prepare_historical_source_query_permission_with_parameters(
                     &execution, query, access, query.identity(), parameters, controls,
                     current, Some(truth.selected()), request, &principal, authority.producer_invocation(), &mut native,
                 ),
@@ -180,7 +180,7 @@ impl WorthQueryHistoryOutputIntent {
             let plan = runtime.finish_prepared_application_query_permission(&execution, permission).map_err(Stop::Admission)?;
             if read {
             let reader = crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::new(
-                runtime, &truth, Some(&control), Some(authority.producer_invocation()), external, request,
+                runtime.inner(), &truth, Some(&control), Some(authority.producer_invocation()), external, request,
             ).map_err(Stop::Demand)?;
             let result = reader.read_admitted_result::<B>(&execution, plan, &mut native)
                 .map_err(|cause| Stop::Demand(crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial::source_query_stop(cause).demand_stop()))?;

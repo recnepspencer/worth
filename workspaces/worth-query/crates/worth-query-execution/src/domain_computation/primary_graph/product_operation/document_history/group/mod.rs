@@ -75,9 +75,9 @@ impl WorthQueryDocumentHistoryGroupAborting {
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<(), WorthQueryDocumentHistoryDenial> {
         phase
-            .checked_execution_request_for(&runtime.runtime.product_runtime)
+            .checked_execution_request_for(&runtime.inner.runtime.product_runtime)
             .map_err(WorthQueryDocumentHistoryDenial::Stopped)?;
-        if self.runtime_authority != runtime.runtime.authority_identity().as_u64()
+        if self.runtime_authority != runtime.inner.runtime.authority_identity().as_u64()
             || self.candidate != Some(branch)
         {
             return Err(WorthQueryDocumentHistoryDenial::ForeignRecording);

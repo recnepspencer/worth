@@ -51,7 +51,7 @@ pub(in crate::domain_computation::primary_graph) fn verify<Schema: ApplicationSc
         .activation()
         .published()
         .ok_or(Denial::SupportUnavailable)?;
-    let owner = &application.runtime.product_runtime.owner;
+    let owner = &application.inner.runtime.product_runtime.owner;
     let observation = owner.observation_port();
     let inventory = observation
         .observe_installed_product_branches(execution)
@@ -60,7 +60,7 @@ pub(in crate::domain_computation::primary_graph) fn verify<Schema: ApplicationSc
         .inspection_port()
         .observe_program_activation_history(execution)
         .map_err(Denial::Source)?;
-    let graph = &application.runtime.primary_provider.graph;
+    let graph = &application.inner.runtime.primary_provider.graph;
     graph.with_runtime(execution, |native| {
         let source = BranchActivationSource::new(native, &graph.layout, published);
         for branch in inventory.branches() {

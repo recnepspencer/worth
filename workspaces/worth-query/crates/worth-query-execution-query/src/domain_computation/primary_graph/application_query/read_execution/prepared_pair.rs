@@ -1,0 +1,243 @@
+//! The worker carries a scope-free read capability and a closed raw binding.
+//! Native reads carry exact immutable custody and cannot name the owner port.
+pub mod batch;
+
+use super::super::derived_view::WorthQueryManagedDerivedViewDenial as Denial;
+use super::{read_plan::ReadPlan, OneShotReadWorkObservation, RawNonLiveKernelOutcome};
+use crate::domain_computation::provider_session::{
+    WorthQueryManagedGraphReadDenial, WorthQueryPreparedReadCompletion,
+    WorthQueryPreparedSessionRead,
+};
+use std::cell::{Cell, RefCell};
+use worth_execution::{ChargedBytes, MapKernelContext, MapKernelFailure, MapKernelStop};
+use worth_foundational::facade::AspectValue;
+use worth_relational::facade::identity::EntityId;
+
+pub struct PreparedRead<'a> {
+    pub plan: ReadPlan<'a>,
+    pub session:
+        WorthQueryPreparedSessionRead,
+
+    pub batch:
+        Option<super::super::batch::PlannedBatchItem>,
+}
+
+/// Construction remains with the owner-side admission stage.
+pub struct PreparedPair<'a> {
+    pub(crate) root: EntityId,
+    pub(crate) witness:
+        Option<std::sync::Arc<super::dispatch_witness::DispatchWitness>>,
+    pub(crate) first: PreparedRead<'a>,
+    pub(crate) second: PreparedRead<'a>,
+    pub(crate) binding_slot: &'a str,
+    pub(crate) binding_value:
+        &'a AspectValue,
+}
+
+pub struct ReadOutput {
+    pub raw: RawNonLiveKernelOutcome,
+    pub(crate) proof:
+        WorthQueryPreparedReadCompletion,
+    pub(crate) batch_rows:
+        Option<super::super::batch::PlannedBatchItem>,
+}
+
+pub struct PairOutput {
+    pub(crate) first: ReadOutput,
+    pub(crate) second: ReadOutput,
+}
+
+impl ChargedBytes for PreparedRead<'_> {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self {
+            plan,
+            session,
+
+            batch: _,
+        } = self;
+        plan.additional_charged_bytes()
+            .saturating_add(session.additional_charged_bytes())
+    }
+}
+impl ChargedBytes for PreparedPair<'_> {
+    fn additional_charged_bytes(&self) -> u64 {
+        // Root/binding are inline or borrowed. The test witness is shared with
+        // its test-thread owner and is not a production allocation.
+        let Self {
+            root: _root,
+            first,
+            second,
+            binding_slot: _binding_slot,
+            binding_value: _binding_value,
+            witness: _witness,
+        } = self;
+        first
+            .additional_charged_bytes()
+            .saturating_add(second.additional_charged_bytes())
+    }
+}
+impl ChargedBytes for ReadOutput {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self {
+            raw,
+            proof,
+            batch_rows: _,
+        } = self;
+        raw.additional_charged_bytes()
+            .saturating_add(proof.additional_charged_bytes())
+    }
+}
+impl ChargedBytes for PairOutput {
+    fn additional_charged_bytes(&self) -> u64 {
+        let Self { first, second } = self;
+        first
+            .additional_charged_bytes()
+            .saturating_add(second.additional_charged_bytes())
+    }
+}
+
+impl PreparedPair<'_> {
+    pub fn run(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<PairOutput, MapKernelFailure<Denial>> {
+        if let Some(witness) = &self.witness {
+            witness.enter(self.root);
+        }
+        let root = self.root;
+        let witness = self.witness.clone();
+        let outcome = self.compute(execution, context);
+        if let Some(witness) = &witness {
+            witness.complete(root);
+        }
+        outcome
+    }
+    fn compute(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        context: &mut MapKernelContext<'_, '_>,
+    ) -> Result<PairOutput, MapKernelFailure<Denial>> {
+        context.checkpoint(1)?;
+        if let Some(witness) = &self.witness {
+            witness.charged(self.root, 1);
+        }
+        let first = self
+            .first
+            .run(execution, self.root, context, self.witness.as_deref())?;
+        let [row] = first.raw.raw.rows.raw_rows() else {
+            return Err(MapKernelFailure::Domain(Denial::IncompleteDependencies));
+        };
+        if row.entity_id() != self.root
+            || row.field(self.binding_slot).map(|field| field.value()) != Some(self.binding_value)
+        {
+            return Err(MapKernelFailure::Domain(Denial::IncompleteDependencies));
+        }
+        if let Some(witness) = &self.witness {
+            witness.before_second(self.root);
+        }
+        let second = self
+            .second
+            .run(execution, self.root, context, self.witness.as_deref())?;
+        Ok(PairOutput { first, second })
+    }
+}
+
+impl PreparedRead<'_> {
+    fn run(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: EntityId,
+        context: &mut MapKernelContext<'_, '_>,
+        witness: Option<&super::dispatch_witness::DispatchWitness>,
+    ) -> Result<ReadOutput, MapKernelFailure<Denial>> {
+        let Self {
+            plan,
+            session,
+
+            batch,
+        } = self;
+        let entered = Cell::new(false);
+        let stop = Cell::new(None);
+        let meter = RefCell::new(context);
+        let charge = |units: usize, subject: &str| {
+            let result = u64::try_from(units)
+                .map_err(|_| MapKernelStop::WorkCounterOverflow)
+                .and_then(|units| meter.borrow_mut().checkpoint(units));
+            if result.is_ok()
+                && let Some(witness) = witness
+            {
+                witness.charged(root, units as u64);
+            }
+            result.map_err(|cause| {
+                stop.set(Some(cause));
+                super::read_execution_denial(
+                    super::WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
+                    subject,
+                )
+            })
+        };
+        let spent = OneShotReadWorkObservation::with_charge(&charge);
+        let check = |subject: &str| charge(0, subject);
+        let read = session.execute(execution, |runtime, graph| {
+            entered.set(true);
+            if let Some(witness) = witness {
+                witness.native_read_enter(root);
+            }
+            let plan = plan.with_snapshot(runtime.snapshot());
+            let answer = super::read_prepared_root_rows(
+                runtime,
+                execution,
+                graph,
+                &plan,
+                Some(&spent),
+                super::ReadInterruption::Execution(&check),
+            );
+            if let Some(witness) = witness {
+                witness.native_read_exit(root);
+            }
+            answer
+        });
+        let batch_rows = batch;
+        if let Some(stop) = stop.get() {
+            return Err(MapKernelFailure::Stop(stop));
+        }
+        use super::super::authorized_read::WorthQueryAuthorizedApplicationReadDenial as ReadDenial;
+        use super::super::one_shot::map_authorized_read_denial;
+        match read {
+            Ok((Ok(raw), proof)) => Ok(ReadOutput {
+                raw,
+                proof,
+                batch_rows,
+            }),
+            Ok((Err(read), _)) => Err(MapKernelFailure::Domain(Denial::ReadDenied {
+                root,
+                denial: map_authorized_read_denial(ReadDenial::Read(read), plan.name),
+            })),
+            Err(
+                cause @ (WorthQueryManagedGraphReadDenial::RequestStop(_)
+                | WorthQueryManagedGraphReadDenial::SnapshotUnavailable
+                | WorthQueryManagedGraphReadDenial::IndexNotInstalled(_)
+                | WorthQueryManagedGraphReadDenial::MutationSession
+                | WorthQueryManagedGraphReadDenial::ForeignBasis
+                | WorthQueryManagedGraphReadDenial::ForeignGraph
+                | WorthQueryManagedGraphReadDenial::ForeignReadProof
+                | WorthQueryManagedGraphReadDenial::ForeignReadIntent),
+            ) => {
+                let read =
+                    super::managed_read_denial(cause, &plan).map_err(MapKernelFailure::Stop)?;
+                Err(MapKernelFailure::Domain(Denial::ReadDenied {
+                    root,
+                    denial: map_authorized_read_denial(read, plan.name),
+                }))
+            }
+        }
+    }
+}
+
+const _: fn() = || {
+    fn send<T: Send>() {}
+    send::<PreparedPair<'static>>();
+};
+
+mod court_doors_for_test;

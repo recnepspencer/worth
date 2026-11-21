@@ -33,7 +33,7 @@ pub(super) fn require<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
     {
         return Ok(());
     }
-    let provider = &target.application().runtime.primary_provider;
+    let provider = &target.application().inner.runtime.primary_provider;
     // The caller already selected this occurrence's ancestry. This is an exact
     // completed-occurrence lookup, not another history traversal.
     let occurrence = provider

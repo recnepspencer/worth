@@ -143,7 +143,7 @@ where
     let reading = installed.clock.observe().map_err(ResourceCause::Clock)?;
     execution.consult().map_err(ResourceCause::Request)?;
     let clock = runtime
-        .runtime
+        .inner.runtime
         .bridge
         .conditional()
         .with_view(
@@ -154,7 +154,7 @@ where
                 .signal_basis(),
             |bridge| {
                 runtime
-                    .runtime
+                    .inner.runtime
                     .product_runtime
                     .advance_owned_async_source_clock(
                         &bridge,
@@ -202,7 +202,7 @@ where
     };
     if owner.wake_cleanup_pending() {
         runtime
-            .runtime
+            .inner.runtime
             .bridge
             .conditional()
             .with_view(
@@ -218,7 +218,7 @@ where
     }
     if occurrence.timeout.is_none() && occurrence.retry.is_none() {
         let timeout = runtime
-            .runtime
+            .inner.runtime
             .bridge
             .conditional()
             .with_view(
@@ -251,7 +251,7 @@ where
             .as_ref()
             .ok_or(ResourceCause::Unavailable)?;
         let scheduled = runtime
-            .runtime
+            .inner.runtime
             .bridge
             .conditional()
             .with_view(
@@ -268,7 +268,7 @@ where
     }
     let before = owner.request_handle();
     let result = runtime
-        .runtime
+        .inner.runtime
         .bridge
         .conditional()
         .with_view(
@@ -322,12 +322,12 @@ where
     };
     let before = owner.request_handle();
     let result = runtime
-        .runtime
+        .inner.runtime
         .bridge
         .conditional()
         .with_view(selected.observation().basis().signal_basis(), |bridge| {
             runtime
-                .runtime
+                .inner.runtime
                 .product_runtime
                 .revalidate_custodied_owned_async_request(&bridge, owner, selected)
         })

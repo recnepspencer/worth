@@ -54,11 +54,11 @@ pub(super) fn select_input<Schema: ApplicationSchema, C: ApplicationCorrectionBi
         maximum_results,
     )?;
     let execution = phase
-        .execution_request_for(&target.application().runtime.product_runtime)
+        .execution_request_for(&target.application().inner.runtime.product_runtime)
         .map_err(|_| WorthQueryCorrectionDerivationDenial::ForeignPhase)?;
     let observed = target
         .application()
-        .runtime
+        .inner.runtime
         .primary_provider
         .observe_correction_command(
             &execution,
@@ -96,7 +96,7 @@ pub(super) fn select_input<Schema: ApplicationSchema, C: ApplicationCorrectionBi
         target, source, key, &lineage,
     );
     select_action::<Schema, ApplicationInverseBinding<Schema, C>>(
-        &target.application().runtime.primary_provider,
+        &target.application().inner.runtime.primary_provider,
         observed,
         intent,
         key,
@@ -132,11 +132,11 @@ pub(super) fn select_reapplication_input<
     )?;
     target.select_alternative_ancestry(phase, &alternative.selected, maximum_history)?;
     let execution = phase
-        .execution_request_for(&target.application().runtime.product_runtime)
+        .execution_request_for(&target.application().inner.runtime.product_runtime)
         .map_err(|_| WorthQueryCorrectionDerivationDenial::ForeignPhase)?;
     let observed = target
         .application()
-        .runtime
+        .inner.runtime
         .primary_provider
         .observe_correction_command(
             &execution,
@@ -184,7 +184,7 @@ pub(super) fn select_reapplication_input<
         &lineage,
     );
     select_action::<Schema, C::Source>(
-        &target.application().runtime.primary_provider,
+        &target.application().inner.runtime.primary_provider,
         observed,
         intent,
         key,

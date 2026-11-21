@@ -34,7 +34,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationRequiredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationRequiredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().inner.runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
         };
@@ -47,7 +47,7 @@ where
             ));
         }
         if prepared.runtime_authority
-            != self.backing.runtime().runtime.authority_identity().as_u64()
+            != self.backing.runtime().inner.runtime.authority_identity().as_u64()
             || &prepared.source_commit != receipt.source_commit()
             || &prepared.source_commit != observation.selected_commit()
             || prepared.product_occurrence != observation.branch_incarnation()
@@ -79,7 +79,7 @@ where
                     "required continuation observation",
                 )
             })?;
-        self.backing.runtime().runtime.output_demands.validate_owned_root_kind(
+        self.backing.runtime().inner.runtime.output_demands.validate_owned_root_kind(
             prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()),
         )?;
@@ -122,7 +122,7 @@ where
     where
         Root: ApplicationOutputGraphShape<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(&self.backing.runtime().inner.runtime.product_runtime) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
         };

@@ -7,104 +7,11 @@ use worth_runtime_bridge::facade::{
 use super::predicate_admission::QueryConditionalComputeContext;
 use crate::domain_computation::primary_graph::primary_truth_branch_identity;
 
-mod admitted;
-mod selected_projections;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::admitted;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::selected_projections;
 pub(in crate::domain_computation::primary_graph) use selected_projections::WorthQuerySelectedSignalProjections;
 
-pub struct WorthQueryConditionalTruthBasis {
-    product: crate::basis::WorthQueryProductBranchLease,
-    _application_basis:
-        super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
-    observation: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,
-    _branch: TruthBranchIdentity,
-    snapshot: TruthSnapshotIdentity,
-    branch_projection: worth_runtime_bridge::facade::BridgeIdentityEvidence,
-    snapshot_projection: worth_runtime_bridge::facade::BridgeIdentityEvidence,
-}
-
-impl WorthQueryConditionalTruthBasis {
-    pub(in crate::domain_computation::primary_graph) fn from_selected<Schema>(
-        selected: crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
-            '_,
-            Schema,
-        >,
-    ) -> Self {
-        let (_, product, application_basis) = selected.into_parts();
-        let observation = product.bridge_source();
-        let snapshot = product.bridge_snapshot_identity().clone();
-        let branch = primary_truth_branch_identity();
-        Self {
-            product,
-            _application_basis: application_basis,
-            observation,
-            branch_projection: branch.bridge_admission_evidence(),
-            snapshot_projection: snapshot.bridge_admission_evidence(),
-            _branch: branch,
-            snapshot,
-        }
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn retain_selected<Schema>(
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
-            '_,
-            Schema,
-        >,
-    ) -> Result<Self, crate::basis::WorthQueryProductBranchAdmissionDenial>
-    where
-        Schema: worth_query_installation::facade::ApplicationSchema,
-    {
-        Ok(Self::from_selected(selected.retain_selection(execution)?))
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn is_product_publication(
-        &self,
-        publication: &super::super::WorthQueryCommittedProductPublication,
-    ) -> bool {
-        publication.is_selected_at(self.product.observation())
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn snapshot(&self) -> &TruthSnapshotIdentity {
-        &self.snapshot
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn signal_basis(
-        &self,
-    ) -> &worth_signal::facade::branch::AdmittedSignalBranchBasis {
-        self.product.signal_basis()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn owner_identity(
-        &self,
-    ) -> worth_runtime_world::facade::RuntimeWorldOwnerIdentity {
-        self.product
-            .observation()
-            .branch_identity()
-            .owner_identity()
-    }
-
-    pub(super) fn product(&self) -> &crate::basis::WorthQueryProductBranchLease {
-        &self.product
-    }
-
-    pub(super) fn granular_source_read_basis(
-        &self,
-    ) -> crate::domain_computation::primary_graph::WorthQueryGranularSourceReadBasis {
-        crate::domain_computation::primary_graph::WorthQueryGranularSourceReadBasis::new(
-            self.snapshot.clone(),
-            self._branch.clone(),
-            std::sync::Arc::clone(&self.observation),
-        )
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn snapshot_projection(&self) -> &str {
-        self.snapshot_projection.terminal_projection_for_reporting()
-    }
-
-    pub(in crate::domain_computation::primary_graph) fn branch_projection(&self) -> &str {
-        self.branch_projection.terminal_projection_for_reporting()
-    }
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis;
 
 mod retained_decision;
 pub(super) use retained_decision::{

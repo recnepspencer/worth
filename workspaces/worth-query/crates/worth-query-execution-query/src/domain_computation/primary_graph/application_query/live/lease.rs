@@ -1,0 +1,277 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+mod basis_interruption;
+use std::marker::PhantomData;
+use std::rc::Rc;
+
+use worth_foundational::facade::AspectValue;
+use worth_query_admission::facade::authenticated_principal::{
+    WorthQueryRequestInterruption, WorthQueryRequestScope,
+};
+use worth_query_declaration::facade::{
+    application_query::{ApplicationQueryLiveCauseBinding, ApplicationQueryParameterSet},
+    application_schema::{
+        ApplicationScalarValueBinding, ApplicationSchema, ApplicationStructuredValueBinding,
+    },
+};
+use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
+use worth_runtime_bridge::facade::BridgeExecutionBasisTerminalDisposition;
+
+mod delivery;
+mod delivery_admission;
+mod denial;
+mod lifecycle;
+mod open;
+mod validation;
+
+use super::{
+    controls::WorthQueryApplicationLiveControls,
+    outcome::{
+        WorthQueryApplicationLiveCauseDenialKind, WorthQueryApplicationLiveCloseOutcome,
+        WorthQueryApplicationLiveOutcome, WorthQueryApplicationLiveOverflow,
+        WorthQueryApplicationLiveUpdate,
+    },
+    projection::{finalize_live_projection, WorthQueryLiveProjectionFinalizationDenial},
+};
+use crate::domain_computation::{
+    managed_run::WorthQueryManagedLowerExecutionBasis,
+    primary_graph::{
+        application_query::{
+            authorized_read::{execute_authorized_read, refresh_governed_authorization},
+            read_execution::read_live_target,
+            WorthQueryApplicationProjection, WorthQueryApplicationQueryAccessContext,
+            WorthQueryApplicationQueryControls,
+        },
+        live_delivery::{WorthQueryLiveCauseFillPosture, WorthQueryLiveCauseQueue},
+        WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
+        WorthQueryPrimaryGraphApplicationRuntime,
+    },
+};
+
+/// An open live read: a bounded subscription that delivers a fresh query result
+/// for each matching committed change.
+///
+/// Call `next` with a fresh principal and request for each delivery; each call
+/// re-admits and re-authorizes the read. The lease is not `Send`; end it with
+/// `close`.
+pub struct WorthQueryApplicationLiveLease<
+    'runtime,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+    Target,
+    Binding,
+> where
+    Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
+{
+    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    termination_failed: bool,
+    query: WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+    scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    parameters: ApplicationQueryParameterSet<Query>,
+    controls: WorthQueryApplicationLiveControls,
+    _opening_product: crate::basis::WorthQueryProductBranchLease,
+    governance: super::super::disclosure::WorthQueryApplicationQueryGovernance,
+    scope_identity: AspectValue,
+    basis: Option<WorthQueryManagedLowerExecutionBasis>,
+    graph_work:
+        Option<crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession>,
+    read_proof:
+        Option<crate::domain_computation::provider_session::WorthQuerySessionGraphReadProof>,
+    initial_read_work:
+        Option<crate::domain_computation::provider_session::WorthQueryObservedGraphReadWork>,
+    basis_release: Option<super::super::WorthQueryApplicationBasisReleaseReceipt>,
+    read_completion:
+        Option<crate::domain_computation::provider_session::WorthQueryGraphReadCompletion>,
+    queue: WorthQueryLiveCauseQueue<
+        <Binding::PayloadBinding as ApplicationStructuredValueBinding>::Value,
+    >,
+    _target: PhantomData<fn() -> (Principal, PrincipalIdentity, Target, Binding)>,
+    _thread_affinity: PhantomData<Rc<()>>,
+}
+
+impl<
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
+    WorthQueryApplicationLiveLease<
+        '_,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+        Target,
+        Binding,
+    >
+where
+    Schema: ApplicationSchema,
+    QueryResult: WorthQueryApplicationProjection<Schema, Query>,
+    Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
+{
+    pub fn graph_work_session_identity(
+        &self,
+    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
+        self.graph_work
+            .as_ref()
+            .expect("an open live lease retains its graph-work session")
+            .identity()
+    }
+
+    pub fn buffered_cause_count(&self) -> usize {
+        self.queue.buffered_cause_count()
+    }
+
+    pub fn fixture_phase<'scope>(
+        &self,
+        host: &crate::domain_computation::primary_graph::TestHostRequest<'scope>,
+    ) -> crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'scope> {
+        host.phase_for_application(self.runtime)
+    }
+
+    pub fn next(
+        &mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+        request: &WorthQueryRequestScope,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        let phase_request = match phase.execution_request_for(&self.runtime.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return WorthQueryApplicationLiveOutcome::AuthorizationDenied(Box::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
+        };
+        let execution = &phase_request;
+
+        if let Some(outcome) = self.observe_interruption(request) {
+            return outcome;
+        }
+        self.controls.replace_request(request.clone());
+        if let Err(outcome) = self.admit_delivery_progress(execution, principal) {
+            return outcome;
+        }
+        let fill = {
+            let Some(basis) = self.basis.as_mut() else {
+                return WorthQueryApplicationLiveOutcome::Closed;
+            };
+            let expected_scope = &self.scope_identity;
+            self.queue.fill(
+                &self.runtime.runtime.primary_provider.live_delivery,
+                basis,
+                Binding::effect(),
+                self.controls.buffer_capacity(),
+                |payload| {
+                    Binding::ScopeIdentityBinding::encode(&Binding::scope_identity(payload))
+                        .is_ok_and(|identity| identity == *expected_scope)
+                },
+            )
+        };
+        let terminal = match fill {
+            WorthQueryLiveCauseFillPosture::Pending => WorthQueryApplicationLiveOutcome::Pending,
+            WorthQueryLiveCauseFillPosture::Overflow(missed) => {
+                WorthQueryApplicationLiveOutcome::Overflow(WorthQueryApplicationLiveOverflow::new(
+                    missed,
+                ))
+            }
+            WorthQueryLiveCauseFillPosture::Closed => WorthQueryApplicationLiveOutcome::Closed,
+            WorthQueryLiveCauseFillPosture::Unavailable => {
+                WorthQueryApplicationLiveOutcome::Unavailable
+            }
+        };
+        let Some((publication, product, payload)) = self.queue.front(&Binding::effect()) else {
+            return match terminal {
+                WorthQueryApplicationLiveOutcome::Overflow(overflow) => {
+                    if self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled) {
+                        WorthQueryApplicationLiveOutcome::Overflow(overflow)
+                    } else {
+                        WorthQueryApplicationLiveOutcome::Unavailable
+                    }
+                }
+                WorthQueryApplicationLiveOutcome::Closed => {
+                    if self.terminate(BridgeExecutionBasisTerminalDisposition::Completed) {
+                        WorthQueryApplicationLiveOutcome::Closed
+                    } else {
+                        WorthQueryApplicationLiveOutcome::Unavailable
+                    }
+                }
+                outcome => outcome,
+            };
+        };
+        let target_identity =
+            match Binding::TargetIdentityBinding::encode(&Binding::target_identity(payload)) {
+                Ok(identity) => identity,
+                Err(_) => return WorthQueryApplicationLiveOutcome::Unavailable,
+            };
+        self.project_front(
+            execution,
+            principal,
+            publication.clone(),
+            product.retained_clone(),
+            target_identity,
+        )
+    }
+
+    pub fn observe_interruption(
+        &mut self,
+        request: &WorthQueryRequestScope,
+    ) -> Option<WorthQueryApplicationLiveOutcome<Query, QueryResult>> {
+        if self.termination_failed || self.basis.is_none() {
+            return Some(WorthQueryApplicationLiveOutcome::Closed);
+        }
+        let interruption = request.interruption()?;
+        self.controls.replace_request(request.clone());
+        Some(match interruption {
+            WorthQueryRequestInterruption::Cancelled => self.cancelled_outcome(),
+            WorthQueryRequestInterruption::DeadlineExceeded => self.deadline_exceeded_outcome(),
+        })
+    }
+
+    fn acknowledge_cause_denial(
+        &mut self,
+        kind: WorthQueryApplicationLiveCauseDenialKind,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        self.acknowledge_and_terminate(WorthQueryApplicationLiveOutcome::CauseDenied(kind))
+    }
+
+    fn acknowledge_front(&mut self) -> bool {
+        self.basis
+            .as_mut()
+            .is_some_and(|basis| self.queue.acknowledge_front(basis).is_ok())
+    }
+
+    fn acknowledge_and_terminate(
+        &mut self,
+        outcome: WorthQueryApplicationLiveOutcome<Query, QueryResult>,
+    ) -> WorthQueryApplicationLiveOutcome<Query, QueryResult> {
+        if self.acknowledge_front()
+            && self.terminate(BridgeExecutionBasisTerminalDisposition::Cancelled)
+        {
+            outcome
+        } else {
+            WorthQueryApplicationLiveOutcome::Unavailable
+        }
+    }
+
+    pub fn close(mut self) -> WorthQueryApplicationLiveCloseOutcome {
+        if self.terminate(BridgeExecutionBasisTerminalDisposition::Completed) {
+            self.read_completion.take().map_or(
+                WorthQueryApplicationLiveCloseOutcome::Unavailable,
+                WorthQueryApplicationLiveCloseOutcome::Completed,
+            )
+        } else {
+            WorthQueryApplicationLiveCloseOutcome::Unavailable
+        }
+    }
+}
+
+mod court_doors_for_test;

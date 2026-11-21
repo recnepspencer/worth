@@ -121,7 +121,7 @@ where
     )
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution) fn validate_pair<S, C>(
+pub fn validate_pair<S, C>(
 ) -> Result<(), Denial>
 where
     S: ApplicationSchema,
@@ -164,7 +164,7 @@ where
     Ok(())
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution) fn required_producers<
+pub fn required_producers<
     S,
     P,
     R,

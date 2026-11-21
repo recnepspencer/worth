@@ -16,7 +16,7 @@ pub(super) fn complete<S: ApplicationSchema + 'static>(
     } = prepared.consume();
     conditional_operations.reconstruct_all(&application)?;
     let mut owner = application
-        .runtime
+        .inner.runtime
         .bridge
         .conditional_lifecycle()
         .map_err(|cause| {
@@ -31,8 +31,9 @@ pub(super) fn complete<S: ApplicationSchema + 'static>(
     drop(owner);
     *application
         .conditional_cleanup
+        .routes
         .operations
-        .get_mut()
+        .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner) = conditional_operations;
     Ok(application)
 }

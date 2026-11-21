@@ -1,0 +1,350 @@
+//! Producer input preparation consumed by fresh execution or stable publication.
+
+mod computation_prior;
+mod refusal;
+pub use computation_prior::prepare_computation_prior;
+mod stable_apply;
+use super::*;
+use crate::domain_computation::primary_graph::application_contribution::InstalledProducerEdition;
+use crate::domain_computation::primary_graph::application_query::PreparedObservedSourceExpectation;
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff as observation;
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Gate;
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Outcome;
+use crate::domain_computation::primary_graph::output_lineage::prepare_stable_address;
+use crate::domain_computation::primary_graph::output_lineage::InputCutoffVerificationStop;
+use crate::domain_computation::primary_graph::output_lineage::OwnedInputCutoffDecision;
+use crate::domain_computation::primary_graph::output_lineage::PreparedDecisionReuseContext;
+use crate::domain_computation::primary_graph::output_lineage::PreparedInputCutoffBasis;
+use crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey;
+use crate::domain_computation::primary_graph::output_lineage::PublishedStableLineage;
+use crate::domain_computation::primary_graph::ComputationPrior;
+use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
+use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
+use refusal::cutoff_admission_denial;
+use refusal::cutoff_basis_denial;
+use refusal::cutoff_verification_stop;
+
+type StablePublication<'owner, Schema, OperationType, Input, Scope> = Box<
+    dyn FnOnce(
+            &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
+        ) -> Result<PublishedStableLineage, ProducerExecutionStop>
+        + 'owner,
+>;
+
+pub enum ProducerInputProgression<'owner, Schema, OperationType, Input, Scope> {
+    FreshPrepared {
+        required_output: RequiredOutputDemandContext,
+        source: PreparedObservedSourceExpectation,
+        key: Option<PreparedInputReuseKey>,
+        context: Option<PreparedDecisionReuseContext>,
+    },
+    StablePrepared(StablePublication<'owner, Schema, OperationType, Input, Scope>),
+}
+
+/// An exact selection whose producer declares no Preserve posture reuses the
+/// live output it was selected for or stops here, before any effect: that
+/// producer never executes over a live output.
+/// A producer that retains a partitioned computation hands its run what the
+/// selected record retained, or why it has nothing.
+fn fresh<'owner, Schema, OperationType, Input, Scope>(
+    mut required_output: RequiredOutputDemandContext,
+    source: PreparedObservedSourceExpectation,
+    key: Option<PreparedInputReuseKey>,
+    context: Option<PreparedDecisionReuseContext>,
+    prior: Option<ComputationPrior>,
+    producer: &'static str,
+    reason: &'static str,
+) -> Result<
+    ProducerInputProgression<'owner, Schema, OperationType, Input, Scope>,
+    ProducerExecutionStop,
+> {
+    if required_output.reuses_live_output_only() {
+        return Err(ProducerExecutionStop::LiveOutputNotReused { producer, reason });
+    }
+    if let Some(prior) = prior {
+        required_output.retain_computation_prior(prior);
+    }
+    observation::finish(Outcome::Fresh);
+    Ok(ProducerInputProgression::FreshPrepared {
+        required_output,
+        source,
+        key,
+        context,
+    })
+}
+
+/// Eligibility precedes lineage storage, registry claims, and source-image
+/// construction. The Fresh branch returns the original preparation custody;
+/// no input/context proof or source fact set is reconstructed on fallback.
+pub fn advance_input_cutoff<'owner, Schema, Binding, OperationType, Input, Scope>(
+    phase: &'owner WorthQueryAdvancementPhase<'owner>,
+    runtime: &'owner WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    selected: &'owner WorthQuerySelectedProductOperation<'_, Schema>,
+    operation: &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
+    source: PreparedObservedSourceExpectation,
+    required_output: RequiredOutputDemandContext,
+    key: Option<PreparedInputReuseKey>,
+    context: Option<PreparedDecisionReuseContext>,
+    matched_predecessors: Option<super::super::demand::MatchedRequiredPredecessors<'_>>,
+    edition: InstalledProducerEdition,
+) -> Result<
+    ProducerInputProgression<'owner, Schema, OperationType, Input, Scope>,
+    ProducerExecutionStop,
+>
+where
+    Schema: ApplicationSchema + 'static,
+    Binding: WorthQueryApplicationProducerBinding<Schema>,
+{
+    let _observation = observation::Scope::begin(Binding::IDENTITY, Gate::ExecutionRequest);
+    let scope = operation.operation_scope_binding();
+    let execution = phase
+        .execution_request_for(&runtime.runtime.product_runtime)
+        .map_err(|cause| {
+            WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                "advancement phase",
+            )
+        })?;
+    let observation = selected.product().observation();
+    let handle = &runtime.runtime.primary_provider.graph;
+    let source_owner = &handle.source_owner.invalidation_owner;
+    if edition.retains_computation() {
+        observation::reach(Gate::ComputationPrior);
+    }
+    let prior = prepare_computation_prior::<Schema, Binding>(
+        &execution,
+        runtime,
+        selected,
+        scope,
+        source.partition_identity(),
+        edition,
+    )?;
+    let (key, context) = match (key, context) {
+        (Some(key), Some(context)) => (key, context),
+        (key, context) => {
+            observation::reach(if key.is_none() {
+                Gate::PreparedKey
+            } else {
+                Gate::PreparedContext
+            });
+            return fresh(
+                required_output,
+                source,
+                key,
+                context,
+                prior,
+                Binding::IDENTITY,
+                "prepared input key or decision context unavailable",
+            );
+        }
+    };
+    observation::reach(Gate::Candidate);
+
+    let candidate = handle
+        .output_lineage
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .prior_input_cutoff_candidate::<Operation<Schema, Binding>>(
+            scope,
+            observation,
+            source.partition_identity(),
+            &execution,
+        )
+        .map_err(cutoff_admission_denial)?;
+    let Some(candidate) = candidate else {
+        return fresh(
+            required_output,
+            source,
+            Some(key),
+            Some(context),
+            prior,
+            Binding::IDENTITY,
+            "prior input cutoff candidate unavailable",
+        );
+    };
+    // Eviction degrades to Fresh. Only a row holds the claims on what its
+    // record consumed and answers its pending edges. A candidate of this
+    // occurrence that consumed upstream outputs and that no row posts lost its
+    // row to custody. Without exact predecessor matching it executes fresh.
+    // A wave handoff retains the actual consumer row before its own refresh
+    // supersedes the posting. That closed custody proof survives this handoff;
+    // Released has no interest or evidence and always executes fresh.
+    observation::reach(Gate::RegistryCustody);
+    let settlement = candidate.settlement_identity();
+    if !candidate.consumed_outputs().is_empty()
+        && settlement.address().0 == observation.lifecycle_incarnation()
+        && !required_output.registry().posts_settlement(settlement)?
+    {
+        observation::reach(Gate::PredecessorHandoff);
+        let handed_off = match matched_predecessors.as_ref() {
+            Some(matched) => matched
+                .matches_consumer(settlement)
+                .map_err(cutoff_admission_denial)?,
+            None => false,
+        };
+        if !handed_off {
+            return fresh(
+                required_output,
+                source,
+                Some(key),
+                Some(context),
+                prior,
+                Binding::IDENTITY,
+                "consumed-output settlement lost registry custody",
+            );
+        }
+    }
+    // The Native owner authenticates and funds the exact issued handle once.
+    // Verification consumes this paired proof instead of resolving it again.
+    observation::reach(Gate::NativeBasis);
+    let basis = handle
+        .with_runtime(&execution, |relational| {
+            PreparedInputCutoffBasis::prepare(
+                relational,
+                selected.application_basis().snapshot_handle(),
+            )
+        })
+        .map_err(cutoff_basis_denial)?;
+    let decision = handle
+        .with_runtime(&execution, |relational| {
+            candidate.verify_for_reuse_owned(
+                &execution,
+                key,
+                context,
+                matched_predecessors,
+                relational,
+                basis,
+                source_owner,
+            )
+        })
+        .map_err(cutoff_verification_stop)?;
+    let verified = match decision {
+        OwnedInputCutoffDecision::Fresh { key, context } => {
+            return fresh(
+                required_output,
+                source,
+                Some(key),
+                Some(context),
+                prior,
+                Binding::IDENTITY,
+                "prior input cutoff verification requires fresh execution",
+            );
+        }
+        OwnedInputCutoffDecision::Reuse(verified) => verified,
+    };
+    observation::reach(Gate::SourceConsumption);
+    let fresh = source
+        .consume_stable(operation)
+        .map_err(|error| failed(Binding::IDENTITY, error))?;
+    observation::finish(Outcome::Eligible);
+    Ok(ProducerInputProgression::StablePrepared(Box::new(
+        move |operation| {
+            let _observation =
+                observation::Scope::begin(Binding::IDENTITY, Gate::PublicationSelection);
+            // Completion uses the current head after earlier canonical slots
+            // published. Recompare prepared facts; do not rerun a handler read.
+            let current = runtime
+                .on_branch(selected.product().product_branch())
+                .select(phase)
+                .map_err(|stop| {
+                    WorthQueryOutputDemandDenial::product_selection(
+                        stop,
+                        "stable publication current Product",
+                    )
+                })?;
+            observation::reach(Gate::PublicationBasis);
+            let basis = handle
+                .with_runtime(&execution, |relational| {
+                    PreparedInputCutoffBasis::prepare(
+                        relational,
+                        current.application_basis().snapshot_handle(),
+                    )
+                })
+                .map_err(cutoff_basis_denial)?;
+            let verified = handle
+                .with_runtime(&execution, |relational| {
+                    verified.recompare_for_publication(
+                        &execution,
+                        relational,
+                        basis,
+                        source_owner,
+                        fresh.source_facts(),
+                    )
+                })
+                .map_err(cutoff_verification_stop)?;
+            observation::reach(Gate::PublicationApply);
+            let result = verified.with_verified(|verified| {
+                stable_apply::publish::<Schema, Binding, _, _, _>(
+                    runtime,
+                    current.product().observation(),
+                    &execution,
+                    operation,
+                    fresh,
+                    verified,
+                    required_output,
+                )
+            });
+            if result.is_ok() {
+                observation::finish(Outcome::Published);
+            }
+            result
+        },
+    )))
+}
+
+pub fn source_preparation_denial(
+    identity: &str,
+    stop: crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenial,
+) -> WorthQueryOutputDemandDenial {
+    use crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenialKind as Kind;
+    if let Some(cause) = stop.execution_denial() {
+        return denial(WorthQueryOutputDemandDenialKind::ExecutionRequest(crate::domain_computation::primary_graph::application_contribution::execution_denial::advancement_scope_stop(*cause)), identity.to_owned());
+    }
+    if let Some(cause) = stop.retention_interruption() {
+        use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption as Stop;
+        return denial(
+            match cause {
+                Stop::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
+                Stop::DeadlineExceeded => WorthQueryOutputDemandDenialKind::TimedOut,
+            },
+            identity.to_owned(),
+        );
+    }
+    match stop.kind() {
+        Kind::ManagedSourceExpansionUnsupported => denial(
+            WorthQueryOutputDemandDenialKind::ManagedSourceExpansionUnsupported,
+            format!("{identity}: {stop}"),
+        ),
+        Kind::WorkBudgetExceeded => denial(
+            WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+            format!("{identity}: {stop}"),
+        ),
+        Kind::PreparationMemoryExceeded => denial(
+            WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded,
+            format!("{identity}: {stop}"),
+        ),
+        Kind::AdmissionAuthorization => denial(
+            WorthQueryOutputDemandDenialKind::of_request_authorization(
+                stop.authorization_denial()
+                    .expect("the source denial owner retains its authorization cause")
+                    .kind(),
+            ),
+            identity.to_owned(),
+        ),
+        Kind::MissingExpectation
+        | Kind::ForeignApplication
+        | Kind::ForeignInstallation
+        | Kind::ForeignSchema
+        | Kind::ForeignModel
+        | Kind::ForeignBranch
+        | Kind::ForeignOperation
+        | Kind::SourceChanged
+        | Kind::IncompleteFootprint
+        | Kind::SourceContractMismatch
+        | Kind::SourceParametersMismatch
+        | Kind::RetainedSourceStorageDenied => failed(identity, stop),
+    }
+}
+
+#[cfg(test)]
+mod authorization_cause_tests;

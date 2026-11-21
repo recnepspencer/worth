@@ -1,0 +1,393 @@
+//! Sole producer source/lifecycle selection on the original native borrow.
+use super::*;
+pub mod current_verification;
+pub use current_verification::VerifiedAppliedParent;
+
+impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub fn select_output_producer_with_remaining_core<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: &WorthQueryObservedSource<
+            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
+        >,
+        profile_kind: &'static str,
+
+        retained_program_basis: Option<
+            &crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+        >,
+        selected_override: Option<&crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation<'_, Schema>>,
+        purpose: SelectionPurpose,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<SelectedWithEntry<'_, Schema>, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        if source.runtime_authority != self.runtime.authority_identity().as_u64()
+            || source.schema_binding != self.installed_schema.binding_identity()
+        {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                Family::IDENTITY,
+            ));
+        }
+        let installed = self
+            .installed_schema
+            .installed_query_binding::<Family::Source>()
+            .map_err(|_| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    Family::IDENTITY,
+                )
+            })?;
+        require_installed_output_dependencies(installed.query().output_dependencies(), source)?;
+        let WorthQueryApplicationBasisSelectionIdentity::Product(observation) = &source.selection
+        else {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                Family::IDENTITY,
+            ));
+        };
+        selected_basis::require_retained_source(
+            self,
+            execution,
+            retained_program_basis,
+            selected_override,
+            observation,
+            Family::IDENTITY,
+        )?;
+        if let Some(shared) = selected_override {
+            selected_basis::require_fresh_source(self, observation, Family::IDENTITY, shared)?;
+        }
+        // The retained source establishes discovery custody, not the cutoff for
+        // publications that already exist at the execution head. Use one current
+        // selection for both candidate lookup and native output verification.
+        let program_selection = if retained_program_basis.is_some() && selected_override.is_none() {
+            let selected = selected_basis::select_retained_lifecycle(
+                self,
+                execution,
+                observation,
+                Family::IDENTITY,
+            )?;
+            Some(selected)
+        } else {
+            None
+        };
+        let lifecycle_observation = program_selection.as_ref().map(|selected| {
+            crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                selected.product().observation(),
+            )
+        });
+        let lifecycle_observation = lifecycle_observation.as_ref().unwrap_or(observation);
+        let output_bindings = self.installed_producers.family_output_bindings::<Family>();
+        let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.source_root());
+        // Lineage is registered by the admitted mutation scope, which the
+        // Source expectation binds to the query scope. A projected row can
+        // have a different root; that root still identifies the demand below.
+        let lineage_scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.model_root);
+        let mut lineage = self
+            .runtime
+            .primary_provider
+            .graph
+            .output_lineage
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        self.record_recovered_output_candidates(
+            None,
+            source.partition_identity(),
+            &source.checkpoint_identity().bytes(),
+            lifecycle_observation,
+            lineage_scope,
+            &output_bindings,
+            &mut lineage,
+        )
+        .map_err(|stop| selected_basis::selection_lookup_denial(stop, Family::IDENTITY))?;
+        let mut candidates = lineage
+            .retained_output_candidates_metered(
+                self.runtime.authority_identity().as_u64(),
+                &self.installed_schema.binding_identity(),
+                lineage_scope,
+                lifecycle_observation.lifecycle_incarnation(),
+                lifecycle_observation.reference_generation().get(),
+                &output_bindings,
+                source.partition_identity(),
+                execution,
+            )
+            .map_err(|stop| selected_basis::selection_lookup_denial(stop, Family::IDENTITY))?;
+        drop(lineage);
+        if candidates.is_empty()
+            && self.installed_producers.entries.values().any(|entry| {
+                entry.declaration.output_family_type
+                    == crate::equality_type_id::EqualityTypeId::of::<Family>()
+                    && entry.declaration.owned_scope_entity.is_some()
+            })
+        {
+            let newly_selected = if selected_override.is_none() && program_selection.is_none() {
+                Some(
+                    self.on_branch(observation.product_branch())
+                        .select_with_request(execution)
+                        .map_err(|cause| {
+                            WorthQueryOutputDemandDenial::product_selection(cause, Family::IDENTITY)
+                        })?,
+                )
+            } else {
+                None
+            };
+            let selected = selected_override
+                .map(|shared| shared.selected())
+                .or(program_selection.as_ref())
+                .or(newly_selected.as_ref())
+                .expect("Native restored prior lookup owns one selected product");
+            if !source_basis_is_admitted(
+                observation,
+                selected.product().observation(),
+                retained_program_basis.is_some(),
+            ) {
+                return Err(WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::Superseded,
+                    Family::IDENTITY,
+                )
+                .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable));
+            }
+            self.record_native_restored_output_prior::<Family>(
+                execution, source, selected, native,
+            )?;
+            candidates = self
+                .runtime
+                .primary_provider
+                .graph
+                .output_lineage
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .retained_output_candidates_metered(
+                    self.runtime.authority_identity().as_u64(),
+                    &self.installed_schema.binding_identity(),
+                    lineage_scope,
+                    lifecycle_observation.lifecycle_incarnation(),
+                    lifecycle_observation.reference_generation().get(),
+                    &output_bindings,
+                    source.partition_identity(),
+                    execution,
+                )
+                .map_err(|stop| selected_basis::selection_lookup_denial(stop, Family::IDENTITY))?;
+        }
+        let mut live_candidates = Vec::new();
+        for candidate in candidates {
+            let role = self
+                .installed_producers
+                .family_output_role::<Family>(candidate.binding)?;
+            if let Some(entity) = candidate.correspondence.active_entity_for_role(role) {
+                live_candidates.push((candidate, entity));
+            }
+        }
+        if !live_candidates.is_empty() {
+            // Debit basis admission and lifecycle visits before entering that
+            // phase. The caller's remainder survives all subsequent failures.
+
+            let newly_selected = if program_selection.is_some() {
+                program_selection
+            } else if selected_override.is_none() {
+                Some(
+                    self.on_branch(observation.product_branch())
+                        .select_with_request(execution)
+                        .map_err(|denial| {
+                            WorthQueryOutputDemandDenial::product_selection(
+                                denial,
+                                "output lifecycle basis could not be selected",
+                            )
+                        })?,
+                )
+            } else {
+                None
+            };
+            let selected = selected_override.map_or_else(
+                || {
+                    newly_selected
+                        .as_ref()
+                        .expect("ordinary selection owns a basis")
+                },
+                |shared| shared.selected(),
+            );
+            let source_basis_is_admitted = if selected_override.is_some() {
+                true // The exact selected owner check precedes candidate lookup.
+            } else {
+                source_basis_is_admitted(
+                    observation,
+                    selected.product().observation(),
+                    retained_program_basis.is_some(),
+                )
+            };
+            if !source_basis_is_admitted {
+                return Err(WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::Superseded,
+                    Family::IDENTITY,
+                )
+                .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable));
+            }
+            let graph = self.runtime.primary_graph().ok_or_else(|| {
+                WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    Family::IDENTITY,
+                )
+            })?;
+            let current = native.with_runtime(
+                graph,
+                execution,
+                || {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        Family::IDENTITY,
+                    )
+                },
+                |runtime| {
+                    current_verification::verify::<Schema, Family>(
+                        self,
+                        execution,
+                        runtime,
+                        selected,
+                        source,
+                        &live_candidates,
+                    )
+                },
+            )?;
+            let mut retained_output = false;
+            for ((candidate, _), (live, facts_current)) in live_candidates.into_iter().zip(current)
+            {
+                if !live {
+                    continue;
+                }
+                // A row that retains no fact has no Source evidence for the
+                // cutoff to compare; it keeps its ordinary Preserve selection.
+                if !facts_current && candidate.observed_source_facts.is_some() {
+                    let (mut exact, entry) = self
+                        .installed_producers
+                        .select_exact::<Family>(candidate.binding)?;
+                    if exact.reuses_live_output_only
+                        && !Family::SUPPORTED.iter().any(|applicability| {
+                            applicability.profile_kind() == profile_kind
+                                && applicability.lifecycle()
+                                    == WorthQueryProducerLifecyclePosture::Preserve
+                        })
+                        && entry.declaration.input_reuse.is_some_and(|contract| {
+                            contract.determinism()
+                                == worth_foundational::facade::DeterminismContract::CanonicalBitwise
+                        })
+                    {
+                        // This selects only the guarded input cutoff. It cannot
+                        // execute a fresh producer over the existing live output.
+                        exact.exact_retained_output = false;
+                        return Ok((exact, entry));
+                    }
+                }
+                if facts_current {
+                    let (mut selected, entry) = self
+                        .installed_producers
+                        .select_exact::<Family>(candidate.binding)?;
+                    // Restored rows use their own authenticated readmission;
+                    // other runtime rows still need the input cutoff.
+                    if current_verification::exact_source_contract(&candidate, entry)
+                        || candidate.historical_selection.is_some()
+                    {
+                        selected.retain_verified_output(&candidate);
+                        // A producer may declare several lifecycles. Lifecycle
+                        // selection names the one this retained output was
+                        // actually produced under, not the first declared.
+                        if matches!(purpose, SelectionPurpose::Lifecycle)
+                            && let Some(lifecycle) = candidate.performed_lifecycle()
+                            && let performed =
+                                WorthQueryProducerApplicability::new(profile_kind, lifecycle)
+                            && entry.declaration.applicability.contains(&performed)
+                        {
+                            selected.applicability = performed;
+                        }
+                        return Ok((selected, entry));
+                    }
+                    // A cached delivery belongs to the currently applicable
+                    // producer, not merely the binding of a historical output.
+                    // A different Preserve binding must execute its own work.
+                    // No retained input key or checkpoint authority is supplied.
+                    let may_rejoin_ready = match purpose {
+                        SelectionPurpose::Lifecycle => false,
+                        SelectionPurpose::OutputDelivery => true,
+                    };
+                    if may_rejoin_ready
+                        && candidate
+                            .completed_coupled_receipt_for_source(execution, source)
+                            .map_err(|cause| {
+                                selected_basis::selection_lookup_denial(
+                                    worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause),
+                                    Family::IDENTITY,
+                                )
+                            })?
+                            .is_some()
+                    {
+                        // The completed owner will recheck the actual input,
+                        // implementation and receipt before read-only adoption.
+                        selected.exact_retained_output = false;
+                        return Ok((selected, entry));
+                    }
+                    if may_rejoin_ready
+                        && let Some(epoch) = source.output_source_epoch()
+                        && let Ok((delivery, delivery_entry)) = self
+                            .installed_producers
+                            .select::<Family>(WorthQueryProducerApplicability::new(
+                                profile_kind,
+                                WorthQueryProducerLifecyclePosture::Preserve,
+                            ))
+                        && delivery_entry.declaration.operation_binding_type == candidate.binding
+                    {
+                        let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
+                            Family::IDENTITY, delivery.identity.clone(), delivery.applicability, epoch,
+                        );
+                        if self.runtime.output_demands.has_executed_ready(
+                            &key,
+                            scope,
+                            observation.lifecycle_incarnation(),
+                            candidate.correspondence.as_ref(),
+                            &candidate.idempotency_key_identity,
+                            &candidate.settlement_identity,
+                        ) {
+                            return Ok((delivery, delivery_entry));
+                        }
+                    }
+                    // A performed source has already executed this exact required
+                    // publication. Deliver its original Ready and receipt without
+                    // authorizing fresh work or manufacturing an input reuse key.
+                    // select_exact retains the existing read-only guard: if Ready
+                    // disappears, this Initial-only producer cannot run over live output.
+                    if may_rejoin_ready
+                        && selected.reuses_live_output_only
+                        && let Some(epoch) = source.output_source_epoch()
+                    {
+                        let key = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey::new(
+                            Family::IDENTITY, selected.identity.clone(), selected.applicability, epoch,
+                        );
+                        if let Some(_ready) = self.runtime.output_demands.committed_required_ready(
+                            &key,
+                            scope,
+                            observation.lifecycle_incarnation(),
+                            candidate.correspondence.as_ref(),
+                            &candidate.idempotency_key_identity,
+                        ) {
+                            selected.exact_retained_output = false;
+                            return Ok((selected, entry));
+                        }
+                    }
+                }
+                retained_output = true;
+            }
+            if retained_output {
+                return self.installed_producers.select::<Family>(
+                    WorthQueryProducerApplicability::new(
+                        profile_kind,
+                        WorthQueryProducerLifecyclePosture::Preserve,
+                    ),
+                );
+            }
+        }
+        self.installed_producers
+            .select::<Family>(WorthQueryProducerApplicability::new(
+                profile_kind,
+                WorthQueryProducerLifecyclePosture::Initial,
+            ))
+    }
+}

@@ -193,7 +193,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             ));
         }
         phase
-            .check_live_for(&application.runtime.product_runtime)
+            .check_live_for(&application.inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let history = application
             .installed_schema()

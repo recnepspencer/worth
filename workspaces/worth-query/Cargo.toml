@@ -19,6 +19,7 @@ members = [
     "crates/worth-query-execution-runtime",
     "crates/worth-query-execution-lineage",
     "crates/worth-query-execution-attempt",
+    "crates/worth-query-execution-query",
     "crates/worth-query-execution",
     "crates/worth-query-publication",
 ]
@@ -51,6 +52,7 @@ worth-query-execution-obligations = { path = "crates/worth-query-execution-oblig
 worth-query-execution-runtime = { path = "crates/worth-query-execution-runtime" }
 worth-query-execution-lineage = { path = "crates/worth-query-execution-lineage" }
 worth-query-execution-attempt = { path = "crates/worth-query-execution-attempt" }
+worth-query-execution-query = { path = "crates/worth-query-execution-query" }
 worth-query-execution = { path = "crates/worth-query-execution" }
 worth-query-publication = { path = "crates/worth-query-publication" }
 
@@ -106,6 +108,11 @@ worth-testkit-compiler.opt-level = 0
 worth-query-certification.debug = false
 # The worth-query-execution lib-test binary carries the whole primary-graph
 # court suite; its line tables pass the same PDB limit on Windows.
+worth-query-execution-contracts.debug = false
+worth-query-execution-runtime.debug = false
+worth-query-execution-lineage.debug = false
+worth-query-execution-attempt.debug = false
+worth-query-execution-query.debug = false
 worth-query-execution.debug = false
 # The worth-query-court-decl-host court binary passes the same limit.
 worth-query-court-decl-host.debug = false
@@ -128,6 +135,11 @@ worth-harness.opt-level = 0
 worth-testkit-compiler.opt-level = 0
 # Certification symbols exceed the PDB limit; see [profile.dev.package].
 worth-query-certification.debug = false
+worth-query-execution-contracts.debug = false
+worth-query-execution-runtime.debug = false
+worth-query-execution-lineage.debug = false
+worth-query-execution-attempt.debug = false
+worth-query-execution-query.debug = false
 worth-query-execution.debug = false
 worth-query-court-decl-host.debug = false
 

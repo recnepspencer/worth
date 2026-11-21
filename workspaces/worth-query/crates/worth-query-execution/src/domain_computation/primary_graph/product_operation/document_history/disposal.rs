@@ -98,7 +98,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryDocumentHistoryCloseReceipt, Self> {
         if let Err(cause) =
-            phase.checked_execution_request_for(&self.application.runtime.product_runtime)
+            phase.checked_execution_request_for(&self.application.inner.runtime.product_runtime)
         {
             self.opening_denial = Some(cause);
             return Err(self);

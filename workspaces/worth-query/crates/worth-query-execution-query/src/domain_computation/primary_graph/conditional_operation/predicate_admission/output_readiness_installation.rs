@@ -1,0 +1,81 @@
+use std::sync::Arc;
+
+use worth_query_installation::facade::{
+    WorthQueryConditionalConditionClass, WorthQueryInstalledApplicationConditionalNode,
+    WorthQueryInstalledGraphParticipationAuthority,
+};
+use worth_runtime_bridge::facade::{
+    BridgeConditionalProviderSet, BridgeOwnedConditionalInstallationRequest,
+};
+
+use super::{
+    bridge_denial, QueryAuthoredConditionalComputeProvider, QueryOutputReadinessPredicate,
+    WorthQueryConditionalRuntimeInstallationDenial,
+};
+
+pub fn prepare_dependency_conditional_installation<
+    Schema,
+    ApplicationOperation,
+    Input,
+    D,
+    O,
+    F,
+    Node,
+>(
+    node: &WorthQueryInstalledApplicationConditionalNode<
+        Schema,
+        ApplicationOperation,
+        Input,
+        D,
+        O,
+        F,
+        Node,
+    >,
+    graph: &WorthQueryInstalledGraphParticipationAuthority,
+) -> Result<BridgeOwnedConditionalInstallationRequest, WorthQueryConditionalRuntimeInstallationDenial>
+where
+    Node: 'static,
+{
+    if node.declaration().condition().class() != WorthQueryConditionalConditionClass::AspectFiltered
+    {
+        return Err(bridge_denial(
+            "output readiness requires an aspect-filtered conditional node",
+        ));
+    }
+    let contract = super::lower_dependency_contract(node.declaration())?;
+    let dependencies = super::dependency_candidates(node, graph)?;
+    let node_authority: Arc<str> = Arc::from(node.authority_identity());
+    let portable_node: Arc<str> = Arc::from(node.declaration().identity());
+    Ok(BridgeOwnedConditionalInstallationRequest {
+        contract,
+        location: super::lower_location(node.location()),
+        dependencies,
+        providers: output_readiness_providers::<Node, _>(
+            Arc::clone(&portable_node),
+            QueryOutputReadinessPredicate::new(
+                node_authority,
+                portable_node,
+                node.declaration().condition().dependencies().len(),
+            ),
+        ),
+    })
+}
+
+pub fn output_readiness_providers<
+    Node: 'static,
+    Predicate,
+>(
+    portable_node: Arc<str>,
+    condition: Predicate,
+) -> BridgeConditionalProviderSet
+where
+    Predicate: worth_runtime_bridge::facade::BridgeConditionalConditionProvider
+        + worth_runtime_bridge::facade::BridgeAuthoredConditionalProvider,
+{
+    BridgeConditionalProviderSet::new()
+        .authored_condition(condition)
+        .authored_compute(QueryAuthoredConditionalComputeProvider::<Node>::new(
+            portable_node,
+            None,
+        ))
+}

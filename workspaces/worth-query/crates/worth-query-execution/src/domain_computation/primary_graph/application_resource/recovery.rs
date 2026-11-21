@@ -17,18 +17,18 @@ pub(super) fn require_authority<Schema: ApplicationSchema>(
     access: &OriginalResourceAccess,
     product: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<(), ResourceCause> {
-    match runtime.runtime.product_runtime.owner.owner_identity().admit_incarnation(handle.home_owner()) {
+    match runtime.inner.runtime.product_runtime.owner.owner_identity().admit_incarnation(handle.home_owner()) {
         Err(worth_proof::HomeIncarnationDenial::StaleIncarnation) => return Err(ResourceCause::Recovery(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial::new(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenialKind::StaleIncarnation))),
         Err(worth_proof::HomeIncarnationDenial::ForeignHome) | Ok(()) => {}
     }
     authority
         .ensure_for(handle)
         .map_err(ResourceCause::Recovery)?;
-    if handle.runtime_authority() != runtime.runtime.authority_identity() {
+    if handle.runtime_authority() != runtime.inner.runtime.authority_identity() {
         return Err(ResourceCause::RecoveryAffinity(Affinity::Runtime));
     }
     if handle.binding().principal_scope().binding_identity()
-        != &runtime.installed_schema.binding_identity()
+        != &runtime.inner.installed_schema.binding_identity()
     {
         return Err(ResourceCause::RecoveryAffinity(Affinity::Schema));
     }
@@ -64,13 +64,13 @@ pub(super) fn require_unresolved<Schema: ApplicationSchema>(
     // The retained exact-commit read proves original record/correlation/commit
     // provenance only. It does not establish current effect status.
     let original = runtime
-        .runtime
+        .inner.runtime
         .primary_provider
         .committed_dispatch_outbox_for_binding(
             execution,
             handle.binding(),
-            &runtime.runtime.product_runtime.owner.observation_port(),
-            &runtime.runtime.product_runtime.owner.inspection_port(),
+            &runtime.inner.runtime.product_runtime.owner.observation_port(),
+            &runtime.inner.runtime.product_runtime.owner.inspection_port(),
         )
         .map_err(ResourceCause::EffectOutbox)?;
     drop(original);

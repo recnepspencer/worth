@@ -46,7 +46,7 @@ where
     Owner: WorthQueryProgramOwner<Schema> + ?Sized,
 {
     let execution =
-        match phase.execution_request_for(&owner.owned_runtime().runtime.product_runtime) {
+        match phase.execution_request_for(&owner.owned_runtime().inner.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
                 return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(

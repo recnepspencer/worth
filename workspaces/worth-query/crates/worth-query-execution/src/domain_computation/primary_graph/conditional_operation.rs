@@ -12,7 +12,7 @@ mod authorization_sources;
 mod canonical_identity;
 pub(crate) mod clock_observation;
 mod definition;
-pub(in crate::domain_computation::primary_graph) mod definition_declarations;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::definition_declarations;
 mod pending_definition;
 pub(in crate::domain_computation::primary_graph) use pending_definition::{
     install_pending_definitions, PendingDefinitionDeclaration,
@@ -25,13 +25,13 @@ pub(crate) mod lifecycle;
 pub(crate) mod lifecycle_inventory;
 mod operation_invocation;
 mod pending_binding;
-mod predicate_admission;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::predicate_admission;
 pub(in crate::domain_computation::primary_graph) use predicate_admission::{
     prepare_dependency_conditional_installation, QueryConditionalComputeContext,
 };
-mod authored_predicate;
-mod authored_provider_source;
-mod predicate_observation;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::authored_predicate;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::authored_provider_source;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::predicate_observation;
 pub(in crate::domain_computation::primary_graph) use authored_predicate::QueryAuthoredPredicateProvider;
 mod publication;
 mod reconstruction_authority;

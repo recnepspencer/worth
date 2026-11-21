@@ -22,9 +22,9 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         use WorthQueryCorrectionSelectionDenial as D;
         let application = self.application();
         let execution = phase
-            .execution_request_for(&application.runtime.product_runtime)
+            .execution_request_for(&application.inner.runtime.product_runtime)
             .map_err(|_| D::ForeignPhase)?;
-        let owner = &application.runtime.product_runtime.owner;
+        let owner = &application.inner.runtime.product_runtime.owner;
         if owner
             .owner_identity()
             .durable()
@@ -34,7 +34,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
             return Err(D::SourcePublicationMismatch);
         }
         let material = application
-            .runtime
+            .inner.runtime
             .primary_provider
             .observe_correction_material(coordinates.relational())
             .map_err(D::Material)?;
@@ -72,7 +72,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
             .ok_or(D::SourceNotCorrectable)?
             .binding_type();
         let fact = application
-            .runtime
+            .inner.runtime
             .primary_provider
             .observe_correction_original_fact(&execution, &original, &material.ready.commit)
             .map_err(D::Material)?;
@@ -122,7 +122,7 @@ impl<'runtime, S: ApplicationSchema> ApplicationCorrectionVisitor<S>
         let application = self.target.application();
         let execution = self
             .phase
-            .execution_request_for(&application.runtime.product_runtime)
+            .execution_request_for(&application.inner.runtime.product_runtime)
             .map_err(|_| WorthQueryCorrectionSelectionDenial::ForeignPhase)?;
         let original = self
             .originals
@@ -163,7 +163,7 @@ pub(super) fn read_lineage<S: ApplicationSchema>(
     use WorthQueryCorrectionSelectionDenial as D;
     let observation = target
         .application()
-        .runtime
+        .inner.runtime
         .product_runtime
         .owner
         .observation_port();

@@ -27,9 +27,9 @@ impl WorthQueryHistoryRecordingOutputOrigin {
             return Err(foreign().into());
         }
         let execution = phase
-            .checked_execution_request_for(&application.runtime.product_runtime)
+            .checked_execution_request_for(&application.inner.runtime.product_runtime)
             .map_err(stopped)?;
-        let graph = &application.runtime.primary_provider.graph;
+        let graph = &application.inner.runtime.primary_provider.graph;
         graph.with_runtime(&execution, |native| {
             let owner = match native
                 .observe_model_owner(
@@ -102,7 +102,7 @@ where
             TreeVerification::RequiresOriginal => return Ok(None),
         };
         let execution = phase
-            .checked_execution_request_for(&self.runtime().runtime.product_runtime)
+            .checked_execution_request_for(&self.runtime().inner.runtime.product_runtime)
             .map_err(stopped)?;
         let memory = memory::reserve(
             &execution,

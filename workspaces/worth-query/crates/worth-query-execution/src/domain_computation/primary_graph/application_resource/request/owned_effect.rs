@@ -209,10 +209,15 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
                 returned.expect("successful authorized cleanup returns exact recovery custody"),
                 closed.expect("successful cleanup retains its actual evidence"),
             )),
-            Err(cause) => Err(WorthQueryResourceRecoveryCloseStop {
-                recovery: returned,
-                denial: WorthQueryResourceActionDenial { cause, closed },
-            }),
+            Err(cause) => Err(WorthQueryResourceRecoveryCloseStop::from_parts(
+                worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
+                returned,
+                WorthQueryResourceActionDenial::from_cause_port(
+                    worth_query_execution_query::facade::ports::worth_query_query_crate_seal(),
+                    Box::new(cause),
+                    closed,
+                ),
+            )),
         }
     }
 

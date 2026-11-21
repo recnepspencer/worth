@@ -65,7 +65,7 @@ impl PreparedAdoptionPublication {
             .publication()
             .query_publication_home_binding(binding.observation())
             .map_err(Failure::Opening)?;
-        let graph = &selected.application().runtime.primary_provider.graph;
+        let graph = &selected.application().inner.runtime.primary_provider.graph;
         if home.is_none() {
             let candidate = graph
                 .with_runtime(execution, |native| {

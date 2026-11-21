@@ -50,7 +50,7 @@ where
 }
 
 impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, Schema> {
-    pub(super) fn new(
+    pub fn new(
         installed_schema: &'a WorthQueryInstalledApplicationSchema<Schema>,
         contribution: WorthQueryInstalledApplicationContribution<'a>,
         handlers: &'a mut PendingMutationHandlerRegistry<Schema>,

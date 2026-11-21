@@ -10,7 +10,7 @@ mod recording_outputs;
 mod retention;
 pub use output_intent::{WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputNavigationDenial};
 pub(in crate::domain_computation::primary_graph) use output_read::HistoryOutputControlPlan;
-mod retained_permission;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::document_history::retained_permission;
 pub(in crate::domain_computation::primary_graph) use retained_permission::HistoryRetainedPermissionStop;
 mod paging;
 mod pending;
@@ -154,7 +154,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             });
         }
         let expected = pending.identity();
-        let execution = match phase.checked_execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.checked_execution_request_for(&self.inner.runtime.product_runtime) {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(WorthQueryDocumentHistoryAttachmentFailure {

@@ -1,0 +1,359 @@
+//! Exact selected conventional authority for one required producer execution.
+
+use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_declaration::facade::application_operation::ApplicationMutationInputScope;
+use worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding;
+use worth_query_declaration::facade::application_operation::ApplicationMutationScopeResolution;
+use worth_query_declaration::facade::application_operation::ApplicationMutationScopeResolutionMode;
+use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
+
+use super::*;
+use crate::domain_computation::authorization::authorize_current_control_mutation_on_selected;
+mod applied;
+use crate::domain_computation::authorization::SelectedConventionalAdmissionStop;
+use crate::domain_computation::authorization::{
+    authorize_historical_control_mutation_on_selected, authorize_public_mutation_on_selected,
+};
+use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
+use crate::domain_computation::primary_graph::SharedSelectedProductOperation;
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::primary_graph::WorthQueryIssuedSelectedPrincipal;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial;
+pub use applied::prepare_applied_public_mutation;
+
+type Mutation<Schema, Binding> =
+    <Binding as WorthQueryApplicationProducerBinding<Schema>>::Operation;
+type MutationInput<Schema, Binding> =
+    <Mutation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Input;
+type MutationScope<Schema, Binding> = <<Mutation<Schema, Binding> as ApplicationMutationBinding<
+    Schema,
+>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope;
+type MutationPrincipal<Schema, Binding> =
+    <Mutation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Principal;
+type MutationPrincipalIdentity<Schema, Binding> =
+    <Mutation<Schema, Binding> as ApplicationMutationBinding<Schema>>::PrincipalIdentity;
+
+pub enum SelectedPublicPreparationStop {
+    CurrentPrincipal(WorthQueryPrincipalResolutionDenial),
+    CurrentScope(WorthQueryEntityResolutionDenial),
+    CurrentHead(ProducerExecutionStop),
+    CurrentMovedHead,
+    CurrentOperation(SelectedConventionalAdmissionStop),
+    ForeignSelectedRuntime,
+    Issuer,
+    Principal(WorthQueryPrincipalResolutionDenial),
+    Scope(WorthQueryEntityResolutionDenial),
+    UnsupportedScopeMode,
+    Head(ProducerExecutionStop),
+    MovedHead,
+    Operation(SelectedConventionalAdmissionStop),
+}
+
+pub struct PreparedSelectedPublicMutation<'selected, 'runtime, Schema, Binding>
+where
+    Schema: ApplicationSchema,
+    Binding: WorthQueryApplicationProducerBinding<Schema>,
+    MutationScope<Schema, Binding>: ApplicationEntityMarkerIdentity<Schema>,
+{
+    pub principal: WorthQueryIssuedSelectedPrincipal<
+        'selected,
+        'runtime,
+        Schema,
+        MutationPrincipal<Schema, Binding>,
+        MutationPrincipalIdentity<Schema, Binding>,
+    >,
+    pub scope: Option<
+        crate::domain_computation::primary_graph::WorthQueryApplicationEntityIdentity<
+            Schema,
+            MutationScope<Schema, Binding>,
+        >,
+    >,
+    pub operation:
+        crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
+            Schema,
+            <Mutation<Schema, Binding> as ApplicationMutationBinding<Schema>>::Operation,
+            MutationInput<Schema, Binding>,
+            MutationScope<Schema, Binding>,
+        >,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn prepare_selected_public_mutation<'selected, 'runtime, Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    installed: &TypedInstalledProducer<Schema, Binding>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    shared: &'selected SharedSelectedProductOperation<'runtime, Schema>,
+    control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
+    history: Option<HistoryProducerInvocation<'_>>,
+    external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request: &WorthQueryRequestScope,
+    input: &MutationInput<Schema, Binding>,
+) -> Result<
+    PreparedSelectedPublicMutation<'selected, 'runtime, Schema, Binding>,
+    SelectedPublicPreparationStop,
+>
+where
+    Schema: ApplicationSchema + 'static,
+    Binding: WorthQueryApplicationProducerBinding<Schema>,
+    MutationScope<Schema, Binding>: ApplicationEntityMarkerIdentity<Schema>,
+{
+    prepare_public_mutation::<Schema, Binding>(
+        execution, installed, runtime, shared, control, history, external, request, input, None,
+        None,
+    )
+}
+
+pub fn prepare_recovery_public_mutation<'selected, 'runtime, Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    installed: &TypedInstalledProducer<Schema, Binding>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    shared: &'selected SharedSelectedProductOperation<'runtime, Schema>,
+    control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
+    history: Option<HistoryProducerInvocation<'_>>,
+    external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request: &WorthQueryRequestScope,
+    input: &MutationInput<Schema, Binding>,
+    recovery: &super::unpublished::ContinuationState,
+) -> Result<
+    PreparedSelectedPublicMutation<'selected, 'runtime, Schema, Binding>,
+    SelectedPublicPreparationStop,
+>
+where
+    Schema: ApplicationSchema + 'static,
+    Binding: WorthQueryApplicationProducerBinding<Schema>,
+    MutationScope<Schema, Binding>: ApplicationEntityMarkerIdentity<Schema>,
+{
+    prepare_public_mutation::<Schema, Binding>(
+        execution,
+        installed,
+        runtime,
+        shared,
+        control,
+        history,
+        external,
+        request,
+        input,
+        Some(recovery),
+        None,
+    )
+}
+
+fn prepare_public_mutation<'selected, 'runtime, Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    installed: &TypedInstalledProducer<Schema, Binding>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    shared: &'selected SharedSelectedProductOperation<'runtime, Schema>,
+    control: Option<&'selected SharedSelectedProductOperation<'runtime, Schema>>,
+    history: Option<HistoryProducerInvocation<'_>>,
+    external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request: &WorthQueryRequestScope,
+    input: &MutationInput<Schema, Binding>,
+    recovery: Option<&super::unpublished::ContinuationState>,
+    applied: Option<(
+        &worth_relational::facade::runtime::RelationalPinnedRead,
+        &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    )>,
+) -> Result<
+    PreparedSelectedPublicMutation<'selected, 'runtime, Schema, Binding>,
+    SelectedPublicPreparationStop,
+>
+where
+    Schema: ApplicationSchema + 'static,
+    Binding: WorthQueryApplicationProducerBinding<Schema>,
+    MutationScope<Schema, Binding>: ApplicationEntityMarkerIdentity<Schema>,
+{
+    use SelectedPublicPreparationStop as Stop;
+    // The actual runtime index/schema, cold installed binding, and shared
+    // selected Product are caller operands. The Installation owner admits its
+    // selected catalog and authority work before issuing the borrowed proof.
+
+    let selected = control.unwrap_or(shared).selected();
+    if !std::ptr::eq(selected.application(), runtime) {
+        return Err(Stop::ForeignSelectedRuntime);
+    }
+    let current = runtime
+        .runtime
+        .installed_packages()
+        .validate_retained_mutation_binding(runtime.installed_schema(), &installed.mutation)
+        .map_err(|_| Stop::Issuer)?;
+    // Three retained-binding/wrapper getters, the scope mode, the principal
+    // identity reference, and the selected-scope call arguments are formed by
+    // this owner before their admitted callees begin work.
+
+    let principal = selected
+        .resolve_authenticated_principal_issued(
+            execution,
+            current.principal_binding(),
+            external,
+            request,
+            WorthQueryPrincipalResolutionMode::Ordinary,
+            None,
+        )
+        .map_err(|cause| {
+            if control.is_some() {
+                Stop::CurrentPrincipal(cause)
+            } else {
+                Stop::Principal(cause)
+            }
+        })?;
+
+    if current.scope_contract().mode() != ApplicationMutationScopeResolutionMode::InputField {
+        // Principal-derived scope copies need their own admitted Declaration
+        // owner. This selected route refuses before scope or graph effects.
+        return Err(Stop::UnsupportedScopeMode);
+    }
+    // operation_input and scope_for_binding are authored producer callbacks. For
+    // InputField, into_field_parts moves the already supplied field/value;
+    // it performs no framework clone of the principal identity.
+    let (field, value) =
+        <_ as ApplicationMutationInputScope<Schema, Mutation<Schema, Binding>>>::scope_for_binding(
+            input,
+        )
+        .into_field_parts(principal.principal().principal_identity());
+    let scope = selected.resolve_mutation_scope_issued(execution, field, value, request);
+    let scope = match scope {
+        Ok(scope) if history.is_some_and(|history| history.admits_historical_truth(shared.selected())) => {
+            let (truth_field, truth_value) = <_ as ApplicationMutationInputScope<Schema, Mutation<Schema, Binding>>>::scope_for_binding(input)
+                .into_field_parts(principal.principal().principal_identity());
+            if let Ok(truth_scope) = shared.selected().resolve_mutation_scope_issued(execution, truth_field, truth_value, request)
+                && truth_scope.scope().entity_id() != scope.scope().entity_id() {
+                require_selected_heads::<Schema, Binding>(runtime, shared, control, recovery)?;
+                let operation = authorize_historical_control_mutation_on_selected::<Schema, Mutation<Schema, Binding>, MutationScope<Schema, Binding>>(
+                    execution, runtime, shared, control.ok_or(Stop::ForeignSelectedRuntime)?, &current, &installed.prepared_graph,
+                    &principal, &truth_scope, history.expect("historical source"), request,
+                ).map_err(Stop::CurrentOperation)?;
+                return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.or(Binding::ORIGINAL_READS).map(|_| truth_scope.scope().retain_description().into_application_identity()) });
+            }
+            scope
+        }
+        Ok(scope) => scope,
+        Err(cause) if applied.is_some() && cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
+            crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity,
+        ) => {
+            require_selected_heads::<Schema, Binding>(runtime, shared, control, recovery)?;
+            let (before, candidate) = applied.expect("applied source posture");
+            let (field, value) = <_ as ApplicationMutationInputScope<Schema, Mutation<Schema, Binding>>>::scope_for_binding(input)
+                .into_field_parts(principal.principal().principal_identity());
+            let scope = runtime.runtime.primary_graph().ok_or(Stop::ForeignSelectedRuntime)?.retain_entity_resolution_context()
+                .resolve_applied_field(execution, before, candidate, field, value).map_err(Stop::Scope)?;
+            let operation = crate::domain_computation::authorization::authorize_applied_control_mutation_on_selected::<Schema, Mutation<Schema, Binding>, MutationScope<Schema, Binding>>(
+                execution, runtime, shared, &current, &installed.prepared_graph, &principal, &scope, before, candidate, request,
+            ).map_err(Stop::Operation)?;
+            return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.or(Binding::ORIGINAL_READS).map(|_| scope) });
+        }
+        Err(cause) if history.is_some_and(|history| history.admits_historical_truth(shared.selected()))
+            && cause.kind() == crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenialKind::Refused(
+                crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind::UnknownEntity,
+            ) => {
+            require_selected_heads::<Schema, Binding>(runtime, shared, control, recovery)?;
+            let history = history.expect("guarded historical source");
+            let control = control.ok_or(Stop::ForeignSelectedRuntime)?;
+            let (field, value) = <_ as ApplicationMutationInputScope<Schema, Mutation<Schema, Binding>>>::scope_for_binding(input)
+                .into_field_parts(principal.principal().principal_identity());
+            let mutation_scope = shared.selected().resolve_mutation_scope_issued(execution, field, value, request)
+                .map_err(Stop::Scope)?;
+            let operation = authorize_historical_control_mutation_on_selected::<Schema, Mutation<Schema, Binding>, MutationScope<Schema, Binding>>(
+                execution, runtime, shared, control, &current, &installed.prepared_graph,
+                &principal, &mutation_scope, history, request,
+            ).map_err(Stop::CurrentOperation)?;
+            return Ok(PreparedSelectedPublicMutation { principal, operation, scope: Binding::PREDECESSOR_READS.or(Binding::ORIGINAL_READS).map(|_| mutation_scope.scope().retain_description().into_application_identity()) });
+        }
+        Err(cause) => return Err(if control.is_some() { Stop::CurrentScope(cause) } else { Stop::Scope(cause) }),
+    };
+    require_selected_heads::<Schema, Binding>(runtime, shared, control, recovery)?;
+    let operation = if let Some(control) = control {
+        let selector = scope.scope().retain_scope_selector_funded(execution).map_err(|cause| {
+            Stop::CurrentOperation(SelectedConventionalAdmissionStop::Authorization(
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(
+                    crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(cause),
+                    Binding::IDENTITY,
+                ),
+            ))
+        })?;
+        let mutation_scope = shared
+            .selected()
+            .resolve_retained_query_scope_issued(execution, field, &selector, request)
+            .map_err(Stop::Scope)?;
+        authorize_current_control_mutation_on_selected::<
+            Schema,
+            Mutation<Schema, Binding>,
+            MutationScope<Schema, Binding>,
+        >(
+            execution,
+            runtime,
+            shared,
+            control,
+            &current,
+            &installed.prepared_graph,
+            &principal,
+            &scope,
+            &mutation_scope,
+            request,
+        )
+        .map_err(Stop::CurrentOperation)
+    } else {
+        authorize_public_mutation_on_selected::<
+            Schema,
+            Mutation<Schema, Binding>,
+            MutationScope<Schema, Binding>,
+        >(
+            execution,
+            runtime,
+            shared,
+            &current,
+            &installed.prepared_graph,
+            &principal,
+            &scope,
+            request,
+        )
+        .map_err(Stop::Operation)
+    }?;
+
+    Ok(PreparedSelectedPublicMutation {
+        principal,
+        operation,
+        scope: Binding::PREDECESSOR_READS
+            .or(Binding::ORIGINAL_READS)
+            .map(|_| {
+                scope
+                    .scope()
+                    .retain_description()
+                    .into_application_identity()
+            }),
+    })
+}
+
+fn require_selected_heads<S, B>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    shared: &SharedSelectedProductOperation<'_, S>,
+    control: Option<&SharedSelectedProductOperation<'_, S>>,
+    recovery: Option<&super::unpublished::ContinuationState>,
+) -> Result<(), SelectedPublicPreparationStop>
+where
+    S: ApplicationSchema + 'static,
+    B: WorthQueryApplicationProducerBinding<S>,
+{
+    use SelectedPublicPreparationStop as Stop;
+    let source_matches = match recovery {
+        Some(recovery) => recovery
+            .admits_selected(shared.selected().product().observation())
+            .map_err(|stop| Stop::Head(stop.into()))?,
+        None => source_readmission::is_current_selected_product::<S, B>(runtime, shared.selected())
+            .map_err(Stop::Head)?,
+    };
+    if !source_matches {
+        return Err(Stop::MovedHead);
+    }
+    if let Some(control) = control
+        && !source_readmission::is_current_selected_product::<S, B>(runtime, control.selected())
+            .map_err(Stop::CurrentHead)?
+    {
+        return Err(Stop::CurrentMovedHead);
+    }
+    Ok(())
+}
+
+mod denial;
+pub use denial::preparation_stop;

@@ -18,7 +18,7 @@ pub(super) fn publish<
 > {
     use WorthQueryProductConditionalPublicationDenial as D;
     let execution = phase
-        .execution_request_for(&application.runtime.product_runtime)
+        .execution_request_for(&application.inner.runtime.product_runtime)
         .map_err(|cause| D::ExecutionRequest(cause.into()))?;
     let branch = worth_foundational::facade::DurableSignalBranchIdentity::from_recorded(
         bridge.signal_owner().binding().owner(),
@@ -28,7 +28,7 @@ pub(super) fn publish<
         .prepare_conditional_definition_publication(&execution, branch, predecessor, request)
         .map_err(D::AuthoredBridgePreparation)?;
     let product_binding = product.publication_binding();
-    let publication = application.runtime.product_runtime.owner.publication_port();
+    let publication = application.inner.runtime.product_runtime.owner.publication_port();
     let mut pending = publication
         .prepare_query_publication_with_signal(
             &execution,

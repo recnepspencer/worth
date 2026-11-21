@@ -221,7 +221,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             .map_err(Original::Observation)?;
         let current =
             runtime
-                .runtime
+                .inner.runtime
                 .primary_provider
                 .graph
                 .with_runtime(&execution, |native| {

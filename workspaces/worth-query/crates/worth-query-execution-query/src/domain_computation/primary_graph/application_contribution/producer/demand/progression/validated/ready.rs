@@ -1,0 +1,258 @@
+use crate::domain_computation::primary_graph::OutputDemandSettlementReusedExt;
+use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
+use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryAcceptedOutputAuthority as Authority;
+use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement as Settlement;
+
+/// What a Ready row proves on the branch as it stands.
+#[derive(Clone, Copy)]
+enum ReadyUnavailable {
+    Superseded,
+    WorkExhausted,
+}
+
+enum ReadyVerdict {
+    Settled(std::sync::Arc<Settlement>),
+    /// A superseded output, or an exhausted source-currentness allowance,
+    /// leaves no current proof. Movable demands refresh into fresh execution;
+    /// exact-publication recovery refuses that refresh.
+    Unavailable(ReadyUnavailable),
+}
+
+/// Selected waves supply their own currentness proof; ordinary Ready uses a branch.
+pub enum ReadyCertification {
+    SelectedWave,
+    OnBranch(crate::basis::WorthQueryProductBranch),
+}
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    pub fn advance_validated_ready<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        disclosure: ValidatedOutputDisclosure<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
+        completion: ReadyCompletion,
+        certification: ReadyCertification,
+    ) -> Result<
+        OwnStages<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
+        WorthQueryOutputDemandDenial,
+    >
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        FamilySourceValue<Schema, Family>: 'static,
+        FamilySourceQuery<Schema, Family>: 'static,
+    {
+        let delivery_branch = match certification {
+            // Exact Ready still needs the wave's registry and
+            // actor/native proof before it can be Current.
+            ReadyCertification::SelectedWave => {
+                return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Pending));
+            }
+            ReadyCertification::OnBranch(branch) => branch,
+        };
+        // The disclosed source is the one this demand names: a replaced
+        // source left through `leave_replaced_source` before the row began.
+        if let ReadyVerdict::Settled(settlement) =
+            self.certify_ready(execution, phase, demand, &completion, delivery_branch)?
+        {
+            return Ok(OwnStages::Answer(WorthQueryOutputDemandAdvance::Settled(
+                settlement,
+            )));
+        }
+
+        self.refresh_ready_output_demand(
+            execution,
+            demand,
+            disclosure.value(),
+            disclosure.source().clone(),
+            &completion,
+        )?;
+        // Carry source custody unchanged; no executable seal crosses refresh.
+        Ok(OwnStages::Refreshed(disclosure))
+    }
+
+    /// Settle the Ready this call's own stages reached. Its disclosure went
+    /// into the execution. A born-stale publication requests one reobservation
+    /// within this advance, using the same request admission.
+    pub fn settle_own_ready<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
+        completion: &ReadyCompletion,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+        progress: CheckpointProgress,
+    ) -> Result<
+        CallerPass<FamilySourceQuery<Schema, Family>, FamilySourceValue<Schema, Family>>,
+        WorthQueryOutputDemandDenial,
+    >
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        Ok(
+            match self.certify_ready(execution, phase, demand, completion, delivery_branch)? {
+                ReadyVerdict::Settled(settlement) => {
+                    CallerPass::Answer(WorthQueryOutputDemandAdvance::Settled(settlement))
+                }
+                ReadyVerdict::Unavailable(ReadyUnavailable::Superseded) => match progress {
+                    CheckpointProgress::Published(publication) => {
+                        let current = self
+                            .on_branch(delivery_branch)
+                            .select_with_request(execution)
+                            .map_err(|stop| {
+                                WorthQueryOutputDemandDenial::product_selection(
+                                    stop,
+                                    "own publication readmission",
+                                )
+                            })?;
+                        if publication
+                            .0
+                            .is_selected_at(current.product().observation())
+                            && matches!(&completion.authority, Authority::Committed(receipt) if receipt.committed_product_publication() == &publication.0)
+                        {
+                            CallerPass::PublishedStale(publication)
+                        } else {
+                            CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
+                        }
+                    }
+                    CheckpointProgress::Advanced => CallerPass::Progressed,
+                },
+                ReadyVerdict::Unavailable(ReadyUnavailable::WorkExhausted) => {
+                    CallerPass::Answer(WorthQueryOutputDemandAdvance::Pending)
+                }
+            },
+        )
+    }
+
+    fn certify_ready<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        demand: &WorthQueryAdmittedOutputDemand<Schema, Family>,
+        completion: &ReadyCompletion,
+        delivery_branch: crate::basis::WorthQueryProductBranch,
+    ) -> Result<ReadyVerdict, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        let interest = demand
+            .interest
+            .as_ref()
+            .expect("validated Ready retains its live Interest");
+        let current = self
+            .on_branch(delivery_branch)
+            .select_with_request(execution)
+            .map_err(|denial| {
+                WorthQueryOutputDemandDenial::product_selection(
+                    denial,
+                    "ready output currentness basis could not be selected",
+                )
+            })?;
+        let unavailable = |proof: Result<(), WorthQueryOutputDemandDenial>| match proof {
+            Ok(()) => Ok(None),
+            Err(denial) => match ready_unavailable(&denial) {
+                Some(cause) => Ok(Some(cause)),
+                None => Err(denial),
+            },
+        };
+        // The source is proven by the disclosure. A stable alias or a
+        // restored output and its facts are compared here as well, and for a
+        // restored output that comparison is what gives it its marks.
+        let alias = |settlement: std::sync::Arc<Settlement>| {
+            let proof = current.require_current_output_settlements(phase, [settlement.as_ref()]);
+            unavailable(proof).map(|unavailable| match unavailable {
+                None => Ok(settlement),
+                Some(kind) => Err(kind),
+            })
+        };
+        let settlement = match &completion.authority {
+            Authority::Committed(receipt) => {
+                let proof = current.require_current_output_receipts(phase, [receipt]);
+                if let Some(kind) = unavailable(proof)? {
+                    return Ok(ReadyVerdict::Unavailable(kind));
+                }
+                match Settlement::from_committed_ready(
+                    execution,
+                    self,
+                    completion,
+                    &demand.selected.identity,
+                    Family::IDENTITY,
+                    demand.producer_contacts_in_this_demand,
+                ) {
+                    Ok(settlement) => Ok(settlement),
+                    Err(denial)
+                        if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
+                    {
+                        own_effect_observation::record(Stage::ReadySuperseded);
+                        Err(ReadyUnavailable::Superseded)
+                    }
+                    Err(denial) => return Err(denial),
+                }
+            }
+            Authority::Recovered(_) => {
+                match Settlement::from_committed_ready(
+                    execution,
+                    self,
+                    completion,
+                    &demand.selected.identity,
+                    Family::IDENTITY,
+                    demand.producer_contacts_in_this_demand,
+                ) {
+                    Ok(settlement) => alias(settlement)?,
+                    Err(stop) if stop.kind() == WorthQueryOutputDemandDenialKind::Superseded => {
+                        own_effect_observation::record(Stage::ReadySuperseded);
+                        Err(ReadyUnavailable::Superseded)
+                    }
+                    Err(stop) => return Err(stop),
+                }
+            }
+            Authority::Stable(stable) => alias(Settlement::from_stable(
+                execution,
+                self,
+                stable,
+                &current,
+                &demand.selected.identity,
+                Family::IDENTITY,
+                demand.producer_contacts_in_this_demand,
+            )?)?,
+            Authority::Restored(restored) => alias(Settlement::from_restoration(
+                execution,
+                self,
+                restored,
+                Family::IDENTITY,
+                demand.producer_contacts_in_this_demand,
+            )?)?,
+        };
+        let settlement = match settlement {
+            Ok(settlement) => settlement,
+            Err(kind) => return Ok(ReadyVerdict::Unavailable(kind)),
+        };
+        self.runtime
+            .output_demands
+            .finish_settlement(interest, &completion.authority)?;
+        own_effect_observation::record(Stage::ReadySettled);
+        Ok(ReadyVerdict::Settled(settlement))
+    }
+}
+
+fn ready_unavailable(denial: &WorthQueryOutputDemandDenial) -> Option<ReadyUnavailable> {
+    match denial.kind() {
+        WorthQueryOutputDemandDenialKind::Superseded => {
+            own_effect_observation::record(Stage::ReadySuperseded);
+            Some(ReadyUnavailable::Superseded)
+        }
+        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded => {
+            own_effect_observation::record(Stage::ReadyWorkExhausted);
+            Some(ReadyUnavailable::WorkExhausted)
+        }
+        _ => None,
+    }
+}

@@ -64,11 +64,11 @@ where
         .ok_or(Denial::NoActiveReversal)?;
     let active_ancestry = target.select_alternative_ancestry(phase, active, maximum_history)?;
     let execution = phase
-        .execution_request_for(&target.application().runtime.product_runtime)
+        .execution_request_for(&target.application().inner.runtime.product_runtime)
         .map_err(|_| Denial::ForeignPhase)?;
     if target
         .application()
-        .runtime
+        .inner.runtime
         .primary_provider
         .consumption_of_reversal_at_basis(&execution, target.product().relational_basis(), active)
         .map_err(Denial::History)?

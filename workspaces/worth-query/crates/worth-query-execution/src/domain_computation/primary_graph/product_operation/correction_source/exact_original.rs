@@ -71,7 +71,7 @@ pub(super) fn performed<S: ApplicationSchema>(
     WorthQueryCorrectionSelectionDenial,
 > {
     use WorthQueryCorrectionSelectionDenial as D;
-    let owner = &target.application().runtime.product_runtime.owner;
+    let owner = &target.application().inner.runtime.product_runtime.owner;
     let originals = owner
         .inspection_port()
         .observe_program_activation_history(&execution)

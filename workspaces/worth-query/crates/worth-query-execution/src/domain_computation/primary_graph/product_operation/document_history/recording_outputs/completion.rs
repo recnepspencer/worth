@@ -13,7 +13,7 @@ impl<S: ApplicationSchema>
     ) -> Result<WorthQueryCompletedRecordingOutputs, WorthQueryRecordingOutputQualificationDenial>
     {
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(&self.inner.runtime.product_runtime)
             .map_err(stopped)?;
         if trees.len() != origin.profile.tree_profiles().len() {
             return Err(foreign().into());
@@ -35,7 +35,7 @@ impl<S: ApplicationSchema>
             match &tree.completion {
                 RecordingTreeCompletion::Original(original) => {
                     original.require_current_at(
-                        self.select_application_read_observation(phase, &endpoint)
+                        self.inner.select_application_read_observation(phase, &endpoint)
                             .map_err(WorthQueryOriginalReadOutputDenial::Observation)?,
                         phase,
                         access,
@@ -99,7 +99,7 @@ impl<S: ApplicationSchema>
                 }
             }
         }
-        let graph = &self.runtime.primary_provider.graph;
+        let graph = &self.inner.runtime.primary_provider.graph;
         if let Some(publisher) = graph
             .application_publication
             .as_ref()
@@ -228,7 +228,7 @@ fn graph_current_parent<S: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     profile: &WorthQueryHistoryOutputProfile,
 ) -> Result<bool, WorthQueryRecordingOutputQualificationDenial> {
-    runtime.runtime.primary_provider.graph.with_runtime(execution,|native|
+    runtime.inner.runtime.primary_provider.graph.with_runtime(execution,|native|
         selected.current_owned_route_is_current(execution,native,profile.recording_model().entity(),profile.source_intent().source_subject(),profile.recording_family(),profile.source_intent().source_partition())
             .map_err(|cause|match cause {
                 crate::domain_computation::primary_graph::application_output_demand::CurrentOwnedRouteDenial::Ownership(cause)=>WorthQueryRecordingOutputQualificationDenial::Ownership(Box::new(cause)),

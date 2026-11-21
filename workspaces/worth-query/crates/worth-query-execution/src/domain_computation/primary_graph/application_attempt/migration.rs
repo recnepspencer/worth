@@ -23,22 +23,22 @@ where
     Schema: worth_query_declaration::facade::application_schema::ApplicationSchema,
 {
     program
-        .refuse_stale_home_authority(application.runtime.product_runtime.owner.owner_identity())
+        .refuse_stale_home_authority(application.inner.runtime.product_runtime.owner.owner_identity())
         .map_err(|cause| {
             WorthQueryProgramMigrationPreparationDenial::Candidate(
                 super::WorthQueryApplicationAttemptDenial::request_authority_lost(cause),
             )
         })?;
     if !program.belongs_to_application(
-        application.runtime.authority_identity(),
-        &application.installed_schema.binding_identity(),
+        application.inner.runtime.authority_identity(),
+        &application.inner.installed_schema.binding_identity(),
     ) {
         return Err(WorthQueryProgramMigrationPreparationDenial::ForeignCandidate);
     }
     program
         .validate_installed_entry(
-            &application.runtime,
-            &application.installed_schema.binding_identity(),
+            &application.inner.runtime,
+            &application.inner.installed_schema.binding_identity(),
         )
         .and_then(|()| program.validate_current_authority())
         .map_err(|denial| {

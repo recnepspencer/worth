@@ -1,0 +1,180 @@
+//! Commit-snapshot readmission of an approval from its durable, descriptive basis.
+
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_installation::facade::ApplicationSchema;
+
+use super::{
+    foreign_runtime, stale_authorization, stale_principal, RevalidationObservationAxes,
+    WorthQueryAuthorizationRevalidationObservation, WorthQueryCapabilityObservationSource,
+};
+use crate::domain_computation::authorization::{
+    WorthQueryOperationAuthorizationDenial, WorthQueryWorkflowApprovalAuthorityBasis,
+};
+use crate::domain_computation::primary_graph::{
+    WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
+};
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    pub fn readmit_workflow_approval_authority<Operation, Input, Scope>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        authority: &WorthQueryWorkflowApprovalAuthorityBasis,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        let product = admission
+            .graph_work()
+            .mutation_product()
+            .ok_or_else(stale_authorization)?;
+        self.readmit_workflow_approval_authority_on_product(
+            execution,
+            authority,
+            product,
+            admission.graph_work_session_identity(),
+        )
+    }
+
+    pub fn readmit_workflow_approval_authority_on_product(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        authority: &WorthQueryWorkflowApprovalAuthorityBasis,
+        product: &crate::basis::WorthQueryProductBranchLease,
+        session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+    ) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+        if authority.principal().principal() != authority.request().principal() {
+            return Err(stale_principal());
+        }
+        let installed = self.installed_capability_plan(authority.request())?;
+        // The retained seal identifies the original installation's admission;
+        // it is provenance, not a permit transferable to this installation.
+        // Resolve the exact durable canonical capability identity above, then
+        // freshly observe its principal/grant/lineage/dependencies below.
+        let sample = self.sample_capability_time(installed)?;
+        let worth_foundational::facade::AspectValue::UInt64(now) = sample.value() else {
+            return Err(stale_authorization());
+        };
+        if sample.timeline() != authority.timeline() {
+            return Err(stale_authorization());
+        }
+        if *now > authority.expiry() {
+            return Err(WorthQueryOperationAuthorizationDenial::new(
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityExpired),
+                "workflow approval",
+            ));
+        }
+        let security = self
+            .admit_product_security_basis(execution, product)
+            .map_err(|denial| {
+                super::super::denial::product_security_basis_denial(
+                    denial,
+                    "workflow approval authorization",
+                )
+            })?;
+        let graph = self.runtime.primary_graph().ok_or_else(foreign_runtime)?;
+        graph.integration_handle().with_runtime(execution, |runtime| {
+            let snapshot = security.snapshot_handle();
+            if !authority
+                .principal()
+                .remains_current_in(execution, runtime, snapshot, graph.layout()).map_err(|denial| WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::denial::principal_currentness(denial), "workflow approval principal"))?
+            {
+                return Err(stale_principal());
+            }
+            let observed = WorthQueryAuthorizationRevalidationObservation::from_axes(
+                RevalidationObservationAxes {
+                    session,
+                    relational: runtime,
+                    snapshot,
+                    bridge: self.runtime.authorization.bridge(),
+                    installed,
+                    request: authority.request(),
+                    sample: &sample,
+                },
+            )
+            .observe_active_capability(execution, Some(authority.grant()), None)?;
+            authority.lineage().matches_view(&observed.decision().durable_lineage_view())
+                .then_some(())
+                .ok_or_else(stale_authorization)?;
+            if !authority.dependencies().primary_matches(execution, observed.decision())? {
+                return Err(stale_authorization());
+            }
+            if let Some(support) = authority.support() {
+                if support.request().principal() != authority.request().principal()
+                    || !support_matches_primary(authority, support)
+                {
+                    return Err(stale_authorization());
+                }
+                let installed = self.installed_capability_plan(support.request())?;
+                // Support is also re-admitted by its exact canonical request.
+                // Its recorded local seal belongs to the original installation.
+                let sample = self.sample_capability_time(installed)?;
+                let worth_foundational::facade::AspectValue::UInt64(support_now) = sample.value() else {
+                    return Err(stale_authorization());
+                };
+                if sample.timeline() != support.timeline() {
+                    return Err(stale_authorization());
+                }
+                if *support_now > support.expiry() {
+                    return Err(WorthQueryOperationAuthorizationDenial::new(
+                        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::CapabilityExpired),
+                        "workflow approval support",
+                    ));
+                }
+                let observed = WorthQueryAuthorizationRevalidationObservation::from_axes(
+                    RevalidationObservationAxes {
+                        session,
+                        relational: runtime,
+                        snapshot,
+                        bridge: self.runtime.authorization.bridge(),
+                        installed,
+                        request: support.request(),
+                        sample: &sample,
+                    },
+                )
+                .observe_retained_capability(execution,
+                    support.posture(),
+                    support.grant(),
+                    None,
+                )?;
+                if !support.lineage().matches_view(&observed.decision().durable_lineage_view()) {
+                    return Err(stale_authorization());
+                }
+                let dependencies_match = match support.role() {
+                    crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::DelegationTarget => authority
+                        .dependencies()
+                        .delegation_target_support_matches(execution, observed.decision(), runtime, snapshot)?,
+                    crate::domain_computation::authorization::WorthQueryCapabilitySupportRole::ElevationUpperBound => authority
+                        .dependencies()
+                        .support_matches(execution, observed.decision())?,
+                };
+                if !dependencies_match {
+                    return Err(stale_authorization());
+                }
+            }
+            Ok(())
+        })
+    }
+}
+
+fn support_matches_primary(
+    authority: &WorthQueryWorkflowApprovalAuthorityBasis,
+    support: &crate::domain_computation::authorization::workflow_approval_authority::WorthQueryWorkflowApprovalSupportBasis,
+) -> bool {
+    use crate::domain_computation::authorization::delegation_admission::WorthQueryCapabilityObservationPosture;
+    use crate::domain_computation::authorization::WorthQueryCapabilitySupportRole;
+    match support.role() {
+        WorthQueryCapabilitySupportRole::DelegationTarget => {
+            support.posture() == WorthQueryCapabilityObservationPosture::Active
+        }
+        WorthQueryCapabilitySupportRole::ElevationUpperBound => {
+            support.posture() == WorthQueryCapabilityObservationPosture::UpperBound
+                && support.request().resource() == authority.request().resource()
+                && support.request().capability_identity()
+                    == authority.request().capability_identity()
+                && support.capability_authority_identity()
+                    == authority.capability_authority_identity()
+                && support.grant() == authority.grant()
+        }
+    }
+}

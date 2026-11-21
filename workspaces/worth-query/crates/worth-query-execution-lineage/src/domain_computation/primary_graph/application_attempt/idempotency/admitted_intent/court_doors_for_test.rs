@@ -3,10 +3,10 @@ use super::*;
 
 impl WorthQueryApplicationIdempotencyBinding {
     #[doc(hidden)]
-    pub fn bind_admission_for_test<S, O, I, E>(
+    pub fn bind_admission_for_test<A: AdmittedOperationPort + ?Sized>(
         self,
-        admission: &WorthQueryAdmittedApplicationOperation<S, O, I, E>,
+        admission: &A,
     ) -> Self {
-        Self::bind_admission::<S, O, I, E>(self, admission)
+        Self::bind_admission(self, admission)
     }
 }

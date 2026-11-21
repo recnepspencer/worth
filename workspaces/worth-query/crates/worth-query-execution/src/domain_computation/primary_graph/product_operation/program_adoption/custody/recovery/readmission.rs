@@ -182,7 +182,7 @@ Err(PublicationDenial::Stopped(stop)) => Err(failure(
                     effects,
                     binding.recovery(),
                     self.application()
-                        .runtime
+                        .inner.runtime
                         .primary_provider
                         .unpublished_idempotency_disposition(),
                     support_custody,

@@ -106,7 +106,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 // disclosure, posting, original root or settlement is constructed.
                 let selected = self.runtime().select_application_read_observation_with_request(execution, basis)
                     .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?;
-                native.with_runtime(self.runtime().runtime.primary_graph().ok_or_else(foreign)?, execution,
+                native.with_runtime(self.runtime().inner.runtime.primary_graph().ok_or_else(foreign)?, execution,
                     foreign, |native| {
                         let current=if let Some(model)=authority.recording_model() {
                             crate::domain_computation::primary_graph::product_operation::document_history::navigation::output_verification::current_recording_route_is_current(

@@ -62,7 +62,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if expected != document.selection.lock().expected {
             return Err(Denial::HeadDiverged);
         }
-        confirm_document_head(self, phase, product, ()).map_err(|(_, denial)| denial)?;
+        confirm_document_head(self.inner(), phase, product, ()).map_err(|(_, denial)| denial)?;
         if expected != document.selection.lock().expected {
             return Err(Denial::HeadDiverged);
         }
@@ -88,17 +88,17 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::ForeignRuntime);
         }
         let ownership = self
-            .runtime
+            .inner.runtime
             .primary_provider
             .graph
             .layout
             .history_ownership(&installed.definition().parts().identity)
             .ok_or(Denial::InstalledBindingMismatch)?;
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(&self.inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let owner = self
-            .runtime
+            .inner.runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |native| {

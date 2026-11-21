@@ -14,7 +14,7 @@ impl WorthQueryPreparedBranchSetAdoption {
     {
         let result = application.with_application_advancement(request, |phase| {
             let execution = phase
-                .checked_execution_request_for(&application.runtime.product_runtime)
+                .checked_execution_request_for(&application.inner.runtime.product_runtime)
                 .map_err(|cause| {
                     WorthQueryBranchSetAdoptionResumeDenial::Preparation(
                         WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause),
@@ -94,7 +94,7 @@ impl WorthQueryPreparedBranchSetAdoption {
                 ))?];
         for pending in &self.pending {
             if pending.adoption.owner_identity
-                != application.runtime.product_runtime.owner.owner_identity()
+                != application.inner.runtime.product_runtime.owner.owner_identity()
             {
                 return Err(Denial::ForeignRuntime);
             }
@@ -138,7 +138,7 @@ impl WorthQueryPreparedBranchSetAdoption {
             progress: std::mem::take(&mut self.progress),
             target: self.target,
             total_selection_work_units: self.total_selection_work_units,
-            owner: application.runtime.product_runtime.owner.owner_identity(),
+            owner: application.inner.runtime.product_runtime.owner.owner_identity(),
             durable: attempt,
             _support_custody: custody,
         })
@@ -237,11 +237,11 @@ impl WorthQueryStoppedBranchSetAdoption {
     {
         let result = application
             .with_application_advancement(request, |phase| {
-                if self.owner != application.runtime.product_runtime.owner.owner_identity() {
+                if self.owner != application.inner.runtime.product_runtime.owner.owner_identity() {
                     return Err(WorthQueryBranchSetAdoptionResumeDenial::ForeignRuntime);
                 }
                 let execution = phase
-                    .checked_execution_request_for(&application.runtime.product_runtime)
+                    .checked_execution_request_for(&application.inner.runtime.product_runtime)
                     .map_err(|cause| {
                         WorthQueryBranchSetAdoptionResumeDenial::Preparation(
                             WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause),

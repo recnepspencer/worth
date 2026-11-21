@@ -27,7 +27,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         use WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as Kind;
 
         let request_execution =
-            match phase.execution_request_for(&self.application().runtime.product_runtime) {
+            match phase.execution_request_for(&self.application().inner.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => {
                     return Err(
@@ -51,7 +51,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 ),
             );
         }
-        let truth = match crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis::retain_selected(execution, self) {
+        let truth = match crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalTruthBasis::retain_selected(execution, self.inner()) {
             Ok(truth) => truth,
             Err(denial) => {
                 return Err(WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
@@ -64,6 +64,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let operation = self
             .application()
             .conditional_cleanup
+            .routes
             .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -77,7 +78,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 ),
             );
         };
-        let bridge_root = self.application().runtime.bridge.conditional_operations();
+        let bridge_root = self.application().inner.runtime.bridge.conditional_operations();
         let bridge = bridge_root
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);

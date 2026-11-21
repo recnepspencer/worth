@@ -174,7 +174,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::ReceiptMismatch);
         }
         let execution = phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(&self.application().inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         WorthQueryHistoryRecordingOutputOrigin::capture(
             &execution,
@@ -211,7 +211,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         }
         self.validate_selected_output_root::<R>(phase, access, &origin.observation)
             .map_err(WorthQueryOriginalReadOutputDenial::Program)?;
-        let execution = phase.checked_execution_request_for(&self.runtime().runtime.product_runtime)
+        let execution = phase.checked_execution_request_for(&self.runtime().inner.runtime.product_runtime)
             .map_err(stopped)?;
         let original = OriginalOutputTree::retain(&execution, &origin.observation, root,
             dependents, dependencies, std::mem::size_of::<WorthQueryRetainedRecordingOutputTree>() + 2 * std::mem::size_of::<usize>())?;

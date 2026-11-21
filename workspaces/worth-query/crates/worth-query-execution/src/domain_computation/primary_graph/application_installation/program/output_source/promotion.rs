@@ -52,7 +52,7 @@ where
                     "selected program does not own the original discovered source",
                 )
             })?;
-        if source.runtime_authority != self.backing.runtime().runtime.authority_identity().as_u64()
+        if source.runtime_authority != self.backing.runtime().inner.runtime.authority_identity().as_u64()
             || source.program != *presented.rendering()
             || source.binding != TypeId::of::<Source>()
             || source.payload.root_kind() != PreparedOutputRootKind::Discovered(TypeId::of::<Root>())
@@ -96,7 +96,7 @@ where
                     "selected program does not own the original required source",
                 )
             })?;
-        if source.runtime_authority != self.backing.runtime().runtime.authority_identity().as_u64()
+        if source.runtime_authority != self.backing.runtime().inner.runtime.authority_identity().as_u64()
             || source.program != *presented.rendering()
             || source.binding != TypeId::of::<Source>()
             || source.payload.root_kind() != PreparedOutputRootKind::Required(TypeId::of::<Root>())
@@ -130,7 +130,7 @@ where
     > {
         let retained = (|| {
             let execution = phase
-                .execution_request_for(&self.runtime().runtime.product_runtime)
+                .execution_request_for(&self.runtime().inner.runtime.product_runtime)
                 .map_err(|cause| {
                     WorthQueryOutputDemandDenial::new(
                         WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -138,7 +138,7 @@ where
                     )
                 })?;
             if source.runtime_authority
-                != self.backing.runtime().runtime.authority_identity().as_u64()
+                != self.backing.runtime().inner.runtime.authority_identity().as_u64()
                 || source.branch != receipt.product_branch()
                 || carrier.publication.composite_commit()
                     != receipt.committed_product_publication().composite_commit()

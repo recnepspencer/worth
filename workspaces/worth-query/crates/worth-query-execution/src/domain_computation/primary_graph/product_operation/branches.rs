@@ -44,12 +44,12 @@ pub struct WorthQueryApplicationProductBranches<'runtime, Schema> {
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn current_world(&self) -> WorthQueryProductBranch {
-        self.runtime.product_runtime.root_product_branch()
+        self.inner.runtime.product_runtime.root_product_branch()
     }
 
     pub fn branches(&self) -> WorthQueryApplicationProductBranches<'_, Schema> {
         WorthQueryApplicationProductBranches {
-            branches: self.runtime.product_runtime.product_branches(),
+            branches: self.inner.runtime.product_runtime.product_branches(),
             application: self,
         }
     }
@@ -66,7 +66,7 @@ impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
         Option<worth_query_declaration::facade::application_program::ApplicationProgramRevision>,
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     > {
-        match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution, self, source.relational_basis()) {
+        match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution, self.inner(), source.relational_basis()) {
             Ok(selected) => Ok(Some(*selected.revision())),
             Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) => Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop)),
             Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered) => Ok(None),
@@ -86,7 +86,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         let coverage = WorthQueryProgramAdoptionCoverage::issue(branches, maximum_targets)?;
         let unadmitted = self
             .application
-            .runtime
+            .inner.runtime
             .product_runtime
             .activations
             .first_unadmitted_live_occurrence(
@@ -126,13 +126,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
                 std::sync::Arc::clone(
                     &self
                         .application
-                        .runtime
+                        .inner.runtime
                         .primary_provider
                         .graph
                         .output_lineage,
                 ),
             )),
-            self.application.runtime.primary_provider.as_ref(),
+            self.application.inner.runtime.primary_provider.as_ref(),
             self.application,
         )
     }
@@ -159,25 +159,25 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
     pub fn pending_cleanup(&self) -> Vec<WorthQueryApplicationProductBranchCleanup> {
         for occurrence in self
             .application
-            .runtime
+            .inner.runtime
             .product_runtime
             .pending_application_retired_product_occurrences()
         {
             self.application
-                .runtime
+                .inner.runtime
                 .output_demands
                 .release_product_occurrence(occurrence.incarnation());
             self.application
-                .runtime
+                .inner.runtime
                 .primary_provider
                 .release_product_occurrence_retention(
                     occurrence.branch(),
                     occurrence.incarnation(),
                 );
         }
-        let conditional = self.application.runtime.bridge.conditional_operations();
+        let conditional = self.application.inner.runtime.bridge.conditional_operations();
         self.application
-            .runtime
+            .inner.runtime
             .product_runtime
             .pending_owner_cleanup()
             .into_iter()

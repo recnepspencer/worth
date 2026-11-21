@@ -53,7 +53,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         self.validate_selected_output_root::<R>(phase, access, &source.source)
             .map_err(Original::Program)?;
         let execution = phase
-            .checked_execution_request_for(&self.runtime().runtime.product_runtime)
+            .checked_execution_request_for(&self.runtime().inner.runtime.product_runtime)
             .map_err(stopped)?;
         let original = OriginalOutputTree::retain(
             &execution,
@@ -103,7 +103,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(foreign());
         }
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(&self.inner.runtime.product_runtime)
             .map_err(stopped)?;
         if trees.is_empty() {
             return Err(ReadDenial::Incomplete {
@@ -120,7 +120,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return self.qualify_verified_history_forest(phase, access, authority, trees);
         }
         let original = qualify_output_collection(
-            self,
+            self.inner(),
             phase,
             access,
             authority.request(),
@@ -168,7 +168,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         >,
         trees: &[Arc<WorthQueryRetainedHistoryOutputTree>],
     ) -> Result<(), ReadDenial> {
-        self.runtime
+        self.inner.runtime
             .primary_provider
             .graph
             .with_runtime(execution, |native| {

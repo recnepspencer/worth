@@ -5,6 +5,9 @@ pub mod basis {
 }
 
 pub mod ports {
+    pub use crate::commit_touches::{
+        CommitTouchEntities, CommitTouchInterest, TouchedCommit, TouchedCommits,
+    };
     pub use crate::ports::*;
 }
 

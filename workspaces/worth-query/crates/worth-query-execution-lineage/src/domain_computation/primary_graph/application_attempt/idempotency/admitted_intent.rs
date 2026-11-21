@@ -19,3 +19,5 @@ impl WorthQueryApplicationIdempotencyBinding {
         self.intent_slots() == other.intent_slots()
     }
 }
+
+mod court_doors_for_test;

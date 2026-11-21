@@ -85,12 +85,12 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
             };
         }
         let execution = phase
-            .checked_execution_request_for(&self.application.runtime.product_runtime)
+            .checked_execution_request_for(&self.application.inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let historical = self.source.as_ref().ok_or(Denial::IntentDrift)?;
         let current = self
             .application
-            .runtime
+            .inner.runtime
             .primary_provider
             .graph
             .with_runtime(&execution, |native| {

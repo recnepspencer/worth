@@ -105,7 +105,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             })?;
         let authority = WorthQueryHistoryOutputAuthority {
             phase,
-            runtime: self.application().runtime.authority_identity().as_u64(),
+            runtime: self.application().inner.runtime.authority_identity().as_u64(),
             binding: self.binding.clone(),
             profile: origin.recording_profile().clone(),
             current: read.current_product().retained_clone(),

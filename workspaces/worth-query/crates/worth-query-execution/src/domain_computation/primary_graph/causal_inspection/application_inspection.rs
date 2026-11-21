@@ -61,7 +61,7 @@ pub use stop::{
     WorthQueryManagedGraphWorkSessionStartDenial,
 };
 
-pub(crate) mod target;
+pub(crate) use worth_query_execution_query::facade::domain_computation::primary_graph::causal_inspection::application_inspection::target;
 
 pub(in crate::domain_computation) use target::WorthQueryApplicationInspectionTarget;
 

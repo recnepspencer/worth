@@ -52,11 +52,11 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
             supported: Vec::new(),
             owner: self
                 .runtime()
-                .runtime
+                .inner.runtime
                 .product_runtime
                 .owner
                 .owner_identity(),
-            authority: self.runtime().runtime.authority_identity(),
+            authority: self.runtime().inner.runtime.authority_identity(),
         })
     }
 }
@@ -95,11 +95,11 @@ where
             self.authority,
             runtime
                 .runtime()
-                .runtime
+                .inner.runtime
                 .product_runtime
                 .owner
                 .owner_identity(),
-            runtime.runtime().runtime.authority_identity(),
+            runtime.runtime().inner.runtime.authority_identity(),
         )?;
         if self.workflow.schema_binding() != &runtime.installed_schema().binding_identity() {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);

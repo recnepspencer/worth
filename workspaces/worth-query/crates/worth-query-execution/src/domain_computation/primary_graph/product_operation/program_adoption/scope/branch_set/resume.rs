@@ -101,14 +101,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let mut retained = Some(adoption);
         let result = self.with_application_advancement(request, |phase| {
         let phase = &phase;
-            let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            let phase_request = match phase.execution_request_for(&self.inner.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(cause) => return Err(resume_failure(WorthQueryBranchSetAdoptionResumeDenial::Preparation(WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())), retained.take().expect("one admitted resume"))),
             };
             let execution = &phase_request;
             let mut adoption = retained.take().expect("one admitted resume");
 
-        if adoption.owner != self.runtime.product_runtime.owner.owner_identity() {
+        if adoption.owner != self.inner.runtime.product_runtime.owner.owner_identity() {
             return Err(resume_failure(WorthQueryBranchSetAdoptionResumeDenial::ForeignRuntime,adoption));
         }
         if coverage.branches() != adoption.remaining.as_ref() {

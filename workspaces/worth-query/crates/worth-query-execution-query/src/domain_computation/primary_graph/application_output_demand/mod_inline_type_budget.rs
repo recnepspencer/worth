@@ -1,0 +1,4 @@
+//! Unit-only layout evidence; constructs no runtime, proof or authority.
+
+pub fn collect(census: &mut crate::inline_type_sizes::Census) {
+}

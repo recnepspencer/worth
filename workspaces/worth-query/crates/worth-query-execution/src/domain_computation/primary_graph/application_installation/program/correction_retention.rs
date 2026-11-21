@@ -13,14 +13,14 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
     ) -> Result<(), WorthQueryCorrectionRetentionDenial> {
         let runtime = self.runtime();
         let originals = runtime
-            .runtime
+            .inner.runtime
             .product_runtime
             .owner
             .inspection_port()
             .observe_program_activation_history(execution)
             .map_err(WorthQueryCorrectionRetentionDenial::World)?;
         runtime
-            .runtime
+            .inner.runtime
             .primary_provider
             .expire_optional_correction_material(&originals, coordinates, execution)
     }

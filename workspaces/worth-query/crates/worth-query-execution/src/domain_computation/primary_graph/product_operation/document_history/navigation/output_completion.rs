@@ -112,7 +112,7 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
                 .compare(exact.observation())
                 .is_err()
             || !endpoint.same_application_occurrence(source)
-            || !endpoint.belongs_to_selected_occurrence(self.application, exact.observation())
+            || !endpoint.belongs_to_selected_occurrence(self.application.inner(), exact.observation())
         {
             return Err(Denial::IntentDrift);
         }
@@ -138,7 +138,7 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         let endpoint = endpoint.retained_product_lease();
         drop(selected);
         phase
-            .check_live_for(&self.application.runtime.product_runtime)
+            .check_live_for(&self.application.inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let NavigationPhase::AwaitingOutputs {
             candidate,

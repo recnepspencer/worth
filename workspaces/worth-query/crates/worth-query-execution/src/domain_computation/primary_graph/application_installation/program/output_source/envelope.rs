@@ -126,7 +126,7 @@ where
         }
         let causality = match source {
             Some(source) => {
-                if let Err(cause) = source.admit_receiver(self.runtime().runtime.product_runtime.owner.owner_identity()) {
+                if let Err(cause) = source.admit_receiver(self.runtime().inner.runtime.product_runtime.owner.owner_identity()) {
                     return WorthQueryApplicationCommitOutcome::Denied(cause);
                 }
                 if !source.is_action_binding::<B>() || !source.matches_input(identities.input_identity()) || !source.requires_root(None) {

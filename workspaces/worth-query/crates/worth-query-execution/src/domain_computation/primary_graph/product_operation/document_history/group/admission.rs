@@ -101,7 +101,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             intent_hash.finalize().into(),
         );
         let execution = phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(&self.application().inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let mut selected = self.selection.lock();
         match selected.journal.lookup(meaning) {
@@ -238,7 +238,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         drop(scopes);
         Ok(WorthQueryDocumentHistoryGroupAborting {
             reservation,
-            runtime_authority: self.application().runtime.authority_identity().as_u64(),
+            runtime_authority: self.application().inner.runtime.authority_identity().as_u64(),
             candidate: candidate.map(|(branch, _)| branch),
             _allocation,
         })

@@ -142,7 +142,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         .activation()
         .published()
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnavailable)?;
-    let graph = &application.runtime.primary_provider.graph;
+    let graph = &application.inner.runtime.primary_provider.graph;
     let layout = graph.layout.program_activation().clone();
     let basis = selected.product().relational_basis();
 
@@ -162,7 +162,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         let workflow_request = WorkflowAdoptionInventoryRequest {
             layout: graph.layout.workflow(),
             branch_occurrence: selected.product().product_branch().occurrence_ordinal(),
-            coverage: &application.runtime.workflow_coverage,
+            coverage: &application.inner.runtime.workflow_coverage,
             requirements: &requirements,
             source: &source,
             target,
@@ -240,7 +240,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     let recovery = selected.product().publication_binding().recovery();
     let disposition = selected
         .application()
-        .runtime
+        .inner.runtime
         .primary_provider
         .unpublished_idempotency_disposition();
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
@@ -271,7 +271,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         branch: selected.product().product_branch(),
         owner_identity: selected
             .application()
-            .runtime
+            .inner.runtime
             .product_runtime
             .owner
             .owner_identity(),

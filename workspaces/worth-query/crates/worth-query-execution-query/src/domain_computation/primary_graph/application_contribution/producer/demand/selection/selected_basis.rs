@@ -1,0 +1,236 @@
+//! Exact selected Product checks for a fresh required-output continuation.
+
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
+use super::*;
+use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
+use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    /// The required wave has already selected and retained this Product.
+    /// Its fresh disclosed source must name that exact read; predecessor
+    /// program custody may name an older head of the same occurrence.
+    pub fn select_output_producer_with_remaining_on_selected<
+        Family,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: &WorthQueryObservedSource<
+            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
+        >,
+        profile_kind: &'static str,
+
+        retained_program_basis: Option<&WorthQueryApplicationReadObservation>,
+        shared: &SharedSelectedProductOperation<'_, Schema>,
+    ) -> Result<SelectedWithEntry<'_, Schema>, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        self.select_output_producer_with_remaining_core::<Family>(execution, source, profile_kind, retained_program_basis, Some(shared), SelectionPurpose::OutputDelivery, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+    }
+    pub fn select_output_producer_for_observation<
+        Family,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source: &WorthQueryObservedSource<
+            <<Family as WorthQueryProducerOutputFamily<Schema>>::Source as worth_query_declaration::facade::application_query::ApplicationQueryBinding<Schema>>::Query,
+        >,
+        profile_kind: &'static str,
+
+        shared: &SharedSelectedProductOperation<'_, Schema>,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<SelectedWithEntry<'_, Schema>, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        self.select_output_producer_with_remaining_core::<Family>(
+            execution,
+            source,
+            profile_kind,
+            None,
+            Some(shared),
+            SelectionPurpose::Lifecycle,
+            native,
+        )
+    }
+}
+
+/// Historical program custody constrains the application and occurrence. It
+/// does not assert that its earlier commit equals the fresh selected head.
+pub fn historical_basis_matches<Schema>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    retained: &WorthQueryApplicationReadObservation,
+    shared: &SharedSelectedProductOperation<'_, Schema>,
+) -> Result<bool, WorthQueryOutputDemandDenial>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    let selected = shared.selected();
+    let selected_observation = selected.product().observation();
+    Ok(std::ptr::eq(runtime, selected.application())
+        && retained.belongs_to_selected_occurrence(runtime, selected_observation))
+}
+
+/// Check the selected read before candidate enumeration, including the empty
+/// candidate path. A failed comparison never authorizes another Product read.
+pub fn require_fresh_source<Schema>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    source: &crate::basis::WorthQueryProductBranchReadIdentity,
+    family: &str,
+    shared: &SharedSelectedProductOperation<'_, Schema>,
+) -> Result<(), WorthQueryOutputDemandDenial>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    let selected = shared.selected();
+    let selected_observation = selected.product().observation();
+    if std::ptr::eq(runtime, selected.application())
+        && source.matches_observation(selected_observation)
+    {
+        Ok(())
+    } else {
+        Err(WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::Superseded,
+            family.to_owned(),
+        )
+        .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable))
+    }
+}
+
+pub fn source_basis_is_admitted(
+    source: &crate::basis::WorthQueryProductBranchReadIdentity,
+    current: &worth_runtime_world::facade::ProductBranchObservation,
+    owner_retained_program_basis: bool,
+) -> bool {
+    if owner_retained_program_basis {
+        source.same_branch_occurrence_observation(current)
+    } else {
+        source.matches_observation(current)
+    }
+}
+
+/// Candidate lookup uses the caller's selection admission. Its optional work
+/// ceiling can be changed on a fresh selection; recorded-fact bounds and every
+/// other native stop keep their own meaning.
+pub fn selection_lookup_denial(
+    stop: worth_relational::facade::mvcc::CompanionPreflightStop,
+    family: &str,
+) -> WorthQueryOutputDemandDenial {
+    use crate::domain_computation::primary_graph::output_reuse;
+    use worth_relational::facade::mvcc::CompanionPreflightStop;
+    match stop {
+        CompanionPreflightStop::Execution(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted,
+        ) => selection_budget_denial(family),
+        other => output_reuse::retained_fact_denial(
+            output_reuse::preflight_stop(other),
+            "native retained output selection unavailable",
+        ),
+    }
+}
+
+pub fn selection_budget_denial(family: &str) -> WorthQueryOutputDemandDenial {
+    WorthQueryOutputDemandDenial::new(
+        WorthQueryOutputDemandDenialKind::WorkBudgetExceeded,
+        family.to_owned(),
+    )
+    .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable)
+}
+
+/// Retained discovery pins the source, while lifecycle reads the current head
+/// of that same admitted occurrence. Candidate lookup and liveness share it.
+pub fn select_retained_lifecycle<'runtime, Schema>(
+    runtime: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    source: &crate::basis::WorthQueryProductBranchReadIdentity,
+    family: &str,
+) -> Result<
+    crate::domain_computation::primary_graph::product_operation::WorthQuerySelectedProductOperation<
+        'runtime,
+        Schema,
+    >,
+    WorthQueryOutputDemandDenial,
+>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    let selected = runtime
+        .on_branch(source.product_branch())
+        .select_with_request(execution)
+        .map_err(|cause| {
+            WorthQueryOutputDemandDenial::product_selection(
+                cause,
+                "output lifecycle basis could not be selected",
+            )
+        })?;
+    if !source_basis_is_admitted(source, selected.product().observation(), true) {
+        return Err(WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::Superseded,
+            family.to_owned(),
+        )
+        .with_recovery_posture(WorthQueryOutputDemandRecoveryPosture::Retryable));
+    }
+    Ok(selected)
+}
+
+/// Retained discovery must name the genuine selected occurrence before producer lookup.
+pub fn require_retained_source<Schema: ApplicationSchema + 'static>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    retained_program_basis: Option<&WorthQueryApplicationReadObservation>,
+    selected_override: Option<&SharedSelectedProductOperation<'_, Schema>>,
+    observation: &crate::basis::WorthQueryProductBranchReadIdentity,
+    family: &'static str,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    if let Some(retained_basis) = retained_program_basis {
+        if let Some(shared) = selected_override {
+            if !selected_basis::historical_basis_matches(runtime, retained_basis, shared)? {
+                return Err(WorthQueryOutputDemandDenial::new(
+                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                    family,
+                ));
+            }
+        } else {
+            let retained = runtime
+                .select_application_read_observation_with_request(execution, retained_basis)
+                .map_err(|cause| match cause {
+                    cause @ crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(_) => {
+                        WorthQueryOutputDemandDenial::product_selection(cause, family)
+                    }
+                    crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(_) => {
+                        WorthQueryOutputDemandDenial::new(
+                            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                            family,
+                        )
+                    }
+                })?;
+            if crate::basis::WorthQueryProductBranchReadIdentity::from_observation(
+                retained.product().observation(),
+            ) != *observation
+            {
+                // A retained original may advance under a fresh disclosure at
+                // the current head of its same occurrence. An arbitrary older
+                // disclosure still cannot replace its admitted source.
+                let current = runtime
+                    .on_branch(observation.product_branch())
+                    .select_with_request(execution)
+                    .map_err(|cause| {
+                        WorthQueryOutputDemandDenial::product_selection(cause, family)
+                    })?;
+                let current_observation = current.product().observation();
+                if !observation.matches_observation(current_observation)
+                    || !retained_basis.belongs_to_selected_occurrence(runtime, current_observation)
+                {
+                    return Err(WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        family,
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}

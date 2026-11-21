@@ -149,9 +149,9 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             selection::require_current_target(&after.target, &target)?;
         }
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(&self.application().inner.runtime.product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
-        let provider = &self.application().runtime.primary_provider;
+        let provider = &self.application().inner.runtime.primary_provider;
         let history: WorthQueryCorrectionHistoryProgress = provider
             .correction_alternatives_progress_at_basis(
                 &execution,
@@ -224,10 +224,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             &resolution.target,
             &WorthQueryProductBranchReadIdentity::from_observation(self.product().observation()),
         )?;
-        let provider = &self.application().runtime.primary_provider;
+        let provider = &self.application().inner.runtime.primary_provider;
         let expected_fact = &selected.fact;
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(&self.application().inner.runtime.product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
         let home = self
             .product()
@@ -240,7 +240,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
                 execution,
                 &self
                     .application()
-                    .runtime
+                    .inner.runtime
                     .product_runtime
                     .owner
                     .observation_port(),
@@ -338,10 +338,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     ) -> Result<ProductBranchAncestorSelection, WorthQueryCorrectionDerivationDenial> {
         use WorthQueryCorrectionDerivationDenial as Denial;
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(&self.application().inner.runtime.product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
         self.application()
-            .runtime
+            .inner.runtime
             .product_runtime
             .owner
             .observation_port()

@@ -76,7 +76,7 @@ impl WorthQueryHistoryRecordingOutputOrigin {
             return Err(mismatch());
         }
         let execution = phase
-            .checked_execution_request_for(&application.runtime().runtime.product_runtime)
+            .checked_execution_request_for(&application.runtime().inner.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),

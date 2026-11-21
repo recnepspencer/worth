@@ -1,0 +1,258 @@
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
+use super::*;
+use crate::equality_type_id::EqualityTypeId as TypeId;
+
+pub fn validate_prepared_source_carrier<Query>(
+    runtime_authority: u64,
+    prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+    observed: &crate::domain_computation::primary_graph::WorthQueryObservedSource<Query>,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    if prepared.runtime_authority != runtime_authority {
+        return Err(denial(
+            WorthQueryOutputDemandDenialKind::ForeignSource,
+            "prepared output source belongs to another Query runtime",
+        ));
+    }
+    if observed.selected_product_commit() != Some(&prepared.source_commit) {
+        return Err(denial(
+            WorthQueryOutputDemandDenialKind::ForeignSource,
+            "prepared output source belongs to another product commit",
+        ));
+    }
+    if observed.selected_product_occurrence() != Some(prepared.product_occurrence) {
+        return Err(denial(
+            WorthQueryOutputDemandDenialKind::ForeignSource,
+            "prepared output source belongs to another product occurrence",
+        ));
+    }
+    Ok(())
+}
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    pub fn retain_required_output_source_carrier(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        change: std::sync::Arc<crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange>,
+        observation: worth_runtime_world::facade::ProductBranchObservation,
+        preparation: &crate::domain_computation::primary_graph::application_output_demand::WorthQueryRequiredOutputSourcePreparation,
+        root_kind: crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind,
+        discovery: Option<std::sync::Arc<dyn std::any::Any + Send + Sync>>,
+    ) -> Result<
+        (
+            crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+            std::sync::Arc<
+                crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+            >,
+        ),
+        WorthQueryOutputDemandDenial,
+    > {
+        let publication = receipt.committed_product_publication();
+        if !std::sync::Arc::ptr_eq(
+            &change.root_identity,
+            &self.runtime.product_runtime.root_identity(),
+        ) || change.product_branch_identity() != publication.product_branch()
+            || change.product_commit() != publication.composite_commit()
+            || observation.branch_identity() != change.product_branch_identity()
+            || observation.selected_commit() != change.product_commit()
+        {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "original performed carrier differs from its published receipt",
+            ));
+        }
+        let retained = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
+            self,
+            crate::basis::WorthQueryProductObservationLease::new(observation.clone()),
+        );
+        let product_occurrence = observation.lifecycle_incarnation();
+        let source_commit = self.runtime.output_demands.retain_performed_source(
+            crate::domain_computation::primary_graph::application_output_demand::WorthQueryRetainedOutputDemandSource {
+                receipt: receipt.into(),
+                change: Some(change),
+                observation,
+                output_source_identity: None,
+            },
+            preparation,
+            root_kind,
+            discovery,
+            self.installed_program_support().map(|support| (support.lifecycle(), execution)),
+        )?;
+        Ok((
+            crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource {
+                runtime_authority: self.runtime.authority_identity().as_u64(),
+                source_commit,
+                product_occurrence,
+                owner: self.runtime.output_demands.clone(),
+            },
+            retained,
+        ))
+    }
+
+    pub fn recover_discovered_output_source<
+        Discovery,
+    >(
+        &self,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
+        root_type: TypeId,
+    ) -> Result<
+        (
+            crate::domain_computation::primary_graph::WorthQueryOutputDiscoveryRecipe<Discovery>,
+            std::sync::Arc<
+                crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+            >,
+            crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+        ),
+        WorthQueryOutputDemandDenial,
+    >
+    where
+        Discovery: Clone + Send + Sync + 'static,
+    {
+        let (discovery, observation) = self
+            .runtime
+            .output_demands
+            .recover_discovered_source::<Discovery>(receipt, root_type)?;
+        let discovery = match discovery {
+            Some(value) => value.into(),
+            None => {
+                let original = receipt.source_commit();
+                let owner = original.owner_identity().durable().ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        "cold discovery requires a durable source",
+                    )
+                })?;
+                let history = self
+                    .installed_program_support()
+                    .ok_or_else(|| {
+                        denial(
+                            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                            "source support unavailable",
+                        )
+                    })?
+                    .obligation_history();
+                let row = history.output_sources().into_iter().find(|row| row.commit == worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(owner,original.ordinal())).ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,"source recipe unavailable"))?;
+                crate::domain_computation::primary_graph::WorthQueryOutputDiscoveryRecipe::readmitted(row.discovery_recipe.as_deref().ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,"source recipe unavailable"))?)?
+            }
+        };
+        let retained = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
+            self,
+            crate::basis::WorthQueryProductObservationLease::new(observation),
+        );
+        let prepared =
+            crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource {
+                runtime_authority: self.runtime.authority_identity().as_u64(),
+                source_commit: receipt.source_commit().clone(),
+                product_occurrence: receipt.product_branch().occurrence(),
+                owner: self.runtime.output_demands.clone(),
+            };
+        Ok((discovery, retained, prepared))
+    }
+
+    pub fn bind_prepared_output_source<
+        Query,
+        Value,
+    >(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+        source: &crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            Query,
+            Value,
+        >,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let observed = source
+            .observed_sources()
+            .first()
+            .filter(|_| source.rows().len() == 1 && source.observed_sources().len() == 1);
+        let Some(observed) = observed else {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "prepared output source query did not return one owner-paired occurrence",
+            ));
+        };
+        validate_prepared_source_carrier(
+            self.runtime.authority_identity().as_u64(),
+            prepared,
+            observed,
+        )?;
+        self.publish_output_source_bindings(phase, prepared, &[observed])?;
+        self.runtime.output_demands.bind_prepared_output_source(
+            &prepared.source_commit,
+            crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
+                scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
+                identity: observed.output_source_epoch().ok_or_else(|| {
+                    denial(
+                        WorthQueryOutputDemandDenialKind::ForeignSource,
+                        "prepared output source has no product epoch",
+                    )
+                })?,
+            },
+        )
+    }
+
+    pub fn bind_prepared_output_sources<
+        Query,
+        Value,
+    >(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+        sources: &[crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            Query,
+            Value,
+        >],
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let identities = sources
+            .iter()
+            .map(|source| {
+                let observed = source
+                    .observed_sources()
+                    .first()
+                    .filter(|_| source.rows().len() == 1 && source.observed_sources().len() == 1)
+                    .ok_or_else(|| {
+                        denial(
+                            WorthQueryOutputDemandDenialKind::ForeignSource,
+                            "discovered root source did not return one owner-paired occurrence",
+                        )
+                    })?;
+                validate_prepared_source_carrier(
+                    self.runtime.authority_identity().as_u64(),
+                    prepared,
+                    observed,
+                )?;
+                Ok(crate::domain_computation::primary_graph::application_output_demand::BoundOutputSource {
+                    scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed.source_root()),
+                    identity: observed.output_source_epoch().ok_or_else(|| {
+                        denial(
+                            WorthQueryOutputDemandDenialKind::ForeignSource,
+                            "discovered output source has no product epoch",
+                        )
+                    })?,
+                })
+            })
+            .collect::<Result<Vec<_>, WorthQueryOutputDemandDenial>>()?;
+        let observed = sources
+            .iter()
+            .filter_map(|source| source.observed_sources().first())
+            .collect::<Vec<_>>();
+        self.publish_output_source_bindings(phase, prepared, &observed)?;
+        self.runtime
+            .output_demands
+            .ensure_discovered_sources_bound(&prepared.source_commit, &identities)
+    }
+
+    pub fn discard_prepared_required_output_source(
+        &self,
+        prepared: crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+    ) {
+        if prepared.runtime_authority == self.runtime.authority_identity().as_u64() {
+            self.runtime
+                .output_demands
+                .discard_prepared_source(&prepared.source_commit);
+        }
+    }
+}

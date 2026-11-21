@@ -14,7 +14,7 @@ impl<
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryOutputReadCloseDenial> {
         self.admitted
-            .close_read_request(phase, runtime.runtime(), branch)?;
+            .close_read_request(phase, runtime.runtime().inner(), branch)?;
         self.original_result = original_result::OriginalProgramResult::Disabled;
         Ok(())
     }

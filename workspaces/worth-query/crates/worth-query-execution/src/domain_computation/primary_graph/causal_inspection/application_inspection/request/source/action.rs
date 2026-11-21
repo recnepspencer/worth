@@ -1,7 +1,7 @@
 //! Source and query inspection enter the same current READ/session/terminal owner.
 use super::super::super::{
     admission::{self, InspectionDiagnosticPreparation, InspectionSubject},
-    source_original::SourceOriginal,
+    source_original::{SourceOriginal, SourceOriginalRuntimeExt as _},
 };
 use super::*;
 use crate::domain_computation::{

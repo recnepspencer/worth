@@ -35,13 +35,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
     ) -> Result<WorthQueryProductHistory<'runtime, Schema>, WorthQueryProductBranchAdmissionDenial>
     {
         let execution = phase
-            .execution_request_for(&self.application.runtime.product_runtime)
+            .execution_request_for(&self.application.inner.runtime.product_runtime)
             .map_err(|_| {
                 WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignPhase)
             })?;
         let history = self
             .application
-            .runtime
+            .inner.runtime
             .product_runtime
             .trace_product_history(&execution, branch, maximum)?;
         Ok(WorthQueryProductHistory {
@@ -77,13 +77,13 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
         maximum: Option<NonZeroUsize>,
     ) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {
         let execution = phase
-            .execution_request_for(&self.application.runtime.product_runtime)
+            .execution_request_for(&self.application.inner.runtime.product_runtime)
             .map_err(|_| {
                 WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignPhase)
             })?;
         let history = self
             .application
-            .runtime
+            .inner.runtime
             .product_runtime
             .continue_product_history(&execution, &self.history, maximum)?;
         Ok(Self {
@@ -101,7 +101,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
         WorthQueryProductBranchAdmissionDenial,
     > {
         let phase_request =
-            match phase.execution_request_for(&self.application.runtime.product_runtime) {
+            match phase.execution_request_for(&self.application.inner.runtime.product_runtime) {
                 Ok(request) => request,
                 Err(_) => {
                     return Err(WorthQueryProductBranchAdmissionDenial::Refused(
@@ -121,7 +121,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryProductHistory<'runtime, Sch
         }
         let product = self
             .application
-            .runtime
+            .inner.runtime
             .product_runtime
             .admit_product_history_entry(&self.history, entry.index)?;
         self.application.on_product(execution, product)

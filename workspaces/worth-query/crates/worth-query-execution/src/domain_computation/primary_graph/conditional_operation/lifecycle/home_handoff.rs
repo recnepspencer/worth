@@ -20,7 +20,7 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         ) {
             prepare_wake(request, runtime, wake)?;
         }
-        let owner = runtime.runtime.bridge.conditional_operations();
+        let owner = runtime.inner.runtime.bridge.conditional_operations();
         let bridge = owner
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);

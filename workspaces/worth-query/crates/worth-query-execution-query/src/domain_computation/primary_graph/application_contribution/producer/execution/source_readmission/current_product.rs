@@ -1,0 +1,37 @@
+use worth_runtime_world::facade::ProductBranchCurrentnessFailure;
+
+use super::*;
+
+/// Authenticate an already prepared permission against the exact issued head.
+/// The guarded callback only seals currentness; actor verification and its
+/// variable work run afterward against the pinned native Product root.
+pub fn is_current_selected_product<
+    Schema,
+    Binding,
+>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+) -> Result<bool, ProducerExecutionStop>
+where
+    Schema: ApplicationSchema + 'static,
+    Binding: WorthQueryApplicationProducerBinding<Schema>,
+{
+    let expected = selected.product().observation();
+
+    let checked = runtime
+        .runtime
+        .product_runtime
+        .owner
+        .observation_port()
+        .while_product_branch_current(expected, (), |(), _head| true);
+    match checked {
+        Ok(current) => Ok(current),
+        Err(ProductBranchCurrentnessFailure::ExpectedHeadUnavailable(())) => Ok(false),
+
+        Err(ProductBranchCurrentnessFailure::AdmissionDenied { .. }) => Err(denial(
+            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+            Binding::IDENTITY,
+        )
+        .into()),
+    }
+}

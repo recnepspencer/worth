@@ -17,7 +17,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
+            .execution_request_for(&self.runtime.backing.runtime().inner.runtime.product_runtime)
         {
             Ok(execution) => execution,
             Err(cause) => {
@@ -70,7 +70,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
+            .execution_request_for(&self.runtime.backing.runtime().inner.runtime.product_runtime)
         {
             Ok(execution) => execution,
             Err(cause) => {
@@ -124,7 +124,7 @@ where
         Input: Clone + Send + Sync + 'static,
     {
         let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
+            .execution_request_for(&self.runtime.backing.runtime().inner.runtime.product_runtime)
         {
             Ok(execution) => execution,
             Err(cause) => {

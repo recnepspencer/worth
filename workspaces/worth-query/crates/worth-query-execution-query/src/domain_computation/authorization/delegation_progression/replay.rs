@@ -1,0 +1,204 @@
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_declaration::facade::{
+    application_capability::{
+        ApplicationCapabilityDelegationRequest, ApplicationCapabilityRequest,
+    },
+    application_schema::{ApplicationOperationMarkerIdentity, TypedMutationPreconditions},
+};
+use worth_query_installation::facade::{
+    ApplicationSchema, WorthQueryInstalledApplicationCapability,
+    WorthQueryInstalledApplicationOperation,
+};
+
+use super::super::{
+    operation_progression::{
+        progress_capability_operation, WorthQueryCapabilityOperationProgression,
+    },
+    WorthQueryAdmittedApplicationCapabilityAccess,
+};
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationCommitOutcome, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryPrimaryGraphApplicationRuntime,
+};
+
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// A denied fresh delegation may inspect one exact prior commit. A missing
+    /// or drifted record never leaves this method as executable authority.
+    pub fn replay_capability_delegation_after_fresh_denial<
+        CommandCapability,
+        TargetCapability,
+        TargetOperation,
+        TargetInput,
+        Operation,
+        Input,
+    >(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<
+            Schema,
+            CommandCapability,
+            Operation,
+            Input,
+        >,
+        target: &WorthQueryInstalledApplicationCapability<
+            Schema,
+            TargetCapability,
+            TargetOperation,
+            TargetInput,
+        >,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, CommandCapability>>::Scope,
+        >,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<
+        Option<WorthQueryApplicationCommitOutcome>,
+        WorthQueryApplicationIdempotencyResolutionDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, CommandCapability>
+            + ApplicationCapabilityDelegationRequest<Schema, TargetCapability>
+            + Clone
+            + Send
+            + Sync
+            + 'static,
+    {
+        access
+            .refuse_stale_incarnation(self)
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(execution) => execution,
+            Err(_) => return Err(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
+        };
+        self.replay_capability_delegation_after_fresh_denial_with_request(
+            &execution,
+            access,
+            target,
+            operation,
+            preconditions,
+            idempotency,
+        )
+    }
+
+    pub fn replay_capability_delegation_after_fresh_denial_with_request<
+        CommandCapability,
+        TargetCapability,
+        TargetOperation,
+        TargetInput,
+        Operation,
+        Input,
+    >(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<
+            Schema,
+            CommandCapability,
+            Operation,
+            Input,
+        >,
+        target: &WorthQueryInstalledApplicationCapability<
+            Schema,
+            TargetCapability,
+            TargetOperation,
+            TargetInput,
+        >,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, CommandCapability>>::Scope,
+        >,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<
+        Option<WorthQueryApplicationCommitOutcome>,
+        WorthQueryApplicationIdempotencyResolutionDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, CommandCapability>
+            + ApplicationCapabilityDelegationRequest<Schema, TargetCapability>
+            + Clone
+            + Send
+            + Sync
+            + 'static,
+    {
+        access
+            .refuse_stale_incarnation(self)
+            .map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)?;
+        let Some(installed) = self.runtime.authorization.capability_plan(target) else {
+            return Ok(None);
+        };
+        if super::validate_activation_operation(installed, operation).is_err() {
+            return Ok(None);
+        }
+        let Ok(proposed) = access.capability_input().delegation_request() else {
+            return Ok(None);
+        };
+        let resolved = match access.with_exact_observation(execution, self, |observation| {
+            observation.resolve_delegation_replay_target(execution, target, &proposed)
+        }).map_err(WorthQueryApplicationIdempotencyResolutionDenial::from_authorization)? {
+            Some(Ok(resolved)) => resolved,
+            Some(Err(denial)) => match denial.kind() {
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
+                return Err(
+                    WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial),
+                )
+                }
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Ok(None),
+            },
+            None => return Ok(None),
+        };
+        let Ok(prepared) = super::binding::bind_activation(
+            self, installed, &proposed, resolved, target, operation,
+        ) else {
+            return Ok(None);
+        };
+        let admission = match progress_capability_operation(
+            execution,
+            self,
+            access,
+            operation,
+            preconditions,
+            WorthQueryCapabilityOperationProgression::DelegationActivation,
+        ) {
+            Ok(admission) => admission,
+            Err(denial) => match denial.kind() {
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Stopped(_) => {
+                return Err(
+                    WorthQueryApplicationIdempotencyResolutionDenial::from_authorization(denial),
+                )
+                }
+                crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(_) => return Ok(None),
+            },
+        };
+        let Ok(admission) = prepared.finish(admission) else {
+            return Ok(None);
+        };
+        let resolution = self
+            .resolve_admitted_application_idempotency_with_request(
+                execution,
+                &admission,
+                idempotency,
+            )?
+            .into_resolution();
+        Ok(match resolution {
+            WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => Some(WorthQueryApplicationCommitOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())),
+            WorthQueryApplicationIdempotencyResolution::ProductUnpublished(effects) => Some(
+                WorthQueryApplicationCommitOutcome::ProductUnpublished(effects),
+            ),
+            WorthQueryApplicationIdempotencyResolution::ProductPreparationPending(pending) => {
+                Some(WorthQueryApplicationCommitOutcome::ProductPreparationPending(pending))
+            }
+            WorthQueryApplicationIdempotencyResolution::RecoveredCommitted(receipt) => Some(
+                WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt),
+            ),
+            WorthQueryApplicationIdempotencyResolution::IntentDrift
+            | WorthQueryApplicationIdempotencyResolution::Unseen => None,
+        })
+    }
+}

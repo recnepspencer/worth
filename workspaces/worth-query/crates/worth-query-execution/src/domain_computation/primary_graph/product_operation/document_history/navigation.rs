@@ -66,75 +66,9 @@ use crate::domain_computation::primary_graph::{
 };
 use std::sync::{Arc, Weak};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryHistoryNavigationEligibilityDenial {
-    NotDeclared,
-    ModelDomain,
-    LiveControlDomain,
-    ProgramUnavailable,
-    ProgramChanged,
-    RequiredOutputs,
-    SignalChanged,
-    ExternalEffects,
-    Workflow,
-}
-
-#[derive(Debug)]
-pub enum WorthQueryHistoryNavigationDenial {
-    Document(WorthQueryDocumentHistoryDenial),
-    RequiresSemanticCorrection(WorthQueryHistoryNavigationEligibilityDenial),
-    DocumentClosed,
-    DiscoveryRecipeUnsupportedScope { step: WorthQueryHistoryNodeId, binding: &'static str },
-    DiscoveryRecipeInvalidScope { step: WorthQueryHistoryNodeId, binding: &'static str },
-    DiscoveryRecipeSealed { step: WorthQueryHistoryNodeId },
-    DiscoveryRecipeMissing { step: WorthQueryHistoryNodeId },
-    DiscoveryRecipeCorrupt { step: WorthQueryHistoryNodeId },
-    DiscoveryRecipeForeignDocument { step: WorthQueryHistoryNodeId },
-    ForeignDocument,
-    HeadChanged,
-    NoParent,
-    NotChild,
-    IntentDrift,
-    Busy,
-    UnfinishedAttemptLimitExceeded,
-    Discarded,
-    DisposalInProgress,
-    AlreadySelected,
-    Value(worth_query_declaration::facade::application_schema::ApplicationValueEncodeDenial),
-    CapabilityInstallation(
-        worth_query_installation::facade::WorthQueryApplicationCapabilityInstallationDenial,
-    ),
-    OperationInstallation(
-        worth_query_installation::facade::WorthQueryApplicationOperationInstallationDenial,
-    ),
-    Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial),
-    ProductAdmission(crate::basis::WorthQueryProductBranchAdmissionDenial),
-    CandidateCreation(crate::basis::WorthQueryProductBranchCreateError),
-    ForkRecovery,
-    Transaction(worth_relational::facade::mvcc::RelationalBranchTransactionAdmissionDenial),
-    Preparation(worth_relational::facade::mvcc::RelationalRetainedEntitySelectionPreparationError),
-    OwnedGraph(worth_relational::facade::branch::RelationalOwnedModelSelectionDenial),
-    GraphPreparation(worth_relational::facade::mvcc::RelationalOwnedGraphSelectionPreparationError),
-    /// The selected step retains no exact lineage row for a producer route
-    /// Native restores, or its lookup stopped.
-    OutputLineage(worth_relational::facade::mvcc::CompanionPreflightStop),
-    /// Descriptive Query roles disagree with this selected Native publication.
-    OutputPublicationCorrespondence(
-        crate::domain_computation::primary_graph::output_lineage::WorthQueryHistoryPublicationCorrespondenceMismatch,
-    ),
-    RestoredOutputRead(worth_relational::facade::runtime::RelationalHistoricalSelectionReadDenial),
-    RestoredOutputCurrentness(
-        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial,
-    ),
-    SelectorSnapshot(worth_relational::facade::snapshots::RelationalSnapshotAdmissionDenial),
-    Publication(worth_runtime_world::facade::NoEffectCompositePublication),
-    Recovery(worth_runtime_world::facade::RuntimeWorldRecoveryDenial),
-    RecoveryAffinity,
-    RecoveryPreparation(worth_runtime_world::facade::RuntimeWorldSettledRelationalAdoptionDenial),
-    Adoption(WorthQueryExpectedProductBranchAdoptionDenial),
-    Stopped(WorthQueryAdvancementDenial),
-    Cleanup,
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::{
+    WorthQueryHistoryNavigationDenial, WorthQueryHistoryNavigationEligibilityDenial,
+};
 
 /// A live attempt handle, issued only after fresh READ, metadata and NAV.
 /// The document's registry retains actual candidate custody if this handle is dropped.

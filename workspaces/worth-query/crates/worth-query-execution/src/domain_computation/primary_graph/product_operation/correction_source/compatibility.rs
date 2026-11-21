@@ -101,7 +101,7 @@ where
         worth_query_installation::facade::InstalledCorrectionMechanism::Compensation(_)
     ) {
         let execution = phase
-            .execution_request_for(&target.application().runtime.product_runtime)
+            .execution_request_for(&target.application().inner.runtime.product_runtime)
             .map_err(|_| Denial::ForeignPhase)?;
         let facts = source
             .occurrence()

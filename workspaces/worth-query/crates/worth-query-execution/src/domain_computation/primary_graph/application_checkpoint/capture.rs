@@ -86,20 +86,20 @@ where
         WorthQueryCheckpointCaptureDenial,
     > {
         policy.check_live()?;
-        let occurrence = self.runtime.product_runtime.default_occurrence;
+        let occurrence = self.inner.runtime.product_runtime.default_occurrence;
         let lane = self
-            .runtime
+            .inner.runtime
             .primary_provider
             .application_branch_commit_lane_for_occurrence(occurrence);
         let _coordination = lane.enter();
         let lease = self
-            .runtime
+            .inner.runtime
             .product_runtime
             .admit_product_occurrence(occurrence)
             .map_err(|_| {
                 native_priors::capture_denial("checkpoint product occurrence cannot be admitted")
             })?;
-        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+        let execution = phase.execution_request_for(&self.inner.runtime.product_runtime)?;
         let execution = match policy {
             WorthQueryCheckpointCapturePolicy::SystemAllocation => execution,
             WorthQueryCheckpointCapturePolicy::Execution(lease) => {
@@ -108,7 +108,7 @@ where
         };
         let mut answer = None;
         let stage = execution.run_native_with_checkpoint(|_| {
-            answer = Some(self.runtime.primary_provider.graph.with_runtime(
+            answer = Some(self.inner.runtime.primary_provider.graph.with_runtime(
                 &execution,
                 |runtime| {
                     policy.check_live()?;
@@ -118,7 +118,7 @@ where
                         .map_err(WorthQueryCheckpointCaptureDenial::from)
                         .and_then(|(checkpoint, admission)| {
                             let port = self
-                                .runtime
+                                .inner.runtime
                                 .product_runtime
                                 .interim_checkpoint_port()
                                 .ok_or(
@@ -150,10 +150,10 @@ where
                                 );
                             }
                             let accepted =
-                                self.runtime.output_demands.accepted_checkpoint_records();
+                                self.inner.runtime.output_demands.accepted_checkpoint_records();
 
                             let lineage = self
-                                .runtime
+                                .inner.runtime
                                 .primary_provider
                                 .graph
                                 .output_lineage
@@ -165,8 +165,8 @@ where
                             let priors = lineage
                                 .checkpoint_prior_outputs(
                                     &execution,
-                                    self.runtime.authority_identity().as_u64(),
-                                    &self.installed_schema.binding_identity(),
+                                    self.inner.runtime.authority_identity().as_u64(),
+                                    &self.inner.installed_schema.binding_identity(),
                                     occurrence,
                                     lease.observation().reference_generation().get(),
                                 )
@@ -174,7 +174,7 @@ where
                             let mut accepted = native_priors::merge(
                                 &lineage,
                                 accepted,
-                                self.runtime.recovered_outputs.iter().map(|accepted| {
+                                self.inner.runtime.recovered_outputs.iter().map(|accepted| {
                                     (
                                         accepted.checkpoint.clone(),
                                         accepted.correspondence.binding_type(),

@@ -31,12 +31,12 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 return Ok(false);
             }
             let execution = phase
-                .checked_execution_request_for(&self.runtime.product_runtime)
+                .checked_execution_request_for(&self.inner.runtime.product_runtime)
                 .map_err(|cause| control(WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
             let selected = self.on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
                 authority.original().product_observation().lifecycle_incarnation(),
             )).select(phase).map_err(|cause| Denial::Original(crate::domain_computation::primary_graph::WorthQueryOriginalReadOutputDenial::Observation(cause)))?;
-            self.runtime
+            self.inner.runtime
                 .primary_provider
                 .graph
                 .with_runtime(&execution, |native| {

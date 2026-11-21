@@ -21,10 +21,10 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
         interim_continuation,
     } = completion.consume();
     let execution = phase.execution_request();
-    application.installed_producers = producers;
-    application.installed_conditionals = installed_conditionals;
+    application.inner.installed_producers = producers;
+    application.inner.installed_conditionals = installed_conditionals;
     application
-        .runtime
+        .inner.runtime
         .primary_provider
         .graph
         .output_lineage
@@ -33,11 +33,11 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
         .bind_implementation_build(build_identity);
     if let Some(support) = admitted_program_support {
         application
-            .runtime
+            .inner.runtime
             .product_runtime
             .activations
             .require_program_coordination();
-        application.program_support = Some(
+        application.inner.program_support = Some(
             crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport::installed(
                 support.roster,
                 activation,
@@ -51,13 +51,13 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
         application
             .restore_interim_registry(origin, interim_continuation.as_ref(), &execution)
             .map_err(Denial::Graph)?;
-        application.runtime.recovered_outputs =
+        application.inner.runtime.recovered_outputs =
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryRecoveredOutputs::from_checkpoint(
                 checkpoint,
                 &execution,
                 |accepted| {
-                    application.installed_producers.readmit_checkpoint_output(
-                        &application.installed_schema,
+                    application.inner.installed_producers.readmit_checkpoint_output(
+                        &application.inner.installed_schema,
                         accepted,
                         &execution,
                     )

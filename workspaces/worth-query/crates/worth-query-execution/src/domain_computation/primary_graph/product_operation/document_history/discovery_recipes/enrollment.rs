@@ -1,6 +1,11 @@
 //! Enrollment can bind recipes only to the original current source endpoint.
-use super::super::{WorthQueryDocumentHistory, WorthQueryHistoryOutputProfile};
-use super::*;
+use super::{
+    WorthQueryDocumentHistory, WorthQueryHistoryNavigationDenial as Denial,
+    WorthQueryHistoryOutputProfile,
+};
+use crate::domain_computation::primary_graph::product_operation::WorthQueryHistoryOutputReadDenial as ReadDenial;
+use crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding;
+use crate::domain_computation::primary_graph::application_query::request_recipe::CapturedSourceQueryRequest;
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding,
     application_query::{
@@ -42,11 +47,11 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         };
         let request = CapturedSourceQueryRequest::capture::<S, B>(
             &execution,
-            self.application(),
+            self.application().inner(),
             step,
             intent,
         )?;
-        let key = HistoryDiscoveryRecipeKey::new::<C>(
+        let key = super::history_discovery_recipe_key::<C>(
             profile,
             (
                 WorthQueryOperationScopeEntityBinding::from_entity(

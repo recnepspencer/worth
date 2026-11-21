@@ -20,3 +20,16 @@ pub use query::{
     GraphIntegrationPort, ManagedIndexCausePort, SourceAuthorizationLocus, SourceQueryReaderPort,
     SourceReadSupportPort, WorkflowRetentionPort,
 };
+
+#[doc(hidden)]
+pub trait ProducerEditionDeclarationPort {
+    type Error;
+
+    fn build_installed_producer_edition(
+        &self,
+        build_identity: worth_foundational::facade::ApplicationBuildIdentity,
+    ) -> Result<
+        crate::domain_computation::primary_graph::application_contribution::producer::registry::semantic_edition::InstalledProducerEdition,
+        Self::Error,
+    >;
+}

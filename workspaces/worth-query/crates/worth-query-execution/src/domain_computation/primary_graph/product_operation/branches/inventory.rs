@@ -33,7 +33,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'_, Schema>
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryProductBranchInventory, WorthQueryProductBranchInventoryDenial> {
-        let runtime = &self.application.runtime.product_runtime;
+        let runtime = &self.application.inner.runtime.product_runtime;
         let execution = phase
             .execution_request_for(runtime)
             .map_err(WorthQueryProductBranchInventoryDenial::ForeignPhase)?;

@@ -122,8 +122,8 @@ impl WorthQuerySuspendedGeneratedOutput {
     where
         Schema: ApplicationSchema,
     {
-        self.producer.runtime_authority == runtime.runtime.authority_identity().as_u64()
-            && self.producer.schema == runtime.installed_schema.binding_identity()
+        self.producer.runtime_authority == runtime.inner.runtime.authority_identity().as_u64()
+            && self.producer.schema == runtime.inner.installed_schema.binding_identity()
     }
 
     pub(super) fn matches_retained_lineage<Schema, Producer>(
@@ -135,7 +135,7 @@ impl WorthQuerySuspendedGeneratedOutput {
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         runtime
-            .runtime
+            .inner.runtime
             .primary_provider
             .graph
             .output_lineage

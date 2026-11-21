@@ -37,7 +37,12 @@ pub(super) fn assemble<S: ApplicationSchema>(
         output_readiness_routes,
     )
     .map_err(crate::domain_computation::primary_graph::conditional_operation::publication_denial)?;
-    application.conditional_cleanup.definitions = definition_routes;
+    *application
+        .conditional_cleanup
+        .routes
+        .definitions
+        .write()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = definition_routes;
     owned_contributions::transfer(&mut application, resources, managed_indexes);
     Ok(storage.fill(UnreconciledConditionalRuntime {
         application,

@@ -24,7 +24,7 @@ impl<
         if matches!(self.original_result, OriginalProgramResult::Awaiting)
             && let Some(original) = self
                 .admitted
-                .observe_own_completed_publication(execution, runtime)?
+                .observe_own_completed_publication(execution, runtime.inner())?
         {
             self.original_result = OriginalProgramResult::Retained {
                 result: original,

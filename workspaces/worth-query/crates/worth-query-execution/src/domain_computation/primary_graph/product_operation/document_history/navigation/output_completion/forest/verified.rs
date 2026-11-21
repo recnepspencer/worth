@@ -62,7 +62,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let mut retained = Vec::with_capacity(count);
         for dependent in dependents {
             checkpoint(&execution)?;
-            if retained.len() == count || !dependent.belongs_to(self.runtime()) {
+            if retained.len() == count || !dependent.belongs_to(self.runtime().inner()) {
                 return Err(foreign());
             }
             retained.push(dependent);
@@ -163,7 +163,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         >,
         profile: &WorthQueryHistoryOutputProfile,
     ) -> Result<(), ReadDenial> {
-        self.runtime
+        self.inner.runtime
             .primary_provider
             .graph
             .with_runtime(execution, |native| {
@@ -195,7 +195,7 @@ impl WorthQueryRetainedHistoryOutputTree {
     ) -> Result<(), ReadDenial> {
         match &self.kind {
             HistoryRetainedOutputTree::Original(original) => original
-                .require_current_at(selected, phase, access, request)
+                .require_current_at(selected.into_inner(), phase, access, request)
                 .map_err(ReadDenial::Original),
             HistoryRetainedOutputTree::Verified(verified) => {
                 if let Some(dependencies) = &verified.dependencies {

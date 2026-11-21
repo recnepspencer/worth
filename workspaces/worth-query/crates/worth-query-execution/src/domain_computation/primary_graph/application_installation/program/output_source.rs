@@ -53,7 +53,7 @@ where
         };
         let receipt = source.into();
         let execution = phase
-            .execution_request_for(&self.runtime().runtime.product_runtime)
+            .execution_request_for(&self.runtime().inner.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     Kind::ExecutionRequest(cause.into()),
@@ -177,7 +177,7 @@ where
         let source_preparation = self
             .backing
             .runtime()
-            .runtime
+            .inner.runtime
             .output_demands
             .begin_source_preparation(program.product_branch().occurrence());
         let branch = program.product_branch();
@@ -203,7 +203,7 @@ where
         };
         let pending = WorthQueryUnpublishedProgramOutputSource {
             correction,
-            runtime_authority: self.backing.runtime().runtime.authority_identity().as_u64(),
+            runtime_authority: self.backing.runtime().inner.runtime.authority_identity().as_u64(),
             revision: worth_foundational::facade::CanonicalDigestId::new(
                 *presented.revision().as_bytes(),
             ),

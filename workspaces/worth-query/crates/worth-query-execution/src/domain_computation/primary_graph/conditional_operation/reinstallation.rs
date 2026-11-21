@@ -102,7 +102,7 @@ where
         WorthQueryConditionalRuntimeReinstallationReceipt,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        let current = self.runtime.retain_installed_packages();
+        let current = self.inner.runtime.retain_installed_packages();
         self.reinstall_conditional_runtime_for_installation(execution, current, product_branch)
     }
 
@@ -118,7 +118,7 @@ where
         WorthQueryConditionalRuntimeReinstallationReceipt,
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
-        require_equivalent_installation(self.runtime.installed_packages(), &candidate)?;
+        require_equivalent_installation(self.inner.runtime.installed_packages(), &candidate)?;
         let selected = self
             .on_branch(product_branch)
             .select_with_request(execution)
@@ -130,9 +130,9 @@ where
                     bridge_denial(format!("product selection failed: {refused:?}"))
                 }
             })?;
-        let truth = WorthQueryConditionalTruthBasis::from_selected(selected);
+        let truth = WorthQueryConditionalTruthBasis::from_selected(selected.into_inner());
         let mut bridge_candidate = self
-            .runtime
+            .inner.runtime
             .bridge
             .conditional()
             .memory()
@@ -147,8 +147,9 @@ where
             })?;
         let mut registry = self
             .conditional_cleanup
+            .routes
             .operations
-            .get_mut()
+            .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();
         let mut prepared = registry.prepare_derived_runtime_reinstallation(
@@ -163,7 +164,7 @@ where
             .sum();
         registry.reconcile_prepared_runtime_reinstallation(&mut bridge_candidate, &mut prepared)?;
         let lower_runtime_reconstitution = self
-            .runtime
+            .inner.runtime
             .bridge
             .conditional_lifecycle()
             .and_then(|mut owner| owner.activate_conditional_reconstitution(bridge_candidate))
@@ -176,7 +177,7 @@ where
                 )
             })?;
         registry.apply_derived_runtime_reinstallation(prepared);
-        self.runtime
+        self.inner.runtime
             .granular_invalidation
             .advance_runtime_generation();
         let work = registry.reconstruction_work();
@@ -188,7 +189,7 @@ where
             projected_record_count: work.projected_records,
             projected_field_count: work.projected_fields,
             total_work_units: work.total_work_units,
-            successor_invalidation_installation: self.runtime.granular_invalidation.current(),
+            successor_invalidation_installation: self.inner.runtime.granular_invalidation.current(),
         })
     }
 }

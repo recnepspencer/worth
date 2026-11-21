@@ -114,10 +114,10 @@ where
         return Err(Denial::TargetIncarnationChanged);
     }
     let execution = phase
-        .execution_request_for(&application.runtime.product_runtime)
+        .execution_request_for(&application.inner.runtime.product_runtime)
         .map_err(|_| Denial::ForeignPhase)?;
     let ancestry = application
-        .runtime
+        .inner.runtime
         .product_runtime
         .owner
         .observation_port()
@@ -130,7 +130,7 @@ where
         .map_err(Denial::Ancestry)?;
     if source.occurrence().home_material().is_some() {
         application
-            .runtime
+            .inner.runtime
             .primary_provider
             .observe_correction_material(source.occurrence().commit_reference())
             .map_err(Denial::Material)?;

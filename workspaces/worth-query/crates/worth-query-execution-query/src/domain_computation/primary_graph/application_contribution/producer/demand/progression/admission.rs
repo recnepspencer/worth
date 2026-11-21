@@ -1,0 +1,257 @@
+use worth_query_installation::facade::ApplicationSchema;
+
+mod dependent;
+mod historical_restoration;
+pub mod restoration;
+mod retained_observation;
+
+mod durable_obligation;
+mod selection_mode;
+mod source_admission;
+mod source_custody;
+pub use selection_mode::SourceAdmissionSelection;
+pub use source_custody::validate_prepared_source_carrier;
+
+pub use super::super::{
+    FamilySourceQuery, FamilySourceValue, WorthQueryAdmittedOutputDemand,
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind, WorthQueryProducerOutputFamily,
+};
+use super::denial;
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryObservedSource, WorthQueryPrimaryGraphApplicationRuntime,
+};
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    pub fn output_demand_resource_profile(
+        &self,
+    ) -> crate::domain_computation::execution_runtime::WorthQueryOutputDemandResourceProfile {
+        self.runtime.output_demand_resource_profile()
+    }
+
+    pub fn admit_output_demand<Family>(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
+    ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
+        };
+        let execution = &phase_request;
+
+        let (source, observed_source) = source_result.into_single_source().ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "output source query did not return one owner-paired occurrence",
+            )
+        })?;
+        let profile_kind = Family::profile_kind(&source);
+        self.admit_output_demand_with_source::<Family>(execution,
+            observed_source,
+            None,
+            profile_kind,
+            limits,
+            None,
+            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Ordinary,
+            None,
+            None,
+            None,
+        )
+    }
+
+    #[doc(hidden)]
+    pub fn admit_required_output_demand<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
+    ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        let (source, observed_source) = source_result.into_single_source().ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "required output source query did not return one owner-paired occurrence",
+            )
+        })?;
+        let profile_kind = Family::profile_kind(&source);
+        self.admit_output_demand_with_source::<Family>(execution,
+            observed_source,
+            None,
+            profile_kind,
+            limits,
+            None,
+            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
+            None,
+            None,
+            None,
+        )
+    }
+
+    #[doc(hidden)]
+    pub fn admit_recovered_output_demand<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
+        current_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
+        source_receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
+    ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        let (source, observed_source) = source_result.into_single_source().ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "recovered output source query did not return one owner-paired occurrence",
+            )
+        })?;
+        let (_, current_observed_source) =
+            current_result.into_single_source().ok_or_else(|| {
+                denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "current recovered output source query did not return one owner-paired occurrence",
+            )
+            })?;
+        let retained_epoch = observed_source.output_source_epoch().ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                Family::IDENTITY,
+            )
+        })?;
+        let current_epoch = current_observed_source
+            .output_source_epoch()
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    Family::IDENTITY,
+                )
+            })?;
+        if !retained_epoch.same_semantic_source(&current_epoch) {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "current recovered output source differs from retained source",
+            ));
+        }
+        let profile_kind = Family::profile_kind(&source);
+        self.admit_output_demand_with_source::<Family>(execution,
+            observed_source,
+            Some(&current_observed_source),
+            profile_kind,
+            limits,
+            None,
+            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Recovery,
+            Some(source_receipt.source_commit()),
+            None,
+            None,
+        )
+    }
+
+    pub fn admit_performed_output_demand<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        source_result: crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
+        prepared: &crate::domain_computation::primary_graph::WorthQueryPreparedRequiredOutputSource,
+        retained_program_basis: std::sync::Arc<
+            crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+        >,
+    ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        let (source, observed_source) = source_result.into_single_source().ok_or_else(|| {
+            denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "required-output source query did not return one owner-paired occurrence",
+            )
+        })?;
+        validate_prepared_source_carrier(
+            self.runtime.authority_identity().as_u64(),
+            prepared,
+            &observed_source,
+        )?;
+        if retained_program_basis.selected_commit() != &prepared.source_commit
+            || retained_program_basis.branch_incarnation() != prepared.product_occurrence
+        {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "performed source basis differs from its original preparation",
+            ));
+        }
+        let profile_kind = Family::profile_kind(&source);
+        self.admit_output_demand_with_source::<Family>(execution,
+            observed_source,
+            None,
+            profile_kind,
+            limits,
+            Some(prepared.source_commit.clone()),
+            crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind::Required,
+            None,
+            None,
+            Some(retained_program_basis),
+        )
+    }
+
+    pub fn admit_output_demand_with_source<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        observed_source: WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>,
+        selection_source: Option<&WorthQueryObservedSource<FamilySourceQuery<Schema, Family>>>,
+        profile_kind: &'static str,
+        limits: crate::domain_computation::execution_runtime::WorthQueryOutputDemandLimits,
+        performed_source: Option<worth_runtime_world::facade::CompositeCommitIdentity>,
+        admission_kind: crate::domain_computation::primary_graph::application_output_demand::DemandAdmissionKind,
+        expected_source_commit: Option<&worth_runtime_world::facade::CompositeCommitIdentity>,
+        successor_of: Option<
+            crate::domain_computation::primary_graph::application_output_demand::OutputRefreshPredecessor<'_>,
+        >,
+        retained_program_basis: Option<
+            std::sync::Arc<
+                crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
+            >,
+        >,
+    ) -> Result<WorthQueryAdmittedOutputDemand<Schema, Family>, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        self.admit_output_demand_with_source_admitted::<Family>(
+            execution,
+            observed_source,
+            selection_source,
+            profile_kind,
+            limits,
+            performed_source,
+            admission_kind,
+            expected_source_commit,
+            successor_of,
+            retained_program_basis,
+            SourceAdmissionSelection::Ordinary,
+        )
+    }
+}
+
+mod court_doors_for_test;

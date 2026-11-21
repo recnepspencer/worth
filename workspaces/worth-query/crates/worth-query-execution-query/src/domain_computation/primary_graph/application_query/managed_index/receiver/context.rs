@@ -1,0 +1,116 @@
+//! Full Parent admission precedes any Source, provider, or retained-root lookup.
+use super::*;
+use crate::domain_computation::primary_graph::{
+    application_query::{
+        authorized_read::{refresh_governed_authorization, validate_before_callback},
+        one_shot::{
+            outcome::material::{retain_scope, MaterialCompletion},
+            plan_admission::validate_one_shot_plan,
+        },
+        WorthQueryApplicationBasisSelectionIdentity, WorthQueryObservedScopeSelector,
+    },
+    WorthQuerySelectedProductOperation,
+};
+use worth_query_installation::facade::WorthQueryInstalledManagedIndexParent;
+
+pub struct ParentContext<'a, S> {
+    pub association: WorthQueryInstalledManagedIndexParent,
+    pub selected: WorthQuerySelectedProductOperation<'a, S>,
+    pub selector: Arc<WorthQueryObservedScopeSelector>,
+}
+impl<S: ApplicationSchema> ParentContext<'_, S> {
+    /// Pin Live history first, then observe the real current World occurrence.
+    pub fn recheck_current(
+        &self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    ) -> Result<(), ReceiverCause> {
+        let current = application.admit_with_observation_room(|| {
+            application
+                .runtime
+                .product_runtime
+                .admit_product_occurrence(self.selected.product().product_branch().occurrence())
+        })?;
+        if current
+            .observation()
+            .compare(self.selected.product().observation())
+            .is_err()
+        {
+            return Err(ReceiverCause::Refused(Refusal::StaleImage));
+        }
+        Ok(())
+    }
+}
+
+pub fn prepare<'a, S: ApplicationSchema, B: ApplicationQueryBinding<S>>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &'a WorthQueryPrimaryGraphApplicationRuntime<S>,
+    binding: &WorthQueryInstalledApplicationQueryBinding<S, B>,
+    plan: &mut BoundPlan<'_, S, B>,
+    allocation: &Arc<SourceFactsAllocation>,
+) -> Result<ParentContext<'a, S>, ReceiverCause> {
+    if !std::ptr::eq(binding.query(), plan.query) {
+        return Err(ReceiverCause::Refused(Refusal::ForeignBinding));
+    }
+    if plan.controls.lane()
+        != worth_query_admission::facade::application_query::WorthQueryApplicationQueryLane::OneShot
+        || plan.retain_expression_context
+    {
+        return Err(ReceiverCause::Refused(Refusal::UnsupportedMode));
+    }
+    validate_one_shot_plan(execution, application, plan).map_err(ReceiverCause::Read)?;
+    refresh_governed_authorization(execution, application, plan).map_err(|cause| {
+        ReceiverCause::Read(one_shot::map_authorized_read_denial(
+            cause,
+            plan.query.name(),
+        ))
+    })?;
+    validate_before_callback(execution, application, plan).map_err(|cause| {
+        ReceiverCause::Read(one_shot::map_authorized_read_denial(
+            cause,
+            plan.query.name(),
+        ))
+    })?;
+    let storage = MaterialCompletion::new(execution, allocation);
+    let association = application
+        .installed_schema()
+        .installed_managed_index_parent(binding, &mut |work, bytes| {
+            storage.work(work)?;
+            allocation.claim(execution, bytes)
+        })
+        .map_err(ReceiverCause::Installation)?
+        .ok_or(ReceiverCause::Refused(Refusal::NotIndexParent))?;
+    let basis = plan
+        .graph_work
+        .query_basis()
+        .ok_or(ReceiverCause::Refused(Refusal::ForeignContext))?;
+    let WorthQueryApplicationBasisSelectionIdentity::Product(product) = basis.selection() else {
+        return Err(ReceiverCause::Refused(Refusal::UnsupportedMode));
+    };
+    // The occurrence token is Copy. Query-owned retained-basis copies are
+    // admitted at their actual selected-observation owner before allocation.
+    let selected = application.on_branch(product.product_branch())
+        .select_for_managed_index(execution, |observed| {
+            let bytes = super::super::super::WorthQueryApplicationBasisIdentity::retained_basis_clone_heap_bytes(
+                observed.basis().relational_basis(),
+            ).ok_or(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
+            storage.work(bytes)?;
+            allocation.claim(execution, bytes).map_err(ReceiverCause::Execution)
+        })?;
+    if !plan.graph_work.admits_managed_product(
+        selected.product().read_lease_ref(),
+        &mut |units| storage.work(units),
+        || worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow,
+    )? {
+        // A retained read is supported only while its genuine admitted World
+        // and Native occurrence still equal current truth. It keeps read-only
+        // controls; no Bridge/publication source is manufactured by this check.
+        return Err(ReceiverCause::Refused(Refusal::UnsupportedMode));
+    }
+    let selector =
+        retain_scope(execution, plan.scope, plan.query.name()).map_err(ReceiverCause::Read)?;
+    Ok(ParentContext {
+        association,
+        selected,
+        selector,
+    })
+}

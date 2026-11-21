@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 mod admission;
-mod application_change;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::conditional_definition::application_change;
 pub use application_change::WorthQueryAdmittedApplicationConditionalDefinition;
 
 use worth_query_installation::facade::{
@@ -15,20 +15,7 @@ use worth_runtime_world::facade::{
 use super::WorthQuerySelectedProductOperation;
 use crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalClockHandle;
 
-/// Why a conditional definition was not admitted for an application change.
-/// Admission is a check, so nothing was published.
-#[derive(Debug)]
-pub enum WorthQueryApplicationConditionalDefinitionAdmissionDenial {
-    /// The operation has no admitted mutation product to bind a successor to.
-    MissingProductObservation,
-    /// The installed registry has no matching typed conditional binding.
-    ConditionalBindingUnavailable { identity: &'static str },
-    /// The clock handle's conditional operation is not live in this
-    /// application.
-    ForeignConditionalOperation,
-    /// The bridge refused the conditional signal basis of the selected product.
-    BridgePreparation(worth_runtime_bridge::facade::BridgeConditionalDenial),
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::conditional_definition::WorthQueryApplicationConditionalDefinitionAdmissionDenial;
 
 /// Why definition publication stopped. Durable preparation retains its original open.
 #[derive(Debug)]

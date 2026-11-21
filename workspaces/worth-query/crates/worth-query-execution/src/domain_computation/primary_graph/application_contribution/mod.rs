@@ -1,98 +1,57 @@
-pub(crate) mod authored_edit;
-mod composition;
-pub(in crate::domain_computation::primary_graph) use composition::PreparedApplicationRuntimeContributions;
-mod derived_relation;
-pub(crate) use worth_query_execution_lineage::facade::primary_graph::application_contribution::{
-    computation, execution_denial, native_field_contract,
-};
-pub use derived_relation::WorthQueryDerivedRelationCountOwner;
-pub(crate) mod conditional;
-mod contracts;
-mod feature;
-pub use feature::{
-    WorthQueryFeatureConfiguration, WorthQueryFeatureDefinition,
-    WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
-    WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
-};
-mod coupled_publication;
-pub(crate) mod partitioned_computation;
-pub(crate) mod producer;
-pub(in crate::domain_computation::primary_graph) use coupled_publication::CoupledApplicationAssembly;
-pub(in crate::domain_computation::primary_graph) use producer::OwnerPlan;
-pub use producer::PendingProducerPublication;
-pub(in crate::domain_computation::primary_graph) use producer::{CurrentBasis, CurrentProof};
-pub(crate) mod request_execution;
-pub(in crate::domain_computation::primary_graph) use request_execution::{
-    QueryMemoryReservation, QueryRequestExecution,
-};
-mod setup;
-
-pub use composition::{
-    WorthQueryApplicationContribution, WorthQueryApplicationContributionTuple,
-    WorthQueryConfiguredApplicationContributions,
-};
-pub use computation::{
-    WorthQueryCompletedManagedComputation, WorthQueryInstalledManagedComputation,
-    WorthQueryManagedComputationCheckpoint, WorthQueryManagedComputationCheckpointDenial,
-    WorthQueryManagedComputationDenial, WorthQueryManagedComputationExecution,
-    WorthQueryManagedComputationInterruption, WorthQueryManagedComputationOwner,
-    WorthQueryManagedComputationResourceDenial, WorthQueryMemberExecution,
-    WorthQueryMemoryLimitLevel, WorthQueryPreparedManagedComputation,
-};
-pub use conditional::{
-    WorthQueryApplicationConditionalBinding, WorthQueryApplicationConditionalPackageContract,
-    WorthQueryApplicationConditionalProducerAccess,
-    WorthQueryInstalledApplicationConditionalRegistry, WorthQueryOutputReadinessContract,
-    WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
-    WorthQueryReadinessFieldUse,
-};
-pub use contracts::{
-    WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
-};
-pub use partitioned_computation::WorthQueryPartitionedComputationFullCause;
-pub use partitioned_computation::{
-    discarded_computation_retention_on_this_thread_for_test,
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::application_contribution::{
+    advancement_denial, advancement_observations_on_this_thread_for_test,
+    advancement_requests_on_this_thread_for_test,
+    bound_advancement_requests_on_this_thread_for_test, caller_pass_reports_on_this_thread_for_test,
+    computation, discarded_computation_retention_on_this_thread_for_test, execution_denial,
     full_partitioned_computation_preparations_on_this_thread_for_test,
+    install_output_readiness_routes, native_field_contract,
+    observe_discarded, observe_published, partitioned_computation,
     partitioned_computation_runs_on_this_thread_for_test,
     partitioned_computation_tree_work_on_this_thread_for_test,
+    place_managed_computations_on_this_thread_for_test, producer, publication_execution_kind,
     published_partitioned_computations_on_this_thread_for_test,
-    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeAccounting,
-    WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,
-    WorthQueryPartitionedTreeRun, WorthQueryPublishedComputationStateForTest,
-};
-pub(in crate::domain_computation::primary_graph) use partitioned_computation::{
-    Comparator, CompletedComputationRetention, ComputationDeposit, ComputationRetention,
-    NativeComputationReads,
-};
-pub(in crate::domain_computation) use partitioned_computation::{
-    ComputationPrior, PriorAbsence, RetainedComputation, SealedComputationRetention,
-    SealedComputationRun, Suppression,
-};
-pub use partitioned_computation::{
+    query_test_execution_authority_for_test, record_advancement_commit, request_execution,
+    test_execution_workers_for_test, with_bootstrap_advancement,
+    with_bootstrap_advancement_from_request, Comparator, ComparedProducerOutput,
+    CompletedComputationRetention, ComputationDeposit, ComputationPrior, ComputationRetention,
+    CoupledApplicationAssembly, CurrentBasis, CurrentProof, InstalledProducerEdition,
+    MatchedRequiredPredecessors, NativeComputationReads, OutputSourceAddress, OwnerPlan,
+    PendingOutputReadiness, PendingProducerPublication, PriorAbsence, ProducerOutputEvaluation,
+    ProducerOutputEvaluationState, QualifiedOutputSource, QueryMemoryReservation,
+    QueryRequestExecution, RefusedProducerSeal, RetainedComputation, SealedComputationRetention,
+    SealedComputationRun, Suppression, TestHostRequest, TypedPendingOutputReadiness,
+    WorthQueryAdmittedOutputDemand, WorthQueryAdvancementDenial, WorthQueryAdvancementEventForTest,
+    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
+    WorthQueryAdvancementObservationForTest, WorthQueryAdvancementPhase,
+    WorthQueryApplicationConditionalPackageContract, WorthQueryApplicationConditionalProducerAccess,
+    WorthQueryApplicationOutputDemand, WorthQueryApplicationProducerBinding,
+    WorthQueryApplicationProducerProvider, WorthQueryBootstrapAdvancementPhase,
+    WorthQueryCapturedProducerInputs, WorthQueryCompletedManagedComputation,
     WorthQueryCompletedPartitionedComputation, WorthQueryComputationInputDenial,
     WorthQueryComputationPartitionMembers, WorthQueryComputationPartitionPlan,
     WorthQueryComputationPartitionStop, WorthQueryComputationPartitionView,
-    WorthQueryComputationReadDenial, WorthQueryComputationReader, WorthQueryDeterministicReducer,
-    WorthQueryInstalledPartitionedComputation, WorthQueryPartitionedComputationDenial,
-    WorthQueryPartitionedComputationOwner, WorthQueryPreparedPartitionedComputation,
-    WorthQueryReductionInputDenial,
-};
-pub use producer::OutputSourceAddress;
-pub(in crate::domain_computation::primary_graph) use producer::{
-    install_output_readiness_routes, InstalledProducerEdition, MatchedRequiredPredecessors,
-    PendingOutputReadiness, QualifiedOutputSource, TypedPendingOutputReadiness,
+    WorthQueryComputationReadDenial, WorthQueryComputationReader,
+    WorthQueryDecisionContextDependencies, WorthQueryDerivedRelationCountOwner,
+    WorthQueryDeterministicReducer, WorthQueryExecutionPlacementForTest,
+    WorthQueryForeignAdvancementPhase, WorthQueryInstalledApplicationConditionalRegistry,
+    WorthQueryInstalledApplicationProducerRegistry, WorthQueryInstalledManagedComputation,
     WorthQueryInstalledOutputProducerRoutes, WorthQueryInstalledOutputReadinessRoutes,
-    WorthQueryProducerCommitAuthority,
-};
-pub use producer::{
-    WorthQueryAdmittedOutputDemand, WorthQueryApplicationOutputDemand,
-    WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
-    WorthQueryCapturedProducerInputs, WorthQueryDecisionContextDependencies,
-    WorthQueryInstalledApplicationProducerRegistry, WorthQueryOriginalOutputDemand,
+    WorthQueryInstalledPartitionedComputation, WorthQueryManagedComputationCheckpoint,
+    WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationDenial,
+    WorthQueryManagedComputationExecution, WorthQueryManagedComputationInterruption,
+    WorthQueryManagedComputationOwner, WorthQueryManagedComputationResourceDenial,
+    WorthQueryMemberExecution, WorthQueryMemoryLimitLevel, WorthQueryOriginalOutputDemand,
     WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandRecoveryPosture, WorthQueryOutputReadCleanup,
-    WorthQueryOutputReadCloseDenial, WorthQueryOutputSettlementProvenanceDenial,
-    WorthQueryProducerApplicability, WorthQueryProducerDenialDeclaration,
+    WorthQueryOutputReadCloseDenial, WorthQueryOutputReadinessContract,
+    WorthQueryOutputReadinessContractBuilder, WorthQueryOutputReadinessContractDenial,
+    WorthQueryOutputSettlementProvenanceDenial, WorthQueryPartitionedComputationDenial,
+    WorthQueryPartitionedComputationFullCause, WorthQueryPartitionedComputationOwner,
+    WorthQueryPartitionedComputationRunForTest, WorthQueryPartitionedTreeAccounting,
+    WorthQueryPartitionedTreeMetrics, WorthQueryPartitionedTreeRebuildCause,
+    WorthQueryPartitionedTreeRun, WorthQueryPreparedManagedComputation,
+    WorthQueryPreparedPartitionedComputation, WorthQueryProducerApplicability,
+    WorthQueryProducerCommitAuthority, WorthQueryProducerDenialDeclaration,
     WorthQueryProducerDenialDecodeDenial, WorthQueryProducerDenialEncodingRefusal,
     WorthQueryProducerDenialProjection, WorthQueryProducerDenialValue,
     WorthQueryProducerEvaluationIneligibility, WorthQueryProducerInputCaptureContract,
@@ -101,54 +60,37 @@ pub use producer::{
     WorthQueryProducerLifecyclePosture, WorthQueryProducerObservationReadContract,
     WorthQueryProducerObservationReadDenial, WorthQueryProducerObservationReadOperation,
     WorthQueryProducerOutputEquivalence, WorthQueryProducerOutputFamily,
-    WorthQueryProjectedProducerDenial, WorthQueryRecordedProducerDenialEncodingRefusal,
-    WorthQueryRecordedProducerDenialValue, WorthQuerySelectedApplicationProducer,
-    WorthQueryUndeclaredProducerDenial, WorthQueryWorkflowAssessmentOutputFamily,
-    WorthQueryWorkflowAssessmentPosture,
+    WorthQueryProjectedProducerDenial, WorthQueryPublishedComputationStateForTest,
+    WorthQueryReadinessFieldUse, WorthQueryRecordedProducerDenialEncodingRefusal,
+    WorthQueryRecordedProducerDenialValue, WorthQueryReductionInputDenial,
+    WorthQuerySelectedApplicationProducer, WorthQueryUndeclaredProducerDenial,
+    WorthQueryWorkflowAssessmentOutputFamily, WorthQueryWorkflowAssessmentPosture,
 };
-pub use request_execution::query_test_execution_authority_for_test;
-pub use request_execution::{
-    bound_advancement_requests_on_this_thread_for_test,
-    place_managed_computations_on_this_thread_for_test, test_execution_workers_for_test,
-    WorthQueryExecutionPlacementForTest,
+#[cfg(test)]
+pub use worth_query_execution_runtime::facade::request_execution::with_test_advancement;
+
+pub(crate) mod authored_edit;
+mod composition;
+pub(crate) mod conditional;
+mod contracts;
+mod feature;
+mod setup;
+pub(crate) mod synchronous_outputs;
+
+pub(in crate::domain_computation::primary_graph) use composition::PreparedApplicationRuntimeContributions;
+pub use composition::{
+    WorthQueryApplicationContribution, WorthQueryApplicationContributionTuple,
+    WorthQueryConfiguredApplicationContributions,
 };
-pub use request_execution::{
-    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
+pub use conditional::{RefusedConditionalBatch, WorthQueryApplicationConditionalBinding};
+pub use contracts::{
+    WorthQueryApplicationContractCatalog, WorthQueryApplicationContributionContracts,
+};
+pub use feature::{
+    WorthQueryFeatureConfiguration, WorthQueryFeatureDefinition,
+    WorthQueryFeaturePairConfiguration, WorthQueryFeatureRoleRuntime, WorthQueryFeatureRuntime,
+    WorthQueryRequiredFeatureContract, WorthQueryRequiredFeaturePair,
 };
 pub use setup::{
     WorthQueryApplicationContributionSetup, WorthQueryManagedIndexProviderRegistration,
 };
-
-pub(in crate::domain_computation) use partitioned_computation::observe_discarded;
-pub(in crate::domain_computation::primary_graph) use partitioned_computation::observe_published;
-
-pub(in crate::domain_computation::primary_graph) use request_execution::advancement_denial;
-
-pub use request_execution::{
-    advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
-    caller_pass_reports_on_this_thread_for_test, WorthQueryAdvancementEventForTest,
-    WorthQueryAdvancementEventKindForTest, WorthQueryAdvancementIdentityForTest,
-    WorthQueryAdvancementObservationForTest,
-};
-
-#[cfg(test)]
-pub(crate) use request_execution::with_test_advancement;
-pub(crate) use request_execution::TestHostRequest;
-
-pub use request_execution::{with_bootstrap_advancement, with_bootstrap_advancement_from_request};
-
-pub use request_execution::WorthQueryBootstrapAdvancementPhase;
-
-pub(in crate::domain_computation::primary_graph) use execution_denial::publication_execution_kind;
-pub(in crate::domain_computation::primary_graph) use request_execution::advancement::observation::application::record_commit as record_advancement_commit;
-
-pub use producer::ProducerOutputEvaluation;
-pub(in crate::domain_computation::primary_graph) use producer::{
-    ComparedProducerOutput, ProducerOutputEvaluationState,
-};
-#[cfg(test)]
-#[path = "mod_inline_type_budget.rs"]
-pub(crate) mod inline_type_budget;
-
-pub(in crate::domain_computation::primary_graph) use conditional::RefusedConditionalBatch;
-pub(in crate::domain_computation::primary_graph) use producer::RefusedProducerSeal;

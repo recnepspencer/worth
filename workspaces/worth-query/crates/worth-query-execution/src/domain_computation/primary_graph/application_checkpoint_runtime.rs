@@ -22,7 +22,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         let receiver = self
-            .runtime
+            .inner.runtime
             .primary_provider
             .graph
             .with_runtime(request, |runtime| {
@@ -31,7 +31,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
                     .admit_interim_receiver(&origin.native, request)
             })
             .map_err(|cause| native_refusal(cause).into_installation_denial())?;
-        let product = &self.runtime.product_runtime;
+        let product = &self.inner.runtime.product_runtime;
         let lease = product
             .admit_product_occurrence(product.default_occurrence)
             .map_err(|cause| {

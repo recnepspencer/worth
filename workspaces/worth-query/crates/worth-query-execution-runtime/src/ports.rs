@@ -42,6 +42,19 @@ pub trait RelationalSourceInvalidationPort:
     fn as_any(&self) -> &(dyn Any + Send + Sync);
 
     fn into_any_arc(self: Arc<Self>) -> Arc<dyn Any + Send + Sync>;
+
+    #[doc(hidden)]
+    fn latest_position_for_test(&self) -> Option<worth_relational::facade::publication::PatchStreamPosition>;
+
+    #[doc(hidden)]
+    fn touched_commits_after_for_test(
+        &self,
+        branch: &worth_relational::facade::history::BranchId,
+        cursor: Option<worth_relational::facade::publication::PatchStreamPosition>,
+        ceiling: Option<worth_relational::facade::history::CommitId>,
+        limit: usize,
+        interest: crate::commit_touches::CommitTouchInterest<'_>,
+    ) -> crate::commit_touches::TouchedCommits;
 }
 
 /// Lower runtime-side maintenance hook invoked after an advancement phase ends.

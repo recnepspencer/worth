@@ -13,7 +13,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         self.with_application_advancement(request, |phase| {
             let phase_request = phase
-                .execution_request_for(&self.runtime.product_runtime)
+                .execution_request_for(&self.inner.runtime.product_runtime)
                 .map_err(|cause| {
                     WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())
                 })?;

@@ -27,7 +27,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(&self.inner.runtime.product_runtime)
             .map_err(|cause| ReadDenial::Authority(NavigationDenial::Stopped(cause)))?;
         profile
             .source_intent()
@@ -41,7 +41,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         { return Err(ReadDenial::Authority(NavigationDenial::ForeignDocument)); }
         read.confirm(document, ())
             .map_err(|cause| ReadDenial::Authority(NavigationDenial::Document(cause)))?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
+        validate_execution_lifetimes(self.inner(), &control.controls, control.principal)
             .map_err(super::super::output_read::control_denial)
     }
 
@@ -159,7 +159,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         // A stopped callback leaves its SDK owners in the document registry.
         // The actual Native transition remains authoritative if its delivery lapses.
         if let Some(source) = &source {
-            validate_execution_lifetimes(self, &source.controls, source.principal).map_err(
+            validate_execution_lifetimes(self.inner(), &source.controls, source.principal).map_err(
                 |cause| Denial::Source(super::super::output_read::control_denial(cause)),
             )?;
         }

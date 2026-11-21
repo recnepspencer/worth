@@ -13,6 +13,8 @@ pub use output_field_capture::{OutputFieldCaptureFailure, StoreDenial};
 pub mod business_original;
 pub mod capability_revocation_program;
 pub mod compare_and_commit;
+pub mod delegation_activation_program;
+pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub mod dependency_identity;
 pub use dependency_identity::{
     FactContent, OutputCurrentnessFacts, 

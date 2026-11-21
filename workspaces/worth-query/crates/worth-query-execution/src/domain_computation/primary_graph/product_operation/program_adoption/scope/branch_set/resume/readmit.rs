@@ -9,7 +9,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         use WorthQueryBranchSetAdoptionResumeDenial as Denial;
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(&self.inner.runtime.product_runtime)
             .map_err(|cause| {
                 Denial::Preparation(
                     WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause),
@@ -19,7 +19,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             QueryObligationDenial::SupportUnavailable,
         ))?;
         let observed = self
-            .runtime
+            .inner.runtime
             .product_runtime
             .owner
             .observation_port()
@@ -64,7 +64,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 progress,
                 target,
                 total_selection_work_units: row.selection_work as usize,
-                owner: self.runtime.product_runtime.owner.owner_identity(),
+                owner: self.inner.runtime.product_runtime.owner.owner_identity(),
                 durable: Some(row.attempt),
                 _support_custody: Vec::new(),
             });

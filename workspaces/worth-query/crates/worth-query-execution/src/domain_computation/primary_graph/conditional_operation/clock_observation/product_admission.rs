@@ -23,13 +23,22 @@ where
         let runtime = self.application();
         let operation = runtime
             .conditional_cleanup
+            .routes
             .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .admit_clock(handle.binding_identity(), handle.lease())
             .ok_or_else(|| {
                 WorthQueryConditionalClockObservationDenial::new(
-                    if runtime.conditional_cleanup.definitions.route(handle.binding_identity(), handle.lease()).is_some() {
+                    if runtime
+                        .conditional_cleanup
+                        .routes
+                        .definitions
+                        .read()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .route(handle.binding_identity(), handle.lease())
+                        .is_some()
+                    {
                         WorthQueryConditionalClockObservationDenialKind::NotReadmitted { family: worth_foundational::facade::DurableStateFamily::BridgeManagedTemporalIntents, phase: 7 }
                     } else { WorthQueryConditionalClockObservationDenialKind::ForeignRuntime },
                     handle.binding_identity(),
@@ -37,9 +46,9 @@ where
             })?;
         let truth =
             super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis::from_selected(
-                self,
+                self.into_inner(),
             );
-        let bridge_root = runtime.runtime.bridge.conditional_operations();
+        let bridge_root = runtime.inner.runtime.bridge.conditional_operations();
         let bridge = bridge_root
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);

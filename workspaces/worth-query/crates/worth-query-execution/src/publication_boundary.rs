@@ -211,7 +211,8 @@ pub mod capability_command {
 
 /// Executable sealed graph shape used only by source publication.
 pub mod synchronous_outputs {
-    pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::{default_producer_round_bounds, SynchronousDiscoveredOutputRoot, SynchronousOutputEdges, AppliedOutputParent, SynchronousOutputAssembly, SynchronousOutputFailure};
+    pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::{default_producer_round_bounds, SynchronousOutputEdges, AppliedOutputParent, SynchronousOutputAssembly, SynchronousOutputFailure};
+    pub use crate::domain_computation::primary_graph::application_contribution::synchronous_outputs::SynchronousDiscoveredOutputRoot;
 }
 
 pub mod authored_edit {

@@ -1,9 +1,6 @@
-//! Implementations of `worth-query-execution-attempt` upward boundary ports.
+//! L6 implementations of `worth-query-execution-attempt` upward boundary ports.
 
-mod candidate_read;
-pub(crate) mod correction_source;
-mod managed_views;
+pub mod correction_source;
 mod program_and_workflow;
-mod runtime_methods;
 
-pub(in crate::domain_computation::primary_graph) use program_and_workflow::downcast_supported_program;
+pub use program_and_workflow::downcast_supported_program;

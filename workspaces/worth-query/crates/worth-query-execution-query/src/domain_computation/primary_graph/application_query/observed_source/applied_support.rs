@@ -1,0 +1,87 @@
+//! Actual discovery dependencies remain tied to the candidate that read them.
+use super::*;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact as Fact,
+    WorthQueryPrimaryGraphApplicationRuntime,
+};
+use worth_relational::facade::{
+    runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead, RelationalRuntime},
+    snapshots::SnapshotHandle,
+};
+
+pub struct AppliedQuerySupport {
+    query: String,
+    pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    facts: Vec<Fact>,
+    managed: Option<
+        std::sync::Arc<super::super::managed_index::applied_read::AppliedManagedSourceSupport>,
+    >,
+}
+impl<Q, V> AppliedQuerySource<Q, V> {
+    pub fn retain_candidate_support<
+        S: worth_query_installation::facade::ApplicationSchema,
+    >(
+        &self,
+        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        query: &str,
+        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    ) -> Result<AppliedQuerySupport, WorthQuerySourceExpectationDenial> {
+        let foreign = || {
+            WorthQuerySourceExpectationDenial::new(
+                WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
+                query,
+            )
+        };
+        let graph = application.runtime.primary_graph().ok_or_else(foreign)?;
+        if self.runtime_authority != application.runtime.authority_identity().as_u64()
+            || self.candidate.qualification() != pin.candidate_identity().qualification()
+        {
+            return Err(foreign());
+        }
+        let facts = fact_conversion::applied_facts(
+            self.meaning.footprint(),
+            &graph.layout,
+            query,
+            fact_conversion::SourceFactExpansionControl::in_request(*execution, Some(request)),
+        )?;
+        Ok(AppliedQuerySupport {
+            query: query.into(),
+            pin: pin.clone(),
+            facts,
+            managed: self.managed.clone(),
+        })
+    }
+}
+impl AppliedQuerySupport {
+    pub fn query(&self) -> &str {
+        &self.query
+    }
+    /// The candidate image this support observed.
+    pub fn pin(
+        &self,
+    ) -> &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
+        &self.pin
+    }
+    pub fn changed_fact(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &RelationalRuntime,
+        before: &SnapshotHandle,
+        earlier: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        image: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    ) -> Result<Option<&Fact>, WorthQueryApplicationAttemptDenial> {
+        if let Some(managed) = &self.managed
+            && let Some(fact) = managed.changed_fact(execution, runtime, before, earlier, image)?
+        {
+            return Ok(Some(fact));
+        }
+        for fact in &self.facts {
+            if !fact.support_equal_after_own_effect(execution, runtime, before, earlier, image)? {
+                return Ok(Some(fact));
+            }
+        }
+        Ok(None)
+    }
+}

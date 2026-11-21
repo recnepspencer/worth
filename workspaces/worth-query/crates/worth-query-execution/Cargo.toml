@@ -30,6 +30,7 @@ worth-query-execution-obligations = { path = "../worth-query-execution-obligatio
 worth-query-execution-runtime = { path = "../worth-query-execution-runtime" }
 worth-query-execution-lineage = { path = "../worth-query-execution-lineage" }
 worth-query-execution-attempt = { path = "../worth-query-execution-attempt" }
+worth-query-execution-query = { path = "../worth-query-execution-query" }
 worth-query-installation = { path = "../worth-query-installation" }
 
 [dev-dependencies]

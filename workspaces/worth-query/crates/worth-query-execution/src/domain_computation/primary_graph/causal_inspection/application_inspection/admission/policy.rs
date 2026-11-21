@@ -65,7 +65,7 @@ where
     let contract = original.validate(runtime, installed, selected, scope.scope().entity_id())?;
     let access = WorthQueryApplicationQueryAccessContext::new(principal.principal(), scope.scope());
     let root = SelectedIssuedAccessRoot::from_issued(
-        selected,
+        selected.inner(),
         &access,
         principal,
         scope,
@@ -89,7 +89,7 @@ where
             .map_err(InspectionAdmissionDenial::Capability)?;
     }
     let graph = runtime
-        .runtime
+        .inner.runtime
         .primary_graph()
         .ok_or(InspectionAdmissionDenial::MissingGraph)?;
     let security = runtime
@@ -105,7 +105,7 @@ where
                     execution,
                     relational,
                     snapshot,
-                    runtime.runtime.authorization.bridge(),
+                    runtime.inner.runtime.authorization.bridge(),
                 )
                 .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
             if let Some(capability) = metadata.authorization_mut() {
@@ -114,7 +114,7 @@ where
                         execution,
                         relational,
                         snapshot,
-                        runtime.runtime.authorization.bridge(),
+                        runtime.inner.runtime.authorization.bridge(),
                     )
                     .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
             }
@@ -176,7 +176,7 @@ where
                                 execution,
                                 relational,
                                 security.snapshot_handle(),
-                                runtime.runtime.authorization.bridge(),
+                                runtime.inner.runtime.authorization.bridge(),
                             )
                             .map_err(InspectionAdmissionDenial::CurrentAuthorization)
                     })?;

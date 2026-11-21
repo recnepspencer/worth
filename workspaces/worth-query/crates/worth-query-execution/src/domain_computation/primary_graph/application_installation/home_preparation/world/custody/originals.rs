@@ -9,7 +9,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     ) -> Result<(), QueryHomeCustodyReadmissionDenial> {
         use QueryHomeCustodyReadmissionDenial as Denial;
         let application = self.runtime.runtime();
-        let owner = &application.runtime.product_runtime.owner;
+        let owner = &application.inner.runtime.product_runtime.owner;
         let snapshot = owner
             .inspection_port()
             .recovery_snapshot()
@@ -64,7 +64,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     continue;
                 }
                 if let Some((entity, completion)) = application
-                    .runtime
+                    .inner.runtime
                     .primary_provider
                     .recovered_inbound_completion_row(execution, &effects)
                     .map_err(|_| Denial::OriginalBindingUnavailable)?
@@ -75,7 +75,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     continue;
                 }
                 application
-                    .runtime
+                    .inner.runtime
                     .primary_provider
                     .admit_recovered_idempotency(execution, row.handle().clone(), &effects)
                     .map_err(original_binding_denial)?;
@@ -107,7 +107,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     continue;
                 }
                 if application
-                    .runtime
+                    .inner.runtime
                     .primary_provider
                     .released_inbound_completion_row(execution, original)
                     .map_err(|_| Denial::OriginalBindingUnavailable)?
@@ -119,7 +119,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     continue;
                 }
                 application
-                    .runtime
+                    .inner.runtime
                     .primary_provider
                     .admit_released_idempotency(execution, original)
                     .map_err(original_binding_denial)?;

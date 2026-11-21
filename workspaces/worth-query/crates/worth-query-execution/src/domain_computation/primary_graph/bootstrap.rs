@@ -122,6 +122,24 @@ where
         self.recovered_checkpoint_restore_work
     }
 
+    pub fn install_handler<Binding, Handler>(
+        &mut self,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationMutationBinding<
+            Schema,
+            Binding,
+        >,
+        handler: Handler,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+        Handler: super::application_entry::mutation::OperationHandler<Schema, Binding>,
+    {
+        self.mutation_handlers
+            .register(self.graph.binding_identity(), installed, handler)
+    }
+
     pub fn bind_principal<
         Binding,
         Mapping,

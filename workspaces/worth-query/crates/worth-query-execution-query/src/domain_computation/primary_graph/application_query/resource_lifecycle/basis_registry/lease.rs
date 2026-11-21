@@ -1,0 +1,289 @@
+use super::super::lifecycle_count::release;
+use super::WorthQueryApplicationBasisIdentity;
+use super::WorthQueryApplicationBasisRegistryState;
+use super::WorthQueryApplicationBasisReleaseOutcome;
+use super::WorthQueryApplicationBasisReleaseReceipt;
+use super::WorthQueryApplicationBasisSelectionIdentity;
+use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle;
+use std::sync::Arc;
+mod batch;
+use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
+use worth_relational::facade::branch::RelationalBranchRetentionLease;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::snapshots::SnapshotHandle;
+
+pub struct WorthQueryApplicationBasisLease {
+    identity: WorthQueryApplicationBasisIdentity,
+    custody: BasisCustody,
+}
+
+enum BasisCustody {
+    Exclusive(BasisLeaseCore),
+    Shared(Arc<BasisLeaseCore>),
+    Transitioning,
+}
+
+struct BasisLeaseCore {
+    basis: Option<AdmittedRelationalBranchBasis>,
+    retention: Option<RelationalBranchRetentionLease>,
+    snapshot: Option<SnapshotHandle>,
+    graph: WorthQueryPrimaryGraphIntegrationHandle,
+    state: Arc<WorthQueryApplicationBasisRegistryState>,
+    program_interpretation: Option<WorthQueryProgramSupportInterpretation>,
+    selected_program_inspected: bool,
+}
+
+impl WorthQueryApplicationBasisLease {
+    pub fn registered(
+        identity: WorthQueryApplicationBasisIdentity,
+        basis: AdmittedRelationalBranchBasis,
+        retention: RelationalBranchRetentionLease,
+        snapshot: SnapshotHandle,
+        graph: WorthQueryPrimaryGraphIntegrationHandle,
+        state: Arc<WorthQueryApplicationBasisRegistryState>,
+    ) -> Self {
+        Self {
+            identity,
+            custody: BasisCustody::Exclusive(BasisLeaseCore {
+                basis: Some(basis),
+                retention: Some(retention),
+                snapshot: Some(snapshot),
+                graph,
+                state,
+                program_interpretation: None,
+                selected_program_inspected: false,
+            }),
+        }
+    }
+
+    fn core(&self) -> &BasisLeaseCore {
+        match &self.custody {
+            BasisCustody::Exclusive(core) => core,
+            BasisCustody::Shared(core) => core,
+            BasisCustody::Transitioning => {
+                unreachable!("custody promotion cannot escape its owner")
+            }
+        }
+    }
+
+    fn core_mut(&mut self) -> &mut BasisLeaseCore {
+        match &mut self.custody {
+            BasisCustody::Exclusive(core) => core,
+            BasisCustody::Shared(core) => {
+                Arc::get_mut(core).expect("program binding precedes sharing")
+            }
+            BasisCustody::Transitioning => {
+                unreachable!("custody promotion cannot escape its owner")
+            }
+        }
+    }
+
+    pub fn prepare_shared(
+        &mut self,
+    ) -> Result<(), CompanionPreflightStop> {
+        if matches!(self.custody, BasisCustody::Shared(_)) {
+            return Ok(());
+        }
+
+        let BasisCustody::Exclusive(core) =
+            std::mem::replace(&mut self.custody, BasisCustody::Transitioning)
+        else {
+            unreachable!("only exclusive custody can enter the sharing phase")
+        };
+        self.custody = BasisCustody::Shared(Arc::new(core));
+        Ok(())
+    }
+
+    pub fn retain_shared(&self) -> Result<Self, CompanionPreflightStop> {
+        let BasisCustody::Shared(core) = &self.custody else {
+            return Err(CompanionPreflightStop::SelectedSourceMismatch);
+        };
+
+        Ok(Self {
+            identity: self.identity.clone(),
+            custody: BasisCustody::Shared(Arc::clone(core)),
+        })
+    }
+}
+
+impl WorthQueryApplicationBasisLease {
+    /// The program inspection was performed for this lease's exact native
+    /// basis, including the case where the installed program is unavailable.
+    pub fn mark_selected_program_inspected(
+        &mut self,
+        relational: &AdmittedRelationalBranchBasis,
+    ) -> bool {
+        if self.identity.runtime_instance_id() != relational.identity().runtime_instance_id()
+            || self.identity.branch_id() != relational.identity().branch_id()
+            || self.identity.descriptor() != relational.descriptor()
+            || self.version_id() != relational.observation().version_id()
+        {
+            return false;
+        }
+        self.core_mut().selected_program_inspected = true;
+        true
+    }
+
+    pub fn selected_program_inspected(&self) -> bool {
+        self.core().selected_program_inspected
+    }
+
+    pub fn carries_selected_program_interpretation(
+        &self,
+        selected: Option<&crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation>,
+    ) -> bool {
+        match (self.core().program_interpretation.as_ref(), selected) {
+            (Some(retained), Some(current)) => retained.same_support_as(current),
+            (None, None) => true,
+            _ => false,
+        }
+    }
+
+    pub fn bind_product_observation(
+        &mut self,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
+    ) {
+        assert_eq!(
+            self.identity.descriptor(),
+            product.basis().relational_basis().descriptor(),
+            "product custody retains the exact query snapshot basis"
+        );
+        self.identity.set_selection(WorthQueryApplicationBasisSelectionIdentity::Product(
+            crate::basis::WorthQueryProductBranchReadIdentity::from_observation(product),
+        ));
+    }
+
+    pub fn bind_program_interpretation(
+        &mut self,
+        interpretation: crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation,
+    ) {
+        assert!(
+            self.core_mut()
+                .program_interpretation
+                .replace(interpretation)
+                .is_none(),
+            "one retained basis binds exactly one program interpretation"
+        );
+    }
+
+    pub fn identity(&self) -> &WorthQueryApplicationBasisIdentity {
+        &self.identity
+    }
+
+    pub fn version_id(&self) -> worth_relational::facade::identity::VersionId {
+        self.basis().observation().version_id()
+    }
+
+    pub fn snapshot_handle(&self) -> &SnapshotHandle {
+        self.core()
+            .snapshot
+            .as_ref()
+            .expect("an active application-query basis retains its snapshot")
+    }
+
+    pub fn graph_handle(
+        &self,
+    ) -> &WorthQueryPrimaryGraphIntegrationHandle {
+        &self.core().graph
+    }
+
+    pub fn is_live(&self, execution: &worth_execution::ExecutionRequest<'_, '_>) -> bool {
+        self.core()
+            .graph
+            .with_runtime(execution, |runtime| self.is_live_at(runtime))
+    }
+
+    pub fn is_live_at(
+        &self,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> bool {
+        self.identity.runtime_instance_id() == runtime.main_branch_identity().runtime_instance_id()
+            && self.core().basis.is_some()
+            && self
+                .core()
+                .snapshot
+                .as_ref()
+                .is_some_and(|snapshot| runtime.read_truth().project_snapshot(snapshot).is_some())
+    }
+
+    pub fn release(self) -> WorthQueryApplicationBasisReleaseReceipt {
+        let Self { identity, custody } = self;
+        let outcome = match custody {
+            BasisCustody::Exclusive(core) => core.release(&identity),
+            BasisCustody::Shared(core) => match Arc::try_unwrap(core) {
+                Ok(core) => core.release(&identity),
+                Err(core) => {
+                    drop(core);
+                    WorthQueryApplicationBasisReleaseOutcome::SharedCustodyRetained
+                }
+            },
+            BasisCustody::Transitioning => {
+                unreachable!("custody promotion cannot escape its owner")
+            }
+        };
+        WorthQueryApplicationBasisReleaseReceipt::new(identity, outcome)
+    }
+
+    fn basis(&self) -> &AdmittedRelationalBranchBasis {
+        self.core()
+            .basis
+            .as_ref()
+            .expect("an active Query basis retains its observation")
+    }
+}
+
+impl BasisLeaseCore {
+    fn release(
+        mut self,
+        identity: &WorthQueryApplicationBasisIdentity,
+    ) -> WorthQueryApplicationBasisReleaseOutcome {
+        let released = self.release_snapshot();
+        let retention = self
+            .retention
+            .take()
+            .expect("active Query basis owns Native retention");
+        let receipt = self
+            .graph
+            .release_component_basis(retention)
+            .unwrap_or_else(|denial| {
+                panic!(
+                    "Query retained a lease its Native owner rejected: {:?}",
+                    denial.denial()
+                )
+            });
+        assert_eq!(
+            receipt.descriptor(),
+            identity.descriptor(),
+            "Query releases its exact admitted Native basis"
+        );
+        self.basis.take();
+        self.release_observation();
+        WorthQueryApplicationBasisReleaseOutcome::NativeResourcesReleased {
+            snapshot_released: released,
+            relational_retention: receipt.outcome(),
+        }
+    }
+
+    fn release_snapshot(&mut self) -> bool {
+        let Some(snapshot) = self.snapshot.take() else {
+            return false;
+        };
+        self.graph.release_query_snapshot(&snapshot);
+        true
+    }
+
+    fn release_observation(&self) {
+        release(&self.state.active, 1).expect("live Query basis count cannot underflow");
+    }
+}
+
+impl Drop for BasisLeaseCore {
+    fn drop(&mut self) {
+        if self.basis.take().is_some() {
+            self.release_snapshot();
+            self.retention.take();
+            self.release_observation();
+        }
+    }
+}

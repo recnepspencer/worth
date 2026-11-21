@@ -57,7 +57,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let owner = self
             .runtime
             .runtime()
-            .runtime
+            .inner.runtime
             .product_runtime
             .owner
             .owner_identity();
@@ -97,7 +97,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let originals = match self
             .runtime
             .runtime()
-            .runtime
+            .inner.runtime
             .product_runtime
             .owner
             .inspection_port()
@@ -127,7 +127,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let material_admission = match self
             .runtime
             .runtime()
-            .runtime
+            .inner.runtime
             .primary_provider
             .readmit_correction_material(std::sync::Arc::clone(&material), &originals, execution)
         {
@@ -141,7 +141,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         };
         self.correction_material_admission = std::sync::OnceLock::from(material_admission);
         let admission =
-            match self.runtime.runtime().runtime.primary_provider
+            match self.runtime.runtime().inner.runtime.primary_provider
                 .readmit_retained_program_support(support.lifecycle(), obligations, &originals, execution)
             {
                 Ok(admission) => admission,
@@ -159,7 +159,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         if let Err(cause) = crate::domain_computation::primary_graph::application_installation::checkpoint_lineage::readmit_journal(self.runtime.runtime(), &originals, execution) {
             return Err(QueryHomeCustodyReadmissionRefused { query: self, cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(cause) });
         }
-        let serving = &self.runtime.runtime().runtime;
+        let serving = &self.runtime.runtime().inner.runtime;
         if let Err(cause) = support
             .obligation_history()
             .bind_live_receivers(&serving.primary_provider, serving.execution())
@@ -197,7 +197,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 cause: QueryHomeCustodyReadmissionDenial::Activation(cause),
             });
         }
-        if let Err(cause) = corrections::verify(self.runtime.runtime(), execution) {
+        if let Err(cause) = corrections::verify(self.runtime.runtime().inner(), execution) {
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::Correction(cause),
@@ -244,7 +244,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         match self
             .runtime
             .runtime()
-            .runtime
+            .inner.runtime
             .primary_provider
             .readmit_correction_material(material, &originals, execution)
         {
@@ -261,11 +261,11 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         // Cold terminal ACK settlement may advance the journal after its first
         // fold. Admit the final exact prefix before the service witness escapes.
         let application = self.runtime.runtime();
-        match application.runtime.dispatch_journal.readmit(
+        match application.inner.runtime.dispatch_journal.readmit(
             dispatch,
             execution,
             application
-                .runtime
+                .inner.runtime
                 .primary_provider
                 .dispatch_readmission_catalog(),
         ) {

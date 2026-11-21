@@ -79,7 +79,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         let request = admission.retain_admitted_request();
         self.pause_retention(retention_pause::RetentionChangePoint::Before);
         let execution = phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(&self.application().inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let mut selected = self.selection.lock();
         if !selected
@@ -91,7 +91,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         selected.journal.quote_frontier(&execution)?;
         let mut changed = None;
         let confirmed = current_head::confirm_in_execution_with_effect(
-            self.application(),
+            self.application().inner(),
             &execution,
             read.current_product(),
             Some(&request),
@@ -118,7 +118,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         drop(removed);
         self.pause_retention(retention_pause::RetentionChangePoint::After);
         phase
-            .check_live_for(&self.application().runtime.product_runtime)
+            .check_live_for(&self.application().inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         Ok(status)
     }
@@ -133,7 +133,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
     ) -> Result<Result<WorthQueryHistoryReleaseOutcome, E>, WorthQueryDocumentHistoryDenial> {
         use head_custody::HistoryHeadCustody as State;
         let execution = phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(&self.application().inner.runtime.product_runtime)
             .map_err(WorthQueryDocumentHistoryDenial::Stopped)?;
         let release = {
             let mut selected = self.selection.lock();

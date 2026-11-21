@@ -266,8 +266,8 @@ fn restoration_retry_matches<Schema: ApplicationSchema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     retry: &RestorationRetry,
 ) -> bool {
-    retry.producer.runtime_authority == runtime.runtime.authority_identity().as_u64()
-        && retry.producer.schema == runtime.installed_schema.binding_identity()
+    retry.producer.runtime_authority == runtime.inner.runtime.authority_identity().as_u64()
+        && retry.producer.schema == runtime.inner.installed_schema.binding_identity()
 }
 
 pub(super) fn failure(

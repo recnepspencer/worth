@@ -112,14 +112,14 @@ where
     {
         let (application, product, application_basis) = self.into_parts();
         let execution_request = phase
-            .execution_request_for(&application.runtime.product_runtime)
+            .execution_request_for(&application.inner.runtime.product_runtime)
             .map_err(|cause| {
                 WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
             })?;
         let execution = &execution_request;
         drop(application_basis);
         if application
-            .installed_producers
+            .inner.installed_producers
             .provider::<Producer>()
             .is_none()
         {
@@ -129,7 +129,7 @@ where
         }
         let branch = product.product_branch();
         let gate = application
-            .runtime
+            .inner.runtime
             .product_runtime
             .activations
             .gate(product.branch_identity())
@@ -150,7 +150,7 @@ where
         let output_occurrence = observation.lifecycle_incarnation();
         let output_generation = observation.reference_generation().get();
         let lineage = application
-            .runtime
+            .inner.runtime
             .primary_provider
             .graph
             .output_lineage
@@ -178,12 +178,12 @@ where
                 WorthQueryGeneratedOutputSuspensionFailure::Qualification(denial)
             })?;
         drop(lineage);
-        if exact.runtime_authority != application.runtime.authority_identity().as_u64() {
+        if exact.runtime_authority != application.inner.runtime.authority_identity().as_u64() {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
                 WorthQueryGeneratedOutputSuspensionDenial::ForeignRuntime,
             ));
         }
-        if exact.schema != application.installed_schema.binding_identity() {
+        if exact.schema != application.inner.installed_schema.binding_identity() {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
                 WorthQueryGeneratedOutputSuspensionDenial::ForeignSchema,
             ));
@@ -204,7 +204,7 @@ where
         }
         let prepared =
             application
-                .runtime
+                .inner.runtime
                 .primary_provider
                 .graph
                 .with_runtime(execution, |runtime| {
@@ -257,7 +257,7 @@ PublicationDenial::Stopped(stop) => {
         };
         match prepared.execute(
             phase
-                .execution_request_for(&application.runtime.product_runtime)
+                .execution_request_for(&application.inner.runtime.product_runtime)
                 .map_err(|cause| {
                     WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
                 })?,

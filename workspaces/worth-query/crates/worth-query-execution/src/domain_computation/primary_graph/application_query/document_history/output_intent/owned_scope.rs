@@ -21,7 +21,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if history.definition().parts().model_domain
             == ApplicationHistoryModelDomain::OwnedModelGraph
         {
-            let graph = &self.runtime.primary_provider.graph;
+            let graph = &self.inner.runtime.primary_provider.graph;
             let ownership = graph
                 .layout
                 .history_ownership(&history.definition().parts().identity)

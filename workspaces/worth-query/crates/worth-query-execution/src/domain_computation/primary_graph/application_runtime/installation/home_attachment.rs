@@ -145,9 +145,14 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
         None,
         mutation_partitions,
     );
-    application.installed_producers = producers;
-    application.installed_conditionals = conditionals;
-    application.conditional_cleanup.definitions = definition_routes;
+    application.inner.installed_producers = producers;
+    application.inner.installed_conditionals = conditionals;
+    *application
+        .conditional_cleanup
+        .routes
+        .definitions
+        .write()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = definition_routes;
     super::owned_contributions::transfer(&mut application, resources, managed_indexes);
     application
 }

@@ -11,7 +11,7 @@ pub(super) fn restore<Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let checkpoint_observation = application
-        .runtime
+        .inner.runtime
         .product_runtime
         .recovered_root_authority
         .as_ref()
@@ -21,7 +21,7 @@ pub(super) fn restore<Schema: ApplicationSchema>(
             .into_installation_denial()
     })?;
     let mut lineage = application
-        .runtime
+        .inner.runtime
         .primary_provider
         .graph
         .output_lineage
@@ -29,7 +29,7 @@ pub(super) fn restore<Schema: ApplicationSchema>(
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     // This is one pass over bounded, installed-producer-readmitted checkpoint records.
     // Current-output reads stay indexed and check these facts at their selected basis.
-    for recovered in application.runtime.recovered_outputs.iter() {
+    for recovered in application.inner.runtime.recovered_outputs.iter() {
         let Some(observation) = recovered.observation.as_ref().or(checkpoint_observation) else {
             continue;
         };
@@ -54,8 +54,8 @@ pub(super) fn restore<Schema: ApplicationSchema>(
         .into_parts();
         lineage.record_restoration(
             binding,
-            application.runtime.authority_identity().as_u64(),
-            application.installed_schema.binding_identity(),
+            application.inner.runtime.authority_identity().as_u64(),
+            application.inner.installed_schema.binding_identity(),
             checkpoint.scope,
             observation,
             std::sync::Arc::clone(&recovered.correspondence),
@@ -89,7 +89,7 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
         return Ok(());
     };
     let branches = application
-        .runtime
+        .inner.runtime
         .product_runtime
         .owner
         .observation_port()
@@ -135,8 +135,8 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
             return Err(Denial::ObligationSubjectMismatch);
         }
         let correspondence = application
-            .installed_producers
-            .readmit_checkpoint_output(&application.installed_schema, &checkpoint, execution)
+            .inner.installed_producers
+            .readmit_checkpoint_output(&application.inner.installed_schema, &checkpoint, execution)
             .map_err(|_| Denial::ObligationSubjectMismatch)?;
         accepted.push(
             super::super::application_output_demand::WorthQueryReadmittedAcceptedOutput {
@@ -157,7 +157,7 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
         );
     }
     application
-        .runtime
+        .inner.runtime
         .recovered_outputs
         .readmit_journal(accepted, execution)
         .map_err(|_| Denial::MalformedFrame)?;

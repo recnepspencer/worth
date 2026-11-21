@@ -16,7 +16,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'_, Schem
         feature::install::<Schema, Contract>(configuration, self)
     }
 
-    pub(in crate::domain_computation::primary_graph::application_contribution) fn feature_conditional<
+    pub fn feature_conditional<
         Producer,
         Binding,
     >(

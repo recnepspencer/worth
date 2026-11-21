@@ -67,7 +67,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     }
     let application = current.application();
     if application
-        .runtime
+        .inner.runtime
         .primary_provider
         .graph
         .layout
@@ -76,7 +76,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         return Err(correction(Eligibility::LiveControlDomain));
     }
     application
-        .runtime
+        .inner.runtime
         .product_runtime
         .require_live_product_occurrence(
             source.source.product_observation().lifecycle_incarnation(),
@@ -143,7 +143,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     };
     if let Some(profile) = outputs.filter(|profile| profile.is_output_forest()) {
         let execution = phase
-            .checked_execution_request_for(&application.runtime.product_runtime)
+            .checked_execution_request_for(&application.inner.runtime.product_runtime)
             .map_err(Denial::Stopped)?;
         let work = profile
             .tree_profiles()
@@ -195,17 +195,17 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         }
     }
     let execution = phase
-        .checked_execution_request_for(&application.runtime.product_runtime)
+        .checked_execution_request_for(&application.inner.runtime.product_runtime)
         .map_err(Denial::Stopped)?;
     // This real admission on C catches medium/schema/source eligibility before
     // fork. Actual preparation later repeats admission on the new C-derived target.
     application
-        .runtime
+        .inner.runtime
         .primary_provider
         .graph
         .with_runtime(&execution, |native| {
             if definition.model_domain == ApplicationHistoryModelDomain::OwnedModelGraph {
-                let layout = &application.runtime.primary_provider.graph.layout;
+                let layout = &application.inner.runtime.primary_provider.graph.layout;
                 let ownership =
                     layout
                         .history_ownership(&definition.identity)
@@ -232,7 +232,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                     &execution,
                     native,
                     application
-                        .runtime
+                        .inner.runtime
                         .primary_provider
                         .graph
                         .application_publication

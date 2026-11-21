@@ -6,18 +6,7 @@ use worth_runtime_world::facade::{
     RuntimeWorldServiceDenial,
 };
 
-#[derive(Debug)]
-pub enum WorthQueryExpectedProductBranchAdoptionDenial {
-    ForeignPhase,
-    Stopped(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
-    /// The application's actual head slot no longer names the selected source.
-    HeadReplaced,
-    CandidateAdmission(WorthQueryProductBranchAdmissionDenial),
-    SourceBasis(RelationalBranchBasisDenial),
-    CandidateBasis(RelationalBranchBasisDenial),
-    HeadAdmission(RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>),
-    HeadMoved,
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::WorthQueryExpectedProductBranchAdoptionDenial;
 
 /// Adoption did not change the supplied head. Candidate effects still exist;
 /// the returned continuation retains their ordinary close/recovery custody.
@@ -99,7 +88,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         ),
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
-        let execution = match phase.execution_request_for(&self.application.runtime.product_runtime)
+        let execution = match phase.execution_request_for(&self.application.inner.runtime.product_runtime)
         {
             Ok(execution) => execution,
             Err(_) => {
@@ -123,14 +112,14 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         occurrences.sort_unstable();
         let lanes = occurrences.map(|occurrence| {
             application
-                .runtime
+                .inner.runtime
                 .primary_provider
                 .application_branch_commit_lane_for_occurrence(occurrence)
         });
         let _first = lanes[0].enter();
         let _second = lanes[1].enter();
         let candidate = match application
-            .runtime
+            .inner.runtime
             .product_runtime
             .admit_product_occurrence(self.branch.occurrence())
         {
@@ -151,7 +140,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         // Keep resource drops outside Native access and the outer head-slot guard.
         let result =
             application
-                .runtime
+                .inner.runtime
                 .primary_provider
                 .graph
                 .with_runtime(&execution, |native| {
@@ -197,7 +186,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
     > {
         let world = self
             .application
-            .runtime
+            .inner.runtime
             .product_runtime
             .owner
             .observation_port();

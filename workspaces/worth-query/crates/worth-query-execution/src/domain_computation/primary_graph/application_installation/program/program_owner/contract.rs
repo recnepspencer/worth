@@ -126,7 +126,7 @@ pub trait WorthQueryProgramOwner<Schema>: sealed::WorthQueryProgramOwnership {
     {
         if let Err(cause) = source.admit_receiver(
             self.runtime()
-                .runtime
+                .inner.runtime
                 .product_runtime
                 .owner
                 .owner_identity(),

@@ -11,6 +11,7 @@
 #![recursion_limit = "256"]
 
 mod basis;
+mod commit_touches;
 mod domain_computation;
 mod ports;
 

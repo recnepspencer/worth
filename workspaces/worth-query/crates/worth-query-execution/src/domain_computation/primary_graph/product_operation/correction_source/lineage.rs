@@ -22,11 +22,11 @@ pub(super) fn reverse_lineage<Schema: ApplicationSchema>(
     use WorthQueryCorrectionDerivationDenial as Denial;
     let locator = source_locator(source);
     let execution = phase
-        .execution_request_for(&target.application().runtime.product_runtime)
+        .execution_request_for(&target.application().inner.runtime.product_runtime)
         .map_err(|_| Denial::ForeignPhase)?;
     if target
         .application()
-        .runtime
+        .inner.runtime
         .primary_provider
         .reversal_of_source_at_basis(&execution, target.product().relational_basis(), &locator)
         .map_err(Denial::History)?
