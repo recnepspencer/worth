@@ -102,6 +102,7 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-executio
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph/tests/worth_query_court_execution_primary_graph/domain_computation/primary_graph/tests/index_maintenance_interruptions/refresh_consults/mod.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-execution/tests/worth_query_court_execution/domain_computation/primary_graph/causal_inspection/application_inspection/admission/materialization/tests/mod.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/temporal_conditional_operation/contribution_installation/request_cancellation/mod.rs
+crates/worth-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/cost/host/temporal_conditional_operation/work_prefix.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/decision_facts/authorization/durable_dependencies/cancellation_tests.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/authorization/operation_admission/retained_activation_read_tests.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/admitted_capture/retained_stage/tests.rs

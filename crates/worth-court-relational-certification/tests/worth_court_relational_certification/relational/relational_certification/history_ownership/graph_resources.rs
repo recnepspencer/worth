@@ -21,20 +21,6 @@ fn graph_relation_preparation_retains_its_funding_and_cannot_reset_the_entity_me
             .unwrap(),
         Some(graph.model)
     );
-    // Warm the relation material too, so the meter sees only result backing.
-    drop(
-        graph
-            .runtime
-            .prepare_owned_model_graph_selection(
-                execution,
-                &basis,
-                &basis,
-                &ownership(),
-                &ownership(),
-                graph.model,
-            )
-            .unwrap(),
-    );
     let memory = SerialMemoryBudget::new(None);
     let metered = SerialRequest::from_memory(memory.clone(), CancellationToken::new(), None);
     let request = &ExecutionRequest::serial(&metered);
@@ -58,11 +44,34 @@ fn graph_relation_preparation_retains_its_funding_and_cannot_reset_the_entity_me
         .unwrap();
     assert_eq!(selected.current_relations().len(), 2);
     assert_eq!(selected.selected_relations().len(), 2);
+    let during = memory.charged_memory_bytes();
     assert!(
-        memory.charged_memory_bytes() > entity_bytes,
+        during > entity_bytes,
         "relation results retain their original backing beyond the computation scope"
     );
     drop(selected);
+    // Transfer history readmits cold commit envelopes; each cell keeps only its
+    // fixed Weak-pinned control bill on the readmitting request
+    // (canonical_publication_routes/position_retention.rs).
+    let history_cells = memory.charged_memory_bytes();
+    assert!(
+        during - history_cells > entity_bytes,
+        "drop released the relation backing"
+    );
+    // Another request's readmission replaces those cells; nothing was selection-owned.
+    drop(
+        graph
+            .runtime
+            .prepare_owned_model_graph_selection(
+                execution,
+                &basis,
+                &basis,
+                &ownership(),
+                &ownership(),
+                graph.model,
+            )
+            .unwrap(),
+    );
     assert_eq!(memory.charged_memory_bytes(), 0);
     let policy = ExecutionRequestPolicy::new(
         ExecutionPosture::Automatic,

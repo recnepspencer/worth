@@ -133,11 +133,42 @@ fn commit(
 }
 
 #[test]
+fn one_work_account_bounds_each_entry_with_its_original_canonical_evidence() {
+    for entry in ENTRIES {
+        // Strategy retains its actual StrategyCommitArtifactBundle; the other
+        // entries discard that decoration. Hashing those distinct original
+        // canonical subjects may have different byte costs.
+        let (reference, required) = commit(entry, FUNDED_WORK_CEILING, true, false);
+        reference.unwrap();
+        assert!(required > 0 && required < FUNDED_WORK_CEILING);
+        let (unwrapped, recorded) = commit(entry, required, false, false);
+        unwrapped.unwrap_or_else(|error| {
+            panic!("{entry:?}: exact invoking account {required}: {error:?}")
+        });
+        assert_eq!(
+            recorded, required,
+            "{entry:?}: every original SDK charge settles into the same account"
+        );
+        let (wrapped, charged) = commit(entry, required, true, false);
+        wrapped.unwrap_or_else(|error| {
+            panic!("{entry:?}: exact ancestor and invoking accounts {required}: {error:?}")
+        });
+        assert_eq!(charged, required);
+        let refused = commit(entry, required - 1, false, false).0;
+        assert!(
+            matches!(refused, Err(TransactionCommitError::Execution { denial, .. })
+            if denial.kind == CommitExecutionDenialKind::Cause(crate::execution::RelationalExecutionDenialCause::WorkExhausted)),
+            "{entry:?}: one shared ceiling below {required} must refuse"
+        );
+    }
+}
+
+#[test]
 fn equivalent_proposal_entries_preserve_mutation_results() {
     let (ordinary, _) = commit(Entry::Ordinary, FUNDED_WORK_CEILING, true, false);
     let ordinary = ordinary.unwrap();
     for entry in ENTRIES {
-        let (reference, _) = commit(entry, FUNDED_WORK_CEILING, true, false);
+        let (reference, required) = commit(entry, FUNDED_WORK_CEILING, true, false);
         let reference = reference.unwrap();
         assert_eq!(
             reference.changed_records, ordinary.changed_records,
@@ -147,6 +178,7 @@ fn equivalent_proposal_entries_preserve_mutation_results() {
             reference.version_id, ordinary.version_id,
             "{entry:?}: same successor version"
         );
+        assert!(required > 0 && required < FUNDED_WORK_CEILING);
     }
 }
 
@@ -174,5 +206,40 @@ fn assert_cancelled(outcome: Result<CommitResult, TransactionCommitError>) {
         CommitExecutionDenialKind::Cause(
             crate::execution::RelationalExecutionDenialCause::Cancelled
         ),
+    );
+}
+
+#[test]
+fn one_work_account_bounds_the_same_proposal_on_every_entry() {
+    // The SDK report includes native evidence work outside the packet recorder.
+    let (reference, required_work) = commit(Entry::Ordinary, FUNDED_WORK_CEILING, true, false);
+    reference.unwrap();
+    assert!(required_work > 0 && required_work < FUNDED_WORK_CEILING);
+    let (unwrapped, recorded) = commit(Entry::Ordinary, FUNDED_WORK_CEILING, false, false);
+    unwrapped.unwrap();
+    eprintln!("native commit work invoice: actual={required_work} settled={recorded}");
+    assert_eq!(
+        recorded, required_work,
+        "the authoritative account settles all SDK work"
+    );
+    let completed = ENTRIES.map(|entry| {
+        let (outcome, charged) = commit(entry, required_work, true, false);
+        outcome.unwrap();
+        charged
+    });
+    assert_eq!(
+        completed,
+        [required_work; ENTRIES.len()],
+        "the same proposal pays the same full work through every entry"
+    );
+    // No enclosing account may make an internally reset allowance look sound.
+    let outcomes = ENTRIES.map(|entry| commit(entry, required_work - 1, false, false).0);
+    let refused = outcomes.each_ref().map(|outcome| {
+        matches!(outcome, Err(TransactionCommitError::Execution { denial, .. })
+            if denial.kind == CommitExecutionDenialKind::Cause(crate::execution::RelationalExecutionDenialCause::WorkExhausted))
+    });
+    assert_eq!(
+        refused, [true; 5],
+        "all entries spend one ceiling below {required_work}"
     );
 }
