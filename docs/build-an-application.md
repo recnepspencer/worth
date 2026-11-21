@@ -8361,6 +8361,14 @@ consumes selection; an empty attempt returns `EmptyBootstrap` and poisons that
 bootstrap. A nonempty unrelated batch also consumes unused selection. A recovered
 bootstrap rejects initialization; an installed runtime has no initialization method.
 
+Each seed batch, and the final bootstrap publication, is one canonical commit
+whose artifact encodes exactly the rows that batch installs: its size grows with
+the batch, never with rows already committed. A single frame is capped at
+256 MiB, and an oversized batch refuses `RelationalCommitRejected` naming
+`CanonicalArtifactEncoding(SizeLimit)` with nothing installed. Install a large
+population in bounded `commit_seed_batch` calls; a relation seed must join
+endpoints seeded in its own batch.
+
 Once that attempt ends, ordinary new/cold scopes still refuse under `Refuse`.
 A fresh public `rebuild_index` can refill an existing cold association after its
 independent Source READ; it cannot create a nonexistent scope. A refusing seed
