@@ -32,6 +32,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         family::decision_input::contracts(contracts)?;
         family::parity_input::contracts(contracts)?;
         family::saturated_input::contracts(contracts)?;
+        family::cross_reader::contracts(contracts)?;
+        family::cross_converge::contracts(contracts)?;
+        family::cross_oscillate::contracts(contracts)?;
         family::ordinary_input::contracts(contracts)?;
         family::diamond::contracts(contracts)?;
         family::predecessor_family::contracts(contracts)?;
@@ -85,6 +88,9 @@ impl WorthQueryApplicationContribution<Schema> for Contribution {
         family::decision_input::install(setup)?;
         family::parity_input::install(setup)?;
         family::saturated_input::install(setup)?;
+        family::cross_reader::install(setup)?;
+        family::cross_converge::install(setup)?;
+        family::cross_oscillate::install(setup)?;
         family::ordinary_input::install(setup)?;
         family::diamond::install(setup)?;
         family::predecessor_family::install(setup)?;
