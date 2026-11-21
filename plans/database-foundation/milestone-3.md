@@ -170,7 +170,7 @@ surface.
 
 | C3 slice | State on the branch |
 |---|---|
-| C3.1 Mixed publication killed between owner effects; Signal refusals at Home open | Implemented, in review. A mixed original's planned Signal leg is recorded before Native; a kill with only Native durable continues to exactly one Signal effect and one occurrence |
+| C3.1 Mixed publication killed between owner effects; Signal refusals at Home open | Done (reviewed). A mixed original's planned Signal leg is recorded before Native's effect. A kill with only Native durable continues to exactly one Signal effect and one occurrence. A retry of the original key answers the original in both cuts, and a fresh key is refused before any effect. At Home open, damaged, foreign, unknown-version and unrecorded-definition Signal inputs refuse before service |
 | C3.2 Cold release of process-local managed custody | Planned |
 | C3.3 Mid-step workflow kills, R9 `Indeterminate` and temporal retry | Planned |
 | C3.4 Adoption killed at each stage; retirement across a kill | Planned |
