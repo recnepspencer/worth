@@ -242,6 +242,23 @@ pub(super) fn require_replay_prestate(
     Ok(())
 }
 
+/// A schema-changing tail commit replays under the result schema it recorded;
+/// an ordinary commit keeps its predecessor root's own schema.
+pub(super) fn recorded_result_schema(
+    graph: &OriginalSchemaGraph,
+    envelope: &crate::history::data::CanonicalCommitEnvelope,
+) -> Result<Option<crate::mvcc::RecordedReplayResultSchema>, RelationalRecoveryStop> {
+    let inputs = envelope
+        .recorded_original_inputs()
+        .ok_or_else(|| corrupt("tail original attribution missing"))?;
+    if inputs.result_schema == inputs.prestate_schema {
+        return Ok(None);
+    }
+    crate::mvcc::RecordedReplayResultSchema::admit(graph.get(inputs.result_schema)?, envelope)
+        .map(Some)
+        .map_err(Into::into)
+}
+
 pub(super) fn bind_replayed_schema(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     runtime: &mut RelationalRuntime,

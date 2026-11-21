@@ -8,6 +8,7 @@ pub(super) enum RecoveryEntry {
     Active(Arc<ActiveAttemptRecord>),
     Retained(Arc<ProductUnpublishedOwnerEffectsRecord>),
     Recovered(Arc<crate::recovery::RecoveredWorldPublicationRecord>),
+    RecoveredCreation(Arc<crate::recovery::RecoveredWorldCreationRecord>),
     Busy,
 }
 
@@ -75,6 +76,16 @@ impl RecoveryRecordSlots {
         self.insert(record.identity.clone(), RecoveryEntry::Recovered(record));
         self.retained += 1;
     }
+    pub(super) fn insert_recovered_creation(
+        &mut self,
+        record: Arc<crate::recovery::RecoveredWorldCreationRecord>,
+    ) {
+        self.insert(
+            record.identity.clone(),
+            RecoveryEntry::RecoveredCreation(record),
+        );
+        self.retained += 1;
+    }
     fn insert(&mut self, identity: ProductUnpublishedOwnerEffectsIdentity, entry: RecoveryEntry) {
         assert!(!self.index.contains_key(&identity));
         let occupied = RecoverySlot::Occupied {
@@ -106,12 +117,16 @@ impl RecoveryRecordSlots {
         };
         self.retained += usize::from(matches!(
             next,
-            RecoveryEntry::Retained(_) | RecoveryEntry::Recovered(_)
+            RecoveryEntry::Retained(_)
+                | RecoveryEntry::Recovered(_)
+                | RecoveryEntry::RecoveredCreation(_)
         ));
         let old = std::mem::replace(entry, next);
         self.retained -= usize::from(matches!(
             old,
-            RecoveryEntry::Retained(_) | RecoveryEntry::Recovered(_)
+            RecoveryEntry::Retained(_)
+                | RecoveryEntry::Recovered(_)
+                | RecoveryEntry::RecoveredCreation(_)
         ));
         old
     }
@@ -130,7 +145,9 @@ impl RecoveryRecordSlots {
         };
         self.retained -= usize::from(matches!(
             entry,
-            RecoveryEntry::Retained(_) | RecoveryEntry::Recovered(_)
+            RecoveryEntry::Retained(_)
+                | RecoveryEntry::Recovered(_)
+                | RecoveryEntry::RecoveredCreation(_)
         ));
         Some(entry)
     }

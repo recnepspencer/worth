@@ -5,6 +5,7 @@ use super::source::assembly::HomeQueryPreparation;
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
 use worth_runtime_world::facade::*;
+mod creation_originals;
 mod custody;
 mod dispatch_custody;
 mod inbound_custody;
@@ -132,6 +133,7 @@ where
         QueryHomeWorldAttachmentRefused<Schema, Program>,
     > {
         let prepared = (|| {
+            creation_originals::decide_recovered_creations(phase, &inspection, &branch)?;
             let branches = observation
                 .observe_installed_product_branches(&phase.execution_request())
                 .map_err(|cause| {

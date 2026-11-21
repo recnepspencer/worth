@@ -193,8 +193,7 @@ impl Fixture {
                     recorder.binding().clone(),
                     recorder.snapshot(),
                     request,
-                )
-                .unwrap()
+                )?
                 .bind(recorder.clone(), request)
                 .unwrap();
                 builder.readmit_world_home(
@@ -217,18 +216,9 @@ impl Fixture {
             native_medium: medium,
         })
     }
-    pub(super) fn associated_signal_digest(&self, request: &ExecutionRequest<'_, '_>) -> [u8; 32] {
-        match self
-            .signal
-            .source_port()
-            .inspect_associated_advances(request, |effect, _| {
-                std::ops::ControlFlow::Break(effect.digest())
-            })
-            .unwrap()
-        {
-            std::ops::ControlFlow::Break(digest) => digest,
-            std::ops::ControlFlow::Continue(()) => panic!("actual Signal effect required"),
-        }
+    /// Signal's next branch advance never becomes durable in this process.
+    pub(super) fn hold_signal_advances(&self) {
+        self.signal_medium.hold_branch_advances();
     }
     pub(super) fn finish(self, request: &ExecutionRequest<'_, '_>) {
         let report = self

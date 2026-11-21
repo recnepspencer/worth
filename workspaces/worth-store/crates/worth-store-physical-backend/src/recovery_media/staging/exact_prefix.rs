@@ -24,7 +24,7 @@ pub(super) fn complete_existing(
         .map_err(RecoveryStagingPhysicalFailure::Denied)?;
     let expected_length = expected.len() as u64;
     if length > expected_length {
-        return Err(RecoveryStagingPhysicalFailure::Denied(damaged()));
+        return Err(RecoveryStagingPhysicalFailure::Mismatched);
     }
     if length == expected_length {
         return verify_complete(media, artifact, physical, coordinate, expected);
@@ -98,6 +98,23 @@ pub(super) fn create(
     }
 }
 
+/// Discards a killed runtime's unpublished candidate under the name, then
+/// creates the expected bytes. Each step is repeatable: a later attempt finds
+/// the candidate, its absence, or a prefix of the expected bytes. A failed
+/// removal refuses this attempt; no published root reaches the name either way.
+pub(super) fn replace_unpublished(
+    media: &ArtifactTreeMedia<'_>,
+    artifact: RecordArtifactFile,
+    physical: ArtifactTreeFile,
+    coordinate: RecordFrameCoordinate,
+    bytes: &[u8],
+) -> Result<CompletedRecoveryStagingWrite, RecoveryStagingPhysicalFailure> {
+    media
+        .remove_file_durably(&physical)
+        .map_err(RecoveryStagingPhysicalFailure::Denied)?;
+    create(media, artifact, physical, coordinate, bytes)
+}
+
 fn verify_complete(
     media: &ArtifactTreeMedia<'_>,
     artifact: RecordArtifactFile,
@@ -108,7 +125,7 @@ fn verify_complete(
     let mut observed = vec![0; expected.len()];
     let verified = read_exact(media, &physical, coordinate, &mut observed)?;
     if observed != expected {
-        return Err(RecoveryStagingPhysicalFailure::Denied(damaged()));
+        return Err(RecoveryStagingPhysicalFailure::Mismatched);
     }
     Ok(CompletedRecoveryStagingWrite {
         artifact,
@@ -140,7 +157,7 @@ fn verify_prefix(
     let mut observed = vec![0; prefix_length];
     let verified = read_exact(media, physical, coordinate, &mut observed)?;
     if observed != expected[..prefix_length] {
-        return Err(RecoveryStagingPhysicalFailure::Denied(damaged()));
+        return Err(RecoveryStagingPhysicalFailure::Mismatched);
     }
     Ok(Some(verified))
 }

@@ -21,8 +21,15 @@ impl ProductUnpublishedRecoveryCatalog {
             let Some((_, entry)) = state.slots.at(position) else {
                 continue;
             };
-            let RecoveryEntry::Recovered(record) = entry else {
-                return Err(Denial::CloseProgressInvariant);
+            let record = match entry {
+                RecoveryEntry::Recovered(record) => record,
+                // An undecided creation holds owner forks and a fenced name.
+                RecoveryEntry::RecoveredCreation(_) => {
+                    return Err(Denial::UnresolvedBusinessCustody)
+                }
+                RecoveryEntry::Active(_) | RecoveryEntry::Retained(_) | RecoveryEntry::Busy => {
+                    return Err(Denial::CloseProgressInvariant)
+                }
             };
             if *record.claimed.try_lock().map_err(|_| Denial::Busy)? {
                 return Err(Denial::UnresolvedBusinessCustody);
@@ -57,6 +64,7 @@ impl ProductUnpublishedRecoveryCatalog {
                     }
                 }
                 RecoveryEntry::Recovered(_)
+                | RecoveryEntry::RecoveredCreation(_)
                 | RecoveryEntry::Active(_)
                 | RecoveryEntry::Retained(_)
                 | RecoveryEntry::Busy => {
@@ -211,6 +219,9 @@ impl ProductUnpublishedRecoveryCatalog {
                     Some(RecoveryEntry::Recovered(record))
                         if std::sync::Arc::strong_count(record) == 1 => {}
                     Some(RecoveryEntry::Recovered(_)) => {
+                        return Err(Denial::UnresolvedBusinessCustody)
+                    }
+                    Some(RecoveryEntry::RecoveredCreation(_)) => {
                         return Err(Denial::UnresolvedBusinessCustody)
                     }
                     Some(

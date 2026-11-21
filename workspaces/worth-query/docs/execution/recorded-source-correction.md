@@ -157,7 +157,7 @@ the original description/owner through the public request. The real Bank freeze
 journey covers divergent root/child reversals and exact foreign-alternative
 refusal without duplicate publication. No-output reapplication uses the declared
 zero-role contract; an empty cache is not evidence for output-bearing corrections.
-Crash recovery is not yet certified (C1–C5).
+Crash recovery is not yet certified (C4/C5).
 
 A directory Home records the original canonical input, disclosure parameters,
 pre-image and output correspondence in `query.corrections`. Readmission joins

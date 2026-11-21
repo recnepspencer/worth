@@ -249,6 +249,13 @@ impl ReadmittedHomeProgramTransitions {
     }
 }
 
+/// Whether the author plans on the current head or recomputes a recorded
+/// pending intent on its original planning root.
+pub(crate) enum HomeTransitionPlanningOrigin {
+    Fresh,
+    Resume,
+}
+
 pub(crate) enum HomeTransitionAdmission {
     Current {
         history: ReadmittedHomeProgramTransitions,
@@ -287,6 +294,21 @@ impl HomeTransitionAdmission {
                 history,
                 successor: _,
             } => history,
+        }
+    }
+    pub(crate) fn planning_origin(
+        &self,
+        current: &ApplicationHomeBinding,
+    ) -> Result<HomeTransitionPlanningOrigin, Denial> {
+        match self {
+            Self::Current { history: _ } => Err(Denial::TransitionNotRequested),
+            Self::Requested {
+                history,
+                successor: _,
+            } => Ok(match history.pending(current)? {
+                Some(_) => HomeTransitionPlanningOrigin::Resume,
+                None => HomeTransitionPlanningOrigin::Fresh,
+            }),
         }
     }
     pub(crate) fn require_fresh_plan(

@@ -44,3 +44,8 @@ pub use worth_store_application::{
     ApplicationHomeCloseDenial,
     ApplicationHomeCloseOutcome as WorthQueryApplicationHomeCloseOutcome,
 };
+/// Store's physical refusal vocabulary, for `physical_refusal`.
+pub use worth_store_application::{
+    ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind,
+    ApplicationHomePhysicalStage,
+};

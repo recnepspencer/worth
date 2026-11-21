@@ -18,8 +18,9 @@ this guide explain the underlying contracts and support specialized composition.
 
 Directory Homes support the declared track-H families through the real installed
 owners in [§4](#4-install-or-reopen). Use graceful close and fresh-process reopen
-for durable continuation; MemoryOnly carries no restart guarantee. Crash recovery
-is not yet certified. For the short lifecycle path (open, write, retry, close,
+for durable continuation; MemoryOnly carries no restart guarantee. Reopen after
+a kill recovers the cases listed in [After a crash](application-home.md#after-a-crash-or-unclean-close);
+crash recovery is not yet certified. For the short lifecycle path (open, write, retry, close,
 crash behavior, discard) start with [Use an Application Home](application-home.md).
 
 | Your next task | Start here | What you supply |
@@ -2186,8 +2187,14 @@ initializers and business handlers are not replayed. See the executable combined
 Bank journey in `bank-courtroom/examples/h10_graceful_bank_home`.
 
 Failed live cleanup returns an owning close refusal. A pending release after
-process loss belongs to C3. Effects without a recorded World disposition retain
-`UncleanRecoveryUnsupported` (D18, C1/C5); C2 owns durable-history/branch cleanup;
+process loss belongs to C3: until then, a reopened Home whose prior process died
+while an attempt held a managed run refuses graceful close with
+`ManagedCleanup(ManagedRunPending { .. })`. After a kill, reopen continues a
+Native effect that World had not yet recorded as recovered `ProductUnpublished`
+custody, releases a no-effect original, and resumes an interrupted program
+transition ([After a crash](application-home.md#after-a-crash-or-unclean-close)).
+Only an unobserved dispatch attempt and damage-shaped Signal or fork tails keep
+`UncleanRecoveryUnsupported` (D18, C5); C2 owns durable-history/branch cleanup;
 C4 owns the adversarial oracle; C5 owns retirement and final certification.
 **Crash recovery is not yet certified.**
 Correction shapes without admitted relation pre-images, output material or
@@ -6791,8 +6798,8 @@ not yet certified. Their caller cutover still needs focused execution at the
 integrated H6 source epoch; it does not certify the milestone's full-family
 positive divergent-correction/materialization journey. That positive journey
 remains a separate H10 prerequisite, including the currently refused coupled or
-authored correction output shapes. C1–C5 own unclean recovery and retirement
-certification.
+authored correction output shapes. C1 recovers the crash core; C2–C5 own the
+remaining unclean recovery and retirement certification.
 
 #### Keep a basis, reacquire a locator
 
@@ -7282,13 +7289,14 @@ The same chain in production code is
 | Prepare | `.prepare(maximum_selection_work)` | `WorthQueryPreparedBranchAdoption` (move-only, fields private) |
 | Publish | `programs.publish(prepared)` | `WorthQueryBranchAdoptionPublicationOutcome` |
 | Recover | `programs().recover(unpublished.into_recovery())` | `Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryApplicationProgramAdoptionRecoveryFailure>` |
-| Readmit after Directory reopen | `runtime.readmit_branch_adoption(fresh_world_recovery_handle)` | Exact original adoption custody where D18 admits the tail; then ordinary `programs().recover` with fresh authentication |
+| Readmit after Directory reopen | `runtime.readmit_branch_adoption(fresh_world_recovery_handle)` | Exact original adoption custody, including a recovered unpublished original after a kill; then ordinary `programs().recover` with fresh authentication |
 
 Directory close succeeds before preparation starts and after the World occurrence or
 disposition settles. A cancelled adoption with a Native effect but no World
 occurrence or disposition refuses close with `UnresolvedBusinessCustody`; the
-returned Home remains usable. Abandoning that prefix refuses reopen with
-`UncleanRecoveryUnsupported(Relational)` (D18); its continuation belongs to C1.
+returned Home remains usable. If the process ends with that prefix, reopen
+retains the original as recovered `ProductUnpublished` custody and the same key
+continues it without rerunning its handler.
 
 `compare` comes first because the requirements are the input to `adopt`.
 `WorthQueryProgramAdoptionRequirements` exposes `semantic_diff()`,
@@ -8699,11 +8707,13 @@ effect and inherits its predecessor's exact Native source. Mixed publication
 settles Native first and preserves both original effects in its World
 occurrence. A graceful close or quiescent process kill preserves published
 authored state and committed receipts without repeating either effect.
-Unresolved live publication custody refuses close. If an unclean tail contains
-an associated owner effect without an occurrence or disposition, reopen refuses
-with `UncleanRecoveryUnsupported` before service (D18). A retained original
-cannot become a no-effect result; its crash continuation and pending settlement
-recovery belong to track C.
+Unresolved live publication custody refuses close. After an unclean end, a
+Native effect without its World occurrence reopens as recovered
+`ProductUnpublished` custody that the same key continues, and a Signal effect
+with its recorded open is readmitted. A Signal effect with no recorded open
+(damage, not a kill) still refuses with `UncleanRecoveryUnsupported` before
+service (D18). A retained original cannot become a no-effect result; pending
+settlement recovery belongs to track C.
 
 Use `bind_conditional_definition` to install authored conditional membership
 without a managed clock or temporal operation. Actual temporal installation and

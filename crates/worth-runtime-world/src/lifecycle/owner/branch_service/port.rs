@@ -1,4 +1,4 @@
-//! Weak service dispatch and same-original creation resumption.
+//! Weak service dispatch and same-original creation resumption, live or recovered.
 use super::*;
 impl<D, I, E, Ctx, T> crate::lifecycle::ports::RuntimeWorldBranchService
     for RuntimeWorldOwnerRoot<D, I, E, Ctx, T>
@@ -57,6 +57,10 @@ where
     {
         use crate::recovery::RuntimeWorldRecoveryDenial as Denial;
         self.state.recovery.admit_handle(handle)?;
+        // A cold-recovered original has no live driver; its owners decided it.
+        if let Some(claim) = self.state.recovery.claim_recovered_creation(handle)? {
+            return self.resolve_recovered_creation(execution, claim, cancellation);
+        }
         let operation = self
             .reserve_creation_operation()
             .map_err(|()| Denial::Busy)?;

@@ -1,7 +1,7 @@
 use worth_store_io_scheduler::execute_ready_queue_plan;
 use worth_store_physical_backend::{
-    ArtifactRangeWriteDurabilityRequirement, RecoveryStagingWriteDisposition,
-    RecoveryStagingWriteOutcome,
+    ArtifactRangeWriteDurabilityRequirement, RecoveryStagingExistingArtifact,
+    RecoveryStagingWriteDisposition, RecoveryStagingWriteOutcome,
 };
 
 use crate::physical_runtime::recovery_coordination::{
@@ -52,6 +52,10 @@ pub(super) fn execute(
         command.artifact,
         command.offset,
         command.bytes,
+        // Staged page data is a canonical function of the admitted redo, so
+        // a killed runtime's partial write is a prefix of it; other bytes are
+        // damage (`RecoveryCandidateGeneration` covers the candidate root).
+        RecoveryStagingExistingArtifact::Verify,
         plan.backend_completion_binding()
             .backend_execution_binding(),
     ) {

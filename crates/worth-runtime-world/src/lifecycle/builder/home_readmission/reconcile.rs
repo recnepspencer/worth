@@ -12,12 +12,19 @@ use worth_foundational::facade::{
 use worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority;
 mod creation;
 mod unpublished;
+mod unresolved_creation;
 
 type ReferenceKey = (
     DurableProductBranchIncarnation,
     DurableProductReferenceGeneration,
 );
 type Observations = ExecutionOrderedMap<ReferenceKey, crate::branch::ProductBranchObservation>;
+type Points =
+    ExecutionOrderedMap<ReferenceKey, worth_signal::facade::durability::SignalRecordedSourcePoint>;
+type Descriptors = ExecutionOrderedMap<
+    worth_foundational::facade::DurableCompositeCommitIdentity,
+    worth_relational::facade::branch::RecordedRelationalComponentReference,
+>;
 
 pub(super) fn reconcile<D, I, E, Ctx, T>(
     root: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
@@ -27,6 +34,7 @@ pub(super) fn reconcile<D, I, E, Ctx, T>(
     authority: &RecoveredRelationalRuntimeAuthority,
     effects: super::native_effects::ReadmittedNativeEffects,
     signal_effects: super::signal_effects::ReadmittedSignalEffects,
+    creation_forks: super::creation_effects::UnresolvedCreationForks,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), Denial>
 where
@@ -39,7 +47,7 @@ where
         recovered.branches.len(),
         recovered.occurrences.len(),
         recovered.opens.len(),
-        recovered.created.len(),
+        recovered.creations.len(),
     )?;
     custody.history = Some(root.state.history.clone());
     custody.branches = Some(root.state.branches.clone());
@@ -51,14 +59,8 @@ where
             .authored()
             .ok_or(Denial::AuthoredSignalRequired)?;
         let mut observations = Observations::default();
-        let mut points: ExecutionOrderedMap<
-            ReferenceKey,
-            worth_signal::facade::durability::SignalRecordedSourcePoint,
-        > = ExecutionOrderedMap::default();
-        let mut descriptors: ExecutionOrderedMap<
-            _,
-            worth_relational::facade::branch::RecordedRelationalComponentReference,
-        > = ExecutionOrderedMap::default();
+        let mut points = Points::default();
+        let mut descriptors = Descriptors::default();
         for (key, reference) in &recovered.references {
             execution.consult().map_err(|cause| {
                 Denial::Medium(crate::durability::WorldDurableMediumDenial::Request(cause))
@@ -207,6 +209,24 @@ where
             &signal_effects,
             &descriptors,
             &observations,
+            &mut custody,
+            execution,
+        )?;
+        unresolved_creation::install(
+            root,
+            binding,
+            recovered,
+            native,
+            authority,
+            &unresolved_creation::OwnerInventories {
+                forks: &creation_forks,
+                signal: &signal_effects,
+            },
+            &unresolved_creation::RecoveredReferences {
+                observations: &observations,
+                descriptors: &descriptors,
+                points: &points,
+            },
             &mut custody,
             execution,
         )?;

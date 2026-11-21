@@ -40,6 +40,14 @@ pub enum WorthQueryHomeProgramTransitionDenial {
         pending: worth_runtime_world::facade::WorldPendingDurablePublication,
     },
     Completion(worth_store_application::ApplicationHomeTransitionStepRejected),
+    Resumption(worth_store_application::ApplicationHomeTransitionResumptionDenial),
+    UnopenedStep(worth_runtime_world::facade::WorldHomeTransitionUnopenedDenial),
+    ResumedOpen(Box<worth_runtime_world::facade::WorldHomeTransitionOpenResumeRefused>),
+    Continuation(Box<worth_runtime_world::facade::WorldHomeTransitionEffectOutcome>),
+    StoppedContinuation {
+        cause: worth_execution::WorkCeilingDenial,
+        custody: worth_runtime_world::facade::WorldRecoveredUnpublishedEffects,
+    },
     Binding(worth_store_application::ApplicationHomeTransitionFinishDenial),
     Observation(
         worth_runtime_world::facade::RuntimeWorldServiceDenial<

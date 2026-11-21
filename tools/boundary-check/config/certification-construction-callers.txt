@@ -202,7 +202,10 @@ native-world-readmission workspaces/worth-store/crates/worth-store-application/s
 native-world-readmission workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission/selected_source.rs
 native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/readmission.rs
 native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/readmission/transition.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/transition_compilation_basis.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-application/src/world_section/transition_planning_request.rs
 native-world-readmission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_catalog_readmission.rs
+native-world-readmission workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_source/interrupted.rs
 query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/existing.rs
 query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/fresh.rs
 query-home-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/opening/preparation.rs
@@ -215,11 +218,13 @@ query-home-preparation workspaces/worth-store/crates/worth-store-court-applicati
 query-home-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/native_artifacts/successor_compilation.rs
 query-home-retirement workspaces/worth-query/crates/worth-query-host/src/application_home/close/retirement.rs
 query-registered-native workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/source_owner/attachment.rs
+query-world-commit-preparation crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/durable_siblings/unresolved_creation.rs
 query-world-commit-preparation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/application_runtime/inbound_publication/completion_publication.rs
 query-world-commit-preparation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution.rs
-query-world-commit-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/publication.rs
+query-world-commit-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/step_execution.rs
 query-world-commit-preparation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/publication/preparation.rs
 query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/promotion.rs
+query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_native_effect/native_original.rs
 query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/publication.rs
 world-fresh-home crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/artifact_source.rs
 world-fresh-home workspaces/worth-store/crates/worth-store-application/src/tests/world_section/readmission.rs

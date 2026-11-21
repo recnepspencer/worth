@@ -76,6 +76,14 @@ pub struct WorthQueryProductBranchOwnerCleanupReceipt {
 }
 
 impl WorthQueryProductBranchOwnerCleanupReceipt {
+    /// A published original whose World continuation already released every
+    /// owner custody; no component remains to retire.
+    pub(crate) const fn continued_original() -> Self {
+        Self {
+            retired_component_count: 0,
+        }
+    }
+
     pub const fn retired_component_count(&self) -> usize {
         self.retired_component_count
     }

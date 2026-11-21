@@ -2,7 +2,8 @@ use super::ProductUnpublishedRecoveryCatalog;
 use super::RecoveryEntry;
 use crate::inspection::RuntimeWorldRecoveryCursor;
 use crate::inspection::{
-    RuntimeWorldRecoveryPage, RuntimeWorldRecoveryRecordState, RuntimeWorldRecoveryRow,
+    RuntimeWorldRecoveredOriginal, RuntimeWorldRecoveryPage, RuntimeWorldRecoveryRecordState,
+    RuntimeWorldRecoveryRow,
 };
 use crate::lifecycle::RuntimeWorldInstant;
 use crate::recovery::{ProductUnpublishedRecoveryHandle, RuntimeWorldRecoveryDenial};
@@ -55,12 +56,21 @@ impl ProductUnpublishedRecoveryCatalog {
             let Some((id, entry)) = state.slots.at(position) else {
                 continue;
             };
+            let recovered = match entry {
+                RecoveryEntry::Recovered(_) => Some(RuntimeWorldRecoveredOriginal::Publication),
+                RecoveryEntry::RecoveredCreation(_) => {
+                    Some(RuntimeWorldRecoveredOriginal::BranchCreation)
+                }
+                RecoveryEntry::Active(_) | RecoveryEntry::Retained(_) | RecoveryEntry::Busy => None,
+            };
             let (posture, time) = match entry {
                 RecoveryEntry::Retained(record) => (
                     RuntimeWorldRecoveryRecordState::Retained,
                     Some((record.admitted_at(), record.deadline())),
                 ),
-                RecoveryEntry::Recovered(_) => (RuntimeWorldRecoveryRecordState::Recovered, None),
+                RecoveryEntry::Recovered(_) | RecoveryEntry::RecoveredCreation(_) => {
+                    (RuntimeWorldRecoveryRecordState::Recovered, None)
+                }
                 RecoveryEntry::Active(record) => (
                     if record.is_abandoned() {
                         RuntimeWorldRecoveryRecordState::Abandoned
@@ -74,6 +84,7 @@ impl ProductUnpublishedRecoveryCatalog {
             rows.push(RuntimeWorldRecoveryRow {
                 handle: ProductUnpublishedRecoveryHandle::new(id.clone(), self.affinity()),
                 state: posture,
+                recovered,
                 admitted_at: time.map(|(t, _)| t),
                 age_ticks: time.and_then(|(t, _)| now.ticks().checked_sub(t.ticks())),
                 deadline_expired: time.map(|(_, deadline)| deadline.is_some_and(|d| now >= d)),

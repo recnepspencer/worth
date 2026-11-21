@@ -16,6 +16,18 @@ use super::AdmittedRecoveryFilesystemMedia;
 mod arena_range;
 mod exact_prefix;
 
+/// What an ensure-exact recovery write does with an existing artifact whose
+/// bytes are neither the expected bytes nor a prefix of them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecoveryStagingExistingArtifact {
+    /// A published root may reach the name: other bytes are damage and refuse.
+    Verify,
+    /// No published root reaches the name, so other bytes are a killed
+    /// runtime's unpublished candidate: it is durably removed and the
+    /// expected bytes are created in its place.
+    DiscardUnpublished,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RecoveryStagingWriteDisposition {
     Created,
@@ -107,6 +119,7 @@ impl AdmittedRecoveryFilesystemMedia {
         artifact: RecordArtifactFile,
         offset: u64,
         bytes: &[u8],
+        existing: RecoveryStagingExistingArtifact,
         binding: BackendQueueExecutionPlanBinding,
     ) -> RecoveryStagingWriteOutcome {
         let Some(coordinate) = u32::try_from(bytes.len())
@@ -133,7 +146,22 @@ impl AdmittedRecoveryFilesystemMedia {
                 if matches!(artifact, RecordArtifactFile::ExtentArena { .. }) {
                     arena_range::complete_existing(&media, artifact, physical, coordinate, bytes)
                 } else if offset == 0 {
-                    exact_prefix::complete_existing(&media, artifact, physical, coordinate, bytes)
+                    match exact_prefix::complete_existing(
+                        &media,
+                        artifact,
+                        physical.clone(),
+                        coordinate,
+                        bytes,
+                    ) {
+                        Err(RecoveryStagingPhysicalFailure::Mismatched)
+                            if existing == RecoveryStagingExistingArtifact::DiscardUnpublished =>
+                        {
+                            exact_prefix::replace_unpublished(
+                                &media, artifact, physical, coordinate, bytes,
+                            )
+                        }
+                        completed => completed,
+                    }
                 } else {
                     Err(RecoveryStagingPhysicalFailure::Denied(structural_denial()))
                 }
@@ -150,6 +178,15 @@ impl AdmittedRecoveryFilesystemMedia {
                 RecoveryStagingWriteOutcome::DeniedBeforeEffect(Box::new(
                     DeniedScheduledRecoveryStagingWrite {
                         failure,
+                        queue: Some(queue),
+                    },
+                ))
+            }
+            // Different bytes under a name a published root may reach are damage.
+            Err(RecoveryStagingPhysicalFailure::Mismatched) => {
+                RecoveryStagingWriteOutcome::DeniedBeforeEffect(Box::new(
+                    DeniedScheduledRecoveryStagingWrite {
+                        failure: ArtifactTreeFailure::recovery_damaged(),
                         queue: Some(queue),
                     },
                 ))
@@ -223,6 +260,9 @@ impl AdmittedRecoveryFilesystemMedia {
 
 enum RecoveryStagingPhysicalFailure {
     Denied(ArtifactTreeFailure),
+    /// The existing artifact's bytes are neither the expected bytes nor a
+    /// prefix of them.
+    Mismatched,
     Indeterminate(IndeterminateRecoveryStagingWrite),
 }
 

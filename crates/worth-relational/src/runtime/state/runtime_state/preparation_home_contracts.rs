@@ -10,10 +10,14 @@ impl RelationalPreparationRuntime {
         &self,
         basis: &AdmittedRelationalBranchBasis,
         target: Option<&Arc<AdmittedRelationalHomeProgramTarget>>,
+        recorded: Option<&Arc<crate::branch::RelationalBranchRootSchemaAuthority>>,
     ) -> Result<Self, TransactionCommitError> {
-        let selected = match target {
-            Some(target) => Some(&target.meaning),
-            None => basis.inner.root.execution_contracts.get(),
+        // A replayed schema-changing commit is judged under the schema it
+        // durably recorded; its predecessor root's inventory never applies.
+        let selected = match (target, recorded) {
+            (Some(target), _) => Some(&target.meaning),
+            (None, Some(_)) => None,
+            (None, None) => basis.inner.root.execution_contracts.get(),
         };
         let mut runtime = self.clone();
         if let Some(target) = target
@@ -23,9 +27,10 @@ impl RelationalPreparationRuntime {
         }
         runtime.schema_contract_runtime = self.configuration_epoch.schema_contract_runtime.clone();
         runtime.execution_contracts = None;
-        runtime.execution_registry = Some(match selected {
-            Some(selected) => selected.schema.registry_arc(),
-            None => basis.inner.root.schema_authority().registry_arc(),
+        runtime.execution_registry = Some(match (selected, recorded) {
+            (Some(selected), _) => selected.schema.registry_arc(),
+            (None, Some(recorded)) => recorded.registry_arc(),
+            (None, None) => basis.inner.root.schema_authority().registry_arc(),
         });
         runtime.home_target = target.cloned();
         match selected {

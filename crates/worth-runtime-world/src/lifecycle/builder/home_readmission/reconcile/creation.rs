@@ -67,16 +67,36 @@ where
         None => None,
     };
     custody.creation_signals.push(acquired_signal);
+    let mut destination = reserve_destination(root, &created.intent)?;
     let (observed, origin) = root.install_readmitted_created_branch(
         created,
         source,
         source_point,
         custody.creation_forks[index].as_ref(),
         custody.creation_signals[index].as_ref(),
+        &mut destination,
         request,
     )?;
     custody.checkpoint_origins.push(origin);
     Ok(observed)
+}
+
+/// Reserve the original destination name; a held reservation fences it.
+pub(super) fn reserve_destination<D, I, E, Ctx, T>(
+    root: &RuntimeWorldOwnerRoot<D, I, E, Ctx, T>,
+    intent: &crate::durability::WorldCreationIntentRecord,
+) -> Result<crate::branch::registry::ProductBranchRegistryReservation, Denial>
+where
+    D: Copy + Ord + std::fmt::Debug + Send + Sync + 'static,
+    I: Copy + Ord + Send + Sync + 'static,
+    T: Copy + Ord + Send + Sync + 'static,
+{
+    let name = crate::branch::ProductBranchName::try_new(intent.destination.branch.name())
+        .map_err(|_| Denial::BranchLineage)?;
+    root.state
+        .branches
+        .reserve_branch(root.owner_identity(), name)
+        .map_err(|_| Denial::RecoveryCapacity)
 }
 
 pub(super) fn retire_admissions(

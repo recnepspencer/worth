@@ -7,6 +7,7 @@ mod initial_schema_recovery;
 mod prepared_home_schema;
 mod recorded_basis;
 mod recorded_component_checkpoint;
+mod recorded_component_property;
 mod recorded_component_recovery;
 mod recorded_component_validation;
 mod recovered_associated_effects;

@@ -52,7 +52,7 @@ pub(super) fn occurrence(
     crate::physical_runtime::recovery_coordination::RecoveryPublicationCandidateOccurrence::new(
         coordination.session_identity(),
         command.plan,
-        command.staging_generation,
+        command.generation.generation(),
         command.protocol.publication(),
         candidate.artifact(),
         ordinal,

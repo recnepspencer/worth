@@ -150,17 +150,34 @@ guides state that crash recovery is not yet certified.
 
 ### Cleanup track status
 
-**2026-11-20.** C1 (crash core) is being built on branch `m3/cleanup-c1`; C2–C5
-have not started. Nothing from C1 is on master yet, so master still refuses an
-unclean Home open with `UncleanRecoveryUnsupported` (D18).
+**2026-11-20.** C1 (crash core) is complete on branch `m3/cleanup-c1` and
+lands with its PR; C2–C5 have not started. D18 remains for the causes below:
+two damage-shaped World causes and the Dispatch cause (C3). C5 retires the
+surface.
 
 | C1 slice | State on the branch |
 |---|---|
 | C1.1 Native effect before World publication | Done: the reopened Home retains the original and continues it without rerunning the handler |
-| C1.2 Unresolved fate, release and fork custody | Mostly done. Open: fresh same-key execution after a durable no-effect release, and the M2 unresolved fork |
+| C1.2 Unresolved fate, release and fork custody | Done. Reopen durably releases a no-effect original before service, and its key then executes fresh exactly once. An unresolved M2 branch creation reopens as recovered custody: with no owner fork it can only be released, and once any fork is durable it can only continue. A creation killed between Native's fork and Signal's completes Signal's planned fork once from the recovered custody, under World's grant and at the recorded basis |
 | C1.3 Exact Native components and selective readmission | Done. Selective readmission past an unrelated damaged body is proved at the Native owner; on the filesystem, Store's physical recovery refuses any damaged WAL |
-| C1.4 Program transition resume and drift | In progress: unclean transition effects recover and Store's D18 gate is removed; resuming a transition killed after its durable intent is not done |
-| C1.5 Home open refusals and interrupted discard | Done. Open notes: after a refused discard the live Home is shown to close, not to keep serving; `ConflictingOpenAttempt` has no test |
+| C1.4 Program transition resume and drift | Done. A transition killed in any of its 12 durable states resumes on reopen with the same request. Every step happens exactly once and the plan author reruns only before the binding is durable. A changed plan refuses with `TransitionPlanDrift` and extends nothing. The three transition-source courts are restored (D16) |
+| C1.5 Home open refusals and interrupted discard | Done. Contended and discard-pending opens are matched through `physical_refusal()`. Open notes: after a refused discard the live Home is shown to close, not to keep serving; `ConflictingOpenAttempt` has no test, because no public owner produces a second open for one attempt without rewriting the journal |
+| C1 close-checkpoint crash recovery | Done. A kill inside graceful-close checkpoint publication used to leave an unpublished candidate root that reopen refused as damage. Reopen now discards it and recovers to the pre-close committed state. Court: `interrupted_close::killed_checkpoint` |
+
+The Host accessor `unclean_recovery_unsupported()` now reads World's D18
+refusal. After C1, it reports two kinds of cause.
+
+- **World-wrapped causes:** a Signal effect without its recorded open, and a
+  Native fork without a creation intent. Neither can come from a kill, because
+  each owner writes only after World acknowledges its record, and WAL damage
+  is refused earlier by physical recovery. A Host open therefore cannot
+  produce them without forged bytes. The World owner court
+  `owner_evidence::recovered_owners` covers the refusal.
+- **Dispatch cause:** an external dispatch attempt with no recorded
+  observation. A kill during external contact can produce it. Its recovery is
+  C3 scope (crashes after dispatch).
+
+C5 deletes the accessor along with D18.
 
 ### Track C items
 
@@ -195,6 +212,105 @@ unclean Home open with `UncleanRecoveryUnsupported` (D18).
   - Boundary gates at zero; re-audit; no deleted callers.
   - Tier 3 and the cumulative oracle; milestone certification.
 
+### C1 implementation and acceptance slices
+
+Start with one ordinary Native write killed between the durable Native effect
+and World occurrence. The application reopens the same directory in a fresh
+process and can continue the original without running its handler again.
+Expand that path in the order below. C1 keeps the D8 service gate in force;
+Store admits the Home, Native proves what it recovered, World classifies the
+original, and Query readmits the caller's key and outcome. Only the complete
+D8 progression grants service. C1 supplies recovery for its qualified cases;
+C5 retires the D18 refusal surface after the remaining cases are qualified.
+
+#### C1.1 — Native effect before World publication
+
+Use the existing Store `readmit_world` path, Native's
+`RecoveredRelationalRuntimeAuthority::discover_recovered_associated_effects`
+and `admit_recorded_publication`, and World's associated-effect reconciliation
+and recovered-publication catalog. Join the owner-issued effect to the exact
+`OpenAttempt`, branch and predecessor before returning `ReadmittedRuntimeWorld`.
+If the effect has no World occurrence or disposition, retain the original
+`ProductUnpublished` custody with its receipt and continuation. The live head
+stays at its predecessor until an occurrence is committed. If World already
+committed the occurrence, readmit that movement even if the old process never
+installed it live. The retry consumer uses the existing recovered claim and
+`continue_effects` / `prepare_settled_relational_adoption` path.
+
+| Evidence | Acceptance |
+|---|---|
+| Bounded stateful property in the existing World model court | Generate short sequences of durable open, owner effect, World occurrence, reopen and duplicate retry. Compare the reconciler's catalog, selected head, original identities and retry posture with a small model derived from the recorded facts. Cover open-only, owner-effect-only and acknowledged World occurrence states. Reopening the same prefix repeatedly preserves durable state. A subsequent fresh operation takes an attempt, commit and custody identity beyond their respective durable frontiers, including identities from unfinished opens. |
+| Owner negative cases | A genuine effect with a missing original, a wrong owner or predecessor, or a conflicting effect for the same association refuses before service. The matching case admits the same recorded receipt. Exercise recovery/runtime affinity even with no World originals. |
+| Fresh-process journey | Use the Store `world_durable_release` child fixture and the preserved Query `durable_retry::fate_reopening` case. Kill after Native commits and before World submits an occurrence. Assert the old product head, the exact recovered receipt and key, a single continuation, and zero handler reruns. Reopen again and observe the same outcome. Use a separate cut after the World occurrence is durable and before live head installation to prove it moves exactly once. Quiet reopen is the positive control. |
+
+#### C1.2 — Unresolved fate, release and fork custody
+
+Build on C1.1's recovered original. The issuing owner resolves publication fate
+under recovered authority. Continue or `release_effects` through World's
+existing recovery ports and persist the matching disposition before changing
+live custody. Query retains the original key until its disposition permits a
+fresh operation. For an M2 unresolved fork, retain the original fork, exact
+predecessor and custody while Native determines the fate.
+
+| Evidence | Acceptance |
+|---|---|
+| Extend the C1.1 property with fate and disposition | Add `Indeterminate`, `ProvenNoEffect`, durable `Released` and durable `Continued`. Pending or indeterminate evidence fences fresh work and cannot release an original as no-effect. A proved no-effect original permits a fresh same-key execution after durable release. A durable disposition is monotone across duplicate requests and repeated reopen. A performed effect never becomes open-only. |
+| Real release kill and fork cases | Kill immediately before release publication and after it commits but before live removal. The first reopen retains the original, the second does not reclaim it. In the no-effect case a fresh same-key operation runs once after release. Readmit an M2 unresolved fork and verify the same fork and custody survive with no replacement branch or identity. Use a genuinely stale claim as a negative twin. |
+| Caller integration | Restore the C1 Native-before-disposition, adoption and inbound-original cases from [Moved courts](#moved-courts) as their continuation paths become available. Preserve the recorded receipt, dedupe, original effect count and affinity assertions. |
+
+#### C1.3 — Exact Native components and selective readmission
+
+Run through the existing Native `admit_recorded_component` and
+`admit_recorded_publication` ports. Discover the relevant subject from the
+checkpoint and uncovered tails, validate the recorded component commitments,
+then admit and pin the demanded predecessor and successor. C1 qualifies that
+selection and its refusal behavior. C2 owns growth bounds and concurrent
+checkpoint capture.
+
+| Evidence | Acceptance |
+|---|---|
+| Bounded component property at the Native owner | Start with genuine Empty and Canonical predecessors and a later Native head. Vary one recorded commitment at a time across owner/branch, schema/root/reference, and positioned effect identity. Exact inputs readmit the recorded components; each relevant mismatch refuses without returning grants or substituting the latest head. Compare with the components captured before the crash. |
+| Existing `native_components` filesystem court | Recover a retained Empty and a historical Canonical predecessor, with the selected effect represented in checkpoint or tail as applicable. A missing or corrupt selected body refuses before exposure. Removing one unrelated historical body still permits the selected readmission. Observe exact predecessor and successor, the retained receipt, and actual pin/readback through the admitted component. C1 ruling (2026-11-20): on the filesystem Store's physical recovery admits no damaged WAL at all, so a damaged body, selected or unrelated, refuses at physical recovery before exposure (`world_durable_release::selected_body`). Selective readmission past a lost unrelated body is a Native property and is proved at the Native owner (`recorded_component_checkpoint_readmits_the_selected_subject_without_an_unrelated_body`). |
+
+#### C1.4 — Program transition resume and drift
+
+D16's existing Host transition request and Store-owned transition executor
+use the recorded plan digest, original planning predecessor and durable step
+prefix. Reconcile any C1.1?C1.3 Native effect before selecting the first
+nondurable step. Resume under the same plan, refuse changed meaning with
+`TransitionPlanDrift`, and refuse a different successor with
+`TransitionPending`. A refusal precedes new owner effects and service.
+
+| Evidence | Acceptance |
+|---|---|
+| Prefix property at the transition owner | Use a short nonempty roster with distinguishable step effects. Enumerate the valid durable prefixes, including all steps durable with binding pending. Resume selects precisely the suffix. Changed same-successor body or plan and a different successor produce their distinct typed refusals without extending the recorded prefix. |
+| Existing `no_pending_owners` process courts | Kill at durable intent, at each step seam of one small real transition, and at binding. Reopen through Store/Host, assert the original planning root and exactly-once steps, and compare terminal program/schema and data to the uninterrupted run. Restore the preserved transition-source and Native-effect continuation cases, including refusal/reclaim and spent movement. |
+
+#### C1.5 — Home open refusals and interrupted discard
+
+Use the existing Host directory open and `discard_home` entry points. Store's
+mutation lease and descriptor admission decide the Phase 3 refusals. Store
+persists the discard tombstone before removal and keeps the directory fenced
+until discard completes. This slice can proceed alongside C1.1?C1.4 because
+its descriptor and discard authorities are independent of recovered custody.
+
+| Evidence | Acceptance |
+|---|---|
+| Table-driven Phase 3 Home cases | Use the existing Store application suites. Cover fresh initialization and valid reopen alongside damaged descriptor, foreign Home, unknown root schema, incomplete recovery and a competing opener. Assert the specific refusal and absence of serving authority. Observe that a refused competing open or discard leaves the live Home usable. |
+| Existing `discard` and `discard::interruption` cases | Kill after the tombstone is durable during removal. Verify `DiscardPending`, then explicit discard completion and idempotent retry, including the damaged Store case. A subsequent open initializes a fresh Home identity. |
+
+C1 slice checks select the affected owner tests and named process cases. Keep
+generated cases bounded and reproducible, with the failing seed or shortest
+operation trace in the test output. Use real owner issuance and durable state
+for process courts, and use public reads, receipts and effect counts as the
+observations. Reuse existing fixtures and the preserved cases before adding
+another process journey. Run a real kill only where it distinguishes durable
+state from live state. A green model or graceful reopen cannot qualify a kill
+case. See [the adversarial constraint](#adversarial-constraint) for the broader
+C4 campaign and the existing [verification tiers](#verification-tiers-every-phase)
+for promotion. Update the existing Host recovery and Native component guides
+when the corresponding behavior lands.
+
 ### Moved courts
 
 - **C3:** cold discharge of an H7 process-local application-resource obligation whose provider/queue/Native release was outstanding at quiescent kill; keep its original input/request and typed pending record; never release it against fresh empty resources.
@@ -205,9 +321,10 @@ unclean Home open with `UncleanRecoveryUnsupported` (D18).
   - `host::application_home::dispatch_custody::inbound_custody::empty_original::an_empty_completion_original_is_released_on_reopen_before_the_callback_retries`: restore `154fd3c893f33d059e44b5b44604f66c27edbda4:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/empty_original.rs`, `mod empty_original;` in its parent, and the helper `end_live_home_for_required_reopen` from `154fd3c893f33d059e44b5b44604f66c27edbda4:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/fixture.rs` (the C1 `unpublished` module above needs the same helper).
   - Restore the five exact caller rows naming these files from `154fd3c893f33d059e44b5b44604f66c27edbda4:tools/boundary-check/config/control-callers.txt`.
   - Every other recovered-custody, inbound-custody and recovery-claim court stays active; the close refusal itself is guarded by `host::application_home::managed_runs::abandoned_managed_direct_work_preserves_failed_terminal_after_directory_reopen`.
+  - The C1-restored `process::host::durable_retry::fate_reopening::cancellation_after_native_effect_retains_key_across_kill_and_reopen` and `host::application_home::dispatch_custody::inbound_custody::unpublished` courts continue their originals, then meet the same pending managed run at close. They first assert that no World recovery custody remains, then end through `pending_support::end_with_pending_managed_run` (and `inbound_custody::fixture::end_recovered_home`), which require the typed `ManagedCleanup(ManagedRunPending)` refusal. When C3 lands the cold release contract, replace those two helpers with a graceful close and reopen.
 
 Cleanup courts moved out of the tree are listed under their C item, with `restore from <sha>:<path>`. Existing entries:
-- **C1:** the three transition-source recovery courts. They are listed in D16 under "Cleanup track: moved courts".
+- **C1:** the three transition-source recovery courts, listed in D16 under "Cleanup track: moved courts". Restored in C1; D16 names their new courts.
 - **C2 (cost and bounds): exact deduplicated physical accounting of nested persistent aspect backing.** No court has left the tree yet; the claim moved. Pending: 24 exact-accounting and cost-equality courts are still red after the master merge and are not yet classified court by court (exact-equality courts move here with a restore reference; bound-at-least-actual courts stay and must pass); and the full-inventory totals (`RecordArena::allocation_inventory`, `PartitionState::allocation_inventory`, the fork-materialized total in `branch/root.rs`) still saturate instead of refusing, which is open repair work until the coordinator accepts it as C2. `restore from 171d380829:crates/worth-relational/src/inspection/mvcc/sharing_authoritative_byte_metrics.rs` (lines 6–11, 25–28) and `restore from 171d380829:crates/worth-relational/src/inspection/mvcc/sharing_byte_metric_scope.rs` (lines 7–11, inspection version 6). Claim: `unique_physical_*` sums each distinct allocation exactly once, and shared payloads keep node and value granularity, including persistent aspect nodes and admitted values shared between distinct Extra carriers. Inspection version 7 reports that backing as a checked per-carrier upper bound that may count shared structure once per holder, and refuses an unrepresentable bound with a typed overflow. C2 supplies an allocation visitor that sees through shared nodes and values, restores the exact wording under a new version, and adds the court: two Extras sharing one aspect map contribute the shared backing once, and the rows sum to an allocator-observed union. C2 also makes full region inventories and reclamation counters refuse an unrepresentable bound instead of saturating.
 - **C2:** `reclose_before_any_image_demand_keeps_the_selections_the_image_carried`
   (restore from `10d117085f:crates/worth-relational/src/tests/durability/medium/complete_index_selections.rs`).
@@ -308,6 +425,17 @@ Cleanup courts moved out of the tree are listed under their C item, with `restor
   Reintroducing the removed `query-world-commit-preparation` certification
   caller for `transition_native_effect/native_original.rs` requires a fresh
   boundary ruling; restoration references grant no caller-list expansion.
+  C1 ruling (2026-11-20): the row is restored for that one test file only. It
+  binds the original Native transition-step effect to its real World open,
+  the same door its sibling courts `transition_indexes/{promotion,publication}.rs`
+  already hold, and it is the only way to leave exactly that Native effect
+  without a World occurrence. No production caller is added.
+  C1 ruling (2026-11-20, review 5): one more test-only row, for the World
+  court `durable_siblings/unresolved_creation.rs`. Its fence probe prepares
+  a Relational-only durable open without advancing it, to show that an
+  undecided recovered creation fences only Signal-carrying opens (transition
+  steps pass). A durable open would journal an original and change the
+  court's recovered state. No production caller is added.
   Restore complete courts only through public owner recovery after C1 supports
   this Native-effect prefix and C5 lifts D18. No graceful close may replace
   their abandoned prefix or weaken the original assertions.
@@ -2234,6 +2362,27 @@ The supported development workflow is:
 **Cleanup track: moved courts.** The following transition-source recovery
 courts leave the happy-path tree under the M3 track split. Restore and migrate
 them against real Store Home/World authority; do not ignore or gate them.
+
+**Restored in C1 (2026-11-20).** The first two claims are now in the Store
+court, `process::application::no_pending_owners::transition_source`, against
+real Home/World authority. The setup is a closed A Home followed by one
+committed schema-changing intent and a durable target step. The court asserts:
+- exactly one durable step;
+- the catalogs' predecessor is the planning root, distinct from the current
+  World head and its truth version;
+- the runtime schema is version 2;
+- one row at the planning root and two at the current basis.
+
+`authority.admit_basis(planning).is_err()` is not reproduced literally,
+because Store holds the recovered authority by reference and `admit_basis`
+consumes it. The head and truth-version checks assert the same distinction.
+
+The third claim is in the Relational court,
+`process::home_program_transition_source`. A real Home cannot durably hold a
+Native tail its own plan does not cover, so that court builds its own
+transition owner bound to a pass-through receiver. A foreign step refuses
+`PrefixAssociation`, an unplanned extra commit refuses `PrefixLength`, and the
+receiver stays empty in both cases. Zero-step plans stay prohibited.
 
 - `transition_source_recovers_the_exact_durable_prefix_and_original_planning_root`: Recovers the exact durable transition prefix and original planning root, keeps that historical root distinct from the current execution basis, and readmits successor schema version 2.
   `restore from 34edd18ff6:crates/worth-court-relational-certification/tests/worth_court_relational_certification/process/home_program_transition_source.rs`. Migration needs catalog-grant access before

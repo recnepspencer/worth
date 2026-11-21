@@ -1664,6 +1664,9 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-ui/crates/worth-ui-query-binding/src/product_projection/status_integrity/lease_tests.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/reopening/checkpoint_restart/writer.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/host_oracle/admission_retry/readmission.rs
+workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/interrupted_close/killed_checkpoint.rs
+workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_seams.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_seams.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/opening.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/delivery.rs
 workspaces/worth-query/crates/worth-query-publication/ workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/consumer_root/src/application_invariant_acceptance/document_history/failures/selection.rs
@@ -1900,6 +1903,7 @@ workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/cr
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/relational/relational_home/incarnation/media/mod.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/relational/relational_home/incarnation/mod.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/relational/relational_home/incarnation/writable_ownership/mod.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/relational/relational_home/incarnation/refusals.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/relational/relational_home/open_refusals/mod.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/relational/relational_home/process_kill/mod.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/relational/relational_home/publication_refusals/mod.rs
@@ -1950,6 +1954,8 @@ workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crate
 workspaces/worth-store/crates/worth-store-security/ workspaces/worth-store/crates/worth-store-tiering/src/cold_tier_posture/certification_test_support.rs
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-application/src/close/start.rs
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/child.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/graceful_source.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/release_cut.rs
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-recovery-runtime-replication-production-entry-production-custody-serving/tests/worth_store_court_recovery_runtime_replication_production_entry_production_custody_serving/process/recovery_runtime/production_entry/anchored_records/owned_publication/fixture.rs
 workspaces/worth-store/crates/worth-store/ workspaces/worth-store/crates/worth-store-court-store-replication-physical-record-journeys-physical-work/tests/worth_store_court_store_replication_physical_record_journeys_physical_work/process/store/physical_record_journeys/physical_work/close_plan/task.rs
 
@@ -2002,6 +2008,9 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/adoption/directory_refusal.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-application-graph/tests/worth_query_court_decl_host_package_archive_replay_application_graph/certification/application_graph/adoption/directory_refusal.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/dispatch_custody/inbound_custody/unpublished.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/dispatch_custody/inbound_custody/unpublished.rs
+crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/owner_evidence/recovered_owners.rs
 
 # Phase5: the existing interleaved court observations in their semantic child files.
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/certification/document_history/owned_outputs/synchronous_edit/interleaved/courts/positioned.rs

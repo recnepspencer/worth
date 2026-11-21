@@ -305,6 +305,7 @@ fn corrupt_replay_keeps_its_durability_failure() {
         &envelope,
         plan.tail_log[0].position(),
         catalog,
+        None,
     )
     .unwrap_err();
     match error {

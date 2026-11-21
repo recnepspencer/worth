@@ -1,5 +1,5 @@
 mod content;
-mod home_original_progression;
+pub(crate) mod home_original_progression;
 pub(in crate::domain_computation) use content::retention_checkpoint;
 pub use content::{
     AdmittedContent, ContentReadDenial, ContentWriteDenial, RelationalContentDenial,

@@ -135,6 +135,32 @@ impl<Schema: ApplicationSchemaComposition, Program>
     }
 }
 
+/// Recompute a recorded pending transition on its original planning root.
+/// The World head has advanced by the durable prefix, so its current-head
+/// activation and correction checks do not describe this root; Store's
+/// recorded intent and Native's exact readmission of the root carry them.
+impl<Schema: ApplicationSchemaComposition, Program>
+    PreparedExistingHomeSignalProgram<Schema, Program>
+{
+    pub fn home_program_transition_original_source<'owner, 'scope>(
+        &'owner self,
+        phase: &'owner WorthQueryBootstrapAdvancementPhase<'scope>,
+        native: &'owner RelationalRuntime,
+        current: &worth_runtime_world::facade::ProductBranchObservation,
+        root: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+        admitted: worth_proof::AdmittedHomeProgramTransitionPlanningRequest<
+            worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+        >,
+    ) -> Result<
+        WorthQueryHomeProgramTransitionReadSource<'owner, 'scope>,
+        QueryHomeProgramTransitionSourceDenial,
+    > {
+        let (layout, receipt) = self.predecessor_native_meaning();
+        admit_planning_owner(native, current, root, &admitted, receipt)?;
+        read_lens(phase, native, current, root, admitted, layout)
+    }
+}
+
 fn admit_source_lens<'owner, 'scope, Schema>(
     phase: &'owner WorthQueryBootstrapAdvancementPhase<'scope>,
     native: &'owner RelationalRuntime,
@@ -153,22 +179,7 @@ fn admit_source_lens<'owner, 'scope, Schema>(
 > {
     use QueryHomeProgramTransitionSourceDenial as Denial;
     let basis = source.basis().relational_basis();
-    // Incarnation/owner admission precedes every scope test and truth read.
-    native
-        .admit_home_program_transition_planning_request(&admitted, basis)
-        .map_err(Denial::Native)?;
-    let owner = source
-        .owner_identity()
-        .durable()
-        .ok_or(Denial::NonDurableWorldOwner)?;
-    if owner != admitted.source().actor() {
-        return Err(Denial::ForeignWorldOwner);
-    }
-    if receipt.runtime_instance_id() != native.runtime_instance_id() {
-        return Err(Denial::Meaning(denied(
-            "transition source belongs to another actual Native receiver",
-        )));
-    }
+    admit_planning_owner(native, source, basis, &admitted, receipt)?;
     super::super::super::super::bootstrap::branch_activation_history::verify_predecessor(
         native,
         layout,
@@ -182,6 +193,52 @@ fn admit_source_lens<'owner, 'scope, Schema>(
     crate::domain_computation::primary_graph::provider::aftermath_causality::readmission::verify_source(
         &phase.execution_request(), native, layout, inspection, observation,
     ).map_err(Denial::Correction)?;
+    read_lens(phase, native, source, basis, admitted, layout)
+}
+
+/// Incarnation/owner admission precedes every scope test and truth read.
+fn admit_planning_owner(
+    native: &RelationalRuntime,
+    source: &worth_runtime_world::facade::ProductBranchObservation,
+    basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    admitted: &worth_proof::AdmittedHomeProgramTransitionPlanningRequest<
+        worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+    >,
+    receipt: &worth_relational::facade::runtime::RelationalInitialSchemaInstallationReceipt,
+) -> Result<(), QueryHomeProgramTransitionSourceDenial> {
+    use QueryHomeProgramTransitionSourceDenial as Denial;
+    native
+        .admit_home_program_transition_planning_request(admitted, basis)
+        .map_err(Denial::Native)?;
+    let owner = source
+        .owner_identity()
+        .durable()
+        .ok_or(Denial::NonDurableWorldOwner)?;
+    if owner != admitted.source().actor() {
+        return Err(Denial::ForeignWorldOwner);
+    }
+    if receipt.runtime_instance_id() != native.runtime_instance_id() {
+        return Err(Denial::Meaning(denied(
+            "transition source belongs to another actual Native receiver",
+        )));
+    }
+    Ok(())
+}
+
+fn read_lens<'owner, 'scope>(
+    phase: &'owner WorthQueryBootstrapAdvancementPhase<'scope>,
+    native: &'owner RelationalRuntime,
+    source: &worth_runtime_world::facade::ProductBranchObservation,
+    basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+    admitted: worth_proof::AdmittedHomeProgramTransitionPlanningRequest<
+        worth_relational::facade::runtime::RelationalHomeProgramPlanningSource,
+    >,
+    layout: &'owner WorthQueryPrimaryGraphLayout,
+) -> Result<
+    WorthQueryHomeProgramTransitionReadSource<'owner, 'scope>,
+    QueryHomeProgramTransitionSourceDenial,
+> {
+    use QueryHomeProgramTransitionSourceDenial as Denial;
     let view = native
         .read_truth()
         .project_observation(&basis.observation())

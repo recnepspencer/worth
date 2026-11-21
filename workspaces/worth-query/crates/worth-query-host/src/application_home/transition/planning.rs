@@ -1,5 +1,5 @@
 //! Author and seal the complete original plan before its first journal write.
-use super::{plan::*, preparation::*, refusal::*};
+use super::{plan::*, preparation::*, refusal::*, resumption::RecomputedHomeProgramTransitionPlan};
 use worth_query_declaration::facade::application_schema::ApplicationSchemaComposition;
 use worth_query_execution::facade::{
     application_contribution::WorthQueryBootstrapAdvancementPhase,
@@ -7,7 +7,10 @@ use worth_query_execution::facade::{
         WorthQueryHomeProgramTransitionReadSource, WorthQueryHomeProgramTransitionTarget,
     },
 };
-use worth_relational::facade::indexes::DerivedIndexMaintenanceBudget;
+use worth_relational::facade::{
+    durability::ReadmittedRelationalHomeProgramCatalogs, indexes::DerivedIndexMaintenanceBudget,
+};
+use worth_store_application::ApplicationHomeTransitionPlanningRequest as PlanningRequest;
 use WorthQueryHomeProgramTransitionDenial as Denial;
 
 pub(super) struct PlannedHomeProgramTransition<
@@ -20,9 +23,22 @@ pub(super) struct PlannedHomeProgramTransition<
     pub(super) binding: SuccessorBinding,
     pub(super) bridge: worth_runtime_bridge::facade::RuntimeBridge,
     pub(super) plan: WorthQueryHomeProgramTransitionPlan,
-    pub(super) reserved: worth_store_application::ReservedApplicationHomeTransitionPlan,
+    pub(super) origin: PlannedHomeProgramTransitionOrigin,
     pub(super) resources: DerivedIndexMaintenanceBudget,
 }
+
+/// Whether this plan starts an original intent or recomputes a recorded one.
+pub(super) enum PlannedHomeProgramTransitionOrigin {
+    /// Reserved original assignments; the intent is not yet published.
+    Fresh(worth_store_application::ReservedApplicationHomeTransitionPlan),
+    /// The recorded pending intent. Its original roots stay pinned until the
+    /// binding, and Store compares this plan before admitting any step.
+    Resumed {
+        recomputed: RecomputedHomeProgramTransitionPlan,
+        catalogs: ReadmittedRelationalHomeProgramCatalogs,
+    },
+}
+
 impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
     PreparedHomeProgramTransition<A, AP, B, BP>
 {
@@ -48,7 +64,11 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
             worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
         >,
     {
-        let Self { owners, binding } = self;
+        let Self {
+            owners,
+            binding,
+            compilation,
+        } = self;
         let request = phase.execution_request();
         let before = &owners.before;
         let target = &owners.target;
@@ -68,19 +88,46 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
             let bridge = target
                 .prepare_home_program_bridge(&bridge)
                 .map_err(Denial::Author)?;
-            let admitted = home
+            let (lens, catalogs) = match home
                 .admit_home_program_transition_planning_request(source, &request)
-                .map_err(Denial::PlanningRequest)?;
-            let lens = before
-                .home_program_transition_source(
-                    phase,
-                    native,
-                    source,
-                    admitted,
-                    &home.world().observation_port(),
-                    &home.world().inspection_port(),
-                )
-                .map_err(Denial::Source)?;
+                .map_err(Denial::PlanningRequest)?
+            {
+                PlanningRequest::Fresh(admitted) => (
+                    before
+                        .home_program_transition_source(
+                            phase,
+                            native,
+                            source,
+                            admitted,
+                            &home.world().observation_port(),
+                            &home.world().inspection_port(),
+                        )
+                        .map_err(Denial::Source)?,
+                    None,
+                ),
+                PlanningRequest::Resume(required) => {
+                    let (admitted, catalogs) = home
+                        .readmit_home_program_transition_planning_root(
+                            required,
+                            &compilation,
+                            source,
+                            target.native_contracts(),
+                            &request,
+                        )
+                        .map_err(Denial::PlanningRequest)?
+                        .into_parts();
+                    let lens = before
+                        .home_program_transition_original_source(
+                            phase,
+                            native,
+                            source,
+                            catalogs.predecessor(),
+                            admitted,
+                        )
+                        .map_err(Denial::Source)?;
+                    (lens, Some(catalogs))
+                }
+            };
             let mut plan = author(&lens, &target.authoring_target()).map_err(Denial::Author)?;
             let count = u32::try_from(plan.steps.len()).map_err(|_| Denial::InvalidPlan)?;
             if count == 0 || plan.target >= count {
@@ -125,22 +172,37 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
                     .map_err(Denial::Body)
                 })
                 .collect::<Result<Vec<_>, _>>()?;
-            let reserved = home
-                .reserve_home_program_transition_plan(
-                    source.clone(),
-                    plan.digest(&bodies),
-                    count,
-                    target
-                        .native_contracts()
-                        .target_meaning(&request, plan.target)
-                        .map_err(Denial::Native)?,
-                    &bodies,
-                    &request,
-                )
-                .map_err(Denial::Plan)?;
-            Ok((bridge, plan, reserved))
+            let recomputed = RecomputedHomeProgramTransitionPlan {
+                digest: plan.digest(&bodies),
+                steps: count,
+                target: target
+                    .native_contracts()
+                    .target_meaning(&request, plan.target)
+                    .map_err(Denial::Native)?,
+                bodies,
+            };
+            let origin = match catalogs {
+                None => PlannedHomeProgramTransitionOrigin::Fresh(
+                    home.reserve_home_program_transition_plan(
+                        source.clone(),
+                        recomputed.digest,
+                        recomputed.steps,
+                        recomputed.target,
+                        &recomputed.bodies,
+                        &request,
+                    )
+                    .map_err(Denial::Plan)?,
+                ),
+                Some(catalogs) => PlannedHomeProgramTransitionOrigin::Resumed {
+                    recomputed,
+                    catalogs,
+                },
+            };
+            Ok((bridge, plan, origin))
         })();
-        let (bridge, plan, reserved) = match prepared {
+        // A resumed plan's catalogs now hold the planning root.
+        drop(compilation);
+        let (bridge, plan, origin) = match prepared {
             Ok(parts) => parts,
             Err(cause) => return Err(owners.refused(cause)),
         };
@@ -149,7 +211,7 @@ impl<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaComposition, BP>
             binding,
             bridge,
             plan,
-            reserved,
+            origin,
             resources,
         })
     }

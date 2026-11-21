@@ -22,6 +22,7 @@ pub(crate) use transaction::split_contacts;
 pub(crate) use transaction::OwnedMergePlan;
 pub(crate) mod validation;
 
+pub(crate) use crate::durability::RecordedReplayResultSchema;
 pub use crate::runtime::{
     RelationalCancellationSource, RelationalCancellationToken, RelationalInterruptionBoundary,
     RelationalInterruptionCostCounters, RelationalInterruptionEvent, RelationalOperationControl,
@@ -81,6 +82,7 @@ pub use retained_entity_selection::{
 pub(crate) use transaction::commit_plan::bulk_reservations_for_plan;
 pub(crate) use transaction::RelationalMaterializationTransactionMode;
 pub(crate) use transaction::RelationalTransactionSavepoint;
+pub(crate) use transaction::TransactionSchemaOrigin;
 pub use transaction::{
     BranchBoundRelationalTransaction, PreparedRelationalAspectScope,
     PreparedRelationalChangeSummary, PreparedRelationalChangeSummaryBudget,

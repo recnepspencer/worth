@@ -1,4 +1,6 @@
-//! Ordinary recovery keeps strict declared-schema admission after migration.
+//! Mixed-schema recovery: ordinary recovery keeps strict declared-schema
+//! admission, and a Home transition source refuses a tail its plan disowns.
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{branch::*, durability::*, mvcc::*, runtime::*, schema::*};
@@ -8,6 +10,48 @@ use worth_testkit_relational::{
     durable_publication, initial_input_source,
     shared_relational_certification_test_execution_policy::serial_request,
 };
+mod home_bound;
+
+/// The plan's prefix is the only durable tail a transition source admits:
+/// a foreign step, or a durable commit the plan never assigned, refuses
+/// before cutover and leaves the receiver empty.
+#[test]
+fn transition_source_refuses_a_missing_or_foreign_prefix_before_runtime_cutover() {
+    let policy = serial_request();
+    let request = ExecutionRequest::serial(&policy);
+    let (source, medium, predecessor, association) = migrated_source(&request);
+    let owner = home_bound::owner();
+    let recorded = home_bound::one_step_plan();
+    let durable_step: [u8; 32] = Sha256::digest(association.as_bytes()).into();
+    let foreign_step: [u8; 32] = Sha256::digest(b"another-plan-step").into();
+    for (caller, unplanned_commits) in [(foreign_step, 0), (durable_step, 1)] {
+        for _ in 0..unplanned_commits {
+            durable_publication::create_entity(&request, &source, "unplanned");
+        }
+        let mut receiver = home_bound::receiver(&medium, &owner);
+        let plan = recovery_plan(&request, &receiver, &medium);
+        let grant = home_bound::grant(&owner, &recorded, &predecessor, caller, &request);
+        let failure = receiver
+            .durability_recovery()
+            .recover_home_program_transition_source(&request, plan, &grant)
+            .err()
+            .expect("only the plan's own prefix readmits");
+        match (unplanned_commits, failure) {
+            (0, RelationalHomeProgramTransitionSourceRefusal::PrefixAssociation { position }) => {
+                assert_eq!(position.0, 2)
+            }
+            (
+                1,
+                RelationalHomeProgramTransitionSourceRefusal::PrefixLength {
+                    expected: 1,
+                    actual: 2,
+                },
+            ) => {}
+            (_, failure) => panic!("the exact prefix evidence refuses: {failure:?}"),
+        }
+        assert_unrecovered(&receiver);
+    }
+}
 
 #[test]
 fn ordinary_recovery_still_refuses_a_declared_schema_that_differs_from_the_durable_head() {

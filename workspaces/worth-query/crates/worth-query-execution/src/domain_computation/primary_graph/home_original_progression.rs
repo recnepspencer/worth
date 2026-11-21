@@ -5,7 +5,7 @@ use worth_runtime_world::facade::{
     WorldRecoveredReleaseOutcome as Release, WorldRecoveredUnpublishedEffects,
 };
 
-pub(super) fn continue_original(
+pub(crate) fn continue_original(
     recovery: &RuntimeWorldRecoveryPort,
     execution: &ExecutionRequest<'_, '_>,
     mut original: WorldRecoveredUnpublishedEffects,

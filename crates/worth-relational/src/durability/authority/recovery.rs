@@ -4,7 +4,7 @@ mod fork_effect;
 use crate::durability::data::RelationalRecoveryStop;
 pub use catalog_readmission::{
     ReadmittedRelationalHomeProgramCatalogs, RefusedRelationalHomeProgramCatalogReadmission,
-    RelationalHomeProgramCatalogReadmissionDenial,
+    RelationalHomeProgramCatalogReadmissionDenial, RelationalHomeProgramPlanningRoot,
 };
 pub(crate) use codec_transition::{
     AdmittedRecoveredCodecPublication, RecoveredCodecPublicationCustody,

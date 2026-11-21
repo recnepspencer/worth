@@ -17,7 +17,7 @@ pub use refusal::{
     RelationalHomeReadmissionRefused,
 };
 pub use unrecovered::{
-    ApplicationHomeNativeSchemaPreparation, ApplicationHomeNativeSchemaPreparationDenial,
-    UnrecoveredApplicationHome,
+    ApplicationHomeNativeIdentityBound, ApplicationHomeNativeSchemaPreparation,
+    ApplicationHomeNativeSchemaPreparationDenial, UnrecoveredApplicationHome,
 };
 pub use unshared::UnsharedReadmittedApplicationHome;

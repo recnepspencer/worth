@@ -4,10 +4,15 @@ use crate::section::source_preparation::receiver::HomeReceiverPreparation as Sta
 use worth_relational::facade::schema::RelationalSchemaRegistry;
 
 impl UnrecoveredRelationalSection {
+    /// `planning` is a pending transition's recorded planning predecessor.
+    /// With it, the maxima are those occupied when that predecessor was
+    /// durable, so a resumed successor recompile reproduces its recorded plan.
+    /// Without it, every durable schema role stays reserved.
     pub fn prepare_home_existing_schema_source(
         &mut self,
         request: &ExecutionRequest<'_, '_>,
         acknowledged_target: Option<worth_foundational::facade::HomeProgramTransitionTargetMeaning>,
+        planning: Option<&worth_relational::facade::branch::RecordedRelationalComponentReference>,
     ) -> Result<
         (
             &mut RelationalRuntime,
@@ -18,30 +23,18 @@ impl UnrecoveredRelationalSection {
         RelationalSectionReadmissionDenial,
     > {
         use RelationalSectionReadmissionDenial as Denial;
+        self.prepare_home_receiver(request)?;
         let prepared = self
             .prepared_source
             .as_mut()
             .ok_or(Denial::PreparedHomeSourceRequired)?;
         match &prepared.receiver {
-            State::NotRequested => {
-                let input = prepared
-                    .original
-                    .copy_home_input_for_request(request)
-                    .map_err(Denial::InitialInputs)?;
-                let recovery = request.in_scope(|_| {
-                    self.attached.runtime.durability().prepare_home_recovery_source(
-                        request, input, worth_relational::facade::durability::RecoveryVerificationMode::NormalRecoveryVerification)
-                }).map_err(Denial::Execution)?.map_err(Denial::HomePreparation)?;
-                prepared.receiver = State::Prepared(recovery);
-            }
-            State::Prepared(_) => (),
-            State::Consumed => return Err(Denial::PreparedHomeSourceRequired),
-        }
-        match &prepared.receiver {
             State::Prepared(recovery) => {
-                let (maximum_kind, maximum_aspect) = recovery
-                    .occupied_identity_maxima(request)
-                    .map_err(Denial::HomePreparation)?;
+                let (maximum_kind, maximum_aspect) = match planning {
+                    Some(predecessor) => recovery.occupied_identity_maxima_at(request, predecessor),
+                    None => recovery.occupied_identity_maxima(request),
+                }
+                .map_err(Denial::HomePreparation)?;
                 Ok((
                     &mut self.attached.runtime,
                     match acknowledged_target {
@@ -58,6 +51,33 @@ impl UnrecoveredRelationalSection {
             State::NotRequested | State::Consumed => {
                 unreachable!("prepared Home Source was retained")
             }
+        }
+    }
+
+    fn prepare_home_receiver(
+        &mut self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), RelationalSectionReadmissionDenial> {
+        use RelationalSectionReadmissionDenial as Denial;
+        let prepared = self
+            .prepared_source
+            .as_mut()
+            .ok_or(Denial::PreparedHomeSourceRequired)?;
+        match &prepared.receiver {
+            State::NotRequested => {
+                let input = prepared
+                    .original
+                    .copy_home_input_for_request(request)
+                    .map_err(Denial::InitialInputs)?;
+                let recovery = request.in_scope(|_| {
+                    self.attached.runtime.durability().prepare_home_recovery_source(
+                        request, input, worth_relational::facade::durability::RecoveryVerificationMode::NormalRecoveryVerification)
+                }).map_err(Denial::Execution)?.map_err(Denial::HomePreparation)?;
+                prepared.receiver = State::Prepared(recovery);
+                Ok(())
+            }
+            State::Prepared(_) => Ok(()),
+            State::Consumed => Err(Denial::PreparedHomeSourceRequired),
         }
     }
 }

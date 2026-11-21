@@ -1,6 +1,6 @@
 use worth_store::physical_runtime::{
     PhysicalRecoveryPublicationCandidate, PhysicalRecoveryPublicationCommand,
-    PhysicalRecoveryPublicationCommandOutcome,
+    PhysicalRecoveryPublicationCommandOutcome, RecoveryCandidateGeneration,
 };
 
 use crate::entry::PhysicalRecoveryOutcome;
@@ -24,21 +24,27 @@ pub(crate) fn publish_recovery(
         return Err(state.block_invalid());
     };
     let mut protocol = expectation.root_protocol();
-    let mut staging_generation = expectation.staging_generation();
+    let mut generation =
+        match RecoveryCandidateGeneration::successor(expectation.source_generation()) {
+            Some(successor) if successor.generation() == expectation.staging_generation() => {
+                successor
+            }
+            _ => return Err(state.block_invalid()),
+        };
     if candidates.is_empty() {
         match catalog_repair::plan(state.media(), &expectation, state.prior_effects_unproven()) {
             Ok(None) => return state.publish_preexisting(expectation),
             Ok(Some(repair)) => {
                 candidates = repair.candidates;
                 protocol = repair.protocol;
-                staging_generation = repair.generation;
+                generation = RecoveryCandidateGeneration::republication(repair.generation);
             }
             Err(()) => return Err(state.block_invalid()),
         }
     }
     let Some(command) = PhysicalRecoveryPublicationCommand::new(
         expectation.plan_identity(),
-        staging_generation,
+        generation,
         candidates,
         protocol,
     ) else {

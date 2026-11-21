@@ -16,11 +16,12 @@ struct SettledHomeTransition {
 }
 
 impl HomeTransitionOwner {
-    pub(crate) fn require_fresh_plan(
+    pub(crate) fn planning_origin(
         &self,
         binding: &worth_foundational::facade::ApplicationHomeBinding,
-    ) -> Result<(), super::ApplicationHomeTransitionIntentDenial> {
-        self.admission.require_fresh_plan(binding)
+    ) -> Result<super::HomeTransitionPlanningOrigin, super::ApplicationHomeTransitionIntentDenial>
+    {
+        self.admission.planning_origin(binding)
     }
     pub(crate) fn admit_planning_request(
         &self,

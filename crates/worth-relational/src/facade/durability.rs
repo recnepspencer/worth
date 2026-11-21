@@ -12,9 +12,9 @@ pub use crate::durability::authority::{
     RefusedRelationalHomeProgramCatalogReadmission, RefusedRelationalRecordedComponent,
     RelationalAssociatedEffectRefusal, RelationalAssociatedEffectSettlement,
     RelationalAssociatedEffectSubject, RelationalFreshSourceAdmissionStop,
-    RelationalHomeProgramCatalogReadmissionDenial, RelationalHomeProgramTransitionSource,
-    RelationalHomeProgramTransitionSourceRefusal, RelationalHomeRecoveryPreparationDenial,
-    RelationalRecordedComponentAdmissionCause,
+    RelationalHomeProgramCatalogReadmissionDenial, RelationalHomeProgramPlanningRoot,
+    RelationalHomeProgramTransitionSource, RelationalHomeProgramTransitionSourceRefusal,
+    RelationalHomeRecoveryPreparationDenial, RelationalRecordedComponentAdmissionCause,
 };
 pub use crate::durability::branch_transition_artifact::{
     RelationalBranchTransitionArtifact, RelationalBranchTransitionArtifactDigest,

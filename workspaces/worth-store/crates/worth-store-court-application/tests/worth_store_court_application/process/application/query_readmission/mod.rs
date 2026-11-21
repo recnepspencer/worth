@@ -1,2 +1,2 @@
 mod bootstrap_publication;
-mod native_artifacts;
+pub(super) mod native_artifacts;

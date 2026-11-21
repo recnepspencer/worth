@@ -596,10 +596,11 @@ not reconstructed: recovered `relational_owner_contacts()` returns `None`.
 Graceful close and reopen work before Native preparation starts and after World
 occurrence or disposition settles. A cancelled adoption whose Native effect is
 acknowledged but has no World occurrence or disposition is the C1 prefix:
-close refuses `UnresolvedBusinessCustody` and returns a usable Home; abandoning it
-refuses reopen with `UncleanRecoveryUnsupported(Relational)` (D18). This refusal
-is not a successful graceful close, and graceful evidence does not replace that
-original continuation obligation.
+close refuses `UnresolvedBusinessCustody` and returns a usable Home. If the
+Home is abandoned instead, reopen retains that original as recovered
+`ProductUnpublished` custody and continues it without rerunning the handler
+(C1). The refusal is not a successful graceful close, and graceful evidence
+does not replace that original continuation obligation.
 
 ## Branch-set adoption
 

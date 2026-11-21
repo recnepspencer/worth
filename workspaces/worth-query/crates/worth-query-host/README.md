@@ -70,9 +70,19 @@ authentication and actual Home readmission supply authority after reopen.
 
 External dispatch, inbound completion and aftermath custody survive graceful
 close/reopen without duplicate contact. A failed live resource release refuses
-close and preserves its owner. Unclean effects retain the D18
-`UncleanRecoveryUnsupported` refusal (C1/C5); outstanding resource cleanup after
-process loss belongs to C3. C2 owns durable-history/branch cleanup, and C4 owns
+close and preserves its owner. After an unclean end, reopen retains a Native
+effect without its World occurrence as recovered `ProductUnpublished` custody
+that the same key continues without rerunning its handler, durably releases a
+no-effect original before service, reopens an unresolved branch creation as
+recovered custody, and resumes a program transition reopened with the same
+request (a changed plan refuses `TransitionPlanDrift`). Only an unobserved
+dispatch attempt and damage-shaped Signal or fork tails retain the D18
+`UncleanRecoveryUnsupported` refusal (C5); `unclean_recovery_unsupported()`
+reports each of them. Contended and discard-pending opens are matched by
+`physical_refusal()` and `ApplicationHomePhysicalRefusalKind`. Outstanding
+resource cleanup after process loss belongs to C3: until then a reopened Home
+whose prior process died holding a managed run refuses graceful close with
+`ManagedCleanup(ManagedRunPending { .. })`. C2 owns durable-history/branch cleanup, and C4 owns
 the adversarial oracle; C5 owns retirement and final certification. **Crash recovery is not yet certified.**
 
 Correction contracts still refuse unsupported relation pre-images, compensation,
@@ -155,8 +165,9 @@ recovery handles cannot cross incarnations. Zero observed effects are not proof
 of no effect, and lower recovery does not recreate a Rust business result.
 
 Existing service readmits graceful World recovery, outbox, inbound-completion
-and aftermath custody. An unclean effect retains the named C1/C5 D18 refusal;
-keep that owning opening refusal and follow its close route. `ProductPreparationRefused` is a
+and aftermath custody. An unclean effect that C1 does not recover retains the
+named D18 refusal (C5); keep that owning opening refusal and follow its close
+route. `ProductPreparationRefused` is a
 terminal preparation failure, with no publication/retry door; its carrier may
 still own partial reservations until ordinary unbudgeted destruction.
 
@@ -198,6 +209,9 @@ Dispose of a development directory with
 lease is free. Discard destroys its data; it is separate from close. A held lease
 refuses `MutationOwnerContended`. Interrupted discard leaves `discard.pending`,
 and opening refuses `DiscardPending` until another explicit discard completes.
+Match a contended or discard-pending open through
+`WorthQueryApplicationHomeOpenRefused::physical_refusal()` and its `kind()`
+(`ApplicationHomePhysicalRefusalKind`).
 The next successful open after discard initializes a new Home identity.
 
 ### Checkpoints
@@ -1109,8 +1123,9 @@ its graph records, approvals and original logical keys preserved. Reinstall
 workflow configuration and fresh signing authority, then reacquire current
 locators through governed original-intent discovery. Progress and replay
 retention reconstruct from the records. Configuration after open does not
-supply a transition's target executable vocabulary retroactively. Crash recovery
-and interrupted-transition resumption remain uncertified.
+supply a transition's target executable vocabulary retroactively. A program
+transition killed after its durable intent resumes when the Home is reopened
+with the same transition request; crash recovery remains uncertified.
 
 A completion with a live durable `ProductUnpublished` original requires Home
 reopen. Owning close can refuse while preserving the same serving Home; end

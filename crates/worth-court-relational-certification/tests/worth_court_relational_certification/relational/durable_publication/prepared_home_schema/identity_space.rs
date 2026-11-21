@@ -3,6 +3,50 @@ use super::*;
 use worth_foundational::facade::{aspects, AspectIdentity, AspectKey, FieldKey, ScalarAspectType};
 use worth_relational::facade::{identity::KindId, schema::*};
 
+/// A resumed plan's maxima are read at its recorded predecessor, which the
+/// selected checkpoint may cover exactly but must not have passed.
+#[test]
+fn planning_maxima_admit_a_predecessor_at_coverage_and_refuse_one_the_checkpoint_passed() {
+    let request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&request);
+    let (source, medium) = initial_input_source::initialized(execution);
+    create_entity(execution, &source, "predecessor");
+    let predecessor = current(execution, &source);
+    let at_predecessor = initial_input_source::capture(&source, execution);
+    create_entity(execution, &source, "later");
+    let later = current(execution, &source);
+    let past_predecessor = initial_input_source::capture(&source, execution);
+    for (image, admitted) in [(&at_predecessor, true), (&past_predecessor, false)] {
+        medium.file_checkpoint(image.checkpoint().clone());
+        let receiver = durable_runtime(&medium);
+        let prepared = receiver
+            .durability()
+            .prepare_home_recovery_source(
+                execution,
+                initial_input_source::home_image_input(&medium, image, execution).unwrap(),
+                RecoveryVerificationMode::NormalRecoveryVerification,
+            )
+            .unwrap();
+        let occupied = prepared.occupied_identity_maxima(execution).unwrap();
+        assert_eq!(occupied.0, Some(KindId(901)));
+        assert_eq!(
+            prepared
+                .occupied_identity_maxima_at(execution, &later)
+                .unwrap(),
+            occupied
+        );
+        match prepared.occupied_identity_maxima_at(execution, &predecessor) {
+            Ok(maxima) if admitted => assert_eq!(maxima, occupied),
+            Err(Denial::PlanningPredecessorCovered) if !admitted => {}
+            other => panic!("checkpoint coverage decides planning admission: {other:?}"),
+        }
+        drop(prepared);
+        receiver.prepare_close().unwrap().finish();
+    }
+    drop((at_predecessor, past_predecessor));
+    source.prepare_close().unwrap().finish();
+}
+
 #[test]
 fn ordinary_schema_transition_refuses_new_roles_without_home_program_authority() {
     let request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();

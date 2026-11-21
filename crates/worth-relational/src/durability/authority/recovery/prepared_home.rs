@@ -21,6 +21,9 @@ pub enum RelationalHomeRecoveryPreparationDenial {
     SchemaAuthorityMismatch,
     ForeignReceiver,
     ReceiverInstallation(RelationalInitialSchemaInstallationDenial),
+    /// A checkpoint covers commits after the recorded planning predecessor,
+    /// so the identities occupied at that predecessor cannot be separated.
+    PlanningPredecessorCovered,
 }
 use RelationalHomeRecoveryPreparationDenial as Denial;
 

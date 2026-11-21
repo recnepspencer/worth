@@ -1,67 +1,13 @@
-//! Open refusals: a home that is not this runtime's, a location holding
-//! something other than a Store, and a home whose checkpoint or journal is
-//! damaged all refuse before service, with a typed refusal, and none of them
-//! is treated as an empty home.
+//! Open refusals: a location holding something other than a Store, and a
+//! home whose checkpoint or journal is damaged, refuse before service with a
+//! typed refusal; none is treated as an empty home. Foreign and contended
+//! opens are rows of `incarnation::refusals`.
 use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 
 #[allow(unused_imports)]
 use crate::open_refusals::*;
 
-use {crate::durable_run::assert_holds, crate::durable_run::open};
-
-/// A home's journal medium is owned by the one runtime the open home serves
-/// (D1): a second runtime opening the same location while it is open is
-/// refused, and the first keeps serving.
-#[test]
-fn a_second_runtime_cannot_open_a_home_that_is_open() {
-    let request = crate::workload::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&request);
-    let (_directory, location, script, acknowledged) = home_with(2, &execution);
-    let home = open(&location, &execution).expect("the home opens");
-    let second = open(&location, &execution);
-    assert!(
-        second.is_err(),
-        "a second runtime opened the medium of a home that is open"
-    );
-    drop(second);
-    assert_holds(&execution, &home, &script, &acknowledged);
-    home.close(&execution);
-}
-
-#[test]
-fn a_home_opened_as_another_runtime_refuses_as_foreign() {
-    let request = crate::workload::serial_request();
-    let execution = worth_execution::ExecutionRequest::serial(&request);
-    let (_directory, location, script, acknowledged) = home_with(2, &execution);
-    let foreign = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
-        .runtime_setup(|runtime| {
-            runtime.runtime_name("another-runtime");
-        })
-        .schema_setup(|setup| {
-            setup.schema_registry(crate::schema_transition::registry(
-                crate::schema_transition::SOURCE,
-            ));
-        });
-    let refused = worth_store_testkit_application_oracle::facade::home_opening::open(
-        worth_store_testkit_application_oracle::facade::home_opening::request(&location, foreign),
-        &execution,
-    );
-    assert!(
-        matches!(
-            refused,
-            Err(OpenRefusal::BeforeReadmission(
-                worth_store_application::ApplicationHomeOpenRefusal::Descriptor(
-                    worth_store_application::ApplicationHomeDescriptorDenial::BindingMismatch
-                )
-            ))
-        ),
-        "{:?}",
-        refused.map(|_| ())
-    );
-    let home = open(&location, &execution).expect("the home is still its runtime's");
-    assert_holds(&execution, &home, &script, &acknowledged);
-    home.close(&execution);
-}
+use crate::durable_run::open;
 
 #[test]
 fn a_location_holding_something_else_is_refused_not_initialized_over() {

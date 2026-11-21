@@ -58,6 +58,7 @@ pub(crate) struct RelationalTransactionValidationInput {
     home_target: Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
     home_step: Option<std::sync::Arc<crate::runtime::AdmittedRelationalHomeProgramStep>>,
     home_target_coverage: Option<std::sync::Arc<crate::runtime::RelationalHomeTargetCoverage>>,
+    schema_origin: crate::mvcc::TransactionSchemaOrigin,
     schema_authority: std::sync::Arc<RelationalBranchRootSchemaAuthority>,
     footprint: crate::mvcc::RelationalTransactionFootprint,
     retention:
@@ -88,6 +89,7 @@ impl PartialEq for RelationalTransactionValidationInput {
                 (None, None) => true,
                 (None, Some(_)) | (Some(_), None) => false,
             }
+            && self.schema_origin == other.schema_origin
             && self.schema_authority.allocation_id() == other.schema_authority.allocation_id()
             && self.footprint == other.footprint
     }
@@ -117,6 +119,7 @@ impl RelationalTransactionValidationInput {
             home_target: transaction.home_target.clone(),
             home_step: transaction.home_step.clone(),
             home_target_coverage: transaction.home_target_coverage.clone(),
+            schema_origin: transaction.schema_origin,
             recovered_codec_publication_custody: transaction
                 .recovered_codec_publication_custody
                 .clone(),
@@ -139,6 +142,7 @@ impl RelationalTransactionValidationInput {
             home_target: None,
             home_step: None,
             home_target_coverage: None,
+            schema_origin: crate::mvcc::TransactionSchemaOrigin::BasisRoot,
             recovered_codec_publication_custody: None,
             schema_authority: basis.inner.root.retained_schema_authority(),
             footprint: crate::mvcc::RelationalTransactionFootprint::for_basis(basis),
@@ -245,6 +249,27 @@ impl RelationalTransactionValidationInput {
         self.home_target_coverage.as_ref()
     }
 
+    pub(crate) fn recorded_result_schema(
+        &self,
+    ) -> Option<&std::sync::Arc<RelationalBranchRootSchemaAuthority>> {
+        (self.schema_origin == crate::mvcc::TransactionSchemaOrigin::RecordedReplayResult)
+            .then_some(&self.schema_authority)
+    }
+
+    /// Recovery replay of a recorded schema-changing commit only.
+    pub(crate) fn with_recorded_result_schema(
+        mut self,
+        recorded: crate::mvcc::RecordedReplayResultSchema,
+    ) -> Self {
+        self.schema_authority = recorded.into_schema();
+        self.schema_origin = crate::mvcc::TransactionSchemaOrigin::RecordedReplayResult;
+        let registry = self.schema_authority.registry_arc();
+        self.schema_authority_input = self
+            .schema_authority_input
+            .map(|input| input.carrying_recorded_registry(registry));
+        self
+    }
+
     pub(crate) fn with_schema_authority_input(
         mut self,
         input: crate::schema::SchemaContinuityAuthorityInput,
@@ -293,6 +318,10 @@ impl RelationalTransactionValidationInput {
         transaction.home_target = self.home_target;
         transaction.home_step = self.home_step;
         transaction.home_target_coverage = self.home_target_coverage;
+        if self.schema_origin == crate::mvcc::TransactionSchemaOrigin::RecordedReplayResult {
+            transaction.schema_authority = self.schema_authority;
+        }
+        transaction.schema_origin = self.schema_origin;
         transaction.recovered_codec_publication_custody = self.recovered_codec_publication_custody;
         if let Some(retention) = self.retention {
             transaction.retention = retention;
