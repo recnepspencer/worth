@@ -7,6 +7,7 @@ pub(super) mod journey;
 use journey::*;
 mod authored_retirement;
 mod durable_cancellation;
+mod mixed_definition;
 mod recovered_owners;
 mod transport;
 mod unclean_native;

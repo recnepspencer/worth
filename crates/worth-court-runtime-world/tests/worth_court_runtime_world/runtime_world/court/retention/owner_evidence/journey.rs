@@ -10,8 +10,14 @@ pub(in super::super) struct Journey {
     pub signal: Option<Vec<u8>>,
 }
 impl Journey {
+    /// Tag 3, the mixed original, runs World's definition path over a real
+    /// Bridge owner: the only mixed path a durable medium admits.
     pub fn new(request: &ExecutionRequest<'_, '_>, tag: u8) -> Self {
-        let mut fixture = Fixture::journal(request);
+        let mut fixture = if tag == 3 {
+            Fixture::bridge_journal(request)
+        } else {
+            Fixture::journal(request)
+        };
         let root = match fixture.offer(request, "primary") {
             WorldDurableBootstrapOutcome::Performed(value) => value.product_branch().clone(),
             other => panic!("real bootstrap: {other:?}"),
@@ -35,67 +41,17 @@ impl Journey {
         root: ProductBranchObservation,
         tag: u8,
     ) {
-        let port = self.fixture.world.publication_port();
-        let cancellation = RuntimeWorldCancellationSource::new();
-        let opened = if tag == 1 {
-            port.open_publication_without_signal(
+        let outcome = if tag == 3 {
+            let original =
+                super::mixed_definition::prepare(&self.fixture, request, &root, "wire-3");
+            super::mixed_definition::publish(
+                &self.fixture.world.publication_port(),
                 request,
-                root.clone(),
-                self.fixture.recorder.program_source(&root),
-                RelationalTransactionIntent::ordinary(),
-                &cancellation.token(),
-                None,
+                original,
+                &RuntimeWorldCancellationSource::new().token(),
             )
         } else {
-            port.prepare_query_publication_with_signal(
-                request,
-                root.clone(),
-                self.fixture.recorder.program_source(&root),
-                (tag == 3).then(RelationalTransactionIntent::ordinary),
-                &cancellation.token(),
-                None,
-            )
-            .unwrap()
-            .advance(request)
-        };
-        let WorldOpenAttemptOutcome::Opened(opened) = opened else {
-            panic!("actual open: {opened:?}")
-        };
-        let proposal = if tag != 2 {
-            let mut transaction =
-                worth_testkit_relational::aspect_storage::publications::begin_main_transaction(
-                    &self.fixture.native,
-                );
-            transaction
-                .push_batch(
-                    worth_testkit_relational::durable_publication::batch_create(&format!(
-                        "wire-{tag}"
-                    )),
-                    request.allocation_policy(),
-                )
-                .unwrap();
-            Some(transaction.validate(request, &self.fixture.native).unwrap())
-        } else {
-            None
-        };
-        let outcome = if tag == 1 {
-            port.execute_durable_without_signal(
-                *request,
-                opened
-                    .prepare_native(&self.fixture.native, request, proposal.unwrap())
-                    .unwrap(),
-                &cancellation.token(),
-            )
-        } else {
-            port.execute_durable_with_signal(
-                *request,
-                opened
-                    .prepare_signal(&self.fixture.native, request, proposal)
-                    .unwrap(),
-                &mut (),
-                &cancellation.token(),
-                |_| Ok(()),
-            )
+            self.closure_original(request, &root, tag)
         };
         let performed = match outcome {
             WorldDurablePublicationOutcome::Performed(value) => value,
@@ -149,10 +105,13 @@ impl Journey {
             self.signal = Some(bytes);
         }
         let subjects = self.fixture.recorder.subjects.lock().unwrap();
+        // The latest open; a mixed original's planned Signal leg follows it.
         self.open = subjects
             .iter()
             .rev()
-            .find(|subject| subject.journal() == WorldDurableJournal::Custody)
+            .find(|subject| {
+                subject.journal() == WorldDurableJournal::Custody && subject.as_bytes()[52] == 3
+            })
             .unwrap()
             .as_bytes()
             .to_vec();
@@ -171,6 +130,77 @@ impl Journey {
         drop(subjects);
         drop(performed.consume());
         drop(root);
+    }
+    /// A relational-only (tag 1) or Signal-only (tag 2) original with a
+    /// closure Signal leg.
+    fn closure_original(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+        root: &ProductBranchObservation,
+        tag: u8,
+    ) -> WorldDurablePublicationOutcome {
+        let port = self.fixture.world.publication_port();
+        let cancellation = RuntimeWorldCancellationSource::new();
+        let opened = if tag == 1 {
+            port.open_publication_without_signal(
+                request,
+                root.clone(),
+                self.fixture.recorder.program_source(root),
+                RelationalTransactionIntent::ordinary(),
+                &cancellation.token(),
+                None,
+            )
+        } else {
+            port.prepare_query_publication_with_signal(
+                request,
+                root.clone(),
+                self.fixture.recorder.program_source(root),
+                None,
+                &cancellation.token(),
+                None,
+            )
+            .unwrap()
+            .advance(request)
+        };
+        let WorldOpenAttemptOutcome::Opened(opened) = opened else {
+            panic!("actual open: {opened:?}")
+        };
+        let proposal = if tag == 1 {
+            let mut transaction =
+                worth_testkit_relational::aspect_storage::publications::begin_main_transaction(
+                    &self.fixture.native,
+                );
+            transaction
+                .push_batch(
+                    worth_testkit_relational::durable_publication::batch_create(&format!(
+                        "wire-{tag}"
+                    )),
+                    request.allocation_policy(),
+                )
+                .unwrap();
+            Some(transaction.validate(request, &self.fixture.native).unwrap())
+        } else {
+            None
+        };
+        if tag == 1 {
+            port.execute_durable_without_signal(
+                *request,
+                opened
+                    .prepare_native(&self.fixture.native, request, proposal.unwrap())
+                    .unwrap(),
+                &cancellation.token(),
+            )
+        } else {
+            port.execute_durable_with_signal(
+                *request,
+                opened
+                    .prepare_signal(&self.fixture.native, request, proposal)
+                    .unwrap(),
+                &mut (),
+                &cancellation.token(),
+                |_| Ok(()),
+            )
+        }
     }
     pub fn data(&self, request: &ExecutionRequest<'_, '_>) -> PreparedWorldHomeData {
         PreparedWorldHomeData::from_home_source(

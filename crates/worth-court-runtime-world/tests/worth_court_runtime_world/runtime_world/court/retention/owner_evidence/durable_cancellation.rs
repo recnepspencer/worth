@@ -37,8 +37,8 @@ fn durable_candidate_cancelled_while_waiting_never_runs_its_body() {
     let prepared = opened
         .prepare_signal(&fixture.native, &request, None)
         .unwrap();
-    let source = fixture.signal.source_port();
-    let basis = fixture.signal.basis_port();
+    let source = fixture.signal().source_port();
+    let basis = fixture.signal().basis_port();
     let control = source.owner_operation_control_for_test().unwrap();
     let pause = control.arm_pause_once_for_test(
         worth_signal::facade::branch::SignalOwnerOperationBoundaryForTest::DurableCandidateCellWait,

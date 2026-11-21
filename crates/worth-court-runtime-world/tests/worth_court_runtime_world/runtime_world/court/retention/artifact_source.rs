@@ -7,6 +7,7 @@ use worth_runtime_bridge::facade::*;
 use worth_runtime_world::facade::*;
 use worth_signal::facade::durability::SignalDurableOwner;
 
+pub(super) mod bridge_owner;
 mod journal;
 pub(super) mod signal_medium;
 pub(super) use journal::Recorder;
@@ -32,13 +33,42 @@ impl InvalidationSink for UnboundDelivery {
 pub(super) struct Fixture {
     pub(super) world: RuntimeWorldOwner<(), (), (), (), ()>,
     pub(super) native: Arc<RelationalRuntime>,
-    pub(super) signal: SignalDurableOwner<(), (), (), (), ()>,
+    owners: SignalOwners,
     signal_medium: Arc<signal_medium::Medium>,
     pub(super) recorder: Arc<Recorder>,
-    _bridge: RuntimeBridge,
     native_medium: Arc<worth_testkit_relational::durable_medium::TestDurableMedium>,
 }
+/// The plain Signal owner, or the real Bridge projection owner over it.
+enum SignalOwners {
+    Plain {
+        signal: SignalDurableOwner<(), (), (), (), ()>,
+        _bridge: RuntimeBridge,
+    },
+    Bridge(Arc<BridgeReadmittedAuthoredAssembly>),
+}
+enum OwnerKind {
+    Plain(SignalDurableOwner<(), (), (), (), ()>),
+    Bridge,
+}
 impl Fixture {
+    pub(super) fn signal(&self) -> &SignalDurableOwner<(), (), (), (), ()> {
+        match &self.owners {
+            SignalOwners::Plain { signal, .. } => signal,
+            SignalOwners::Bridge(assembly) => assembly.signal_owner(),
+        }
+    }
+    /// The Bridge projection owner of a [`Self::bridge_journal`] Home.
+    pub(super) fn bridge(&self) -> &Arc<BridgeReadmittedAuthoredAssembly> {
+        match &self.owners {
+            SignalOwners::Bridge(assembly) => assembly,
+            SignalOwners::Plain { .. } => panic!("a plain Signal Home has no Bridge owner"),
+        }
+    }
+    /// A journal Home whose Signal owner is a real Bridge projection with
+    /// one authored conditional definition.
+    pub(super) fn bridge_journal(request: &ExecutionRequest<'_, '_>) -> Self {
+        Self::fresh_owned(request, true, RuntimeWorldBudgets::without_policy_limits(), true)
+    }
     pub(super) fn new(request: &ExecutionRequest<'_, '_>) -> Self {
         Self::fresh(request, false, RuntimeWorldBudgets::without_policy_limits())
     }
@@ -55,6 +85,14 @@ impl Fixture {
         request: &ExecutionRequest<'_, '_>,
         journal: bool,
         budgets: RuntimeWorldBudgets,
+    ) -> Self {
+        Self::fresh_owned(request, journal, budgets, false)
+    }
+    fn fresh_owned(
+        request: &ExecutionRequest<'_, '_>,
+        journal: bool,
+        budgets: RuntimeWorldBudgets,
+        bridge: bool,
     ) -> Self {
         let (mut native, medium) =
             worth_testkit_relational::initial_input_source::initialized(request);
@@ -73,14 +111,19 @@ impl Fixture {
             .durability_recovery()
             .admit_fresh_home_source(request, plan)
             .unwrap();
-        let (signal, signal_medium) = signal_medium::owner(request);
+        let (kind, signal_medium) = if bridge {
+            (OwnerKind::Bridge, signal_medium::Medium::new(request))
+        } else {
+            let (signal, medium) = signal_medium::owner(request);
+            (OwnerKind::Plain(signal), medium)
+        };
         Self::attach(
             native,
             medium,
             Recorder::new(journal),
             request,
             Admission::Fresh(admission),
-            signal,
+            kind,
             signal_medium,
             budgets,
         )
@@ -98,14 +141,19 @@ impl Fixture {
             recorder,
             world,
             native,
-            signal,
-            _bridge,
+            owners,
             signal_medium,
         } = self;
-        drop((world, native, signal, _bridge));
+        let bridge = matches!(owners, SignalOwners::Bridge(_));
+        drop(world);
+        drop((native, owners));
         let recorder = recorder.successor();
         let signal_medium = signal_medium.successor(request);
-        let signal = signal_medium::readmit(signal_medium.clone(), request);
+        let kind = if bridge {
+            OwnerKind::Bridge
+        } else {
+            OwnerKind::Plain(signal_medium::readmit(signal_medium.clone(), request))
+        };
         let mut native = worth_testkit_relational::initial_input_source::receiver(&native_medium);
         let plan = native
             .durability()
@@ -129,7 +177,7 @@ impl Fixture {
             recorder,
             request,
             Admission::Recovered(authority),
-            signal,
+            kind,
             signal_medium,
             RuntimeWorldBudgets::without_policy_limits(),
         )
@@ -140,7 +188,7 @@ impl Fixture {
         recorder: Arc<Recorder>,
         request: &ExecutionRequest<'_, '_>,
         admission: Admission,
-        signal: SignalDurableOwner<(), (), (), (), ()>,
+        kind: OwnerKind,
         signal_medium: Arc<signal_medium::Medium>,
         budgets: RuntimeWorldBudgets,
     ) -> Result<Self, WorldReadmissionDenial> {
@@ -168,7 +216,35 @@ impl Fixture {
             ))
             .build()
             .unwrap();
-        let attachment = RuntimeWorldAuthoredSignalAttachment::install(&signal, request).unwrap();
+        let (owners, attachment, correspondence) = match kind {
+            OwnerKind::Plain(signal) => {
+                let attachment =
+                    RuntimeWorldAuthoredSignalAttachment::install(&signal, request).unwrap();
+                let correspondence = bridge.runtime_world_correspondence_port();
+                (
+                    SignalOwners::Plain {
+                        signal,
+                        _bridge: bridge,
+                    },
+                    attachment,
+                    correspondence,
+                )
+            }
+            OwnerKind::Bridge => {
+                let builder = bridge_owner::builder(bridge);
+                let assembly = match &admission {
+                    Admission::Fresh(_) => bridge_owner::fresh(builder, &signal_medium, request),
+                    Admission::Recovered(_) => {
+                        bridge_owner::readmit(builder, &signal_medium, request)
+                    }
+                };
+                let attachment =
+                    RuntimeWorldAuthoredSignalAttachment::install_bridge(&assembly, request)
+                        .unwrap();
+                let correspondence = assembly.runtime_world_correspondence_port();
+                (SignalOwners::Bridge(assembly), attachment, correspondence)
+            }
+        };
         let builder = RuntimeWorldOwner::builder()
             .with_authored_signal(attachment)
             .with_budgets(budgets)
@@ -181,7 +257,7 @@ impl Fixture {
         let world = match admission {
             Admission::Fresh(admission) => builder.admit_fresh_world_home(
                 native.owner_component_services(),
-                bridge.runtime_world_correspondence_port(),
+                correspondence.clone(),
                 recorder.clone(),
                 recorder.snapshot(),
                 request,
@@ -198,7 +274,7 @@ impl Fixture {
                 .unwrap();
                 builder.readmit_world_home(
                     native.owner_component_services(),
-                    bridge.runtime_world_correspondence_port(),
+                    correspondence.clone(),
                     &prepared,
                     request,
                     &native,
@@ -209,10 +285,9 @@ impl Fixture {
         Ok(Self {
             world,
             native,
-            signal,
+            owners,
             signal_medium,
             recorder,
-            _bridge: bridge,
             native_medium: medium,
         })
     }
@@ -238,8 +313,8 @@ impl Fixture {
             .native
             .observe_branch(&self.native.main_branch_identity())
             .unwrap();
-        let branch = DurableSignalBranchIdentity::from_recorded(self.signal.binding().owner(), 0);
-        let port = self.signal.source_port();
+        let branch = DurableSignalBranchIdentity::from_recorded(self.signal().binding().owner(), 0);
+        let port = self.signal().source_port();
         let descriptor = port.observe(branch).unwrap();
         let signal = port
             .readmit_descriptor(&descriptor)
