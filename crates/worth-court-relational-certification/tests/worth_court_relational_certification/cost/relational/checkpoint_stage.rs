@@ -5,7 +5,9 @@
 //! byte hashed and per byte copied; zero-work boundaries are free. Every
 //! oracle below is derived from encoded byte counts read independently of the
 //! charging code: the checkpoint length, its reported sections, the journal
-//! artifact payloads and a MessagePack walk of the embedded envelopes.
+//! artifacts and a MessagePack walk of the checkpoint's inline members.
+//! Reconstructing a region that has no recorded checkpoint is its residency
+//! owner's own phase, observed apart from the encoding rate.
 use worth_execution::{
     CancellationSource, ExecutionAllocationDenialClass, ExecutionAllocationPolicy as Allocation,
     ExecutionRequest, ExecutionScopeSetupCountsForTest as Setup,
@@ -16,8 +18,12 @@ use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 use worth_relational::facade::{
-    durability::{NativeCheckpointSectionBytes, RelationalNativeCheckpointCaptureDenial as Denial},
+    durability::{
+        NativeCheckpointSectionBytes, RelationalDurableMemberLocator,
+        RelationalNativeCheckpointCaptureDenial as Denial,
+    },
     identity::{KindId, PartitionId},
+    inspection::observe_maintenance_work,
     runtime::RelationalRuntime,
     symbols::ClientKey,
     transactions::{
@@ -30,64 +36,74 @@ use worth_testkit_relational::aspect_storage::{
 };
 use worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request;
 
-/// `WORTH-REL-CHK15\n`: the prefix is emitted but not sized.
-const CHECKPOINT_MAGIC_BYTES: u64 = 16;
+/// The native checkpoint prefix; it is emitted but not sized.
+const CHECKPOINT_MAGIC: &[u8] = b"WORTH-REL-CHK23\n";
 /// Journal artifact header: magic 8, version 2, position 8, commit 8,
 /// digest 32, payload length 8.
 const ARTIFACT_HEADER_BYTES: usize = 66;
-/// The empty checkpoint's total charge, derived in the first court.
-const EMPTY_TOTAL: u64 = 2_376;
+/// The payload digest's root hashes its domain `worth.relational.canonical.v8\0`,
+/// the position, the commit and the three field digests.
+const DIGEST_ROOT_BYTES: usize = 30 + 8 + 8 + 3 * 32;
+/// The empty checkpoint's total charge: 2 x 2,645 - 16 + 175, the first court.
+const EMPTY_TOTAL: u64 = 5_449;
 
 #[test]
 fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
     // T = (2 x bytes - magic)          final wire: sizing pass + emission pass
     //   + classified sections          one more sizing pass per section
-    //   + sum(journal payloads)        one digest pass per resident envelope
-    //   + 2 x sum(embedded envelopes)  sizing + emission per carried envelope
+    //   + sum(digest inputs)           one digest pass per resident envelope
+    //   + sum(embedded artifacts)      one locator hash per envelope carried inline
+    //   + region capture               a region with no recorded checkpoint
     //
-    //  0 rows: 2 x 1,108 - 16 + 176 + 0 + 2 x 0                       =     2,376
-    //  8 rows: 2 x 36,807 - 16 + 26,846 + 24,402 + 2 x 25,522         =   175,890
-    // 64 rows: 2 x 263,373 - 16 + 207,226 + 196,763 + 2 x 205,723     = 1,342,165
+    // CHK23 carries each envelope as its original journal artifact, so no
+    // envelope is serialized again: embedding costs its member's locator hash.
+    //
+    //  0 rows: 2 x 2,645 - 16 + 175 + 0 + 0                   =     5,449
+    //  8 rows: 2 x 57,564 - 16 + 46,368 + 44,196 + 43,876     =   249,552 + regions
+    // 64 rows: 2 x 425,003 - 16 + 359,570 + 354,880 + 352,320 = 1,916,760 + regions
     // classified = envelopes + roots + cells + mirror + index definitions:
-    //   1 + 1 + 172 + 1 + 1; 25,547 + 514 + 371 + 413 + 1;
-    //   205,918 + 516 + 376 + 415 + 1.
-    for (rows, bytes, sections, payloads, envelopes, total) in [
-        (0, 1_108, [1, 1, 172, 1, 1], 0, 0, 2_376),
+    //   0 + 1 + 172 + 1 + 1; 43,900 + 1,351 + 340 + 776 + 1;
+    //   352,512 + 3,646 + 340 + 3,071 + 1.
+    for (rows, bytes, sections, digests, artifacts, encoding) in [
+        (0, 2_645, [0, 1, 172, 1, 1], 0, 0, EMPTY_TOTAL),
         (
             8,
-            36_807,
-            [25_547, 514, 371, 413, 1],
-            24_402,
-            25_522,
-            175_890,
+            57_564,
+            [43_900, 1_351, 340, 776, 1],
+            44_196,
+            43_876,
+            249_552,
         ),
         (
             64,
-            263_373,
-            [205_918, 516, 376, 415, 1],
-            196_763,
-            205_723,
-            1_342_165,
+            425_003,
+            [352_512, 3_646, 340, 3_071, 1],
+            354_880,
+            352_320,
+            1_916_760,
         ),
     ] {
         let request = serial_request();
         let execution = ExecutionRequest::serial(&request);
         let runtime = runtime_with_rows(rows);
-        let journal: usize = runtime
+        let journal: Vec<Vec<u8>> = runtime
             .durability()
             .canonical_commit_artifacts(&execution)
-            .map(|artifact| artifact.unwrap().as_bytes().len() - ARTIFACT_HEADER_BYTES)
-            .sum();
-        let (checkpoint, report) = ExecutionWorkCeiling::new(None)
-            .run_serial(&request, || {
-                runtime
-                    .durability_authority()
-                    .native_checkpoint(&execution, Allocation::SystemAllocation)
-                    .unwrap()
-            })
-            .unwrap();
+            .map(|artifact| artifact.unwrap().as_bytes().to_vec())
+            .collect();
+        let ((checkpoint, report), observed) = observe_maintenance_work(64, || {
+            ExecutionWorkCeiling::new(None)
+                .run_serial(&request, || {
+                    runtime
+                        .durability_authority()
+                        .native_checkpoint(&execution, Allocation::SystemAllocation)
+                        .unwrap()
+                })
+                .unwrap()
+        });
         let [envelope_section, roots, cells, mirror, indexes] = sections;
         let classified: usize = sections.iter().sum();
+        assert!(checkpoint.bytes().starts_with(CHECKPOINT_MAGIC));
         assert_eq!(checkpoint.bytes().len(), bytes, "rows={rows}");
         assert_eq!(
             checkpoint.captured_sections(),
@@ -102,15 +118,38 @@ fn checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte() {
             }),
             "rows={rows}"
         );
-        assert_eq!(journal, payloads, "rows={rows}");
-        let embedded: usize = embedded_envelope_lengths(checkpoint.bytes()).iter().sum();
-        assert_eq!(embedded, envelopes, "rows={rows}");
-        let derived = 2 * bytes as u64 - CHECKPOINT_MAGIC_BYTES
+        let digest_inputs: usize = journal
+            .iter()
+            .map(|artifact| digest_input_bytes(&artifact[ARTIFACT_HEADER_BYTES..]))
+            .sum();
+        assert_eq!(digest_inputs, digests, "rows={rows}");
+        // The embedded envelopes are exactly the journal's artifacts, in order;
+        // their section adds a 3-byte bin16 header to each.
+        let embedded: Vec<&[u8]> = inline_members(checkpoint.bytes())
+            .into_iter()
+            .filter(|member| member.starts_with(b"WRTHRCCA"))
+            .collect();
+        assert_eq!(embedded, journal, "rows={rows}");
+        let embedded_bytes: usize = embedded.iter().map(|member| member.len()).sum();
+        assert_eq!(embedded_bytes, artifacts, "rows={rows}");
+        assert_eq!(envelope_section, artifacts + 3 * journal.len());
+        let derived = 2 * bytes as u64 - CHECKPOINT_MAGIC.len() as u64
             + classified as u64
-            + payloads as u64
-            + 2 * envelopes as u64;
-        assert_eq!(derived, total, "rows={rows}: the arithmetic above");
-        assert_eq!(report.charged_work(), total, "rows={rows}");
+            + digests as u64
+            + artifacts as u64;
+        assert_eq!(derived, encoding, "rows={rows}: the arithmetic above");
+        // With rows, the main root's region and the partition mirror's region
+        // have no recorded checkpoint and are each reconstructed once.
+        assert_eq!(observed.omitted_phases, 0);
+        let regions: Vec<u64> = observed
+            .phases
+            .iter()
+            .filter(|row| row.phase == "region_capture")
+            .map(|row| row.charged_work)
+            .collect();
+        assert_eq!(regions.len(), if rows == 0 { 0 } else { 2 }, "rows={rows}");
+        let region: u64 = regions.iter().sum();
+        assert_eq!(report.charged_work(), encoding + region, "rows={rows}");
         drop(checkpoint);
         assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
     }
@@ -139,16 +178,13 @@ fn checkpoint_capture_sets_up_exactly_one_stage_whatever_the_row_count() {
 
 #[test]
 fn empty_checkpoint_work_ceiling_bounds_the_whole_capture() {
-    // 574 of the 585 consults charge work. The last three charges are the
-    // one-byte sizing writes of the mirror, envelope and index-definition
-    // sections; the last one needs the whole total.
+    // Consult ordinals are charging structure, so the accepted run fixes them:
+    // its last charge needs the whole total. A refused run charges exactly the
+    // accepted run's prefix up to the first charge whose cumulative requirement
+    // exceeds its ceiling; that charge latches the stop, the stage's next
+    // consult observes the same origin and the capture consults nothing more.
     let mut accepted = Vec::new();
-    for (ceiling, consults, origins) in [
-        (EMPTY_TOTAL, 585, &[][..]),
-        (EMPTY_TOTAL - 1, 582, &[(581, 581), (582, 581)][..]),
-        (1, 4, &[(3, 3), (4, 3)][..]),
-        (0, 3, &[(2, 2), (3, 2)][..]),
-    ] {
+    for ceiling in [EMPTY_TOTAL, EMPTY_TOTAL - 1, 1, 0] {
         let request = SerialRequest::from_policy(
             &ExecutionRequestPolicy::new(
                 ExecutionPosture::Serial,
@@ -166,34 +202,41 @@ fn empty_checkpoint_work_ceiling_bounds_the_whole_capture() {
         let result = runtime
             .durability_authority()
             .native_checkpoint(&execution, Allocation::SystemAllocation);
-        assert_eq!(observer.count_for_test(), consults, "ceiling={ceiling}");
-        assert_eq!(
-            observer.stop_origins_for_test(),
-            origins,
-            "ceiling={ceiling}"
-        );
+        let consults = observer.count_for_test();
+        let origins = observer.stop_origins_for_test();
         let charges = observer.charged_prefixes_for_test();
         drop(observer);
         if ceiling == EMPTY_TOTAL {
-            assert_eq!(charges.len(), 574);
+            assert_eq!(origins, []);
             assert_eq!(
-                charges[charges.len() - 3..],
-                [(577, 2_374), (579, 2_375), (581, EMPTY_TOTAL)]
+                charges.last().map(|(_, required)| *required),
+                Some(EMPTY_TOTAL)
             );
+            assert!(charges
+                .last()
+                .is_some_and(|(ordinal, _)| *ordinal < consults));
             accepted = charges;
             let checkpoint = result.expect("the whole capture fits its total charge");
-            assert_eq!(checkpoint.bytes().len(), 1_108);
-            assert_eq!(request.memory().unwrap().charged_memory_bytes(), 1_108);
+            assert_eq!(checkpoint.bytes().len(), 2_645);
+            // A work ceiling changes nothing the checkpoint retains.
+            assert_eq!(
+                request.memory().unwrap().charged_memory_bytes(),
+                memory_outcome(false, 1 << 20, false).unwrap().1
+            );
             drop(checkpoint);
         } else {
-            // The refused write is the first whose cumulative charge exceeds
-            // the ceiling; every earlier write charged as in the accepted run.
             let refused = accepted
                 .iter()
                 .position(|(_, required)| *required > ceiling)
                 .unwrap();
+            let stop = accepted[refused].0;
             assert_eq!(charges, accepted[..=refused], "ceiling={ceiling}");
-            assert_eq!(accepted[refused].0, origins[0].0, "ceiling={ceiling}");
+            assert_eq!(
+                origins,
+                [(stop, stop), (stop + 1, stop)],
+                "ceiling={ceiling}"
+            );
+            assert_eq!(consults, stop + 1, "ceiling={ceiling}");
             assert!(
                 matches!(result, Err(Denial::Request(Cause::WorkExhausted))),
                 "ceiling={ceiling}: {result:?}"
@@ -205,44 +248,9 @@ fn empty_checkpoint_work_ceiling_bounds_the_whole_capture() {
     }
 }
 
-#[test]
-fn empty_checkpoint_memory_boundary_is_its_bytes_plus_one_stage() {
-    let _guard = crate::leased_preparation::ordinary_context::serial();
-    // 1,508 = the 1,108 checkpoint bytes + 400 bytes the one stage retains,
-    // on serial and leased lineages alike.
-    for leased in [false, true] {
-        let fits = memory_outcome(leased, 1_508, false);
-        assert!(matches!(fits, Ok(1_108)), "leased={leased}: {fits:?}");
-        let short = memory_outcome(leased, 1_507, false);
-        assert!(
-            matches!(
-                short,
-                Err(Denial::Request(Cause::PolicyMemoryExhausted {
-                    requested: 1_108,
-                    admitted: 1_107,
-                    ancestor: 0,
-                }))
-            ),
-            "leased={leased}: {short:?}"
-        );
-        // Cancellation outranks the memory refusal at the first gate.
-        for memory in [1_507, 1_508] {
-            match (leased, memory_outcome(leased, memory, true)) {
-                (false, Err(Denial::Request(Cause::Cancelled))) => {}
-                (true, Err(Denial::Allocation(cause))) => assert_eq!(
-                    cause.classify(),
-                    ExecutionAllocationDenialClass::Request(WorkCeilingDenial::Stopped(
-                        MapKernelStop::Cancelled
-                    ))
-                ),
-                (_, outcome) => panic!("leased={leased} memory={memory}: {outcome:?}"),
-            }
-        }
-    }
-}
-
 mod fixture;
-use fixture::{embedded_envelope_lengths, memory_outcome, runtime_with_rows};
+mod memory;
+use fixture::{digest_input_bytes, inline_members, memory_outcome, runtime_with_rows};
 
 #[test]
 fn checkpoint_reconstruction_preserves_complete_identity_and_data() {
@@ -327,55 +335,4 @@ fn checkpoint_reconstruction_scope_growth_is_linear_in_cold_input() {
             "{name}: cold scope work outgrows cold input: {first}->{second}"
         );
     }
-}
-
-#[test]
-fn checkpoint_refusals_preserve_request_custody_and_publication() {
-    let _guard = crate::leased_preparation::ordinary_context::serial();
-    for leased in [false, true] {
-        assert!(memory_outcome(leased, 1 << 20, false).unwrap() > 0);
-        assert!(matches!(
-            memory_outcome(leased, 0, false),
-            Err(Denial::Request(Cause::PolicyMemoryExhausted { .. })) | Err(Denial::Allocation(_))
-        ));
-        match (leased, memory_outcome(leased, 0, true)) {
-            (false, Err(Denial::Request(Cause::Cancelled))) => {}
-            (true, Err(Denial::Allocation(cause))) => assert_eq!(
-                cause.classify(),
-                ExecutionAllocationDenialClass::Request(WorkCeilingDenial::Stopped(
-                    MapKernelStop::Cancelled
-                ))
-            ),
-            (_, outcome) => panic!("cancellation must outrank memory refusal: {outcome:?}"),
-        }
-    }
-    let request = SerialRequest::from_policy(
-        &ExecutionRequestPolicy::new(
-            ExecutionPosture::Serial,
-            DeterminismContract::CanonicalBitwise,
-            ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, Some(0)),
-        ),
-        CancellationSource::new().token(),
-        None,
-    );
-    let execution = ExecutionRequest::serial(&request);
-    let runtime = runtime_with_rows(0);
-    let before = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap()
-        .0;
-    assert!(matches!(
-        runtime
-            .durability_authority()
-            .native_checkpoint(&execution, Allocation::SystemAllocation),
-        Err(Denial::Request(Cause::WorkExhausted))
-    ));
-    assert_eq!(request.memory().unwrap().charged_memory_bytes(), 0);
-    assert_eq!(
-        runtime
-            .observe_branch(&runtime.main_branch_identity())
-            .unwrap()
-            .0,
-        before
-    );
 }

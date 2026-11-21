@@ -11,28 +11,29 @@ use crate::storage::data::{
 };
 
 impl RelationalCommitEnvelopeResidency {
-    /// Capture metadata is read from the original Memory frame, never re-encoded.
-    pub(crate) fn original_memory_payload_digest(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<[u8; 32], Stop> {
+    /// Capture metadata reads the digest the original Memory frame records,
+    /// never re-encoding or re-hashing it: the capture verifies each frame
+    /// once, when it embeds it, against the digest this returns.
+    pub(crate) fn original_memory_recorded_digest(&self) -> Result<[u8; 32], Stop> {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
-        let fail = || {
-            crate::durability::data::DurabilityError::new(
-                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
-                "original Memory artifact unavailable or damaged",
-            )
-        };
         let EnvelopeBacking::Memory {
             original: Some(bytes),
             ..
         } = &state.backing
         else {
-            return Err(fail().into());
+            return Err(crate::durability::data::DurabilityError::new(
+                crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
+                "original Memory artifact unavailable or damaged",
+            )
+            .into());
         };
-        let artifact =
-            Artifact::from_owned_original(bytes.clone(), execution).map_err(original_frame_stop)?;
-        Ok(*artifact.payload_digest().as_bytes())
+        Artifact::recorded_payload_digest(bytes.bytes()).map_err(|cause| {
+            original_frame_stop(
+                crate::durability::canonical_commit_artifact::ControlledFrameCopyDenial::Frame(
+                    cause,
+                ),
+            )
+        })
     }
     /// Strict capture reads original frames only; resident body encoding is forbidden.
     pub(crate) fn require_original_artifact(

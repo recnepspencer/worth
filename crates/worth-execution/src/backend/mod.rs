@@ -37,6 +37,7 @@ pub(crate) use meter::detach_meter_for_test;
 pub(crate) use meter::enter_certification_activity;
 pub(crate) use meter::enter_retained_memory;
 pub(crate) use meter::has_active_kernel;
+pub(crate) use meter::joined_stage;
 pub(crate) use meter::run_invoking_preparation;
 pub(crate) use meter::run_invoking_scope;
 pub(crate) use meter::MemoryActivityGuard;

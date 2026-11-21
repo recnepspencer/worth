@@ -10,6 +10,7 @@ pub use equivalence::EquivalencePredicate;
 pub(crate) use lease::ResourceReservation;
 #[cfg(test)]
 pub(crate) use lease::SlotRefusal;
+pub(crate) use lease::StageOrigin;
 pub(crate) use lease::{
     interruption_backing_lease, unrelated_interruption_context, InterruptionViewBuilder,
 };
