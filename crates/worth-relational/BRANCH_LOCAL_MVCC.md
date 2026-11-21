@@ -123,8 +123,9 @@ any effect: `prepare_branch_transaction` returns
 `RetentionBackpressure`.
 
 A `PreparedRelationalCommitCandidate` is opaque, runtime-affine, branch-bound,
-single-use, and retained. Preparing, discarding, expiring, or losing a
-candidate does not move a public reference; `discard_prepared_candidate` is the
+single-use, and retained until its holder publishes, discards or drops it; it
+has no wall-clock lifetime. Preparing, discarding, or losing a candidate does
+not move a public reference; `discard_prepared_candidate` is the
 explicit way to consume one without publishing, and the `preparation_port`
 doctest proves the branch does not move across it.
 

@@ -1,4 +1,4 @@
-//! Framing cannot extend the caller's narrowing or the prepared candidate's life.
+//! Framing cannot extend the caller's cutover narrowing.
 use super::*;
 use crate::durability::canonical_commit_artifact::{
     MemoryFramePreparationDenial, RelationalCanonicalCommitArtifact,

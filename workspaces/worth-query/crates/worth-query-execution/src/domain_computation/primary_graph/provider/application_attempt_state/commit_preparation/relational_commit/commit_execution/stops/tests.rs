@@ -5,7 +5,7 @@ use crate::domain_computation::{
 mod mapping_contracts;
 
 #[test]
-fn maintenance_lifetime_and_budgets_keep_their_paths() {
+fn maintenance_budgets_identity_and_rejection_keep_their_paths() {
     use worth_relational::facade::indexes::{
         DerivedIndexMaintenanceDenial, DerivedIndexMaintenanceDenialKind as Maintenance,
     };
