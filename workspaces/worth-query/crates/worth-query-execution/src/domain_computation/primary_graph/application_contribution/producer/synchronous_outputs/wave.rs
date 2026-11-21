@@ -14,6 +14,7 @@ mod occurrences;
 mod outgoing;
 mod prerequisites;
 mod reopen;
+mod settlement;
 mod state;
 use state::{capacity_denied, push_funded, Scheduled, TaskState};
 
@@ -131,6 +132,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             children: Vec::new(),
             _children_memory: None,
             reopen_check: None,
+            settling: None,
             subject,
             rank,
             owed: context.owner.owing(),
@@ -312,6 +314,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 }
             }
             self.retain_parent_inputs(context, candidate, i)?;
+            if self.settle_consumers(context, candidate, i)? {
+                observation::record(|| format!("break settle after={i}"));
+                break;
+            }
         }
         Ok(completed)
     }
