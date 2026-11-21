@@ -65,6 +65,10 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationAssemb
     superseding: std::cell::Cell<bool>,
     /// The wave task whose discovery is now retaining support (its owner).
     discovering: std::cell::Cell<Option<usize>>,
+    /// Parent outputs some derivation consumed (R3), by read.
+    consumed: RefCell<worth_execution::ExecutionOrderedMap<usize, ()>>,
+    /// Retentions superseded at their authenticated invalidator, to reopen.
+    reopens: RefCell<Vec<qualification::Reopen>>,
 }
 /// The applied position of the earliest stage whose effect demands some work.
 /// Work demanded through it (prerequisites, discovered children, continuations
@@ -158,6 +162,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             ledger: RefCell::new(ledger::DerivationLedger::default()),
             superseding: std::cell::Cell::new(false),
             discovering: std::cell::Cell::new(None),
+            consumed: RefCell::new(worth_execution::ExecutionOrderedMap::default()),
+            reopens: RefCell::new(Vec::new()),
         }
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn owing(
@@ -352,6 +358,8 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
             self.demands.round_limits,
         );
         *self.ledger.borrow_mut() = ledger::DerivationLedger::default();
+        *self.consumed.borrow_mut() = worth_execution::ExecutionOrderedMap::default();
+        self.reopens.borrow_mut().clear();
         self.superseding.set(false);
         let prepared = self
             .application

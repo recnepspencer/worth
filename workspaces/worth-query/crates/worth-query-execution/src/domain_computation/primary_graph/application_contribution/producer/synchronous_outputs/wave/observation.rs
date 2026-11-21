@@ -6,6 +6,7 @@ use std::cell::{Cell, RefCell};
 thread_local! {
     static EVENTS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
     static UNITS: Cell<u64> = const { Cell::new(0) };
+    static VISITED: Cell<u64> = const { Cell::new(0) };
     static CLEANUP_REGISTERED: Cell<bool> = const { Cell::new(false) };
 }
 fn observing() -> bool {
@@ -21,11 +22,20 @@ fn clear() {
     CLEANUP_REGISTERED.with(|registered| registered.set(false));
     EVENTS.with(|events| events.borrow_mut().clear());
     UNITS.with(|units| units.set(0));
+    VISITED.with(|visited| visited.set(0));
 }
-/// Adds work the wave charged, only while observed.
-pub(super) fn charged(units: u64) {
+/// Adds work the wave charged, only while observed. Qualified use charges
+/// its marking, comparisons and lookups here too: it is scheduling work.
+pub(in crate::domain_computation::primary_graph) fn charged(units: u64) {
     if observing() {
         UNITS.with(|total| total.set(total.get().saturating_add(units)));
+    }
+}
+/// Counts retained candidate reads qualified use visited in one lookup,
+/// only while observed: an index visits the entries it needs, a scan all.
+pub(in crate::domain_computation::primary_graph) fn visited_retained_reads(entries: u64) {
+    if observing() {
+        VISITED.with(|total| total.set(total.get().saturating_add(entries)));
     }
 }
 /// Records one event, formatted only while observed.
@@ -70,5 +80,9 @@ impl crate::domain_computation::execution_observation::WorthQueryExecutionObserv
     /// The work units the wave charged on this thread since the last call.
     pub fn wave_charged_units_for_test(&self) -> u64 {
         UNITS.with(|units| units.replace(0))
+    }
+    /// Retained candidate reads qualified use visited since the last call.
+    pub fn retained_reads_visited_for_test(&self) -> u64 {
+        VISITED.with(|visited| visited.replace(0))
     }
 }

@@ -6,12 +6,15 @@ mod completion;
 mod continuations;
 mod inputs;
 mod observation;
+pub(in crate::domain_computation::primary_graph) use observation::{
+    charged as observe_scheduling_work, visited_retained_reads,
+};
 mod occurrences;
 mod outgoing;
 mod prerequisites;
 mod reopen;
 mod state;
-use state::{capacity_denied, map_insert, map_remove, push_funded, Scheduled, TaskState};
+use state::{capacity_denied, push_funded, Scheduled, TaskState};
 
 /// Every wave charge goes through here, so its observed units are the
 /// wave's whole share of the request's work accounting.
@@ -38,6 +41,8 @@ pub struct SynchronousOutputWave<S: ApplicationSchema> {
     done_components: ExecutionOrderedMap<usize, ()>,
     /// The task that retained or derived each parent output read (PR C R2).
     by_read: ExecutionOrderedMap<usize, usize>,
+    /// Reopened rows that discovered again, to verify once identified.
+    rediscovered: Vec<usize>,
     needed_undone_count: usize,
     needed_dirty: bool,
     last_allowed: Option<Option<Vec<String>>>,
@@ -56,6 +61,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             ready_alias_continuations: ExecutionOrderedMap::default(),
             done_components: ExecutionOrderedMap::default(),
             by_read: ExecutionOrderedMap::default(),
+            rediscovered: Vec::new(),
             needed_undone_count: 0,
             needed_dirty: true,
             last_allowed: None,
@@ -121,6 +127,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             _readers_memory: None,
             alias_rows: Vec::new(),
             _alias_rows_memory: None,
+            children: Vec::new(),
+            reopen_check: None,
             subject,
             rank,
             owed: context.owner.owing(),
@@ -206,6 +214,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             observation::record(|| format!("batch id={batch_id} rank={rank} ready={ready:?}"));
             batch_id += 1;
             let completed = self.run_batch(context, candidate, allowed, &ready)?;
+            // Nothing discovers from a parent the batch's own appends staled.
+            self.reopen_stale(context, candidate)?;
             self.discover_completed(context, candidate, ready, completed)?;
         }
         Ok(())
@@ -315,6 +325,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             .pin_source(context.execution)
             .map_err(CoupledSourceReadStop::from)?;
         let mut next = Self::new();
+        let mut selections = Vec::new();
         for i in ready.into_iter().take(completed) {
             let owed = self.tasks[i].owed.clone();
             let task = &mut self.tasks[i];
@@ -326,16 +337,14 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 // A discovered child is owed by the stage that owed its parent.
                 context.owner.owe(&owed);
                 context.owner.discover_for(Some(i));
+                let start = next.tasks.len();
                 let discovered = task.tree.discover(context, candidate, parent, &mut next);
                 context.owner.discover_for(None);
                 discovered?;
+                task.continuation_done = true;
+                selections.push((i, start..next.tasks.len()));
             }
-            task.continuation_done = true;
         }
-        for task in next.tasks {
-            self.reserve_slot(context, task.subject)?;
-            self.tasks.push(task);
-        }
-        Ok(())
+        self.adopt_discovered(context, next, selections)
     }
 }

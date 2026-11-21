@@ -61,19 +61,45 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let Some((rep_producer, _)) = rep_part.publication.lineage_attribution() else {
             return Ok(false);
         };
+        // The consumer must have retained this route; its retained meaning is
+        // the historical one it consumed, kept from before any fold.
+        let Some(retained) = self.parts[consumer_index]
+            .inputs
+            .as_ref()
+            .and_then(|inputs| {
+                inputs.meanings.iter().position(|entry| {
+                    entry.family == rep_meaning.family
+                        && entry.source_scope == rep_meaning.source_scope
+                        && entry.source_partition == rep_meaning.source_partition
+                })
+            })
+        else {
+            return Ok(false);
+        };
+        let retained_meaning = &self.parts[consumer_index]
+            .inputs
+            .as_ref()
+            .expect("retained consumer inputs")
+            .meanings[retained];
         let (old_meaning, old_producer, old_roles) = match &old_parent.origin {
             InputOrigin::Applied(head_index) => {
                 if *head_index >= consumer_index || *head_index != rep_index {
                     return Ok(false);
                 }
+                // A fold admits a round only with the head's producer and
+                // roles over the same records (`prove_succession` Identity),
+                // so the chain's current part carries them; the meaning a
+                // fold may change (implementation, epoch) is the retained one.
                 let head = &self.parts[*head_index];
-                let meaning = head.publication.producing_meaning().expect("admitted head");
                 let (producer, _) = head.publication.lineage_attribution().expect("head owner");
                 let roles = self.resolve_part_roles(execution, *head_index)?;
-                (meaning, producer, roles)
+                (retained_meaning, producer, roles)
             }
             InputOrigin::Current(publication) => {
                 let meaning = &publication.origin.meaning;
+                if retained_meaning != meaning {
+                    return Ok(false);
+                }
                 let producer = publication.origin.producer.as_str();
                 let mut roles = Vec::with_capacity(publication.origin.members.len());
                 for member in &publication.origin.members {
@@ -120,16 +146,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             return Ok(false);
         }
         let next_meaning = rep_meaning.clone();
-        if let Some(inputs) = self.parts[consumer_index].inputs.as_mut() {
-            for entry in &mut inputs.meanings {
-                if entry.family == next_meaning.family
-                    && entry.source_scope == next_meaning.source_scope
-                    && entry.source_partition == next_meaning.source_partition
-                {
-                    *entry = next_meaning.clone();
-                }
-            }
-        }
+        self.parts[consumer_index]
+            .inputs
+            .as_mut()
+            .expect("retained consumer inputs")
+            .meanings[retained] = next_meaning;
         Ok(true)
     }
 

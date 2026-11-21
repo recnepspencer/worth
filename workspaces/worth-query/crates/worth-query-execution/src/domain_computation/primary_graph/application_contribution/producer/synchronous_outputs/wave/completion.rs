@@ -1,6 +1,6 @@
 //! A completed task wakes the aliases and dependents that wait on it.
 use super::*;
-use state::{map_insert, map_remove, TaskState};
+use state::{map_insert, map_remove, push_funded, TaskState};
 
 impl<S: ApplicationSchema> SynchronousOutputWave<S> {
     pub(super) fn complete_task(
@@ -15,6 +15,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         let has_parent = parent.is_some();
         if let Some(read) = parent.as_ref().and_then(|parent| parent.read) {
             map_insert(&mut self.by_read, &read.0, &i, context.execution, subject)?;
+            context.owner.claim_retention(context.execution, read)?;
         }
         map_remove(
             &mut self.ready_queue,
@@ -71,6 +72,41 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                         )?;
                     }
                 }
+            }
+        }
+        Ok(())
+    }
+
+    /// Append the rows a discovery pass selected and record, per selecting
+    /// row, which they are; a reopened row is then verified once identified.
+    pub(super) fn adopt_discovered(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        next: Self,
+        selections: Vec<(usize, std::ops::Range<usize>)>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        let base = self.tasks.len();
+        for task in next.tasks {
+            self.reserve_slot(context, task.subject)?;
+            self.tasks.push(task);
+        }
+        for (row, range) in selections {
+            let subject = self.tasks[row].subject;
+            checkpoint(context.execution, subject, range.len() as u64 + 1)?;
+            let mut children = Vec::new();
+            let mut memory = None;
+            for child in range {
+                push_funded(
+                    &mut children,
+                    &mut memory,
+                    base + child,
+                    context.execution,
+                    subject,
+                )?;
+            }
+            self.tasks[row].children = children;
+            if self.tasks[row].reopen_check.is_some() {
+                self.rediscovered.push(row);
             }
         }
         Ok(())

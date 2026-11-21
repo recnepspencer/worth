@@ -24,6 +24,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             self.unidentified_from += 1;
             self.identify(context, candidate, i, allowed)?;
         }
+        if !self.rediscovered.is_empty() {
+            self.verify_rediscovered(context, candidate)?;
+        }
         if self.needed_dirty {
             self.recompute_needed(context, allowed)?;
         }

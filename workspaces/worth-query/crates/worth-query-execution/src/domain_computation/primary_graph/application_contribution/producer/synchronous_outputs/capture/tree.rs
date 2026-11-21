@@ -18,6 +18,13 @@ pub(in super::super) trait RequiredTree<S: ApplicationSchema>:
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<Option<(occurrences::OccurrenceKey, std::any::TypeId)>, SynchronousOutputFailure>;
+    /// The route this tree's demand selects at the current candidate: its
+    /// identity whether or not an occurrence component coalesces it.
+    fn route(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+    ) -> Result<occurrences::OccurrenceKey, SynchronousOutputFailure>;
     fn has_static_continuation(&self) -> bool;
     fn prerequisites(
         &self,
@@ -129,6 +136,13 @@ where
         else {
             return Ok(None);
         };
+        Ok(Some((self.route(context, candidate)?, component)))
+    }
+    fn route(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+    ) -> Result<occurrences::OccurrenceKey, SynchronousOutputFailure> {
         let demand = source::capture::<S, D>(self.connection, self.demand.clone());
         let principal = context.owner.principal.ok_or_else(|| {
             occurrences::refusal(self.connection, "current principal unavailable")
@@ -161,15 +175,12 @@ where
                         "captured parent source changed",
                     ));
                 }
-                Ok(Some((
-                    occurrences::OccurrenceKey {
-                        family: demand.family,
-                        source_binding: demand.source_binding_type,
-                        scope,
-                        partition,
-                    },
-                    component,
-                )))
+                Ok(occurrences::OccurrenceKey {
+                    family: demand.family,
+                    source_binding: demand.source_binding_type,
+                    scope,
+                    partition,
+                })
             }
             _ => Err(occurrences::refusal(
                 self.connection,

@@ -11,6 +11,10 @@ use worth_relational::facade::identity::EntityId;
 pub(super) struct CandidateReadSupports {
     values: Vec<RetainedCandidateRead>,
     storage: Option<worth_execution::ExecutionMemoryReservation>,
+    /// The slot of each retained verified parent, by its read.
+    by_read: worth_execution::ExecutionOrderedMap<usize, usize>,
+    /// The slots each wave task's discovery owns.
+    by_owner: worth_execution::ExecutionOrderedMap<(usize, usize), ()>,
 }
 impl CandidateReadSupports {
     fn retain(
@@ -75,6 +79,8 @@ impl CandidateReadSupports {
             self.values = replacement;
             self.storage = memory;
         }
+        let slot = self.values.len();
+        self.index(execution, slot, owner, &support, subject)?;
         self.values.push(RetainedCandidateRead {
             source,
             position,
@@ -84,6 +90,54 @@ impl CandidateReadSupports {
         });
         Ok(())
     }
+
+    fn index(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        slot: usize,
+        owner: Option<usize>,
+        support: &CandidateReadSupport,
+        subject: &str,
+    ) -> Result<(), Denial> {
+        let stopped = |cause| match cause {
+            worth_execution::ExecutionOrderedMapDenial::Allocation(cause) => {
+                Denial::allocation_denied(subject, cause)
+            }
+            worth_execution::ExecutionOrderedMapDenial::Request(cause) => {
+                Denial::relational_read_stopped(cause.into(), subject)
+            }
+            worth_execution::ExecutionOrderedMapDenial::CapacityOverflow => {
+                Denial::new(Kind::CandidateCapacityExceeded, subject)
+            }
+        };
+        if let CandidateReadSupport::Parent(parent) = support
+            && let Some(read) = parent.read()
+        {
+            charge_scan(
+                execution,
+                "retained read index",
+                log_work(self.by_read.len()),
+            )?;
+            self.by_read
+                .insert_cloned_native_for_request(&read.0, &slot, *execution)
+                .map_err(stopped)?;
+        }
+        if let Some(owner) = owner {
+            charge_scan(
+                execution,
+                "retained read index",
+                log_work(self.by_owner.len()),
+            )?;
+            self.by_owner
+                .insert_cloned_native_for_request(&(owner, slot), &(), *execution)
+                .map_err(stopped)?;
+        }
+        Ok(())
+    }
+}
+
+fn log_work(entries: usize) -> usize {
+    entries.max(1).ilog2() as usize + 1
 }
 impl WorthQueryPrimaryGraphApplicationAttempt {
     pub(in crate::domain_computation::primary_graph) fn retain_candidate_read_support(
@@ -105,11 +159,27 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         invalidator: usize,
     ) -> Result<(), Denial> {
         let subject = "reopened discovery support";
-        charge_scan(execution, subject, self.candidate_read_support.values.len())?;
-        for entry in &mut self.candidate_read_support.values {
-            if entry.owner == Some(owner) && entry.window_end.is_none() {
+        let supports = &mut self.candidate_read_support;
+        charge_scan(execution, subject, log_work(supports.by_owner.len()))?;
+        let Some(mut rank) = supports
+            .by_owner
+            .first_at_or_after(&(owner, 0))
+            .and_then(|(first, ())| supports.by_owner.rank_of(first))
+        else {
+            return Ok(());
+        };
+        while let Some((&(found, slot), ())) = supports.by_owner.entry_at(rank) {
+            if found != owner {
+                break;
+            }
+            charge_scan(execution, subject, 1)?;
+            crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::visited_retained_reads(1);
+            let entry = &mut supports.values[slot];
+            // Only evidence retained before the invalidating append.
+            if entry.position < invalidator && entry.window_end.is_none() {
                 entry.window_end = Some(invalidator);
             }
+            rank += 1;
         }
         Ok(())
     }
@@ -138,9 +208,18 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
                     subject,
                 )
             })?;
-        self.candidate_read_support
+        let supports = &mut self.candidate_read_support;
+        supports
             .values
             .retain(|entry| !matches!(entry.support, CandidateReadSupport::Outgoing(_)));
+        // Slots moved: index the kept entries again.
+        supports.by_read = worth_execution::ExecutionOrderedMap::default();
+        supports.by_owner = worth_execution::ExecutionOrderedMap::default();
+        let kept = std::mem::take(&mut supports.values);
+        for (slot, entry) in kept.iter().enumerate() {
+            supports.index(execution, slot, entry.owner, &entry.support, subject)?;
+        }
+        supports.values = kept;
         Ok(())
     }
     pub(in crate::domain_computation::primary_graph) fn candidate_read_support(
@@ -163,17 +242,18 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         invalidator: usize,
         settles: impl Fn(&crate::domain_computation::primary_graph::application_contribution::producer::VerifiedAppliedParent) -> bool,
     ) -> Result<RetainedReadRequalification, Denial> {
+        let supports = &mut self.candidate_read_support;
         charge_scan(
             execution,
             "retained parent qualification",
-            self.candidate_read_support.values.len(),
+            log_work(supports.by_read.len()),
         )?;
-        let Some(entry) = self.candidate_read_support.values.iter_mut().find(|entry| {
-            matches!(&entry.support, CandidateReadSupport::Parent(parent) if parent.read() == Some(read))
-        }) else {
+        let Some(&slot) = supports.by_read.get(&read.0) else {
             // An assembly round reset this support; nothing retained it.
             return Ok(RetainedReadRequalification::Equal);
         };
+        crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::visited_retained_reads(1);
+        let entry = &mut supports.values[slot];
         let CandidateReadSupport::Parent(parent) = &entry.support else {
             unreachable!("matched a verified parent")
         };
@@ -199,6 +279,7 @@ fn charge_scan(
 ) -> Result<(), Denial> {
     let work = u64::try_from(entries)
         .map_err(|_| Denial::new(Kind::CandidateCapacityExceeded, subject))?;
+    crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::observe_scheduling_work(work);
     execution
         .run_native_with_checkpoint(|context| {
             crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)

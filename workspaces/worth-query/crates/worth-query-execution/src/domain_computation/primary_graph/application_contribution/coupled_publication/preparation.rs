@@ -302,6 +302,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .clone();
         let source_scope = meaning.source_scope;
         let position = self.applied_position() + 1;
+        self.record_consumption(execution, &self.consuming())?;
         self.writers.borrow_mut().push(CoupledWriter {
             position,
             owed: self.owing(),
@@ -336,6 +337,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 index,
                 position,
                 owed,
+                meaning: meaning.clone(),
             },
         )?;
         let entities = candidate

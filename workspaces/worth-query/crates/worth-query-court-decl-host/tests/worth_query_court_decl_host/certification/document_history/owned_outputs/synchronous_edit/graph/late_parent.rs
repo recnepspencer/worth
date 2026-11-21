@@ -5,6 +5,7 @@ mod program;
 #[macro_use]
 mod staged;
 mod prerequisite;
+mod selection;
 /// Commits `b = 4` and settles its outputs: `first:a` is then a verified
 /// parent derived from model `a` and member `m`, and `second:b` its child.
 fn settle_initial(
@@ -98,7 +99,10 @@ fn exercise(worker: bool) {
         )
         .unwrap();
     let WorthQueryApplicationPerformedMutationOutcome::Performed(_) = outcome else {
-        panic!("the stale verified parent is derived again in the edit")
+        panic!(
+            "the stale verified parent is derived again in the edit: {:?}",
+            _execution.wave_events_for_test()
+        )
     };
     // `decision-write(b)` writes m = b + 1 = 9; the verified parent read m = 5,
     // so qualified use derives it again from m = 9 (D3): 2 + 9.
