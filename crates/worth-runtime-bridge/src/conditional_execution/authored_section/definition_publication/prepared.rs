@@ -7,23 +7,29 @@ use worth_signal::facade::durability::{
 pub struct BridgePreparedAuthoredDefinitionPublication {
     pub(super) prepared: PreparedDefinition,
     pub(super) expected: SignalDurableBranchHandle,
-    pub(super) planned: crate::conditional_execution::BridgePlannedDefinitionLeg,
+    /// The predecessor's recorded node, where the planned leg publishes.
+    pub(super) node: worth_foundational::facade::DurableSignalNodeIdentity,
 }
 impl BridgePreparedAuthoredDefinitionPublication {
-    /// The exact Signal leg this original performs, for World to record before
-    /// Native's effect. Recording it grants nothing.
-    pub fn planned_leg(&self) -> &crate::conditional_execution::BridgePlannedDefinitionLeg {
-        &self.planned
+    /// Capture the exact Signal leg this original performs, for World to
+    /// record before Native's effect of a durable mixed original. Only that
+    /// record is bounded by World's custody row; recording it grants nothing.
+    pub fn planned_leg(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::conditional_execution::BridgePlannedDefinitionLeg,
+        BridgeDurableDefinitionPublicationDenial,
+    > {
+        self.prepared
+            .pending
+            .planned_leg(execution, self.node, &self.prepared.definition)
     }
     pub fn admits_signal_basis(
         &self,
         basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
     ) -> bool {
         self.expected.basis().admission_identity() == basis.admission_identity()
-    }
-    /// Signal's readmitted predecessor branch this successor was prepared on.
-    pub fn expected_signal(&self) -> &SignalDurableBranchHandle {
-        &self.expected
     }
     pub fn completion(&self) -> BridgeDurableDefinitionCompletion {
         self.prepared.pending.completion()

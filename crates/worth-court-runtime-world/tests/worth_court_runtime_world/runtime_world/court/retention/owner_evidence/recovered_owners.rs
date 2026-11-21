@@ -68,7 +68,6 @@ fn run(mixed: bool, orphan: bool) {
             let request = ExecutionRequest::serial(&funding);
             match original {
                 Original::Definition(original) => {
-                    calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
                     super::mixed_definition::publish(&port, &request, original, &token)
                 }
                 Original::Closure(prepared) => port.execute_durable_with_signal(
@@ -173,7 +172,12 @@ fn run(mixed: bool, orphan: bool) {
         fixture.signal().published_advance_count().unwrap(),
         original_signal
     );
-    assert_eq!(body_calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+    // The closure leg's body runs once; the definition leg has no body, so its
+    // non-re-execution evidence is the unchanged Native, Signal and generation
+    // counts around continuation.
+    if !mixed {
+        assert_eq!(body_calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
     if let Some(generation) = generation {
         assert_eq!(
             super::mixed_definition::served_generation(&fixture),

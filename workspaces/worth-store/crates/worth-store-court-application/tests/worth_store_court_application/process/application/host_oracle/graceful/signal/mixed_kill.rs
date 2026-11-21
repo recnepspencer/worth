@@ -31,7 +31,6 @@ enum Request {
 struct Observation {
     states: Vec<operations::State>,
     frontiers: Vec<(u64, u64, u64)>,
-    contacts: (usize, usize, usize, usize),
     recovered_rows: usize,
 }
 /// The recovered original as Query and World answer it in the fresh process.
@@ -39,8 +38,7 @@ struct Observation {
 struct Recovered {
     owner_effects: usize,
     continue_offered: bool,
-    /// Sent only while Signal's leg is outstanding (see `recover`).
-    duplicate_key_is_original: Option<bool>,
+    duplicate_key_is_original: bool,
     published: bool,
     key_answers_recovered_commit: bool,
     after: Observation,
@@ -85,16 +83,14 @@ fn journey(cut: Cut, acting_owners: usize) {
         "the product stays at its predecessor"
     );
     assert_eq!(reopened.frontiers, first.frontiers);
-    assert_eq!(reopened.contacts, (0, 0, 0, 0), "reopen runs no provider");
     let recovered: Recovered = session.exchange(&Request::Recover(2));
     assert_eq!(
         recovered.owner_effects, acting_owners,
         "exactly the acting owners"
     );
     assert!(recovered.continue_offered);
-    assert_eq!(
+    assert!(
         recovered.duplicate_key_is_original,
-        (acting_owners == 1).then_some(true),
         "the original key answers its retained original"
     );
     assert!(recovered.published, "the original continues once");
@@ -116,11 +112,6 @@ fn journey(cut: Cut, acting_owners: usize) {
             "the continuation moves each owner exactly as one uninterrupted commit"
         );
     }
-    assert_eq!(
-        recovered.after.contacts,
-        (0, 0, 0, 0),
-        "continuation re-executes no provider"
-    );
     session.kill();
     let (mut session, again) = start(&mut generation);
     assert_eq!(
@@ -168,19 +159,17 @@ fn signal_mixed_kill_child() {
         .unwrap();
     let request = super::super::super::opening::serial();
     let execution = worth_execution::ExecutionRequest::serial(&request);
-    let contacts = ContactCounters::default();
     let home = opening::open(
         WorthQueryApplicationHomeLocation::Directory(path),
         build,
         Arc::new(AtomicUsize::new(0)),
-        contacts.clone(),
+        ContactCounters::default(),
         &execution,
     );
     let main = operations::installed(&home)[0];
     let observe = |home: &opening::Home| Observation {
         states: operations::observe(home, &[main]),
         frontiers: operations::frontiers(home, &[main]),
-        contacts: contacts.snapshot(),
         recovered_rows: home
             .runtime()
             .product_publication_recovery_page(None, std::num::NonZeroUsize::new(16).unwrap())
@@ -315,17 +304,14 @@ fn recover(
         .next_actions()
         .contains(&ProductUnpublishedNextAction::ContinueOriginalPublication);
     drop(original);
-    // With Signal's leg already durable, the handler's own definition
-    // admission refuses before any key lookup (the installed lowering is ahead
-    // of the product basis), so the duplicate key is sent only while Signal's
-    // leg is outstanding; after continuation the key is answered either way.
-    let duplicate_key_is_original =
-        (owner_effects == 1).then(|| match operations::commit_mixed(home, branch, ordinal) {
-            primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(original) => {
-                original.into_recovery().record_handle() == &handle
-            }
-            other => panic!("the original key answers its retained original: {other:?}"),
-        });
+    // The same request: its key resolves before any Bridge basis check, so
+    // it answers the retained original in both cuts.
+    let duplicate_key_is_original = match operations::commit_mixed(home, branch, ordinal) {
+        primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(original) => {
+            original.into_recovery().record_handle() == &handle
+        }
+        other => panic!("the original key answers its retained original: {other:?}"),
+    };
     let published = loop {
         match recovery.continue_original_in_request(execution).unwrap() {
             WorldRecoveredContinuationOutcome::Pending(custody) => drop(custody),

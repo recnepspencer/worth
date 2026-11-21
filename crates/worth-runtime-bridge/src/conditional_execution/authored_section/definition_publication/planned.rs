@@ -33,7 +33,7 @@ impl BridgeReadmittedAuthoredAssembly {
             &predecessor,
             request,
         )?;
-        if prepared.planned_leg() != leg {
+        if prepared.planned_leg(execution)? != *leg {
             return Err(D::PlannedLegChanged);
         }
         Ok(prepared)

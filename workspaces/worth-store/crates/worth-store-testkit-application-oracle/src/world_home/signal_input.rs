@@ -13,6 +13,8 @@ pub enum ChangedSignalAdvance {
     ForeignOwner,
     /// Framed in a Signal owner-frame version this program does not read.
     UnknownVersion,
+    /// Its branch descriptor names a definition basis this Home never recorded.
+    DefinitionBasis,
 }
 
 /// The cause a refused Home open names for a changed Signal input.
@@ -21,6 +23,7 @@ pub enum SignalOpenRefusal {
     Physical,
     ForeignOwner,
     UnsupportedVersion,
+    MissingDefinition,
     Other(String),
 }
 
@@ -43,6 +46,9 @@ impl WorldHomeFixture {
                 (foreign, foreign_descriptor(&descriptor, branch, foreign))
             }
             ChangedSignalAdvance::UnknownVersion => (branch.owner(), descriptor),
+            ChangedSignalAdvance::DefinitionBasis => {
+                (branch.owner(), unrecorded_definition(&descriptor, branch))
+            }
         };
         let mut bytes = SignalBranchAdvanceArtifact::capture(
             execution,
@@ -75,6 +81,9 @@ pub fn signal_open_refusal(refused: &WorldHomeFixtureRefusal) -> SignalOpenRefus
             SignalOwnerReadmissionDenial::Frame(SignalDurableFrameDenial::UnsupportedVersion(
                 _,
             )) => SignalOpenRefusal::UnsupportedVersion,
+            SignalOwnerReadmissionDenial::MissingDefinition(_) => {
+                SignalOpenRefusal::MissingDefinition
+            }
             _ => SignalOpenRefusal::Other(format!("{cause:?}")),
         },
         other => SignalOpenRefusal::Other(format!("{other:?}")),
@@ -100,6 +109,29 @@ fn foreign_descriptor(
                 original.definition().identity().ordinal(),
             ),
             original.definition().digest(),
+        ),
+    )
+    .unwrap()
+}
+
+/// The same branch's next generation, naming its recorded definition
+/// transition with a digest no recorded definition carries.
+fn unrecorded_definition(
+    original: &SignalDurableBranchDescriptor,
+    branch: DurableSignalBranchIdentity,
+) -> SignalDurableBranchDescriptor {
+    let mut digest = original.definition().digest();
+    digest[0] ^= 0xff;
+    SignalDurableBranchDescriptor::from_recorded(
+        DurableSignalGeneration::from_recorded(
+            DurableSignalCellIncarnation::from_recorded(branch, original.cell().ordinal()),
+            original.generation().ordinal() + 1,
+        ),
+        None,
+        original.admission(),
+        SignalDefinitionTransitionReference::from_recorded(
+            original.definition().identity(),
+            digest,
         ),
     )
     .unwrap()

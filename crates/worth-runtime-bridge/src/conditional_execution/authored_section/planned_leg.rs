@@ -9,11 +9,9 @@ use crate::conditional_execution::{
     BridgeAuthoredProviderDescriptions, BridgeConditionalContract, BridgeConditionalLocation,
 };
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
-use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersion};
+use worth_foundational::facade::BoundaryProtocolVersion;
 use worth_signal::facade::durability::SignalPlannedConditionalDefinition;
 
-pub const BRIDGE_PLANNED_DEFINITION_LEG_PROTOCOL: BoundaryProtocolIdentity =
-    BoundaryProtocolIdentity::new("worth.bridge.planned-definition-leg");
 pub const BRIDGE_PLANNED_DEFINITION_LEG_VERSION: BoundaryProtocolVersion =
     BoundaryProtocolVersion::new(1);
 /// Bounded by the World custody row that carries it.

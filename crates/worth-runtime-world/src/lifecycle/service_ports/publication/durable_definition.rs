@@ -82,20 +82,37 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
         };
         // The Signal leg is durable DATA before Native may take its effect.
         // A Signal-only original has no state between two owner effects.
-        let recorded = match prepared.prepared.durable_open() {
-            Some(open) if open.plans_signal_after_native() => {
-                open.publish_planned_signal_leg(definition.planned_leg(), &execution, &|| {
-                    cancellation.is_cancelled()
-                })
+        let open = match prepared.prepared.durable_open() {
+            Some(open) => open,
+            None => {
+                return WorldDurablePublicationOutcome::RecoveryRequired {
+                    cause: crate::publication::WorldDurablePublicationDenial::PlannedSignalLeg(
+                        crate::durability::WorldDurableMediumDenial::Unavailable,
+                    ),
+                    custody: prepared.cancel(),
+                }
             }
-            Some(_) => Ok(()),
-            None => Err(crate::durability::WorldDurableMediumDenial::Unavailable),
         };
-        if let Err(cause) = recorded {
-            return WorldDurablePublicationOutcome::RecoveryRequired {
-                cause: crate::publication::WorldDurablePublicationDenial::PlannedSignalLeg(cause),
-                custody: prepared.cancel(),
+        if open.plans_signal_after_native() {
+            let leg = match definition.planned_leg(&execution) {
+                Ok(leg) => leg,
+                Err(cause) => {
+                    return WorldDurablePublicationOutcome::RecoveryRequired {
+                        cause: crate::publication::WorldDurablePublicationDenial::BridgeDefinitionPreparation(Box::new(cause)),
+                        custody: prepared.cancel(),
+                    }
+                }
             };
+            if let Err(cause) =
+                open.publish_planned_signal_leg(&leg, &execution, &|| cancellation.is_cancelled())
+            {
+                return WorldDurablePublicationOutcome::RecoveryRequired {
+                    cause: crate::publication::WorldDurablePublicationDenial::PlannedSignalLeg(
+                        cause,
+                    ),
+                    custody: prepared.cancel(),
+                };
+            }
         }
         let original = AuthoredConditionalDefinitionAttemptCustody::new(definition);
         let custody = prepared.prepared.reserve_conditional_definition_custody();

@@ -23,7 +23,16 @@ pub(super) fn publish(
             custody: prepared.cancel(),
         };
     };
-    let parts = change.into_parts();
+    // Commit preparation refuses a fresh key's stale basis before this open;
+    // any other route keeps the open and names Bridge's refusal.
+    let parts = match change.into_parts() {
+        Ok(parts) => parts,
+        Err(cause) => return WorldDurablePublicationOutcome::RecoveryRequired {
+            cause: worth_runtime_world::facade::WorldDurablePublicationDenial::BridgeDefinitionPreparation(
+                Box::new(worth_runtime_bridge::facade::BridgeDurableDefinitionPublicationDenial::Conditional(Box::new(cause)))),
+            custody: prepared.cancel(),
+        },
+    };
     if parts.expected_product != *product.observation() {
         return WorldDurablePublicationOutcome::RecoveryRequired {
             cause: worth_runtime_world::facade::WorldDurablePublicationDenial::ConditionalDefinitionExpectedProduct,

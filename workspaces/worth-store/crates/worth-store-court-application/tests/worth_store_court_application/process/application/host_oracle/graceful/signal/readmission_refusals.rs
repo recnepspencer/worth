@@ -29,6 +29,10 @@ fn each_changed_signal_input_refuses_the_next_home_open_before_service() {
             Change::Advance(ChangedSignalAdvance::UnknownVersion),
             SignalOpenRefusal::UnsupportedVersion,
         ),
+        (
+            Change::Advance(ChangedSignalAdvance::DefinitionBasis),
+            SignalOpenRefusal::MissingDefinition,
+        ),
     ] {
         let directory = tempfile::tempdir().unwrap();
         let opening = || {

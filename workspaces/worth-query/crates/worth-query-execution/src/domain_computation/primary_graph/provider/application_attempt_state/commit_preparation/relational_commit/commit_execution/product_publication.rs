@@ -137,7 +137,9 @@ pub(super) fn publish(
         };
     };
 
-    let parts = change.into_parts();
+    let parts = change
+        .into_parts()
+        .map_err(|_| denied("conditional definition has no installed predecessor at its basis"))?;
     if parts.expected_product != *product.observation() {
         return Err(denied(
             "conditional definition belongs to another product occurrence",

@@ -9,7 +9,7 @@ pub use authored_section::{
     BridgeDurableForkPublicationDenial, BridgePlannedDefinitionLeg,
     BridgePreparedAuthoredDefinitionPublication, BridgeReadmittedAuthoredAssembly,
     BRIDGE_AUTHORED_SECTION_PROTOCOL, BRIDGE_AUTHORED_SECTION_VERSION,
-    BRIDGE_PLANNED_DEFINITION_LEG_PROTOCOL, BRIDGE_PLANNED_DEFINITION_LEG_VERSION,
+    BRIDGE_PLANNED_DEFINITION_LEG_VERSION,
 };
 mod authored_declaration;
 mod authored_provider;

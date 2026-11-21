@@ -117,13 +117,10 @@ impl BridgeReadmittedAuthoredAssembly {
             predecessor.signal_node().index(),
             predecessor.signal_node().generation(),
         );
-        let planned = prepared
-            .pending
-            .planned_leg(execution, node, &prepared.definition)?;
         Ok(BridgePreparedAuthoredDefinitionPublication {
             prepared,
             expected,
-            planned,
+            node,
         })
     }
     pub fn begin_conditional_definition_publication(

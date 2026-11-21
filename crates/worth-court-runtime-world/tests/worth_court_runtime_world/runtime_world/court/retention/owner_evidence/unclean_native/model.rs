@@ -241,7 +241,7 @@ impl Model {
                     "the live head stays at its predecessor"
                 );
                 let receipt = effects.native_receipt();
-                Original {
+                let original = Original {
                     identities: [
                         effects.attempt_identity().ordinal(),
                         effects.reserved_commit_identity().ordinal(),
@@ -249,7 +249,13 @@ impl Model {
                     ],
                     signal: effects.owner_effect_count() > usize::from(receipt.is_some()),
                     receipt,
-                }
+                };
+                assert_eq!(
+                    effects.next_actions(),
+                    self.next_actions(&original),
+                    "the recovered original offers exactly its recorded facts' actions"
+                );
+                original
             };
             let first = observe();
             assert_eq!(
@@ -290,6 +296,30 @@ impl Model {
             sorted_by_custody(expected),
             "a durable release keeps its original and any Native receipt"
         );
+    }
+
+    /// What a reopened original may do, from its recorded facts alone: an
+    /// effect-free original only releases; a durable `Continued` only
+    /// continues; any other owner effect (Native only, with or without its
+    /// planned Signal leg pending, or both) continues or releases.
+    fn next_actions(&self, original: &Original) -> &'static [ProductUnpublishedNextAction] {
+        use ProductUnpublishedNextAction as Action;
+        if self.continued.contains(&original.identities) {
+            &[Action::Inspect, Action::ContinueOriginalPublication]
+        } else if original.receipt.is_none() && !original.signal {
+            &[
+                Action::Inspect,
+                Action::ReleaseObligations,
+                Action::CloseOwner,
+            ]
+        } else {
+            &[
+                Action::Inspect,
+                Action::ContinueOriginalPublication,
+                Action::ReleaseObligations,
+                Action::CloseOwner,
+            ]
+        }
     }
 
     /// Remove and return the model's original with these recovered identities.

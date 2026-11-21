@@ -29,10 +29,7 @@ pub use definition_publication::{
 };
 pub use dependency::BridgeAuthoredDependencyDescription;
 pub use fork_publication::BridgeDurableForkPublicationDenial;
-pub use planned_leg::{
-    BridgePlannedDefinitionLeg, BRIDGE_PLANNED_DEFINITION_LEG_PROTOCOL,
-    BRIDGE_PLANNED_DEFINITION_LEG_VERSION,
-};
+pub use planned_leg::{BridgePlannedDefinitionLeg, BRIDGE_PLANNED_DEFINITION_LEG_VERSION};
 pub use readmission::{BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial};
 
 use worth_foundational::facade::{

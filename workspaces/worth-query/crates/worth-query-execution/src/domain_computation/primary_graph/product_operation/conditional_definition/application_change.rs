@@ -14,13 +14,24 @@ pub struct WorthQueryAdmittedApplicationConditionalDefinition {
     application_binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
     expected_product: ProductBranchObservation,
     identity: [u8; 32],
-    predecessor: Arc<BridgeInstalledConditionalLowering>,
-    request: BridgeOwnedConditionalInstallationRequest,
+    successor: AdmittedSuccessor,
     bridge: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
     activations: Arc<
         crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationRegistry,
     >,
 }
+
+/// The Bridge successor at the selected product's Signal basis, or why that
+/// basis serves no installed definition. A refusal is reported by the commit
+/// only after its idempotency key resolves, so a retained original answers
+/// its key before any Bridge basis check can refuse it.
+type AdmittedSuccessor = Result<
+    (
+        Arc<BridgeInstalledConditionalLowering>,
+        BridgeOwnedConditionalInstallationRequest,
+    ),
+    worth_runtime_bridge::facade::BridgeConditionalDenial,
+>;
 
 pub(in crate::domain_computation::primary_graph) struct
     WorthQueryApplicationConditionalDefinitionParts
@@ -39,16 +50,14 @@ impl WorthQueryAdmittedApplicationConditionalDefinition {
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         product: &crate::basis::WorthQueryProductBranchLease,
         identity: [u8; 32],
-        predecessor: Arc<BridgeInstalledConditionalLowering>,
-        request: BridgeOwnedConditionalInstallationRequest,
+        successor: AdmittedSuccessor,
     ) -> Self {
         Self {
             runtime_authority: application.runtime.authority_identity(),
             application_binding: application.installed_schema().binding_identity(),
             expected_product: product.observation().clone(),
             identity,
-            predecessor,
-            request,
+            successor,
             bridge: application.runtime.bridge.conditional_operations(),
             activations: Arc::clone(&application.runtime.product_runtime.activations),
         }
@@ -69,16 +78,28 @@ impl WorthQueryAdmittedApplicationConditionalDefinition {
         &self.identity
     }
 
+    /// Why the selected product's Signal basis serves no installed
+    /// predecessor, checked by the commit after its key resolves.
+    pub(in crate::domain_computation::primary_graph) fn successor_refusal(
+        &self,
+    ) -> Option<&worth_runtime_bridge::facade::BridgeConditionalDenial> {
+        self.successor.as_ref().err()
+    }
+
     pub(in crate::domain_computation::primary_graph) fn into_parts(
         self,
-    ) -> WorthQueryApplicationConditionalDefinitionParts {
-        WorthQueryApplicationConditionalDefinitionParts {
+    ) -> Result<
+        WorthQueryApplicationConditionalDefinitionParts,
+        worth_runtime_bridge::facade::BridgeConditionalDenial,
+    > {
+        let (predecessor, request) = self.successor?;
+        Ok(WorthQueryApplicationConditionalDefinitionParts {
             expected_product: self.expected_product,
-            predecessor: self.predecessor,
-            request: self.request,
+            predecessor,
+            request,
             bridge: self.bridge,
             activations: self.activations,
-        }
+        })
     }
 }
 
