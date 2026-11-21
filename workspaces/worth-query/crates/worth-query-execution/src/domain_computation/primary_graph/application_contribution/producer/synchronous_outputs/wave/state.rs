@@ -52,6 +52,8 @@ pub(super) struct Scheduled<S: ApplicationSchema> {
     pub(super) _children_memory: Option<ExecutionMemoryReservation>,
     /// Set while reopened: what it selected before, checked on re-discovery.
     pub(super) reopen_check: Option<super::reopen::ReopenCheck>,
+    /// Set while reopened: the done consumers it settles or reopens (R3).
+    pub(super) settling: Option<super::settlement::Settling>,
     pub(super) subject: &'static str,
     pub(super) rank: usize,
     /// The demand that owes this task, carried to everything it enqueues.
