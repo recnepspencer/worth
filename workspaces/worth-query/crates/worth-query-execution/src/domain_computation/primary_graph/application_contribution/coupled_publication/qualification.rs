@@ -11,12 +11,14 @@ use crate::domain_computation::primary_graph::provider::{ParentRead, RetainedRea
 /// The member whose append is being marked.
 pub(in crate::domain_computation::primary_graph::application_contribution) enum AppendedMember {
     /// Native producer part `index` at applied `position`, owed at `owed`,
-    /// deriving `meaning`.
+    /// deriving `meaning`; `continues` when it is an owned route that can
+    /// derive its chain's next round.
     Part {
         index: usize,
         position: usize,
         owed: usize,
         meaning: worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
+        continues: bool,
     },
     /// Later authored stage `physical` at applied `position`.
     Stage { physical: usize, position: usize },
@@ -259,7 +261,11 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
             return Ok(());
         }
         let appending = match &member {
-            AppendedMember::Part { index, .. } => Some(self.writers.borrow()[*index].produces),
+            // Only a part that can derive again is reopenable as the
+            // consumer of a parent its own append changed.
+            AppendedMember::Part {
+                index, continues, ..
+            } => continues.then(|| self.writers.borrow()[*index].produces),
             AppendedMember::Stage { .. } => None,
         };
         let (touches, position, owed, route) = match member {
@@ -268,6 +274,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
                 position,
                 owed,
                 meaning,
+                ..
             } => (
                 candidate.part_append_touches(execution, index)?,
                 position,

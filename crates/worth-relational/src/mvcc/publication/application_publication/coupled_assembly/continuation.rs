@@ -62,6 +62,28 @@ impl ContinuationState {
     }
 }
 impl RelationalAuthoredCoupledCandidate<'_> {
+    /// Whether part `index` is a real owned route: an owned publication of a
+    /// producer that owns a source scope. Only such a route can derive its
+    /// chain's next round (`next_producer_round`), so a caller that reopens
+    /// appended routes asks exactly this.
+    pub fn continues_owned_route(&self, index: usize) -> bool {
+        let Some(part) = self.parts.get(index) else {
+            return false;
+        };
+        let producer = part
+            .publication
+            .lineage_attribution()
+            .expect("actual producer")
+            .0;
+        part.publication.owned().is_some()
+            && self
+                .binding
+                .installed
+                .source_scope_ownership
+                .scope_kind(producer)
+                .is_some()
+    }
+
     /// Begin another observation of a real owned route. This does not admit a
     /// second publication or weaken first-entry duplicate-route admission.
     pub fn next_producer_round(
@@ -96,14 +118,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                 meaning.source_scope,
             ));
         }
-        if part.publication.owned().is_none()
-            || self
-                .binding
-                .installed
-                .source_scope_ownership
-                .scope_kind(producer)
-                .is_none()
-        {
+        if !self.continues_owned_route(index) {
             return Err(part::reject(
                 Cause::CoupledContinuationRequiresOwnedRoute,
                 meaning.source_scope,

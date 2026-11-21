@@ -327,13 +327,6 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             meaning: meaning.clone(),
         };
         let chain = chain.map(|chain| chain.index);
-        // Only an owned route can derive its chain's next round (Native
-        // `next_producer_round`); an ordinary participant's changed reads
-        // stay with final qualification, never reopening it.
-        let owned = matches!(
-            publication,
-            worth_relational::facade::mvcc::RelationalCoupledProducerPosture::Publication(_)
-        );
         let index = self.append_round(
             execution,
             candidate,
@@ -342,6 +335,12 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             (publication, content, batch),
         )?;
         let owed = self.writers.borrow()[index].owed.position();
+        // Only an owned route can derive its chain's next round: Native's own
+        // predicate (`next_producer_round`). Any other participant (ordinary,
+        // or an independent publication) is neither registered for reopen nor
+        // reopenable as its parent's consumer; its changed reads stay with
+        // final qualification.
+        let continues = candidate.continues_owned_route(index);
         self.mark_append(
             execution,
             candidate,
@@ -350,9 +349,10 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
                 position,
                 owed,
                 meaning: meaning.clone(),
+                continues,
             },
         )?;
-        if owned {
+        if continues {
             self.register_part(execution, index, produces)?;
         }
         let entities = candidate
