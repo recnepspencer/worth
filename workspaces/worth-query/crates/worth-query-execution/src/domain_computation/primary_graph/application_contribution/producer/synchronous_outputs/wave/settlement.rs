@@ -45,6 +45,19 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         Ok(())
     }
 
+    /// Reopened task `i` owes at least `owed`; so does each consumer it
+    /// deferred, which would reopen at the same invalidator (R1 stays exact).
+    pub(super) fn raise_owed(&mut self, i: usize, owed: usize) {
+        if self.tasks[i].owed.position() < owed {
+            self.tasks[i].owed = crate::domain_computation::primary_graph::application_contribution::coupled_publication::OwedDemand::at(owed);
+        }
+        if let Some(settling) = self.tasks[i].settling.as_mut() {
+            for consumer in &mut settling.consumers {
+                consumer.2 = consumer.2.max(owed);
+            }
+        }
+    }
+
     /// Task `i` derived again: settle or reopen each consumer it deferred.
     /// Returns whether any consumer reopened.
     pub(super) fn settle_consumers(

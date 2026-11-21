@@ -45,8 +45,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             let owed = self.tasks[i].owed.position().max(reopen.invalidator_owed);
             if !self.tasks[i].is_done() {
                 // An earlier reopen of this batch already reopened it with
-                // its parent (R3): it also owes this append's invalidation.
-                self.tasks[i].owed = crate::domain_computation::primary_graph::application_contribution::coupled_publication::OwedDemand::at(owed);
+                // its parent (R3): it, and every consumer it deferred, also
+                // owes this append's invalidation.
+                self.raise_owed(i, owed);
                 observation::record(|| format!("reopen task={i} owed={owed} (already reopened)"));
                 continue;
             }

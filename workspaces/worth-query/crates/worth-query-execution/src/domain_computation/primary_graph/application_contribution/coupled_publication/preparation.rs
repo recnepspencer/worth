@@ -102,6 +102,15 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .map(PendingOutputDemand::Prefix)
             .collect::<Vec<_>>();
         for (physical, capture) in self.stage_captures().iter().enumerate() {
+            if let Some(order) = &order {
+                let context = synchronous_outputs::SynchronousOutputAssembly {
+                    owner: self,
+                    execution,
+                    before: &before_pin,
+                    order,
+                };
+                wave.qualify(&context, candidate).map_err(|cause| cause.0)?;
+            }
             self.prepare_pending(
                 execution,
                 &before_pin,
