@@ -42,4 +42,3 @@ pub struct WorthQueryObservedConventionalOperation {
     pub principal_currentness: WorthQueryPrincipalCurrentnessDependency,
     pub decision_facts: Vec<WorthQueryAuthorizationDecisionFact>,
 }
-

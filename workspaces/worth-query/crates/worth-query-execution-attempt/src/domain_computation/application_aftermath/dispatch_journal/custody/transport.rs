@@ -50,4 +50,3 @@ impl WorthQueryDispatchJournal {
             runtime, owner, custody.attempt()).map_err(|_| QueryDispatchJournalDenial::MalformedFrame)
     }
 }
-

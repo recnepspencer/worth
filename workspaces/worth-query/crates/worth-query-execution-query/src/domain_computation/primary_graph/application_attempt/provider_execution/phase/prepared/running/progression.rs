@@ -1,4 +1,3 @@
-use crate::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::ApplicationAttemptBasisCaptureExt as _;
 use self::session_admission::admit_provider_session;
 use super::WorthQueryRunningApplicationCommit;
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
@@ -176,6 +175,32 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
 
 #[allow(clippy::too_many_arguments)]
 pub fn progress_application_commit<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    application: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
+    running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
+    history: Option<HistoryProducerInvocation<'_>>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    held: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
+) -> super::completion_storage::CompletedApplicationCommit
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+    Input: Clone + Send + Sync + 'static,
+{
+    progress_application_commit_with_outer(
+        execution,
+        phase,
+        application.runtime_inner(),
+        application.outer_application_any(),
+        running_commit,
+        history,
+        allocation_policy,
+        held,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn progress_application_commit_with_outer<Schema, Operation, Input, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 

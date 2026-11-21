@@ -8,8 +8,6 @@ pub mod registry;
 pub use registry::PredicateNoticeDisposition;
 pub mod retention;
 
-use worth_foundational::facade::CanonicalDigestId;
-use worth_relational::facade::identity::EntityId;
 
 pub use change_summary::changes_from_summary;
 pub use publication::{

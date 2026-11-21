@@ -15,8 +15,7 @@ use worth_query_declaration::facade::{
 use worth_query_installation::facade::{
     derive_capability_revocation_proposal_identity, ApplicationSchema,
     WorthQueryCanonicalWorkEvidence, WorthQueryCapabilityRevocationProposalBasis,
-    WorthQueryInstalledApplicationCapability, WorthQueryInstalledApplicationOperation,
-    WorthQueryOperationFieldTouchScope, WorthQueryOperationTouchScope,
+    WorthQueryInstalledApplicationCapability, WorthQueryInstalledApplicationOperation, WorthQueryOperationTouchScope,
 };
 use worth_relational::facade::identity::{EntityId, KindId};
 

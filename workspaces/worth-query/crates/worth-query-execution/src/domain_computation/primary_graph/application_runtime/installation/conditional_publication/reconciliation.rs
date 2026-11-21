@@ -12,7 +12,7 @@ pub(super) fn complete<S: ApplicationSchema + 'static>(
         // Locals drop in reverse binding order: the application cleanup owner
         // closes Bridge resources while its dependent registry is still alive.
         mut conditional_operations,
-        mut application,
+        application,
     } = prepared.consume();
     conditional_operations.reconstruct_all(&application)?;
     let mut owner = application

@@ -3,7 +3,7 @@ use super::*;
 use worth_query_declaration::facade::{
     application_aftermath::ApplicationInverseBinding,
     application_operation::{
-        application_value_identity, ApplicationCanonicalIdentity, ApplicationValueIdentityDomain,
+        application_value_identity, ApplicationValueIdentityDomain,
     },
 };
 

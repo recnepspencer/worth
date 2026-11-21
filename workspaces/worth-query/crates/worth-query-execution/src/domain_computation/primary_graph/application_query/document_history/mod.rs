@@ -11,7 +11,6 @@ mod retention;
 pub use output_intent::{WorthQueryHistoryOutputIntent, WorthQueryHistoryOutputNavigationDenial};
 pub(in crate::domain_computation::primary_graph) use output_read::HistoryOutputControlPlan;
 pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::document_history::retained_permission;
-pub(in crate::domain_computation::primary_graph) use retained_permission::HistoryRetainedPermissionStop;
 mod paging;
 mod pending;
 mod preview;

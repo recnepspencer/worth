@@ -22,9 +22,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 
 mod binding;
 mod replay;
-pub use binding::{
-    WorthQueryDelegationActivationBinding, WorthQueryDelegationActivationEffect,
-};
+pub use binding::WorthQueryDelegationActivationEffect;
 pub mod support;
 use support::authorize_target_support;
 

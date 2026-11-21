@@ -2,12 +2,11 @@ use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
-use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
 use super::super::{
-    PublishedWorkflowInstanceRef, WorthQueryApplicationEffectProgram,
+    PublishedWorkflowInstanceRef,
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
     WorthQueryApplicationIdempotencyResolutionDenial, WorthQueryApplicationUncommitted,
 };
@@ -20,7 +19,6 @@ pub use worth_query_execution_attempt::facade::domain_computation::primary_graph
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_proposal_program::publication::reference;
 pub use reference::PublishedWorkflowProposalRef;
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_proposal_program::publication::read_only;
-pub use read_only::observe as observe_read_only_proposal;
 /// A workflow proposal that landed: the proposal, the transition it opened, its commit
 /// receipt from this actual publication.
 #[derive(Debug)]
@@ -316,4 +314,3 @@ fn unique_created_text_pair(
     };
     Some(candidate.clone())
 }
-

@@ -268,3 +268,12 @@ pub trait BasisLeasePort: Any + Send + Sync {
         self: Box<Self>,
     ) -> worth_query_execution_runtime::facade::basis_identities::WorthQueryApplicationBasisReleaseOutcome;
 }
+
+/// Port enabling `WorthQueryApplicationCommitAuthorityBinding::from_admission`
+/// without a reverse dependency on `worth-query-execution-attempt`.
+pub trait CommitAuthorityAdmissionPort {
+    fn build_commit_authority_binding(
+        &self,
+        idempotency_binding: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationIdempotencyBinding,
+    ) -> crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitAuthorityBinding;
+}

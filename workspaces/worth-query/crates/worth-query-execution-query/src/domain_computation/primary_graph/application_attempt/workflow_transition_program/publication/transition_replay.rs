@@ -11,7 +11,6 @@ use worth_query_installation::facade::ApplicationSchema;
 
 #[path = "transition_replay/condition.rs"]
 pub mod condition;
-#[path = "transition_replay/descriptor_retention.rs"]
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::transition_replay::descriptor_retention;
 pub use descriptor_retention::PreparedWorkflowTransitionReplays;
 

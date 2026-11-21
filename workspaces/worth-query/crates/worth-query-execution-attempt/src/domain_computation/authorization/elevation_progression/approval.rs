@@ -1,20 +1,12 @@
 use super::{WorthQueryOperationAuthorizationDenial, WorthQueryRequestedElevation};
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
-use worth_query_declaration::facade::application_schema::{
-    ApplicationOperationMarkerIdentity, TypedMutationPreconditions,
-};
+use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
 use worth_query_installation::facade::{
     ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget, ApplicationSchema,
-    WorthQueryInstalledApplicationOperation,
 };
 use worth_relational::facade::identity::{EntityId, KindId};
 
-use super::super::capability_registry::{
-    WorthQueryElevationLifecycleOperationRole, WorthQueryInstalledCapabilityPlan,
-};
-use super::transition_contract::{approval_program_targets, lifecycle_decision_reads};
 
 pub mod binding;
 pub use binding::WorthQueryElevationApprovalBinding;

@@ -1,6 +1,6 @@
 //! The original local effect's binding-selected admission owns completion, not Advance.
 use super::super::super::application_attempt::workflow_transition_program::{
-    local_actions, operation, publication, PreparedWorkflowAdvance, RequiredWorkflowOperation,
+    operation, publication, PreparedWorkflowAdvance, RequiredWorkflowOperation,
     WorkflowLocalActionKind, WorkflowProgressOutcome, WorkflowTransitionPreparationDenial,
     WorkflowTransitionRequestKind,
 };

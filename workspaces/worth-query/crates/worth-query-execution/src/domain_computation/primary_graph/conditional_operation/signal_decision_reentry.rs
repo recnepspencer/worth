@@ -1,13 +1,11 @@
 use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 use worth_runtime_bridge::facade::{
     BridgeConditionalDecisionEvidence, BridgeManagedConditionalExecutionRequest,
-    BridgeManagedDueWake, TruthBranchIdentity, TruthSnapshotIdentity,
+    BridgeManagedDueWake,
 };
 
 use super::predicate_admission::QueryConditionalComputeContext;
-use crate::domain_computation::primary_graph::primary_truth_branch_identity;
 
-pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::admitted;
 pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::selected_projections;
 pub(in crate::domain_computation::primary_graph) use selected_projections::WorthQuerySelectedSignalProjections;
 

@@ -2,7 +2,6 @@ pub use super::application_attempt::fact::WorthQueryApplicationFactKey;
 pub use super::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead;
 pub(crate) mod application_inspection;
 mod application_observation;
-pub(in crate::domain_computation) use application_inspection::WorthQueryApplicationInspectionTarget;
 pub use worth_query_execution_diagnostics::facade::causal_inspection::{
     admit_causal_inspection, anchor_causal_observation, causal_evidence_inventory_rows,
     causal_evidence_reference_index, causal_evidence_reference_index_record,

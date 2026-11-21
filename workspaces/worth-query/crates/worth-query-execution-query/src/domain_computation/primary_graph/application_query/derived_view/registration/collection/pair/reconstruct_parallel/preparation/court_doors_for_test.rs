@@ -8,7 +8,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
     pub fn admit_for_test(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+        application: &dyn crate::ports::ApplicationRuntimeRef<S>,
         root: EntityId,
         context: &mut MapKernelContext<'_, '_>,
     ) -> Result<
@@ -18,7 +18,7 @@ impl<'a, S: ApplicationSchema, FQ, FP, FR, SQ, SP, SR, A, I, C>
         ),
         Denial,
     > {
-        Self::admit(self, execution, application, root, context)
+        Self::admit(self, execution, application.runtime_inner(), root, context)
     }
 }
 

@@ -60,3 +60,13 @@ where
         self.authorize_application_commit(execution, admission, commit_basis, serialization)
     }
 }
+
+impl<Schema> worth_query_execution_attempt::facade::ports::RuntimeAuthorityPort
+    for crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    fn runtime_authority_identity(
+        &self,
+    ) -> crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity {
+        self.runtime.authority_identity()
+    }
+}

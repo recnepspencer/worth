@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use super::super::value_decode::{ValueDecodeSession, WorthQueryValueDecodeDenial};
+use super::super::value_decode::ValueDecodeSession;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryMarkerIdentity, ApplicationQueryOptionalResultFieldRef,
     ApplicationQueryResultFieldRef, ApplicationQueryResultRelationCardinality,

@@ -134,4 +134,3 @@ pub fn denial(subject: impl Into<String>) -> WorthQueryApplicationDisclosureCont
 }
 
 pub use diagnostic::DiagnosticContractDenial;
-

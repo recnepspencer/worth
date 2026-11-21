@@ -59,4 +59,3 @@ impl WorthQueryPrimaryGraphProvider {
         let _ = runtime.run_index_generation_reclamation_after_publication(committed);
     }
 }
-

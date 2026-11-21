@@ -11,9 +11,7 @@ use crate::domain_computation::{
         WorthQueryManagedIndexSessionDenial,
     },
 };
-use worth_query_admission::facade::graph_obligation::{
-    WorthQueryGraphWorkAdmissionDenial, WorthQueryGraphWorkCapacityAdmissionStop,
-};
+use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkCapacityAdmissionStop;
 
 pub use worth_query_execution_lineage::facade::primary_graph::application_query::managed_index::denial::causes::{
     WorthQueryManagedIndexDenialCause, WorthQueryManagedIndexRefusal,

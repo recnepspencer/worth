@@ -13,8 +13,8 @@ use worth_query_installation::facade::{
 };
 
 use crate::domain_computation::primary_graph::{
-    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantDecisionPlanDenial,
-    WorthQueryInvariantEntityIdentity, WorthQueryInvariantProjectionTraversalDenial,
+    WorthQueryApplicationOperationInvariantProjectionReader,
+    WorthQueryInvariantEntityIdentity,
     WorthQueryInvariantRelation,
 };
 
@@ -134,6 +134,4 @@ where
     }
 }
 
-pub use worth_query_execution_lineage::facade::primary_graph::application_contribution::partitioned_computation::denial::{
-    WorthQueryComputationInputDenial, WorthQueryComputationReadDenial,
-};
+pub use worth_query_execution_lineage::facade::primary_graph::application_contribution::partitioned_computation::denial::WorthQueryComputationReadDenial;

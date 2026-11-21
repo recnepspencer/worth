@@ -182,4 +182,3 @@ where
             .map(|installed| installed.source_posture())
     }
 }
-

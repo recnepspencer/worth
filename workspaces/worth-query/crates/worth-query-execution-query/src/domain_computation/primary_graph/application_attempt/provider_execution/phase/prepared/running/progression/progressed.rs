@@ -15,21 +15,33 @@ pub fn finish_application_commit<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
     progressed: super::super::completion_storage::CompletedApplicationCommit,
 ) -> WorthQueryApplicationCommitOutcome
 where
     Schema: ApplicationSchema,
 {
-    finish_application_commit_with_delivery(execution, phase, application, progressed, true)
+    finish_application_commit_with_delivery(
+        execution,
+        phase,
+        application.runtime_inner(),
+        progressed,
+        true,
+    )
 }
 pub fn finish_coupled_application_commit<Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     phase: &WorthQueryAdvancementPhase<'_>,
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
     progressed: super::super::completion_storage::CompletedApplicationCommit,
 ) -> WorthQueryApplicationCommitOutcome {
-    finish_application_commit_with_delivery(execution, phase, application, progressed, false)
+    finish_application_commit_with_delivery(
+        execution,
+        phase,
+        application.runtime_inner(),
+        progressed,
+        false,
+    )
 }
 fn finish_application_commit_with_delivery<Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

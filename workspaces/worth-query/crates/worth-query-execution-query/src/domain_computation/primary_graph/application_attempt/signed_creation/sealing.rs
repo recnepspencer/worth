@@ -1,6 +1,6 @@
 //! Seals the actual prepared native body once, at its retained occurrence snapshot.
 use super::super::{
-    WorthQueryApplicationAttemptDenial, WorthQueryApplicationCommitDenial,
+    WorthQueryApplicationAttemptDenial,
     WorthQueryApplicationEffectProgram,
 };
 use super::{identity, SealedSigningContext};

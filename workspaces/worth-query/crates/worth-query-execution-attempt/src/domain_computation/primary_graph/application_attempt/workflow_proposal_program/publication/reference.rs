@@ -1,7 +1,6 @@
 //! Proposal locator backing: ordinary receipts or request-funded read projections.
 
 use worth_relational::facade::identity::EntityId;
-use super::*;
 #[derive(Clone, Debug)]
 pub enum ProposalText {
     Receipt(String),

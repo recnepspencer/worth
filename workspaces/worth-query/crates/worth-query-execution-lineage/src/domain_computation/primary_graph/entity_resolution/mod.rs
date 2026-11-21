@@ -1,7 +1,6 @@
 //! Exact Relational truth used to resolve one application entity.
 
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
-use worth_relational::facade::transactions::RelationalExecutionDenialCause as NativeReadStop;
 
 pub mod applied;
 pub mod applied_lookup_control;

@@ -2,7 +2,7 @@
 
 use super::WorthQueryManagedDerivedViewDenial as Denial;
 use worth_execution::{
-    ChargedBytes, LeaseDenial, MapKernelFailure, MapKernelStop, MapStop, MemoryLimitLevel,
+    LeaseDenial, MapKernelFailure, MapKernelStop, MapStop, MemoryLimitLevel,
     WorkCeilingDenial,
 };
 use worth_relational::facade::identity::EntityId;

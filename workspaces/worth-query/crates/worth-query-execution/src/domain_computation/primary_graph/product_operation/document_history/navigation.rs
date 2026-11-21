@@ -1,5 +1,4 @@
 //! Owned process-local navigation attempts; canonical truth stays with Native and World.
-use super::WorthQueryHistoryNodeId;
 mod admission;
 mod control;
 mod custody;
@@ -61,9 +60,6 @@ pub use selection::{WorthQueryHistoryNavigationCompletion, WorthQueryHistorySele
 pub use target::WorthQueryHistoryNavigationIntent;
 
 use super::{selection::HistorySelectionCell, WorthQueryDocumentHistoryDenial};
-use crate::domain_computation::primary_graph::{
-    WorthQueryAdvancementDenial, WorthQueryExpectedProductBranchAdoptionDenial,
-};
 use std::sync::{Arc, Weak};
 
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::{

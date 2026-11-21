@@ -1,5 +1,4 @@
 //! Keep each actual producer's typed admission through the shared publication.
-use crate::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::ApplicationAttemptBasisCaptureExt as _;
 use super::super::super::{
     entry_custody::prepare_application_commit, WorthQueryApplicationCommitPreparation,
     WorthQueryApplicationCommitPreparationRequest,

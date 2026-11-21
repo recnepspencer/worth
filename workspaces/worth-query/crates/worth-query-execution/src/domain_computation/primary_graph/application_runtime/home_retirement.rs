@@ -5,14 +5,13 @@ pub use super::home_retirement_denial::{
 };
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::{
-    handler::HandlerRetirementCursor, WorthQueryOperationHomeRetirementDenial,
+    handler::HandlerRetirementCursor,
     WorthQueryOperationHomeRetirementProgress as Progress,
 };
 use worth_execution::ExecutionRequest;
 use worth_query_installation::facade::ApplicationSchema;
 mod inbound;
 pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::application_runtime::home_retirement::participation;
-pub use participation::PrimaryGraphParticipationCustody;
 
 /// Keeps the original runtime and handler cursor, never a replacement service.
 pub struct RetiringPrimaryGraphRuntime<Schema> {

@@ -1,7 +1,7 @@
 //! Exact relation lifecycle material retained by the original commit owner.
 use std::sync::Arc;
 use worth_query_installation::facade::InstalledPreImageRelationLocus;
-use worth_relational::facade::{mvcc::ValidatedRelationMutation, transactions::RecordRef};
+use worth_relational::facade::mvcc::ValidatedRelationMutation;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryRetainedPreImageRelation {

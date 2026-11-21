@@ -1,6 +1,6 @@
 //! One native approval and its declared attestation share one authenticated candidate.
 use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::transition_replay::PreparedWorkflowAdvanceTransitionReplayExt as _;
-use crate::domain_computation::primary_graph::application_attempt::{signed_creation, WorthQueryApplicationEffectProgram};
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationEffectProgram;
 use super::*;
 use crate::domain_computation::primary_graph::{
     MutationHandlerExecutionDenial, WorthQueryAdvancementPhase, WorthQueryOperationBodyDecision,

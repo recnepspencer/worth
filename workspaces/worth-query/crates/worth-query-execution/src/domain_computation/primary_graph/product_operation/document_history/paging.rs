@@ -3,7 +3,7 @@ use super::{
     step::DocumentIncarnation, WorthQueryHistoryDescriptionContext, WorthQueryHistoryNodeId,
 };
 use std::num::NonZeroUsize;
-use worth_execution::{ExecutionMemoryReservation, WorkCeilingDenial};
+use worth_execution::ExecutionMemoryReservation;
 
 #[derive(Clone, Copy, Debug)]
 pub struct WorthQueryHistoryPageLimits {

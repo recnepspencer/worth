@@ -1,8 +1,6 @@
 //! Applied entity selection carries no committed index-generation identity.
 use super::*;
-use worth_query_declaration::facade::application_schema::{
-    ApplicationScalarValueBinding, ApplicationSchema,
-};
+use worth_query_declaration::facade::application_schema::ApplicationScalarValueBinding;
 use worth_relational::facade::{
     identity::{EntityId, KindId},
     indexes::{AppliedEntityFieldLookupDenial as Stop, AppliedEntityFieldMatch},

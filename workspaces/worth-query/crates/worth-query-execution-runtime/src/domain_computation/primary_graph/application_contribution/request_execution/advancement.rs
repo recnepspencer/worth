@@ -6,8 +6,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryManagedComputationCheckpointDenial, WorthQueryManagedComputationInterruption,
 };
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, WorkCeilingDenial};
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use worth_query_installation::facade::ApplicationSchema;
 
 /// Why an advancement could not return its ordinary result.
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

@@ -24,6 +24,13 @@ struct SourceRetirementBacking {
     original: Option<RetiringRelationalSource>,
 }
 impl PrimaryGraphSourceCustody {
+    #[doc(hidden)]
+    pub fn invalidation_owner_for_test(
+        &self,
+    ) -> &std::sync::Arc<super::super::SourceInvalidationOwner> {
+        &self.invalidation_owner
+    }
+
     pub fn new(serving: WorthQueryRelationalSourceOwner) -> Self {
         let invalidation_owner = std::sync::Arc::clone(&serving.invalidation_owner)
             .into_any_arc()

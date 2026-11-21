@@ -360,4 +360,3 @@ pub fn denial(subject: &str) -> WorthQueryApplicationAttemptDenial {
 }
 
 pub mod history_projection;
-

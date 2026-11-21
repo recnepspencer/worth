@@ -91,7 +91,7 @@ impl<Schema> WorthQueryInstalledProgramSupport<Schema> {
         self.native_programs
             .iter()
             .find(|program| program.revision() == revision)
-            
+
     }
 
     pub fn adoption_authorization_matches(

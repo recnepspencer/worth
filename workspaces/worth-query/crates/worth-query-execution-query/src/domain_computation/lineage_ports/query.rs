@@ -1,16 +1,13 @@
 //! Authorization-support, governance, and diagnostic-admission port implementations.
 
-use std::any::Any;
 
 use worth_query_execution_lineage::facade::ports::{
-    DiagnosticComparisonAdmissionPort, QueryGovernancePort, SourceAuthorizationLocus,
-    SourceReadSupportPort,
+    DiagnosticComparisonAdmissionPort, QueryGovernancePort,
 };
 
 use crate::domain_computation::authorization::application_disclosure::decision::{
     DiagnosticComparisonAdmission, WorthQueryApplicationQueryGovernance,
 };
-use crate::domain_computation::authorization::SourceReadSupport;
 
 impl DiagnosticComparisonAdmissionPort for DiagnosticComparisonAdmission<'_> {
     fn graph(&self) -> &worth_query_installation::facade::WorthQueryInstalledGraphReadContract {
@@ -37,5 +34,3 @@ impl QueryGovernancePort for WorthQueryApplicationQueryGovernance {
         self.omission(slot)
     }
 }
-
-

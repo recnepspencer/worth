@@ -13,9 +13,10 @@
 pub(crate) mod domain_computation;
 pub(crate) mod ports;
 mod runtime_ports;
+pub(crate) mod test_read_stops;
 
 pub(crate) use worth_query_execution_foundation::facade::{
-    equality_type_id, execution_digest, relational_snapshot_release,
+    equality_type_id, relational_snapshot_release,
 };
 pub(crate) use worth_query_execution_runtime::facade::basis;
 

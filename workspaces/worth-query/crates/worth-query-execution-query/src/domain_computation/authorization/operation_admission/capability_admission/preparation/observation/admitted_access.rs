@@ -1,26 +1,14 @@
 //! Attempt-bound capability access minted only by capability admission.
 
 use std::marker::PhantomData;
-use std::sync::Arc;
-use std::time::Instant;
 
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
-use worth_query_declaration::facade::application_capability::{
-    ApplicationCapabilityRequest, ApplicationCapabilityRequestProjection,
-    ApplicationCapabilityValidityTimeline,
-};
-use worth_query_declaration::facade::application_operation::ApplicationCanonicalWork;
+use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
 use worth_query_installation::facade::{
-    ApplicationSchema, ApplicationSchemaBindingIdentity, WorthQueryCanonicalWorkEvidence,
+    ApplicationSchema, WorthQueryCanonicalWorkEvidence,
 };
-use worth_relational::facade::authorization::RelationalAuthorizationObservationCounters;
 
-use super::request_resolution::WorthQueryResolvedCapabilityRequest;
 use super::ObservedCapabilityAdmission;
-use crate::domain_computation::authorization::{
-    WorthQueryRetainedCapabilityAuthorization, WorthQueryRetainedCapabilitySupport,
-};
 mod exact_observation;
 mod issuance;
 pub use issuance::admit_observed_capability;

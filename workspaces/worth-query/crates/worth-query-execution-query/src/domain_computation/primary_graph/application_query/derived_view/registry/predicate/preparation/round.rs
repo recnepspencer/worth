@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::application_query::managed_index::
     WorthQueryManagedIndexWorkDenial as WorkDenial,
 };
 use std::collections::BTreeMap;
-use worth_execution::{ExecutionArray, ExecutionRequestArrayBuilder};
+use worth_execution::ExecutionRequestArrayBuilder;
 
 struct Collected {
     slots: BTreeMap<WatchSlot, PredicateNoticeDisposition>,

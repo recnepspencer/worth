@@ -1,4 +1,5 @@
-use super::super::super::{finish_application_commit, progress_application_commit};
+use super::super::running::progression::progress_application_commit_with_outer;
+use super::super::super::finish_application_commit;
 use super::*;
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
 impl<Schema: ApplicationSchema, Operation, Input, Scope>
@@ -66,7 +67,7 @@ impl<Schema: ApplicationSchema, Operation, Input, Scope>
             execution,
             phase,
             application,
-            progress_application_commit(
+            progress_application_commit_with_outer(
                 execution,
                 phase,
                 application,

@@ -132,4 +132,3 @@ pub use operation::ValidatedWorkflowOperationReceipt;
 pub use publication::{PreparedWorkflowOperation, RequiredWorkflowOperation, WorkflowOperationAuthority};
 
 pub use publication::WorkflowProgressOutcome;
-

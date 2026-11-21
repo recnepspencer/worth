@@ -3,7 +3,6 @@ use super::source_alignment::BranchMarkRoot;
 use super::SourceInvalidationOwner;
 use worth_relational::facade::branch::RelationalBranchIdentity;
 use worth_relational::facade::mvcc::CompanionBranchCell;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop;
 use worth_relational::facade::runtime::RelationalRuntime;
 pub use worth_query_execution_contracts::facade::HeadCellRegistrationStop;

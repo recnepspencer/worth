@@ -17,7 +17,6 @@ use super::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryAdvancementPhase,
-    WorthQuerySelectedProductOperation,
 };
 use worth_query_declaration::facade::{
     application_operation::{

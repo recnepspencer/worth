@@ -166,5 +166,14 @@ where
         > {
             self.inner.begin_projected_application_read_attempt_with_request::<Operation, Input, Scope>(execution, admission, projection, allocation_policy)
         }
+
+        pub fn durable_dispatch_custody(
+            &self,
+            correlation_token: &[u8; 32],
+        ) -> Option<
+            crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchCustody,
+        > {
+            self.inner.durable_dispatch_custody(correlation_token)
+        }
     }
 }

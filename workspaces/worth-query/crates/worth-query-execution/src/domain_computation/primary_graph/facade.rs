@@ -34,7 +34,6 @@ pub use super::application_attempt::{
     WorthQueryApplicationCommittedChanges, WorthQueryApplicationCreatedRelation,
     WorthQueryApplicationEffectEntity, WorthQueryApplicationEffectProgram,
     WorthQueryApplicationEffectProgramBuilder, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationIdempotencyResolutionDenialKind, WorthQueryApplicationLandedCommit,
     WorthQueryApplicationManagedCleanup, WorthQueryApplicationManagedCleanupFailure,
     WorthQueryApplicationManagedCleanupReceipt, WorthQueryApplicationNoEffect,
@@ -215,7 +214,7 @@ pub use super::application_runtime::{
     WorthQueryCertificationCostObservation, WorthQueryCertificationCostRuntimeExt,
     WorthQueryCertificationCostScope, WorthQueryCertificationWorldHistory,
     WorthQueryCertificationWorldRetention, WorthQueryCorrelatedInboundOccurrence,
-    WorthQueryExecutionLeaseDenial, WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner,
+    WorthQueryExecutionLeaseDenial, WorthQueryHomeRetirementOwner,
     WorthQueryInboundAdmissionDenial, WorthQueryInboundAuthenticatedPermanentDenial,
     WorthQueryInboundCleanupReport, WorthQueryInboundCostObservation,
     WorthQueryInboundIndexRepairDenial, WorthQueryInboundMaintenanceReport,
@@ -300,7 +299,6 @@ pub use super::output_lineage::invalidation::{
     WorthQueryMarkedOutputForTest, WorthQueryNativeMarkingForTest,
     WorthQueryNativeMarkingPrecision, WorthQueryNativeMarkingWork,
 };
-pub use super::output_lineage::{WorthQueryPriorOutputDenial, WorthQueryPriorOutputDenialKind};
 pub use super::principal_key::{
     WorthQueryApplicationPrincipalKey, WorthQueryApplicationPrincipalKeyDenial,
 };

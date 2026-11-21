@@ -35,4 +35,3 @@ impl CoupledCommitDeletions {
         Ok(Arc::clone(self.0.get_or_init(|| Arc::new(deleted))))
     }
 }
-

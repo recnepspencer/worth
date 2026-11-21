@@ -1,9 +1,8 @@
 //! Exact installed route for completion observed on the outbound transport.
 
-use worth_query_installation::facade::{ApplicationSchema, InstalledInboundOccurrenceContract};
+use worth_query_installation::facade::InstalledInboundOccurrenceContract;
 
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
-use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxObservation;
 
 /// Runtime-sealed operation and verifier audience for one installed outbox.
 /// An external dispatch result cannot supply either field.

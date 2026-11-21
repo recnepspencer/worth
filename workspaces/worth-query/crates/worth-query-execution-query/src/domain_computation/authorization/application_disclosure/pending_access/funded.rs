@@ -9,7 +9,7 @@ use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFai
 /// together, so both copies are admitted before the first is constructed.
 /// Existing capability authorization remains shared under its original owner.
 pub fn prepare_funded_pending_disclosure<Schema, Scope, Capability, Operation, Input, E>(
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
     binding: &ApplicationSchemaBindingIdentity,
     principal: EntityId,
     scope: EntityId,
@@ -31,6 +31,7 @@ where
     Schema: ApplicationSchema,
     Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
 {
+    let runtime = runtime.runtime_inner();
     prepare_with_capture(
         runtime,
         binding,

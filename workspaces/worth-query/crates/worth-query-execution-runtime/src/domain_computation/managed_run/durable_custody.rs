@@ -1,8 +1,7 @@
 //! Home custody follows the actual affinity; native owners alone report release.
 use crate::ports::ManagedRunObligationPort;
 use worth_query_execution_obligations::facade::query_obligations::{
-    QueryManagedCleanupOriginal, QueryManagedExecutionRelease, QueryManagedRunPosture,
-    QueryManagedRunRecovery, QueryManagedRunResources, QueryObligationDenial,
+    QueryManagedRunPosture, QueryObligationDenial,
 };
 use std::{
     collections::BTreeMap,

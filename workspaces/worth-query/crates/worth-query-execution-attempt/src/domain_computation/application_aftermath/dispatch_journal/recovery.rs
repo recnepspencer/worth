@@ -1,8 +1,7 @@
 //! Acknowledged recovery claims and their one terminal disposition.
 use super::*;
 use worth_foundational::facade::{
-    CorrectionMaterialPinIdentity, DurableCompositeCommitIdentity,
-    DurableCompositePublicationAttemptIdentity, DurableRecoveryClaimIdentity,
+    DurableCompositeCommitIdentity, DurableRecoveryClaimIdentity,
     RecoveryClaimDisposition,
 };
 

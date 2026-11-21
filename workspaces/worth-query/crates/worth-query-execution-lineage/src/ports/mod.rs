@@ -5,15 +5,15 @@ mod lineage;
 mod query;
 
 pub use attempt::{
-    AdmittedOperationPort, ApplicationAttemptPort, BasisLeasePort, CoupledMemberPort,
-    CoupledPreparationView, CurrentProofPort, StableObservedSourceFactsPort,
+    AdmittedOperationPort, ApplicationAttemptPort, BasisLeasePort, CommitAuthorityAdmissionPort,
+    CoupledMemberPort, CoupledPreparationView, CurrentProofPort, StableObservedSourceFactsPort,
     TypedAdmittedOperationPort, WorkflowActorEvidenceRuntimePort,
 };
 pub use lineage::{
     AppliedManagedSourcePort, EmptyManagedDerivedViewPort, LineageHomeRetirementDenial,
-    ManagedDerivedViewPort, PendingProducerPublicationPort, PreparingCommitPort,
-    QueryGovernancePort, SourceReadClosurePort, UnpublishedIdempotencyPort,
-    WorthQueryReadCleanupRuntime,
+    ManagedDerivedViewCourtDoor, ManagedDerivedViewPort, ManagedViewPublicationRequestPort,
+    PendingProducerPublicationPort, PreparingCommitPort, QueryGovernancePort,
+    SourceReadClosurePort, UnpublishedIdempotencyPort, WorthQueryReadCleanupRuntime,
 };
 pub use query::{
     AppliedOutputsSelection, DiagnosticComparisonAdmissionPort, EmptyWorkflowRetentionPort,

@@ -2,16 +2,15 @@ use crate::domain_computation::authorization::operation_admission::capability_ad
 pub use worth_query_execution_attempt::facade::domain_computation::authorization::elevation_progression::elevation_close::*;
 
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationMarkerIdentity, TypedMutationPreconditions,
 };
 use worth_query_installation::facade::{
-    ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget, ApplicationSchema,
+    ApplicationSchema,
     WorthQueryInstalledApplicationOperation,
 };
-use worth_relational::facade::identity::EntityId;
 
 use super::super::capability_registry::{
     WorthQueryElevationLifecycleOperationRole, WorthQueryInstalledCapabilityPlan,
@@ -31,8 +30,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 
-pub use worth_query_execution_attempt::facade::domain_computation::authorization::elevation_progression::elevation_close::binding;
-pub use binding::WorthQueryElevationCloseBinding;
 
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>

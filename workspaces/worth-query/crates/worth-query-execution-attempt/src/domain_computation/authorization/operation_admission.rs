@@ -3,8 +3,6 @@
 pub mod admitted_operation_core;
 
 use std::marker::PhantomData;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
 
 
 use worth_query_declaration::facade::application_operation::{
@@ -198,3 +196,7 @@ mod tests {
 
 #[path = "operation_admission/forgery_doors.rs"]
 pub mod forgery_doors;
+#[path = "operation_admission/request_read_stops_tests.rs"]
+mod request_read_stops_tests;
+#[path = "operation_admission/retained_activation_read_tests.rs"]
+mod retained_activation_read_tests;

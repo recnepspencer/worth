@@ -6,7 +6,7 @@ use super::super::WorthQueryAftermathDerivationFailure;
 use super::dispatch_admission::{
     DispatchAttemptCoordinate, WorthQueryAdmittedExternalDispatchAttempt,
 };
-use super::identity::{ExternalEffectCausalLink, ExternalEffectPostureIdentity};
+use super::identity::ExternalEffectPostureIdentity;
 use super::identity_derivation::{
     attempt_identity, emission_identity, observation_identity, provider_commit_identity,
 };

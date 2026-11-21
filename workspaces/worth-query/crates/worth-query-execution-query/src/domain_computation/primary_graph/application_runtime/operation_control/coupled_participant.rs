@@ -1,8 +1,5 @@
 //! Receiver-owned corruption of the next genuine coupled writer, cleared on drop.
-use super::{
-    attempt_registration::WorthQueryApplicationAttemptOperationControl,
-    WorthQueryPrimaryGraphApplicationRuntime,
-};
+use super::WorthQueryPrimaryGraphApplicationRuntime;
 use std::sync::{
     atomic::{AtomicU8, Ordering},
     Arc,

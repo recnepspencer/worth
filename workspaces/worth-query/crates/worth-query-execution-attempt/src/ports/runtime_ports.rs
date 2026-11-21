@@ -12,7 +12,6 @@ use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIden
 use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationAttemptDenial,
-    WorthQueryOutputDemandSettlement,
 };
 
 /// Upper-layer runtime port for `WorkflowOperationAuthority::validate_before_handler`.
@@ -61,4 +60,10 @@ pub trait ProducerIdentityRuntimePort {
         &self,
         settlement: &crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
     ) -> Result<bool, ()>;
+}
+
+/// Upper-layer runtime port exposing the runtime authority identity for
+/// `WorthQueryApplicationAttemptBasis::capture`.
+pub trait RuntimeAuthorityPort {
+    fn runtime_authority_identity(&self) -> WorthQueryRuntimeAuthorityIdentity;
 }

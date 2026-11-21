@@ -148,6 +148,15 @@ pub fn install_primary_graph_indexes(
         })?
         .index_id;
     }
+    worth_query_execution_layout::facade::workflow_schema::register_indexes(
+        layout.workflow_mut(),
+        |definition| install(definition),
+    )?;
+    let read_indexes = worth_query_execution_layout::facade::WorkflowReadIndexes::install(
+        layout.workflow(),
+        &mut install,
+    )?;
+    layout.set_workflow_reads(read_indexes);
     Ok(())
 }
 

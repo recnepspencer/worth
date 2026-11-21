@@ -2,7 +2,6 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRe
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
-use worth_relational::facade::mvcc::CompanionPreflightStop;
 
 mod admitted;
 pub use admitted::map_selected_read_stop;

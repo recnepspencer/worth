@@ -1,5 +1,4 @@
 pub mod publication_appendix;
-use std::sync::Arc;
 
 pub mod authored_coupling;
 pub mod authored_restoration;

@@ -17,7 +17,7 @@ pub mod delegation_activation_program;
 pub use delegation_activation_program::WorthQueryDelegationActivationProgram;
 pub mod dependency_identity;
 pub use dependency_identity::{
-    FactContent, OutputCurrentnessFacts, 
+    FactContent, OutputCurrentnessFacts,
 };
 pub mod effect_program;
 pub mod effect_validation;
@@ -205,4 +205,3 @@ pub use workflow_proposal_program::PublishedWorkflowProposalRef;
 
 pub use workflow_definition_program::PublishedWorkflowDefinitionRef;
 pub use workflow_transition_program::WorkflowApprovalDecision;
-

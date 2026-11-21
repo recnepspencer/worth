@@ -113,7 +113,7 @@ mod domain_computation_primary_graph_product_operation_shared_query_basis {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
     impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
-        pub(crate) fn prepare_shared_query_basis(mut self) -> Result<SharedSelectedProductOperation<'runtime, Schema>, (Self, CompanionPreflightStop)> {
+        pub(crate) fn prepare_shared_query_basis(self) -> Result<SharedSelectedProductOperation<'runtime, Schema>, (Self, CompanionPreflightStop)> {
             let application = self.application;
             self.inner.prepare_shared_query_basis()
                 .map_err(|(inner, stop)| (Self::from_inner(application, inner), stop))

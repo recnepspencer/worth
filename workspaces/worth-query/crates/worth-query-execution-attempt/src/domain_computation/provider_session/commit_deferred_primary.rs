@@ -57,3 +57,16 @@ impl SessionBoundReadsPrimaryExt for WorthQuerySessionBoundReadsAndEffects<'_> {
         basis.bind_live_session(self.live_affinity())
     }
 }
+
+impl worth_query_execution_runtime::facade::ports::SessionBoundAttemptBasisPort
+    for WorthQueryApplicationAttemptBasis
+{
+    type Affinity = WorthQueryApplicationAttemptAffinity;
+
+    fn bind_to_session_bound_reads(
+        self,
+        reads: &WorthQuerySessionBoundReadsAndEffects<'_>,
+    ) -> Result<Self::Affinity, ()> {
+        self.bind_live_session(reads.live_affinity())
+    }
+}

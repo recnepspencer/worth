@@ -121,7 +121,7 @@ impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
         self.affinity.terminal_binding()
     }
 
-    pub fn live_affinity(&self) -> &WorthQueryProviderSessionAffinity {
+    pub fn live_affinity(&self) -> &WorthQueryProviderSessionAffinity<'_> {
         &self.affinity
     }
 

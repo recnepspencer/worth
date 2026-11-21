@@ -1,5 +1,4 @@
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::operation::receipt::*;
-use sha2::{Digest, Sha256};
 use worth_query_declaration::facade::application_schema::{
     ApplicationOperationRef, ApplicationStructuredValueBinding,
 };
@@ -99,4 +98,3 @@ pub fn receipt_identity(receipt: &WorthQueryApplicationCommitReceipt) -> Option<
         receipt.installed_operation(),
     ))
 }
-

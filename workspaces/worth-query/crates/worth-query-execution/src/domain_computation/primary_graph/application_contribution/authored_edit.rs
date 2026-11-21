@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::{
 };
 
 pub use inner::{
-    stage_admission_refusal, AuthoredEditStageAdmission, AuthoredEditStageOperation,
+    stage_admission_refusal, AuthoredEditStageAdmission,
     AuthoredEnvelopeResolution, AuthoredEnvelopeResolutionPurpose, AuthoredStageDomainDenial,
     AuthoredStageExecutionCause, AuthoredStageExecutionDenial, DeclaredEditDependency,
     DeclaredEditOrderRefusal, DeclaredEditParticipant, DeclaredEditReadScope,

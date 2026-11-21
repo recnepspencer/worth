@@ -2,7 +2,7 @@ pub use worth_query_execution_lineage::facade::primary_graph::invariant_projecti
 
 pub mod operation_reader {
     use std::marker::PhantomData;
-    use std::sync::Arc;
+
     use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
     use worth_query_installation::facade::{
         ApplicationReadableScalarValueBinding, ApplicationRelationRef, ApplicationSchema,

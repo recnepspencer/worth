@@ -4,5 +4,4 @@ use super::{
     QueryDispatchJournalDenial, QueryDispatchRecordIntent, QueryDispatchRecordedObservation,
     QueryInboundDispatchSource, QueryInboundRecord, QueryTransportBinding,
 };
-use crate::domain_computation::primary_graph::application_attempt::provider_execution::external_dispatch::OriginalDispatchObservation;
 pub mod transport;

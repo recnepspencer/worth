@@ -1,6 +1,4 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use std::num::NonZeroUsize;
-use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
 use worth_query_declaration::facade::application_query::ApplicationQueryParameterSet;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
@@ -17,7 +15,6 @@ pub use history_outputs::WorthQueryHistoryOutputControlDenial;
 pub use history_outputs::WorthQueryHistoryOutputReadDenial;
 pub use history_outputs::WorthQueryHistoryRootOutputRead;
 mod preview;
-pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::query::retained;
 pub use batch::WorthQueryRetainedBatchQueryAdmissionDenial;
 
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::WorthQueryProductQueryControls;

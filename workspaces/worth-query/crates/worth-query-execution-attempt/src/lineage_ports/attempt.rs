@@ -245,4 +245,3 @@ impl<Schema, Operation, Input, Scope> TypedAdmittedOperationPort<Schema>
     type Operation = Operation;
     type Scope = Scope;
 }
-

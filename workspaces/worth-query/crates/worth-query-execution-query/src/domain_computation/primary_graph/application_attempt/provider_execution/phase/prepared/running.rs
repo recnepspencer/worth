@@ -1,4 +1,3 @@
-use crate::domain_computation::primary_graph::application_attempt::provider_execution::application_attempt_affinity::ApplicationAttemptBasisCaptureExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::basis::basis_lifecycle;
@@ -62,7 +61,7 @@ pub struct WorthQueryRunningApplicationCommit<
 pub fn start_managed_application_commit<Schema, Operation, Input, Scope>(
     phase: &WorthQueryAdvancementPhase<'_>,
 
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
     prepared: WorthQueryPreparedApplicationCommit<Schema, Operation, Input, Scope>,
 ) -> Result<
     WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
@@ -71,6 +70,7 @@ pub fn start_managed_application_commit<Schema, Operation, Input, Scope>(
 where
     Schema: ApplicationSchema,
 {
+    let application = application.runtime_inner();
     let WorthQueryPreparedApplicationCommit {
         coupled_outputs,
         mut admission,

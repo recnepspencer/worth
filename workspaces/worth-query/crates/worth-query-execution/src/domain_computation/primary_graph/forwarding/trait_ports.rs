@@ -5,10 +5,13 @@ use std::any::Any;
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_execution_attempt::facade::ports::{
-    EffectProgramOriginalInputRuntimePort, ProducerIdentityRuntimePort,
-    SelectedProductOperationPort, WorkflowOperationAuthorityRuntimePort,
+    CommitAuthorizationRuntimePort, EffectProgramOriginalInputRuntimePort,
+    ProducerIdentityRuntimePort, RuntimeAuthorityPort, SelectedProductOperationPort,
+    WorkflowOperationAuthorityRuntimePort,
 };
-use worth_query_execution_lineage::facade::ports::WorthQueryReadCleanupRuntime;
+use worth_query_execution_lineage::facade::ports::{
+    WorkflowActorEvidenceRuntimePort, WorthQueryReadCleanupRuntime,
+};
 use worth_query_execution_query::facade::domain_computation::primary_graph::application_query::managed_index::certification::{
     WorthQueryCertificationManagedIndexPages, WorthQueryCertificationManagedIndexPagesDenial,
 };
@@ -50,6 +53,78 @@ impl<Schema: 'static> ApplicationRuntimeRef<Schema>
     #[inline]
     fn outer_application_any(&self) -> Option<&(dyn Any + Send + Sync)> {
         Some(self)
+    }
+}
+
+impl<Schema: 'static, Program> ApplicationRuntimeRef<Schema>
+    for crate::domain_computation::primary_graph::application_installation::WorthQueryProgramApplicationRuntime<
+        Schema,
+        Program,
+    >
+{
+    #[inline]
+    fn runtime_inner(&self) -> &WorthQueryPrimaryGraphApplicationRuntimeInner<Schema> {
+        &self.runtime().inner
+    }
+
+    #[inline]
+    fn outer_application_any(&self) -> Option<&(dyn Any + Send + Sync)> {
+        Some(self.runtime())
+    }
+}
+
+impl<Schema> RuntimeAuthorityPort for WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    fn runtime_authority_identity(&self) -> WorthQueryRuntimeAuthorityIdentity {
+        self.inner.runtime_authority_identity()
+    }
+}
+
+impl<Schema, Program> RuntimeAuthorityPort
+    for crate::domain_computation::primary_graph::application_installation::WorthQueryProgramApplicationRuntime<
+        Schema,
+        Program,
+    >
+{
+    fn runtime_authority_identity(&self) -> WorthQueryRuntimeAuthorityIdentity {
+        self.runtime().inner.runtime_authority_identity()
+    }
+}
+
+impl<Schema: ApplicationSchema> CommitAuthorizationRuntimePort<Schema>
+    for WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    fn authorize_with_commit_basis<'serialization, 'admission, Operation, Input, Scope>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        approval_authority: Option<
+            &crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis,
+        >,
+        commit_basis: &crate::domain_computation::authorization::WorthQueryCommitAuthorizationBasis,
+        admission: &'admission crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
+        serialization: &'serialization crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>,
+    ) -> Result<
+        crate::domain_computation::authorization::WorthQueryApplicationCommitAuthorization<
+            'serialization,
+            'admission,
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    > {
+        self.inner.authorize_with_commit_basis(
+            execution,
+            approval_authority,
+            commit_basis,
+            admission,
+            serialization,
+        )
     }
 }
 
@@ -184,5 +259,20 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationManagedIndexRuntimeExt
         WorthQueryCertificationManagedIndexPagesDenial,
     > {
         self.inner.observe_certification_managed_index_pages()
+    }
+}
+
+impl<Schema: ApplicationSchema> WorkflowActorEvidenceRuntimePort
+    for WorthQueryPrimaryGraphApplicationRuntime<Schema>
+{
+    fn retain_workflow_actor_evidence_for_test(
+        &self,
+        changes: &crate::domain_computation::primary_graph::WorthQueryApplicationCommittedChanges,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+        approval: worth_relational::facade::identity::EntityId,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.inner
+            .retain_workflow_actor_evidence_for_test(changes, execution, receipt, approval)
     }
 }

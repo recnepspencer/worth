@@ -16,4 +16,3 @@ where
         Self::resolve_installed_transport_completion_binding(self, owner)
     }
 }
-

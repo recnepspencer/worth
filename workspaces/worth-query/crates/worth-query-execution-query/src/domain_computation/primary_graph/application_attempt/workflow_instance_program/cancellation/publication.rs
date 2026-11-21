@@ -1,18 +1,15 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
-use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
-use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
+use worth_foundational::facade::{AspectValue, InternedString};
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::{
-    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitReceipt,
-    WorthQueryApplicationEffectProgram, WorthQueryApplicationIdempotencyBinding,
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationUncommitted,
 };
 use super::super::PublishedWorkflowInstanceRef;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
-#[must_use = "prepared workflow instance cancellation owns a live application attempt"]
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_instance_program::cancellation::PreparedWorkflowInstanceCancellation;
 
 /// A canceled instance and the effects it performed before it ended, which
@@ -133,4 +130,3 @@ where
         })
     }
 }
-

@@ -43,4 +43,22 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             *record.correlation().digest(),
         ))
     }
+
+    /// The latest custody this Home's dispatch journal durably records for
+    /// the effect with this correlation token (the token its outbox row and
+    /// every transport request carry). `None` for a memory-only runtime and
+    /// for an effect no attempt has been recorded for. Recorded DATA: it
+    /// grants no dispatch authority.
+    pub fn durable_dispatch_custody(
+        &self,
+        correlation_token: &[u8; 32],
+    ) -> Option<
+        crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchCustody,
+    > {
+        self.runtime
+            .dispatch_journal
+            .custody(&worth_foundational::facade::CanonicalDigestId::new(
+                *correlation_token,
+            ))
+    }
 }

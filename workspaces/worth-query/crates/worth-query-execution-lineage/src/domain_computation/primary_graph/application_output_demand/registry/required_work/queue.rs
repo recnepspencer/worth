@@ -134,4 +134,3 @@ impl Drop for RequiredWorkQueue {
         }
     }
 }
-

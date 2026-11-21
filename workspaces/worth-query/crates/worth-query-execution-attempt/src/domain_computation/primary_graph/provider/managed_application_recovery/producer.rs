@@ -8,4 +8,3 @@ pub struct ProducerRecoveryCustody {
     pub binding: WorthQueryApplicationIdempotencyBinding,
     pub cleanup: Option<WorthQueryProductUnpublishedRecovery>,
 }
-

@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-use worth_relational::facade::transactions::EntityReference;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
@@ -169,4 +167,3 @@ const _: fn() = || {
     fn send<T: Send>() {}
     send::<WorthQueryApplicationEffectProgram<(), (), u8, ()>>();
 };
-

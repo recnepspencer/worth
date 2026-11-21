@@ -4,7 +4,6 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationQueryMutationSource, WorthQueryApplicationOutputRole, WorthQueryExactlyOneOutput,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
-use worth_query_declaration::facade::application_schema::ApplicationInvariantExecutionPoint;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_installation::facade::ApplicationSchema;
 

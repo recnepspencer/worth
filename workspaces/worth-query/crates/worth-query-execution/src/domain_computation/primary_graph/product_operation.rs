@@ -1,5 +1,5 @@
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::{
-    application_basis, current_read, observation_room, operation, security_basis,
+    security_basis,
     shared_query_basis,
 };
 pub(in crate::domain_computation::primary_graph) use shared_query_basis::SelectedQueryBasisRetentionStop;
@@ -9,7 +9,6 @@ mod cleanup;
 mod close;
 mod conditional_definition;
 pub(crate) mod context;
-pub(in crate::domain_computation::primary_graph) use context::SelectedQueryOrigin;
 pub(crate) mod correction_source;
 pub(crate) mod document_history;
 pub use correction_source::{
@@ -23,17 +22,12 @@ pub use correction_source::{
     WorthQuerySelectedCorrectionSource,
 };
 pub(crate) mod generated_materialization;
-pub(in crate::domain_computation::primary_graph) use generated_materialization::admit_required_invariants;
 mod history;
 pub(crate) mod program_adoption;
 pub(crate) mod query;
 mod relational_change_delivery;
 mod transaction;
 
-pub(in crate::domain_computation) use security_basis::WorthQueryProductSecurityBasis;
-pub(in crate::domain_computation::primary_graph) use security_basis::{
-    SelectedPermissionSecurityStop, WorthQuerySelectedPermissionSecurityBasis,
-};
 
 pub use branches::{
     WorthQueryApplicationProductBranches, WorthQueryExpectedProductBasisSelectionDenial,

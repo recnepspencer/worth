@@ -26,11 +26,7 @@ pub(crate) mod lifecycle_inventory;
 mod operation_invocation;
 mod pending_binding;
 pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::predicate_admission;
-pub(in crate::domain_computation::primary_graph) use predicate_admission::{
-    prepare_dependency_conditional_installation, QueryConditionalComputeContext,
-};
 pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::authored_predicate;
-pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::authored_provider_source;
 pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::predicate_observation;
 pub(in crate::domain_computation::primary_graph) use authored_predicate::QueryAuthoredPredicateProvider;
 mod publication;
@@ -39,9 +35,7 @@ mod reinstallation;
 pub(crate) mod signal_decision_reentry;
 pub(crate) use signal_decision_reentry::classify_bridge_signal;
 pub(crate) use signal_decision_reentry::classify_bridge_signal_observation;
-pub(in crate::domain_computation::primary_graph) use signal_decision_reentry::{
-    WorthQueryConditionalTruthBasis, WorthQuerySelectedSignalProjections,
-};
+pub(in crate::domain_computation::primary_graph) use signal_decision_reentry::WorthQueryConditionalTruthBasis;
 mod temporal_intent_projection;
 pub(crate) mod temporal_reconstruction;
 

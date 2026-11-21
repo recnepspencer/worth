@@ -18,7 +18,6 @@ use super::{
 };
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryAdvancementPhase,
-    WorthQuerySelectedProductOperation,
 };
 use std::sync::{Arc, Mutex};
 use worth_query_declaration::facade::{

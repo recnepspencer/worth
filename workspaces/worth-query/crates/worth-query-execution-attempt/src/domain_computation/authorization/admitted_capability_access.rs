@@ -229,3 +229,6 @@ where
         self.canonical_work
     }
 }
+
+#[path = "admitted_capability_access_court_doors_for_test.rs"]
+pub mod court_doors_for_test;

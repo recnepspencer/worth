@@ -219,6 +219,13 @@ impl PartialEq for WorthQueryApplicationCommitAuthorityBinding {
 impl Eq for WorthQueryApplicationCommitAuthorityBinding {}
 
 impl WorthQueryApplicationCommitAuthorityBinding {
+    pub fn from_admission(
+        admission: &impl crate::ports::CommitAuthorityAdmissionPort,
+        idempotency_binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> Self {
+        admission.build_commit_authority_binding(idempotency_binding)
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub fn from_parts(
         original_mutation_binding: Option<std::any::TypeId>,

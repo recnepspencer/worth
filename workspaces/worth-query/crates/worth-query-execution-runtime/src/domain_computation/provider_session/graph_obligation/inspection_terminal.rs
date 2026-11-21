@@ -1,6 +1,5 @@
 //! Inspection completion carries the actual original target and its own release.
 use super::{WorthQueryGraphWorkManagedRunIdentity, WorthQueryGraphWorkSessionIdentity};
-use crate::ports::InspectionTargetPort;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationBasisIdentity, WorthQueryApplicationBasisReleaseReceipt,
 };

@@ -7,17 +7,13 @@
 
 pub use worth_query_execution_attempt::facade::domain_computation::application_aftermath::recovery_progression::authority::*;
 
-use worth_proof::{
-    Artifact, AssumptionBasis, CurrentValidity, FreshnessScopedBasis, NoProofs, PhaseMarker,
-};
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
-use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 use super::super::recovery_handle::{
-    WorthQueryRecoveryHandle, WorthQueryRecoveryHandleAuthorityIdentity,
+    WorthQueryRecoveryHandle,
     WorthQueryRecoveryHandleDenial, WorthQueryRecoveryHandleDenialKind,
 };
 use super::disclose::WorthQueryRecoveryDisclosureAdmission;

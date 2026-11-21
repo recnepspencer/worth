@@ -14,9 +14,10 @@ pub(crate) mod ports;
 mod lineage_ports;
 
 pub(crate) use worth_query_execution_foundation::facade::{
-    equality_type_id, execution_digest, relational_snapshot_release,
+    equality_type_id, relational_snapshot_release,
 };
 pub(crate) use worth_query_execution_runtime::facade::basis;
+pub(crate) use worth_query_execution_lineage::facade::test_read_stops;
 
 pub mod facade;
 

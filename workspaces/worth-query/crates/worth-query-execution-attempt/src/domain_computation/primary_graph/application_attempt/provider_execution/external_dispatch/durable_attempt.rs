@@ -9,7 +9,7 @@ use crate::domain_computation::application_aftermath::dispatch_journal::{
     WorthQueryDispatchJournal,
 };
 use crate::domain_computation::application_aftermath::{
-    ExternalRailTransportFault, WorthQueryDispatchOutboxRecord,
+    ExternalRailTransportFault,
     WorthQueryExternalDispatchPostureKind, WorthQueryExternalEffectDispatch,
 };
 

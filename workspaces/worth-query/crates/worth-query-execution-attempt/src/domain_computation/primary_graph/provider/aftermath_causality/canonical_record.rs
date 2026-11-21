@@ -3,7 +3,7 @@ use super::*;
 use crate::domain_computation::application_aftermath::{
     WorthQueryAftermathCausalRole, WorthQueryCorrectionSourceCoordinates,
 };
-use worth_relational::facade::history::{CommitId, RelationalCommitReceipt};
+use worth_relational::facade::history::CommitId;
 pub mod borrowed;
 pub(super) use borrowed::matches_reverse;
 

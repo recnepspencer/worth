@@ -107,4 +107,3 @@ impl std::error::Error for WorthQueryManagedIndexProviderFailure {
         Some(self.cause.as_ref())
     }
 }
-

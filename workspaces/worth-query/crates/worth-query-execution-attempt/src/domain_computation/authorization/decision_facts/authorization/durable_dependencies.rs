@@ -155,3 +155,5 @@ fn validate(
         .map(|_| ())
         .map_err(denial::decode)
 }
+
+mod cancellation_tests;

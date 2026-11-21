@@ -376,4 +376,3 @@ impl OutputDemandSettlementRuntimeExt for WorthQueryOutputDemandSettlement {
         Ok(original)
     }
 }
-

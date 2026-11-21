@@ -11,59 +11,55 @@ use crate::domain_computation::primary_graph::application_attempt::{
 use crate::domain_computation::primary_graph::OriginalProgramMeaning;
 
 pub trait CommitAuthorityBindingExt: Sized {
-    fn from_admission<Schema, Operation, Input, Scope>(
-        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
-        idempotency_binding: WorthQueryApplicationIdempotencyBinding,
-    ) -> Self
-    where
-        Input: Clone + Send + Sync + 'static;
-
     fn original_program(&self) -> Option<&OriginalProgramMeaning>;
 }
 
-impl CommitAuthorityBindingExt for WorthQueryApplicationCommitAuthorityBinding {
-    fn from_admission<Schema, Operation, Input, Scope>(
-        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+impl<Schema, Operation, Input, Scope>
+    worth_query_execution_lineage::facade::ports::CommitAuthorityAdmissionPort
+    for WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>
+where
+    Input: Clone + Send + Sync + 'static,
+{
+    fn build_commit_authority_binding(
+        &self,
         idempotency_binding: WorthQueryApplicationIdempotencyBinding,
-    ) -> Self
-    where
-        Input: Clone + Send + Sync + 'static,
-    {
-        let retained_governed_input = match admission.original_input() {
+    ) -> WorthQueryApplicationCommitAuthorityBinding {
+        let retained_governed_input = match self.original_input() {
             Some((input, _identity)) => Some(WorthQueryRetainedGovernedInput::from_admission(
                 input,
-                admission.governed_input_identity().copied(),
-                admission.original_scope(),
-                admission.original_correction_disclosure(),
-                admission.original_retained_input(),
-                admission.original_material_input(),
+                self.governed_input_identity().copied(),
+                self.original_scope(),
+                self.original_correction_disclosure(),
+                self.original_retained_input(),
+                self.original_material_input(),
             )),
-            None => admission.shared_capability_input().map(|input| {
+            None => self.shared_capability_input().map(|input| {
                 WorthQueryRetainedGovernedInput::from_admission(
                     input,
-                    admission.governed_input_identity().copied(),
-                    admission.original_scope(),
-                    admission.original_correction_disclosure(),
-                    admission.original_retained_input(),
-                    admission.original_material_input(),
+                    self.governed_input_identity().copied(),
+                    self.original_scope(),
+                    self.original_correction_disclosure(),
+                    self.original_retained_input(),
+                    self.original_material_input(),
                 )
             }),
         };
-        Self::from_parts(
-            admission.original_mutation_binding(),
-            admission.runtime_authority(),
-            *admission.installed_operation_identity_bytes(),
-            admission.allowed_graph_contract().aftermath().cloned(),
-            admission.operation_scope_binding().clone(),
+        WorthQueryApplicationCommitAuthorityBinding::from_parts(
+            self.original_mutation_binding(),
+            self.runtime_authority(),
+            *self.installed_operation_identity_bytes(),
+            self.allowed_graph_contract().aftermath().cloned(),
+            self.operation_scope_binding().clone(),
             idempotency_binding,
             retained_governed_input,
-            admission
-                .original_program()
+            self.original_program()
                 .map(|program| Arc::clone(program) as Arc<dyn Any + Send + Sync>),
-            admission.original_inspection_disclosure().cloned(),
+            self.original_inspection_disclosure().cloned(),
         )
     }
+}
 
+impl CommitAuthorityBindingExt for WorthQueryApplicationCommitAuthorityBinding {
     fn original_program(&self) -> Option<&OriginalProgramMeaning> {
         self.original_program_any()
             .and_then(|program| program.downcast_ref::<OriginalProgramMeaning>())

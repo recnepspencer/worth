@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 
-use worth_query_installation::facade::{ApplicationScalarValueBinding, ApplicationSchema};
+use worth_query_installation::facade::ApplicationScalarValueBinding;
 
 use super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
 use super::read_phase::{
@@ -15,8 +15,7 @@ use super::snapshot_lease::WorthQueryApplicationSnapshotLease;
 use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationEntityIdentity,
-    WorthQueryApplicationOperationInvariantProjectionSnapshot,
-    WorthQueryInstalledEntityResolutionContext, 
+    WorthQueryInstalledEntityResolutionContext,
     WorthQueryPrincipalResolutionMode,
 };
 use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::fact_routes;
@@ -74,7 +73,7 @@ pub mod unique_write_dependencies;
 pub use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
 pub use relation_observation::matching_relations;
 pub use relation_observation::WorthQueryObservedApplicationRelation;
-use source_facts::{merge_source_facts, validate_source_facts, SourceFacts};
+use source_facts::SourceFacts;
 
 /// An in-progress decision read for one admitted operation, begun on a leased
 /// snapshot of the branch.

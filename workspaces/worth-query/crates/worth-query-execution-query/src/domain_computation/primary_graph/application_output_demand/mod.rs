@@ -37,20 +37,20 @@ pub mod settlement {
     use producer_identity::SettlementProducerIdentity;
     use receipt_custody::SettlementReceiptCustody;
     use std::sync::Arc;
-    use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
+
     use crate::basis::WorthQueryProductObservationLease;
     use super::registry::WorthQueryAcceptedOutputAuthority;
     use crate::domain_computation::primary_graph::output_lineage::BoundCurrentAcceptedOutput;
-    use crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt;
+
     use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
-    use crate::domain_computation::primary_graph::WorthQueryApplicationOutputProjectionDenial;
+
     use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
-    use crate::domain_computation::primary_graph::WorthQueryApplicationTypedOutputCorrespondence;
+
     use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
     use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
     use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
-    
+
     pub use worth_query_execution_lineage::facade::primary_graph::application_output_demand::settlement::*;
     pub mod current_accepted;
     mod current_commit;

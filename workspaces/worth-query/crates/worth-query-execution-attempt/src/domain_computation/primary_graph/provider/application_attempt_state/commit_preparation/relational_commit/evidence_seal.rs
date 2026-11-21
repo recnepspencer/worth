@@ -8,7 +8,7 @@ pub use postcommit_currentness::{
 
 use super::commit_execution::WorthQueryCommittedApplicationSession;
 use crate::domain_computation::primary_graph::provider::{
-    mutation_work::{WorthQueryPrimaryMutationWorkCounters, WorthQueryPrimaryMutationWorkEvidence},
+    mutation_work::WorthQueryPrimaryMutationWorkCounters,
     session_commit::{
         WorthQueryCommittedDispatchOutboxResolution, WorthQueryPreImageRetentionWork,
     },
@@ -138,4 +138,3 @@ impl WorthQueryMutationWorkCommitSeal {
 pub use postcommit_currentness::{
     PreparedRebaseDenial, PreparedSourceFactRebase,
 };
-

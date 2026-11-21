@@ -1,7 +1,5 @@
 //! Receipt projection describes the one native birth; it cannot authorize it.
-use super::super::super::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
-};
+use super::super::super::WorthQueryApplicationCommitReceipt;
 use super::super::PublishedWorkflowInstanceRef;
 use super::{
     mismatch, ApplicationMutationBinding, ApplicationSchema, RequiredWorkflowBirth, TypeId,
@@ -55,5 +53,3 @@ where
         .map_err(|_| mismatch("foreign birth output role"))?
         .ok_or_else(|| mismatch("birth subject is absent from receipt"))
 }
-
-

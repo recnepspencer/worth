@@ -1,7 +1,6 @@
 //! Principal-first capability admission, before any workflow existence lookup.
 use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;

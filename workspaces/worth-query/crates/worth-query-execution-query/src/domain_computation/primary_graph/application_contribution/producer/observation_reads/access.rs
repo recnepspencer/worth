@@ -6,7 +6,7 @@ use crate::domain_computation::primary_graph::{
     },
     RequiredOutputDemandContext, WorthQueryPrimaryGraphApplicationRuntime,
 };
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use worth_relational::facade::{
     branch::AdmittedRelationalBranchBasis,
     identity::EntityId,

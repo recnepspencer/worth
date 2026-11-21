@@ -5,7 +5,7 @@ use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicat
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
 use crate::domain_computation::primary_graph::{
     application_contribution::execution_denial::publication_execution_kind,
-    WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
+    WorthQueryApplicationAttemptDenial as Denial,
 };
 
 pub fn overflow() -> Denial {

@@ -1,6 +1,5 @@
-use std::sync::Arc;
 
-use super::{WorthQueryPrimaryGraphProvider, WorthQueryPrimaryLogicalGraph};
+use super::WorthQueryPrimaryLogicalGraph;
 use crate::domain_computation::{
     WorthQueryCooperativeGraphProviderExecution, WorthQueryGraphParticipationProvider,
     WorthQueryGraphProviderCall, WorthQueryGraphProviderExecution,

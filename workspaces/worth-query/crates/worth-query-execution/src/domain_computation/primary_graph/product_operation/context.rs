@@ -259,4 +259,15 @@ where
             .select_with_request(request)
             .map(|inner| WorthQuerySelectedProductOperation::from_inner(self.application, inner))
     }
+
+    #[doc(hidden)]
+    pub fn select_with_request_for_test(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'runtime, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        Self::select_with_request(self, request)
+    }
 }

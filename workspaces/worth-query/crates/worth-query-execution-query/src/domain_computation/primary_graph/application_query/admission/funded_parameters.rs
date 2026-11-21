@@ -8,8 +8,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 use stage::{checkpoint, run_stage};
-use std::sync::Arc;
-use worth_execution::ExecutionMemoryReservation;
 use worth_execution::{
     ChargedBytes, ExecutionRequest, LeaseDenial, MapKernelFailure, WorkCeilingDenial,
 };
@@ -21,7 +19,6 @@ use worth_query_declaration::facade::{
     application_query::{ApplicationQueryBinding, ApplicationQueryParameterSet},
     application_schema::ApplicationSchema,
 };
-use worth_query_installation::facade::WorthQueryInstalledApplicationQueryIdentity;
 
 struct Projected<Query>(ApplicationQueryParameterSet<Query>);
 impl<Query> ChargedBytes for Projected<Query> {

@@ -27,9 +27,7 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
 {
     #[doc(hidden)]
     pub fn new_for_test(
-        application: &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        application: &'a dyn crate::ports::ApplicationRuntimeRef<Schema>,
         provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
         admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
         Schema,
@@ -49,8 +47,8 @@ impl<'a, 'provider, Schema, Operation, Input, Scope>
         coupled_outputs: &'a crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
     ) -> Self {
         Self {
-            application,
-            outer_application: None,
+            application: application.runtime_inner(),
+            outer_application: application.outer_application_any(),
             provider,
             admission,
             authorization,

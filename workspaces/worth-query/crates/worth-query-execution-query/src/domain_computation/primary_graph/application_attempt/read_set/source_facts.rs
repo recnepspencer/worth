@@ -1,7 +1,6 @@
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::read_set::source_facts::*;
 use super::*;
 use crate::domain_computation::primary_graph::StorageControl;
-use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 impl<Schema: worth_query_installation::facade::ApplicationSchema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>

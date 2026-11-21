@@ -3,7 +3,6 @@
 
 pub(crate) mod capture;
 mod inspection;
-use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_checkpoint::transition_capture;
 
 pub use inspection::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
@@ -12,9 +11,8 @@ pub use inspection::{
     WorthQueryCheckpointRecordClass,
 };
 pub use worth_query_execution_lineage::facade::primary_graph::application_checkpoint::{
-    accepted_output, decode, denial, encode, facts, header, interim_transport, metadata_funding,
-    producer_computation, section_bytes, CheckpointDecodeDenial, CheckpointMetadataFunding,
-    CheckpointProducerFacts, DecodedApplicationCheckpoint, FactDecodeDenial,
+    accepted_output, encode, facts, header, interim_transport, metadata_funding,
+    producer_computation, CheckpointDecodeDenial, CheckpointMetadataFunding, DecodedApplicationCheckpoint,
     WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
     WorthQueryInterimCheckpointOrigin, WorthQueryNativeCheckpointSectionBytes, BODY_PREFIX_BYTES,

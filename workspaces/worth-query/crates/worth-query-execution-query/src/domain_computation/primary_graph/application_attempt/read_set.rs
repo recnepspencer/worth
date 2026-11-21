@@ -2,22 +2,14 @@ pub use worth_query_execution_attempt::facade::domain_computation::primary_graph
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use worth_foundational::facade::{AspectFieldLocator, AspectValue};
-use worth_query_declaration::facade::{
-    application_operation::{ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding},
-    application_schema::{ApplicationOperationMarkerIdentity, ApplicationSchema},
-};
-use worth_relational::facade::identity::{EntityId, KindId};
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use super::{
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
-    WorthQueryApplicationObservedFact, 
+    WorthQueryApplicationObservedFact,
     WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
 };
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
-use crate::domain_computation::primary_graph::{
-    WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphIntegrationHandle,
-    WorthQueryPrimaryGraphLayout,
-};
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use source_facts::validate_source_facts;
 pub mod admission;
 pub mod captured_input_transfer;

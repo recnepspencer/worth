@@ -3,9 +3,10 @@
 use super::*;
 
 pub fn select_current_product<Schema: ApplicationSchema>(
-    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    application: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
     retained: &crate::basis::WorthQueryProductBranchLease,
 ) -> Result<crate::basis::WorthQueryProductBranchLease, WorthQueryApplicationCommitOutcome> {
+    let application = application.runtime_inner();
     application
         .admit_with_observation_room(|| {
             application

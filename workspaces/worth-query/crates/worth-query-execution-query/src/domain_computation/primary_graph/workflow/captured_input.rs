@@ -9,13 +9,12 @@ use worth_query_declaration::facade::{
     application_schema::{ApplicationStructuredValueBinding, TypedMutationPreconditions},
 };
 use worth_query_installation::facade::ApplicationSchema;
-use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::primary_graph::{
     application_attempt::precondition_binding::bind_mutation_preconditions,
     WorthQueryAdvancementPhase, WorthQueryApplicationEntityIdentity,
-    WorthQueryApplicationObservedFact, WorthQueryObservedResultSet, WorthQueryObservedSource,
-    WorthQuerySelectedProductOperation, WorthQuerySourceExpectationDenial,
+    WorthQueryApplicationObservedFact,
+    WorthQuerySelectedProductOperation,
 };
 use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort;
 mod inventory;

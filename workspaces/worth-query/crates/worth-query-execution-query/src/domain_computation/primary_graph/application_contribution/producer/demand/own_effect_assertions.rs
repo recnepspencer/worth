@@ -25,7 +25,7 @@ where
 {
     pub fn assert_born_stale_absence_for_test(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: worth_relational::facade::identity::EntityId,
@@ -40,6 +40,7 @@ where
             &WorthQueryRequestScope,
         )>,
     ) {
+        let runtime = runtime.runtime_inner();
         let stages = own_effect_observation::take();
         eprintln!("own-effect stages: {stages:?}");
         assert_eq!(
@@ -106,10 +107,11 @@ where
     }
     pub fn assert_preserve_successor_for_test(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
         root: worth_relational::facade::identity::EntityId,
         contacts: usize,
     ) {
+        let runtime = runtime.runtime_inner();
         let stages = own_effect_observation::take();
         eprintln!("successor stages: {stages:?}");
         assert_eq!(stages.iter().filter(|s| **s == Stage::Published).count(), 1);
@@ -129,12 +131,13 @@ where
     }
     pub fn assert_changed_successor_for_test(
         &self,
-        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        runtime: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
         phase: &WorthQueryAdvancementPhase<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: worth_relational::facade::identity::EntityId,
         inspect: impl FnOnce(&WorthQueryApplicationCommitReceipt),
     ) {
+        let runtime = runtime.runtime_inner();
         let stages = own_effect_observation::take();
         assert_eq!(stages.iter().filter(|s| **s == Stage::Published).count(), 1);
         assert!(stages.contains(&Stage::ReadySuperseded));

@@ -21,7 +21,7 @@ use worth_query_installation::facade::InstalledSourceDisclosureBinding;
 )]
 pub fn capture_inspection<Schema, Source>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
     original: &Source::Input,
     scope: Option<&Arc<WorthQueryObservedScopeSelector>>,
 ) -> Result<Option<Arc<OriginalSourceInspectionDisclosure>>, Denial>
@@ -29,6 +29,7 @@ where
     Schema: ApplicationSchema,
     Source: ApplicationMutationBinding<Schema>,
 {
+    let runtime = runtime.runtime_inner();
     let installed = runtime
         .installed_schema()
         .installed_mutation_binding::<Source>()

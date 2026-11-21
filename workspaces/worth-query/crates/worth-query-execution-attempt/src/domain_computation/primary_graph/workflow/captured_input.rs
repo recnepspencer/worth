@@ -8,14 +8,12 @@ use worth_query_declaration::facade::{
         ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,
         ApplicationMutationSourceExpectation,
     },
-    application_schema::{ApplicationStructuredValueBinding, TypedMutationPreconditions},
+    application_schema::ApplicationStructuredValueBinding,
 };
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
 
 use crate::domain_computation::primary_graph::{
-    application_attempt::precondition_binding::bind_mutation_preconditions,
-    WorthQueryAdvancementPhase, WorthQueryApplicationEntityIdentity,
     WorthQueryApplicationObservedFact,  WorthQueryObservedSource,
 };
 pub mod support;

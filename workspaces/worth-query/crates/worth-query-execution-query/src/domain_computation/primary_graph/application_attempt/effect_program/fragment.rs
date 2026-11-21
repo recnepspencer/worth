@@ -2,20 +2,15 @@
 
 use super::WorthQueryApplicationAttemptDenial as Denial;
 use super::WorthQueryApplicationAttemptDenialKind as Kind;
-use super::WorthQueryApplicationCreationPartition as Partition;
 use super::WorthQueryApplicationEffectEntity as EffectEntity;
 use super::WorthQueryApplicationEffectProgramBuilder as Builder;
-use crate::domain_computation::primary_graph::fragment_view::CandidateEntity;
 use crate::domain_computation::primary_graph::fragment_view::ErasedCandidate;
 use crate::domain_computation::primary_graph::fragment_view::FragmentDenial;
-use crate::domain_computation::primary_graph::fragment_view::WritePort;
 use std::collections::BTreeMap;
-use std::marker::PhantomData;
 use std::sync::Arc;
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_schema::fragment::AspectDefinition;
 use worth_query_declaration::facade::application_schema::fragment::RecordFieldDefinition;
-use worth_query_declaration::facade::application_schema::fragment::RelationDefinition;
 
 impl<S: worth_query_installation::facade::ApplicationSchema>
     crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<S>

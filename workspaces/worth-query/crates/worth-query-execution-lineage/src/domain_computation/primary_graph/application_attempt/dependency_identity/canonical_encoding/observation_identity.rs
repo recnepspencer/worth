@@ -49,4 +49,3 @@ pub fn basis<E>(
     };
     Ok((rule, entries))
 }
-

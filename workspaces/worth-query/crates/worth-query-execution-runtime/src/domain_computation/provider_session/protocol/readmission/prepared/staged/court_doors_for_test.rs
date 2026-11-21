@@ -41,6 +41,18 @@ impl WorthQuerySessionReadAuthority<'_> {
 
 impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
     #[doc(hidden)]
+    pub fn bind_application_attempt_for_test<B: crate::ports::SessionBoundAttemptBasisPort>(
+        &self,
+        basis: B,
+    ) -> Result<B::Affinity, WorthQueryApplicationAttemptBindingMismatch> {
+        basis
+            .bind_to_session_bound_reads(self)
+            .map_err(|()| WorthQueryApplicationAttemptBindingMismatch)
+    }
+}
+
+impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
+    #[doc(hidden)]
     pub fn provider_session_terminal_binding_for_test(
         &self,
     ) -> super::super::super::super::WorthQueryProviderSessionTerminalBinding {

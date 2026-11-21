@@ -15,7 +15,7 @@ pub(crate) mod domain_computation;
 pub(crate) mod ports;
 
 pub(crate) mod publication_boundary {
-    pub use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccessPort;
+
 
     pub mod discovery_currentness {
         pub use crate::domain_computation::primary_graph::application_query::{
@@ -25,7 +25,7 @@ pub(crate) mod publication_boundary {
 }
 
 pub(crate) use worth_query_execution_foundation::facade::{
-    equality_type_id, execution_digest, relational_snapshot_release,
+    equality_type_id, relational_snapshot_release,
 };
 pub(crate) use worth_query_execution_runtime::facade::basis;
 

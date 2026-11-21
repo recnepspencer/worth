@@ -19,7 +19,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
     PublishedWorkflowInstanceRef, PublishedWorkflowProposalRef,
 };
 use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::{
-    operation, publication, PreparedWorkflowAdvance, PreparedWorkflowAssessment,
+    PreparedWorkflowAdvance, PreparedWorkflowAssessment,
     PreparedWorkflowCondition, PreparedWorkflowOperation, RequiredWorkflowActor,
     RequiredWorkflowApproval, RequiredWorkflowAssessment, RequiredWorkflowCondition,
     RequiredWorkflowOperation, WorkflowApprovalBodyDenial, WorkflowApprovalBodyPreparation,

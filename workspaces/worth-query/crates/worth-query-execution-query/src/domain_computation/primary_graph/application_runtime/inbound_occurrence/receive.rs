@@ -14,7 +14,7 @@ use super::{
 use crate::domain_computation::application_aftermath::{
     ExternalEffectCorrelationIdentity, WorthQueryAcceptedInboundOccurrence,
     WorthQueryInboundCustodyAdmission, WorthQueryInboundOccurrenceClaims,
-    WorthQueryInboundPublicationClaim, WorthQueryInboundVerificationDenial,
+    WorthQueryInboundPublicationClaim,
 };
 use crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial;
 
@@ -213,5 +213,3 @@ where
         ))
     }
 }
-
-

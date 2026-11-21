@@ -127,8 +127,7 @@ fn selected_consult_answers_in_scopes<T: Eq + Debug, E: Eq + Debug>(
     assert_cancelled: impl Fn(usize, usize, &E),
     assert_work: impl Fn(u64, &E),
 ) {
-    let _observation =
-        crate::facade::primary_graph::WorthQueryExecutionObservation::install_on_this_thread();
+    let _observation = crate::domain_computation::execution_observation::WorthQueryExecutionObservation::install_on_this_thread();
     let observes = std::rc::Rc::new(observes);
     let quotes = std::cell::RefCell::new(Vec::new());
     let run = |k: Option<usize>, ceiling: u64| {
@@ -279,11 +278,11 @@ pub fn every_advancement_consult_with_door<T: Eq + Debug, E: Eq + Debug>(
     cancelled: E,
     exhausted: E,
 ) -> u64 {
-    use crate::facade::primary_graph::{
+    use crate::domain_computation::execution_observation::WorthQueryExecutionObservation;
+    use worth_query_execution_runtime::facade::request_execution::{
         advancement_requests_on_this_thread_for_test,
         bound_advancement_requests_on_this_thread_for_test,
-        place_managed_computations_on_this_thread_for_test, WorthQueryExecutionObservation,
-        WorthQueryExecutionPlacementForTest,
+        place_managed_computations_on_this_thread_for_test, WorthQueryExecutionPlacementForTest,
     };
     use worth_query_admission::facade::authenticated_principal::{
         WorthQueryCancellationSource, WorthQueryRequestScope,

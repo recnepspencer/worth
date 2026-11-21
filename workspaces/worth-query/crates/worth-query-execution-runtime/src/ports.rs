@@ -15,8 +15,7 @@ use worth_query_execution_contracts::facade::{
     WorthQueryHomeRetirementOwner,
 };
 use worth_query_execution_obligations::facade::query_obligations::{
-    QueryManagedCleanupOriginal, QueryManagedRunPosture, QueryManagedRunRecovery,
-    QueryManagedRunResources, QueryObligationDenial,
+    QueryManagedCleanupOriginal, QueryManagedRunPosture, QueryManagedRunRecovery, QueryObligationDenial,
 };
 use worth_relational::facade::branch::RelationalBranchIdentity;
 use worth_relational::facade::mvcc::RelationalPublicationCompanion;
@@ -377,3 +376,14 @@ impl PartialEq for OpaquePrerequisiteDenialKind {
 }
 
 impl Eq for OpaquePrerequisiteDenialKind {}
+
+/// Port allowing an application-attempt basis to bind onto session-bound reads
+/// without introducing a reverse crate edge into `worth-query-execution-attempt`.
+pub trait SessionBoundAttemptBasisPort: Sized {
+    type Affinity;
+
+    fn bind_to_session_bound_reads(
+        self,
+        reads: &crate::domain_computation::provider_session::WorthQuerySessionBoundReadsAndEffects<'_>,
+    ) -> Result<Self::Affinity, ()>;
+}

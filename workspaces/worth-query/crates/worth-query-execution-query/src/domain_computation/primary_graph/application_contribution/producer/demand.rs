@@ -17,8 +17,6 @@ pub use progression::CurrentBasis;
 pub use progression::CurrentProof;
 pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::bridge_denial;
 pub mod checkpoint_delivery;
-use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::denial_diagnostic;
-use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::denial_posture;
 pub mod disclosure;
 pub mod durable;
 mod fulfillment;
@@ -269,7 +267,6 @@ where
     }
 }
 
-use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::bridge_execution_denial;
 
 mod own_effect_assertions;
 mod own_effect_observation;

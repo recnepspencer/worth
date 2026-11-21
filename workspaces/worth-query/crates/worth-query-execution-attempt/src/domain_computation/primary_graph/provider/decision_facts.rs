@@ -1,4 +1,3 @@
-use std::sync::Arc;
 
 pub mod comparison;
 pub use comparison::PrimaryDecisionReadSetComparison;

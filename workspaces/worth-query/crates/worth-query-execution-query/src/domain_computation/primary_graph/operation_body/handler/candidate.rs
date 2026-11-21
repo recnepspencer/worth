@@ -1,5 +1,5 @@
 //! Native candidate assembly consumes one sealed body decision; no graph rereads.
-use super::super::{path_value, retirement, reuse};
+use super::super::reuse;
 use super::*;
 impl<Schema, Binding> OperationBodyHandler<Schema, Binding>
 where

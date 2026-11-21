@@ -79,4 +79,3 @@ impl<'scope> WorthQueryBootstrapAdvancementPhase<'scope> {
         self.request
     }
 }
-

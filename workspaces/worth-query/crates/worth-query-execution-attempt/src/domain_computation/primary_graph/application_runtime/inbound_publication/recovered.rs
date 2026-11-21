@@ -1,17 +1,12 @@
 //! Continue one actual unpublished completion without synthesizing a Performed carrier.
-use crate::domain_computation::primary_graph::provider::{
-    inbound_terminal_index::InboundTerminalSource, WorthQueryCanonicalInboundCompletion,
-};
+use crate::domain_computation::primary_graph::provider::WorthQueryCanonicalInboundCompletion;
 use worth_runtime_world::facade::{
-    CompositeCommitIdentity, ProductUnpublishedRecoveryHandle, WorldRecoveredContinuationOutcome,
+    CompositeCommitIdentity, ProductUnpublishedRecoveryHandle,
     WorldRecoveredUnpublishedEffects,
 };
 
 
-use crate::domain_computation::execution_runtime::product_world::{
-    OwnerCleanupRetirements, WorthQueryProductBranchOwnerCleanup,
-};
-use crate::domain_computation::primary_graph::home_original_progression;
+use crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup;
 
 #[derive(Clone)]
 pub enum OriginalCompletionState {

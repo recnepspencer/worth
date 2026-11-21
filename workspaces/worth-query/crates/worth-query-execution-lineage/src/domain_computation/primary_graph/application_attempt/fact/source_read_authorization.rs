@@ -8,7 +8,6 @@ use crate::domain_computation::{
 use crate::ports::{SourceAuthorizationLocus, SourceReadSupportPort};
 pub mod candidate_support;
 use std::any::Any;
-use std::sync::Arc;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBindingObservation;
 use worth_relational::facade::{
     identity::EntityId, runtime::RelationalRuntime, snapshots::SnapshotHandle,

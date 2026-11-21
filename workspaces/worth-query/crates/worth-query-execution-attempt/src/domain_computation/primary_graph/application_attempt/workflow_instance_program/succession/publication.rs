@@ -1,7 +1,5 @@
 //! Descriptive projection of the exact native successor recorded by this request.
-use super::super::super::{
-    WorthQueryApplicationCommitReceipt, WorthQueryApplicationIdempotencyBinding,
-};
+use super::super::super::WorthQueryApplicationCommitReceipt;
 use super::super::PublishedWorkflowInstanceRef;
 use super::{
     mismatch, RequiredWorkflowSuccession, WorthQueryApplicationAttemptDenial,
@@ -54,4 +52,3 @@ where
         .map_err(|_| mismatch("foreign succession output role"))?
         .ok_or_else(|| mismatch("succession subject absent from receipt"))
 }
-

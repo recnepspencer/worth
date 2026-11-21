@@ -193,6 +193,43 @@ impl ManagedDerivedViewPort for EmptyManagedDerivedViewPort {
     }
 }
 
+/// Port enabling `prepare_publication_for_test` on `ManagedDerivedViewCourtDoor`
+/// without a reverse dependency on `worth-query-execution-query`.
+pub trait ManagedViewPublicationRequestPort<'a>: Sized {
+    type Change;
+    type Prepared;
+
+    fn prepare_on_managed_views(
+        self,
+        port: &dyn ManagedDerivedViewPort,
+        changes: &[Self::Change],
+        maximum_work_units: usize,
+    ) -> Self::Prepared;
+}
+
+/// Court-door handle over a primary graph's managed derived views.
+pub struct ManagedDerivedViewCourtDoor(pub Arc<dyn ManagedDerivedViewPort>);
+
+impl std::ops::Deref for ManagedDerivedViewCourtDoor {
+    type Target = Arc<dyn ManagedDerivedViewPort>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl ManagedDerivedViewCourtDoor {
+    #[doc(hidden)]
+    pub fn prepare_publication_for_test<'a, B: ManagedViewPublicationRequestPort<'a>>(
+        &self,
+        basis: B,
+        changes: &[B::Change],
+        maximum_work_units: usize,
+    ) -> B::Prepared {
+        basis.prepare_on_managed_views(&*self.0, changes, maximum_work_units)
+    }
+}
+
 /// Lower lineage-side port for a source-query read closure.
 pub trait SourceReadClosurePort: Any + Send + Sync {
     fn admits_source_identity(

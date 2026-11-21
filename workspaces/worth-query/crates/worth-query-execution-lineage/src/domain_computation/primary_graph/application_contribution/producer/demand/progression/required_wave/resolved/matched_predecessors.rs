@@ -3,7 +3,6 @@ use std::sync::Arc;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
 use worth_relational::facade::runtime::PositionedRelationalSnapshot;
 use crate::domain_computation::primary_graph::{
-    application_output_demand::ReadyCompletion,
     invariant_projection::ConsumedOutputEvidence,
     output_lineage::RecordedSettlementIdentity,
     WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,

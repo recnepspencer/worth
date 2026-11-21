@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 use worth_query_declaration::facade::application_schema::fragment::RelationDefinition;
-use crate::domain_computation::primary_graph::fragment_view::{CandidateEntity, ErasedCandidate, FragmentDenial, WritePort};
+use crate::domain_computation::primary_graph::fragment_view::{ErasedCandidate, FragmentDenial, WritePort};
 use super::{
     WorthQueryApplicationCreationPartition as Partition,
     WorthQueryApplicationEffectEntity as EffectEntity,

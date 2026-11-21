@@ -96,7 +96,7 @@ pub fn admit_encoded_capability_access<
     Input,
 >(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    runtime: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
     product: &crate::basis::WorthQueryProductBranchLease,
     principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
     capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
@@ -113,6 +113,7 @@ where
     Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
     Input: ApplicationCapabilityRequest<Schema, Capability> + 'static,
 {
+    let runtime = runtime.runtime_inner();
     crate::domain_computation::authorization::admission::validate_admission_clock(
         &runtime.runtime,
         principal.clock(),

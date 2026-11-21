@@ -8,7 +8,6 @@
 use worth_proof::{
     Artifact, AssumptionBasis, CurrentValidity, FreshnessScopedBasis, NoProofs, PhaseMarker,
 };
-use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 use super::super::recovery_handle::{
     WorthQueryRecoveryHandle, WorthQueryRecoveryHandleAuthorityIdentity,

@@ -14,7 +14,7 @@ use super::{
 use crate::domain_computation::primary_graph::{
     PublishedWorkflowInstanceRef, WorthQueryAdmittedApplicationOperation,
     WorthQueryApplicationAttemptDenial, WorthQueryApplicationIdempotencyBinding,
-    WorthQueryOperationProjectionDenial, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryOperationProjectionDenial,
     WorthQuerySelectedProductOperation,
 };
 

@@ -1,20 +1,7 @@
 //! Command/target binding for one exact capability revocation.
 
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
-use worth_foundational::facade::{AspectFieldLocator, AspectValue, CanonicalDigestWorkBudget};
-use worth_query_declaration::facade::{
-    application_capability::{
-        ApplicationCapabilityRequest, ApplicationCapabilityRevocationRequest,
-        ErasedApplicationCapabilityEntitySelector,
-    },
-    application_schema::TypedMutationPreconditions,
-};
-use worth_query_installation::facade::{
-    derive_capability_revocation_proposal_identity, ApplicationSchema,
-    WorthQueryCanonicalWorkEvidence, WorthQueryCapabilityRevocationProposalBasis,
-    WorthQueryInstalledApplicationCapability, WorthQueryInstalledApplicationOperation,
-    WorthQueryOperationFieldTouchScope, WorthQueryOperationTouchScope,
-};
+use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_query_installation::facade::WorthQueryOperationFieldTouchScope;
 use worth_relational::facade::identity::{EntityId, KindId};
 
 

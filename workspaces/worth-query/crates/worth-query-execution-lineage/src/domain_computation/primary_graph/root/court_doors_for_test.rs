@@ -42,16 +42,14 @@ impl WorthQueryPrimaryGraphIntegrationHandle {
 
 impl WorthQueryPrimaryGraph {
     #[doc(hidden)]
-    pub fn managed_derived_views_for_test(
-        &self,
-    ) -> Arc<dyn crate::ports::ManagedDerivedViewPort> {
-        Self::managed_derived_views(self)
+    pub fn managed_derived_views_for_test(&self) -> crate::ports::ManagedDerivedViewCourtDoor {
+        crate::ports::ManagedDerivedViewCourtDoor(Self::managed_derived_views(self))
     }
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]
-    pub fn source_owner_for_test(&self) -> &WorthQueryRelationalSourceOwner {
+    pub fn source_owner_for_test(&self) -> &home_retirement::PrimaryGraphSourceCustody {
         &self.source_owner
     }
 }

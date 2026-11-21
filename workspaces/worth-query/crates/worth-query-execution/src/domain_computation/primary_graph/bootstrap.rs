@@ -37,7 +37,6 @@ mod initial_installation;
 mod managed_source_initialization;
 pub(super) mod native_meaning;
 mod preparation;
-pub(in crate::domain_computation::primary_graph) use preparation::map_checkpoint_recovery_stop;
 pub(super) mod prepared_native;
 mod program_activation_recovery;
 pub(in crate::domain_computation::primary_graph) use program_activation_recovery::read_activation;
