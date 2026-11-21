@@ -116,7 +116,8 @@ pub(super) fn rescope(
 }
 /// A successor round's attempt issues its own mutation partition; the chain's
 /// records live where its head allocated them. Each rescoped key names one
-/// chain record, so its creates and created references take the head's
+/// chain record of its create kind (entity and relation keys are separate
+/// namespaces), so its creates and created references take the head's
 /// partition for that key.
 pub(super) fn repartition(
     execution: &ExecutionRequest<'_, '_>,
@@ -128,14 +129,16 @@ pub(super) fn repartition(
     use crate::transactions::data::{CreateIntent, MutationIntent};
     execution
         .run_native_with_checkpoint(|context| {
+            // Keyed by (relation create, text): an entity and a relation may
+            // share a key text without sharing a partition.
             let mut partitions = std::collections::BTreeMap::new();
             for intent in head {
-                let (key, partition) = match intent {
+                let (relation, key, partition) = match intent {
                     MutationIntent::Create(CreateIntent::Entity(spec)) => {
-                        (&spec.client_key, spec.partition_id)
+                        (false, &spec.client_key, spec.partition_id)
                     }
                     MutationIntent::Create(CreateIntent::Relation(spec)) => {
-                        (&spec.client_key, spec.partition_id)
+                        (true, &spec.client_key, spec.partition_id)
                     }
                     _ => continue,
                 };
@@ -145,16 +148,17 @@ pub(super) fn repartition(
                     )
                 })?;
                 checkpoint(context, text.len() as u64 + 1).map_err(custody::execution_stop)?;
-                partitions.insert(text.to_owned(), partition);
+                partitions.insert((relation, text.to_owned()), partition);
             }
-            let head_partition = |key: &ClientKey| {
+            let head_partition = |relation: bool, key: &ClientKey| {
                 key.as_raw_str()
-                    .and_then(|text| partitions.get(text))
+                    .and_then(|text| partitions.get(&(relation, text.to_owned())))
                     .copied()
             };
+            // A created reference always names an entity.
             let mut repartition = |reference: &mut EntityReference| {
                 if let EntityReference::Created(created) = reference
-                    && let Some(partition) = head_partition(&created.client_key)
+                    && let Some(partition) = head_partition(false, &created.client_key)
                 {
                     created.partition_id = partition;
                 }
@@ -165,15 +169,15 @@ pub(super) fn repartition(
                     checkpoint(context, 1).map_err(custody::execution_stop)?;
                     let created = match intent {
                         MutationIntent::Create(CreateIntent::Entity(spec)) => {
-                            Some((&spec.client_key, &mut spec.partition_id))
+                            Some((false, &spec.client_key, &mut spec.partition_id))
                         }
                         MutationIntent::Create(CreateIntent::Relation(spec)) => {
-                            Some((&spec.client_key, &mut spec.partition_id))
+                            Some((true, &spec.client_key, &mut spec.partition_id))
                         }
                         _ => None,
                     };
-                    if let Some((key, partition)) = created
-                        && let Some(head) = head_partition(key)
+                    if let Some((relation, key, partition)) = created
+                        && let Some(head) = head_partition(relation, key)
                     {
                         *partition = head;
                     }

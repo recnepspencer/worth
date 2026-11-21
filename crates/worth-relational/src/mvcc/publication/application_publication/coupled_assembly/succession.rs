@@ -40,10 +40,11 @@ pub(crate) struct Chain {
     pub(crate) local_keys: super::local_keys::LocalKeys,
     /// The records the head allocated; every round re-creates exactly these.
     pub(crate) created: Vec<EntityId>,
-    /// The changed-record log's length when the latest round applied.
-    pub(crate) records_end: usize,
     /// Each round's span of the changed-record log, head first, ascending.
     pub(crate) rounds: Vec<Range<usize>>,
+    /// The candidate-wide append ordinal of the latest round: rounds order by
+    /// it even when one appended no batch.
+    pub(crate) latest: usize,
 }
 
 impl Chain {
@@ -197,9 +198,11 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             })
             .map_err(custody::execution_stop)?
             .0?;
+        let latest = appended_rounds(&self.parts);
+        let part = &mut self.parts[index];
         let prior = std::mem::replace(&mut part.chain.batches, first_batch..batches_end);
+        part.chain.latest = latest;
         part.chain.superseded.push(prior);
-        part.chain.records_end = records_end;
         part.chain.rounds.push(first_record..records_end);
         part.inputs = None;
         part.input = applied.read;
@@ -381,4 +384,9 @@ fn subject(record: &RecordRef, source: EntityId) -> EntityId {
 
 fn overflow() -> TransactionCommitError {
     custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+}
+
+/// Every round appended to the candidate so far: the next round's ordinal.
+pub(super) fn appended_rounds(parts: &[super::CoupledPublicationPart]) -> usize {
+    parts.iter().map(|part| part.chain.rounds.len()).sum()
 }
