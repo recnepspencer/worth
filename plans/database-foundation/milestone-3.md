@@ -170,7 +170,7 @@ surface.
 
 | C3 slice | State on the branch |
 |---|---|
-| C3.1 Mixed publication killed between owner effects; Signal refusals at Home open | Planned |
+| C3.1 Mixed publication killed between owner effects; Signal refusals at Home open | Implemented, in review. A mixed original's planned Signal leg is recorded before Native; a kill with only Native durable continues to exactly one Signal effect and one occurrence |
 | C3.2 Cold release of process-local managed custody | Planned |
 | C3.3 Mid-step workflow kills, R9 `Indeterminate` and temporal retry | Planned |
 | C3.4 Adoption killed at each stage; retirement across a kill | Planned |
@@ -399,7 +399,7 @@ The owners:
 |---|---|
 | Bounded property in the existing World court (`owner_evidence::unclean_native`, extended with a mixed intent) | Generate short sequences: a mixed open, planned Signal leg, Native effect, Signal effect, occurrence, kill (`Recorder::crash_after`), reopen and duplicate retry. The open-and-planned-leg state releases as no-effect. Compare the recovered owners, the next actions, the selected head and the Signal and Native effect counts with a model built from the recorded facts. A Native-only original continues to exactly one Signal effect and one occurrence. Repeated reopen of the same prefix is stable. A recorded section altered to name another definition refuses before any Signal effect. A closure-leg mixed attempt on a durable medium refuses before any owner effect, and its open releases as no-effect. |
 | Real process kill (Store court, killed child) | A real Home runs one mixed conditional-definition commit. Two cuts: after Native's effect is durable but before Signal's, and after both but before the occurrence. Each reopen must show the original key and receipt, exactly the acting owners, the product unmoved, and zero handler reruns. Continuing publishes once, with one Native and one Signal effect. A second reopen serves the same definitions and receipt. A quiet reopen is the positive control. |
-| Signal readmission at Home open | Store court: after a graceful close, change one input and reopen. A damaged Signal frame refuses as physical damage, per the C1.3 ruling; a foreign Signal owner, an unknown Signal frame version and a definition-basis mismatch (a reopen whose program declares different Signal definitions) each refuse with their typed Signal cause. No Home is issued in any of these cases. The existing in-process refusal courts stay. |
+| Signal readmission at Home open | Store court: after a graceful close, change one input and reopen. A damaged Signal frame refuses as physical damage, per the C1.3 ruling; a foreign Signal owner and an unknown Signal frame version each refuse with their typed Signal cause. No Home is issued in any of these cases. C3 ruling (2026-11-20): a definition-basis mismatch is a branch descriptor whose recorded definition basis disagrees with the readmitted definitions. No kill or graceful path produces one without forged or damaged bytes, and damage is refused physically first. Durable authored definitions stay authoritative under a changed build (Phase 6). The refusal is therefore proved at the Signal owner: `basis_port::tests::descriptor_denials` and `signal::branch_basis_contract`. The existing in-process refusal courts stay. |
 
 #### C3.2 — Cold release of process-local managed custody
 
