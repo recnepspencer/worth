@@ -195,6 +195,16 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         Ok(())
     }
 
+    /// R2 before a later stage's pending demands prepare: a task a prior
+    /// append made stale reopens before anything reads its output again.
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn qualify(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        self.reopen_stale(context, candidate).map(|_| ())
+    }
+
     pub(in crate::domain_computation::primary_graph::application_contribution) fn drive(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
