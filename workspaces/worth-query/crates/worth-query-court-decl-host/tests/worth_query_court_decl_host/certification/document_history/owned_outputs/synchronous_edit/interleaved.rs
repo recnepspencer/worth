@@ -4,9 +4,8 @@ use super::*;
 pub(in super::super) mod component_carriage;
 pub(in super::super) use component_carriage::attach;
 pub(in super::super) use component_carriage::{
-    authored_parent::Binding as AuthoredParentBinding,
-    availability::Binding as ObserveAvailabilityBinding, pending::Input as PendingSeedInput,
-    value_observation::Binding as ObserveValueBinding,
+    authored_parent::Binding as AuthoredParentBinding, pending::Input as PendingSeedInput,
+    availability::Binding as ObserveAvailabilityBinding, value_observation::Binding as ObserveValueBinding,
 };
 mod courts;
 pub(in super::super) mod created;

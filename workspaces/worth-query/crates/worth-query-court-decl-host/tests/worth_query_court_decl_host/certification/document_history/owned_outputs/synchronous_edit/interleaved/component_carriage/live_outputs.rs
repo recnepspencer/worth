@@ -16,11 +16,7 @@ use worth_query_host::facade::{
 type Host = WorthQueryProgramApplicationRuntime<Schema, Program>;
 
 fn cap(value: u64) -> fixture::cap::Intent {
-    fixture::cap::Intent {
-        key: "envelope-cap".into(),
-        value,
-        key_derived_target: false,
-    }
+    fixture::cap::Intent { key: "envelope-cap".into(), value, key_derived_target: false }
 }
 
 fn committed<D: std::fmt::Debug, R: std::fmt::Debug>(
@@ -63,20 +59,10 @@ fn redo_after_link(eager: bool) -> String {
         .unwrap()
         .ordered_authored()
         .unwrap();
-    undo.push_stage::<ApplicationNoOutputGraph, _>(cap(8))
-        .unwrap();
-    let outcome = undo
-        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
-        .unwrap();
-    assert!(
-        matches!(outcome, Outcome::Committed(_)),
-        "undo: {outcome:?}"
-    );
-    let stages: Vec<Vec<bool>> = if eager {
-        vec![vec![false, true]]
-    } else {
-        vec![vec![false], vec![true]]
-    };
+    undo.push_stage::<ApplicationNoOutputGraph, _>(cap(8)).unwrap();
+    let outcome = undo.execute_performed(ExecutionAllocationPolicy::SystemAllocation).unwrap();
+    assert!(matches!(outcome, Outcome::Committed(_)), "undo: {outcome:?}");
+    let stages: Vec<Vec<bool>> = if eager { vec![vec![false, true]] } else { vec![vec![false], vec![true]] };
     for (ordinal, batch) in stages.into_iter().enumerate() {
         let mut edit = request
             .edit_envelope()
@@ -100,9 +86,7 @@ fn redo_after_link(eager: bool) -> String {
             }
             .unwrap();
         }
-        let outcome = edit
-            .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
-            .unwrap();
+        let outcome = edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation).unwrap();
         assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
     }
     let selected = request.corrections().select(&retired, limits).unwrap();
@@ -121,8 +105,7 @@ fn redo_after_link(eager: bool) -> String {
     {
         Ok(redo) => {
             let mut redo = redo.ordered_authored().unwrap();
-            redo.push_stage::<ApplicationNoOutputGraph, _>(cap(9))
-                .unwrap();
+            redo.push_stage::<ApplicationNoOutputGraph, _>(cap(9)).unwrap();
             match redo.execute_performed(ExecutionAllocationPolicy::SystemAllocation) {
                 Ok(Outcome::Committed(_)) => "committed".to_owned(),
                 other => format!("{other:?}"),
@@ -139,12 +122,6 @@ fn redo_after_link(eager: bool) -> String {
 fn correction_redo_answers_the_same_after_an_eager_or_sequential_later_link() {
     let eager = redo_after_link(true);
     let sequential = redo_after_link(false);
-    assert_eq!(
-        eager, sequential,
-        "live_outputs.rs:49 tells eager from sequential"
-    );
-    assert_eq!(
-        eager, "committed",
-        "the undo's own fresh member is live in both worlds"
-    );
+    assert_eq!(eager, sequential, "live_outputs.rs:49 tells eager from sequential");
+    assert_eq!(eager, "committed", "the undo's own fresh member is live in both worlds");
 }
