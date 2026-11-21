@@ -141,7 +141,8 @@ fn report(stage: &MapKernelContext<'_, '_>, (work, span): (u64, u64)) -> Executi
 /// A measured result on the joined stage, settled once: the caller's
 /// reservation is taken over for its retained bytes before the kernel, holds
 /// its result memory during it and its value's or domain error's heap after
-/// it; any other end leaves it holding nothing.
+/// it; any other end leaves it holding nothing, and a refused take-over
+/// leaves it as it was.
 pub(super) fn run_measured_joined<R: ChargedBytes, E: ChargedBytes>(
     stage: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
@@ -153,10 +154,14 @@ pub(super) fn run_measured_joined<R: ChargedBytes, E: ChargedBytes>(
     ) -> Result<R, KernelFailure<E>>,
 ) -> ScopeOutcome<R, E> {
     let cost = stage.cost();
+    // A refused take-over keeps what the reservation held, as a refused
+    // scope admission does; only a reservation the stage holds is settled.
+    let mut held = false;
     let result = settled(|| {
         stage
             .hold_joined(memory, lease, retained_bytes)
             .map_err(ScopeStop::Admission)?;
+        held = true;
         let invoked = invoke(stage, |stage| {
             kernel(
                 stage,
@@ -184,15 +189,17 @@ pub(super) fn run_measured_joined<R: ChargedBytes, E: ChargedBytes>(
         discard(invoked);
         Err(refusal)
     });
-    let kept = match &result {
-        Ok(_) | Err(ScopeStop::Failure(KernelFailure::Domain(_))) => {
-            memory.bytes() - retained_bytes
-        }
-        Err(_) => 0,
-    };
-    memory
-        .resize(kept)
-        .expect("measured settlement only releases bytes");
+    if held {
+        let kept = match &result {
+            Ok(_) | Err(ScopeStop::Failure(KernelFailure::Domain(_))) => {
+                memory.bytes() - retained_bytes
+            }
+            Err(_) => 0,
+        };
+        memory
+            .resize(kept)
+            .expect("measured settlement only releases bytes");
+    }
     ScopeOutcome {
         result,
         report: report(stage, cost),

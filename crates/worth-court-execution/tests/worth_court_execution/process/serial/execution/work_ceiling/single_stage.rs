@@ -186,9 +186,8 @@ fn a_foreign_reservation_is_refused_and_stops_the_single_stage() {
     let request = ExecutionRequest::serial(&backing);
     let mut ran = false;
     let outcome = request.run_single_stage(|_| {
-        let mut foreign = worth_execution::SerialMemoryBudget::new(None)
-            .reserve(0)
-            .unwrap();
+        let budget = worth_execution::SerialMemoryBudget::new(None);
+        let mut foreign = budget.reserve(9).unwrap();
         let refused = request.run_measured_result::<_, Kept>(
             ExecutionWorkCeiling::new(None),
             0,
@@ -199,6 +198,12 @@ fn a_foreign_reservation_is_refused_and_stops_the_single_stage() {
             },
         );
         assert!(matches!(refused.result, Err(ScopeStop::Admission(_))));
+        assert_eq!(
+            foreign.bytes(),
+            9,
+            "a refused take-over keeps the foreign hold"
+        );
+        assert_eq!(budget.charged_memory_bytes(), 9);
     });
     assert!(!ran, "a refused reservation never runs its kernel");
     assert!(
@@ -298,5 +303,28 @@ fn a_refusal_pending_before_a_joined_call_does_not_hide_the_calls_own_refusal() 
         assert_eq!(stage.take_nested_computation_stop(), None);
     });
     assert!(outcome.is_err(), "the call's refusal stops the stage");
+    assert_eq!(backing.memory().unwrap().charged_memory_bytes(), 0);
+}
+
+#[test]
+fn a_refused_retained_admission_keeps_the_callers_existing_hold() {
+    let backing = serial(Some(1 << 12), Some(100));
+    let request = ExecutionRequest::serial(&backing);
+    let outcome = request.run_single_stage(|_| {
+        let mut memory = ExecutionMemoryReservation::reserve_in_scope(None, 5).unwrap();
+        let refused = request.run_measured_result::<_, Kept>(
+            ExecutionWorkCeiling::new(None),
+            1 << 20,
+            &mut memory,
+            |_, _| Ok(Kept(0)),
+        );
+        assert!(matches!(refused.result, Err(ScopeStop::Admission(_))));
+        assert_eq!(
+            memory.bytes(),
+            5,
+            "a refused take-over keeps the existing hold"
+        );
+    });
+    assert!(outcome.is_err());
     assert_eq!(backing.memory().unwrap().charged_memory_bytes(), 0);
 }
