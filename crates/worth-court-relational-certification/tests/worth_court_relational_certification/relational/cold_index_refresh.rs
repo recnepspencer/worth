@@ -270,17 +270,19 @@ fn cold_selected_index_refresh_preserves_budget_gate_and_reads_head_without_hist
         .lock()
         .unwrap()
         .contains(&history));
+    // A recovered predecessor carries no transient delta, so the funded path
+    // after recovery is reconstruction from the selected Head
+    // (checkpoint_admission/indexes.rs keeps the same flow).
     let result = runtime
         .index_authority()
-        .refresh_for_basis(
+        .reconstruct_for_basis(
+            execution,
             request,
             &basis,
-            None,
             DerivedIndexMaintenanceBudget {
                 maximum_cold_record_slots: None,
                 ..budget
             },
-            execution,
         )
         .unwrap();
     let generation = result

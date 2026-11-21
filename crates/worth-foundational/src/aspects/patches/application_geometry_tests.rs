@@ -34,7 +34,7 @@ fn patch(
 
 #[test]
 fn birth_quote_covers_actual_root_boundaries_without_leaf_cow_scratch() {
-    for count in [0, 1, 31, 62, 63, 64, 65] {
+    for count in [0, 1, 31, 62, 63, 64, 65, 128, 200] {
         for distinct_widths in [false, true] {
             let contracts: Vec<_> = (0..count)
                 .map(|n| {

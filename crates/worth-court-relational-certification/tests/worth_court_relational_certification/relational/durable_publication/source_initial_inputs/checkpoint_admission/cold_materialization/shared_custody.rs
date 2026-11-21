@@ -43,7 +43,8 @@ fn shared_history_custody_refuses_unfunded_admission_then_survives_until_the_las
             .take()
             .expect("owned provider retention was reached"),
     );
-    assert_eq!(budget.charged_memory_bytes(), 0);
+    // The symbol page admitted before the refusal stays resident and charged to
+    // that request until the runtime drops; the refused hold itself kept nothing.
     let retry_budget = SerialMemoryBudget::new(None);
     let retry = SerialRequest::from_memory(
         retry_budget.clone(),
@@ -79,4 +80,5 @@ fn shared_history_custody_refuses_unfunded_admission_then_survives_until_the_las
     drop(basis);
     assert_eq!(control.live.load(Ordering::SeqCst), 0);
     assert_eq!(retry_budget.charged_memory_bytes(), 0);
+    assert_eq!(budget.charged_memory_bytes(), 0);
 }

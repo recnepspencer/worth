@@ -127,6 +127,15 @@ fn original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen() {
         .snapshots()
         .release_snapshot(&read_snapshot)
         .unwrap();
+    // A live checkpoint keeps its component holds and canonical publication,
+    // whose original-funded roots and envelopes stay charged until it drops.
+    drop(checkpoint);
+    assert!(
+        original.memory().unwrap().charged_memory_bytes() > 0,
+        "the successor basis alone still retains its original funding"
+    );
     drop(retained_basis);
+    // The reopened runtime shares the original-funded roots it readmitted.
+    drop(reopened);
     assert_eq!(original.memory().unwrap().charged_memory_bytes(), 0);
 }

@@ -157,9 +157,15 @@ impl CanonicalAspectStateMap {
     }
 
     /// Peak incremental construction backing above independently retained input.
-    /// Quotes this actual entry count and key width, including both empty roots.
+    /// Construction consumes a unique stream into fresh roots, so no node is ever
+    /// copied on write: up to 64 entries both trees stay unique leaves, and a
+    /// larger build needs at most one remove-then-insert path beside its final
+    /// nodes. Includes both empty roots.
     pub fn construction_scratch_bytes(entries: usize, maximum_key_width: usize) -> Option<usize> {
-        Self::empty_edit_storage_bytes(entries.checked_mul(2)?, entries, maximum_key_width)
+        if entries <= 64 {
+            return Self::construction_storage_bytes(0);
+        }
+        Self::empty_edit_storage_bytes(2, entries, maximum_key_width)
     }
 
     pub(crate) fn maximum_key_width(&self) -> usize {

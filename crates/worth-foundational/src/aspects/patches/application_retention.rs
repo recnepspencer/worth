@@ -109,11 +109,9 @@ impl AuthoritativeRecordAspectPatch {
                 // both roots stay unique leaves. Key copies are in `copied`.
                 Map::construction_storage_bytes(0)?
             }
-            None => Map::empty_edit_storage_bytes(
-                operations,
-                self.whole_aspect_sets.len(),
-                new_key_width,
-            )?,
+            // A larger unique stream still copies nothing on write; one
+            // remove-then-insert path bounds its construction scratch.
+            None => Map::empty_edit_storage_bytes(2, self.whole_aspect_sets.len(), new_key_width)?,
         };
         // Full node capacity already includes the occupied inline key/value
         // cells counted in the cached payload extent. Only nested heaps remain.

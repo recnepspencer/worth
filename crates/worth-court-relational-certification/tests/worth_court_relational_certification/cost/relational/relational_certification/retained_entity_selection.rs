@@ -17,10 +17,16 @@ fn equal_payload_jumps_charge_the_same_receiving_owner_work_at_near_and_distant_
     let runtime = fixture().build_runtime();
     let old = create(&execution, &runtime, "model", "3");
     let model = changed_entities(&old)[0];
+    release_test_commit_snapshot(&runtime, &old);
+    // Both selected nodes are ordinary commits with one parent; the root
+    // commit's empty parent list would make its reference one byte shorter.
+    for value in ["5", "3"] {
+        let first = update(&execution, &runtime, [(model, value)]);
+        release_test_commit_snapshot(&runtime, &first);
+    }
     let far = runtime
         .admit_branch_basis(&runtime.main_branch_identity())
         .unwrap();
-    release_test_commit_snapshot(&runtime, &old);
     for _ in 0..24 {
         for value in ["5", "3"] {
             let intervening = update(&execution, &runtime, [(model, value)]);
@@ -48,6 +54,15 @@ fn equal_payload_jumps_charge_the_same_receiving_owner_work_at_near_and_distant_
     while runtime.run_branch_root_reclamation_pass().roots_reclaimed() > 0 {}
     let near_result = measure(execution, &runtime, &near, &branches[0], model);
     let far_result = measure(execution, &runtime, &far, &branches[1], model);
+    eprintln!(
+        "near work {} memory {} cost {:?}; far work {} memory {} cost {:?}",
+        near_result.1,
+        near_result.2,
+        near_result.3.sharing_cost_delta(),
+        far_result.1,
+        far_result.2,
+        far_result.3.sharing_cost_delta()
+    );
     assert!(near_result.1 > 0);
     assert_eq!(near_result.1, far_result.1, "actual request charged work");
     assert_eq!(

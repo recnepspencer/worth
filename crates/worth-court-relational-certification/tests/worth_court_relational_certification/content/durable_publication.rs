@@ -149,22 +149,38 @@ fn content_durable_artifact_memory_refuses_before_the_medium_and_selected_commit
         .observe_branch(&runtime.main_branch_identity())
         .unwrap()
         .1;
-    let candidate = large_candidate(&runtime, &execution, &contract, 65_536);
-    let refusal = runtime
-        .publication_port()
-        .compare_and_publish(&execution, candidate);
+    // The root's original evidence encodes the authoritative payload while the
+    // candidate is prepared (branch/root_original_evidence.rs), so the artifact
+    // memory the 768 KiB request cannot fund is refused there, before any
+    // medium contact or selected commit.
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let mut transaction = runtime
+        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
+        .unwrap();
+    let input = super::fixture::Grid {
+        rows: 1,
+        columns: 65_536,
+        samples: vec![0; 65_536],
+    };
+    let id = transaction
+        .admit_content(&execution, FORMAT, &input)
+        .unwrap();
+    transaction
+        .push_batch(batch(&contract, id), execution.allocation_policy())
+        .unwrap();
+    let refusal = runtime.prepare_branch_transaction(&execution, transaction);
     assert!(
         matches!(
-            refusal,
-            RelationalPublicationOutcome::Denied(
-                RelationalPublicationDenial::DurablePublicationRefused(
-                    RelationalDurablePublicationRefusal::Encoding(
-                        RelationalCanonicalCommitArtifactEncodeDenial::Request(
-                            RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
-                        )
+            &refusal,
+            Err(TransactionCommitError::Execution { denial, .. })
+                if matches!(
+                    denial.kind,
+                    CommitExecutionDenialKind::Cause(
+                        RelationalExecutionDenialCause::PolicyMemoryExhausted { .. }
                     )
                 )
-            )
         ),
         "{refusal:?}"
     );
@@ -177,7 +193,7 @@ fn content_durable_artifact_memory_refuses_before_the_medium_and_selected_commit
             .descriptor(),
         before.descriptor()
     );
-    drop(refusal);
+    drop((refusal, basis, before));
     drop(runtime);
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
@@ -250,7 +266,8 @@ fn content_durable_artifact_cancellation_after_original_allocation_never_calls_m
             .descriptor(),
         before.descriptor()
     );
-    drop(refusal);
+    // The court's own basis shares the head root; drop every holder first.
+    drop((refusal, before));
     drop(runtime);
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
@@ -311,7 +328,7 @@ fn content_durable_artifact_original_work_exhaustion_is_exact_and_pre_effect() {
             .descriptor(),
         before.descriptor()
     );
-    drop(refusal);
+    drop((refusal, before));
     drop(runtime);
     assert_eq!(
         request.memory().unwrap().available_memory_bytes(),

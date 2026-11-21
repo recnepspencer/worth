@@ -1,15 +1,9 @@
 //! Public pin and fixed reached-region read after real cold checkpoint recovery.
 use crate::content::historical_kind::fixture::World;
-use std::{
-    collections::BTreeSet,
-    sync::Arc,
-};
+use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 use worth_relational::facade::{
-    durability::*,
-    identity::KindId,
-    runtime::RelationalRuntime,
-    transactions::*,
+    durability::*, identity::KindId, runtime::RelationalRuntime, transactions::*,
 };
 use worth_testkit_relational::maintenance::assert_change_bounded;
 mod queries;
@@ -203,14 +197,8 @@ fn fixed_read_work(regions: u32, history: usize, width: usize) -> ReadWork {
 }
 #[test]
 fn lazy_pin_and_fixed_read_do_not_grow_with_unrelated_regions_or_history() {
-    let model = (
-        fixed_read_work(8, 8, 1),
-        fixed_read_work(16, 8, 1),
-    );
-    let history = (
-        fixed_read_work(4, 16, 1),
-        fixed_read_work(4, 32, 1),
-    );
+    let model = (fixed_read_work(8, 8, 1), fixed_read_work(16, 8, 1));
+    let history = (fixed_read_work(4, 16, 1), fixed_read_work(4, 32, 1));
     eprintln!(
         "SDK fixed read cold member calls: model {}->{}; history {}->{}",
         model.0.members, model.1.members, history.0.members, history.1.members
