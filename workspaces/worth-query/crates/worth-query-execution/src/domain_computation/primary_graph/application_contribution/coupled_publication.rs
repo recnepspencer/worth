@@ -13,6 +13,7 @@ mod ledger;
 mod preparation;
 mod qualification;
 mod source_selection;
+mod succession;
 mod verified_parents;
 pub(in crate::domain_computation::primary_graph::application_contribution) use input_preparation::{PreparedCoupledInputs, PlannedOutput};
 pub(in crate::domain_computation::primary_graph::application_contribution) use source_selection::SelectedCoupledSource;
@@ -69,6 +70,8 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationAssemb
     consumed: RefCell<worth_execution::ExecutionOrderedMap<usize, ()>>,
     /// Retentions superseded at their authenticated invalidator, to reopen.
     reopens: RefCell<Vec<qualification::Reopen>>,
+    /// Successor rounds appended: their writers took their chain's slot.
+    successors: std::cell::Cell<usize>,
 }
 /// The applied position of the earliest stage whose effect demands some work.
 /// Work demanded through it (prerequisites, discovered children, continuations
@@ -126,8 +129,9 @@ enum CoupledWriterStage<'run> {
     ),
 }
 impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run, 'phase, S> {
+    /// Every member append, successor rounds included, takes the next one.
     fn applied_position(&self) -> usize {
-        self.authored.borrow().len() + self.writers.borrow().len()
+        self.authored.borrow().len() + self.writers.borrow().len() + self.successors.get()
     }
     pub(in crate::domain_computation::primary_graph) fn new(
         phase: &'run WorthQueryAdvancementPhase<'phase>,
@@ -164,6 +168,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             discovering: std::cell::Cell::new(None),
             consumed: RefCell::new(worth_execution::ExecutionOrderedMap::default()),
             reopens: RefCell::new(Vec::new()),
+            successors: std::cell::Cell::new(0),
         }
     }
     pub(in crate::domain_computation::primary_graph::application_contribution) fn owing(
@@ -360,6 +365,7 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
         *self.ledger.borrow_mut() = ledger::DerivationLedger::default();
         *self.consumed.borrow_mut() = worth_execution::ExecutionOrderedMap::default();
         self.reopens.borrow_mut().clear();
+        self.successors.set(0);
         self.superseding.set(false);
         let prepared = self
             .application

@@ -157,4 +157,22 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             prior_touches,
         })
     }
+
+    /// The #119 `PriorEffectRead` stop for chain `index`'s next round: Query,
+    /// which owns the round's read facts, found one of them outside the
+    /// chain's own-output view intersecting a key an earlier round wrote.
+    /// The refusal names `record` when the read had one, else the route source.
+    pub fn prior_effect_read(
+        &self,
+        index: usize,
+        record: Option<EntityId>,
+    ) -> TransactionCommitError {
+        let source = self
+            .parts
+            .get(index)
+            .and_then(|part| part.publication.producing_meaning())
+            .map_or_else(|| self.authored_source(), |meaning| meaning.source_scope);
+        continuation::postponed(Reason::PriorEffectRead, record.unwrap_or(source))
+    }
 }
+
