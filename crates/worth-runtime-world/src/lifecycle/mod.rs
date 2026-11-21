@@ -78,7 +78,7 @@ pub use close::{
 
 mod authored_signal;
 pub(crate) use authored_signal::PreparedWorldSignalFork;
-pub use authored_signal::WorldSignalForkPreparationDenial;
+pub use authored_signal::{WorldSignalForkPreparationDenial, WorldSignalLegDenial};
 pub use authored_signal::{
     RuntimeWorldAuthoredSignalAttachment, RuntimeWorldAuthoredSignalAttachmentDenial,
 };

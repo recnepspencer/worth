@@ -11,6 +11,7 @@ mod fork_section;
 mod framing;
 mod layout;
 mod owned_async;
+mod planned_leg;
 mod programme_affinity;
 mod provider_source;
 pub(super) mod publication;
@@ -28,6 +29,10 @@ pub use definition_publication::{
 };
 pub use dependency::BridgeAuthoredDependencyDescription;
 pub use fork_publication::BridgeDurableForkPublicationDenial;
+pub use planned_leg::{
+    BridgePlannedDefinitionLeg, BRIDGE_PLANNED_DEFINITION_LEG_PROTOCOL,
+    BRIDGE_PLANNED_DEFINITION_LEG_VERSION,
+};
 pub use readmission::{BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial};
 
 use worth_foundational::facade::{

@@ -20,7 +20,8 @@ impl Cause {
                     | Refusal::History(_)
                     | Refusal::Retention(_)
                     | Refusal::NoOwnerEffect
-                    | Refusal::OwnerEffectsMismatch { .. } => Denial::RecoveryUnavailable,
+                    | Refusal::OwnerEffectsMismatch { .. }
+                    | Refusal::SignalLeg(_) => Denial::RecoveryUnavailable,
                 }
             }
             Self::Source(cause) => match cause {

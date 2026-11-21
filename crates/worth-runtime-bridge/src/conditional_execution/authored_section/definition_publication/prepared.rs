@@ -7,13 +7,23 @@ use worth_signal::facade::durability::{
 pub struct BridgePreparedAuthoredDefinitionPublication {
     pub(super) prepared: PreparedDefinition,
     pub(super) expected: SignalDurableBranchHandle,
+    pub(super) planned: crate::conditional_execution::BridgePlannedDefinitionLeg,
 }
 impl BridgePreparedAuthoredDefinitionPublication {
+    /// The exact Signal leg this original performs, for World to record before
+    /// Native's effect. Recording it grants nothing.
+    pub fn planned_leg(&self) -> &crate::conditional_execution::BridgePlannedDefinitionLeg {
+        &self.planned
+    }
     pub fn admits_signal_basis(
         &self,
         basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
     ) -> bool {
         self.expected.basis().admission_identity() == basis.admission_identity()
+    }
+    /// Signal's readmitted predecessor branch this successor was prepared on.
+    pub fn expected_signal(&self) -> &SignalDurableBranchHandle {
+        &self.expected
     }
     pub fn completion(&self) -> BridgeDurableDefinitionCompletion {
         self.prepared.pending.completion()
@@ -36,11 +46,12 @@ impl BridgePreparedAuthoredDefinitionPublication {
             &mut worth_signal::facade::SignalTransaction<'_, D, I, E, Ctx, T>,
         ) -> Result<(), worth_signal::facade::SignalError>,
     {
+        let Self { prepared, .. } = self;
         let PreparedDefinition {
             pending,
             definition,
             refusal,
-        } = self.prepared;
+        } = prepared;
         let result = mutation.begin_composite_definition_publication(
             execution,
             binding,

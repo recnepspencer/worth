@@ -135,6 +135,9 @@ impl WorldCheckpointImage {
                 );
                 insert(&mut self.opens, &attempt, &admitted, execution)?;
             }
+            WorldRecord::PlannedSignalLeg(planned) => {
+                self.admit_planned_leg(planned, record.clone(), position, digest, execution)?
+            }
             WorldRecord::Released {
                 association,
                 custody,
@@ -201,6 +204,31 @@ impl WorldCheckpointImage {
             return Err(WorldReadmissionDenial::ConflictingOpenAttempt);
         }
         Ok(())
+    }
+    /// Only a mixed original plans a Signal leg: once, after its open and
+    /// before any decision.
+    fn admit_planned_leg(
+        &mut self,
+        planned: &crate::durability::WorldPlannedSignalLegRecord,
+        record: std::sync::Arc<DecodedWorldRecord>,
+        position: u64,
+        digest: [u8; 32],
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), WorldReadmissionDenial> {
+        self.require_open(&planned.association, planned.custody)?;
+        let attempt = planned.association.attempt();
+        let open = &self.opens[&attempt];
+        if open.component_intent != crate::durability::WorldOpenComponentIntent::RelationalAndSignal {
+            return Err(WorldReadmissionDenial::OccurrenceEvidenceMismatch);
+        }
+        if position <= open.position()
+            || self.planned_legs.contains_key(&attempt)
+            || self.dispositions.contains_key(&attempt)
+        {
+            return Err(WorldReadmissionDenial::ConflictingOpenAttempt);
+        }
+        let row = super::AdmittedWorldPlannedSignalLeg::from_validated_journal(record, position, digest);
+        insert(&mut self.planned_legs, &attempt, &row, execution)
     }
     pub(in crate::durability) fn admit_disposition(
         &mut self,

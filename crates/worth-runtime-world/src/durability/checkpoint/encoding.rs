@@ -64,7 +64,10 @@ impl WorldCheckpointImage {
             location(out, branch.position, &branch.digest)?;
             semantic_row(out, &branch.record().record, request, stop)?;
         }
-        number(out, (self.opens.len() + self.creations.len()) as u64)?;
+        number(
+            out,
+            (self.opens.len() + self.creations.len() + self.planned_legs.len()) as u64,
+        )?;
         for open in self.opens.values() {
             location(out, open.position(), open.digest())?;
             semantic_row(out, &open.record().record, request, stop)?;
@@ -72,6 +75,11 @@ impl WorldCheckpointImage {
         for intent in self.creations.values() {
             location(out, intent.position(), intent.digest())?;
             semantic_row(out, &intent.record().record, request, stop)?;
+        }
+        // Each planned leg follows its own open, which the reader admits first.
+        for planned in self.planned_legs.values() {
+            location(out, planned.position(), planned.digest())?;
+            semantic_row(out, &planned.record().record, request, stop)?;
         }
         number(
             out,

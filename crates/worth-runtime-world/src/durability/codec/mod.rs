@@ -10,6 +10,7 @@ pub(in crate::durability) use initial_components::bridge_decode_denial;
 pub(in crate::durability) mod occurrence_backing;
 pub(in crate::durability) mod owner_evidence;
 pub(in crate::durability) mod owner_value;
+mod planned_leg;
 use super::artifact::WORLD_ARTIFACT_VERSION;
 use super::{WorldDurableFrameDenial as Denial, WorldDurableMediumDenial, WorldRecord};
 use fields::*;
@@ -125,6 +126,7 @@ fn decode_record(
             }
         }
         3 => WorldRecord::OpenAttempt(read.open()?),
+        10 => WorldRecord::PlannedSignalLeg(planned_leg::read(&mut read, execution)?),
         7 => WorldRecord::CreationIntent(creation::read(&mut read)?),
         8 => WorldRecord::BranchCreated(created_branch::read(&mut read, execution)?),
         9 => {
@@ -219,6 +221,10 @@ pub(in crate::durability) fn write_record(
         WorldRecord::OpenAttempt(value) => {
             out(&[3])?;
             open(out, value)
+        }
+        WorldRecord::PlannedSignalLeg(planned) => {
+            out(&[10])?;
+            planned_leg::write(out, planned)
         }
         WorldRecord::CreationIntent(intent) => {
             out(&[7])?;

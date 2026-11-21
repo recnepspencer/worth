@@ -68,7 +68,12 @@ impl WorldIdentityFrontiers {
             | WorldRecord::CreationReleased {
                 association,
                 custody,
-            } => {
+            }
+            | WorldRecord::PlannedSignalLeg(super::WorldPlannedSignalLegRecord {
+                association,
+                custody,
+                ..
+            }) => {
                 include(
                     &mut self.attempt,
                     association.attempt().ordinal(),

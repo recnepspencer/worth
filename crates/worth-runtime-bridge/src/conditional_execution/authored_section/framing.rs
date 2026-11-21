@@ -7,7 +7,26 @@ use sha2::{Digest, Sha256};
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest, ExecutionRequestArrayBuilder};
 use worth_foundational::facade::{BoundaryProtocolCompatibilityWindow, BoundaryProtocolVersion};
 
-const MAGIC: &[u8; 8] = b"WBRGAUTH";
+/// Bridge's own framed families; each admits only its own current version.
+#[derive(Clone, Copy)]
+pub(super) enum Section {
+    Authored,
+    PlannedDefinitionLeg,
+}
+impl Section {
+    fn magic(self) -> &'static [u8; 8] {
+        match self {
+            Self::Authored => b"WBRGAUTH",
+            Self::PlannedDefinitionLeg => b"WBRGPLEG",
+        }
+    }
+    fn version(self) -> BoundaryProtocolVersion {
+        match self {
+            Self::Authored => BRIDGE_AUTHORED_SECTION_VERSION,
+            Self::PlannedDefinitionLeg => super::BRIDGE_PLANNED_DEFINITION_LEG_VERSION,
+        }
+    }
+}
 const HEADER: usize = 52;
 pub(super) const MAXIMUM_BYTES: usize = 16 << 20;
 pub(super) fn raw(
@@ -38,6 +57,13 @@ pub(super) fn encode(
     execution: &ExecutionRequest<'_, '_>,
     emit: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), D>,
 ) -> Result<ExecutionImmutableBytes, D> {
+    encode_section(Section::Authored, execution, emit)
+}
+pub(super) fn encode_section(
+    section: Section,
+    execution: &ExecutionRequest<'_, '_>,
+    emit: &mut dyn FnMut(&mut Writer<'_>) -> Result<(), D>,
+) -> Result<ExecutionImmutableBytes, D> {
     let charge = |bytes| work(execution, bytes);
     let mut size = 0usize;
     emit(&mut Writer::new(
@@ -50,7 +76,7 @@ pub(super) fn encode(
         },
         &charge,
     ))?;
-    let version = BRIDGE_AUTHORED_SECTION_VERSION.get().to_le_bytes();
+    let version = section.version().get().to_le_bytes();
     let length = (size as u64).to_le_bytes();
     work(execution, HEADER + version.len() + length.len())?;
     let mut hash = Sha256::new();
@@ -66,7 +92,7 @@ pub(super) fn encode(
     let hash: [u8; 32] = hash.finalize().into();
     let mut out =
         ExecutionRequestArrayBuilder::allocate(*execution, HEADER + size).map_err(D::Backing)?;
-    for field in [MAGIC.as_slice(), &version, &length, &hash] {
+    for field in [section.magic().as_slice(), &version, &length, &hash] {
         out.extend_from_slice(field).map_err(D::Backing)?;
     }
     emit(&mut Writer::new(
@@ -76,20 +102,20 @@ pub(super) fn encode(
     Ok(out.seal().map_err(D::Backing)?.into_immutable_bytes())
 }
 pub(super) fn payload(bytes: &[u8]) -> Result<Reader<'_>, D> {
+    payload_section(Section::Authored, bytes)
+}
+pub(super) fn payload_section(section: Section, bytes: &[u8]) -> Result<Reader<'_>, D> {
     if bytes.len() > MAXIMUM_BYTES {
         return Err(D::SizeLimit);
     }
-    if bytes.len() < HEADER || &bytes[..8] != MAGIC {
+    if bytes.len() < HEADER || &bytes[..8] != section.magic() {
         return Err(D::Malformed);
     }
     let version =
         BoundaryProtocolVersion::try_new(u32::from_le_bytes(bytes[8..12].try_into().unwrap()))
             .map_err(|_| D::Malformed)?;
-    BoundaryProtocolCompatibilityWindow::inclusive(
-        BRIDGE_AUTHORED_SECTION_VERSION,
-        BRIDGE_AUTHORED_SECTION_VERSION,
-    )
-    .admit(version)
+    BoundaryProtocolCompatibilityWindow::inclusive(section.version(), section.version())
+        .admit(version)
     .map_err(D::UnsupportedVersion)?;
     if u64::from_le_bytes(bytes[12..20].try_into().unwrap()) != (bytes.len() - HEADER) as u64 {
         return Err(D::Malformed);

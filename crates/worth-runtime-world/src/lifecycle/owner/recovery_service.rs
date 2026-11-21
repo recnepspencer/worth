@@ -7,6 +7,7 @@ use crate::recovery::{
 use super::RuntimeWorldOwnerRoot;
 mod memory_release;
 mod recovered_continuation;
+mod recovered_signal_leg;
 mod recovered_publication;
 
 #[cfg(test)]

@@ -143,7 +143,9 @@ fn read_rows(
             decoded::admit(row, image.binding.owner().home(), request).map_err(Denial::Medium)?;
         let allowed = match &record.record {
             WorldRecord::Branch { .. } | WorldRecord::BranchCreated(_) => branch,
-            WorldRecord::OpenAttempt(_) | WorldRecord::CreationIntent(_) => !branch,
+            WorldRecord::OpenAttempt(_)
+            | WorldRecord::CreationIntent(_)
+            | WorldRecord::PlannedSignalLeg(_) => !branch,
             WorldRecord::Owner { .. }
             | WorldRecord::Occurrence { .. }
             | WorldRecord::Released { .. }

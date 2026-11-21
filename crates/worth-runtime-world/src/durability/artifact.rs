@@ -7,6 +7,7 @@ pub(crate) use creation::{
     WorldRecordedRelationalCreationPlan, WorldRelationalForkEvidence,
 };
 pub(crate) use owner_evidence::{WorldOccurrenceOwnerEvidence, WorldSignalEvidence};
+
 mod record_input;
 pub(crate) use record_input::{
     WorldArtifactInput, WorldCreationIntentInput, WorldHeadInput, WorldOpenAttemptInput,
@@ -59,6 +60,14 @@ impl WorldOpenComponentIntent {
         }
     }
 }
+/// The Signal leg a mixed original planned, recorded before Native's effect.
+/// DATA in Bridge's own versioned section; it grants no publication.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct WorldPlannedSignalLegRecord {
+    pub(crate) association: CompositeAttemptAssociation,
+    pub(crate) custody: DurableProductUnpublishedOwnerEffectsIdentity,
+    pub(crate) leg: worth_runtime_bridge::facade::BridgePlannedDefinitionLeg,
+}
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct WorldRelationalEvidence {
     pub(crate) commit: u64,
@@ -77,6 +86,7 @@ pub(crate) enum WorldRecord {
         components: super::RecordedWorldInitialComponents,
     },
     OpenAttempt(WorldOpenAttemptRecord),
+    PlannedSignalLeg(WorldPlannedSignalLegRecord),
     CreationIntent(WorldCreationIntentRecord),
     BranchCreated(WorldBranchCreatedRecord),
     CreationReleased {
@@ -109,6 +119,7 @@ impl WorldRecord {
             Self::OpenAttempt(open) | Self::Occurrence { open, .. } => {
                 open.association.attempt().owner()
             }
+            Self::PlannedSignalLeg(planned) => planned.association.attempt().owner(),
             Self::Released { association, .. } | Self::Continued { association, .. } => {
                 association.attempt().owner()
             }
@@ -120,6 +131,7 @@ impl WorldRecord {
                 WorldDurableJournal::Branches
             }
             Self::OpenAttempt(_)
+            | Self::PlannedSignalLeg(_)
             | Self::Released { .. }
             | Self::Continued { .. }
             | Self::CreationIntent(_)
@@ -179,6 +191,7 @@ impl WorldDurableArtifact {
             WorldRecord::OpenAttempt(open) => Some(open),
             WorldRecord::Owner { .. }
             | WorldRecord::Branch { .. }
+            | WorldRecord::PlannedSignalLeg(_)
             | WorldRecord::Occurrence { .. }
             | WorldRecord::Released { .. }
             | WorldRecord::Continued { .. }

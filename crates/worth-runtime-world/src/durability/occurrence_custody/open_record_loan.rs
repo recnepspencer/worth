@@ -43,6 +43,7 @@ impl Drop for OpenRecordLoan<'_> {
                 | WorldRecord::OpenAttempt(_)
                 | WorldRecord::Released { .. }
                 | WorldRecord::Continued { .. }
+                | WorldRecord::PlannedSignalLeg(_)
                 | WorldRecord::CreationIntent(_)
                 | WorldRecord::BranchCreated(_)
                 | WorldRecord::CreationReleased { .. } => {

@@ -17,6 +17,7 @@ use worth_signal::facade::durability::{
 };
 mod completion;
 mod pending;
+mod planned;
 mod prepared;
 pub use completion::{BridgeDurableDefinitionCompletion, BridgeDurableDefinitionCompletionDenial};
 pub use prepared::BridgePreparedAuthoredDefinitionPublication;
@@ -30,6 +31,8 @@ pub enum BridgeDurableDefinitionPublicationDenial {
     },
     IdentityOrCorrespondenceChanged,
     SourceBasisMismatch,
+    /// The recorded planned leg is not the successor this program prepares.
+    PlannedLegChanged,
     ProjectionSlotOccupied {
         branch: DurableSignalBranchIdentity,
         node: worth_signal::facade::NodeId,
@@ -109,7 +112,19 @@ impl BridgeReadmittedAuthoredAssembly {
             .map_err(|cause| D::Signal(Box::new(SignalDurableAdvanceDenial::Source(cause))))?;
         let prepared =
             self.prepare_definition_publication(execution, branch, predecessor, request)?;
-        Ok(BridgePreparedAuthoredDefinitionPublication { prepared, expected })
+        let node = worth_foundational::facade::DurableSignalNodeIdentity::from_recorded(
+            branch,
+            predecessor.signal_node().index(),
+            predecessor.signal_node().generation(),
+        );
+        let planned = prepared
+            .pending
+            .planned_leg(execution, node, &prepared.definition)?;
+        Ok(BridgePreparedAuthoredDefinitionPublication {
+            prepared,
+            expected,
+            planned,
+        })
     }
     pub fn begin_conditional_definition_publication(
         &self,

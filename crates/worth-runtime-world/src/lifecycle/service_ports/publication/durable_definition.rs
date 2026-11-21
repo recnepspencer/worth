@@ -72,9 +72,6 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
                 custody:prepared.cancel(),
             };
         }
-        let original = AuthoredConditionalDefinitionAttemptCustody::new(definition);
-        let custody = prepared.prepared.reserve_conditional_definition_custody();
-        custody.retain_authored(Arc::clone(&original));
         let owner = match self.service() {
             Ok(owner) if owner.owner_identity() == prepared.expected_head().owner_identity() => {
                 owner
@@ -83,6 +80,26 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
                 return WorldDurablePublicationOutcome::ProductUnpublished(prepared.cancel())
             }
         };
+        // The Signal leg is durable DATA before Native may take its effect.
+        // A Signal-only original has no state between two owner effects.
+        let recorded = match prepared.prepared.durable_open() {
+            Some(open) if open.plans_signal_after_native() => open.publish_planned_signal_leg(
+                definition.planned_leg(),
+                &execution,
+                &|| cancellation.is_cancelled(),
+            ),
+            Some(_) => Ok(()),
+            None => Err(crate::durability::WorldDurableMediumDenial::Unavailable),
+        };
+        if let Err(cause) = recorded {
+            return WorldDurablePublicationOutcome::RecoveryRequired {
+                cause: crate::publication::WorldDurablePublicationDenial::PlannedSignalLeg(cause),
+                custody: prepared.cancel(),
+            };
+        }
+        let original = AuthoredConditionalDefinitionAttemptCustody::new(definition);
+        let custody = prepared.prepared.reserve_conditional_definition_custody();
+        custody.retain_authored(Arc::clone(&original));
         let outcome = owner.execute_authored_conditional_definition_with_signal(
             execution,
             prepared.prepared,
