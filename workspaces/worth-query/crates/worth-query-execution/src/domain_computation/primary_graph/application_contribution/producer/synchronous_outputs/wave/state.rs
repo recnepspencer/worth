@@ -46,8 +46,10 @@ pub(super) struct Scheduled<S: ApplicationSchema> {
     /// Later rows coalesced onto this canonical task.
     pub(super) alias_rows: Vec<usize>,
     pub(super) _alias_rows_memory: Option<ExecutionMemoryReservation>,
-    /// The rows its latest discovery pass selected.
+    /// The rows its discovery selected: its latest pass, plus every row a
+    /// quiescent outgoing refresh selected since.
     pub(super) children: Vec<usize>,
+    pub(super) _children_memory: Option<ExecutionMemoryReservation>,
     /// Set while reopened: what it selected before, checked on re-discovery.
     pub(super) reopen_check: Option<super::reopen::ReopenCheck>,
     pub(super) subject: &'static str,

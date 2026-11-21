@@ -2,6 +2,14 @@
 use super::*;
 use state::{map_insert, map_remove, push_funded, TaskState};
 
+/// Whether a discovery pass replaces a row's recorded selection (its own
+/// discovery) or adds to it (a quiescent outgoing refresh).
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub(super) enum Selection {
+    Replace,
+    Accumulate,
+}
+
 impl<S: ApplicationSchema> SynchronousOutputWave<S> {
     pub(super) fn complete_task(
         &mut self,
@@ -84,6 +92,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         next: Self,
         selections: Vec<(usize, std::ops::Range<usize>)>,
+        selection: Selection,
     ) -> Result<(), SynchronousOutputFailure> {
         let base = self.tasks.len();
         for task in next.tasks {
@@ -93,19 +102,21 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         for (row, range) in selections {
             let subject = self.tasks[row].subject;
             checkpoint(context.execution, subject, range.len() as u64 + 1)?;
-            let mut children = Vec::new();
-            let mut memory = None;
+            let task = &mut self.tasks[row];
+            if selection == Selection::Replace {
+                task.children = Vec::new();
+                task._children_memory = None;
+            }
             for child in range {
                 push_funded(
-                    &mut children,
-                    &mut memory,
+                    &mut task.children,
+                    &mut task._children_memory,
                     base + child,
                     context.execution,
                     subject,
                 )?;
             }
-            self.tasks[row].children = children;
-            if self.tasks[row].reopen_check.is_some() {
+            if selection == Selection::Replace && task.reopen_check.is_some() {
                 self.rediscovered.push(row);
             }
         }

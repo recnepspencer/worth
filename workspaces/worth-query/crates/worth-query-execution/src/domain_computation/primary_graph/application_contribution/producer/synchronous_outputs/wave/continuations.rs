@@ -43,7 +43,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             }
         }
         let appended = !next.tasks.is_empty();
-        self.adopt_discovered(context, next, selections)?;
+        self.adopt_discovered(context, next, selections, Selection::Replace)?;
         Ok(appended)
     }
 }

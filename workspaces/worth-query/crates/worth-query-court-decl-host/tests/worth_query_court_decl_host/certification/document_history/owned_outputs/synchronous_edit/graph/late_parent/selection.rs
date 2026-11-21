@@ -145,13 +145,13 @@ impl ApplicationProgramDefinition<Schema> for SameBatchProgram {
     }
 }
 
-fn seen() -> Vec<u64> {
+pub(super) fn seen() -> Vec<u64> {
     SEEN.with(|seen| std::mem::take(&mut *seen.borrow_mut()))
 }
 
 /// The reopened parent derives at 11 and no longer selects `decision-write(b)`,
 /// which already wrote `m`. The edit must not commit that dropped selection:
-/// its earlier discovery evidence stays live, so final support refuses.
+/// the wave refuses it once the re-discovery is identified.
 #[test]
 fn a_reopened_parent_that_drops_its_selection_refuses() {
     let host = world::install_program_with_other_model::<SelectProgram>(
@@ -180,17 +180,23 @@ fn a_reopened_parent_that_drops_its_selection_refuses() {
         .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
     assert_eq!(seen(), [7, 11], "selected at 7, then dropped at 11");
+    require_dropped(outcome);
+    assert_eq!(courts::native_head(&host), head);
+}
+
+/// The edit refused in the wave because a reopened derivation dropped a
+/// selection it had derived (typed `SupersededSelectionDropped` in C4).
+pub(super) fn require_dropped(outcome: Outcome) {
     let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome else {
         panic!("a dropped selection must not commit: {outcome:?}")
     };
-    let failure = cause
-        .invariant_execution_failure()
-        .unwrap_or_else(|| panic!("the final support owner refuses: {cause:?}"));
-    assert_eq!(
-        failure.kind(),
-        worth_query_host::facade::primary_graph::WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
+    let denial = cause
+        .coupled_producer_denial()
+        .unwrap_or_else(|| panic!("the wave refuses the dropped selection: {cause:?}"));
+    assert!(
+        format!("{denial:?}").contains("dropped a selection it derived"),
+        "{denial:?}"
     );
-    assert_eq!(courts::native_head(&host), head);
 }
 
 /// `first:a` and `decision-write(b)` run in one batch, the writer last. The

@@ -3,6 +3,7 @@ use super::*;
 use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap};
 use worth_relational::facade::identity::EntityId;
 mod completion;
+use completion::Selection;
 mod continuations;
 mod inputs;
 mod observation;
@@ -128,6 +129,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             alias_rows: Vec::new(),
             _alias_rows_memory: None,
             children: Vec::new(),
+            _children_memory: None,
             reopen_check: None,
             subject,
             rank,
@@ -343,8 +345,14 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 discovered?;
                 task.continuation_done = true;
                 selections.push((i, start..next.tasks.len()));
+            } else if matches!(task.state, TaskState::Done { parent: None })
+                && task.reopen_check.is_some()
+            {
+                // A reopened row that derived again as Retiring selects
+                // nothing: what it selected before must be checked too.
+                selections.push((i, 0..0));
             }
         }
-        self.adopt_discovered(context, next, selections)
+        self.adopt_discovered(context, next, selections, Selection::Replace)
     }
 }

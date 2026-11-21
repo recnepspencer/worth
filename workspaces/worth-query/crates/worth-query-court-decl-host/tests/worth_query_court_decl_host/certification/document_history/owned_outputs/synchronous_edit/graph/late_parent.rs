@@ -4,6 +4,8 @@ mod derived;
 mod program;
 #[macro_use]
 mod staged;
+mod alias;
+mod outgoing;
 mod prerequisite;
 mod selection;
 /// Commits `b = 4` and settles its outputs: `first:a` is then a verified

@@ -14,9 +14,13 @@ use state::{map_remove, TaskState};
 /// coalesces is a new row on re-discovery, yet the same selection.
 pub(super) struct ReopenCheck {
     invalidator: usize,
-    prior_children: Vec<super::super::occurrences::OccurrenceKey>,
+    prior_children: Vec<SelectedRoute>,
     prior_prerequisites: Vec<usize>,
 }
+
+/// One selected child: the connection that selected it and its route.
+/// Distinct connections selecting one route are distinct selections.
+type SelectedRoute = (&'static str, super::super::occurrences::OccurrenceKey);
 
 impl<S: ApplicationSchema> SynchronousOutputWave<S> {
     /// Reopen every retention qualified use superseded since the last call.
@@ -139,7 +143,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
         rows: Vec<usize>,
-    ) -> Result<Vec<super::super::occurrences::OccurrenceKey>, SynchronousOutputFailure> {
+    ) -> Result<Vec<SelectedRoute>, SynchronousOutputFailure> {
         let mut routes = Vec::new();
         let mut memory = None;
         for row in rows {
@@ -149,7 +153,13 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 Some(key) => key,
                 None => self.tasks[row].tree.route(context, candidate)?,
             };
-            state::push_funded(&mut routes, &mut memory, route, context.execution, subject)?;
+            state::push_funded(
+                &mut routes,
+                &mut memory,
+                (subject, route),
+                context.execution,
+                subject,
+            )?;
         }
         Ok(routes)
     }
@@ -184,7 +194,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             checkpoint(
                 context.execution,
                 subject,
-                (check.prior_children.len() + check.prior_prerequisites.len()) as u64 + 1,
+                (check.prior_children.len() * children.len().max(1)
+                    + check.prior_prerequisites.len()) as u64
+                    + 1,
             )?;
             let kept_children = check
                 .prior_children
@@ -194,14 +206,20 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 .prior_prerequisites
                 .iter()
                 .all(|parent| prerequisites.binary_search(parent).is_ok());
-            if kept_children && kept_parents {
-                context
-                    .owner
-                    .supersede_discovery(context.execution, row, check.invalidator)
-                    .map_err(CoupledSourceReadStop::from)?;
-            } else {
+            if !(kept_children && kept_parents) {
+                // Final support cannot be the guard: the quiescent outgoing
+                // refresh replaces outgoing evidence. Refuse here (typed
+                // `SupersededSelectionDropped` lands with C4).
                 observation::record(|| format!("dropped selection task={row}"));
+                return Err(super::super::occurrences::refusal(
+                    subject,
+                    "a reopened derivation dropped a selection it derived",
+                ));
             }
+            context
+                .owner
+                .supersede_discovery(context.execution, row, check.invalidator)
+                .map_err(CoupledSourceReadStop::from)?;
         }
         Ok(())
     }
