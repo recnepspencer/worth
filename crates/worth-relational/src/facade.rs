@@ -216,7 +216,9 @@ pub mod runtime {
         ImmutableReadContract, RelationalBoundaryContract, RelationalRuntimeApi,
     };
     #[doc(hidden)]
-    pub use crate::publication::ownership::CurrentOwnershipContactsForTest;
+    pub use crate::publication::ownership::{
+        CurrentOwnershipContactsForTest, CurrentOwnershipLocalityForTest,
+    };
     pub use crate::publication::{
         PostCommitConsumer, PostCommitConsumptionContext, PostCommitConsumptionFailure,
     };

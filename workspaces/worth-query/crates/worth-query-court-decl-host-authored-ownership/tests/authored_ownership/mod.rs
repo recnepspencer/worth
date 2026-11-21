@@ -26,6 +26,7 @@ mod coupled;
 mod directory_correction_refusal;
 mod lifecycle;
 mod lifecycle_handlers;
+mod locality;
 mod metadata_guard;
 mod parameter_inverse;
 mod producer;
