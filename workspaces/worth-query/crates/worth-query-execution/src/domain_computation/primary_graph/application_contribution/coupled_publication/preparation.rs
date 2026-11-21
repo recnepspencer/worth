@@ -314,7 +314,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         let produces = self.next_read();
         self.record_consumption(execution, &self.consuming(), produces)?;
         if let Some(chain) = &chain {
-            self.require_independent(candidate, chain, writer.session())?;
+            self.require_independent(execution, candidate, chain, writer.session(), &pin)?;
             self.rekey_original(chain.index, writer.session(), &mut batch);
         }
         let next = CoupledWriter {

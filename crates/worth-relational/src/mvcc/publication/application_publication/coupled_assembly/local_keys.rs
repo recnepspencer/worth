@@ -114,6 +114,62 @@ pub(super) fn rescope(
         .map_err(custody::execution_stop)?
         .0
 }
+/// A successor round's attempt issues its own mutation partition; the chain's
+/// records live where its head allocated them. Each rescoped key names one
+/// chain record, so its creates and created references take the head's
+/// partition for that key.
+pub(super) fn repartition(
+    execution: &ExecutionRequest<'_, '_>,
+    head: &[crate::transactions::data::MutationIntent],
+    symbols: &StringInterner,
+    batches: &mut [WorkerIntentBatch],
+    roles: &mut [RequiredOutputRoleTarget],
+) -> Result<(), TransactionCommitError> {
+    use crate::transactions::data::{CreateIntent, MutationIntent};
+    execution
+        .run_native_with_checkpoint(|context| {
+            let mut partitions = std::collections::BTreeMap::new();
+            for intent in head {
+                if let MutationIntent::Create(CreateIntent::Entity(spec)) = intent {
+                    let text = spec.client_key.resolve_with_interner(symbols).ok_or_else(|| {
+                        crate::mvcc::origin_denial(
+                            "coupled local key has no actual Native symbol meaning",
+                        )
+                    })?;
+                    checkpoint(context, text.len() as u64 + 1).map_err(custody::execution_stop)?;
+                    partitions.insert(text.to_owned(), spec.partition_id);
+                }
+            }
+            let head_partition =
+                |key: &ClientKey| key.as_raw_str().and_then(|text| partitions.get(text)).copied();
+            let mut repartition = |reference: &mut EntityReference| {
+                if let EntityReference::Created(created) = reference
+                    && let Some(partition) = head_partition(&created.client_key)
+                {
+                    created.partition_id = partition;
+                }
+                Ok::<_, TransactionCommitError>(())
+            };
+            for batch in batches {
+                for intent in &mut batch.intents {
+                    checkpoint(context, 1).map_err(custody::execution_stop)?;
+                    if let MutationIntent::Create(CreateIntent::Entity(spec)) = intent
+                        && let Some(partition) = head_partition(&spec.client_key)
+                    {
+                        spec.partition_id = partition;
+                    }
+                    intent.visit_entity_references_mut(&mut repartition)?;
+                }
+            }
+            for role in roles {
+                checkpoint(context, 1).map_err(custody::execution_stop)?;
+                repartition(&mut role.target)?;
+            }
+            Ok::<_, TransactionCommitError>(())
+        })
+        .map_err(custody::execution_stop)?
+        .0
+}
 fn overflow() -> TransactionCommitError {
     custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
 }

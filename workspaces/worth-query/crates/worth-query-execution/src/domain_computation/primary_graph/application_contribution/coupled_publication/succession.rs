@@ -44,15 +44,27 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
     /// own-output view intersects a key its chain's earlier rounds wrote.
     pub(super) fn require_independent(
         &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
         chain: &ContinuedChain,
         session: crate::domain_computation::WorthQueryProviderSessionView<'_>,
+        current: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
     ) -> Result<(), CoupledSourceReadStop> {
         match self
             .application
             .runtime
             .primary_provider
-            .coupled_writer_prior_effect(session, &chain.own, &chain.prior)
+            .coupled_writer_prior_effect(
+                execution,
+                session,
+                self.before,
+                current,
+                &chain.own,
+                &chain.prior,
+            )
+            .map_err(CoupledSourceReadStop::capture)?
         {
             None => Ok(()),
             Some(record) => Err(candidate.prior_effect_read(chain.index, record).into()),

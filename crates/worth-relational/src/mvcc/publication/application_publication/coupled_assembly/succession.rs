@@ -95,6 +95,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         {
             return Err(continuation::postponed(Reason::StructuralEffect, source).into());
         }
+        super::local_keys::repartition(
+            execution,
+            &self.parts[index].commands.plan().merged_intents,
+            self.mutation.candidate_symbols().interner(),
+            &mut batches,
+            publication.roles_mut(),
+        )?;
         self.prove_succession(execution, index, content, &publication, &batches)?;
         let first_batch = self.transaction.batches().len();
         let first_fragment = self

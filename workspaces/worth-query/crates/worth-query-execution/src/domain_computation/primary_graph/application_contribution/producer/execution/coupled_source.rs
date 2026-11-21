@@ -275,8 +275,15 @@ where
     {
         return Ok(CoupledSourceRead::Prepared(index));
     }
+    // A reopened route that already has a part reads the owner its part
+    // claimed: the successor round continues that chain (§1.5).
+    let owner = if purpose == CoupledSourceReadPurpose::Supersede {
+        assembly.read_successor_parent_owner(execution, demand.family, root, &partition)?
+    } else {
+        assembly.read_parent_owner(execution, demand.family, root, &partition)?
+    };
     let (predecessor, required_writer, unlisted) =
-        match assembly.read_parent_owner(execution, demand.family, root, &partition)? {
+        match owner {
             Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
                 return Ok(CoupledSourceRead::Retiring)
             }
