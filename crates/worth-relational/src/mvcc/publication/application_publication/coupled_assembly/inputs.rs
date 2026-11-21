@@ -179,14 +179,13 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         })
     }
 
-    /// Whether part `parent`'s latest round applied wholly before part
-    /// `consumer`'s latest round. Without successor rounds this is part order.
+    /// Whether part `parent`'s latest round appended before part
+    /// `consumer`'s latest round. Without successor rounds this is part order;
+    /// a round with no batch orders by its append ordinal like any other.
     fn round_precedes(&self, parent: usize, consumer: usize) -> bool {
         parent != consumer
             && match (self.parts.get(parent), self.parts.get(consumer)) {
-                (Some(parent), Some(consumer)) => {
-                    parent.chain.batches.end <= consumer.chain.batches.start
-                }
+                (Some(parent), Some(consumer)) => parent.chain.latest < consumer.chain.latest,
                 _ => false,
             }
     }
