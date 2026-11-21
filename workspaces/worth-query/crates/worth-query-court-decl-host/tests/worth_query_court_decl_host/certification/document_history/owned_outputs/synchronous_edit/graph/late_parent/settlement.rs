@@ -4,6 +4,7 @@
 use super::super::super::interleaved::component_carriage::parent as owner;
 use super::*;
 use family::{decision_write, saturated_input};
+mod current_output;
 mod recorded;
 
 /// The edit roots `saturated-input(a)`: a + min(m, 5).

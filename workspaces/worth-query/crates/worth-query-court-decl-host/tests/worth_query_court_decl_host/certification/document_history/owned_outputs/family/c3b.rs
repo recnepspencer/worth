@@ -5,6 +5,9 @@ use super::*;
 pub mod cross_converge;
 pub mod cross_oscillate;
 pub mod cross_reader;
+pub mod capped_consumer;
+pub mod capped_reader;
+pub mod saturated_consumer;
 pub mod saturated_input;
 pub mod self_write;
 
@@ -15,7 +18,10 @@ pub fn contracts(
     self_write::contracts(contracts)?;
     cross_reader::contracts(contracts)?;
     cross_converge::contracts(contracts)?;
-    cross_oscillate::contracts(contracts)
+    cross_oscillate::contracts(contracts)?;
+    saturated_consumer::contracts(contracts)?;
+    capped_reader::contracts(contracts)?;
+    capped_consumer::contracts(contracts)
 }
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
@@ -24,5 +30,8 @@ pub fn install(
     self_write::install(setup)?;
     cross_reader::install(setup)?;
     cross_converge::install(setup)?;
-    cross_oscillate::install(setup)
+    cross_oscillate::install(setup)?;
+    saturated_consumer::install(setup)?;
+    capped_reader::install(setup)?;
+    capped_consumer::install(setup)
 }

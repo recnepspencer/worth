@@ -51,6 +51,12 @@ macro_rules! producer_operation {
             read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), MemberValue::at("MemberValue")]; creates: [$entity]; links: [$of];
         });
     };
+    (SaturatedConsumerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedConsumerInitial, $entity, $key, $value, $of); };
+    (SaturatedConsumerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedConsumerPreserve, $entity, $key, $value, $of); };
+    (CappedReaderInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedReaderInitial, $entity, $key, $value, $of); };
+    (CappedReaderPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedReaderPreserve, $entity, $key, $value, $of); };
+    (CappedConsumerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedConsumerInitial, $entity, $key, $value, $of); };
+    (CappedConsumerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedConsumerPreserve, $entity, $key, $value, $of); };
     (@member_write $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
         worth_query_operation!(pub $operation for Schema, input InputBinding; access {
             read_entities: [SourceEntity, $entity, Member]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
@@ -71,6 +77,27 @@ macro_rules! producer_operation {
     };
 }
 macro_rules! producer_decision_dependency {
+    (SaturatedConsumerInitial, $reader:ident, $source:ident, $input:ident) => {{
+        let model = $reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
+        producer_decision_dependency!(@current_output $reader, model, super::super::saturated_input::Family)
+    }};
+    (CappedReaderInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_member $reader, $input).min(1) };
+    (CappedConsumerInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@current_output $reader, $source, super::super::capped_reader::Family) };
+    (SaturatedConsumerPreserve, $reader:ident, $source:ident, $input:ident) => {{
+        let model = $reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
+        producer_decision_dependency!(@current_output $reader, model, super::super::saturated_input::Family)
+    }};
+    (CappedReaderPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_member $reader, $input).min(1) };
+    (CappedConsumerPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@current_output $reader, $source, super::super::capped_reader::Family) };
+    // The value of the output `$family` currently publishes for `$producer`.
+    (@current_output $reader:ident, $producer:ident, $family:ty) => {{
+        match $reader.current_output::<$family, Model>(&$producer)? {
+            WorthQueryCurrentOutputSelection::Unique(output) => $reader
+                .field(&output, FirstValue::at("FirstValue"))?
+                .expect("current output has its value"),
+            _ => panic!("the consumed output is current and unique"),
+        }
+    }};
     (SelfWriteInitial, $reader:ident, $source:ident, $input:ident) => {{
         let first = $reader.resolve_entity(FirstKey::at("FirstKey"), "first:a".to_owned())?;
         $reader.field(&first, FirstValue::at("FirstValue"))?.expect("derived first:a has its value")

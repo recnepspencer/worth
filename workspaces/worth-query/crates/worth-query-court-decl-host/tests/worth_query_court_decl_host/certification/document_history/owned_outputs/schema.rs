@@ -120,6 +120,9 @@ fn declare(
     let schema = family::convergent::declare(schema);
     let schema = family::parity_input::declare(schema);
     let schema = family::saturated_input::declare(schema);
+    let schema = family::saturated_consumer::declare(schema);
+    let schema = family::capped_reader::declare(schema);
+    let schema = family::capped_consumer::declare(schema);
     let schema = family::self_write::declare(schema);
     let schema = family::cross_reader::declare(schema);
     let schema = family::cross_converge::declare(schema);

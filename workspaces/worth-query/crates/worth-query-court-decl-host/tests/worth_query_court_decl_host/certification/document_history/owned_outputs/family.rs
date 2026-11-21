@@ -394,4 +394,7 @@ pub mod convergent;
 pub mod parity_input;
 pub mod c3b;
 pub mod registry;
-pub use c3b::{cross_converge, cross_oscillate, cross_reader, saturated_input, self_write};
+pub use c3b::{
+    capped_consumer, capped_reader, cross_converge, cross_oscillate, cross_reader, saturated_consumer,
+    saturated_input, self_write,
+};

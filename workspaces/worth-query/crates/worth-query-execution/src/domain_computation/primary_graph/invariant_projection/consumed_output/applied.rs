@@ -14,11 +14,13 @@ type Pin = RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>;
 struct AppliedConsumptionCells {
     supported: OnceLock<()>,
     settled: OnceLock<ConsumedOutputEvidence>,
-    /// The chain's later round this consumption settled to (R3), when the
+    /// The chain's latest round this consumption settled to (R3), when the
     /// consumer was not re-run: its writer and meaning replace the consumed
-    /// ones for final support and publication.
-    replacement: OnceLock<SettledReplacement>,
+    /// ones for final support and publication. Each later settlement of the
+    /// same chain replaces it.
+    replacement: std::sync::Mutex<Option<SettledReplacement>>,
 }
+#[derive(Clone)]
 struct SettledReplacement {
     completion: CoupledOutputCompletion,
     meaning: RequiredOutputPublicationMeaning,
@@ -62,7 +64,7 @@ impl AppliedConsumedOutput {
         cells.push(AppliedConsumptionCells {
             supported: OnceLock::new(),
             settled: OnceLock::new(),
-            replacement: OnceLock::new(),
+            replacement: std::sync::Mutex::new(None),
         })?;
         Ok(Self {
             completion: preparation.completion.clone(),
@@ -121,7 +123,7 @@ impl AppliedConsumedOutput {
                 .any(|((role, _, _, _), entity)| role == self.role && *entity == self.entity)
             && attempt.required_output_key() == self.key;
         if same && settle {
-            let _ = self.cells[0].replacement.set(SettledReplacement {
+            *self.replacement_cell() = Some(SettledReplacement {
                 completion: preparation.completion.clone(),
                 meaning: outputs.meaning.clone(),
                 writer: writer.clone(),
@@ -129,14 +131,31 @@ impl AppliedConsumedOutput {
         }
         same
     }
+    fn replacement_cell(&self) -> std::sync::MutexGuard<'_, Option<SettledReplacement>> {
+        self.cells[0]
+            .replacement
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+    fn replacement(&self) -> Option<SettledReplacement> {
+        self.replacement_cell().clone()
+    }
+    /// The completion this consumption settles against at publication: its
+    /// settled replacement's, or the consumed writer's.
+    pub(in crate::domain_computation::primary_graph) fn settling_completion(
+        &self,
+    ) -> CoupledOutputCompletion {
+        self.replacement()
+            .map_or_else(|| self.completion.clone(), |settled| settled.completion)
+    }
     pub(in crate::domain_computation::primary_graph) fn require_support(
         &self,
         position: usize,
         members: &[CoupledApplicationMember],
         complete: &Pin,
     ) -> bool {
-        let replacement = self.cells[0].replacement.get();
-        let (completion, meaning, writer) = match replacement {
+        let replacement = self.replacement();
+        let (completion, meaning, writer) = match &replacement {
             Some(settled) => (&settled.completion, &settled.meaning, &settled.writer),
             None => (&self.completion, &self.meaning, &self.writer),
         };
@@ -201,10 +220,7 @@ impl AppliedConsumedOutput {
             self.cells[0].supported.get().is_some(),
             "final support precedes publication"
         );
-        let completion = self.cells[0]
-            .replacement
-            .get()
-            .map_or(&self.completion, |settled| &settled.completion);
+        let completion = self.settling_completion();
         let settled = completion.settled_consumption(after.clone(), &self.role, self.entity);
         assert!(
             self.cells[0].settled.set(settled).is_ok(),

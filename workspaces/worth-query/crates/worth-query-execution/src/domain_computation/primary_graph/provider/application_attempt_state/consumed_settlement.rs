@@ -29,6 +29,16 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         else {
             return false;
         };
+        // A consumer of a committed (Recorded) output names its parent by
+        // semantic source, not by this route's writer, and has no settlement
+        // transition: it is reopened and reads the replacement again.
+        if consumer
+            .consumed_outputs()
+            .iter()
+            .any(|consumed| consumed.recorded_evidence())
+        {
+            return false;
+        }
         // Every output the consumer's own derivation read from this route
         // must be exactly what the replacement publishes. A consumer that
         // named the route only as its prerequisite read none: nothing on the
