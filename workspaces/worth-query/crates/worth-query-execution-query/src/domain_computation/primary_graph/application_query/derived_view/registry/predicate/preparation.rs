@@ -1,4 +1,5 @@
 //! Caller custody binds each genuine Native round; only the accepted child promotes.
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 mod retirement;
 mod round;
 use super::{PredicateWorld, SourcePredicateAxis};

@@ -59,7 +59,7 @@ impl WorthQuerySourceExpectationDenial {
         &self.subject
     }
 
-    pub fn source_retention_denied(
+    pub(crate) fn source_retention_denied(
         subject: &str,
         denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
     ) -> Self {
@@ -88,7 +88,7 @@ impl WorthQuerySourceExpectationDenial {
             _ => None,
         }
     }
-    pub fn retention_denial(&self) -> Option<&crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>{
+    pub(crate) fn retention_denial(&self) -> Option<&crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial>{
         self.retention_denial.as_ref()
     }
 
@@ -106,7 +106,7 @@ impl WorthQuerySourceExpectationDenial {
         self.authorization_denial.as_deref()
     }
 
-    pub fn admission_authorization(
+    pub(crate) fn admission_authorization(
         subject: &str,
         denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
     ) -> Self {
@@ -125,7 +125,10 @@ impl WorthQuerySourceExpectationDenial {
         )
     }
 
-    pub fn new(kind: WorthQuerySourceExpectationDenialKind, subject: impl Into<String>) -> Self {
+    pub(crate) fn new(
+        kind: WorthQuerySourceExpectationDenialKind,
+        subject: impl Into<String>,
+    ) -> Self {
         Self::from_kind(kind, subject.into())
     }
 
@@ -142,6 +145,60 @@ impl WorthQuerySourceExpectationDenial {
             retention_denial: None,
             authorization_denial: None,
         }
+    }
+}
+
+/// Crate-boundary internal port for `WorthQuerySourceExpectationDenial`
+/// construction and retention evidence access. Never exported on
+/// `worth-query-execution::facade` or Host.
+pub trait SourceExpectationDenialInternalPort: Sized {
+    fn from_kind_and_subject(
+        kind: WorthQuerySourceExpectationDenialKind,
+        subject: impl Into<String>,
+    ) -> Self;
+    fn source_retention_denied(
+        subject: &str,
+        denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
+    ) -> Self;
+    fn admission_authorization(
+        subject: &str,
+        denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> Self;
+    fn retention_denial(
+        &self,
+    ) -> Option<
+        &crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
+    >;
+}
+
+impl SourceExpectationDenialInternalPort for WorthQuerySourceExpectationDenial {
+    fn from_kind_and_subject(
+        kind: WorthQuerySourceExpectationDenialKind,
+        subject: impl Into<String>,
+    ) -> Self {
+        Self::new(kind, subject)
+    }
+
+    fn source_retention_denied(
+        subject: &str,
+        denial: crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
+    ) -> Self {
+        Self::source_retention_denied(subject, denial)
+    }
+
+    fn admission_authorization(
+        subject: &str,
+        denial: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
+        Self::admission_authorization(subject, denial)
+    }
+
+    fn retention_denial(
+        &self,
+    ) -> Option<
+        &crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial,
+    >{
+        Self::retention_denial(self)
     }
 }
 

@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 pub use worth_query_execution_lineage::facade::primary_graph::provider::{
     branch_commit_coordination, invariant_execution_failure, native_publication_roles,
     relational_execution_denial,
@@ -223,7 +224,7 @@ impl WorthQueryPrimaryGraphProvider {
     ) {
         idempotency::bind_receipt(
             batch,
-            self.graph.layout.provider_idempotency(),
+            self.graph.layout_ref().provider_idempotency(),
             idempotency,
             outcome_identity,
             emitted_effect_count,
@@ -241,7 +242,7 @@ impl WorthQueryPrimaryGraphProvider {
         mutation_partition: worth_relational::facade::identity::PartitionId,
     ) -> worth_relational::facade::transactions::WorkerIntentBatch {
         batch.push(aftermath_causality::aftermath_causality_create_intent(
-            self.graph.layout.provider_aftermath_causality(),
+            self.graph.layout_ref().provider_aftermath_causality(),
             causality,
             outcome_identity,
             mutation_partition,
@@ -266,7 +267,7 @@ impl WorthQueryPrimaryGraphProvider {
             .map_err(|_| "external-effect correlation derivation failed")?;
         let pending =
             crate::domain_computation::application_aftermath::bind_dispatch_outbox_create_intent(
-                Some(self.graph.layout.provider_dispatch_outbox()),
+                Some(self.graph.layout_ref().provider_dispatch_outbox()),
                 record.as_ref(),
                 mutation_partition,
             );

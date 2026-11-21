@@ -1,6 +1,7 @@
 //! Pin DATA joins the protected historical target before live custody is minted.
 use super::*;
 use worth_foundational::facade::{CorrectionMaterialPinOwner, DurableCompositeCommitIdentity};
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 pub(super) fn admit(
     request: &ExecutionRequest<'_, '_>,
     originals: &WorldProgramActivationHistory,
@@ -29,7 +30,7 @@ pub(super) fn admit(
                 }
             }
         }
-        let layout = provider.graph.layout.provider_idempotency();
+        let layout = provider.graph.layout_ref().provider_idempotency();
         for subject in native
             .durability_authority()
             .discover_all_associated_effects(request)

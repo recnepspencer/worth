@@ -51,7 +51,7 @@ impl WorthQueryApplicationLiveControls {
         self.maximum_materialized_record_count
     }
 
-    pub fn replace_request(&mut self, request: WorthQueryRequestScope) {
+    pub(crate) fn replace_request(&mut self, request: WorthQueryRequestScope) {
         self.delivery.replace_request(request);
     }
 }

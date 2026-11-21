@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 pub use worth_query_execution_lineage::facade::primary_graph::application_attempt::dependency_identity::*;
 pub use worth_query_execution_lineage::facade::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes;
@@ -145,7 +146,7 @@ impl<Schema, Operation, Input, Scope>
         let lineage = runtime
             .primary_provider()
             .graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let head = lineage

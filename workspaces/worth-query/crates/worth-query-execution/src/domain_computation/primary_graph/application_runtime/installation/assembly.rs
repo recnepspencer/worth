@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_runtime::facade::ports::ProductWorldResourcesInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 pub(super) fn assemble_application_runtime<Schema>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,

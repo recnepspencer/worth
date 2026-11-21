@@ -2,6 +2,7 @@
 use super::super::idempotency::snapshot_resolution::original_binding;
 use super::*;
 use worth_foundational::facade::WorldOriginalFate;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::runtime::RelationalRuntime;
 
 pub(super) fn admit(
@@ -25,7 +26,7 @@ pub(super) fn admit(
     {
         return Err(Denial::OriginalMismatch);
     }
-    let layout = provider.graph.layout.provider_idempotency();
+    let layout = provider.graph.layout_ref().provider_idempotency();
     for (identity, material) in &catalog.material {
         request.consult().map_err(Denial::Execution)?;
         let original = originals

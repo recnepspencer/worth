@@ -1,5 +1,6 @@
 //! Bind complete installed-family publication at the actual precommit image.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 pub mod authored_retirement;
 use crate::domain_computation::primary_graph::PreparedPrerequisiteClaims;
@@ -26,7 +27,7 @@ pub(super) fn bind(
     let Some(required) = required else {
         return authored_retirement::bind(proposal, execution, before, provider, attempt);
     };
-    let Some(publisher) = &provider.graph.application_publication else {
+    let Some(publisher) = &provider.graph.application_publication_ref() else {
         return Ok(proposal);
     };
     let Some(dependency) = attempt.idempotency().producer_dependency_identity() else {
@@ -60,7 +61,7 @@ pub(super) fn bind(
     let scope = attempt.affinity().operation_scope();
     let (family, head) = provider
         .graph
-        .output_lineage
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .required_publication_head(
@@ -75,7 +76,7 @@ pub(super) fn bind(
     let (producer, source_epoch) = required.native_prior_checkpoint_input();
     let (roles, all_created) =
         crate::domain_computation::primary_graph::provider::native_publication_roles::collect(
-            &provider.graph.layout,
+            provider.graph.layout_ref(),
             targets,
         )
         .ok_or_else(overflow)?;
@@ -181,7 +182,7 @@ pub(super) fn bind(
             let head = head.ok_or_else(mismatch)?;
             provider.graph.with_runtime(execution, |runtime| {
                 head.readmit(runtime, execution, &publisher.native, native_basis,
-                    &meaning.family, scope.scope(), partition, &provider.graph.layout)
+                    &meaning.family, scope.scope(), partition, provider.graph.layout_ref())
             }).map_err(|stop| match stop {
                 crate::domain_computation::primary_graph::output_lineage::required_publication::head::RequiredPublicationReadmissionStop::Selection(stop) => native_output_witness_stop(stop),
                 crate::domain_computation::primary_graph::output_lineage::required_publication::head::RequiredPublicationReadmissionStop::Native(stop) => transaction_commit_stop(stop),

@@ -1,4 +1,5 @@
 use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod consumed;
@@ -84,7 +85,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                         .runtime
                         .primary_provider
                         .graph
-                        .output_lineage
+                        .output_lineage_ref()
                         .lock()
                         .unwrap_or_else(std::sync::PoisonError::into_inner);
                     let read = lineage_read(|| {
@@ -155,7 +156,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .runtime
             .primary_provider
             .graph
-            .source_owner
+            .source_owner_ref()
             .invalidation_owner;
         let snapshot = self.application_basis().snapshot_handle();
         require_witnessed_output(

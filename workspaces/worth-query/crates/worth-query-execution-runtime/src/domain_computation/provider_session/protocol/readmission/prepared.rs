@@ -43,7 +43,7 @@ impl WorthQueryProviderSessionGrant {
         self.prepare_with_receiver(phase, phase.world_owner(), &provider, || Ok(receiver))
     }
 
-    pub fn prepare_with_receiver<'run>(
+    pub(crate) fn prepare_with_receiver<'run>(
         self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'run>,
         owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
@@ -69,6 +69,36 @@ impl WorthQueryProviderSessionGrant {
             ));
         }
         receiver.plan.readmit_physical(phase, grant.admission)
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryProviderSessionGrant`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ProviderSessionGrantInternalPort: Sized {
+    fn prepare_with_receiver<'run>(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'run>,
+        owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
+        provider: &std::sync::Arc<super::super::WorthQueryGraphProviderAnchor>,
+        receiver: impl FnOnce() -> Result<
+            WorthQueryProviderSessionReceiver<'run>,
+            WorthQueryProviderSessionFailure,
+        >,
+    ) -> Result<WorthQueryPreparedProviderSession<'run>, WorthQueryProviderSessionFailure>;
+}
+
+impl ProviderSessionGrantInternalPort for WorthQueryProviderSessionGrant {
+    fn prepare_with_receiver<'run>(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'run>,
+        owner: Option<worth_runtime_world::facade::RuntimeWorldOwnerIdentity>,
+        provider: &std::sync::Arc<super::super::WorthQueryGraphProviderAnchor>,
+        receiver: impl FnOnce() -> Result<
+            WorthQueryProviderSessionReceiver<'run>,
+            WorthQueryProviderSessionFailure,
+        >,
+    ) -> Result<WorthQueryPreparedProviderSession<'run>, WorthQueryProviderSessionFailure> {
+        Self::prepare_with_receiver(self, phase, owner, provider, receiver)
     }
 }
 

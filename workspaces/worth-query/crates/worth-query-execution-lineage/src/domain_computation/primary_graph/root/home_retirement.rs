@@ -6,6 +6,7 @@ use crate::domain_computation::execution_runtime::product_world::{
 use crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial;
 use std::sync::Mutex;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
+use worth_query_execution_runtime::facade::ports::RelationalSourceOwnerInternalPort as _;
 use worth_relational::facade::runtime::RelationalRuntime;
 
 /// The serving graph and its integration copies each retire their actual
@@ -31,7 +32,7 @@ impl PrimaryGraphSourceCustody {
     }
 
     pub fn new(serving: WorthQueryRelationalSourceOwner) -> Self {
-        let invalidation_owner = std::sync::Arc::clone(&serving.invalidation_owner)
+        let invalidation_owner = std::sync::Arc::clone(serving.invalidation_owner_ref())
             .into_any_arc()
             .downcast::<super::super::SourceInvalidationOwner>()
             .expect("primary graph source carries SourceInvalidationOwner");

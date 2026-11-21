@@ -1,5 +1,6 @@
 //! Each writer admits its own contract under one genuine Native invariant judgment.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 enum CoupledContribution<'a> {
     Producer(&'a worth_relational::facade::mvcc::RequiredOutputPublicationMeaning),
     AuthoredStage(usize),
@@ -150,7 +151,7 @@ impl WorthQueryPrimaryGraphProvider {
                 .map_err(super::super::application_touch_admission::TouchAdmissionFailure::Projection)
                 .map_err(super::super::application_touch_admission::TouchAdmissionFailure::into_invariant_failure)?;
             super::super::application_touch_admission::admit_coupled_contribution_touches(
-                execution, &touches, &self.graph.layout, &material.application_graph_reads,
+                execution, &touches, self.graph.layout_ref(), &material.application_graph_reads,
                 &material.application_touches, &material.application_read_touch_overlap,
             ).map_err(super::super::application_touch_admission::TouchAdmissionFailure::into_invariant_failure)
         })?;

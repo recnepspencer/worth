@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
 use crate::domain_computation::primary_graph::output_reuse;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn require_current_consumed(
@@ -25,7 +26,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .runtime
             .primary_provider
             .graph
-            .source_owner
+            .source_owner_ref()
             .invalidation_owner;
         match ConsumedOutputEvidence::verify_many_with_admission(
             execution,

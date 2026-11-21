@@ -1,4 +1,5 @@
 //! Native certification issues the sole consuming key for a Current result.
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use super::super::*;
 use super::PerformedMembers;
@@ -69,7 +70,7 @@ where
         .runtime
         .primary_provider
         .graph
-        .output_lineage
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .resolve_required_settlement(
@@ -166,7 +167,7 @@ pub fn certify_frozen_ready<'call, Schema: ApplicationSchema + 'static>(
         .runtime
         .primary_provider
         .graph
-        .output_lineage
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .resolve_required_settlement(

@@ -1,6 +1,7 @@
 //! Publish the real World successor; retire queue custody after the Source gate.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryAdmittedApplicationEmissionBatch;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 impl WorthQueryLiveDeliverySource {

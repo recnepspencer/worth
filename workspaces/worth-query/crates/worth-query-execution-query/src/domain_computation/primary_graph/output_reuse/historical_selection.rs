@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::output_lineage::{
     ComparableSourceFacts, HistoricalSelectionCoordinate, SealedNativeOutputWitness,
 };
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// A borrowed view of one authentic retained row, used by selection and final
@@ -61,7 +62,7 @@ impl<'a> HistoricalOutputRead<'a> {
         let basis = selected.product().relational_basis();
         let graph = &selected.application().runtime.primary_provider.graph;
         let (Some(publication), Some(publisher)) =
-            (self.publication, graph.application_publication.as_deref())
+            (self.publication, graph.application_publication_ref())
         else {
             return Ok(false);
         };
@@ -118,7 +119,7 @@ impl<'a> HistoricalOutputRead<'a> {
             .positioned_snapshot(snapshot)
             .map_err(|_| evidence_unavailable())?;
         let result = graph
-            .source_owner
+            .source_owner_ref()
             .invalidation_owner
             .capture_full_verification(runtime, snapshot, &selected)
             .and_then(|image| {

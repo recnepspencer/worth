@@ -44,7 +44,7 @@ impl<S, I> WorthQueryPreparedInvariantManagedIndex<S, I> {
         self.native.scope()
     }
     /// The erased parts observed-row reads admit through Native.
-    pub fn source(
+    pub(crate) fn source(
         &self,
     ) -> (
         &ApplicationSchemaBindingIdentity,

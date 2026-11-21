@@ -4,7 +4,9 @@ use super::super::mutation_partition::ApplicationMutationPartitions;
 use super::*;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductWorldResourcesInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph) struct HomeApplicationServices<
     Schema: ApplicationSchema,
@@ -61,12 +63,12 @@ pub(in crate::domain_computation::primary_graph) fn prepare_home_application_ser
     );
     provider.install_managed_views_execution(
         crate::domain_computation::primary_graph::lineage_ports::downcast_managed_views_arc(
-            std::sync::Arc::clone(&provider.graph.managed_derived_views),
+            std::sync::Arc::clone(&provider.graph.managed_derived_views()),
         ),
     );
     provider
         .graph
-        .output_lineage
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .install_binding_identities(

@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 pub mod authored_predicate;
 pub mod authored_provider_source;
 pub mod definition_declarations;
@@ -74,7 +75,10 @@ pub mod signal_decision_reentry {
             &self,
             publication: &super::super::WorthQueryCommittedProductPublication,
         ) -> bool {
-            publication.is_selected_at(self.product.observation())
+            worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort::is_selected_at(
+                publication,
+                self.product.observation(),
+            )
         }
 
         pub fn snapshot(&self) -> &TruthSnapshotIdentity {

@@ -1,5 +1,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 
@@ -168,13 +170,13 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         let mut prepared = runtime_rebinding::prepare_temporal_runtime_binding(
             &self.definition.binding,
             bridge,
-            self.active_lowering().ok_or_else(|| super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
+            self.active_lowering().ok_or_else(|| super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                 super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::ApplicationHomeOwnsLifecycle,
                 "authored temporal reinstallation requires its Home lifecycle"))?,
             Arc::clone(&self.runtime_binding_identity),
             product,
         )?;
-        prepared.authoritative_commit_cursor = runtime.inner.runtime.primary_provider.graph.source_owner.invalidation_owner.latest_position();
+        prepared.authoritative_commit_cursor = runtime.inner.runtime.primary_provider.graph.source_owner_ref().invalidation_owner.latest_position();
         let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(execution,
             runtime, &self.definition.binding, &self.definition.reconstruction, self.definition.execution.identity_field,
             product,

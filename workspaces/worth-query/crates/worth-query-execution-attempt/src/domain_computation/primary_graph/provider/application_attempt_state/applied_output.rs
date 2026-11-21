@@ -3,6 +3,7 @@ use crate::domain_computation::primary_graph::invariant_projection::{
     consumed_output::{AppliedConsumedOutput, ConsumedOutputEvidence},
     WorthQueryCurrentOutputDenial, WorthQueryCurrentOutputDenialKind as Kind,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 /// Borrow the actual assembly roster; descriptors never admit a provider attempt.
 pub trait AppliedOutputParticipants {
     fn visit(
@@ -38,7 +39,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let lineage = self
             .graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         let mut found = AppliedFamilyOutputs {

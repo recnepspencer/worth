@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOutputDemandSource, WorthQueryPreparedRequiredOutputSource,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn finish_unavailable_output_demand<Family>(
@@ -67,7 +68,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 .runtime
                 .primary_provider
                 .graph
-                .source_owner
+                .source_owner_ref()
                 .invalidation_owner,
             self.installed_program_support()
                 .map(|support| support.lifecycle()),

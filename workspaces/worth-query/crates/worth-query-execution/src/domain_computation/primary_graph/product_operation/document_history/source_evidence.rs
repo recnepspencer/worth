@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryRecoveredApplicationCommitReceipt,
 };
 use worth_foundational::facade::RecordedProductBranchReference;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_runtime_world::facade::ProductBranchObservation;
 
 #[derive(Clone, Copy)]

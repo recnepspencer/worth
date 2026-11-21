@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
     WorthQueryOperationHomeRetirementProgress as Progress,
 };
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 
 impl OutstandingDispatchOwner {
     pub fn protect_for_durable_close(

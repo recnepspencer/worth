@@ -1,5 +1,6 @@
 //! Publish an already prepared memory candidate and retain its exact terminal custody.
 use super::*;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
 pub fn publish(
     execution: worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,

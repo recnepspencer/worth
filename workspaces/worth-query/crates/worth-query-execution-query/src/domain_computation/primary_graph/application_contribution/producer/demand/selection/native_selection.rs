@@ -1,6 +1,7 @@
 //! Sole producer source/lifecycle selection on the original native borrow.
 use super::*;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 pub mod current_verification;
 pub use current_verification::VerifiedAppliedParent;
@@ -90,7 +91,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .runtime
             .primary_provider
             .graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         self.record_recovered_output_candidates(
@@ -157,7 +158,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                 .runtime
                 .primary_provider
                 .graph
-                .output_lineage
+                .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .retained_output_candidates_metered(

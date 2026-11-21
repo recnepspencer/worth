@@ -4,6 +4,7 @@ use crate::domain_computation::provider_session::graph_provider::bounded_step::p
 use crate::domain_computation::{
     WorthQueryProviderSessionGrantControlDenial, WorthQueryProviderSessionGrantControlForTest,
 };
+use worth_query_execution_runtime::facade::ports::GraphProviderAnchorInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// Capture the next authentic grant before any physical provider callback.
@@ -26,6 +27,6 @@ fn capture_next_grant(
         .primary_graph_authority()
         .retain_provider_anchor::<WorthQueryGraphProviderAnchor>()
         .expect("published primary authority retains its original provider")
-        .session_grant_control
+        .session_grant_control()
         .arm()
 }

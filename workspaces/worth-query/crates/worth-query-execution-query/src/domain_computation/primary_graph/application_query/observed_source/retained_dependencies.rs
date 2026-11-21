@@ -9,6 +9,7 @@ use worth_execution::ExecutionArray;
 use worth_execution::ExecutionArrayBuilder;
 use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::SourceExpectationDenialInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -55,7 +56,11 @@ fn storage(
 fn source_denial(
     kind: WorthQuerySourceExpectationDenialKind,
 ) -> WorthQueryRequiredSetCurrentnessDenial {
-    WorthQuerySourceExpectationDenial::new(kind, "original discovery dependencies").into()
+    WorthQuerySourceExpectationDenial::from_kind_and_subject(
+        kind,
+        "original discovery dependencies",
+    )
+    .into()
 }
 fn execution_denial(
     cause: crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,

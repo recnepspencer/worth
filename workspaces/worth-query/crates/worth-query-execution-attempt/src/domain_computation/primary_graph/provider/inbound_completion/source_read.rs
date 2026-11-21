@@ -4,6 +4,7 @@ use super::read::{
     WorthQueryInboundCompletionReadDenial as Denial,
 };
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_runtime_world::facade::{RuntimeWorldObservationPort, WorldReadmittedPublication};
 
 impl WorthQueryPrimaryGraphProvider {
@@ -33,7 +34,7 @@ impl WorthQueryPrimaryGraphProvider {
             .created_entity(execution, entity)
             .map_err(native_read_denial)?
             .ok_or(Denial::Malformed)?;
-        let layout = self.graph.layout.provider_inbound_completion();
+        let layout = self.graph.layout_ref().provider_inbound_completion();
         if row.kind_id() != layout.kind {
             return Err(Denial::Malformed);
         }
@@ -79,7 +80,8 @@ impl WorthQueryPrimaryGraphProvider {
                     .map_err(native_read_denial)?;
                 let mut entity = None;
                 for created in native.semantic_result().created_entities() {
-                    if created.key.kind == self.graph.layout.provider_inbound_completion().kind
+                    if created.key.kind
+                        == self.graph.layout_ref().provider_inbound_completion().kind
                         && entity.replace(created.assigned).is_some()
                     {
                         return Err(Denial::AmbiguousCorrelation);

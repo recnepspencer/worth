@@ -1,5 +1,6 @@
 //! Runtime port implementation for closed certification inspection of committed actor evidence.
 use super::*;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 
 impl<Schema: worth_query_installation::facade::ApplicationSchema>
     worth_query_execution_lineage::facade::ports::WorkflowActorEvidenceRuntimePort

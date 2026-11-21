@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::SourceFactExpansionControlExt;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_lineage::facade::ports::SourceExpectationDenialInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Input, Scope>
     CheckedMutableSourceAdmission<'_, Schema, Operation, Input, Scope>
@@ -23,13 +24,13 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Inp
                         .matches_observation(product.observation())
                 })
         {
-            return Err(WorthQuerySourceExpectationDenial::new(
+            return Err(WorthQuerySourceExpectationDenial::from_kind_and_subject(
                 WorthQuerySourceExpectationDenialKind::ForeignOperation,
                 "pending source expectation",
             ));
         }
         let graph = runtime.runtime.primary_graph().ok_or_else(|| {
-            WorthQuerySourceExpectationDenial::new(
+            WorthQuerySourceExpectationDenial::from_kind_and_subject(
                 WorthQuerySourceExpectationDenialKind::ForeignApplication,
                 pending.expected_query_identifier,
             )
@@ -38,7 +39,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema, Operation, Inp
             .installed_schema
             .installed_query_identity_by_name(pending.expected_query_identifier)
             .ok_or_else(|| {
-                WorthQuerySourceExpectationDenial::new(
+                WorthQuerySourceExpectationDenial::from_kind_and_subject(
                     WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
                     pending.expected_query_identifier,
                 )

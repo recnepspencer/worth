@@ -13,7 +13,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
 use worth_query_execution_lineage::facade::ports::InvariantMutationTargetInternalPort as _;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
-    pub fn body_retirements(
+    pub(crate) fn body_retirements(
         &mut self,
         body: &ApplicationOperationBodyProgram,
         indices: &[usize],

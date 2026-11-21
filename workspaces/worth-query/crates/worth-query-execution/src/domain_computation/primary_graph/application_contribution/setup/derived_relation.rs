@@ -11,6 +11,7 @@ use worth_query_declaration::facade::{
         ApplicationRuleReadableCollectionAssociation, OperationReads,
     },
 };
+use worth_query_execution_query::facade::ports::DerivedRelationCountOwnerInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'_, Schema> {
     /// Installs a count of one recipe's canonical endpoint pairs using the
@@ -77,7 +78,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'_, Schem
                 Relation,
                 From,
                 To,
-            >::new(relation, expected),
+            >::from_relation(relation, expected),
         )?;
         self.handlers
             .bind_rule_readable_count::<Feature, Collection>(relation.name());

@@ -5,6 +5,7 @@ use super::read::{
 use super::source_read::{native_read_denial, world_read_denial};
 use super::*;
 use crate::domain_computation::primary_graph::provider::OriginalPublication;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_runtime_world::facade::{
     CompositeCommitIdentity, ProductBranchIncarnation, RuntimeWorldObservationPort,
 };
@@ -56,7 +57,7 @@ impl WorthQueryPrimaryGraphProvider {
         if created.len() > maximum_created_records.get() {
             return Err(Denial::ReconstructionWorkExhausted);
         }
-        let layout = self.graph.layout.provider_idempotency();
+        let layout = self.graph.layout_ref().provider_idempotency();
         let expected_affinity =
             super::super::idempotency::recorded_origin::original_affinity_text(source);
         let mut selected = None;

@@ -5,6 +5,7 @@ use super::super::super::{
 };
 use super::*;
 use crate::domain_computation::primary_graph::admitted_capture::run_retained_stage;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
     pub(in super::super::super) fn materialize_source_rich<Q, P, R, S>(
         &mut self,
@@ -43,7 +44,13 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                 original,
                 self.scope.entity_kind(),
                 loan,
-                &self.runtime.inner.runtime.primary_provider.graph.layout,
+                &self
+                    .runtime
+                    .inner
+                    .runtime
+                    .primary_provider
+                    .graph
+                    .layout_ref(),
                 self.runtime.installed_schema().native_contracts(),
             )?
         } else {

@@ -24,10 +24,10 @@ pub enum WorthQueryRelationalSourceInstallationDenial {
 #[derive(Clone)]
 pub struct WorthQueryRelationalSourceOwner {
     runtime: worth_relational::facade::change_source::RelationalRuntimeHandle,
-    pub runtime_instance_id: u64,
+    pub(crate) runtime_instance_id: u64,
     pub(super) source: RuntimeBridgeRelationalSource,
     pub(super) bridge_head: Arc<Mutex<Option<RelationalBridgeBranchHeadLease>>>,
-    pub invalidation_owner: Arc<dyn crate::ports::RelationalSourceInvalidationPort>,
+    pub(crate) invalidation_owner: Arc<dyn crate::ports::RelationalSourceInvalidationPort>,
     canonical_subscription: RelationalBridgeCanonicalSubscription,
     read_acquisitions: Arc<std::sync::atomic::AtomicU64>,
     _bridge_lock_observations: Arc<
@@ -38,7 +38,7 @@ pub struct WorthQueryRelationalSourceOwner {
 }
 
 impl WorthQueryRelationalSourceOwner {
-    pub fn with_invalidation_owner(
+    pub(crate) fn with_invalidation_owner(
         runtime: RelationalRuntime,
         graph_role: impl Into<Arc<str>>,
         invalidation_owner: Arc<dyn crate::ports::RelationalSourceInvalidationPort>,
@@ -101,7 +101,7 @@ impl WorthQueryRelationalSourceOwner {
     ///
     /// Resolve only a branch identity here; Native alone selects the current
     /// head while excluding publication through the prepaid lookup install.
-    pub fn mint_mark_cell_at_head(
+    pub(crate) fn mint_mark_cell_at_head(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: &worth_relational::facade::history::BranchId,
@@ -130,7 +130,7 @@ impl WorthQueryRelationalSourceOwner {
         });
     }
 
-    pub fn release_component_basis(
+    pub(crate) fn release_component_basis(
         &self,
         retention: worth_relational::facade::branch::RelationalBranchRetentionLease,
     ) -> Result<
@@ -142,7 +142,7 @@ impl WorthQueryRelationalSourceOwner {
     }
 
     /// Metadata read: fixed-size counters, without row traversal or request work.
-    pub fn custom_invariant_candidate_input_counters(
+    pub(crate) fn custom_invariant_candidate_input_counters(
         &self,
     ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
         self.runtime
@@ -162,7 +162,7 @@ impl WorthQueryRelationalSourceOwner {
         self.source.clone()
     }
 
-    pub fn bind_truth_partition(
+    pub(crate) fn bind_truth_partition(
         &mut self,
         graph_role: impl Into<Arc<str>>,
         partition: worth_relational::facade::identity::PartitionId,
@@ -173,6 +173,97 @@ impl WorthQueryRelationalSourceOwner {
             .clone()
             .with_graph_partition(graph_role, partition, role)?;
         Ok(())
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryRelationalSourceOwner` backing
+/// identity, invalidation owner, and lifecycle methods. Never exported on
+/// `worth-query-execution::facade` or Host.
+pub trait RelationalSourceOwnerInternalPort: Sized {
+    fn with_invalidation_owner(
+        runtime: RelationalRuntime,
+        graph_role: impl Into<Arc<str>>,
+        invalidation_owner: Arc<dyn crate::ports::RelationalSourceInvalidationPort>,
+    ) -> Result<Self, WorthQueryRelationalSourceInstallationDenial>;
+    fn runtime_instance_id(&self) -> u64;
+    fn invalidation_owner_ref(&self) -> &Arc<dyn crate::ports::RelationalSourceInvalidationPort>;
+    fn mint_mark_cell_at_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        branch: &worth_relational::facade::history::BranchId,
+    ) -> Result<
+        (),
+        crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop,
+    >;
+    fn release_component_basis(
+        &self,
+        retention: worth_relational::facade::branch::RelationalBranchRetentionLease,
+    ) -> Result<
+        worth_relational::facade::branch::RelationalBranchRetentionReleaseReceipt,
+        worth_relational::facade::branch::RelationalBranchRetentionReleaseDenial,
+    >;
+    fn custom_invariant_candidate_input_counters(
+        &self,
+    ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters;
+    fn bind_truth_partition(
+        &mut self,
+        graph_role: impl Into<Arc<str>>,
+        partition: worth_relational::facade::identity::PartitionId,
+        role: worth_foundational::facade::TruthPartitionRole,
+    ) -> Result<(), RelationalBridgeSourceConfigurationError>;
+}
+
+impl RelationalSourceOwnerInternalPort for WorthQueryRelationalSourceOwner {
+    fn with_invalidation_owner(
+        runtime: RelationalRuntime,
+        graph_role: impl Into<Arc<str>>,
+        invalidation_owner: Arc<dyn crate::ports::RelationalSourceInvalidationPort>,
+    ) -> Result<Self, WorthQueryRelationalSourceInstallationDenial> {
+        Self::with_invalidation_owner(runtime, graph_role, invalidation_owner)
+    }
+
+    fn runtime_instance_id(&self) -> u64 {
+        self.runtime_instance_id
+    }
+
+    fn invalidation_owner_ref(&self) -> &Arc<dyn crate::ports::RelationalSourceInvalidationPort> {
+        &self.invalidation_owner
+    }
+
+    fn mint_mark_cell_at_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        branch: &worth_relational::facade::history::BranchId,
+    ) -> Result<
+        (),
+        crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop,
+    > {
+        Self::mint_mark_cell_at_head(self, execution, branch)
+    }
+
+    fn release_component_basis(
+        &self,
+        retention: worth_relational::facade::branch::RelationalBranchRetentionLease,
+    ) -> Result<
+        worth_relational::facade::branch::RelationalBranchRetentionReleaseReceipt,
+        worth_relational::facade::branch::RelationalBranchRetentionReleaseDenial,
+    > {
+        Self::release_component_basis(self, retention)
+    }
+
+    fn custom_invariant_candidate_input_counters(
+        &self,
+    ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
+        Self::custom_invariant_candidate_input_counters(self)
+    }
+
+    fn bind_truth_partition(
+        &mut self,
+        graph_role: impl Into<Arc<str>>,
+        partition: worth_relational::facade::identity::PartitionId,
+        role: worth_foundational::facade::TruthPartitionRole,
+    ) -> Result<(), RelationalBridgeSourceConfigurationError> {
+        Self::bind_truth_partition(self, graph_role, partition, role)
     }
 }
 

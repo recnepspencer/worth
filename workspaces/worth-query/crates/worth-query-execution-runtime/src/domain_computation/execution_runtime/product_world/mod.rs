@@ -26,13 +26,14 @@ mod receipt;
 pub mod relational_publication;
 pub mod request_control;
 pub mod resources;
+pub(crate) mod resources_internal_port;
 mod retirement;
 pub(crate) mod runtime;
 mod shared_root;
 mod signal_lifecycle;
 mod source_head;
 mod source_installation;
-mod source_owner;
+pub(crate) mod source_owner;
 mod world_ports;
 
 pub use branch_close::WorthQueryProductBranchCloseScope;

@@ -3,6 +3,7 @@ use super::{
     facts, WorthQueryApplicationCheckpoint, WorthQueryApplicationCheckpointSectionBytes,
     WorthQueryCheckpointCaptureDenial, WorthQueryCheckpointCapturePolicy,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::{
     ApplicationCheckpointInternalPort as _, InterimCheckpointOriginInternalPort as _,
 };
@@ -170,7 +171,7 @@ where
                                 .runtime
                                 .primary_provider
                                 .graph
-                                .output_lineage
+                                .output_lineage_ref()
                                 .lock()
                                 .unwrap_or_else(std::sync::PoisonError::into_inner);
                             // Native prior custody is required; cached reuse facts are

@@ -1,6 +1,7 @@
 //! Exactly-one Source completion uses the common real permission admission.
 use super::*;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
     pub fn read<Binding>(
@@ -56,7 +57,7 @@ impl<Schema: ApplicationSchema> SourceQueryReaderAccess<'_, Schema> {
                     .expect("exactly one native source");
                 let facts = source
                     .admit_fact_materialization(
-                        &application.runtime.primary_provider.graph.layout,
+                        application.runtime.primary_provider.graph.layout_ref(),
                         query.name(),
                         super::super::observed_source::SourceFactExpansionControl::in_request(
                             *execution,

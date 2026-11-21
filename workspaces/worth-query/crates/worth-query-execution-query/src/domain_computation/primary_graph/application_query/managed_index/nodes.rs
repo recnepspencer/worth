@@ -65,7 +65,7 @@ pub struct WorthQueryManagedIndexNodes<Node> {
 }
 
 impl<'a, Node: Clone> WorthQueryManagedIndexNodeWriter<'a, Node> {
-    pub fn allocate(
+    pub(crate) fn allocate(
         execution: &ExecutionRequest<'_, '_>,
         owner: WorthQueryGraphWorkSessionIdentity,
         capacity: usize,
@@ -212,7 +212,7 @@ impl<'a, Node: Clone> WorthQueryManagedIndexNodeWriter<'a, Node> {
         }
         Ok(())
     }
-    pub fn seal(
+    pub(crate) fn seal(
         self,
         execution: &ExecutionRequest<'_, '_>,
         root: Option<WorthQueryManagedIndexNodeId>,
@@ -253,7 +253,7 @@ impl<Node: Clone> WorthQueryManagedIndexNodes<Node> {
     {
         self.pages.inspect_pages(inspection);
     }
-    pub fn frontier(&self) -> usize {
+    pub(crate) fn frontier(&self) -> usize {
         self.frontier
     }
     pub fn node_at_ordinal(
@@ -292,7 +292,7 @@ impl<Node: Clone> WorthQueryManagedIndexNodes<Node> {
 
     /// Framework-only: a fresh original request owns every new page. The retained
     /// root holds backing, never the authority of the request that constructed it.
-    pub fn edit<'a>(
+    pub(crate) fn edit<'a>(
         &self,
         execution: ExecutionRequest<'a, 'a>,
         capacity: usize,

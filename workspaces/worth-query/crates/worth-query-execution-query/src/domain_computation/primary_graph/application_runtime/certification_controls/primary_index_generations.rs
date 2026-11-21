@@ -1,5 +1,6 @@
 //! Eviction of rebuildable primary index projections for real read-stop proofs.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -14,7 +15,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .retain_primary_graph_integration_handle()
             .expect("installed primary graph");
         graph.with_runtime(&execution, |runtime| {
-            for index in graph.primary_index_ids.iter() {
+            for index in graph.primary_index_ids_ref().iter() {
                 runtime
                     .index_authority()
                     .discard_generations(
@@ -25,7 +26,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
                     .expect("installed primary index can discard rebuildable generations");
             }
         });
-        Ok(graph.primary_index_ids.len())
+        Ok(graph.primary_index_ids_ref().len())
     }
 }
 

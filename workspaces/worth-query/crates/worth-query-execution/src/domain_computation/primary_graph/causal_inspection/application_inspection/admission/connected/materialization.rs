@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt,
 };
 use worth_execution::MapKernelFailure;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 pub(in super::super::super) enum ConnectedMaterialization {
     Reference(super::super::super::report::FundedConnectedReport),
@@ -114,7 +115,13 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                     source,
                     source_read.scope.entity_kind(),
                     source_admission,
-                    &self.runtime.inner.runtime.primary_provider.graph.layout,
+                    &self
+                        .runtime
+                        .inner
+                        .runtime
+                        .primary_provider
+                        .graph
+                        .layout_ref(),
                     self.runtime.installed_schema().native_contracts(),
                 )?;
             }

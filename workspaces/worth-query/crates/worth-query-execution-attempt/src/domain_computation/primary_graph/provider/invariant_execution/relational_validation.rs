@@ -1,6 +1,7 @@
 //! The actual Relational validation, under the admitted request control.
 use super::*;
 use crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 impl WorthQueryPrimaryGraphProvider {
@@ -33,7 +34,7 @@ impl WorthQueryPrimaryGraphProvider {
         };
         let batch = if self.take_undeclared_application_touch() {
             batch.push(undeclared_application_touch_probe(
-                &self.graph.layout,
+                self.graph.layout_ref(),
                 application_touches,
             )?)
         } else {
@@ -102,11 +103,10 @@ impl WorthQueryPrimaryGraphProvider {
                             content,
                             &self
                                 .graph
-                                .application_publication
-                                .as_ref()
+                                .application_publication_ref()
                                 .ok_or_else(owner_failure)?
                                 .native,
-                            &self.graph.layout,
+                            self.graph.layout_ref(),
                         )?;
                         transaction
                             .push_publication_body(selected, allocation_control.policy())
@@ -129,8 +129,7 @@ impl WorthQueryPrimaryGraphProvider {
             Some(coupling) => {
                 let publisher = self
                     .graph
-                    .application_publication
-                    .as_ref()
+                    .application_publication_ref()
                     .ok_or_else(owner_failure)?;
                 let retirement = if coupling.owners.retirement_authorities().next().is_some() {
                     Some(
@@ -202,8 +201,7 @@ impl WorthQueryPrimaryGraphProvider {
                 .bind_required_output_publication(
                     &self
                         .graph
-                        .application_publication
-                        .as_ref()
+                        .application_publication_ref()
                         .ok_or_else(owner_failure)?
                         .native,
                     publication,

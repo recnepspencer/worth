@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -170,7 +171,7 @@ where
         effects: worth_runtime_world::facade::ProductUnpublishedOwnerEffects,
         publication: &WorthQueryProductPublicationBinding,
     ) -> crate::domain_computation::WorthQueryProductUnpublishedApplication {
-        crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
+        crate::domain_computation::WorthQueryProductUnpublishedApplication::from_effects(
             effects,
             publication.recovery(),
             self.inner

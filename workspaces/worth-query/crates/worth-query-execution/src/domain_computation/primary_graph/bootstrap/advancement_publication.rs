@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
 
@@ -73,7 +74,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
             .equality_index_ids()
             .collect::<BTreeSet<_>>()
             .len();
-        let index_ids = self.graph.integration_handle().primary_index_ids.to_vec();
+        let index_ids = self
+            .graph
+            .integration_handle()
+            .primary_index_ids_ref()
+            .to_vec();
         self.seed_batch_failed = true;
         if let Some(seed) = self.program_activation_seed.take() {
             commit_initial_program_activation(execution, &self.graph, seed)?;

@@ -99,9 +99,8 @@ impl super::WorthQueryProductRuntime {
 
 mod court_doors_for_test;
 pub(crate) mod internal_port;
-mod selected_program;
+pub(crate) mod selected_program;
 use selected_program::BranchProgramSourceCache;
 pub use selected_program::{
-    SelectedProgramInspectionInternalPort, SelectedProgramSourceRetentionDenial,
-    WorthQuerySelectedProgramInspection,
+    SelectedProgramSourceRetentionDenial, WorthQuerySelectedProgramInspection,
 };

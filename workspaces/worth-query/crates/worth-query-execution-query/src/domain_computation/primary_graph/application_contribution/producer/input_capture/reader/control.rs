@@ -37,7 +37,7 @@ where
         }
     }
 
-    pub fn charge(&self, work: u64) -> Result<(), HandlerExecutionDenial> {
+    pub(crate) fn charge(&self, work: u64) -> Result<(), HandlerExecutionDenial> {
         self.execution
             .decision_stage(|context| {
                 crate::domain_computation::primary_graph::admitted_capture::checkpoint(

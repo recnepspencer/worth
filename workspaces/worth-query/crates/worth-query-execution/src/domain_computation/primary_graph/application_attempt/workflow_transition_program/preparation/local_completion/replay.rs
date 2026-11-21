@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationUncommitted,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 #[allow(clippy::too_many_arguments)]
 pub fn resolve<S, O, I, Scope>(
@@ -28,7 +29,7 @@ where
         .runtime
         .primary_provider
         .graph
-        .layout
+        .layout_ref()
         .workflow()
         .transition
         .identity

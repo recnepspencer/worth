@@ -96,7 +96,7 @@ impl<Schema> WorthQueryConfiguredApplicationContributions<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn into_parts(
+    pub(crate) fn into_parts(
         self,
     ) -> Result<
         (

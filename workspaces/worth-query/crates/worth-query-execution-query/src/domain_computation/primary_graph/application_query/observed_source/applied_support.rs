@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_lineage::facade::ports::SourceExpectationDenialInternalPort as _;
 use worth_relational::facade::{
     runtime::{RelationalAppliedCandidateReadIdentity, RelationalPinnedRead, RelationalRuntime},
     snapshots::SnapshotHandle,
@@ -28,7 +29,7 @@ impl<Q, V> AppliedQuerySource<Q, V> {
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     ) -> Result<AppliedQuerySupport, WorthQuerySourceExpectationDenial> {
         let foreign = || {
-            WorthQuerySourceExpectationDenial::new(
+            WorthQuerySourceExpectationDenial::from_kind_and_subject(
                 WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
                 query,
             )

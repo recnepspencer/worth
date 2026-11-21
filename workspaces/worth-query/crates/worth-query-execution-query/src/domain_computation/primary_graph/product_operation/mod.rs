@@ -4,6 +4,7 @@ pub mod context;
 pub mod correction_source;
 pub mod current_read;
 pub mod document_history;
+pub(crate) mod entry_internal_port;
 pub mod observation_room;
 pub mod operation;
 pub mod query_controls;

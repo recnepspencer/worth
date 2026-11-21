@@ -5,6 +5,7 @@ use super::original_receipt::{
 };
 use super::*;
 use crate::domain_computation::primary_graph::provider::OriginalPublication;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::RecoveredCommitReceiptInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::{history::RelationalCommitReceipt, identity::EntityId};
@@ -32,13 +33,13 @@ pub(super) fn read_original(
             context
                 .provider
                 .graph
-                .layout
+                .layout_ref()
                 .provider_dispatch_outbox()
                 .entity_kind,
             context
                 .provider
                 .graph
-                .layout
+                .layout_ref()
                 .provider_aftermath_causality()
                 .entity_kind,
         ]

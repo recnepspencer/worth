@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_schema::ApplicationOperationBod
 use worth_query_execution_attempt::facade::ports::EffectProgramBuilderAuthoringInternalPort as _;
 use worth_query_execution_lineage::facade::ports::InvariantMutationTargetInternalPort as _;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> CandidateWriter<'_, S, B> {
-    pub fn body_references<Entity>(
+    pub(crate) fn body_references<Entity>(
         &mut self,
         scope: &WorthQueryApplicationEffectEntity<S, Entity>,
         body: &ApplicationOperationBodyProgram,

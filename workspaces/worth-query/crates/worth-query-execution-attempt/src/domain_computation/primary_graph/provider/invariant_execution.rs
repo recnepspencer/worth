@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 pub mod publication_appendix;
 
 pub mod authored_coupling;
@@ -166,7 +167,7 @@ impl WorthQueryPrimaryGraphProvider {
         }
         ApplicationInvariantCandidateMaterial::from_staged(
             &staged,
-            &self.graph.layout,
+            self.graph.layout_ref(),
             appendix_policy,
         )
     }
@@ -243,7 +244,7 @@ impl WorthQueryPrimaryGraphProvider {
             super::application_touch_admission::admit_validated_application_touches(
                 execution,
                 &candidate,
-                &self.graph.layout,
+                self.graph.layout_ref(),
                 &material.application_graph_reads,
                 &material.application_touches,
                 &material.application_read_touch_overlap,

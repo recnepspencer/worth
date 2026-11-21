@@ -62,10 +62,10 @@ impl WorthQueryCommittedProductPublication {
             },
         }
     }
-    pub fn co_committed_at(&self, observation: &ProductBranchObservation) -> bool {
+    pub(crate) fn co_committed_at(&self, observation: &ProductBranchObservation) -> bool {
         matches!(&self.custody,PublicationCustody::CoCommitted{endpoint,..} if endpoint.matches_observation(observation))
     }
-    pub fn preflight_home_retirement(
+    pub(crate) fn preflight_home_retirement(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
@@ -76,7 +76,7 @@ impl WorthQueryCommittedProductPublication {
             PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. } => Ok(()),
         }
     }
-    pub fn advance_home_retirement(
+    pub(crate) fn advance_home_retirement(
         &mut self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         native: &worth_relational::facade::runtime::RelationalRuntime,
@@ -93,14 +93,14 @@ impl WorthQueryCommittedProductPublication {
     }
 
     /// Canonical World facts remain available only from actual consumed custody.
-    pub fn original_movement(
+    pub(crate) fn original_movement(
         &self,
     ) -> Option<&worth_runtime_world::facade::ConsumedCompositePublication> {
         self.performed().map(|receipt| receipt.publication())
     }
 
     /// Join metadata to the real performed predecessor, including its admission.
-    pub fn follows_observation(&self, observation: &ProductBranchObservation) -> bool {
+    pub(crate) fn follows_observation(&self, observation: &ProductBranchObservation) -> bool {
         self.performed().is_some_and(|receipt| {
             let before = receipt.publication().old_product_head();
             before.branch_identity() == observation.branch_identity()
@@ -112,7 +112,7 @@ impl WorthQueryCommittedProductPublication {
     }
     /// The original performed selection, without retaining its owner bases.
     /// Identity-only custody cannot supply the missing full basis.
-    pub fn observed_product_identity(
+    pub(crate) fn observed_product_identity(
         &self,
     ) -> Option<crate::basis::WorthQueryProductBranchReadIdentity> {
         self.performed().map(|receipt| {
@@ -122,7 +122,7 @@ impl WorthQueryCommittedProductPublication {
         })
     }
 
-    pub fn from_receipt(receipt: WorthQueryProductPublicationReceipt) -> Self {
+    pub(crate) fn from_receipt(receipt: WorthQueryProductPublicationReceipt) -> Self {
         Self {
             custody: PublicationCustody::Performed(receipt),
         }
@@ -130,7 +130,7 @@ impl WorthQueryCommittedProductPublication {
 
     /// Takes the World history protection out of this copy, leaving it
     /// detached; a retired publication has none.
-    pub fn take_history(
+    pub(crate) fn take_history(
         &mut self,
     ) -> Option<
         crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold,
@@ -143,13 +143,13 @@ impl WorthQueryCommittedProductPublication {
 
     /// The same identities without the performed publication, once its
     /// commit's history retired, so holding it pins no World or owner state.
-    pub fn retired(&self) -> Self {
+    pub(crate) fn retired(&self) -> Self {
         self.descriptive()
     }
 
     /// Preserve original immutable identities without retaining physical history.
     /// This describes the copy; it does not retire the actual publication.
-    pub fn descriptive(&self) -> Self {
+    pub(crate) fn descriptive(&self) -> Self {
         if let PublicationCustody::Described(_) = &self.custody {
             return self.clone();
         }
@@ -230,7 +230,7 @@ impl WorthQueryCommittedProductPublication {
     /// Whether `observation` still selects this publication: nothing has been
     /// published on its branch since, so the effect it committed is current
     /// with nothing to compare.
-    pub fn is_selected_at(&self, observation: &ProductBranchObservation) -> bool {
+    pub(crate) fn is_selected_at(&self, observation: &ProductBranchObservation) -> bool {
         observation.lifecycle_incarnation() == self.product_incarnation()
             && observation.reference_generation() == self.product_generation()
             && observation.selected_commit() == self.composite_commit()
@@ -309,7 +309,7 @@ impl WorthQueryCommittedProductPublication {
 
     /// Borrow the actual native poststate retained by a performed World owner.
     /// Descriptive identity cannot reconstruct or lend this custody.
-    pub fn retained_relational_basis(
+    pub(crate) fn retained_relational_basis(
         &self,
     ) -> Option<&worth_relational::facade::branch::AdmittedRelationalBranchBasis> {
         Some(
@@ -321,19 +321,19 @@ impl WorthQueryCommittedProductPublication {
         )
     }
 
-    pub fn take_successor_observation(
+    pub(crate) fn take_successor_observation(
         &self,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         self.performed()?.take_live_successor_observation()
     }
 
-    pub fn take_output_demand_observation(
+    pub(crate) fn take_output_demand_observation(
         &self,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         self.performed()?.take_output_demand_observation()
     }
 
-    pub fn take_client_observation(
+    pub(crate) fn take_client_observation(
         &self,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         self.performed()?.take_client_observation()

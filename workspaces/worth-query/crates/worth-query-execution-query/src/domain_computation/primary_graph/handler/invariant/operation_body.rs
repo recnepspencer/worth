@@ -32,7 +32,7 @@ enum BodySource<'a, Schema> {
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>
 {
-    pub fn body_inputs(
+    pub(crate) fn body_inputs(
         &self,
         body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
         bindings: &[worth_query_installation::facade::WorthQueryInstalledApplicationValueBinding],
@@ -47,7 +47,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             bindings,
         )
     }
-    pub fn body_scope_field(
+    pub(crate) fn body_scope_field(
         &mut self,
         field: &ApplicationFieldBindingLocus,
         expected: BodyFieldExpectation<'_>,
@@ -57,14 +57,14 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         self.reader.body_field(self.scope, field, expected)
     }
 
-    pub fn body_scope_value(
+    pub(crate) fn body_scope_value(
         &mut self,
         field: &ApplicationFieldBindingLocus,
     ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
         self.body_source_value(field, BodySource::Scope)
     }
 
-    pub fn body_principal_value(
+    pub(crate) fn body_principal_value(
         &mut self,
         field: &ApplicationFieldBindingLocus,
     ) -> Result<Option<PreparedBodySource>, HandlerExecutionDenial> {
@@ -72,7 +72,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         self.body_source_value(field, BodySource::Principal)
     }
 
-    pub fn body_related_value(
+    pub(crate) fn body_related_value(
         &mut self,
         field: &ApplicationFieldBindingLocus,
         selected: &crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity<
@@ -133,7 +133,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         captured.map_err(HandlerExecutionDenial::new)?
     }
 
-    pub fn body_scope_target(
+    pub(crate) fn body_scope_target(
         &mut self,
         body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
     ) -> Result<
@@ -155,7 +155,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             .map_err(HandlerExecutionDenial::new)
     }
 
-    pub fn body_scope_requirements(
+    pub(crate) fn body_scope_requirements(
         &mut self,
         body: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram,
     ) -> Result<

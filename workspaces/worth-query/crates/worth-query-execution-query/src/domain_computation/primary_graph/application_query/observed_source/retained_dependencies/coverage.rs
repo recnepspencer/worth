@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::output_reuse::{
 };
 use std::sync::Arc;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 pub struct RetainedQuerySource {
     pub source: WorthQueryObservedSource<()>,
@@ -68,7 +69,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .runtime
             .primary_provider
             .graph
-            .source_owner
+            .source_owner_ref()
             .invalidation_owner;
         for source in sources {
             execution
@@ -76,7 +77,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .check_live()
                 .map_err(storage)?;
             let prepared = source.admit_fact_materialization(
-                &self.application().runtime.primary_provider.graph.layout,
+                self.application()
+                    .runtime
+                    .primary_provider
+                    .graph
+                    .layout_ref(),
                 &source.query_identifier(),
                 SourceFactExpansionControl::in_request(*execution, None),
             )?;

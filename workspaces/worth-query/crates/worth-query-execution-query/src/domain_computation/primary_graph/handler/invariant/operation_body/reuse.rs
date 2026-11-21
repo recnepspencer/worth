@@ -9,7 +9,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreatedField as Field, ApplicationOperationBodyProgram,
 };
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
-    pub fn body_creation_disposition(
+    pub(crate) fn body_creation_disposition(
         &mut self,
         body: &ApplicationOperationBodyProgram,
         inputs: Option<&PreparedBodyInputs>,

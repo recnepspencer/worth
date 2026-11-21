@@ -1,5 +1,6 @@
 //! A Native current roster addresses the same lineage/currentness verifier.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::{
     branch::RelationalModelOwnershipDenial, identity::EntityId, runtime::RelationalRuntime,
@@ -20,8 +21,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
     ) -> Result<bool, CurrentOwnedRouteDenial> {
         let graph = &self.application().runtime.primary_provider.graph;
         let Some(publisher) = graph
-            .application_publication
-            .as_ref()
+            .application_publication_ref()
             .filter(|publisher| publisher.native.owns_source_scopes())
         else {
             return Ok(false);
@@ -31,7 +31,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                 execution,
                 &publisher.native,
                 self.product().relational_basis(),
-                graph.layout.installed_history_ownership(),
+                graph.layout_ref().installed_history_ownership(),
                 model,
             )
             .map_err(CurrentOwnedRouteDenial::Ownership)?;

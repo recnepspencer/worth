@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::application_aftermath::ExternalEffectCorrelationIdentity;
 use std::collections::BTreeMap;
 use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::{
     durability::{RelationalAssociatedEffectRefusal, RelationalAssociatedEffectSubject},
     identity::EntityId,
@@ -172,7 +173,7 @@ impl WorthQueryPrimaryGraphProvider {
             .created_entity(execution, entity)
             .map_err(native_denial)?
             .ok_or(Denial::Missing)?;
-        let layout = self.graph.layout.provider_dispatch_outbox();
+        let layout = self.graph.layout_ref().provider_dispatch_outbox();
         if row.kind_id() != layout.entity_kind {
             return Err(Denial::WrongRecordKind);
         }
@@ -184,7 +185,7 @@ impl WorthQueryPrimaryGraphProvider {
                 .collect::<Option<Vec<_>>>()
                 .ok_or(Denial::Malformed)?,
         )?;
-        let idempotency = self.graph.layout.provider_idempotency();
+        let idempotency = self.graph.layout_ref().provider_idempotency();
         let mut binding = None;
         for created in original.semantic_result().created_entities() {
             if created.key.kind != idempotency.entity_kind {
@@ -240,7 +241,7 @@ impl WorthQueryPrimaryGraphProvider {
         let record_ref = RecordRef::Entity(selector.entity);
         let answer = CommittedOutboxRead {
             runtime,
-            layout: self.graph.layout.provider_dispatch_outbox(),
+            layout: self.graph.layout_ref().provider_dispatch_outbox(),
             record: &selector.record,
             record_ref: &record_ref,
             expected_commit: original.native_receipt(),

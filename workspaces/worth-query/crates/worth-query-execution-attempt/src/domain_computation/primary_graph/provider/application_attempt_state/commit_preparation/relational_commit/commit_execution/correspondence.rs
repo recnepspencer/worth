@@ -1,5 +1,6 @@
 //! Canonical output correspondence is admitted before Native's World effect.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 #[derive(Debug)]
 pub(super) enum OutputCorrespondencePreparationDenial {
@@ -46,7 +47,7 @@ pub(super) fn admit(
                 .admit_owned_output_correspondence(prepared, producer, meaning)
                 .map_err(correspondence_denial)?;
         }
-    } else if let Some(publisher) = &provider.graph.application_publication {
+    } else if let Some(publisher) = &provider.graph.application_publication_ref() {
         let publications = candidate
             .prepare_required_output_publications(execution, &publisher.native)
             .map_err(OutputCorrespondencePreparationDenial::Native)?;

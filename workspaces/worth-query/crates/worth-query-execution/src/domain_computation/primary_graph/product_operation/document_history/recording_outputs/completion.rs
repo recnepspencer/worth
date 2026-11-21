@@ -1,6 +1,8 @@
 //! The canonical collection owner seals one endpoint; the journal adopts it atomically.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::CompletedRequiredOutputsInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<S: ApplicationSchema>
@@ -105,7 +107,7 @@ impl<S: ApplicationSchema>
         }
         let graph = &self.inner.runtime.primary_provider.graph;
         if let Some(publisher) = graph
-            .application_publication
+            .application_publication_ref()
             .as_ref()
             .filter(|publisher| publisher.native.owns_source_scopes())
         {
@@ -115,7 +117,7 @@ impl<S: ApplicationSchema>
                         &execution,
                         &publisher.native,
                         selected.product().relational_basis(),
-                        graph.layout.installed_history_ownership(),
+                        graph.layout_ref().installed_history_ownership(),
                         origin.profile.recording_model().entity(),
                     )
                     .map_err(|cause| {

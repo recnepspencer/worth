@@ -27,7 +27,7 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    pub fn new(
+    pub(crate) fn new(
         program: WorthQueryApplicationEffectProgram<
             Schema,
             Binding::Operation,

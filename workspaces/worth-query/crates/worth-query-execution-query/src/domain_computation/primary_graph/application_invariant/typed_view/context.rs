@@ -9,7 +9,7 @@ impl<'borrow, 'runtime, Schema>
         self.lower.refusal_budget()
     }
 
-    pub fn new(
+    pub(crate) fn new(
         lower: &'borrow mut CustomInvariantScopePlanner<'runtime>,
         binding_identity: ApplicationSchemaBindingIdentity,
         content_fields: &'borrow super::super::content_fields::InvariantContentFields,
@@ -76,7 +76,7 @@ impl<'borrow, 'runtime, Schema>
 }
 
 impl<'borrow, 'runtime, Schema> WorthQueryApplicationInvariantContext<'borrow, 'runtime, Schema> {
-    pub fn new(
+    pub(crate) fn new(
         lower: &'borrow CustomInvariantExecutionContext<'runtime>,
         binding_identity: ApplicationSchemaBindingIdentity,
         admission: std::sync::Arc<ApplicationInvariantAdmission>,

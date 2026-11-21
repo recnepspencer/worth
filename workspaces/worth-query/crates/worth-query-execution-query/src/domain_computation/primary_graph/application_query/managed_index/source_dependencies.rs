@@ -14,6 +14,7 @@ use crate::domain_computation::primary_graph::{
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::SourceExpectationDenialInternalPort as _;
 
 pub fn capture<Q>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -26,7 +27,9 @@ pub fn capture<Q>(
 ) -> Result<Arc<ManagedSourceDependencies>, SourceDenial> {
     let storage = MaterialCompletion::new(execution, allocation);
     if !result_set.source().has_complete_output_dependencies() {
-        return Err(Denial::new(Kind::IncompleteFootprint, "managed source set").into());
+        return Err(
+            Denial::from_kind_and_subject(Kind::IncompleteFootprint, "managed source set").into(),
+        );
     }
     let owners = super::invocation::controlled(execution, |control| {
         let count = rows
@@ -57,7 +60,11 @@ pub fn capture<Q>(
         storage.work(1)?;
         source.validate_completeness("managed source")?;
         if !ManagedSourceDependencies::accepts(&source.source_meaning()) {
-            return Err(Denial::new(Kind::SourceContractMismatch, "managed source").into());
+            return Err(Denial::from_kind_and_subject(
+                Kind::SourceContractMismatch,
+                "managed source",
+            )
+            .into());
         }
         // Derive counts during the admitted completed-footprint visit; a
         // later count does not traverse the Source roster or spend its grant.
@@ -65,12 +72,17 @@ pub fn capture<Q>(
         fact_count = footprint
             .fact_count()
             .and_then(|count| fact_count.checked_add(count))
-            .ok_or_else(|| Denial::new(Kind::PreparationMemoryExceeded, "managed source count"))?;
+            .ok_or_else(|| {
+                Denial::from_kind_and_subject(
+                    Kind::PreparationMemoryExceeded,
+                    "managed source count",
+                )
+            })?;
         field_count = footprint
             .field_count()
             .and_then(|count| field_count.checked_add(count))
             .ok_or_else(|| {
-                Denial::new(
+                Denial::from_kind_and_subject(
                     Kind::PreparationMemoryExceeded,
                     "managed source field count",
                 )

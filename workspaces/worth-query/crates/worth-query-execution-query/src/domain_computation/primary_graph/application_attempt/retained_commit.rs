@@ -1,6 +1,7 @@
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use std::sync::Arc;
 use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;

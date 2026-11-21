@@ -43,7 +43,6 @@ pub(crate) mod bootstrap_publication;
 pub(crate) mod causal_inspection;
 pub(crate) mod conditional_operation;
 mod facade;
-mod forwarding;
 pub use facade::*;
 pub(crate) mod invariant_projection;
 mod original_operation;

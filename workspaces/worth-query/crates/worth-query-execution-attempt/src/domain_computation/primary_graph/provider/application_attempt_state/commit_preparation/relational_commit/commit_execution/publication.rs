@@ -1,5 +1,6 @@
 //! Required publication after the authoritative commit has succeeded.
 
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::provider::application_attempt_state::commit_preparation::relational_commit::commit_execution::publication::committed_application;
 pub mod provider_result;
 
@@ -113,7 +114,7 @@ fn prepare_pending(
     } = committed;
     if let (Some(slot), Some(publisher)) = (
         prepared_lineage_slot.as_mut(),
-        provider.graph.application_publication.as_ref(),
+        provider.graph.application_publication_ref(),
     ) {
         // Ordinary authored retirement has Native succession custody, but did
         // not run a producer or create a producer checkpoint locator.

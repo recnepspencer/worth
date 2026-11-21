@@ -4,6 +4,7 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::domain_computation::primary_graph::query_obligations::history::durable_retirement::QueryObligationHistoryDurableRetirementExt;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -334,7 +335,7 @@ where
         crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
     > {
         let backing = std::sync::Arc::get_mut(&mut self.backing).ok_or_else(|| {
-            crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                 crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained,
                 "installed program runtime remains retained by another handle",
             )

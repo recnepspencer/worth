@@ -1,4 +1,5 @@
 //! One owner resolution of all genuinely admitted prefix meanings.
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::authored_edit::AuthoredEnvelopeResolutionPurpose;
@@ -23,7 +24,7 @@ impl WorthQueryPrimaryGraphProvider {
             return Ok(resolution);
         }
 
-        let layout = self.graph.layout.provider_idempotency().clone();
+        let layout = self.graph.layout_ref().provider_idempotency().clone();
         let product_affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
         match self.resolve_unpublished_envelope_idempotency(&product_affinity, candidates)? {

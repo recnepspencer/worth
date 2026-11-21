@@ -1,5 +1,6 @@
 //! An ordinary resumed row uses the same advance's publication permission.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 /// Both forms compare captured input through its actual selected owner.
 /// Callers supply a basis or a runtime, never an asserted comparison result.
@@ -54,7 +55,7 @@ impl PerformedMembers {
                 .runtime
                 .primary_provider
                 .graph
-                .output_lineage
+                .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .resolve_required_settlement(

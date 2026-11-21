@@ -1,6 +1,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use worth_query_execution_lineage::facade::ports::OutputDemandSettlementInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn require_current_settlements_in<'s>(
@@ -44,7 +45,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .runtime
                 .primary_provider
                 .graph
-                .output_lineage
+                .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             let read = lineage_read(|| {

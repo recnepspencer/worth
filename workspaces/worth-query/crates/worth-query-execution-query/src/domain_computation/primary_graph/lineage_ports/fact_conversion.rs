@@ -1,6 +1,7 @@
 //! Phase-bound constructor on `SourceFactExpansionControl`.
 
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_lineage::facade::ports::SourceExpectationDenialInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use crate::domain_computation::primary_graph::application_query::observed_source::fact_conversion::SourceFactExpansionControl;
@@ -30,7 +31,7 @@ impl<'request, 'authority> SourceFactExpansionControlExt<'request, 'authority>
         let execution = phase
             .execution_request_for(&runtime.runtime.product_runtime)
             .map_err(|_| {
-                WorthQuerySourceExpectationDenial::new(
+                WorthQuerySourceExpectationDenial::from_kind_and_subject(
                     WorthQuerySourceExpectationDenialKind::ForeignOperation,
                     subject,
                 )

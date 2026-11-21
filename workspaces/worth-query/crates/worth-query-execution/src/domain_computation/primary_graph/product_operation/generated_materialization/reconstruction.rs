@@ -1,6 +1,7 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -178,7 +179,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .filter(|role| role.posture ==
                     crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture::Preserve)
                 .map(|role| {
-                    let expected = self.inner.runtime.primary_provider.graph.layout.entity_kind(&role.entity_name)
+                    let expected = self.inner.runtime.primary_provider.graph.layout_ref().entity_kind(&role.entity_name)
                         .ok_or(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch)?;
                     let actual = port.retained_entity_kind(
                         execution,
@@ -198,7 +199,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Err(denial) => return Err(reconstruction_failure(suspended, denial)),
         };
         Ok(WorthQueryGeneratedOutputReconstruction::new(
-            &self.inner.runtime.primary_provider.graph.layout,
+            &self.inner.runtime.primary_provider.graph.layout_ref(),
             suspended,
             retained_entities,
         ))

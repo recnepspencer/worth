@@ -8,8 +8,10 @@ use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort
 use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
 use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::RelationalSourceOwnerInternalPort as _;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
@@ -89,7 +91,7 @@ where
             .runtime
             .primary_provider
             .graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         runtime
@@ -125,7 +127,7 @@ where
         .runtime
         .primary_provider
         .graph
-        .source_owner
+        .source_owner_ref()
         .mint_mark_cell_at_head(&execution, selected_publication.branch_id())
         .map_err(|stop| match stop {
             crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop::Admission(cause) => {

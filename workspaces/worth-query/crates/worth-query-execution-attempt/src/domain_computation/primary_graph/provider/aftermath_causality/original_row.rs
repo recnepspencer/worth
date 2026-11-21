@@ -1,5 +1,6 @@
 //! Original causal meaning is bounded by the exact Native creation delta.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 impl WorthQueryPrimaryGraphProvider {
     pub fn original_aftermath_causality(
@@ -15,7 +16,7 @@ impl WorthQueryPrimaryGraphProvider {
         execution
             .consult()
             .map_err(|cause| aftermath_read_stop(cause.into()))?;
-        let layout = self.graph.layout.provider_aftermath_causality();
+        let layout = self.graph.layout_ref().provider_aftermath_causality();
         let semantic = publication.semantic_result();
         let outcome_field = layout
             .outcome_identity_locator
@@ -92,7 +93,7 @@ impl WorthQueryPrimaryGraphProvider {
     ) -> Result<Option<WorthQueryCanonicalCorrectionFact>, WorthQueryAftermathCausalityReadDenial>
     {
         use WorthQueryAftermathCausalityReadDenial::InconsistentCanonicalRelationships as Denied;
-        let layout = self.graph.layout.provider_aftermath_causality();
+        let layout = self.graph.layout_ref().provider_aftermath_causality();
         let semantic = effect.semantic_result();
         let mut matching = semantic
             .created_entities()

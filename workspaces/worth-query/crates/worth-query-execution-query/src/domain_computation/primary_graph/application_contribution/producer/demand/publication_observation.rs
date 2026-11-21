@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::{
 impl<S: ApplicationSchema + 'static, F: WorthQueryProducerOutputFamily<S>>
     WorthQueryAdmittedOutputDemand<S, F>
 {
-    pub fn observe_own_completed_publication(
+    pub(crate) fn observe_own_completed_publication(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,

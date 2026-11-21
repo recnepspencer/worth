@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::request_allocation_control::Reques
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandSettlement;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     /// Validates every retained output and every original query dependency at
@@ -76,7 +77,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .runtime
                 .primary_provider
                 .graph
-                .source_owner
+                .source_owner_ref()
                 .invalidation_owner
                 .query_facts_clean_at(coverage, selected, policy)
                 .map_err(super::coverage::coverage_stop)?
@@ -87,7 +88,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let retained = source;
         let source = &retained.source;
         let prepared = source.admit_fact_materialization(
-            &runtime.runtime.primary_provider.graph.layout,
+            runtime.runtime.primary_provider.graph.layout_ref(),
             &source.query_identifier(),
             SourceFactExpansionControl::in_request(*execution, Some(request)),
         )?;
@@ -112,7 +113,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 .runtime
                 .primary_provider
                 .graph
-                .source_owner
+                .source_owner_ref()
                 .invalidation_owner
                 .reestablish_query_read(coverage, selected, policy)
                 .map_err(super::coverage::coverage_stop)?;

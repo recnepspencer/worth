@@ -3,7 +3,7 @@ use super::*;
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>
 {
-    pub fn body_external_emission(
+    pub(crate) fn body_external_emission(
         &mut self,
         recipe: std::sync::Arc<worth_query_declaration::facade::application_schema::ApplicationOperationBodyExternalEffectRecipe>,
         input: &Binding::Input,

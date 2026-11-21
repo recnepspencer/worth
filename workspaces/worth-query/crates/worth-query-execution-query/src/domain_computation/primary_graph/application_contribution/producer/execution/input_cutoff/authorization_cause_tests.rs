@@ -6,6 +6,7 @@ use crate::domain_computation::authorization::{
     WorthQueryOperationAuthorizationRefusalKind as Refusal,
 };
 use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+use worth_query_execution_lineage::facade::ports::SourceExpectationDenialInternalPort as _;
 
 #[test]
 fn entry_custody_producer_source_cancellation_and_expiry_keep_their_causes() {

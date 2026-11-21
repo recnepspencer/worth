@@ -1,5 +1,6 @@
 //! Distinct current or outside-domain evidence; neither is an SDK settlement.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -38,7 +39,7 @@ impl WorthQueryHistoryRecordingOutputOrigin {
                 .observe_model_owner(
                     &execution,
                     selected.product().relational_basis(),
-                    graph.layout.installed_history_ownership(),
+                    graph.layout_ref().installed_history_ownership(),
                     profile.source_intent().source_subject(),
                 )
             {

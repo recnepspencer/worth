@@ -2,6 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::num::NonZeroUsize;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 use worth_foundational::facade::{AspectValue, FieldKey};
 use worth_relational::facade::history::{
@@ -23,7 +24,11 @@ impl WorthQueryPrimaryGraphProvider {
         identity: &RelationalCommitIdentity,
         maximum_changed_records: NonZeroUsize,
     ) -> Result<Option<WorthQueryCanonicalCompletionRow>, Denial> {
-        let layout = self.graph.layout.provider_inbound_completion().clone();
+        let layout = self
+            .graph
+            .layout_ref()
+            .provider_inbound_completion()
+            .clone();
         self.graph.with_runtime(execution, |runtime| {
             let receipt = runtime
                 .history()

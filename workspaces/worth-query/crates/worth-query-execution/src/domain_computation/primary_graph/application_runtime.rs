@@ -251,3 +251,4 @@ fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census
         owner.field::<WorthQueryPrimaryGraphApplicationRuntimeInner<()>>("inner");
     }
 }
+mod runtime_forwarding;

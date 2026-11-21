@@ -19,39 +19,15 @@ use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, NoApplicationMutationSource},
     application_schema::ApplicationSchema,
 };
-use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
-use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
+use worth_query_execution_query::facade::ports::CompletedRequiredOutputsInternalPort as _;
+use worth_query_execution_runtime::facade::ports::{
+    ProductBranchInternalPort as _, ProductBranchLeaseInternalPort as _,
+};
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
-#[must_use = "retain the original reservation and actual candidate after refusal"]
-pub struct WorthQueryDocumentHistoryAdoptionFailure<'runtime, S> {
-    reservation: WorthQueryDocumentHistoryReservation,
-    candidate: WorthQueryExpectedProductBranch<'runtime, S>,
-    denial: Denial,
-}
-
-impl<'runtime, S> WorthQueryDocumentHistoryAdoptionFailure<'runtime, S> {
-    pub fn into_parts(
-        self,
-    ) -> (
-        WorthQueryDocumentHistoryReservation,
-        WorthQueryExpectedProductBranch<'runtime, S>,
-        Denial,
-    ) {
-        (self.reservation, self.candidate, self.denial)
-    }
-    pub fn denial(&self) -> &Denial {
-        &self.denial
-    }
-}
-
-impl<S> std::fmt::Debug for WorthQueryDocumentHistoryAdoptionFailure<'_, S> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("WorthQueryDocumentHistoryAdoptionFailure")
-            .field("denial", &self.denial)
-            .finish_non_exhaustive()
-    }
-}
+mod adoption_failure;
+pub use adoption_failure::WorthQueryDocumentHistoryAdoptionFailure;
 
 pub(super) struct PreparedBinding {
     pub(super) discovery_recipes:
@@ -383,7 +359,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .prepared_step(&reserved.record, endpoint.clone());
         let discovery_recipes = match &completion {
             RecordingCompletion::Forest { completed, .. } => {
-                Some(std::sync::Arc::clone(&completed.discovery_recipes))
+                Some(completed.discovery_recipes.clone())
             }
             _ => None,
         };

@@ -1,5 +1,6 @@
 //! Reobservation may follow only this pass's still-selected own publication.
 use super::*;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn own_publication_is_selected(

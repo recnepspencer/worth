@@ -1,11 +1,13 @@
 pub mod application_publication;
 pub mod home_retirement;
+pub(crate) mod integration_handle_port;
 pub(crate) mod internal_port;
 pub mod runtime_access;
 pub mod snapshot_release;
 
 use std::sync::{Arc, Mutex};
 
+use worth_query_execution_runtime::facade::ports::RelationalSourceOwnerInternalPort as _;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::runtime::RelationalRuntime;
 
@@ -68,10 +70,10 @@ impl WorthQueryPrimaryGraph {
         layout: Arc<WorthQueryPrimaryGraphLayout>,
         source_owner: WorthQueryRelationalSourceOwner,
     ) -> Self {
-        let relational_runtime_instance_id = source_owner.runtime_instance_id;
+        let relational_runtime_instance_id = source_owner.runtime_instance_id();
         let managed_derived_views = Arc::clone(
             &source_owner
-                .invalidation_owner
+                .invalidation_owner_ref()
                 .as_any()
                 .downcast_ref::<super::SourceInvalidationOwner>()
                 .expect("primary graph source carries SourceInvalidationOwner")
@@ -183,15 +185,15 @@ impl std::fmt::Debug for WorthQueryPrimaryGraph {
 #[derive(Clone)]
 pub struct WorthQueryPrimaryGraphIntegrationHandle {
     pub application_publication: Option<Arc<application_publication::ApplicationPublication>>,
-    pub source_owner: home_retirement::PrimaryGraphSourceCustody,
-    pub layout: Arc<WorthQueryPrimaryGraphLayout>,
-    pub primary_index_ids: Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
-    pub aggregate_projections:
+    pub(crate) source_owner: home_retirement::PrimaryGraphSourceCustody,
+    pub(crate) layout: Arc<WorthQueryPrimaryGraphLayout>,
+    pub(crate) primary_index_ids: Arc<[worth_relational::facade::indexes::DerivedIndexId]>,
+    pub(crate) aggregate_projections:
         Arc<Mutex<super::aggregate_projection::WorthQueryAggregateProjections>>,
     pub output_lineage: Arc<Mutex<super::output_lineage::WorthQueryApplicationOutputLineage>>,
-    pub managed_derived_views: Arc<dyn crate::ports::ManagedDerivedViewPort>,
-    pub workflow_retention: Arc<dyn crate::ports::WorkflowRetentionPort>,
-    pub truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
+    pub(crate) managed_derived_views: Arc<dyn crate::ports::ManagedDerivedViewPort>,
+    pub(crate) workflow_retention: Arc<dyn crate::ports::WorkflowRetentionPort>,
+    pub(crate) truth_partition_role: Option<worth_foundational::facade::TruthPartitionRole>,
 }
 
 impl WorthQueryPrimaryGraphIntegrationHandle {

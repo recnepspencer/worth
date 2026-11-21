@@ -10,7 +10,7 @@ use crate::domain_computation::primary_graph::{
 impl<Schema: ApplicationSchema, Family: WorthQueryProducerOutputFamily<Schema>>
     WorthQueryAdmittedOutputDemand<Schema, Family>
 {
-    pub fn retain_fulfilled_root(
+    pub(crate) fn retain_fulfilled_root(
         &self,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -1,7 +1,7 @@
 //! Compute once from this exact admitted decision reader, before candidate effects.
 use super::*;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
-    pub fn body_values(
+    pub(crate) fn body_values(
         &mut self,
         values: &[crate::domain_computation::primary_graph::operation_body::value::InstalledBodyValue],
     ) -> Result<

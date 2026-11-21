@@ -88,7 +88,7 @@ pub struct WorthQueryConditionalRuntimeInstallationDenial {
 }
 
 impl WorthQueryConditionalRuntimeInstallationDenial {
-    pub fn new(
+    pub(crate) fn new(
         kind: WorthQueryConditionalRuntimeInstallationDenialKind,
         subject: impl Into<String>,
     ) -> Self {
@@ -104,6 +104,26 @@ impl WorthQueryConditionalRuntimeInstallationDenial {
 
     pub fn subject(&self) -> &str {
         &self.subject
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryConditionalRuntimeInstallationDenial`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ConditionalRuntimeInstallationDenialInternalPort: Sized {
+    fn from_kind_and_subject(
+        kind: WorthQueryConditionalRuntimeInstallationDenialKind,
+        subject: impl Into<String>,
+    ) -> Self;
+}
+
+impl ConditionalRuntimeInstallationDenialInternalPort
+    for WorthQueryConditionalRuntimeInstallationDenial
+{
+    fn from_kind_and_subject(
+        kind: WorthQueryConditionalRuntimeInstallationDenialKind,
+        subject: impl Into<String>,
+    ) -> Self {
+        Self::new(kind, subject)
     }
 }
 

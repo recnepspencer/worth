@@ -4,6 +4,8 @@ use crate::domain_computation::primary_graph::{
     output_lineage::ExecutedAdoptionSelection,
     provider::{ReceiptAppendix, WorthQueryPrimaryGraphApplicationAttempt},
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::RelationalSourceOwnerInternalPort as _;
 use worth_relational::facade::mvcc::{
     RelationalPublicationAdoptionRequest, RequiredOutputProducingImplementation,
 };
@@ -103,12 +105,12 @@ pub(super) fn select(
     let Some(prepared) = material.publication_appendix.take() else {
         return Ok(None);
     };
-    if provider.graph.application_publication.is_none() {
+    if provider.graph.application_publication_ref().is_none() {
         return Ok(None);
     }
     let selected = prepared
         .selection
-        .select_native(&provider.graph.output_lineage, execution)
+        .select_native(provider.graph.output_lineage_ref(), execution)
         .map_err(super::super::invariant_execution_failure::companion_failure)?;
     let Some(selected) = selected else {
         return Ok(None);
@@ -121,7 +123,7 @@ pub(super) fn select(
     // this installs derived state at C, never a publication or durable write.
     provider
         .graph
-        .source_owner
+        .source_owner_ref()
         .mint_mark_cell_at_head(execution, prepared.selection.native_branch_id())
         .map_err(super::super::invariant_execution_failure::head_cell_failure)?;
     Ok(Some(SelectedPublicationAppendix {

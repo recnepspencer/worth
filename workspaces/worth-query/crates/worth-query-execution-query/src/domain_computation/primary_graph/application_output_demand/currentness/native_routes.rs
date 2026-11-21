@@ -1,5 +1,6 @@
 //! One currentness owner verifies both sealed current routes and selected historical routes.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub fn selected_route_is_current(
@@ -12,7 +13,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let graph = &runtime.runtime.primary_provider.graph;
         let read = lineage_read(|| {
             graph
-                .output_lineage
+                .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .source_facts_for_selected_route(
@@ -36,7 +37,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         let graph = &runtime.runtime.primary_provider.graph;
         let read = lineage_read(|| {
             graph
-                .output_lineage
+                .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .source_facts_for_current_route(

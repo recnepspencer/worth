@@ -46,7 +46,7 @@ impl<'call, 'reader, 'runtime, Schema, Operation>
 where
     Schema: ApplicationSchema,
 {
-    pub fn lend(
+    pub(crate) fn lend(
         reader: &'call mut WorthQueryApplicationOperationInvariantProjectionReader<
             'reader,
             'runtime,

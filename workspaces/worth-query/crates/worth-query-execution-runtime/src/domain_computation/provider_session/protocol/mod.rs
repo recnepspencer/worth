@@ -10,7 +10,7 @@ mod execution_plan;
 mod plan_contract;
 mod product_affinity;
 mod provider_port;
-mod readmission;
+pub(crate) mod readmission;
 mod session_grant_control;
 pub use session_grant_control::ProviderSessionGrantControl;
 pub use session_grant_control::{

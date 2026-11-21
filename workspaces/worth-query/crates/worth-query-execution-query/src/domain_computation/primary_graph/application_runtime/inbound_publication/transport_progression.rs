@@ -7,6 +7,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
@@ -182,7 +183,7 @@ Err(CompletionPreparationDenial::Request(PublicationDenial::Stopped(stop))) => {
             Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 Outcome::ProductUnpublished(UnpublishedInstalledTransportCompletion::new(
                     evidence,
-                    WorthQueryProductUnpublishedApplication::new(
+                    WorthQueryProductUnpublishedApplication::from_effects(
                         effects,
                         recovery,
                         self.runtime

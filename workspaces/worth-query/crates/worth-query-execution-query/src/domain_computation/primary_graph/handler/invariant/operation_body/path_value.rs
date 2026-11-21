@@ -7,7 +7,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
-    pub fn body_path_writes(
+    pub(crate) fn body_path_writes(
         &mut self,
         body: &ApplicationOperationBodyProgram,
     ) -> Result<PreparedBodyPathWrites<S>, HandlerExecutionDenial> {

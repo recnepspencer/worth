@@ -18,10 +18,16 @@ pub mod ports {
     };
     pub use crate::domain_computation::execution_runtime::product_world::owner_cleanup::internal_port::ProductRuntimeOwnerCleanupInternalPort;
     pub use crate::domain_computation::execution_runtime::product_world::publication_binding::internal_port::ProductPublicationBindingInternalPort;
-    pub use crate::domain_computation::execution_runtime::product_world::publication_binding::SelectedProgramInspectionInternalPort;
+    pub use crate::domain_computation::execution_runtime::product_world::publication_binding::selected_program::SelectedProgramInspectionInternalPort;
+    pub use crate::domain_computation::execution_runtime::product_world::resources_internal_port::ProductWorldResourcesInternalPort;
     pub use crate::domain_computation::execution_runtime::product_world::runtime::branch_lifecycle_internal_port::ProductRuntimeBranchLifecycleInternalPort;
     pub use crate::domain_computation::execution_runtime::product_world::runtime::internal_port::ProductRuntimeInternalPort;
+    pub use crate::domain_computation::execution_runtime::product_world::source_owner::RelationalSourceOwnerInternalPort;
+    pub use crate::domain_computation::managed_run::provider_plan_admission::RunningDirectRunInternalPort;
     pub use crate::domain_computation::managed_run::recovery_registry::RecoveryHandleRegistryInternalPort;
+    pub use crate::domain_computation::managed_run::truth_read_request::ManagedTruthReadRequestInternalPort;
+    pub use crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::GraphProviderAnchorInternalPort;
+    pub use crate::domain_computation::provider_session::protocol::readmission::prepared::ProviderSessionGrantInternalPort;
     pub use crate::execution_runtime_internal_port::ExecutionRuntimeInternalPort;
     pub use crate::managed_run_custody_port::ExecutionRuntimeManagedRunCustodyPort;
     pub use crate::ports::*;

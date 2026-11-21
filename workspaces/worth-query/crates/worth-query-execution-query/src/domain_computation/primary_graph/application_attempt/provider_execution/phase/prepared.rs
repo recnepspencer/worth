@@ -1,6 +1,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_lineage::facade::ports::CommitOutcomeIdentityInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::super::super::provider_binding::installed_preimage_demand;
@@ -214,7 +215,7 @@ where
     };
     let effect_posture = provider.effect_posture;
     let native_reference_invariants = match native_reference_invariants::derive(
-        &application.runtime.primary_provider.graph.layout,
+        application.runtime.primary_provider.graph.layout_ref(),
         &application.installed_schema,
         &provider.effects,
     ) {

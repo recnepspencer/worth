@@ -15,7 +15,7 @@ impl WorthQueryRunningDirectRun {
         WorthQueryAdmittedProviderExecutionPlan::direct(self, graph_authority)
     }
 
-    pub fn into_coupled_provider_execution_plan<'run>(
+    pub(crate) fn into_coupled_provider_execution_plan<'run>(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
@@ -42,6 +42,36 @@ impl WorthQueryRunningDirectRun {
 
     pub(crate) fn provider_plan_bridge_basis(&self) -> &BridgeBoundExecutionBasis {
         &self.bridge_basis
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryRunningDirectRun`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait RunningDirectRunInternalPort: Sized {
+    fn managed_home_custody(
+        &self,
+    ) -> Option<std::sync::Arc<super::durable_custody::ManagedRunCustody>>;
+
+    fn into_coupled_provider_execution_plan<'run>(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+    ) -> crate::domain_computation::provider_session::CoupledProviderPlanAdmission<'run>;
+}
+
+impl RunningDirectRunInternalPort for WorthQueryRunningDirectRun {
+    fn managed_home_custody(
+        &self,
+    ) -> Option<std::sync::Arc<super::durable_custody::ManagedRunCustody>> {
+        Self::managed_home_custody(self)
+    }
+
+    fn into_coupled_provider_execution_plan<'run>(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        graph_authority: &worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+    ) -> crate::domain_computation::provider_session::CoupledProviderPlanAdmission<'run> {
+        Self::into_coupled_provider_execution_plan(self, execution, graph_authority)
     }
 }
 

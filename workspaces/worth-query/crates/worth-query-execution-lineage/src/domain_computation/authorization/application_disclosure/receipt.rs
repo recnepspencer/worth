@@ -51,7 +51,7 @@ pub struct WorthQueryApplicationDisclosureReceipt {
 }
 
 impl WorthQueryApplicationDisclosureReceipt {
-    pub const fn public() -> Self {
+    pub(crate) const fn public() -> Self {
         Self {
             outcome_identity: None,
             posture: WorthQueryApplicationDisclosureReceiptPosture::Public,
@@ -65,7 +65,7 @@ impl WorthQueryApplicationDisclosureReceipt {
         }
     }
 
-    pub fn governed(
+    pub(crate) fn governed(
         classification: impl Into<String>,
         disclosed: Vec<(ApplicationQueryResultSlotKey, AspectValue)>,
         omitted: Vec<(ApplicationQueryResultSlotKey, AspectValue)>,
@@ -119,7 +119,47 @@ impl WorthQueryApplicationDisclosureReceipt {
     pub fn decisions(&self) -> &[WorthQueryApplicationDisclosureDecisionFact] {
         &self.decisions
     }
+}
 
+/// Crate-boundary internal port for constructing `WorthQueryApplicationDisclosureReceipt`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ApplicationDisclosureReceiptInternalPort: Sized {
+    fn public() -> Self;
+    fn governed(
+        classification: impl Into<String>,
+        disclosed: Vec<(ApplicationQueryResultSlotKey, AspectValue)>,
+        omitted: Vec<(ApplicationQueryResultSlotKey, AspectValue)>,
+        capability_authority_identity: impl Into<String>,
+        decision_identity: [u8; 32],
+        authorization_decision_fact_count: usize,
+    ) -> Self;
+}
+
+impl ApplicationDisclosureReceiptInternalPort for WorthQueryApplicationDisclosureReceipt {
+    fn public() -> Self {
+        Self::public()
+    }
+
+    fn governed(
+        classification: impl Into<String>,
+        disclosed: Vec<(ApplicationQueryResultSlotKey, AspectValue)>,
+        omitted: Vec<(ApplicationQueryResultSlotKey, AspectValue)>,
+        capability_authority_identity: impl Into<String>,
+        decision_identity: [u8; 32],
+        authorization_decision_fact_count: usize,
+    ) -> Self {
+        Self::governed(
+            classification,
+            disclosed,
+            omitted,
+            capability_authority_identity,
+            decision_identity,
+            authorization_decision_fact_count,
+        )
+    }
+}
+
+impl WorthQueryApplicationDisclosureReceipt {
     pub const fn disclosure_decision_count(&self) -> usize {
         self.decisions.len()
     }

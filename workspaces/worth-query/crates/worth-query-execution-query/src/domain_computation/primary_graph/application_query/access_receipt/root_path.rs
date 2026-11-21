@@ -19,7 +19,7 @@ pub struct WorthQueryApplicationQueryRootPathStepRead {
     reads: WorthQueryInvariantProjectionWork,
 }
 impl WorthQueryApplicationQueryRootPathStepRead {
-    pub fn new(
+    pub(crate) fn new(
         path_index: usize,
         step_index: usize,
         source_kind: worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind,

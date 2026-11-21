@@ -13,6 +13,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowReadRoute;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -85,7 +86,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                 .runtime
                 .primary_provider
                 .graph
-                .source_owner
+                .source_owner_ref()
                 .invalidation_owner
                 .touch_position_at(basis.identity().branch_id(), commit, &execution)
                 .map_err(Denial::Work)?,
@@ -168,7 +169,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             .runtime
             .primary_provider
             .graph
-            .source_owner
+            .source_owner_ref()
             .invalidation_owner
             .touched_commits_after(
                 basis.identity().branch_id(),

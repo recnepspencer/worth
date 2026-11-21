@@ -17,6 +17,8 @@ use crate::domain_computation::{
     WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
@@ -109,7 +111,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .runtime
                 .primary_provider
                 .graph
-                .output_lineage
+                .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .record_historical_transport(
@@ -162,7 +164,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         &self,
         effects: worth_runtime_world::facade::ProductUnpublishedOwnerEffects,
     ) -> WorthQueryProductUnpublishedRecovery {
-        WorthQueryProductUnpublishedApplication::new(
+        WorthQueryProductUnpublishedApplication::from_effects(
             effects,
             self.application
                 .inner

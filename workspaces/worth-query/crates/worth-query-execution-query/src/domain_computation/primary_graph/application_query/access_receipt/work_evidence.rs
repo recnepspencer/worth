@@ -12,7 +12,7 @@ pub struct WorthQueryApplicationQueryWorkEvidence {
 }
 
 impl WorthQueryApplicationQueryWorkEvidence {
-    pub const fn new(
+    pub(crate) const fn new(
         predicate_work_units: usize,
         adjacency_work_units: usize,
         ordering_work_units: usize,

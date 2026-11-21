@@ -185,7 +185,7 @@ where
     Schema: ApplicationSchema,
 {
     /// Internal managed receiver hook at the actual retained Query basis owner.
-    pub fn select_for_managed_index<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
+    pub(crate) fn select_for_managed_index<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
         self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
         before_basis: impl FnOnce(
@@ -220,7 +220,7 @@ where
         self.select_with_request(&request)
     }
 
-    pub fn select_with_request(
+    pub(crate) fn select_with_request(
         self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<

@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
     WorthQuerySelectedProductOperation,
 };
 use worth_query_declaration::facade::branch::WorthQueryProductBranchComponents;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 mod adoption;
@@ -71,7 +72,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
                                     .runtime
                                     .primary_provider
                                     .graph
-                                    .output_lineage,
+                                    .output_lineage_ref(),
                             ),
                         ),
                     ),

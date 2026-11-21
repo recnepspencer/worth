@@ -1,6 +1,7 @@
 //! Exact-basis Query completion candidate for a retained authenticated occurrence.
 
 use std::collections::BTreeMap;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::{
@@ -73,7 +74,7 @@ impl WorthQueryPrimaryGraphProvider {
         };
         let claims = accepted.claims();
         let record = accepted.owner().record();
-        let layout = self.graph.layout.provider_inbound_completion();
+        let layout = self.graph.layout_ref().provider_inbound_completion();
         let correlation = hex(record.correlation().digest().bytes());
         let fields = BTreeMap::from([
             (layout.correlation.clone(), string(correlation.clone())),
@@ -187,7 +188,7 @@ impl WorthQueryPrimaryGraphProvider {
         fields: BTreeMap<worth_foundational::facade::AspectFieldLocator, AspectValue>,
     ) -> Result<ValidatedRelationalProposal, WorthQueryInboundCompletionPreparationDenial> {
         use WorthQueryInboundCompletionPreparationDenial as Denial;
-        let layout = self.graph.layout.provider_inbound_completion();
+        let layout = self.graph.layout_ref().provider_inbound_completion();
         let intent = MutationIntent::Create(CreateIntent::Entity(EntitySpec {
             partition_id: original_entity.partition_id,
             kind_id: layout.kind,

@@ -1,5 +1,6 @@
 //! Native certifies the complete roster before ordinary relation laws judge deletion.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 impl WorthQueryPrimaryGraphProvider {
     pub(super) fn validate_owned_member_rosters(
@@ -16,7 +17,7 @@ impl WorthQueryPrimaryGraphProvider {
             .observation()
             .basis()
             .relational_basis();
-        let rosters = staged.owned_member_rosters(&self.graph.layout)?;
+        let rosters = staged.owned_member_rosters(self.graph.layout_ref())?;
         for (anchor, kinds, roles) in rosters {
             self.graph
                 .with_runtime(execution, |runtime| {

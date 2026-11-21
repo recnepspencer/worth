@@ -56,7 +56,7 @@ pub struct WorthQueryApplicationInvariantComponent<Schema, Set, Entity> {
     context: ComponentContext<Schema, Entity>,
 }
 impl<Schema, Set, Entity> WorthQueryApplicationInvariantComponent<Schema, Set, Entity> {
-    pub fn new(native: AggregateRead, context: ComponentContext<Schema, Entity>) -> Self {
+    pub(crate) fn new(native: AggregateRead, context: ComponentContext<Schema, Entity>) -> Self {
         let identity = WorthQueryAggregateIdentity::from_invariant_component_read(
             &native,
             context.binding.clone(),
@@ -103,7 +103,10 @@ impl ComponentCollection {
     }
 }
 impl<Schema, Set, Entity> WorthQueryApplicationInvariantComponents<Schema, Set, Entity> {
-    pub fn new(native: AggregateReadCollection, context: ComponentContext<Schema, Entity>) -> Self {
+    pub(crate) fn new(
+        native: AggregateReadCollection,
+        context: ComponentContext<Schema, Entity>,
+    ) -> Self {
         Self {
             native: ComponentCollection::Direct(native),
             context,

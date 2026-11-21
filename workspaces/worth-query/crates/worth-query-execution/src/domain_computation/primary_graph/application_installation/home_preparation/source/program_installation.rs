@@ -5,6 +5,7 @@ use super::{authored_bindings::QueryHomeAuthoredBindings, program_state::HomeSer
 use crate::domain_computation::primary_graph::{
     application_contribution::*, application_runtime::installation::home_attachment,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_runtime_bridge::facade::{
     BridgeConditionalRuntimeBuilder, RuntimeBridge, RuntimeBridgeRelationalSource,
 };
@@ -142,7 +143,7 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
         services
             .provider
             .graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .install_output_families(producers.output_family_bindings());

@@ -1,5 +1,7 @@
 //! Actual outstanding operation custody lends its exact World/Native poststate.
 use super::*;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 impl WorthQueryPrimaryGraphProvider {
     pub fn original_attempt_dispatch_outbox(
         &self,
@@ -66,7 +68,7 @@ impl WorthQueryPrimaryGraphProvider {
                 .expect("a genuine original lends either its cached or newly admitted retention");
             let answer = CommittedOutboxRead {
                 runtime,
-                layout: self.graph.layout.provider_dispatch_outbox(),
+                layout: self.graph.layout_ref().provider_dispatch_outbox(),
                 record: binding.record(),
                 record_ref: binding.record_ref(),
                 expected_commit,

@@ -4,6 +4,7 @@ use super::*;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_execution_lineage::facade::ports::BoundSourceExpectationInternalPort as _;
+use worth_query_execution_lineage::facade::ports::SourceExpectationDenialInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
@@ -31,7 +32,7 @@ impl<Query, Value> AppliedQuerySource<Query, Value> {
         Binding: ApplicationMutationBinding<Schema>,
     {
         let denied = || {
-            WorthQuerySourceExpectationDenial::new(
+            WorthQuerySourceExpectationDenial::from_kind_and_subject(
                 WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
                 Binding::IDENTITY,
             )

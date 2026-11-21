@@ -2,6 +2,7 @@
 
 use crate::domain_computation::application_aftermath::CommittedAftermathCausalityExt;
 use std::collections::BTreeMap;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 use worth_foundational::facade::{AspectValue, InternedString};
 use worth_relational::facade::identity::VersionId;
@@ -126,7 +127,11 @@ impl WorthQueryPrimaryGraphProvider {
         outcome_identity: Option<WorthQueryApplicationCommitOutcomeIdentity>,
     ) -> Result<Option<WorthQueryCommittedAftermathCausality>, WorthQueryAftermathCausalityReadDenial>
     {
-        let layout = self.graph.layout.provider_aftermath_causality().clone();
+        let layout = self
+            .graph
+            .layout_ref()
+            .provider_aftermath_causality()
+            .clone();
         self.graph
             .carry_primary_index_basis_for_basis(execution, runtime, basis)
             .map_err(aftermath_index_currency_denial)?;

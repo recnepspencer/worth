@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_schema::{
     ApplicationOperationBodyCreationLinkSource as Source, ApplicationOperationBodyProgram,
 };
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
-    pub fn body_principal_link(
+    pub(crate) fn body_principal_link(
         &mut self,
         body: &ApplicationOperationBodyProgram,
     ) -> Result<Option<WorthQueryInvariantMutationTarget<S, ()>>, HandlerExecutionDenial> {

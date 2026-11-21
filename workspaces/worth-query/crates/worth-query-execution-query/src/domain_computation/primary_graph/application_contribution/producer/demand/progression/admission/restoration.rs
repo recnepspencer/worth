@@ -1,7 +1,9 @@
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::RelationalSourceOwnerInternalPort as _;
 mod verification_denial;
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_installation::facade::ApplicationSchema;
@@ -72,7 +74,7 @@ where
             .runtime
             .primary_provider
             .graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .restored_settlement_identity(
@@ -213,7 +215,7 @@ where
         let recorded = self
             .runtime.primary_provider
             .graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .record_restoration(
@@ -244,7 +246,7 @@ where
             // Readmission is this output's one full comparison. Recording it
             // as marks lets the next clean demand read them instead; a stop
             // here leaves the output requiring verification.
-            let source_owner = &self.runtime.primary_provider.graph.source_owner;
+            let source_owner = self.runtime.primary_provider.graph.source_owner_ref();
             if let Some(facts) = recorded.facts.for_comparison().filter(|_| {
 use crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop;
 use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as NativeStop;

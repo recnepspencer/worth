@@ -20,6 +20,7 @@ pub mod checkpoint_delivery;
 pub mod disclosure;
 pub mod durable;
 mod fulfillment;
+pub(crate) mod internal_port;
 pub use durable::WorthQueryOriginalOutputDemand;
 pub mod progression;
 pub use progression::DecisionInput;

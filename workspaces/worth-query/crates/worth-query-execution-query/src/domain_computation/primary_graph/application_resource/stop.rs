@@ -50,7 +50,7 @@ pub struct WorthQueryResourceRecoveryCloseStop {
 }
 
 impl WorthQueryResourceRecoveryCloseStop {
-    pub fn from_parts(
+    pub(crate) fn from_parts(
         recovery: Option<
             crate::domain_computation::application_aftermath::WorthQueryRecoveryHandle,
         >,
@@ -77,7 +77,7 @@ pub struct WorthQueryResourceActionDenial {
 }
 
 impl WorthQueryResourceActionDenial {
-    pub fn from_cause_port(
+    pub(crate) fn from_cause_port(
         cause: Box<dyn ResourceCausePort>,
         closed: Option<super::closed::WorthQueryClosedResource>,
     ) -> Self {
@@ -155,5 +155,43 @@ impl std::fmt::Debug for WorthQueryResourceActionDenial {
         f.debug_struct("WorthQueryResourceActionDenial")
             .field("kind", &self.kind())
             .finish_non_exhaustive()
+    }
+}
+
+/// Crate-boundary internal ports for resource stop/denial construction.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ResourceRecoveryCloseStopInternalPort: Sized {
+    fn from_parts(
+        recovery: Option<
+            crate::domain_computation::application_aftermath::WorthQueryRecoveryHandle,
+        >,
+        denial: WorthQueryResourceActionDenial,
+    ) -> Self;
+}
+
+impl ResourceRecoveryCloseStopInternalPort for WorthQueryResourceRecoveryCloseStop {
+    fn from_parts(
+        recovery: Option<
+            crate::domain_computation::application_aftermath::WorthQueryRecoveryHandle,
+        >,
+        denial: WorthQueryResourceActionDenial,
+    ) -> Self {
+        Self::from_parts(recovery, denial)
+    }
+}
+
+pub trait ResourceActionDenialInternalPort: Sized {
+    fn from_cause_port(
+        cause: Box<dyn ResourceCausePort>,
+        closed: Option<super::closed::WorthQueryClosedResource>,
+    ) -> Self;
+}
+
+impl ResourceActionDenialInternalPort for WorthQueryResourceActionDenial {
+    fn from_cause_port(
+        cause: Box<dyn ResourceCausePort>,
+        closed: Option<super::closed::WorthQueryClosedResource>,
+    ) -> Self {
+        Self::from_cause_port(cause, closed)
     }
 }

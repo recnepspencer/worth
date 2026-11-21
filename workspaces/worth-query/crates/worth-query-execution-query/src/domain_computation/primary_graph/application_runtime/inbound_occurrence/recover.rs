@@ -6,6 +6,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use crate::domain_computation::execution_runtime::product_world::ProductPublicationBindingPrimaryExt;
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
@@ -322,7 +323,7 @@ Err(PublicationDenial::Stopped(stop)) => RecoveryStep::Retain(
                 RecoveryStep::Retain(State::Active(recovery), Err(Denial::RecoveryUnavailable))
             }
             Ok(PublicationOutcome::ProductUnpublished(effects)) => {
-                let next = WorthQueryProductUnpublishedApplication::new(
+                let next = WorthQueryProductUnpublishedApplication::from_effects(
                     effects,
                     world_recovery,
                     self.runtime

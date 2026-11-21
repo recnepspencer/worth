@@ -1,6 +1,7 @@
 //! Native liveness, producing build, source facts and witness form one verdict.
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::current_output::retained_candidates::WorthQueryRetainedOutputCandidate;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 pub fn verify<Schema, Family>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -153,7 +154,7 @@ fn origin_is_verified<S: ApplicationSchema>(
                     .runtime
                     .primary_provider
                     .graph
-                    .source_owner
+                    .source_owner_ref()
                     .invalidation_owner,
             )?),
     }

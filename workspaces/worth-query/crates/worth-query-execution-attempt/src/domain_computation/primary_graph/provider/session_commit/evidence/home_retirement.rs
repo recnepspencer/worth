@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryOperationHomeRetirementProgress as Progress,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_relational::facade::runtime::RelationalRuntime;
 impl WorthQueryCompletedCommitEvidenceStore {
     pub fn preflight_home_retirement(

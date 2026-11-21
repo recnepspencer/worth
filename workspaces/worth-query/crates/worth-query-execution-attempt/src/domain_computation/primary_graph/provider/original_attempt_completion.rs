@@ -6,6 +6,7 @@ use super::super::application_attempt::{
 use super::WorthQueryPrimaryGraphCommittedApplication as Completed;
 use crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding;
 use std::sync::{Arc, Mutex, OnceLock};
+use worth_query_execution_lineage::facade::ports::ApplicationCleanupRequiredInternalPort as _;
 
 // Erase the owned Native graph here so consumers never repeat its auto-trait
 // traversal through provider-attempt state. The concrete owner remains sealed.

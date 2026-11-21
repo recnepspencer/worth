@@ -2,6 +2,7 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use worth_query_execution_query::facade::ports::ConditionalProducerAccessInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -85,7 +86,7 @@ where
         declaration: &DeclaredConditionalBinding,
         installation: &mut WorthQueryConditionalApplicationRuntimeInstallation<Schema>,
     ) -> Result<InstalledConditionalBinding, RefusedConditionalConfiguration> {
-        let access = WorthQueryApplicationConditionalProducerAccess::new(
+        let access = WorthQueryApplicationConditionalProducerAccess::from_installed(
             producers,
             &declaration.required_producers,
         );

@@ -78,7 +78,7 @@ impl RetainedWorldPage {
 impl<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>
     WorthQueryApplicationHistoryCursor<Schema, History>
 {
-    pub fn open(
+    pub(crate) fn open(
         execution: worth_execution::ExecutionRequest<'_, '_>,
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         subjects: WorthQueryCapturedApplicationHistorySubjects<Schema, History>,
@@ -118,7 +118,7 @@ impl<Schema: ApplicationSchema, History: ApplicationHistoryQueryBinding<Schema>>
         })
     }
 
-    pub fn successor(&self, position: HistoryPosition) -> Self {
+    pub(crate) fn successor(&self, position: HistoryPosition) -> Self {
         Self {
             source: Arc::clone(&self.source),
             position,

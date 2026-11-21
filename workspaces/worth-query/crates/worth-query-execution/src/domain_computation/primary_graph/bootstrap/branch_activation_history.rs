@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 mod source;
 pub(in crate::domain_computation::primary_graph) use source::BranchActivationSource;
@@ -63,7 +64,7 @@ pub(in crate::domain_computation::primary_graph) fn verify<Schema: ApplicationSc
         .map_err(Denial::Source)?;
     let graph = &application.inner.runtime.primary_provider.graph;
     graph.with_runtime(execution, |native| {
-        let source = BranchActivationSource::new(native, &graph.layout, published);
+        let source = BranchActivationSource::new(native, &graph.layout_ref(), published);
         for branch in inventory.branches() {
             execution.consult().map_err(Denial::Execution)?;
             let current = source.read(execution, branch.basis().relational_basis())?;
@@ -81,7 +82,7 @@ pub(in crate::domain_computation::primary_graph) fn verify<Schema: ApplicationSc
             super::super::workflow::readmission::readmit(
                 execution,
                 native,
-                graph.layout.workflow(),
+                graph.layout_ref().workflow(),
                 branch,
                 worth_foundational::facade::CanonicalDigestId::new(*program.revision().as_bytes()),
                 &history,

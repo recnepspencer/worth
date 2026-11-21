@@ -1,5 +1,6 @@
 //! Correction lookup shares the ordinary original-row and World receipt owner.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 pub fn observe(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -36,7 +37,7 @@ fn read(
         provider,
         runtime,
         snapshot,
-        layout: provider.graph.layout.provider_idempotency(),
+        layout: provider.graph.layout_ref().provider_idempotency(),
     };
     let key_text = AspectValue::String(InternedString::from(
         WorthQueryApplicationIdempotencyBinding::recorded_key_text(key),

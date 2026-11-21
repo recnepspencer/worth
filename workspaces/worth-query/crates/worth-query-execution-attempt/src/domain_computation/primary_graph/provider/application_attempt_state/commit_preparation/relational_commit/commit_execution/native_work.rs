@@ -3,6 +3,7 @@ use super::durable_custody::{
     QueryCandidatePreparationDenial as Denial, QueryNativeCustody, QueryPreparingApplicationCommit,
 };
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 pub(super) fn prepare_before_native(
@@ -153,8 +154,7 @@ pub(super) fn prepare_candidate_support(
                     execution,
                     &provider
                         .graph
-                        .application_publication
-                        .as_ref()
+                        .application_publication_ref()
                         .expect("Native admitted the installed group issuer")
                         .native,
                 )
@@ -177,7 +177,7 @@ pub(super) fn prepare_candidate_support(
                 .attempt
                 .native_publication_roles()
                 .map(|(role, posture, entity_name, _)| (role, posture, entity_name)),
-            &provider.graph.layout,
+            provider.graph.layout_ref(),
         )
         .map_err(Denial::OutputWitness)?;
     query.prepared_touched_records = Some(

@@ -15,6 +15,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
+use worth_query_execution_query::facade::ports::CompletedOriginalReadOutputsInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>

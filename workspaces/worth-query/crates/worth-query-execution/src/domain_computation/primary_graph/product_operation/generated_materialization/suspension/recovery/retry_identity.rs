@@ -1,5 +1,6 @@
 use super::*;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 pub(super) fn retry_matches<Schema, Producer>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -27,7 +28,7 @@ where
         .runtime
         .primary_provider
         .graph
-        .output_lineage
+        .output_lineage_ref()
         .lock()
         .expect("application output lineage lock is available")
         .qualified_output::<Producer::Operation>(

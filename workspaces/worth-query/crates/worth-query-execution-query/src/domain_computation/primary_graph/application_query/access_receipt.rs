@@ -305,7 +305,7 @@ impl WorthQueryApplicationQueryAccessReceipt {
         self.basis_released
     }
 
-    pub fn new(parts: WorthQueryApplicationQueryAccessReceiptParts) -> Self {
+    pub(crate) fn new(parts: WorthQueryApplicationQueryAccessReceiptParts) -> Self {
         Self {
             query_identity: parts.query_identity,
             parameter_binding_identity: parts.parameter_binding_identity,

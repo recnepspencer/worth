@@ -249,6 +249,7 @@ impl ConsumedOutputEvidence {
             return Ok(());
         }
         use crate::domain_computation::primary_graph::output_lineage::invalidation::HeadCellRegistrationStop;
+        use worth_query_execution_runtime::facade::ports::RelationalSourceOwnerInternalPort as _;
         match source_owner
             .mint_mark_cell_at_head(execution, self.recorded().selected_native_root.branch_id())
         {
@@ -270,7 +271,7 @@ impl ConsumedOutputEvidence {
             Err(HeadCellRegistrationStop::LookupChanged) => return Ok(()),
         }
         let invalidation_owner = source_owner
-            .invalidation_owner
+            .invalidation_owner_ref()
             .as_any()
             .downcast_ref::<crate::domain_computation::primary_graph::SourceInvalidationOwner>()
             .expect("primary graph source carries SourceInvalidationOwner");

@@ -5,7 +5,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyPathFieldSource;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
-    pub fn body_path_input_equals(
+    pub(crate) fn body_path_input_equals(
         &mut self,
         source: &ApplicationOperationBodyPathFieldSource,
         expected: &AspectValue,

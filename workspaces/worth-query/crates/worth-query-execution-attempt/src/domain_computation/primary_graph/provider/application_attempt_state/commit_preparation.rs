@@ -4,6 +4,7 @@ use crate::domain_computation::application_aftermath::WorthQueryRetainedPreImage
 use crate::domain_computation::{
     WorthQueryProviderSessionFailure, WorthQueryProviderSessionProtocolStage,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 use super::super::{
     mutation_work::WorthQueryPrimaryMutationWorkCounters, WorthQueryPrimaryGraphApplicationAttempt,
@@ -114,7 +115,7 @@ fn take_prepared_session(
         &mut members,
         &candidate,
         &session.execution_request(),
-        &provider.graph.layout,
+        provider.graph.layout_ref(),
         allocation_policy,
     )?;
     let source_fact_rebase = attempt.take_source_fact_rebase();
@@ -123,7 +124,7 @@ fn take_prepared_session(
         None,
         &candidate,
         &session.execution_request(),
-        &provider.graph.layout,
+        provider.graph.layout_ref(),
         allocation_policy,
     )?
     .into_parts();

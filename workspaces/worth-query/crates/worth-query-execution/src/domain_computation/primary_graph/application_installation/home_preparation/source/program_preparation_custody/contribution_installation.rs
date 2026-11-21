@@ -1,5 +1,6 @@
 //! Contributor installation keeps every advanced original in its refusal owner.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation::source) fn install_contributions(
@@ -106,7 +107,7 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
         let cursor = services
             .provider
             .graph
-            .source_owner
+            .source_owner_ref()
             .invalidation_owner
             .latest_position();
         self.operations = Some(crate::domain_computation::primary_graph::conditional_operation::install_pending_bindings(

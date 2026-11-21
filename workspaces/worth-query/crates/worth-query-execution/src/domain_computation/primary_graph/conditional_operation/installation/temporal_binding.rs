@@ -1,6 +1,7 @@
 //! Temporal operation installation retains its existing reconstruction and execution admission.
 use super::*;
 use worth_query_execution_query::facade::ports::ConditionalClockHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 impl<Schema> WorthQueryConditionalApplicationRuntimeInstallation<Schema>
 where
     Schema: ApplicationSchema + 'static,
@@ -191,7 +192,7 @@ where
             execution.invoker_identity(),
         )
         .map_err(|denial| {
-            WorthQueryConditionalRuntimeInstallationDenial::new(
+            WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                 WorthQueryConditionalRuntimeInstallationDenialKind::ForeignBinding,
                 format!("conditional binding identity was denied: {denial:?}"),
             )
@@ -201,10 +202,12 @@ where
             .binding_identities
             .insert(Arc::clone(&support_identity))
         {
-            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
-                WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,
-                support_identity.as_ref(),
-            ));
+            return Err(
+                WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
+                    WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,
+                    support_identity.as_ref(),
+                ),
+            );
         }
         let binding_canonical_work = identity.canonical_work();
         let lease = WorthQueryConditionalClockHandle::<Schema, (), ()>::new_lease();

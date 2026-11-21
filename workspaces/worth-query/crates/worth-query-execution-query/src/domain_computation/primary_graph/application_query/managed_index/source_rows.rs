@@ -59,7 +59,7 @@ pub struct WorthQueryManagedIndexSourceRows<
 impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
     WorthQueryManagedIndexSourceRows<'a, S, I>
 {
-    pub fn new(
+    pub(crate) fn new(
         image: SourceImageView<'a>,
         decode: &'a ValueDecodeSession<'a>,
         control: &'a WorthQueryManagedIndexControl<'a>,
@@ -151,7 +151,7 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
             self.execution,
         )
     }
-    pub fn image(&self) -> SourceImageView<'a> {
+    pub(crate) fn image(&self) -> SourceImageView<'a> {
         self.image
     }
     /// Enumerate cold material without repeated rank lookups. Coordinates of
@@ -186,13 +186,13 @@ impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
             )
         })
     }
-    pub fn check(&self) -> Result<(), Stop> {
+    pub(crate) fn check(&self) -> Result<(), Stop> {
         if let Some(cause) = self.decode.denial() {
             return Err(self.control.refuse(Stop::ValueDecode(cause)));
         }
         self.control.poll()
     }
-    pub fn validate(&self, slot: WorthQueryManagedIndexSourceSlot) -> Result<(), Stop> {
+    pub(crate) fn validate(&self, slot: WorthQueryManagedIndexSourceSlot) -> Result<(), Stop> {
         self.image.validate_slot(slot, self.control)
     }
 }

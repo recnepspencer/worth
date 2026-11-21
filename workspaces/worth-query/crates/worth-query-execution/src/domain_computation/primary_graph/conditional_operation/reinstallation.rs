@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledPackageIndex, WorthQueryInstalledPackageIndexRelation,
@@ -139,7 +140,7 @@ where
             .memory()
             .and_then(|owner| owner.prepare_conditional_reconstitution(truth.signal_basis()))
             .map_err(|denial| {
-                WorthQueryConditionalRuntimeInstallationDenial::new(
+                WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                     WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(
                         Box::new(denial.kind()),
                     ),
@@ -171,7 +172,7 @@ where
             .conditional_lifecycle()
             .and_then(|mut owner| owner.activate_conditional_reconstitution(bridge_candidate))
             .map_err(|denial| {
-                WorthQueryConditionalRuntimeInstallationDenial::new(
+                WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                     WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(
                         Box::new(denial.kind()),
                     ),
@@ -219,14 +220,14 @@ fn require_equivalent_installation(
 }
 
 fn rebind(detail: impl Into<String>) -> WorthQueryConditionalRuntimeInstallationDenial {
-    WorthQueryConditionalRuntimeInstallationDenial::new(
+    WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
         WorthQueryConditionalRuntimeInstallationDenialKind::RebindRequired,
         detail,
     )
 }
 
 fn bridge_denial(detail: impl Into<String>) -> WorthQueryConditionalRuntimeInstallationDenial {
-    WorthQueryConditionalRuntimeInstallationDenial::new(
+    WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
         WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
         detail,
     )

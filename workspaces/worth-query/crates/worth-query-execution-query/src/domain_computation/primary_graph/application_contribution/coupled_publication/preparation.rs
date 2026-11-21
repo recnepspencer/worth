@@ -1,6 +1,7 @@
 //! Read proposed sources and retain actual writers before final group validation.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 enum PendingOutputDemand<'a> {
     Prefix(&'a DeclaredCoupledOutputDemand),
@@ -35,7 +36,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                 runtime, self.before.relational_basis(),
             ).map_err(|cause| WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ForeignSource, format!("coupled before basis: {cause:?}")))?;
-            let indexes = graph.layout.equality_index_ids().collect::<Vec<_>>();
+            let indexes = graph.layout_ref().equality_index_ids().collect::<Vec<_>>();
             let pin = runtime.read_truth().pin_read_capability(&snapshot, &indexes, execution);
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             pin.map_err(|cause| WorthQueryOutputDemandDenial::new(WorthQueryOutputDemandDenialKind::ForeignSource, format!("coupled before pin: {cause:?}")))

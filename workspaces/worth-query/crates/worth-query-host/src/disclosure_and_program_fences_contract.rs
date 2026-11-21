@@ -279,7 +279,7 @@
 //!
 //! ```compile_fail,E0616
 //! use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-//! fn touch_world_owner<S: worth_query_host::facade::installation::ApplicationSchema>(
+//! fn touch_world_owner<S: worth_query_host::facade::domain::ApplicationSchema>(
 //!     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
 //! ) {
 //!     let _ = &runtime.product_runtime().owner;
@@ -325,7 +325,7 @@
 //!
 //! ```compile_fail,E0624
 //! use worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
-//! fn call_preflight<S: worth_query_host::facade::installation::ApplicationSchema>(
+//! fn call_preflight<S: worth_query_host::facade::domain::ApplicationSchema>(
 //!     runtime: &mut WorthQueryPrimaryGraphApplicationRuntime<S>,
 //! ) {
 //!     let _ = WorthQueryPrimaryGraphApplicationRuntime::<S>::preflight_home_retirement;
@@ -336,7 +336,7 @@
 //! graphs keep internal backing fields private through Host:
 //!
 //! ```compile_fail,E0616
-//! use worth_query_host::facade::primary_graph::WorthQueryApplicationCheckpoint;
+//! use worth_query_host::facade::application_installation::WorthQueryApplicationCheckpoint;
 //! fn read_checkpoint_origin(checkpoint: &WorthQueryApplicationCheckpoint) {
 //!     let _ = &checkpoint.origin;
 //! }
@@ -350,7 +350,7 @@
 //! ```
 //!
 //! ```compile_fail,E0624
-//! use worth_query_host::facade::primary_graph::WorthQueryApplicationCheckpoint;
+//! use worth_query_host::facade::application_installation::WorthQueryApplicationCheckpoint;
 //! fn mint_checkpoint() {
 //!     let _ = WorthQueryApplicationCheckpoint::from_admitted_parts;
 //! }
@@ -379,7 +379,7 @@
 //!
 //! ```compile_fail,E0624
 //! use worth_query_host::facade::primary_graph::WorthQueryApplicationInvariantProjectionAuthority;
-//! fn mint_invariant_authority<S: worth_query_host::facade::installation::ApplicationSchema>() {
+//! fn mint_invariant_authority<S: worth_query_host::facade::domain::ApplicationSchema>() {
 //!     let _ = WorthQueryApplicationInvariantProjectionAuthority::<S>::from_installation_parts;
 //! }
 //! ```

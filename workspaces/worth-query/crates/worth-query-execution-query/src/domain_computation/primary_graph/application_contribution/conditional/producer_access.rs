@@ -15,7 +15,7 @@ impl<'a, Schema> WorthQueryApplicationConditionalProducerAccess<'a, Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn new(
+    pub(crate) fn new(
         installed: &'a WorthQueryInstalledApplicationProducerRegistry<Schema>,
         required: &'a [String],
     ) -> Self {
@@ -32,6 +32,26 @@ where
         dependency_is_declared(self.required, Binding::IDENTITY)
             .then(|| self.installed.provider::<Binding>())
             .flatten()
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryApplicationConditionalProducerAccess`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ConditionalProducerAccessInternalPort<'a, Schema: ApplicationSchema>: Sized {
+    fn from_installed(
+        installed: &'a WorthQueryInstalledApplicationProducerRegistry<Schema>,
+        required: &'a [String],
+    ) -> Self;
+}
+
+impl<'a, Schema: ApplicationSchema> ConditionalProducerAccessInternalPort<'a, Schema>
+    for WorthQueryApplicationConditionalProducerAccess<'a, Schema>
+{
+    fn from_installed(
+        installed: &'a WorthQueryInstalledApplicationProducerRegistry<Schema>,
+        required: &'a [String],
+    ) -> Self {
+        Self::new(installed, required)
     }
 }
 

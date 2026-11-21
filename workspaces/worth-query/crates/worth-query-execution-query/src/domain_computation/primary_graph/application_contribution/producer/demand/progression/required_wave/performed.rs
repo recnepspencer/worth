@@ -8,6 +8,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey;
 use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
 use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 pub struct PerformedMembers {
     entries: Vec<PerformedMember>,
@@ -154,7 +155,7 @@ impl<Schema: ApplicationSchema + 'static> SelectedDecisionInput<'_, '_, Schema> 
             .with_runtime(request_execution, |runtime| {
                 input.decision_input_changed_at(
                     request_execution,
-                    &graph.source_owner.invalidation_owner,
+                    &graph.source_owner_ref().invalidation_owner,
                     runtime,
                     self.shared.selected().application_basis().snapshot_handle(),
                     self.positioned,

@@ -5,6 +5,7 @@ use super::{
 };
 use crate::domain_computation::primary_graph::admitted_capture::CaptureStop;
 use worth_execution::WorkCeilingDenial;
+use worth_query_execution_query::facade::ports::ResourceActionDenialInternalPort as _;
 
 pub use worth_query_execution_query::facade::domain_computation::primary_graph::application_resource::{
     ResourceCausePort, WorthQueryResourceActionDenial, WorthQueryResourceEffectRefusal,

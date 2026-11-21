@@ -2,6 +2,7 @@ use super::managed_views;
 use super::WorthQueryPreImageRetentionWork;
 use super::WorthQueryPrimaryGraphApplicationAttempt;
 use super::WorthQueryPrimaryMutationWorkCounters;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 /// All Query evidence whose owner effects crossed World's partial boundary.
@@ -101,7 +102,7 @@ impl ManagedUnpublishedAttempt {
         }
         let mut slot =
             crate::domain_computation::primary_graph::output_lineage::prepare_output_lineage_slot(
-                &provider.graph.output_lineage,
+                provider.graph.output_lineage_ref(),
                 scope,
                 binding,
                 partition,

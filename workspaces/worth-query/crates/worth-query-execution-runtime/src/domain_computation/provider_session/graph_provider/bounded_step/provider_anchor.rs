@@ -142,7 +142,7 @@ impl<P: WorthQueryProviderSessionLifecycle> WorthQueryErasedProviderSessionLifec
 }
 
 pub struct WorthQueryGraphProviderAnchor {
-    pub session_grant_control: Arc<crate::domain_computation::ProviderSessionGrantControl>,
+    pub(crate) session_grant_control: Arc<crate::domain_computation::ProviderSessionGrantControl>,
     pub(super) provider: Arc<dyn WorthQueryErasedGraphParticipationProvider>,
     pub(super) session_lifecycle: Option<Arc<dyn WorthQueryErasedProviderSessionLifecycle>>,
     pub(super) decision_fact_provider: Option<Arc<dyn WorthQueryErasedDecisionFactProvider>>,
@@ -343,6 +343,21 @@ impl WorthQueryGraphProviderAnchor {
             .as_ref()
             .ok_or_else(WorthQueryProviderSessionFailure::unsupported)?
             .abort(session)
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryGraphProviderAnchor` session
+/// grant control. Never exported on `worth-query-execution::facade` or Host.
+pub trait GraphProviderAnchorInternalPort {
+    fn session_grant_control(&self)
+        -> &Arc<crate::domain_computation::ProviderSessionGrantControl>;
+}
+
+impl GraphProviderAnchorInternalPort for WorthQueryGraphProviderAnchor {
+    fn session_grant_control(
+        &self,
+    ) -> &Arc<crate::domain_computation::ProviderSessionGrantControl> {
+        &self.session_grant_control
     }
 }
 

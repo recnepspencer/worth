@@ -53,7 +53,7 @@ impl<S, M> WorthQueryApplicationInvariantGraphMember<S, M> {
             },
         }
     }
-    pub fn key(&self) -> NativeMemberKey {
+    pub(crate) fn key(&self) -> NativeMemberKey {
         match &self.body {
             Body::Entity(entity) => entity.entity_id.into(),
             Body::Projected(member) => member.key().clone(),

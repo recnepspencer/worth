@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::{
     WorthQuerySelectedProductOperation,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding;
+use worth_query_execution_query::facade::ports::AdmittedApplicationQueryControlsInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 

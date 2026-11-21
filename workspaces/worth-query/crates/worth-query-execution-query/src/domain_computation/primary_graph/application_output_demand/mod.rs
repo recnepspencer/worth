@@ -9,7 +9,7 @@ pub use worth_query_execution_lineage::facade::primary_graph::application_output
 pub mod completed_outputs;
 pub mod completed_read;
 mod completed_set;
-mod original_outputs;
+pub(crate) mod original_outputs;
 pub use original_outputs::{qualify_output_collection, OriginalOutputTree};
 pub use original_outputs::{
     WorthQueryCompletedOriginalReadOutputs, WorthQueryOriginalReadOutputDenial,

@@ -42,7 +42,7 @@ where
     Schema: ApplicationSchema,
     Binding: ApplicationMutationBinding<Schema>,
 {
-    pub fn new(
+    pub(crate) fn new(
         candidate: &'borrow mut WorthQueryApplicationEffectProgramBuilder<
             Schema,
             Binding::Operation,

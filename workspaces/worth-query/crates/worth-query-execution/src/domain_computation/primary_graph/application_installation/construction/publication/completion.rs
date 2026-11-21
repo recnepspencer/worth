@@ -1,5 +1,6 @@
 //! Finalize lineage and recovery only after service publication has returned.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 #[inline(never)]
 pub(super) fn complete<S: ApplicationSchemaComposition>(
@@ -29,7 +30,7 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
         .runtime
         .primary_provider
         .graph
-        .output_lineage
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .bind_implementation_build(build_identity);

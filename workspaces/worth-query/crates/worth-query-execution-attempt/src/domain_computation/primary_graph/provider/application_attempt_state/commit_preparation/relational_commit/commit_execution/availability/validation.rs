@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::output_lineage::invalidation::ObservedSourcePublication;
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 pub(super) fn validate(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     provider: &WorthQueryPrimaryGraphProvider,
@@ -61,7 +62,7 @@ fn image(execution:&worth_execution::ExecutionRequest<'_, '_>,provider:&WorthQue
     let stop = consumed_output::verification_stop;
     provider.graph.with_runtime(execution,|runtime|{
  let selected=runtime.read_truth().positioned_snapshot(before).map_err(|_|stop(VerificationStop::Unavailable))?;
- source_publication_validation_image_for_test(&provider.graph.source_owner.invalidation_owner, observations, &selected)
+ source_publication_validation_image_for_test(&provider.graph.source_owner_ref().invalidation_owner, observations, &selected)
  .map_err(|cause|stop(crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop(cause)))
  })
 }

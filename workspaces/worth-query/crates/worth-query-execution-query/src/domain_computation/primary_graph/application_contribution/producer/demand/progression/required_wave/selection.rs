@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// A caller's Ready or an exactly requested upstream Ready anchors the wave.
@@ -209,7 +210,7 @@ where
                 .runtime
                 .primary_provider
                 .graph
-                .source_owner
+                .source_owner_ref()
                 .invalidation_owner,
         )?;
     let shared = selected

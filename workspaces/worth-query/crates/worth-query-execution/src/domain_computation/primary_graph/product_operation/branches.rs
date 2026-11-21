@@ -1,6 +1,7 @@
 //! Product branch lifecycle enriched with primary-provider custody.
 
 use std::num::NonZeroUsize;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -136,7 +137,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
                             .runtime
                             .primary_provider
                             .graph
-                            .output_lineage,
+                            .output_lineage_ref(),
                     ),
                 ),
             ),

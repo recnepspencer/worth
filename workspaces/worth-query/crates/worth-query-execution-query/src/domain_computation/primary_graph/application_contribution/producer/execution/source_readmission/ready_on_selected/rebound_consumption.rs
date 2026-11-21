@@ -3,6 +3,7 @@ use super::*;
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::application_contribution::producer::demand::ReboundConsumedOutput;
 use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 pub fn retain<Schema: worth_query_installation::facade::ApplicationSchema>(
@@ -15,7 +16,7 @@ pub fn retain<Schema: worth_query_installation::facade::ApplicationSchema>(
     positioned: &PositionedRelationalSnapshot,
 ) -> Result<ReboundConsumedOutput, ProducerExecutionStop> {
     let handle = &runtime.runtime.primary_provider.graph;
-    let candidate = handle.output_lineage.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
+    let candidate = handle.output_lineage_ref().lock().unwrap_or_else(std::sync::PoisonError::into_inner)
         .resolve_required_settlement(runtime.runtime.authority_identity().as_u64(), &runtime.installed_schema.binding_identity(), completion)
         .map_err(|stop| match stop {
             crate::domain_computation::primary_graph::output_lineage::RequiredSettlementStop::Admission(stop) =>
@@ -37,7 +38,7 @@ pub fn retain<Schema: worth_query_installation::facade::ApplicationSchema>(
         .with_runtime(execution, |relational| {
             let current = candidate.certify_current(
                 execution,
-                &handle.source_owner.invalidation_owner,
+                &handle.source_owner_ref().invalidation_owner,
                 relational,
                 product,
                 snapshot,

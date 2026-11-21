@@ -1,5 +1,6 @@
 //! Access-sealed cleanup of the actual admitted read interest.
 use super::*;
+use worth_query_execution_query::facade::ports::AdmittedOutputDemandInternalPort as _;
 impl<
         S: ApplicationSchema + 'static,
         P: ApplicationProgramDefinition<S>,

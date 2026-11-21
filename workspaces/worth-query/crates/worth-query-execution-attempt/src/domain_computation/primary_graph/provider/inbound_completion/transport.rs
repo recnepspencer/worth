@@ -1,6 +1,7 @@
 //! Provider candidate for a completed installed outbound transport attempt.
 
 use std::collections::BTreeMap;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 use worth_foundational::facade::AspectValue;
 use worth_relational::facade::{
@@ -47,7 +48,7 @@ impl WorthQueryPrimaryGraphProvider {
         let RecordRef::Entity(original_entity) = owner.record_ref() else {
             return Err(Denial::OriginalOutboxNotAnEntity);
         };
-        let layout = self.graph.layout.provider_inbound_completion();
+        let layout = self.graph.layout_ref().provider_inbound_completion();
         let correlation = hex(record.correlation().digest().bytes());
         let fields = BTreeMap::from([
             (layout.correlation.clone(), string(correlation.clone())),

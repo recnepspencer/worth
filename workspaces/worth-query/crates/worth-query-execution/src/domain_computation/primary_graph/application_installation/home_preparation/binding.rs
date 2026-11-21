@@ -2,6 +2,7 @@
 use super::*;
 use worth_foundational::facade::{ApplicationHomeBinding, CanonicalDigestId, HomeProgramBinding};
 use worth_proof::AdmittedApplicationHomeBinding;
+use worth_query_execution_runtime::facade::ports::ProductWorldResourcesInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryHomeBindingAdmission, WorthQueryHomeBindingDenial,
 };

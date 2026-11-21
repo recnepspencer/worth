@@ -2,6 +2,7 @@
 
 use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CommitReceiptPreimagePort as _;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_lineage::facade::ports::{
     CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
 };

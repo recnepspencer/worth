@@ -1,5 +1,6 @@
 //! A declaration supplies producers; canonical Native facts decide the trigger.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::mvcc::{
     RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
@@ -38,14 +39,14 @@ impl WorthQueryPrimaryGraphProvider {
         material: &mut ApplicationInvariantCandidateMaterial,
         assembly: Option<&'a dyn CoupledProducerAssembly>,
     ) -> Result<Option<NativeAuthoredCoupling<'a>>, WorthQueryInvariantExecutionFailure> {
-        let Some(publisher) = &self.graph.application_publication else {
+        let Some(publisher) = &self.graph.application_publication_ref() else {
             return Ok(None);
         };
         let source = assembly.map(|_| {
             let attempts = self.attempts.lock().unwrap_or_else(|p| p.into_inner());
             let staged = attempts.staged_attempt(session).ok_or_else(missing_candidate_failure)?;
             Ok::<_, WorthQueryInvariantExecutionFailure>((
-                super::super::application_attempt_state::coupled_publication::authored_retirement_input(&self.graph.layout, &staged)?,
+                super::super::application_attempt_state::coupled_publication::authored_retirement_input(self.graph.layout_ref(), &staged)?,
                 super::super::application_attempt_state::coupled_publication::authored_source(&staged),
                 super::super::authored_retirement_selection::coupling_posture(staged.appendix_attempt()),
             ))

@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::application_checkpoint::{self as c
 use crate::domain_computation::primary_graph::application_output_demand::{
     AcceptedCheckpointFactSource as Source, WorthQueryOutputDemandKey,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S> {
@@ -28,7 +29,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 .runtime
                 .primary_provider
                 .graph
-                .output_lineage
+                .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             identity.producer_facts = match source {
@@ -105,7 +106,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let identities = {
             let lineage = provider
                 .graph
-                .output_lineage
+                .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner);
             let mut identities = Vec::new();

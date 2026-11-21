@@ -11,6 +11,7 @@ use worth_query_admission::facade::{
     authenticated_principal::WorthQueryRequestScope,
 };
 
+pub(crate) mod internal_port;
 mod selected_read;
 
 /// Where an admitted query read takes its basis from.
@@ -322,7 +323,7 @@ impl<'a> WorthQueryApplicationQueryResumeControls<'a> {
 }
 
 impl WorthQueryAdmittedApplicationQueryControls<'_> {
-    pub fn is_current_product_one_shot(&self) -> bool {
+    pub(crate) fn is_current_product_one_shot(&self) -> bool {
         self.current_product_one_shot
     }
     pub(crate) fn original_settled_producer_for(

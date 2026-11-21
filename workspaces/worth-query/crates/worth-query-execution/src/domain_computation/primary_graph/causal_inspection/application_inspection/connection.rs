@@ -1,6 +1,7 @@
 //! Exact original source/input and producer/output joins, after fresh diagnostics.
 use super::WorthQueryApplicationInspectionTarget;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 mod evaluation;
 #[cfg(test)]
@@ -176,7 +177,7 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
         let observed = overlap::ObservationConnection {
             original,
             diagnostic,
-            layout: &runtime.inner.runtime.primary_provider.graph.layout,
+            layout: &runtime.inner.runtime.primary_provider.graph.layout_ref(),
             contracts: runtime.installed_schema().native_contracts(),
         };
         source::require_input(

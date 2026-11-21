@@ -1,5 +1,6 @@
 //! Exact per-writer lineage and receipt settlement after the one World movement.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 pub(super) fn finish_writer(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -98,7 +99,7 @@ pub(super) fn finish_writer(
     });
     if let Some(identity) = settlement_identity {
         let failure_membership = work_membership.clone();
-        let owner = &provider.graph.source_owner.invalidation_owner;
+        let owner = &provider.graph.source_owner_ref().invalidation_owner;
 
         let registration_result = crate::domain_computation::primary_graph::output_lineage::invalidation::register_completed(execution, owner, &completed, recorded.as_ref().expect("performed lineage was recorded").computation_source, recorded.as_ref().expect("performed lineage was recorded").computation_registration, &consumed_outputs, runtime, after, Arc::clone(&identity), work_membership, recorded
                 .as_ref()
@@ -107,7 +108,7 @@ pub(super) fn finish_writer(
         if let Err(reason) = registration_result {
             provider
                 .graph
-                .output_lineage
+                .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(|poisoned| poisoned.into_inner())
                 .require_settlement_verification(&identity, reason);
@@ -119,7 +120,7 @@ pub(super) fn finish_writer(
     }
     // The newest row is registered: the generation it displaced retires,
     // with whatever its demand supersedes when a demand manages it.
-    let owner = &provider.graph.source_owner.invalidation_owner;
+    let owner = &provider.graph.source_owner_ref().invalidation_owner;
     let displaced = recorded.and_then(|recorded| recorded.displaced);
     match (superseded, displaced) {
         (Some(superseded), displaced) => {

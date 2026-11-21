@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::bootstrap::{
     BootstrapPublicationReservation, BootstrapPublicationStorage,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 pub(super) struct PublishedNativeGraph {
     runtime: WorthQueryExecutionRuntime,
@@ -120,12 +121,12 @@ pub(super) fn install_bridge<S: ApplicationSchema>(
     );
     primary_provider.install_managed_views_execution(
         crate::domain_computation::primary_graph::lineage_ports::downcast_managed_views_arc(
-            std::sync::Arc::clone(&primary_provider.graph.managed_derived_views),
+            std::sync::Arc::clone(&primary_provider.graph.managed_derived_views()),
         ),
     );
     primary_provider
         .graph
-        .output_lineage
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .install_binding_identities(

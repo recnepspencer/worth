@@ -78,14 +78,14 @@ impl WorthQueryProductWorldResources {
         self.invalidation.clone()
     }
 
-    pub fn admits_clock(
+    pub(crate) fn admits_clock(
         &self,
         clock: &worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock,
     ) -> bool {
         self.clock.admission_clock.same_clock(clock)
     }
 
-    pub fn into_parts(
+    pub(crate) fn into_parts(
         self,
     ) -> (
         RuntimeWorldBudgets,
@@ -96,7 +96,7 @@ impl WorthQueryProductWorldResources {
         (self.budgets, self.clock, self.invalidation, self.execution)
     }
 
-    pub const fn budgets(&self) -> &RuntimeWorldBudgets {
+    pub(crate) const fn budgets(&self) -> &RuntimeWorldBudgets {
         &self.budgets
     }
 }

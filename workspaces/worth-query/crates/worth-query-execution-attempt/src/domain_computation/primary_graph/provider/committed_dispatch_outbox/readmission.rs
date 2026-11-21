@@ -2,6 +2,7 @@
 use super::*;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{AspectFieldLocator, ContractValidatedAspectValueView};
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::runtime::{EntityReadRecord, VisibilityProjectionView};
 
 impl WorthQueryPrimaryGraphProvider {
@@ -35,7 +36,7 @@ impl WorthQueryPrimaryGraphProvider {
         execution: &ExecutionRequest<'_, '_>,
         view: &VisibilityProjectionView,
     ) -> Result<(bool, Vec<super::recovered::RecoveredDispatchCandidate>), Denial> {
-        let layout = self.graph.layout.provider_dispatch_outbox();
+        let layout = self.graph.layout_ref().provider_dispatch_outbox();
         let outboxes = view
             .bounded_entities_of_kind(execution, layout.entity_kind, usize::MAX)
             .map_err(read_denial)?
@@ -43,7 +44,7 @@ impl WorthQueryPrimaryGraphProvider {
         if outboxes.records().is_empty() {
             return Ok((false, Vec::new()));
         }
-        let binding_layout = self.graph.layout.provider_idempotency();
+        let binding_layout = self.graph.layout_ref().provider_idempotency();
         let bindings = view
             .bounded_entities_of_kind(execution, binding_layout.entity_kind, usize::MAX)
             .map_err(read_denial)?

@@ -75,7 +75,7 @@ pub struct WorthQueryApplicationContinuationDenial {
 }
 
 impl WorthQueryApplicationContinuationDenial {
-    pub fn new(
+    pub(crate) fn new(
         kind: WorthQueryApplicationContinuationDenialKind,
         subject: impl Into<String>,
     ) -> Self {
@@ -86,7 +86,7 @@ impl WorthQueryApplicationContinuationDenial {
         }
     }
 
-    pub fn from_authorization(denial: WorthQueryOperationAuthorizationDenial) -> Self {
+    pub(crate) fn from_authorization(denial: WorthQueryOperationAuthorizationDenial) -> Self {
         Self {
             kind: WorthQueryApplicationContinuationDenialKind::Authorization(denial.kind()),
             subject: denial.subject().to_string(),

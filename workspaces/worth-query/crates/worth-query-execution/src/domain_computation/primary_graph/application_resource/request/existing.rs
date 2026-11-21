@@ -6,6 +6,8 @@ use super::super::{
     storage::ResourceStorage,
 };
 use super::*;
+use worth_query_execution_query::facade::ports::ClosedResourceInternalPort as _;
+use worth_query_execution_query::facade::ports::ResourceActionDenialInternalPort as _;
 use worth_query_installation::facade::WorthQueryResourceAccessPurpose as Purpose;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_, Schema> {

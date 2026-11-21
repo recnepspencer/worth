@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryExpectedProductBranch,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -165,7 +166,9 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .select_application_read_observation(phase, &source.source())
             .map_err(Denial::ProductAdmission)?;
         let graph = &self.application.inner.runtime.primary_provider.graph;
-        let publisher = graph.application_publication.as_deref();
+        let publisher = graph
+            .application_publication_ref()
+            .map(std::sync::Arc::as_ref);
         let (prepared, custody) = graph.with_runtime(&execution, |native| {
             let transaction = native
                 .begin_branch_transaction(
@@ -181,7 +184,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                         current.product().relational_basis(),
                         historical.product().relational_basis(),
                         ownership,
-                        graph.layout.installed_history_ownership(),
+                        graph.layout_ref().installed_history_ownership(),
                         self.model.entity(),
                     )
                     .map_err(Denial::OwnedGraph)?;
@@ -214,14 +217,14 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                         )
                     })?,
                 lineage: graph
-                    .output_lineage
+                    .output_lineage_ref()
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
                     .prepare_historical_transport(
                         &execution,
                         self.application.inner.runtime.authority_identity().as_u64(),
                         &self.application.inner.installed_schema.binding_identity(),
-                        &graph.layout,
+                        &graph.layout_ref(),
                         historical.product().observation(),
                         custody.routes.iter(),
                     )

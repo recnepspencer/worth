@@ -13,7 +13,7 @@ pub struct WorthQueryManagedTruthReadRequest {
 }
 
 impl WorthQueryManagedTruthReadRequest {
-    pub fn from_relational_basis(
+    pub(crate) fn from_relational_basis(
         relational_basis: RelationalBranchBasisDescriptor,
         packet: SnapshotReadPacket,
     ) -> Self {
@@ -56,7 +56,7 @@ impl WorthQueryManagedTruthReadRequest {
         self
     }
 
-    pub fn into_parts(
+    pub(crate) fn into_parts(
         self,
     ) -> (
         RelationalBranchBasisDescriptor,
@@ -88,6 +88,24 @@ impl WorthQueryManagedTruthReadRequest {
             (None, None) => true,
             _ => false,
         }
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryManagedTruthReadRequest`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ManagedTruthReadRequestInternalPort: Sized {
+    fn from_relational_basis(
+        relational_basis: RelationalBranchBasisDescriptor,
+        packet: SnapshotReadPacket,
+    ) -> Self;
+}
+
+impl ManagedTruthReadRequestInternalPort for WorthQueryManagedTruthReadRequest {
+    fn from_relational_basis(
+        relational_basis: RelationalBranchBasisDescriptor,
+        packet: SnapshotReadPacket,
+    ) -> Self {
+        Self::from_relational_basis(relational_basis, packet)
     }
 }
 

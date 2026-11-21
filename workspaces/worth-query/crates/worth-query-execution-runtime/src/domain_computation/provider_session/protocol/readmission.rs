@@ -4,7 +4,7 @@ use super::{
     WorthQueryProviderSessionProtocolCounters, WorthQueryProviderSessionTokenAdmission,
 };
 
-mod prepared;
+pub(crate) mod prepared;
 pub use prepared::{
     WorthQueryPreparedProviderSession, WorthQuerySessionBoundReadsAndEffects,
     WorthQuerySessionEffectAuthority, WorthQuerySessionPrepareOutcome,

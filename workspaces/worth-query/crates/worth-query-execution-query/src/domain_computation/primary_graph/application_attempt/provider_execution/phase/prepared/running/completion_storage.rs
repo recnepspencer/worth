@@ -15,14 +15,14 @@ pub struct CompletedApplicationCommit {
     storage: PhaseStorage<WorthQueryProgressedApplicationCommit>,
 }
 impl ApplicationCommitCompletionStorage {
-    pub fn prepare(
+    pub(crate) fn prepare(
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, WorthQueryApplicationCommitOutcome> {
         Ok(Self {
             storage: PhaseStorage::prepare(request)?,
         })
     }
-    pub fn complete(
+    pub(crate) fn complete(
         self,
         actual: WorthQueryProgressedApplicationCommit,
     ) -> CompletedApplicationCommit {
@@ -32,7 +32,7 @@ impl ApplicationCommitCompletionStorage {
     }
 }
 impl CompletedApplicationCommit {
-    pub fn consume(self) -> WorthQueryProgressedApplicationCommit {
+    pub(crate) fn consume(self) -> WorthQueryProgressedApplicationCommit {
         self.storage.consume()
     }
 }
@@ -43,7 +43,7 @@ pub struct PhaseStorage<T> {
     values: ExecutionArray<Cell<Option<T>>>,
 }
 impl<T> PhaseStorage<T> {
-    pub fn prepare(
+    pub(crate) fn prepare(
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, WorthQueryApplicationCommitOutcome> {
         let mut builder = ExecutionRequestArrayBuilder::allocate(*request, 1).map_err(denied)?;
@@ -52,14 +52,14 @@ impl<T> PhaseStorage<T> {
             values: builder.seal().map_err(denied)?,
         })
     }
-    pub fn fill(self, actual: T) -> Self {
+    pub(crate) fn fill(self, actual: T) -> Self {
         assert!(
             self.values.elements()[0].replace(Some(actual)).is_none(),
             "stage storage filled once"
         );
         self
     }
-    pub fn consume(self) -> T {
+    pub(crate) fn consume(self) -> T {
         self.values
             .into_iter()
             .next()

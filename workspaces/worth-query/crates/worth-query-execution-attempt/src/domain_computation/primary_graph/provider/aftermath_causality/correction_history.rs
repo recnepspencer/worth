@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryRecordedCorrectionSource;
 use worth_foundational::facade::AspectFieldLocator;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::indexes::{BoundedEntityFieldBoundary, DerivedIndexId};
 pub mod page_allocation;
 pub use page_allocation::WorthQueryCorrectionHistoryPageAllocation;
@@ -45,7 +46,7 @@ impl WorthQueryPrimaryGraphProvider {
         source: &WorthQueryRecordedCorrectionSource,
     ) -> Result<Option<WorthQueryCanonicalCorrectionFact>, WorthQueryAftermathCausalityReadDenial>
     {
-        let layout = self.graph.layout.provider_aftermath_causality();
+        let layout = self.graph.layout_ref().provider_aftermath_causality();
         self.lookup_correction_fact(
             execution,
             basis,
@@ -86,7 +87,7 @@ impl WorthQueryPrimaryGraphProvider {
         reversal: &worth_relational::facade::history::RelationalCommitReceipt,
         owner: worth_foundational::facade::WorldOwnerCoordinate,
     ) -> Result<ExactCorrectionFactLookup, WorthQueryAftermathCausalityReadDenial> {
-        let layout = self.graph.layout.provider_aftermath_causality();
+        let layout = self.graph.layout_ref().provider_aftermath_causality();
         self.lookup_correction_fact(
             execution,
             basis,
@@ -289,7 +290,7 @@ impl WorthQueryPrimaryGraphProvider {
             execution.consult().map_err(|cause| aftermath_read_stop(cause.into()))?;
             // The ordinary lane requires the existing native generation. Explicit reconstruction owns rebuilding.
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).map_err(|denial| aftermath_snapshot_denial(denial.into()))?;
-            let result = read(runtime, &snapshot, self.graph.layout.provider_aftermath_causality());
+            let result = read(runtime, &snapshot, self.graph.layout_ref().provider_aftermath_causality());
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             result
         })

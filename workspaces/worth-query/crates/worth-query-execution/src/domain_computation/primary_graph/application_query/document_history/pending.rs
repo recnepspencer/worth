@@ -4,6 +4,7 @@ use crate::basis::{
 };
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryModelIdentity;
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
+use worth_query_execution_query::facade::ports::AdmittedApplicationQueryControlsInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 

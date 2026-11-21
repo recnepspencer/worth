@@ -4,6 +4,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
 use crate::domain_computation::primary_graph::invariant_projection::SelectedPendingConsumedOutput;
 use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 /// An exact old edge joined to the Ready cell resolved on this selected wave.
 pub struct ResolvedConsumedPredecessor {
@@ -206,7 +207,7 @@ where
         .runtime
         .primary_provider
         .graph
-        .output_lineage
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .resolve_required_settlement(

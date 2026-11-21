@@ -1,5 +1,6 @@
 //! Original tree evidence is retained separately from collection qualification.
 use super::*;
+use worth_query_execution_query::facade::ports::CompletedOriginalReadOutputsInternalPort as _;
 mod verified;
 use crate::domain_computation::primary_graph::{
     application_output_demand::{qualify_output_collection, OriginalOutputTree},

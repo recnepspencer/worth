@@ -1,5 +1,6 @@
 //! Real disposal and admitted reconstruction of the canonical correction projections.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::indexes::{
@@ -18,7 +19,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .runtime
             .retain_primary_graph_integration_handle()
             .expect("installed primary graph");
-        let lineage = &graph.layout.provider_aftermath_causality().lineage;
+        let lineage = &graph.layout_ref().provider_aftermath_causality().lineage;
         let indexes = [
             lineage.reversal_root_index,
             lineage.reversed_source_index,
@@ -47,7 +48,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             .runtime
             .retain_primary_graph_integration_handle()
             .expect("installed primary graph");
-        let lineage = &graph.layout.provider_aftermath_causality().lineage;
+        let lineage = &graph.layout_ref().provider_aftermath_causality().lineage;
         let index_ids = vec![
             lineage.reversal_root_index,
             lineage.reversed_source_index,

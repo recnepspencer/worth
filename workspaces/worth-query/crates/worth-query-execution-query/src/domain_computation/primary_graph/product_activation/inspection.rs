@@ -1,4 +1,5 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::SelectedProgramInspectionInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
@@ -28,7 +29,7 @@ pub fn inspect_selected_program<Schema: ApplicationSchema>(
         .published()
         .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable)?;
     let graph = &application.runtime.primary_provider.graph;
-    let layout = graph.layout.program_activation().clone();
+    let layout = graph.layout_ref().program_activation().clone();
     let locator = &layout.program_revision_locator;
     // The activation record is read on the selected branch's own root: a
     // version alone would also see a sibling's later adoption.

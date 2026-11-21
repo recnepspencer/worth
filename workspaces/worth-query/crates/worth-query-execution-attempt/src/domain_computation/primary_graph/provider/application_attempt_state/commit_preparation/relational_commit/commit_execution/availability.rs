@@ -1,5 +1,6 @@
 //! Availability is non-driving, but its source and image remain commit dependencies.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 pub mod validation;
 use crate::domain_computation::primary_graph::application_attempt::Movement;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
@@ -50,7 +51,7 @@ pub(super) fn prepare(
             .map_err(|_| stop(VerificationStop::Unavailable))?;
         let fence = provider
             .graph
-            .source_owner
+            .source_owner_ref()
             .invalidation_owner
             .source_publication_read_fence(&retained, &selected)
             .map_err(|cause| stop(map_admission(cause)))?;

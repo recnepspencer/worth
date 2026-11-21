@@ -1,5 +1,6 @@
 //! All participants prepare against one Native candidate and one planned successor.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 pub mod support;
 use super::durable_custody::QueryCandidatePreparationDenial as Denial;
 use crate::domain_computation::primary_graph::provider::CoupledApplicationMember;
@@ -104,7 +105,7 @@ pub(super) fn prepare_members(
                     .attempt
                     .native_publication_roles()
                     .map(|(role, posture, entity_name, _)| (role, posture, entity_name)),
-                &provider.graph.layout,
+                provider.graph.layout_ref(),
             )
             .map_err(Denial::OutputWitness)?
         } else {
@@ -153,7 +154,7 @@ pub(super) fn prepare_lineage(
         }
         let mut slot =
             crate::domain_computation::primary_graph::output_lineage::prepare_output_lineage_slot(
-                &provider.graph.output_lineage,
+                provider.graph.output_lineage_ref(),
                 owned.attempt.affinity().operation_scope(),
                 owned
                     .attempt

@@ -1,6 +1,7 @@
 //! Immutable original root delivery is separate from final Ready authority.
 use super::*;
 use std::sync::Arc;
+use worth_query_execution_query::facade::ports::AdmittedOutputDemandInternalPort as _;
 
 pub(super) enum OriginalProgramResult<Q> {
     Disabled,

@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
 use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
@@ -31,7 +32,7 @@ pub(super) fn verify(
     attempt: &mut WorthQueryPrimaryGraphApplicationAttempt,
     before: &SnapshotHandle,
 ) -> Result<VerifiedConsumedOutputPublication, ConsumedOutputPreparationDenial> {
-    let owner = &provider.graph.source_owner.invalidation_owner;
+    let owner = &provider.graph.source_owner_ref().invalidation_owner;
     let context = attempt.take_required_output_demand();
 
     let recorded = attempt
@@ -47,7 +48,7 @@ pub(super) fn verify(
             .iter()
             .try_for_each(|consumed| {
                 consumed
-                    .establish_restored_before_commit(execution, &provider.graph.source_owner)
+                    .establish_restored_before_commit(execution, provider.graph.source_owner_ref())
                     .map_err(ConsumedOutputPreparationDenial::Verification)
             })
             .and_then(|()| {

@@ -2,6 +2,7 @@ use worth_foundational::facade::{AspectValue, CanonicalDigestId};
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryObservableInfluence, ApplicationQueryResultSlotKey,
 };
+use worth_query_execution_lineage::facade::ports::ApplicationDisclosureReceiptInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryCanonicalWorkEvidence, WorthQueryInstalledApplicationQueryIdentity,
 };

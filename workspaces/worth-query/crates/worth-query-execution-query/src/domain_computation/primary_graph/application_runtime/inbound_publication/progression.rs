@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryInboundComplet
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
@@ -193,7 +194,7 @@ Err(CompletionPreparationDenial::Request(PublicationDenial::Stopped(stop))) => {
             Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 Outcome::ProductUnpublished(WorthQueryUnpublishedInboundCompletion::new(
                     accepted,
-                    WorthQueryProductUnpublishedApplication::new(
+                    WorthQueryProductUnpublishedApplication::from_effects(
                         effects,
                         recovery,
                         self.runtime

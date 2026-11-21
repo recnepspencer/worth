@@ -1,10 +1,11 @@
 //! Borrowed runtime access under installed phase custody.
 use super::WorthQueryPrimaryGraphIntegrationHandle;
+use worth_query_execution_runtime::facade::ports::RelationalSourceOwnerInternalPort as _;
 use worth_relational::facade::runtime::RelationalRuntime;
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
     pub fn relational_runtime_instance_id(&self) -> u64 {
-        self.source_owner.runtime_instance_id
+        self.source_owner.runtime_instance_id()
     }
 
     pub fn with_runtime<T>(

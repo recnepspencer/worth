@@ -5,6 +5,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
 };
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
@@ -161,7 +162,7 @@ where
             .runtime
             .primary_provider
             .graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .expect("application output lineage lock is available");
         let exact = lineage

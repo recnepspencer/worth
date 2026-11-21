@@ -4,6 +4,8 @@ use super::super::idempotency::{
     WorthQueryProviderIdempotencyResolutionDenial as Denial,
 };
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_runtime_world::facade::WorldReleasedOriginal;
 
@@ -27,7 +29,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         let recovery = product.recovery();
         let effects = recovery.inspect_recovered_effects(&handle)?;
         Ok(
-            crate::domain_computation::WorthQueryProductUnpublishedApplication::new_recovered(
+            crate::domain_computation::WorthQueryProductUnpublishedApplication::from_recovered(
                 effects,
                 recovery,
                 self.unpublished_idempotency_disposition(),
@@ -45,7 +47,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         };
         let original = released_original::read(
             execution,
-            self.graph.layout.provider_idempotency(),
+            self.graph.layout_ref().provider_idempotency(),
             native.semantic_result(),
             |id| {
                 native
@@ -69,7 +71,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         };
         let binding = released_original::read(
             execution,
-            self.graph.layout.provider_idempotency(),
+            self.graph.layout_ref().provider_idempotency(),
             semantic,
             |id| {
                 original
@@ -151,7 +153,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             let binding = if keyed {
                 Some(released_original::read(
                     execution,
-                    self.graph.layout.provider_idempotency(),
+                    self.graph.layout_ref().provider_idempotency(),
                     native.semantic_result().semantic(),
                     |id| {
                         native

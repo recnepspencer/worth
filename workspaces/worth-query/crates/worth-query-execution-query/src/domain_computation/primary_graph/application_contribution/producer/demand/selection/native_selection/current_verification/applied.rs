@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
     application_query::AppliedQuerySource,
     WorthQueryApplicationObservedFact as Fact,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::{
     identity::EntityId,
@@ -106,7 +107,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
             crate::basis::WorthQueryProductBranchReadIdentity::from_observation(observation);
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source.root());
         let mut lineage = graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(|p| p.into_inner());
         self.record_recovered_output_candidates(
@@ -137,9 +138,13 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 .installed_producers
                 .select_exact::<F>(candidate.binding)?;
             let origin_matches = match prior {
-                Some(prior) => {
-                    custody::matches(&graph.layout, execution, &candidate, prior, F::IDENTITY)?
-                }
+                Some(prior) => custody::matches(
+                    graph.layout_ref(),
+                    execution,
+                    &candidate,
+                    prior,
+                    F::IDENTITY,
+                )?,
                 // Native's current route reader found no publication at C.
                 // Independent ordinary rows retain Query's original execution
                 // or authenticated checkpoint, not fabricated Native custody.

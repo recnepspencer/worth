@@ -1,5 +1,7 @@
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationOutcome as PublicationOutcome;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 use super::failure;
@@ -113,7 +115,7 @@ pub fn publish(
             Ok(PublicationOutcome::ProductUnpublished(effects)) => Ok(
                 WorthQueryApplicationProductPublicationOutcome::Unpublished {
                     unpublished:
-                        crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
+                        crate::domain_computation::WorthQueryProductUnpublishedApplication::from_effects(
                             effects,
                             recovery,
                             disposition,
@@ -203,7 +205,7 @@ PublicationDenial::Stopped(stop)=>publication_request_stop(stop), PublicationDen
             }
             Ok(PublicationOutcome::ProductUnpublished(effects)) => {
                 Ok(WorthQueryApplicationProductPublicationOutcome::Unpublished {
-                    unpublished: crate::domain_computation::WorthQueryProductUnpublishedApplication::new_conditional_definition(
+                    unpublished: crate::domain_computation::WorthQueryProductUnpublishedApplication::from_conditional_definition(
                         effects,
                         recovery,
                         disposition,
@@ -241,7 +243,7 @@ pub(super) fn prepare_lineage_slot(
     };
     let mut slot =
         crate::domain_computation::primary_graph::output_lineage::prepare_output_lineage_slot(
-            &provider.graph.output_lineage,
+            provider.graph.output_lineage_ref(),
             attempt.affinity().operation_scope(),
             binding,
             attempt.idempotency().source_partition_identity(),

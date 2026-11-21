@@ -3,6 +3,7 @@ use crate::domain_computation::execution_runtime::product_world::{
     WorthQueryPerformedRelationalProductChange, WorthQueryProductPublicationReceipt,
 };
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 /// Query projection or history retirement. Missing parts remain owned and

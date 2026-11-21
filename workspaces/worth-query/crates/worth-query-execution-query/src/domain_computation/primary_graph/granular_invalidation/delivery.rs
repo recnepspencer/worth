@@ -21,7 +21,7 @@ impl PartialEq for WorthQueryGranularSourceReadBasis {
 impl Eq for WorthQueryGranularSourceReadBasis {}
 
 impl WorthQueryGranularSourceReadBasis {
-    pub fn new(
+    pub(crate) fn new(
         snapshot: worth_runtime_bridge::facade::TruthSnapshotIdentity,
         branch: worth_runtime_bridge::facade::TruthBranchIdentity,
         observation: std::sync::Arc<worth_runtime_bridge::facade::RelationalBridgeObservationLease>,

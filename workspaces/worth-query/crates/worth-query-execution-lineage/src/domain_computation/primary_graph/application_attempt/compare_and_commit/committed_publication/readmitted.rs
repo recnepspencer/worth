@@ -42,13 +42,49 @@ impl WorthQueryCommittedProductPublication {
     }
 }
 
-/// Crate-boundary port for readmitting a committed product publication.
-/// Never exported on `worth-query-execution::facade` or Host.
+/// Crate-boundary port for internal `WorthQueryCommittedProductPublication`
+/// lifecycle, custody, and one-shot observation extraction. Never exported on
+/// `worth-query-execution::facade` or Host.
 pub trait CommittedProductPublicationInternalPort: Sized {
     fn from_readmitted(
         original: &WorldReadmittedPublication,
         commit: &CompositeRuntimeWorldCommit,
     ) -> Result<Self, Denial>;
+    fn from_receipt(receipt: WorthQueryProductPublicationReceipt) -> Self;
+    fn co_committed_at(&self, observation: &ProductBranchObservation) -> bool;
+    fn preflight_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial>;
+    fn advance_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<
+        crate::domain_computation::primary_graph::WorthQueryOperationHomeRetirementProgress,
+        crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial,
+    >;
+    fn original_movement(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::ConsumedCompositePublication>;
+    fn follows_observation(&self, observation: &ProductBranchObservation) -> bool;
+    fn observed_product_identity(
+        &self,
+    ) -> Option<crate::basis::WorthQueryProductBranchReadIdentity>;
+    fn take_history(
+        &mut self,
+    ) -> Option<
+        crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold,
+    >;
+    fn retired(&self) -> Self;
+    fn descriptive(&self) -> Self;
+    fn is_selected_at(&self, observation: &ProductBranchObservation) -> bool;
+    fn retained_relational_basis(
+        &self,
+    ) -> Option<&worth_relational::facade::branch::AdmittedRelationalBranchBasis>;
+    fn take_successor_observation(&self) -> Option<ProductBranchObservation>;
+    fn take_output_demand_observation(&self) -> Option<ProductBranchObservation>;
+    fn take_client_observation(&self) -> Option<ProductBranchObservation>;
 }
 
 impl CommittedProductPublicationInternalPort for WorthQueryCommittedProductPublication {
@@ -57,5 +93,85 @@ impl CommittedProductPublicationInternalPort for WorthQueryCommittedProductPubli
         commit: &CompositeRuntimeWorldCommit,
     ) -> Result<Self, Denial> {
         Self::from_readmitted(original, commit)
+    }
+
+    fn from_receipt(receipt: WorthQueryProductPublicationReceipt) -> Self {
+        Self::from_receipt(receipt)
+    }
+
+    fn co_committed_at(&self, observation: &ProductBranchObservation) -> bool {
+        Self::co_committed_at(self, observation)
+    }
+
+    fn preflight_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
+        Self::preflight_home_retirement(self, request)
+    }
+
+    fn advance_home_retirement(
+        &mut self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+    ) -> Result<
+        crate::domain_computation::primary_graph::WorthQueryOperationHomeRetirementProgress,
+        crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial,
+    > {
+        Self::advance_home_retirement(self, request, native)
+    }
+
+    fn original_movement(
+        &self,
+    ) -> Option<&worth_runtime_world::facade::ConsumedCompositePublication> {
+        Self::original_movement(self)
+    }
+
+    fn follows_observation(&self, observation: &ProductBranchObservation) -> bool {
+        Self::follows_observation(self, observation)
+    }
+
+    fn observed_product_identity(
+        &self,
+    ) -> Option<crate::basis::WorthQueryProductBranchReadIdentity> {
+        Self::observed_product_identity(self)
+    }
+
+    fn take_history(
+        &mut self,
+    ) -> Option<
+        crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold,
+    > {
+        Self::take_history(self)
+    }
+
+    fn retired(&self) -> Self {
+        Self::retired(self)
+    }
+
+    fn descriptive(&self) -> Self {
+        Self::descriptive(self)
+    }
+
+    fn is_selected_at(&self, observation: &ProductBranchObservation) -> bool {
+        Self::is_selected_at(self, observation)
+    }
+
+    fn retained_relational_basis(
+        &self,
+    ) -> Option<&worth_relational::facade::branch::AdmittedRelationalBranchBasis> {
+        Self::retained_relational_basis(self)
+    }
+
+    fn take_successor_observation(&self) -> Option<ProductBranchObservation> {
+        Self::take_successor_observation(self)
+    }
+
+    fn take_output_demand_observation(&self) -> Option<ProductBranchObservation> {
+        Self::take_output_demand_observation(self)
+    }
+
+    fn take_client_observation(&self) -> Option<ProductBranchObservation> {
+        Self::take_client_observation(self)
     }
 }

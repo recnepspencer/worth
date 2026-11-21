@@ -14,6 +14,8 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryScopeResolution,
     application_resource::ApplicationResourceInput,
 };
+use worth_query_execution_query::facade::ports::ResourceActionDenialInternalPort as _;
+use worth_query_execution_query::facade::ports::ResourceRecoveryCloseStopInternalPort as _;
 use worth_query_installation::facade::WorthQueryResourceAccessPurpose as Purpose;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_, Schema> {

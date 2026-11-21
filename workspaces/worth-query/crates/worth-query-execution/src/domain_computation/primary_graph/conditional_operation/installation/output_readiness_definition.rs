@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::application_contribution::{
     TypedPendingOutputReadiness, WorthQueryApplicationProducerBinding,
 };
 use worth_query_execution_query::facade::ports::ConditionalClockHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryAuthoredHostConditionalPredicateProvider, WorthQueryAuthoredHostPredicateBinding,
     WorthQueryInstalledApplicationConditionalNode,
@@ -83,17 +84,19 @@ impl<Schema: ApplicationSchema + 'static>
             delivery_dependency_ordinal as u64,
         );
         let (digest, work) = material.derive().map_err(|cause| {
-            WorthQueryConditionalRuntimeInstallationDenial::new(
+            WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                 WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
                 format!("{cause:?}"),
             )
         })?;
         let identity: Arc<str> = format!("conditional-definition:{}", digest.render_hex()).into();
         if !self.binding_identities.insert(identity.clone()) {
-            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
-                WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,
-                identity.as_ref(),
-            ));
+            return Err(
+                WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
+                    WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,
+                    identity.as_ref(),
+                ),
+            );
         }
         let node_authority = Arc::from(node.authority_identity());
         let providers = super::super::predicate_admission::output_readiness_providers::<Node, _>(

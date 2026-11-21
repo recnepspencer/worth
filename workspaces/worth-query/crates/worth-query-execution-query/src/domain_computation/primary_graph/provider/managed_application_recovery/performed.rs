@@ -56,7 +56,7 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
         self.bind_original_definition(fresh)
     }
 
-    pub fn bind_original_definition(
+    pub(crate) fn bind_original_definition(
         &self,
         fresh: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationIdempotencyBinding {

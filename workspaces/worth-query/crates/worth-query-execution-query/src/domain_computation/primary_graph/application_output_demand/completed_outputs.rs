@@ -45,8 +45,20 @@ impl WorthQueryCompletedRequiredOutputs {
         source.idempotency_binding() == self.intent
             && source.committed_product_publication().composite_commit() == &self.source
     }
-    pub fn retained_output(&self) -> &Arc<WorthQueryApplicationReadObservation> {
+    pub(crate) fn retained_output(&self) -> &Arc<WorthQueryApplicationReadObservation> {
         &self.output
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryCompletedRequiredOutputs`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait CompletedRequiredOutputsInternalPort {
+    fn retained_output(&self) -> &Arc<WorthQueryApplicationReadObservation>;
+}
+
+impl CompletedRequiredOutputsInternalPort for WorthQueryCompletedRequiredOutputs {
+    fn retained_output(&self) -> &Arc<WorthQueryApplicationReadObservation> {
+        Self::retained_output(self)
     }
 }
 

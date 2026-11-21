@@ -27,7 +27,7 @@ pub struct WorthQueryDerivedRelationCountOwner<
 impl<Schema, Feature, Collection, Operation, Relation, From, To>
     WorthQueryDerivedRelationCountOwner<Schema, Feature, Collection, Operation, Relation, From, To>
 {
-    pub fn new(
+    pub(crate) fn new(
         relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
         association:worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
     ) -> Self {
@@ -36,6 +36,35 @@ impl<Schema, Feature, Collection, Operation, Relation, From, To>
             association,
             marker: PhantomData,
         }
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryDerivedRelationCountOwner`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait DerivedRelationCountOwnerInternalPort<Schema, Relation, From, To>: Sized {
+    fn from_relation(
+        relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
+        association: worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
+    ) -> Self;
+}
+
+impl<Schema, Feature, Collection, Operation, Relation, From, To>
+    DerivedRelationCountOwnerInternalPort<Schema, Relation, From, To>
+    for WorthQueryDerivedRelationCountOwner<
+        Schema,
+        Feature,
+        Collection,
+        Operation,
+        Relation,
+        From,
+        To,
+    >
+{
+    fn from_relation(
+        relation: ApplicationDerivedRelationRef<Schema, Relation, From, To>,
+        association: worth_query_declaration::facade::application_schema::ApplicationRuleReadableCollectionAssociation,
+    ) -> Self {
+        Self::new(relation, association)
     }
 }
 

@@ -166,7 +166,7 @@ impl<Schema> WorthQueryApplicationContractCatalog<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub fn validate(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    pub(crate) fn validate(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         let mut family_types = BTreeMap::new();
         let mut families: BTreeMap<
             (&str, &str),
@@ -318,7 +318,7 @@ where
         package
     }
 
-    pub fn into_pending(
+    pub(crate) fn into_pending(
         self,
     ) -> (
         PendingProducerRegistry<Schema>,

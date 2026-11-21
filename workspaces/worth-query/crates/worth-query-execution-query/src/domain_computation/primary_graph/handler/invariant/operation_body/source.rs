@@ -14,7 +14,7 @@ use worth_query_declaration::facade::application_schema::{
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>
 {
-    pub fn body_created_sources(
+    pub(crate) fn body_created_sources(
         &mut self,
         body: &ApplicationOperationBodyProgram,
         selections: &PreparedBodySelections<Schema>,

@@ -22,7 +22,7 @@ pub struct WorthQueryApplicationLiveUpdate<Query, QueryResult> {
 }
 
 impl<Query, QueryResult> WorthQueryApplicationLiveUpdate<Query, QueryResult> {
-    pub fn new(
+    pub(crate) fn new(
         product_publication: crate::domain_computation::primary_graph::WorthQueryCommittedProductPublication,
         result: QueryResult,
         receipt: WorthQueryApplicationQueryAccessReceipt,

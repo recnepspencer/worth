@@ -29,7 +29,7 @@ pub struct WorthQueryClosedResource {
 }
 
 impl WorthQueryClosedResource {
-    pub fn from_completed_action(
+    pub(crate) fn from_completed_action(
         native: Option<worth_runtime_bridge::facade::BridgeOwnedAsyncReleasedResource>,
         clock_only: Option<worth_signal::facade::TemporalClockAdvanceSummary>,
         action: crate::domain_computation::provider_session::WorthQueryResourceReadCompletion,
@@ -42,7 +42,10 @@ impl WorthQueryClosedResource {
         }
     }
 
-    pub fn with_cleanup_detail(mut self, detail: Option<WorthQueryResourceCleanupDetail>) -> Self {
+    pub(crate) fn with_cleanup_detail(
+        mut self,
+        detail: Option<WorthQueryResourceCleanupDetail>,
+    ) -> Self {
         self.detail = detail;
         self
     }
@@ -51,6 +54,31 @@ impl WorthQueryClosedResource {
     /// Plain Close and recovery handoff retain opaque cleanup evidence.
     pub fn detail(&self) -> Option<&WorthQueryResourceCleanupDetail> {
         self.detail.as_ref()
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryClosedResource`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ClosedResourceInternalPort: Sized {
+    fn from_completed_action(
+        native: Option<worth_runtime_bridge::facade::BridgeOwnedAsyncReleasedResource>,
+        clock_only: Option<worth_signal::facade::TemporalClockAdvanceSummary>,
+        action: crate::domain_computation::provider_session::WorthQueryResourceReadCompletion,
+    ) -> Self;
+    fn with_cleanup_detail(self, detail: Option<WorthQueryResourceCleanupDetail>) -> Self;
+}
+
+impl ClosedResourceInternalPort for WorthQueryClosedResource {
+    fn from_completed_action(
+        native: Option<worth_runtime_bridge::facade::BridgeOwnedAsyncReleasedResource>,
+        clock_only: Option<worth_signal::facade::TemporalClockAdvanceSummary>,
+        action: crate::domain_computation::provider_session::WorthQueryResourceReadCompletion,
+    ) -> Self {
+        Self::from_completed_action(native, clock_only, action)
+    }
+
+    fn with_cleanup_detail(self, detail: Option<WorthQueryResourceCleanupDetail>) -> Self {
+        Self::with_cleanup_detail(self, detail)
     }
 }
 

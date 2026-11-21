@@ -1,6 +1,7 @@
 //! The lineage and mark rows of a restored generated output.
 
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchObservation;
@@ -32,12 +33,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         producer: ProducerQualification,
     ) {
         let graph = &self.inner.runtime.primary_provider.graph;
-        let owner = &graph.source_owner.invalidation_owner;
+        let owner = &graph.source_owner_ref().invalidation_owner;
 
         let sealed = graph.with_runtime(execution, |runtime| {
-            let prepared =
-                PreparedNativeOutputWitness::prepare_republication(&correspondence, &graph.layout)
-                    .ok()??;
+            let prepared = PreparedNativeOutputWitness::prepare_republication(
+                &correspondence,
+                &graph.layout_ref(),
+            )
+            .ok()??;
             let committed = runtime
                 .snapshots()
                 .snapshot_for_observation(&observation.basis().relational_basis().observation())
@@ -48,7 +51,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             witness.zip(read_basis)
         });
         let mut lineage = graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .expect("application output lineage lock is available");
         let republished = sealed.and_then(|(witness, read_basis)| {
@@ -107,7 +110,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             // A row that holds no sealed witness has nothing to register:
             // its first reader verifies it in full.
             graph
-                .output_lineage
+                .output_lineage_ref()
                 .lock()
                 .expect("application output lineage lock is available")
                 .require_settlement_verification(
@@ -128,7 +131,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             read_basis,
         ) {
             graph
-                .output_lineage
+                .output_lineage_ref()
                 .lock()
                 .expect("application output lineage lock is available")
                 .require_settlement_verification(&record.identity, reason);

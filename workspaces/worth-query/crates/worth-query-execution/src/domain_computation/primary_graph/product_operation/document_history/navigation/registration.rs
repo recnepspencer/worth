@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 };
 use std::{collections::BTreeMap, sync::Mutex};
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
@@ -191,7 +192,7 @@ where
             model: document.model.clone(),
             ownership: (installed.definition().parts().model_domain
                 == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph)
-                .then(|| application.inner.runtime.primary_provider.graph.layout.history_ownership(
+                .then(|| application.inner.runtime.primary_provider.graph.layout_ref().history_ownership(
                     &installed.definition().parts().identity).expect("eligibility admitted the installed recipe")),
             source: Some(source),
             requested,

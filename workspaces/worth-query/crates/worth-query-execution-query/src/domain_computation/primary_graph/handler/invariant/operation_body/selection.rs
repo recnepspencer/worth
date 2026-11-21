@@ -10,7 +10,7 @@ use worth_query_declaration::facade::application_schema::ApplicationOperationDec
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     DecisionReader<'_, '_, '_, Schema, Binding>
 {
-    pub fn body_selections(
+    pub(crate) fn body_selections(
         &mut self,
         selections: &[ApplicationOperationDecisionReadTarget],
     ) -> Result<PreparedBodySelections<Schema>, HandlerExecutionDenial> {

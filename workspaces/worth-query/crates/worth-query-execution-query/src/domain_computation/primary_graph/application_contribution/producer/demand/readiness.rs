@@ -1,6 +1,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::CompanionPreflightStop;
@@ -227,7 +228,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
                         readiness: &execution,
                         lowering: execution.installed_lowering_ref(),
                         ordinal: route.delivery_dependency_ordinal,
-                        layout: &self.runtime.primary_provider.graph.layout,
+                        layout: self.runtime.primary_provider.graph.layout_ref(),
                     },
                     ready,
                     &self.runtime.next_output_producer_attempt,

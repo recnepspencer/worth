@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 use worth_query_execution_lineage::facade::ports::InvariantMutationTargetInternalPort as _;
 use worth_relational::facade::identity::EntityId;
 /// O(w log w) work and O(w) temporary slots for all actual authored write targets.
-pub fn reject<S>(
+pub(crate) fn reject<S>(
     scope: EntityId,
     body: &ApplicationOperationBodyProgram,
     targets: &[WorthQueryInvariantMutationTarget<S, ()>],

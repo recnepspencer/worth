@@ -1,6 +1,7 @@
 //! Ordinary admitted Retire correspondence succeeds Native's complete selected publication.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture as Posture;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::mvcc::RequiredOutputRolePosture;
 
@@ -14,7 +15,7 @@ pub(super) fn bind(
     ValidatedRelationalProposal,
     crate::domain_computation::WorthQueryProviderSessionCommitStop,
 > {
-    let Some(publisher) = &provider.graph.application_publication else {
+    let Some(publisher) = &provider.graph.application_publication_ref() else {
         return Ok(proposal);
     };
     let targets = attempt.native_publication_roles();
@@ -52,7 +53,7 @@ pub(super) fn bind(
     })?;
     let (roles, _) =
         crate::domain_computation::primary_graph::provider::native_publication_roles::collect(
-            &provider.graph.layout,
+            provider.graph.layout_ref(),
             targets,
         )
         .ok_or_else(mismatch)?;
@@ -63,7 +64,7 @@ pub(super) fn bind(
             .cloned()
             .collect::<Vec<_>>();
         let kinds = attempt
-            .authored_member_kinds(&provider.graph.layout)
+            .authored_member_kinds(provider.graph.layout_ref())
             .map_err(|_| mismatch())?;
         let cascade = provider
             .graph

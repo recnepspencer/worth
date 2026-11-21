@@ -4,6 +4,7 @@ use super::super::{
     application_query::WorthQueryCheckpointSourceIdentity, output_lineage::RecordedSourceIdentity,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -27,7 +28,7 @@ pub(super) fn restore<Schema: ApplicationSchema>(
         .runtime
         .primary_provider
         .graph
-        .output_lineage
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     // This is one pass over bounded, installed-producer-readmitted checkpoint records.

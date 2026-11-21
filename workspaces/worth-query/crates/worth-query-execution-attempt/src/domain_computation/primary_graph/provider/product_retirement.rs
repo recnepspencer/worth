@@ -1,6 +1,7 @@
 //! Release Query-owned retention for one retired product occurrence.
 
 use std::collections::BTreeSet;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldRecoveryPort};
 
@@ -39,7 +40,7 @@ impl WorthQueryPrimaryGraphProvider {
         self.live_delivery
             .retire_product_occurrence(branch, incarnation);
         self.graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .release_occurrence(incarnation);

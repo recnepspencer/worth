@@ -9,7 +9,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_schema::ApplicationOperationBodyProgram;
 use worth_query_declaration::facade::application_schema::ApplicationOperationDecisionReadTarget as Read;
 impl<S: ApplicationSchema, B: ApplicationMutationBinding<S>> DecisionReader<'_, '_, '_, S, B> {
-    pub fn body_references(
+    pub(crate) fn body_references(
         &mut self,
         body: &ApplicationOperationBodyProgram,
         inputs: Option<&PreparedBodyInputs>,

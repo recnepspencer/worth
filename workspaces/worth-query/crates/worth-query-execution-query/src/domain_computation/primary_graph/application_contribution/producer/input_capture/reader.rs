@@ -79,7 +79,7 @@ where
     B: ApplicationMutationBinding<S>,
     C: WorthQueryProducerInputCaptureDefinition<S>,
 {
-    pub fn new(
+    pub(crate) fn new(
         reader: &'call mut WorthQueryApplicationOperationInvariantProjectionReader<
             'reader,
             'runtime,
@@ -245,7 +245,7 @@ where
 
     /// The invocation owner checks the loan after the supplier returns, including
     /// caught failures and a container retained from a different invocation.
-    pub fn complete_call<Data, Denial>(
+    pub(crate) fn complete_call<Data, Denial>(
         self,
         result: HandlerResult<WorthQueryCapturedProducerInputs<S, C, Data>, Denial>,
     ) -> HandlerResult<WorthQueryCapturedProducerInputs<S, C, Data>, Denial> {

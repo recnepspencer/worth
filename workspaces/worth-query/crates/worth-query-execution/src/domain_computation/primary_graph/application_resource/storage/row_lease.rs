@@ -1,6 +1,7 @@
 //! A row action releases its lock before arbitrary provider code and restores
 //! the same occurrence even when an original request or callback unwinds.
 use super::*;
+use worth_query_execution_query::facade::ports::ClosedResourceInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph::application_resource) struct ResourceRowLease {
     storage: Arc<ResourceStorage>,

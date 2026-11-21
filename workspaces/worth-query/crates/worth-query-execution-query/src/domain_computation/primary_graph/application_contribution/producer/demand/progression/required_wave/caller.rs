@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// Check actual selected required work before the caller's ordinary Ready
@@ -54,7 +55,7 @@ where
         .runtime
         .primary_provider
         .graph
-        .output_lineage
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .resolve_required_settlement(
@@ -76,7 +77,7 @@ where
         .runtime
         .primary_provider
         .graph
-        .source_owner
+        .source_owner_ref()
         .invalidation_owner
         .currentness(&wave.positioned, candidate.recorded_identity())
         .map_err(admission_denial)?;
@@ -96,7 +97,7 @@ where
         let pending = graph.with_runtime(execution, |relational| {
             candidate.pending_consumed_output(
                 execution,
-                &graph.source_owner.invalidation_owner,
+                &graph.source_owner_ref().invalidation_owner,
                 relational,
                 snapshot,
                 &wave.positioned,

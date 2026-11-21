@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     },
     provider::WorthQueryApplicationBranchCommitCoordination,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_relational::facade::mvcc::{
     PreparedRelationalCommitCandidate, RelationalCurrentOutputAdoption,
@@ -59,7 +60,7 @@ pub(super) fn prepare(
     }
     let Some(selected) =
         crate::domain_computation::primary_graph::output_lineage::select_executed_adoption(
-            &provider.graph.output_lineage,
+            provider.graph.output_lineage_ref(),
             execution,
             attempt,
         )
@@ -67,7 +68,7 @@ pub(super) fn prepare(
     else {
         return Ok(decline(rebase, required));
     };
-    let Some(publisher) = provider.graph.application_publication.as_ref() else {
+    let Some(publisher) = provider.graph.application_publication_ref() else {
         return Ok(decline(rebase, required));
     };
     let head = selected
@@ -79,7 +80,7 @@ pub(super) fn prepare(
             required.as_ref().expect("required claims checked").native_publication_family(),
             attempt.affinity().operation_scope().scope(),
             attempt.idempotency().source_partition_identity().expect("selected exact partition"),
-            &provider.graph.layout)
+            provider.graph.layout_ref())
     }).map_err(|stop| match stop {
         crate::domain_computation::primary_graph::output_lineage::required_publication::head::RequiredPublicationReadmissionStop::Selection(stop) => native_output_witness_stop(stop),
         crate::domain_computation::primary_graph::output_lineage::required_publication::head::RequiredPublicationReadmissionStop::Native(stop) => transaction_commit_stop(stop),
@@ -178,7 +179,7 @@ impl PreparedExecutedOutputAdoption {
             Ok::<_, crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial>((position, witness, facts))
         })?;
         crate::domain_computation::primary_graph::output_lineage::publish_executed_adoption(
-            &provider.graph.output_lineage, &provider.graph.source_owner.invalidation_owner,
+            provider.graph.output_lineage_ref(), &provider.graph.source_owner_ref().invalidation_owner,
             attempt.affinity().product_publication().observation_port(), execution,
             &attempt, selected, &adoption, &association, &position, facts, witness, required, coordination)
             .map_err(|stop| match stop {

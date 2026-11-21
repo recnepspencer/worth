@@ -15,7 +15,7 @@ use crate::domain_computation::primary_graph::{
 impl<S: ApplicationSchema + 'static, F: WorthQueryProducerOutputFamily<S>>
     WorthQueryAdmittedOutputDemand<S, F>
 {
-    pub fn close_read_request(
+    pub(crate) fn close_read_request(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,

@@ -1,5 +1,6 @@
 //! Borrow the producer's actual C computation record under this request.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// A retained partitioned run takes the record at the address it will replace.
@@ -22,7 +23,7 @@ where
     }
     let handle = &runtime.runtime.primary_provider.graph;
     let mut prior = handle
-        .output_lineage
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .computation_prior_at_address::<Operation<Schema, Binding>>(
@@ -36,7 +37,7 @@ where
     handle
         .with_runtime(execution, |relational| {
             prior.observe_changes(
-                &handle.source_owner.invalidation_owner,
+                &handle.source_owner_ref().invalidation_owner,
                 relational,
                 selected.application_basis().snapshot_handle(),
             )

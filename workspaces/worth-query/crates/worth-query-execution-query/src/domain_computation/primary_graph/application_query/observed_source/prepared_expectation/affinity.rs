@@ -1,6 +1,7 @@
 use super::*;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_lineage::facade::ports::SourceExpectationDenialInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<Schema>
@@ -68,13 +69,13 @@ where
     {
         let expected_query_identifier = <Binding::SourceExpectation as worth_query_declaration::facade::application_operation::ApplicationMutationSourceExpectation<Schema>>::QUERY_IDENTIFIER
             .ok_or_else(|| {
-                WorthQuerySourceExpectationDenial::new(
+                WorthQuerySourceExpectationDenial::from_kind_and_subject(
                     WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
                     Binding::IDENTITY,
                 )
             })?;
         let graph = self.runtime.primary_graph().ok_or_else(|| {
-            WorthQuerySourceExpectationDenial::new(
+            WorthQuerySourceExpectationDenial::from_kind_and_subject(
                 WorthQuerySourceExpectationDenialKind::ForeignApplication,
                 Binding::IDENTITY,
             )
@@ -83,7 +84,7 @@ where
             .installed_schema
             .installed_query_identity_by_name(expected_query_identifier)
             .ok_or_else(|| {
-                WorthQuerySourceExpectationDenial::new(
+                WorthQuerySourceExpectationDenial::from_kind_and_subject(
                     WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
                     expected_query_identifier,
                 )
@@ -97,13 +98,13 @@ where
                 )
             })
             .ok_or_else(|| {
-                WorthQuerySourceExpectationDenial::new(
+                WorthQuerySourceExpectationDenial::from_kind_and_subject(
                     WorthQuerySourceExpectationDenialKind::ForeignBranch,
                     Binding::IDENTITY,
                 )
             })?;
         let parameters_denial = || {
-            WorthQuerySourceExpectationDenial::new(
+            WorthQuerySourceExpectationDenial::from_kind_and_subject(
                 WorthQuerySourceExpectationDenialKind::SourceParametersMismatch,
                 Binding::IDENTITY,
             )
@@ -132,7 +133,7 @@ pub fn parameter_denial(
     denial: worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenial,
 ) -> WorthQuerySourceExpectationDenial {
     use worth_query_admission::facade::application_query::WorthQueryApplicationQueryParameterDenialKind as Kind;
-    WorthQuerySourceExpectationDenial::new(
+    WorthQuerySourceExpectationDenial::from_kind_and_subject(
         match denial.kind() {
             Kind::CanonicalEntryBudgetExceeded | Kind::CanonicalEncodedByteBudgetExceeded => {
                 WorthQuerySourceExpectationDenialKind::WorkBudgetExceeded

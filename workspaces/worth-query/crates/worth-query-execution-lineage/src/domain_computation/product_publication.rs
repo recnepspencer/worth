@@ -1,6 +1,7 @@
 pub mod recovery;
 pub mod stale;
 pub mod unpublished;
+pub(crate) mod unpublished_internal_port;
 
 pub use recovery::{
     WorthQueryProductUnpublishedRecovery, WorthQueryProductUnpublishedRecoveryFailure,

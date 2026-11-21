@@ -16,7 +16,7 @@ pub struct WorthQueryManagedIndexCandidateWriter<'a> {
     control: &'a WorthQueryManagedIndexControl<'a>,
 }
 impl<'a> WorthQueryManagedIndexCandidateWriter<'a> {
-    pub fn allocate<S, I>(
+    pub(crate) fn allocate<S, I>(
         execution: &ExecutionRequest<'a, 'a>,
         source: &WorthQueryManagedIndexSourceRows<'a, S, I>,
         control: &'a WorthQueryManagedIndexControl<'a>,
@@ -48,7 +48,7 @@ impl<'a> WorthQueryManagedIndexCandidateWriter<'a> {
         }
         self.control.poll()
     }
-    pub fn finish(
+    pub(crate) fn finish(
         self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<ExecutionArray<Slot>, Stop> {

@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 pub(super) fn publish_aggregate_projection(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -12,7 +13,7 @@ pub(super) fn publish_aggregate_projection(
     }
     let mut aggregates = provider
         .graph
-        .aggregate_projections
+        .aggregate_projections_ref()
         .lock()
         .unwrap_or_else(|poisoned| poisoned.into_inner());
     if let Some(before) = pending.before.as_ref() {

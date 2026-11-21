@@ -6,7 +6,7 @@ pub struct WorthQueryApplicationBatchResult<Query, Result> {
     item: PlannedBatchItem,
 }
 impl<Q, R> WorthQueryApplicationBatchResult<Q, R> {
-    pub fn issued(
+    pub(crate) fn issued(
         result: WorthQueryApplicationOneShotResult<Q, R>,
         item: PlannedBatchItem,
     ) -> Self {

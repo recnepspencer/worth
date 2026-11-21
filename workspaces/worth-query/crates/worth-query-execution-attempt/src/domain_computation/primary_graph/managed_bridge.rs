@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaMember, WorthQueryInstalledApplicationSchema,
 };
@@ -184,8 +185,8 @@ where
 {
     build_application_runtime_bridge(
         schema,
-        &integration.layout,
-        integration.source_owner.bridge_source(),
+        integration.layout_ref(),
+        integration.source_owner_ref().bridge_source(),
     )
 }
 

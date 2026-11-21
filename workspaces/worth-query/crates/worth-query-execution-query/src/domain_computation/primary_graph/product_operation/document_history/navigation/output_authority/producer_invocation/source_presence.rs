@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationEntityIdentity, WorthQueryApplicationQueryAdmissionDenial as Denial,
     WorthQueryApplicationQueryAdmissionDenialKind as Kind,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -70,7 +71,7 @@ impl HistoryProducerInvocation<'_> {
             {
                 Err(Stop::Selection(Selection::ForeignOwner))
             } else {
-                match native.observe_model_owner(execution,truth,runtime.runtime.primary_provider.graph.layout.installed_history_ownership(),scope.entity_id()) {
+                match native.observe_model_owner(execution,truth,runtime.runtime.primary_provider.graph.layout_ref().installed_history_ownership(),scope.entity_id()) {
                     Ok(Some(owner)) if owner==model=>Ok(Presence::LiveInDomain),
                     Ok(_)=>Ok(Presence::OutsideDomain),
                     Err(worth_relational::facade::branch::RelationalModelOwnershipDenial::EntityUnavailable(id)) if id==scope.entity_id()=>Ok(Presence::NotLive),
@@ -103,7 +104,7 @@ impl HistoryProducerInvocation<'_> {
                                 .runtime
                                 .primary_provider
                                 .graph
-                                .layout
+                                .layout_ref()
                                 .installed_history_ownership(),
                             scope.entity_id(),
                             scope.entity_kind(),

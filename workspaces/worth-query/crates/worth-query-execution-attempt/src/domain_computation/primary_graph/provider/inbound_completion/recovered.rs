@@ -4,6 +4,7 @@ use super::read::{
     WorthQueryInboundCompletionReadDenial as Denial,
 };
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::transactions::RelationalCommitSemanticResult;
 use worth_runtime_world::facade::{WorldRecoveredUnpublishedEffects, WorldReleasedOriginal};
 
@@ -58,7 +59,7 @@ impl WorthQueryPrimaryGraphProvider {
     ) -> Result<Option<worth_relational::facade::identity::EntityId>, Denial> {
         let mut completion = None;
         for created in semantic.created_entities() {
-            if created.key.kind == self.graph.layout.provider_inbound_completion().kind
+            if created.key.kind == self.graph.layout_ref().provider_inbound_completion().kind
                 && completion.replace(created.assigned).is_some()
             {
                 return Err(Denial::AmbiguousCorrelation);
@@ -76,7 +77,7 @@ impl WorthQueryPrimaryGraphProvider {
         row: &worth_relational::facade::durability::ReadmittedRelationalCreatedEntity<'_>,
         receipt: worth_relational::facade::history::RelationalCommitReceipt,
     ) -> Result<WorthQueryCanonicalCompletionRow, Denial> {
-        let layout = self.graph.layout.provider_inbound_completion();
+        let layout = self.graph.layout_ref().provider_inbound_completion();
         if row.kind_id() != layout.kind {
             return Err(Denial::Malformed);
         }

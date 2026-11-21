@@ -1,6 +1,8 @@
 //! Runtime settlement construction, observation, and selection hooks.
 
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::{
     CommitAuthorityBindingInternalPort as _, CommitReceiptInternalPort as _,
     OutputDemandSettlementInternalPort as _, OutputDemandSettlementParts,
@@ -188,7 +190,7 @@ fn capture_settled_observation<Schema: worth_query_installation::facade::Applica
             .runtime
             .primary_provider
             .graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .retain_predecessor_reads(identity),

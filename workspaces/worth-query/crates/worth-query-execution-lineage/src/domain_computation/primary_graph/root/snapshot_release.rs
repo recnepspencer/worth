@@ -1,5 +1,6 @@
 //! Exact retained snapshot release through the issuing source owner.
 use super::WorthQueryPrimaryGraphIntegrationHandle;
+use worth_query_execution_runtime::facade::ports::RelationalSourceOwnerInternalPort as _;
 
 impl WorthQueryPrimaryGraphIntegrationHandle {
     #[doc(hidden)]

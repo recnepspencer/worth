@@ -8,15 +8,27 @@ pub mod domain_computation {
 }
 
 pub mod ports {
-    pub use crate::domain_computation::execution_runtime::product_world::QueryProductRuntimeInternalPort;
+    pub use crate::domain_computation::execution_runtime::product_world::internal_port::QueryProductRuntimeInternalPort;
     pub use crate::domain_computation::execution_runtime::QueryExecutionRuntimeInternalPort;
+    pub use crate::domain_computation::primary_graph::application_contribution::conditional::producer_access::ConditionalProducerAccessInternalPort;
+    pub use crate::domain_computation::primary_graph::application_contribution::derived_relation::DerivedRelationCountOwnerInternalPort;
     pub use crate::domain_computation::primary_graph::application_contribution::partitioned_computation::installed::collection::InstalledPartitionedComputationInternalPort;
+    pub use crate::domain_computation::primary_graph::application_contribution::producer::demand::internal_port::AdmittedOutputDemandInternalPort;
+    pub use crate::domain_computation::primary_graph::application_output_demand::completed_outputs::CompletedRequiredOutputsInternalPort;
+    pub use crate::domain_computation::primary_graph::application_output_demand::original_outputs::CompletedOriginalReadOutputsInternalPort;
     pub use crate::domain_computation::primary_graph::application_query::batch::planning::BatchAdmissionInternalPort;
+    pub use crate::domain_computation::primary_graph::application_query::controls::internal_port::AdmittedApplicationQueryControlsInternalPort;
+    pub use crate::domain_computation::primary_graph::application_resource::closed::ClosedResourceInternalPort;
+    pub use crate::domain_computation::primary_graph::application_resource::stop::{
+        ResourceActionDenialInternalPort, ResourceRecoveryCloseStopInternalPort,
+    };
     pub use crate::domain_computation::primary_graph::causal_inspection::application_observation::declared_query::ApplicationQueryObservationInternalPort;
     pub use crate::domain_computation::primary_graph::conditional_operation::installation::clock_handle::ConditionalClockHandleInternalPort;
+    pub use crate::domain_computation::primary_graph::conditional_operation::installation::denial::ConditionalRuntimeInstallationDenialInternalPort;
     pub use crate::domain_computation::primary_graph::product_operation::document_history::internal_port::{
         HistoryNodeIdInternalPort, HistoryPreviewInternalPort,
     };
+    pub use crate::domain_computation::primary_graph::product_operation::entry_internal_port::ProductEntryInternalPort;
     pub use crate::domain_computation::primary_graph::product_operation::query_controls::ProductQueryControlsInternalPort;
     pub use crate::ports::*;
 }

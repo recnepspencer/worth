@@ -1,5 +1,5 @@
 pub mod authored_edit;
-mod derived_relation;
+pub(crate) mod derived_relation;
 pub use derived_relation::WorthQueryDerivedRelationCountOwner;
 pub use worth_query_execution_lineage::facade::primary_graph::application_contribution::{
     computation, execution_denial, native_field_contract,

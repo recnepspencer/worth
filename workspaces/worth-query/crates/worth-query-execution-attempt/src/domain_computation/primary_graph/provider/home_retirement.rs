@@ -7,6 +7,7 @@ use super::WorthQueryPrimaryGraphProvider;
 use crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchCloseCustody;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::runtime::RelationalRuntime;
 
 pub struct PrimaryProviderCustody {
@@ -194,7 +195,7 @@ impl WorthQueryPrimaryGraphProvider {
             .map_err(|_| Denial::Busy(Owner::ReceiptBases))?
             .preflight_home_retirement(dispatch_custody)?;
         self.graph
-            .source_owner
+            .source_owner_ref()
             .preflight_home_retirement(request)
             .map_err(Into::into)
     }

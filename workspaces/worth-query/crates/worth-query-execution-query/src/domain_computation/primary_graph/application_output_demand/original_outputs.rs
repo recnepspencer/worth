@@ -25,7 +25,7 @@ pub struct WorthQueryCompletedOriginalReadOutputs {
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl WorthQueryCompletedOriginalReadOutputs {
-    pub fn from_qualified_endpoint(
+    pub(crate) fn from_qualified_endpoint(
         _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
         source: Arc<WorthQueryApplicationReadObservation>,
         root: Arc<WorthQueryApplicationReadObservation>,
@@ -41,10 +41,10 @@ impl WorthQueryCompletedOriginalReadOutputs {
             _memory: memory,
         }
     }
-    pub fn original_source(&self) -> &Arc<WorthQueryApplicationReadObservation> {
+    pub(crate) fn original_source(&self) -> &Arc<WorthQueryApplicationReadObservation> {
         &self.source
     }
-    pub fn original_endpoint(&self) -> &Arc<WorthQueryApplicationReadObservation> {
+    pub(crate) fn original_endpoint(&self) -> &Arc<WorthQueryApplicationReadObservation> {
         &self.output
     }
     pub fn source_commit(&self) -> &CompositeCommitIdentity {
@@ -58,6 +58,42 @@ impl WorthQueryCompletedOriginalReadOutputs {
     }
     pub fn root_posture(&self) -> WorthQueryOutputSettlementPosture {
         self.posture
+    }
+}
+
+/// Crate-boundary internal port for `WorthQueryCompletedOriginalReadOutputs`.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait CompletedOriginalReadOutputsInternalPort: Sized {
+    fn from_qualified_endpoint(
+        access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
+        source: Arc<WorthQueryApplicationReadObservation>,
+        root: Arc<WorthQueryApplicationReadObservation>,
+        posture: WorthQueryOutputSettlementPosture,
+        output: Arc<WorthQueryApplicationReadObservation>,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Self;
+    fn original_source(&self) -> &Arc<WorthQueryApplicationReadObservation>;
+    fn original_endpoint(&self) -> &Arc<WorthQueryApplicationReadObservation>;
+}
+
+impl CompletedOriginalReadOutputsInternalPort for WorthQueryCompletedOriginalReadOutputs {
+    fn from_qualified_endpoint(
+        access: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
+        source: Arc<WorthQueryApplicationReadObservation>,
+        root: Arc<WorthQueryApplicationReadObservation>,
+        posture: WorthQueryOutputSettlementPosture,
+        output: Arc<WorthQueryApplicationReadObservation>,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Self {
+        Self::from_qualified_endpoint(access, source, root, posture, output, memory)
+    }
+
+    fn original_source(&self) -> &Arc<WorthQueryApplicationReadObservation> {
+        Self::original_source(self)
+    }
+
+    fn original_endpoint(&self) -> &Arc<WorthQueryApplicationReadObservation> {
+        Self::original_endpoint(self)
     }
 }
 

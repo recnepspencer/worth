@@ -55,7 +55,7 @@ where
     Binding: ApplicationMutationBinding<Schema>,
 {
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
+    pub(crate) fn new(
         reader: &'borrow mut WorthQueryApplicationOperationInvariantProjectionReader<
             'reader,
             'runtime,

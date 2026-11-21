@@ -7,6 +7,7 @@ use crate::domain_computation::{
 };
 use std::sync::Arc;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProviderSessionGrantInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     /// The receiving runtime supplies its actual provider and Home witness.

@@ -21,21 +21,21 @@ pub struct WorthQueryProductUnpublishedApplication {
 }
 
 impl WorthQueryProductUnpublishedApplication {
-    pub fn is_recovered(&self) -> bool {
+    pub(crate) fn is_recovered(&self) -> bool {
         matches!(
             self.effects,
             WorthQueryProductUnpublishedOwnerEffects::Recovered(_)
         )
     }
 
-    pub fn retains_conditional_definition(&self) -> bool {
+    pub(crate) fn retains_conditional_definition(&self) -> bool {
         matches!(
             self.effects,
             WorthQueryProductUnpublishedOwnerEffects::ConditionalDefinition(_)
         )
     }
 
-    pub fn recovery_handle(&self) -> ProductUnpublishedRecoveryHandle {
+    pub(crate) fn recovery_handle(&self) -> ProductUnpublishedRecoveryHandle {
         match &self.effects {
             WorthQueryProductUnpublishedOwnerEffects::Application(effects) => {
                 effects.recovery_handle()
@@ -48,7 +48,7 @@ impl WorthQueryProductUnpublishedApplication {
             }
         }
     }
-    pub fn prepare_settled_relational_adoption(
+    pub(crate) fn prepare_settled_relational_adoption(
         &self,
         cancellation: &worth_runtime_world::facade::RuntimeWorldCancellationToken,
         deadline: Option<worth_runtime_world::facade::RuntimeWorldInstant>,
@@ -71,7 +71,7 @@ impl WorthQueryProductUnpublishedApplication {
         }
     }
 
-    pub fn new_recovered(
+    pub(crate) fn new_recovered(
         effects: worth_runtime_world::facade::WorldRecoveredUnpublishedEffects,
         recovery: RuntimeWorldRecoveryPort,
         disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
@@ -82,7 +82,7 @@ impl WorthQueryProductUnpublishedApplication {
             disposition,
         }
     }
-    pub fn new(
+    pub(crate) fn new(
         effects: ProductUnpublishedOwnerEffects,
         recovery: RuntimeWorldRecoveryPort,
         disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,
@@ -94,7 +94,7 @@ impl WorthQueryProductUnpublishedApplication {
         }
     }
 
-    pub fn new_conditional_definition(
+    pub(crate) fn new_conditional_definition(
         effects: RuntimeWorldUnpublishedConditionalDefinition,
         recovery: RuntimeWorldRecoveryPort,
         disposition: crate::domain_computation::primary_graph::WorthQueryUnpublishedIdempotencyDisposition,

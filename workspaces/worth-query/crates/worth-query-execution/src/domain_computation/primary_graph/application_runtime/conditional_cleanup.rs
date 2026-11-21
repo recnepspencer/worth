@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex, RwLock};
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
@@ -180,16 +181,18 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
         WorthQueryConditionalRuntimeInstallationDenial,
     > {
         if self.conditional_cleanup.owner.is_none() {
-            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
+            return Err(WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                 WorthQueryConditionalRuntimeInstallationDenialKind::ApplicationHomeOwnsLifecycle,
                 "the application Home retains conditional lifecycle custody",
             ));
         }
         if self.conditional_cleanup.resources.cleanup_retained() {
-            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
-                WorthQueryConditionalRuntimeInstallationDenialKind::ResourceCleanupRetained,
-                "installed resources still own process-local cleanup or recovery custody",
-            ));
+            return Err(
+                WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
+                    WorthQueryConditionalRuntimeInstallationDenialKind::ResourceCleanupRetained,
+                    "installed resources still own process-local cleanup or recovery custody",
+                ),
+            );
         }
         let pending = self
             .conditional_cleanup
@@ -200,10 +203,14 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .snapshot()
             .pending_managed_cleanup();
         if let Some(kind) = pending {
-            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
-                WorthQueryConditionalRuntimeInstallationDenialKind::ManagedCleanupRetained(kind),
-                "conditional runtime still owns failed native cleanup",
-            ));
+            return Err(
+                WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
+                    WorthQueryConditionalRuntimeInstallationDenialKind::ManagedCleanupRetained(
+                        kind,
+                    ),
+                    "conditional runtime still owns failed native cleanup",
+                ),
+            );
         }
         let before = self.inspect_conditional_runtime();
         self.conditional_cleanup

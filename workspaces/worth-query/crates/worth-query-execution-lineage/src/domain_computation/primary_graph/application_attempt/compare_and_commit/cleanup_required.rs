@@ -1,5 +1,6 @@
 //! Business evidence and the real failed cleanup owner travel together.
 use super::WorthQueryApplicationCommitOutcome;
+pub(crate) mod internal_port;
 pub mod managed;
 use super::super::business_original as world_association;
 use crate::domain_computation::{
@@ -20,7 +21,7 @@ pub struct WorthQueryApplicationCleanupRequired {
     _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl WorthQueryApplicationCleanupRequired {
-    pub fn reserve(
+    pub(crate) fn reserve(
         policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> Result<Box<Self>, worth_execution::ExecutionAllocationDenial> {
         let bytes = std::mem::size_of::<Self>() as u64
@@ -33,7 +34,7 @@ impl WorthQueryApplicationCleanupRequired {
             _funding: funding,
         }))
     }
-    pub fn fill(
+    pub(crate) fn fill(
         mut self: Box<Self>,
         outcome: WorthQueryApplicationCommitOutcome,
         failure: WorthQueryMutationCleanupFailure,

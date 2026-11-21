@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_admission::facade::authenticated_principal::{
     WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
 };
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema, Family> WorthQueryAdmittedOutputDemand<Schema, Family>
 where

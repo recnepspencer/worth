@@ -1,5 +1,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_lineage::facade::ports::ApplicationCleanupRequiredInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CleanupRequiredInternalPort as _;
+use worth_query_execution_runtime::facade::ports::RunningDirectRunInternalPort as _;
 pub mod cleanup_failure;
 use worth_query_installation::facade::ApplicationSchema;
 

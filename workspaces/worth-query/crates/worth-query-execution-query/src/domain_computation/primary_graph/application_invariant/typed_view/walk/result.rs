@@ -33,7 +33,7 @@ pub struct WorthQueryApplicationInvariantWalkIter<'walk, Schema, Relation, Entit
 }
 
 impl<Schema, Relation, Entity> WorthQueryApplicationInvariantWalk<Schema, Relation, Entity> {
-    pub fn new(
+    pub(crate) fn new(
         view: &WorthQueryApplicationInvariantReadView<'_, Schema>,
         native: CompleteStructuralWalk,
         kind: KindId,

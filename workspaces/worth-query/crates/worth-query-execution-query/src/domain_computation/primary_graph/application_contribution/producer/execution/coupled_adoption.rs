@@ -6,7 +6,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolution as Resolution, WorthQueryApplicationUncommitted,
     WorthQuerySelectedProductOperation,
 };
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 pub struct CoupledAdoption {
@@ -39,7 +41,7 @@ impl CoupledAdoption {
         // source ownership. Independent routes carry the same sealed receipt.
         let handle = &runtime.runtime.primary_provider.graph;
         let candidate = handle
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .prior_input_cutoff_candidate::<Operation<Schema, Binding>>(
@@ -134,7 +136,7 @@ impl CoupledAdoption {
             ).into()),
         };
         let stable = handle
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .resolve_original_publication::<Operation<Schema, Binding>>(
@@ -212,7 +214,7 @@ impl CoupledAdoption {
             .runtime
             .primary_provider
             .graph
-            .source_owner
+            .source_owner_ref()
             .invalidation_owner;
         let mut claims =
             required.prepare_prerequisites(self.candidate.consumed_outputs().iter(), owner)?;
@@ -226,7 +228,7 @@ impl CoupledAdoption {
             })?;
         claims.record_durable_prerequisites(
             &execution,
-            &runtime.runtime.primary_provider.graph.output_lineage,
+            runtime.runtime.primary_provider.graph.output_lineage_ref(),
         )?;
         claims.reserve_identity(self.candidate.settlement_identity())?;
         claims

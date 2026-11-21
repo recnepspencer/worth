@@ -1,6 +1,7 @@
 //! Original SDK qualification preserves typed root/model provenance through adoption.
 use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::CompletedOriginalReadOutputsInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 mod denial;
 pub use denial::WorthQueryHistoryOutputQualificationDenial;

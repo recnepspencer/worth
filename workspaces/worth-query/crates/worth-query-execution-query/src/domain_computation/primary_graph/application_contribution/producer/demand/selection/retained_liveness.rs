@@ -1,5 +1,6 @@
 //! Retained output liveness keeps request failures separate from absent output.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 pub fn read(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     view: &worth_relational::facade::runtime::VisibilityProjectionView,
@@ -78,7 +79,7 @@ where
             .runtime
             .primary_provider
             .graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         application

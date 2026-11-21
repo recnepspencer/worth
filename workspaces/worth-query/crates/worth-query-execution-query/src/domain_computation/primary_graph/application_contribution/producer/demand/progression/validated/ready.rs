@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::application_output_demand::WorthQu
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandSettlement as Settlement;
 use crate::domain_computation::primary_graph::OutputDemandSettlementReusedExt;
 use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// What a Ready row proves on the branch as it stands.

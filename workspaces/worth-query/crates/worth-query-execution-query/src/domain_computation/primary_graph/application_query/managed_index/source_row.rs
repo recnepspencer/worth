@@ -59,7 +59,7 @@ pub struct WorthQueryManagedIndexSourceRow<
 impl<'a, S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>
     WorthQueryManagedIndexSourceRow<'a, S, I>
 {
-    pub fn new(
+    pub(crate) fn new(
         row: WorthQueryApplicationProjectionRow<'a, S, Query<S, I>>,
         slot: Slot,
         text: &'a SourceText,

@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphPr
 use crate::domain_computation::{
     WorthQueryInvariantExecutionDenialKind as Cause, WorthQueryInvariantExecutionFailure as Failure,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::{
     mvcc::{
         RelationalCoupledProducerPosture, RelationalRequiredOutputPublication,
@@ -52,7 +53,7 @@ impl WorthQueryPrimaryGraphProvider {
             ));
         }
         let (roles, _) = super::super::native_publication_roles::collect(
-            &self.graph.layout,
+            self.graph.layout_ref(),
             staged.attempt.native_publication_roles(),
         )
         .ok_or_else(|| {
@@ -85,8 +86,7 @@ impl WorthQueryPrimaryGraphProvider {
         };
         let publisher = self
             .graph
-            .application_publication
-            .as_ref()
+            .application_publication_ref()
             .ok_or_else(unavailable)?;
         let attempts = self.attempts.lock().unwrap_or_else(|p| p.into_inner());
         let staged = attempts.staged_attempt(session).ok_or_else(unavailable)?;
@@ -96,7 +96,7 @@ impl WorthQueryPrimaryGraphProvider {
             .producer_dependency_identity()
             .ok_or_else(unavailable)?;
         let (roles, all_created) = super::super::native_publication_roles::collect(
-            &self.graph.layout,
+            self.graph.layout_ref(),
             attempt.native_publication_roles(),
         )
         .ok_or_else(unavailable)?;

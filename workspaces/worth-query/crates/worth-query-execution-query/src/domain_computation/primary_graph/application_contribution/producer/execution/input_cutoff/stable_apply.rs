@@ -1,5 +1,6 @@
 //! Stable publication occurs only when the canonical owner cursor applies it.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 pub fn publish<Schema, Binding, OperationType, Input, Scope>(
@@ -17,7 +18,7 @@ where
 {
     let scope = operation.operation_scope_binding();
     let handle = &runtime.runtime.primary_provider.graph;
-    let source_owner = &handle.source_owner.invalidation_owner;
+    let source_owner = &handle.source_owner_ref().invalidation_owner;
     let lane = runtime
         .runtime
         .primary_provider
@@ -25,7 +26,7 @@ where
 
     let coordination = lane.enter();
     let address = prepare_stable_address::<Operation<Schema, Binding>>(
-        &handle.output_lineage,
+        handle.output_lineage_ref(),
         verified,
         scope,
         observation,
@@ -36,7 +37,7 @@ where
     // Registry preparation is outside both lineage and Product guards.
     let mut prerequisites = required_output
         .prepare_prerequisites(publication.consumed_outputs().iter(), source_owner)?;
-    prerequisites.record_durable_prerequisites(execution, &handle.output_lineage)?;
+    prerequisites.record_durable_prerequisites(execution, handle.output_lineage_ref())?;
     prerequisites.reserve_identity(publication.identity())?;
     let registration = publication.prepare_current_registration(source_owner, prerequisites.work_membership())
         .map_err(|stop| match stop {

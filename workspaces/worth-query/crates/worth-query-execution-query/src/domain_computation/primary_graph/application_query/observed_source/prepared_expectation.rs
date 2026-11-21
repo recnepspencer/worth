@@ -1,5 +1,6 @@
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_lineage::facade::ports::BoundSourceExpectationInternalPort as _;
+use worth_query_execution_lineage::facade::ports::SourceExpectationDenialInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod admission;
 mod affinity;
@@ -68,7 +69,7 @@ impl PreparedObservedSourceExpectation {
         admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial> {
         if !self.matches_admission(admission) {
-            return Err(WorthQuerySourceExpectationDenial::new(
+            return Err(WorthQuerySourceExpectationDenial::from_kind_and_subject(
                 WorthQuerySourceExpectationDenialKind::ForeignOperation,
                 "prepared source expectation",
             ));
@@ -90,7 +91,7 @@ impl PreparedObservedSourceExpectation {
             .body()
             .is_some_and(|body| body.requires_query_context())
         {
-            return Err(WorthQuerySourceExpectationDenial::new(
+            return Err(WorthQuerySourceExpectationDenial::from_kind_and_subject(
                 WorthQuerySourceExpectationDenialKind::SourceContractMismatch,
                 "query-context body is not a stable producer cutoff",
             ));
@@ -104,7 +105,7 @@ impl PreparedObservedSourceExpectation {
                         .matches_observation(product.observation())
                 })
         {
-            return Err(WorthQuerySourceExpectationDenial::new(
+            return Err(WorthQuerySourceExpectationDenial::from_kind_and_subject(
                 WorthQuerySourceExpectationDenialKind::ForeignOperation,
                 "prepared source expectation",
             ));
@@ -127,7 +128,7 @@ impl BoundStableObservedSourceFacts {
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> Result<WorthQueryBoundSourceExpectation, WorthQuerySourceExpectationDenial> {
         if !self.matches_operation(admission) {
-            return Err(WorthQuerySourceExpectationDenial::new(
+            return Err(WorthQuerySourceExpectationDenial::from_kind_and_subject(
                 WorthQuerySourceExpectationDenialKind::ForeignOperation,
                 "prepared source expectation",
             ));

@@ -1,5 +1,6 @@
 use worth_foundational::facade::AspectValue;
 use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
 use worth_relational::facade::transactions::RecordRef;
@@ -82,7 +83,7 @@ impl WorthQueryPrimaryGraphProvider {
         expected_commit: &worth_relational::facade::history::RelationalCommitReceipt,
         expected_runtime: u64,
     ) -> Result<WorthQueryCommittedDispatchOutboxOwnerObservation, Denial> {
-        let layout = self.graph.layout.provider_dispatch_outbox().clone();
+        let layout = self.graph.layout_ref().provider_dispatch_outbox().clone();
         let expected_commit = expected_commit.clone();
         let retained_basis = self
             .receipt_basis_retention

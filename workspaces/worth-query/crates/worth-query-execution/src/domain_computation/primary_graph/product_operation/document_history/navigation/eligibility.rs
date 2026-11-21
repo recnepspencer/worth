@@ -13,6 +13,7 @@ use worth_query_declaration::facade::{
     },
     application_query::ApplicationQueryBinding,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -75,7 +76,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         .runtime
         .primary_provider
         .graph
-        .layout
+        .layout_ref()
         .is_live_control_entity_kind(model.kind())
     {
         return Err(correction(Eligibility::LiveControlDomain));
@@ -221,7 +222,12 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         .graph
         .with_runtime(&execution, |native| {
             if definition.model_domain == ApplicationHistoryModelDomain::OwnedModelGraph {
-                let layout = &application.inner.runtime.primary_provider.graph.layout;
+                let layout = &application
+                    .inner
+                    .runtime
+                    .primary_provider
+                    .graph
+                    .layout_ref();
                 let ownership =
                     layout
                         .history_ownership(&definition.identity)
@@ -252,8 +258,8 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                         .runtime
                         .primary_provider
                         .graph
-                        .application_publication
-                        .as_deref(),
+                        .application_publication_ref()
+                        .map(std::sync::Arc::as_ref),
                     transaction,
                     graph,
                 )?;

@@ -11,6 +11,7 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryParameterSet,
 };
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::SourceExpectationDenialInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 type Scope<S, B> = <<B as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;
 type Query<S, B> = <<B as ApplicationMutationBinding<S>>::SourceExpectation as ApplicationMutationSourceExpectation<S>>::Query;
@@ -27,7 +28,8 @@ impl<S: worth_query_installation::facade::ApplicationSchema>
     where
         B: ApplicationMutationBinding<S>,
     {
-        let deny = |kind| WorthQuerySourceExpectationDenial::new(kind, B::IDENTITY);
+        let deny =
+            |kind| WorthQuerySourceExpectationDenial::from_kind_and_subject(kind, B::IDENTITY);
         let query = B::SourceExpectation::QUERY_IDENTIFIER
             .ok_or_else(|| deny(WorthQuerySourceExpectationDenialKind::SourceContractMismatch))?;
         let runtime = self.application();

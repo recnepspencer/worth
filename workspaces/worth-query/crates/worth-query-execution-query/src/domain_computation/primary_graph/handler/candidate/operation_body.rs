@@ -12,13 +12,13 @@ use worth_query_declaration::facade::application_schema::ApplicationFieldBinding
 impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     CandidateWriter<'_, Schema, Binding>
 {
-    pub fn body_external_emission(
+    pub(crate) fn body_external_emission(
         &mut self,
         selection: crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.candidate.body_external_emission(selection)
     }
-    pub fn body_retire_owned_selection(
+    pub(crate) fn body_retire_owned_selection(
         &mut self,
         owner: &super::WorthQueryInvariantMutationTarget<Schema, ()>,
         selected: &super::WorthQueryInvariantMutationTarget<Schema, ()>,
@@ -31,7 +31,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             .unlink_at_target(&unlink, &owner, &selected)?;
         self.candidate.delete_at_target(&delete, &selected)
     }
-    pub fn body_creation_unlink<Entity>(
+    pub(crate) fn body_creation_unlink<Entity>(
         &mut self,
         scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         predecessor: &WorthQueryApplicationEffectEntity<Schema, ()>,
@@ -42,7 +42,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             .expect("installed replacement posture");
         self.candidate.unlink_at_target(&target, scope, predecessor)
     }
-    pub fn body_creation_retire_predecessor(
+    pub(crate) fn body_creation_retire_predecessor(
         &mut self,
         predecessor: &WorthQueryApplicationEffectEntity<Schema, ()>,
         link: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLink,
@@ -54,7 +54,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             predecessor,
         )
     }
-    pub fn body_signing_slot(
+    pub(crate) fn body_signing_slot(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, ()>,
         spec: &worth_query_declaration::facade::application_schema::ApplicationOperationBodySigningSpec,
@@ -62,7 +62,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         self.candidate.reserve_body_signing_slot(target, spec)
     }
 
-    pub fn body_creation_link<Entity>(
+    pub(crate) fn body_creation_link<Entity>(
         &mut self,
         scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         created: &WorthQueryApplicationEffectEntity<Schema, ()>,
@@ -84,14 +84,14 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             ),
         }
     }
-    pub fn body_output<Entity>(
+    pub(crate) fn body_output<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         role: OutputRoleUse,
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.candidate.bind_output(role, target)
     }
-    pub fn body_input_field<Entity>(
+    pub(crate) fn body_input_field<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,
@@ -99,7 +99,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
     ) -> Result<(), WorthQueryApplicationAttemptDenial> {
         self.candidate.write_body_input_field(target, field, value)
     }
-    pub fn body_field<Entity>(
+    pub(crate) fn body_field<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,
@@ -108,7 +108,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         self.candidate.write_body_field(target, field, value)
     }
 
-    pub fn body_create_in_scope<Entity>(
+    pub(crate) fn body_create_in_scope<Entity>(
         &mut self,
         scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         entity: &str,
@@ -119,7 +119,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             .create_body_entity_in_context(scope, entity, key)
     }
 
-    pub fn body_initialize_field<Entity>(
+    pub(crate) fn body_initialize_field<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,
@@ -128,7 +128,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
         self.candidate.initialize_body_field(target, field, value)
     }
 
-    pub fn body_optional_field<Entity>(
+    pub(crate) fn body_optional_field<Entity>(
         &mut self,
         target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
         field: &ApplicationFieldBindingLocus,

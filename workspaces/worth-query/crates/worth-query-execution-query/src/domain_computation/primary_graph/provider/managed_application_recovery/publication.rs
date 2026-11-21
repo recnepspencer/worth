@@ -1,5 +1,6 @@
 use crate::domain_computation::execution_runtime::product_world::ProductPublicationBindingPrimaryExt;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -61,7 +62,7 @@ pub fn publish<Schema: ApplicationSchema>(
             }
             PublicationOutcome::ProductUnpublished(effects) => {
                 PublicationOutcome::ProductUnpublished(
-                    WorthQueryProductUnpublishedApplication::new(
+                    WorthQueryProductUnpublishedApplication::from_effects(
                         effects,
                         world_recovery,
                         disposition,
@@ -107,7 +108,7 @@ pub fn publish<Schema: ApplicationSchema>(
             }
             PublicationOutcome::ProductUnpublished(effects) => {
                 PublicationOutcome::ProductUnpublished(
-                    WorthQueryProductUnpublishedApplication::new_conditional_definition(
+                    WorthQueryProductUnpublishedApplication::from_conditional_definition(
                         effects,
                         world_recovery,
                         disposition,

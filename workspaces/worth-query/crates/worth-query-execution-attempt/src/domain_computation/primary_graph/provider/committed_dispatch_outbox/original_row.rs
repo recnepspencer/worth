@@ -1,5 +1,6 @@
 //! Co-committed outbox data read from the original Native after-image.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 impl WorthQueryPrimaryGraphProvider {
     pub fn original_dispatch_outbox(
@@ -16,7 +17,7 @@ impl WorthQueryPrimaryGraphProvider {
                 ),
             )
         })?;
-        let layout = self.graph.layout.provider_dispatch_outbox();
+        let layout = self.graph.layout_ref().provider_dispatch_outbox();
         let semantic = publication.semantic_result();
         let outcome_field = layout
             .outcome_identity_locator

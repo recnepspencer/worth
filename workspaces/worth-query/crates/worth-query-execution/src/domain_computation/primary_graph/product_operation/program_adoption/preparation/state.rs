@@ -1,6 +1,7 @@
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use std::collections::{BTreeMap, BTreeSet};
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -146,7 +147,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         .published()
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnavailable)?;
     let graph = &application.inner.runtime.primary_provider.graph;
-    let layout = graph.layout.program_activation().clone();
+    let layout = graph.layout_ref().program_activation().clone();
     let basis = selected.product().relational_basis();
 
     // One view of the branch's own root serves both reads.
@@ -155,7 +156,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         let selection = selection::select(
             execution,
             &view,
-            &graph.layout,
+            &graph.layout_ref(),
             &requirements,
             maximum_selection_work,
         )?;
@@ -163,7 +164,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             return Ok((selection, None));
         }
         let workflow_request = WorkflowAdoptionInventoryRequest {
-            layout: graph.layout.workflow(),
+            layout: graph.layout_ref().workflow(),
             branch_occurrence: selected.product().product_branch().occurrence_ordinal(),
             coverage: &application.inner.runtime.workflow_coverage,
             requirements: &requirements,
@@ -178,7 +179,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     let selected_entity_count = selection.entities.len();
     let workflow_intents = match workflow_inventory.as_ref() {
         Some(inventory) => prepare_workflow_dispositions(
-            graph.layout.workflow(), inventory, workflow.as_ref(),
+            graph.layout_ref().workflow(), inventory, workflow.as_ref(),
             selected.product().product_branch(), target,
             &crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admission).ending_actor(),
         ).map_err(|cause| match cause {

@@ -14,7 +14,7 @@ pub struct WorthQueryApplicationInvariantOrbit<Schema, Relation, Entity> {
     identity: WorthQueryAggregateIdentity<Schema, Relation>,
 }
 impl<Schema, Relation, Entity> WorthQueryApplicationInvariantOrbit<Schema, Relation, Entity> {
-    pub fn new(
+    pub(crate) fn new(
         aggregate: AggregateRead,
         walk: WorthQueryApplicationInvariantWalk<Schema, Relation, Entity>,
         binding: ApplicationSchemaBindingIdentity,

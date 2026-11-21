@@ -1,5 +1,6 @@
 //! Consume the actual terminal custody only after owner progression has returned.
 use super::*;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 #[inline(never)]
 pub(super) fn finish(
@@ -58,7 +59,7 @@ pub(super) fn finish(
         reservation.retain_managed(handle, into_managed(retained));
         return Err(Stop::ProductUnpublished(
             worth_query_execution_runtime::facade::ports::OpaqueProductPublicationOutcome::new(
-                crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
+                crate::domain_computation::WorthQueryProductUnpublishedApplication::from_effects(
                     effects,
                     product.recovery(),
                     provider.unpublished_idempotency_disposition(),

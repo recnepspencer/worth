@@ -7,6 +7,7 @@ use super::super::{WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphPublic
 use super::{
     denial, record::BootstrapPublicationRecord, WorthQueryPrimaryGraphInstallationDenial as Denial,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
@@ -103,7 +104,7 @@ pub(in crate::domain_computation::primary_graph) fn publish<Schema: ApplicationS
     let index_ids = bootstrap
         .graph
         .integration_handle()
-        .primary_index_ids
+        .primary_index_ids_ref()
         .to_vec();
     build_identity_indexes(
         &execution,

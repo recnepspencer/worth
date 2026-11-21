@@ -11,6 +11,7 @@
 use crate::domain_computation::primary_graph::OutputDemandSettlementReusedExt;
 use std::sync::Arc;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -140,7 +141,7 @@ where
             .runtime
             .primary_provider
             .graph
-            .source_owner
+            .source_owner_ref()
             .invalidation_owner;
         // The selection and its verification share one meter, no larger than
         // the demand's declared source-currentness work.
@@ -150,7 +151,7 @@ where
             .runtime
             .primary_provider
             .graph
-            .output_lineage
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .outputs_at_observation(

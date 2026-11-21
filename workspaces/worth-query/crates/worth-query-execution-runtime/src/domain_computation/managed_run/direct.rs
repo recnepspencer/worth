@@ -74,7 +74,7 @@ pub struct WorthQueryRunningDirectRun {
 }
 
 impl WorthQueryRunningDirectRun {
-    pub fn managed_home_custody(
+    pub(crate) fn managed_home_custody(
         &self,
     ) -> Option<std::sync::Arc<super::durable_custody::ManagedRunCustody>> {
         self.affinity.custody()
