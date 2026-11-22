@@ -4,6 +4,7 @@ use crate::application_schema::canonical_basis::ApplicationSchemaCanonicalBasis;
 use crate::application_schema::ApplicationSchemaMember;
 
 mod aftermath;
+mod application_naming;
 mod authorization;
 mod capability;
 mod derived_relation;
@@ -128,6 +129,9 @@ pub(super) fn append_member(
         }
         ApplicationSchemaMember::Unit { .. } | ApplicationSchemaMember::Effect { .. } => {
             vocabulary::append_vocabulary_member(basis, &prefix, member)
+        }
+        ApplicationSchemaMember::ApplicationNameScheme { definition } => {
+            application_naming::append(basis, &prefix, definition)
         }
     }
 }

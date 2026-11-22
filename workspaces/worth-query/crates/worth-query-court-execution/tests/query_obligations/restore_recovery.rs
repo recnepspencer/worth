@@ -68,6 +68,7 @@ fn managed_restore_owner_data_keeps_original_failure_and_separate_release_facts(
                 posture: QueryManagedRunPosture::Active,
                 original: None,
                 recovery: None,
+                cold_release: None,
             }),
         );
         let cause = QueryManagedRunRecovery::Readmission(cause);

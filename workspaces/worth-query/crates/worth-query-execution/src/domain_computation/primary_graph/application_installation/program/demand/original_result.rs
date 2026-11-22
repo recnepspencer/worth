@@ -1,6 +1,7 @@
 //! Immutable original root delivery is separate from final Ready authority.
 use super::*;
 use std::sync::Arc;
+use worth_query_execution_query::facade::ports::AdmittedOutputDemandInternalPort as _;
 
 pub(super) enum OriginalProgramResult<Q> {
     Disabled,
@@ -24,7 +25,7 @@ impl<
         if matches!(self.original_result, OriginalProgramResult::Awaiting)
             && let Some(original) = self
                 .admitted
-                .observe_own_completed_publication(execution, runtime)?
+                .observe_own_completed_publication(execution, runtime.inner())?
         {
             self.original_result = OriginalProgramResult::Retained {
                 result: original,

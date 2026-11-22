@@ -203,6 +203,33 @@ fixed owner order before the Home serves anything.
   `RecoveredCommitted` and the same receipt.
 - **A kill after a Signal effect whose open World recorded:** the effect is
   readmitted on reopen.
+- **A kill inside a commit that carries a conditional definition** (a Native
+  write and a Signal definition in one original): World durably records the
+  planned Signal leg before Native's effect. If Native's effect is durable and
+  Signal's is not, reopen keeps the original with Native as its only acting
+  owner; continuing performs the recorded Signal leg exactly once, at the
+  original's Signal basis, then publishes. Release stays available until that
+  leg begins. If the reopened program no longer prepares the recorded leg,
+  continuation refuses with `SignalLeg(..)` before any Signal effect; a leg whose
+  Signal fate is unknown is never begun twice and waits for the next reopen.
+  A kill after the open, before any owner effect, releases the original as
+  proven no effect. A Signal leg supplied as a closure cannot be recorded, so a
+  Directory Home refuses such a commit with `UnrecordableSignalLeg` before any
+  owner effect.
+- **A kill during a conditional or temporal operation:** its retained decision
+  keeps its original key and intent. A decision whose commit answer was lost
+  (`Indeterminate`) is classified before service by World's state for that
+  key: published, it finishes and a retry returns the original occurrence; no
+  committed open, it is released as no-effect and the key executes fresh once;
+  a recovered unpublished original joins it, and the retry continues that
+  original without running the operation again. A temporal operation killed
+  between its commit and its response re-executes to its original occurrence,
+  once.
+- **A kill during a workflow** (between steps, or mid-step while a step's
+  managed computation runs): the instance, its approvals and its original keys
+  are graph records and survive; the running computation is cold-released
+  (`Abandoned`) before service and the instance is not cancelled. Continue the
+  workflow under its original keys; each step's effect happens exactly once.
 - **An unfinished branch creation:** opening the Home decides it before
   service, under its original identity. With no owner fork it is released;
   once any fork is durable it continues. A kill between Native's fork and
@@ -214,23 +241,70 @@ fixed owner order before the Home serves anything.
   opening refuses in phase `host::WorthQueryHomeProgramTransitionOpenPhase::Transition`
   with `TransitionPlanDrift` and extends nothing; a different successor refuses
   with `TransitionPending`.
+- **An interrupted branch adoption, stopped branch-set adoption, or support
+  retirement:** a kill after support custody is retained and before any Native
+  effect discharges the empty adoption on reopen; a kill after Native's effect
+  leaves the original in World's recovery catalogue so `readmit_branch_adoption`
+  and `recover` finish it once without re-preparing; a kill after World
+  publication discharges the adoption custody on reopen. A killed stopped
+  branch-set adoption retains its ordered prefix and remainder for
+  `readmit_stopped_branch_set_adoptions` and `programs().resume(..)`, refusing
+  widened coverage so the completed prefix is never re-prepared. A completed
+  `retire_program_support` survives a process kill and keeps refusing
+  interpretation and commits under the retired revision.
+- **An interrupted external dispatch (attempt durable, observation not yet recorded):**
+  opening the Home admits every unobserved attempt from the ended incarnation
+  (including concurrent ones with later frames after them) and durably records
+  each one's observation as `Unresolved(UnknownProviderOutcome)` before service,
+  never re-contacting the external rail during readmission. The recovered custody
+  then enters the ordinary recovery handles (`reconcile_recovery_handle`,
+  `safe_retry_recovery_handle`, `compensate_recovery_handle`,
+  `resolve_recovery_handle`, or authentic inbound completion callback).
+  `reconcile_recovery_handle` consumes the recovery claim and returns a
+  `WorthQueryRecoveryReconcileAdmission` carrying the durable outbox binding;
+  the owner's read-only reconciliation inquiry uses that binding to read the
+  rail's own fate (`Completed`, `AcknowledgedPending`, or `UnresolvedNoRecord`)
+  without redispatching a completed effect. If the external rail itself restarts
+  with lost state, the Home never claims completion: the effect remains
+  unresolved and the owner's reconciliation inquiry reports the restarted rail's
+  contract (`NoRecord`).
+- **A correction killed between authored completion and required derived settlement,
+  a divergent-branch correction killed without close, or a live original owner
+  held across a kill:** reopen preserves the exact split (authored correction
+  complete, required derived settlement pending); replaying the correction key
+  returns `RecoveredCommitted` and `recover_required_outputs` settles the
+  derived output once matching the uninterrupted reference. A correction on a
+  divergent branch keeps its branch-local lineage and refuses cross-branch
+  alternatives (`ForeignAlternative`). A live original owner held across a kill
+  without `handoff_for_reopen` or close readmits under fresh authenticated
+  authority (`WorthQueryOriginalOperation::readmit_native`), survives a
+  dependency edit, and advances/closes with continuous aggregate identities,
+  while stale handles refuse `StaleIncarnation` and discharged originals refuse
+  `OwnershipMaterialUnavailable`.
 - **A kill while graceful close was publishing its checkpoint:** reopen recovers
   the state committed before that close.
-- **Still refused (D18):** an external dispatch attempt with no recorded
-  observation (owner `Dispatch`), a Signal effect with no recorded open, and a
-  Native branch fork with no creation intent. The last two arise only from
-  damaged files, not from a kill. Opening refuses before service with a typed
+- **Still refused (D18):** a Signal effect with no recorded open, and a Native
+  branch fork with no creation intent. Both arise only from damaged files, not
+  from a kill. Opening refuses before service with a typed
   `UncleanRecoveryUnsupported { owner, effect }` (the `DurableOwnerFamily` and
   the effect digest); `refused.unclean_recovery_unsupported()` returns it in
-  every case. Close the refusal as above; a development Home can be discarded.
+  both cases. Close the refusal as above; a development Home can be discarded.
 - **Contended or discard-pending location:** `refused.physical_refusal()` returns
   `Some(&host::ApplicationHomePhysicalRefusal)`; its `kind()` is
   `host::ApplicationHomePhysicalRefusalKind::MutationOwnerContended` (another
   owner holds the Home) or `DiscardPending` (finish it with `discard_home`).
-- **Known hold:** if the process died while an operation held a managed run,
-  the reopened Home's graceful close refuses with
-  `ManagedCleanup(ManagedRunPending { .. })` until the cold release contract lands
-  (Milestone 3 cleanup C3).
+- **Process-local custody of the ended process:** a managed run, a managed
+  cleanup obligation or an application-resource request still outstanding when
+  the process died (or the Home was dropped without close) is cold-released
+  before service. The row keeps its original, recovery cause and recorded
+  posture; `cold_release` on `managed_run_obligations()`,
+  `managed_cleanup_obligations()` and `retained_state(..)` reports the terminal
+  (`Abandoned` for running work or a request without a result, otherwise
+  `ReleaseOutstanding`; never a completion). The released rows no longer refuse
+  graceful close; discharge them through `discharge_managed_run`,
+  `discharge_managed_cleanup` or `discharge_retained` as usual. No fresh
+  provider is contacted, and World still decides each business original.
+  Owner-held custody (a mandatory owned-async request) is never cold-released.
 
 Certification of crash recovery comes later in Milestone 3's cleanup track
 (C4–C5; see [Milestone 3 status](../plans/database-foundation/milestone-3.md#cleanup-track-status)).
@@ -260,6 +334,11 @@ checkpoint.
 reports what is due, and `home.recover_checkpoint(&request)` finishes an accepted
 attempt. On MemoryOnly they return
 `WorthQueryApplicationHomeCheckpointDenial::MemoryLifecycleRequired`.
+`home.discard_derived_for_test(&request)` is a sealed D14 certification door
+(recorded in `tools/boundary-check/config/control-callers.txt`) that discards
+the Home's durable derived checkpoint (`home.checkpoint` and its anchored
+members) so reopen reconstructs strictly from authoritative journals and
+recomputes derived state only on demand.
 
 `host::application_installation::WorthQueryInterimCheckpointRestore` is an
 internal certification door scheduled for deletion. Applications reopen their

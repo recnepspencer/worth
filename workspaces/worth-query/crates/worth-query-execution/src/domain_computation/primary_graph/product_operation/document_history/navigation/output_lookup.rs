@@ -7,6 +7,8 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_history::{
     ApplicationHistoryBinding, ApplicationHistoryModel, ApplicationHistoryNavigationBinding,
 };
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
 
 pub(in crate::domain_computation::primary_graph) enum HistoryOutputLookupPhase {

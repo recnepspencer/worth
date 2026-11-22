@@ -1,0 +1,25 @@
+//! The caller has no reinspection transition after a refused publication.
+use super::super::performed::ReinspectionCredit;
+use super::*;
+pub struct QueuedMember<'frontier, Ready> {
+    member: &'frontier mut RequiredMember<Ready>,
+}
+impl<Ready> RequiredFrontier<Ready> {
+    pub fn queued_member(&mut self, index: usize) -> Option<QueuedMember<'_, Ready>> {
+        let member = &mut self.members[index];
+        (!member.caller).then_some(QueuedMember { member })
+    }
+}
+impl<Ready> QueuedMember<'_, Ready> {
+    pub fn refused(self, credit: Option<ReinspectionCredit>) -> bool {
+        let Some(_credit) = credit else {
+            self.member.state = MemberState::Pending;
+            return false;
+        };
+        self.member.ready.clear_claim_binding();
+        self.member.state = MemberState::Inspect;
+        true
+    }
+}
+
+mod court_doors_for_test;

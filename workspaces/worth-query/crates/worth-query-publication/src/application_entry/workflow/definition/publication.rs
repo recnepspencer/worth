@@ -13,6 +13,7 @@ use worth_query_execution::publication_boundary::workflow_definition_publication
     WorkflowDefinitionPreparationDenial, WorkflowDefinitionPublicationOutcome,
     WorthQueryWorkflowDefinitionPublicationAdapter,
 };
+use worth_query_execution::publication_boundary::WorthQueryAdvancementDenialCommitExt as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledWorkflowDefinitionContract,
 };

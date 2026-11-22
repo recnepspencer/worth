@@ -2,6 +2,8 @@
 mod fork;
 pub(crate) use fork::PreparedWorldSignalFork;
 pub use fork::WorldSignalForkPreparationDenial;
+mod signal_leg;
+pub use signal_leg::WorldSignalLegDenial;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 use worth_foundational::facade::{DurableSignalOwnerIdentity, HomeIncarnation};

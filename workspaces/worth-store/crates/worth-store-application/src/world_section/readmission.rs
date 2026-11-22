@@ -301,6 +301,20 @@ where
         self.checkpoint_operation(Default::default())?
             .recover_checkpoint(request)
     }
+    /// D14 sealed certification door: discards every durable `RetentionClass::Derived`
+    /// artifact held by this Home (`home.checkpoint` and its anchored members) so
+    /// subsequent reopen reconstructs from authoritative journals only.
+    #[doc(hidden)]
+    pub fn discard_derived_for_test(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<u64, crate::ApplicationHomeCheckpointDenial> {
+        crate::checkpoint::discard_for_test::discard(
+            &self.home.context.serving,
+            &self.home.context.checkpoint,
+            request,
+        )
+    }
 }
 
 #[cfg(test)]

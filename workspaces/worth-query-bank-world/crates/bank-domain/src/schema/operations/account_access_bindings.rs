@@ -7,16 +7,15 @@ use worth_query_decl::facade::{
     worth_query_mutation_binding, worth_query_structured_value_binding,
 };
 
-use crate::model::{AccountAuthorizationId, AccountId, BankPrincipalId};
-use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial};
+use crate::model::{AccountAuthorizationId, AccountId};
+use crate::proposals::{BankInvariantApprovedProposal, BankProposalDenial};
 
 use super::{
     GrantAccountAuthorization, GrantAccountAuthorizationInputBinding, RevokeAccountAuthorization,
     RevokeAccountAuthorizationInputBinding,
 };
 use crate::schema::{
-    AccountAuthorization, AccountIdentity, BankPrincipalBinding, BankPrincipalIdBinding,
-    BankSchema, ExternalPrincipalMapping, GrantAccountAuthorizationOperation, Principal,
+    AccountAuthorization, AccountIdentity, BankSchema, GrantAccountAuthorizationOperation,
     RevokeAccountAuthorizationOperation,
 };
 
@@ -85,46 +84,32 @@ fn revoke_scope(input: &RevokeAccountAuthorization) -> AccountId {
 }
 
 worth_query_mutation_binding!(
-    pub GrantAccountAccessMutationBinding for GrantAccountAuthorization, schema BankSchema,
+    pub GrantAccountAccessMutationBinding for GrantAccountAuthorization, schema BankSchema, context crate::schema::BankBindingContext,
     identity "bank.operation.grant-account-authorization.mutation-binding.v1",
     input GrantAccountAuthorizationInputBinding,
     operation GrantAccountAuthorizationOperation,
     result AccountAccessResultBinding,
-    idempotency BankIdempotencyKey,
-        identity "bank.application-mutation-client-key.v1",
     decision BankInvariantApprovedProposal,
     denial AccountAccessDenialBinding,
     handler identity "bank.operation.grant-account-authorization.handler.v1",
     program required,
     outputs GrantAccountAccessOutputs,
-    principal BankPrincipalBinding,
-        mapping ExternalPrincipalMapping,
-        principal_entity Principal,
-        principal_identity BankPrincipalId,
-        identity_binding BankPrincipalIdBinding,
     scope AccountIdentity,
     field AccountIdentity::at("AccountIdentity"),
     value grant_scope,
 );
 
 worth_query_mutation_binding!(
-    pub RevokeAccountAccessMutationBinding for RevokeAccountAuthorization, schema BankSchema,
+    pub RevokeAccountAccessMutationBinding for RevokeAccountAuthorization, schema BankSchema, context crate::schema::BankBindingContext,
     identity "bank.operation.revoke-account-authorization.mutation-binding.v1",
     input RevokeAccountAuthorizationInputBinding,
     operation RevokeAccountAuthorizationOperation,
     result AccountAccessResultBinding,
-    idempotency BankIdempotencyKey,
-        identity "bank.application-mutation-client-key.v1",
     decision BankInvariantApprovedProposal,
     denial AccountAccessDenialBinding,
     handler identity "bank.operation.revoke-account-authorization.handler.v1",
     program required,
     outputs RevokeAccountAccessOutputs,
-    principal BankPrincipalBinding,
-        mapping ExternalPrincipalMapping,
-        principal_entity Principal,
-        principal_identity BankPrincipalId,
-        identity_binding BankPrincipalIdBinding,
     scope AccountIdentity,
     field AccountIdentity::at("AccountIdentity"),
     value revoke_scope,

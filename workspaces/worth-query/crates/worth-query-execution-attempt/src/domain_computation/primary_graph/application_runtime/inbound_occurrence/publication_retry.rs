@@ -1,0 +1,43 @@
+//! A publication refusal retains accepted custody for retry.
+use super::super::inbound_publication::outcome::WorthQueryInboundPublicationDenial as Denial;
+use super::WorthQueryInboundAdmissionDenial as Retry;
+use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
+
+impl Denial {
+    pub fn retry_denial(self) -> Retry {
+        match self {
+            Denial::ExecutionDenied(cause) => Retry::ExecutionDenied(cause),
+            Denial::CompletionPreparation(preparation) => match preparation {
+                Preparation::ExecutionDenied { stage, kind } => {
+                    Retry::PublicationExecutionDenied { stage, kind }
+                }
+                Preparation::ExecutionControlStopped { stage, kind } => {
+                    Retry::PublicationExecutionControlStopped { stage, kind }
+                }
+                Preparation::AllocationDenied { stage, kind, requested_payload_bytes } => Retry::PublicationAllocationDenied { stage, kind, requested_payload_bytes },
+                Preparation::StagingAllocationDenied { kind, requested_payload_bytes } => Retry::PublicationAllocationDenied {
+                    stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::EffectLowering,
+                    kind, requested_payload_bytes,
+                },
+                Preparation::StagingCardinalityOverflow => Retry::PublicationStagingCardinalityOverflow,
+                Preparation::StagingInputDirectoryAllocationDenied { requested_batches } => Retry::PublicationInputDirectoryAllocationDenied { requested_batches },
+                Preparation::OriginalOutboxNotAnEntity
+                | Preparation::ForeignOrStaleBasis
+                | Preparation::StagingUnavailable
+                | Preparation::ValidationUnavailable
+                | Preparation::PreparationUnavailable
+                | Preparation::SnapshotUnavailable
+                | Preparation::InstalledBindingMismatch
+                | Preparation::DispatchOwnerMismatch => Retry::PublicationRetryRequired,
+            },
+            Denial::CorrelationAlreadyOwned => Retry::CorrelationAlreadyOwned,
+            Denial::ForeignRelationalRuntime
+            | Denial::ForeignProductWorld
+            | Denial::OriginalPublicationCommitMismatch
+            | Denial::ProductAdmission
+            | Denial::TerminalIndexUnavailable => Retry::PublicationRetryRequired,
+        }
+    }
+}
+
+mod court_doors_for_test;

@@ -5,7 +5,12 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
+use crate::domain_computation::execution_runtime::product_world::ProductPublicationBindingPrimaryExt;
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     pub(in crate::domain_computation::primary_graph::product_operation::program_adoption) fn recover_branch_adoption_in_advancement<
         Operation,
@@ -181,8 +186,8 @@ Err(PublicationDenial::Stopped(stop)) => Err(failure(
                     effects,
                     binding.recovery(),
                     self.application()
-                        .runtime
-                        .primary_provider
+                        .inner.runtime
+                        .primary_provider_ref()
                         .unpublished_idempotency_disposition(),
                     support_custody,
                 );

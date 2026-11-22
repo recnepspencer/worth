@@ -1,0 +1,140 @@
+//! Execution-only native body write into the existing candidate owner.
+use worth_query_execution_attempt::facade::ports::EffectProgramBuilderAuthoringInternalPort as _;
+mod reference_input;
+use super::OutputRoleUse;
+use super::{
+    ApplicationMutationBinding, ApplicationSchema, CandidateWriter,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationEffectEntity,
+};
+use worth_foundational::facade::AspectValue;
+use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
+
+impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
+    CandidateWriter<'_, Schema, Binding>
+{
+    pub(crate) fn body_external_emission(
+        &mut self,
+        selection: crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.body_external_emission(selection)
+    }
+    pub(crate) fn body_retire_owned_selection(
+        &mut self,
+        owner: &super::WorthQueryInvariantMutationTarget<Schema, ()>,
+        selected: &super::WorthQueryInvariantMutationTarget<Schema, ()>,
+        rule:&worth_query_declaration::facade::application_schema::ApplicationOperationBodyOwnedSelectionRetirement,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let owner = self.projected_entity(owner)?;
+        let selected = self.projected_entity(selected)?;
+        let [unlink, delete] = rule.program_targets();
+        self.candidate
+            .unlink_at_target(&unlink, &owner, &selected)?;
+        self.candidate.delete_at_target(&delete, &selected)
+    }
+    pub(crate) fn body_creation_unlink<Entity>(
+        &mut self,
+        scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        predecessor: &WorthQueryApplicationEffectEntity<Schema, ()>,
+        link: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLink,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        let target = link
+            .replacement_target()
+            .expect("installed replacement posture");
+        self.candidate.unlink_at_target(&target, scope, predecessor)
+    }
+    pub(crate) fn body_creation_retire_predecessor(
+        &mut self,
+        predecessor: &WorthQueryApplicationEffectEntity<Schema, ()>,
+        link: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLink,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.delete_at_target(
+            &link
+                .retirement_target()
+                .expect("installed retiring replacement"),
+            predecessor,
+        )
+    }
+    pub(crate) fn body_signing_slot(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, ()>,
+        spec: &worth_query_declaration::facade::application_schema::ApplicationOperationBodySigningSpec,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.reserve_body_signing_slot(target, spec)
+    }
+
+    pub(crate) fn body_creation_link<Entity>(
+        &mut self,
+        scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        created: &WorthQueryApplicationEffectEntity<Schema, ()>,
+        link: &worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLink,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        use worth_query_declaration::facade::application_schema::ApplicationOperationBodyCreationLinkDirection as Direction;
+        match link.direction {
+            Direction::FromScope => self.candidate.link_at_target(
+                &link.program_target(),
+                link.key.as_str(),
+                scope,
+                created,
+            ),
+            Direction::ToScope => self.candidate.link_at_target(
+                &link.program_target(),
+                link.key.as_str(),
+                created,
+                scope,
+            ),
+        }
+    }
+    pub(crate) fn body_output<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        role: OutputRoleUse,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.bind_output(role, target)
+    }
+    pub(crate) fn body_input_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &ApplicationFieldBindingLocus,
+        value: AspectValue,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.write_body_input_field(target, field, value)
+    }
+    pub(crate) fn body_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &ApplicationFieldBindingLocus,
+        value: &AspectValue,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.write_body_field(target, field, value)
+    }
+
+    pub(crate) fn body_create_in_scope<Entity>(
+        &mut self,
+        scope: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        entity: &str,
+        key: &str,
+    ) -> Result<WorthQueryApplicationEffectEntity<Schema, ()>, WorthQueryApplicationAttemptDenial>
+    {
+        self.candidate
+            .create_body_entity_in_context(scope, entity, key)
+    }
+
+    pub(crate) fn body_initialize_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &ApplicationFieldBindingLocus,
+        value: std::borrow::Cow<'_, AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate.initialize_body_field(target, field, value)
+    }
+
+    pub(crate) fn body_optional_field<Entity>(
+        &mut self,
+        target: &WorthQueryApplicationEffectEntity<Schema, Entity>,
+        field: &ApplicationFieldBindingLocus,
+        value: Option<AspectValue>,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial> {
+        self.candidate
+            .write_body_optional_field(target, field, value)
+    }
+}

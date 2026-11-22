@@ -113,7 +113,7 @@ fn revoked_starter_cannot_advance_but_second_actor_commits_attributed_payment() 
         &actor_authority,
     );
     require_completed(
-        support::block_on(actor_workflow.approve(
+        authentication::complete_approval(actor_workflow.approve(
             instance.clone(),
             &approval,
             &proposal,

@@ -166,8 +166,23 @@ surface.
 | C1.5 Home open refusals and interrupted discard | Done. Contended and discard-pending opens are matched through `physical_refusal()`. Open notes: after a refused discard the live Home is shown to close, not to keep serving; `ConflictingOpenAttempt` has no test, because no public owner produces a second open for one attempt without rewriting the journal |
 | C1 close-checkpoint crash recovery | Done. A kill inside graceful-close checkpoint publication used to leave an unpublished candidate root that reopen refused as damage. Reopen now discards it and recovers to the pre-close committed state. Court: `interrupted_close::killed_checkpoint` |
 
+**C3 (owner crash cases for Phases 5–9)** is in progress on branch
+`m3/cleanup-c3`, built on C1. Its slices and acceptance tables are in
+[C3 implementation and acceptance slices](#c3-implementation-and-acceptance-slices).
+
+| C3 slice | State on the branch |
+|---|---|
+| C3.1 Mixed publication killed between owner effects; Signal refusals at Home open | Done (reviewed). A mixed original's planned Signal leg is recorded before Native's effect. A kill with only Native durable continues to exactly one Signal effect and one occurrence. A retry of the original key answers the original in both cuts, and a fresh key is refused before any effect. At Home open, damaged, foreign, unknown-version and unrecorded-definition Signal inputs refuse before service |
+| C3.2 Cold release of process-local managed custody | Done (reviewed). Before service, the reopened Home's `query.obligations` cold fold mints the ended-incarnation witness and cold-releases every pending managed run, managed cleanup and application-resource row the dead process held (original, recovery cause and posture kept, terminal never `Completed`), so graceful close succeeds and the ordinary doors discharge them; a live row, another fold's release and a mandatory owned-async request refuse the cold route. Hold: no Home publisher of mandatory owned-async requests exists yet, so that real-kill row is covered at the owner court only |
+| C3.3 Mid-step workflow kills, R9 `Indeterminate` and temporal retry | Done (reviewed). `query.obligations` conditional-decision family adds durable `Indeterminate` posture with World original association (`Unclassified` / `Recovered`), classified before service by World's state (published/released: finish; absent: release as proven no-effect; recovered unpublished: join and continue through World's recovery port without re-invocation). Workflow kills after approval between steps and mid-step resume under original keys to the reference terminal; temporal commits killed before product movement or after publication yield one occurrence; workflow-bearing transitions killed in every durable state resume and apply dispositions once |
+| C3.4 Adoption killed at each stage; retirement across a kill | Done (reviewed). Real process kills at every exact durable single-branch adoption record boundary (pre-open support custody retained, empty World open released, adoption recovery recorded with Native effect, World publication durable, and completed) plus the World-Released/Query-ReleaseBranch reopen cut, at each branch of a two-branch set's stopped prefix (with direct preparation-entry observation and branch-local durable activation parity), and after completed support retirement all recover cleanly on reopen (`no_pending_owners::adoption_seams`: 8 substantive parent courts + 1 no-environment child entry = 9/9 PASS; Query adoption courts: 9/9 PASS) |
+| C3.5 Crashes after dispatch, R14 and disappearance mid-dispatch | Done (reviewed). Cold `query.dispatch` readmission admits every unobserved attempt (including concurrent ones with later frames after them) and durably records `Unresolved(UnknownProviderOutcome)` before service; D18's `Dispatch` branch and `UnobservedAttempt` readmission refusal are deleted. Covered by runnable Query `dispatch_custody` courts (including real Directory Home kill with concurrent unobserved attempts + later frames, monotone repeated fold, safe-retry fresh attempt allocation, and frame codec truncation/corruption refusals; unit tests in `dispatch_journal/tests.rs` also updated for concurrent unobserved fold and second-observation/foreign-home/broken-prefix refusals, though `worth-query-execution --lib` has pre-existing master compile debt in `aggregate_identity_layout_tests`) and Bank external-rail real-kill courts (all six dispatch fault cases, kill between dispatch and response recording resolved via Query's `reconcile_recovery_handle` admission + Bank's read-only `reconcile_admitted_effect` rail inquiry without redispatch, inbound duplicate dedupe & callback completion across kill, and R14 pre-reset rail completion proven before restart followed by `UnresolvedNoRecord` reconciliation disposition and retained `Unresolved(UnknownProviderOutcome)` custody across reopen) |
+| C3.6 Correction split completion and original-owner advancement under a true kill | Done (reviewed). Cold `query.corrections` readmission tolerates in-flight `Open` World originals before `admit_original_custody`, filters original-binding entity scans by `ORIGINAL_CLIENT_KEY_PREFIX` so coupled output entities do not collide with idempotency bindings, and re-observes World activation history before Pass 2 `abandon_released`, which emits explicit `MaterialRecord::AbandonPublicationPin` for World-proven `Released`, never-captured publication pins (keeping successful-publication `Release` validation strict and selected source material intact), followed by `release_resolved_original_interpretations` so newly released zero-effect opens immediately drop their `query.obligations` interpretation count; `correction_history::with_correction_snapshot` admits carried known-empty field indexes via `ensure_field_index_for_basis` while still refusing discarded populations as `IndexUnavailable`; `WorthQuerySourceOnlyOperation::original_identity` exposes the recorded durable obligation identity without handoff. Fixed two `worth-relational` coupled-execution replay-parity defects surfaced by the split-completion kill court: `apply_extra_update_using` now coalesces repeated same-version live metadata updates (eliminating zero-width `[V, V)` history entries), and `changed_authoritative_patch` / `semantic_change_projection` filter `FieldLevelPatch` sets/clears by `binding.field_revision_changes` so semantic no-op participant writes match between live coupled execution and composed single-intent replay. Covered by 26/26 focused `worth-relational` tests and 11/11 `correction_material` courts including four real-process-kill Directory Home courts (split completion with uninterrupted positive control and second reopen, live original-owner advancement across OS kill with `StaleIncarnation` and `OwnershipMaterialUnavailable` guards, divergent-branch correction lineage across OS kill with cross-branch `ForeignAlternative` / `TargetIncarnationChanged` refusal and branch-local reapply, and kill after prepared-correction pin transfer before capture proving durable orphan-pin abandonment over two reopens with usable source and clean expiry) |
+| C3.7 Discarding derived caches (D14) | Done (reviewed). Added sealed D14 certification door `discard_derived_for_test` on `WorldReadmittedApplicationHome` and `WorthQueryApplicationHome` (callers recorded in `tools/boundary-check/config/control-callers.txt`), backed by `worth-store-application::checkpoint::discard_for_test`. Inventory verified across every `DurableArtifactRetention` implementation and `registry.rs`: `home.checkpoint` (`SelectedHomeManifest` + anchored members) is the sole durable `RetentionClass::Derived` artifact in a Home. `discard_derived_for_test` serializes on `HomeCheckpointOwner`'s single checkpoint slot (refusing `RecoveryRequired` / `DiscardInProgress` / `DiscardUnresolved`), publishes a versioned zero-member discard marker with a monotonic attempt nonce on `home.checkpoint` (logically unreaching prior member records until Milestone 4 physical reclamation), reconciles both `StoppedPoll::Failed` and `PublicationStep::Failed` against the physical terminal receipt (marking `derived_discarded` if already selected, releasing cleanly only on proven no-effect, or retaining physical failure custody in `CheckpointSlot::DiscardUnresolved` if unknown), clears `acknowledged_native`, and marks the live owner so subsequent same-open `checkpoint()`, `after_advancement()`, and graceful `close()` return `ApplicationHomeCheckpointDenial::DerivedStateDiscarded`; `selected_source/read.rs` treats the zero-member discard marker as no selected checkpoint (`Ok(None)`, refusing non-empty members as `Malformed`) while preserving raw anchor generation so reopened Homes resume normal checkpointing at `discard_generation + 1`. Covered by 41/41 `worth-store-application` unit tests (serialization, pending-attempt refusal, deterministic accepted pre-cutover `BeforeEffectCutover` cancellation + owner stopped-settlement handshake + same-generation retry, deterministic `BeforeTerminalFinalization` post-selection cancellation + owner stopped-settlement handshake, deterministic selected-with-settlement-failure on both ordinary-step and handshake-synchronized stopped-settle paths, same-open `DerivedStateDiscarded` refusal, and reopened fresh checkpointing) and Store/Host fresh-process courts (`host_oracle::graceful::discard_derived` + `host_oracle::graceful::signal::derived_discard`) across graceful close and OS kill under same and changed builds, proving zero Relational checkpoint-member reads (`cold_storage_reads().member_reads == 0`, `commit_reads > 0`), exact 5-lane Store cadence coverage `0`, exact full `DerivedIndexEntries` parity (Relational commit replay rebuilds branch readmission index selections strictly from authored commit journals), cold Signal derived values (`calls == 0` -> `3` -> `3`), Host oracle parity vs `MemoryOnly` under a single run-wide `DurableIdentityCorrespondence` (including immediate kill-reopen truth/history/occurrence/idempotency + custody posture/actions before continuation, direct continuation-to-original attempt/Native-receipt/head/occurrence verification plus once-only continuation retry, post-reopen `IntentDrift` on both interruption paths, and exact original vs `RecoveredCommitted` publication coordinates, journal positions, and 32-byte Native/World artifact digests with zero handler contacts), and resumed fresh checkpointing on subsequent close/reopen |
+
 The Host accessor `unclean_recovery_unsupported()` now reads World's D18
-refusal. After C1, it reports two kinds of cause.
+refusal. After C3.5 deleted the `Dispatch` branch, it reports only the two
+World-wrapped damage causes:
 
 - **World-wrapped causes:** a Signal effect without its recorded open, and a
   Native fork without a creation intent. Neither can come from a kill, because
@@ -175,9 +190,6 @@ refusal. After C1, it reports two kinds of cause.
   is refused earlier by physical recovery. A Host open therefore cannot
   produce them without forged bytes. The World owner court
   `owner_evidence::recovered_owners` covers the refusal.
-- **Dispatch cause:** an external dispatch attempt with no recorded
-  observation. A kill during external contact can produce it. Its recovery is
-  C3 scope (crashes after dispatch).
 
 C5 deletes the accessor along with D18.
 
@@ -533,17 +545,255 @@ C2 slice checks run the focused owner tests and the named courts; T2
 (diff-reachable lanes) runs before landing. Update `docs/application-home.md`
 and the related guides when each behavior lands.
 
+### C3 implementation and acceptance slices
+
+C3 extends C1's owners and mechanisms to Phases 5–9. It adds no second
+recovery authority. Store admits the Home, Native and Relational prove what
+they recovered, World classifies each original, and Query readmits keys,
+obligations and outcomes. The Phase 5–9 owners prove their own recovered
+state: Signal and Bridge for authored definitions, Query's adoption owner,
+the `query.obligations` history, the workflow owner, the `query.dispatch`
+journal and the retained-correction owner. Only the complete D8 progression
+grants service.
+
+Every kill case uses real owner issuance, durable state and a real process
+kill. Observations come through public reads, receipts and effect counts. A
+green model or a graceful reopen never qualifies a kill case. Kills reuse
+C1's existing children: Store `support::killed_child`, the `host_oracle`
+session, `world_durable_release` and the Store opening and physical controls;
+Query `process::host::durable_retry::child_reexecution`; and the Bank
+`h10_graceful_bank_home` stage executable. A slice adds a seam only where
+none of these reaches the durable state it must distinguish. The C4 sweep
+(a kill at every durable I/O boundary, recovery interruption, media damage
+and injected faults) stays C4. C2's durable World history, branch retirement,
+budgets and checkpoint triggers stay C2. A C3 case that needs one of them is
+recorded as a hold with evidence; nothing is built around it.
+
+The World change comes first (C3.1) and is additive: it adds one new
+`world.custody` record kind (the planned Signal leg) with its fold arm, and one
+recovered continuation route. It changes no existing World record format or
+history fold, which C2 changes later. Each slice
+updates the guide its behavior changes: `docs/application-home.md`, the
+Host recovery guides, the external-work, workflow, adoption and correction
+guides, and the capability index.
+
+#### C3.1 — Mixed publication killed between owner effects; Signal refusals at Home open
+
+Today a Home-backed mixed operation (a Query commit that carries a Bridge
+conditional definition) publishes Native first, then Signal. Signal's leg is
+built from process-local handler output. A kill after Native's effect is
+durable leaves a recovered original whose open intent is
+`RelationalAndSignal` and whose only effect is Native's. Its continuation
+refuses `OwnerEffectsMismatch`, so release is the only action. Phase 5
+requires the continuation to complete it without re-executing either effect.
+
+The owners:
+- **Signal and Bridge** define a versioned planned-leg section. It holds
+  Bridge's prepared conditional definition through Signal's existing
+  definition-transition section codec.
+- **Query** prepares the Bridge successor after the open commits, as it does
+  today. **World** then publishes the section as its own `world.custody`
+  record for that open, a planned Signal leg, before Native's effect. It is
+  DATA, not an effect, and grants nothing; Native's effect is not permitted
+  until it is durable. A mixed attempt whose Signal leg is an unrecordable
+  closure (World's `execute_durable_with_signal` port) refuses typed at that
+  port's entry on a durable medium, before any owner effect, because its
+  Native-only state could never continue. Its committed open is kept and
+  released as proven no-effect. The World courts that drive mixed cases
+  through that port (`owner_evidence::recovered_owners` and tag 3 of the
+  retention `journey`) move to the definition path.
+- On reopen, **World's readmission** classifies the recovered mixed original
+  by the records and effects that are actually durable: open only, open and
+  planned leg, Native only, or both.
+  It names exactly the acting owners and leaves the product unmoved.
+- **Continuation** from Native-only executes Signal's leg exactly once from
+  the recorded section, under World's recovered grant at the recorded basis,
+  the way C1's `CompleteSignalFork` does. It then publishes the occurrence. A
+  Signal leg whose recorded section the current program cannot admit refuses
+  typed before any Signal effect. Release stays available until the Signal
+  leg is durable.
+- **Signal's own readmission** refuses at Home open before service: a damaged
+  frame, a foreign owner, an unknown version and a definition-basis mismatch.
+
+| Evidence | Acceptance |
+|---|---|
+| Bounded property in the existing World court (`owner_evidence::unclean_native`, extended with a mixed intent) | Generate short sequences: a mixed open, planned Signal leg, Native effect, Signal effect, occurrence, kill (`Recorder::crash_after`), reopen and duplicate retry. The open-and-planned-leg state releases as no-effect. Compare the recovered owners, the next actions, the selected head and the Signal and Native effect counts with a model built from the recorded facts. A Native-only original continues to exactly one Signal effect and one occurrence. Repeated reopen of the same prefix is stable. A recorded section altered to name another definition refuses before any Signal effect. A closure-leg mixed attempt on a durable medium refuses before any owner effect, and its open releases as no-effect. |
+| Real process kill (Store court, killed child) | A real Home runs one mixed conditional-definition commit. Two cuts: after Native's effect is durable but before Signal's, and after both but before the occurrence. Each reopen must show the original key and receipt, exactly the acting owners, the product unmoved, and zero handler reruns. Continuing publishes once, with one Native and one Signal effect. A second reopen serves the same definitions and receipt. A quiet reopen is the positive control. |
+| Signal readmission at Home open | Store court (`graceful::signal::readmission_refusals`): after a graceful close, one changed Signal input is written and the Home reopens. A damaged Signal frame refuses as physical damage, per the C1.3 ruling. A durable Signal advance recorded by a foreign Signal owner refuses `SignalReadmission(ForeignOwner)`, one in an unknown Signal frame version refuses `SignalReadmission(Frame(UnsupportedVersion))`, and one whose branch descriptor names a definition basis the Home never recorded refuses `SignalReadmission(MissingDefinition)`. No Home is issued in any of these cases. The existing in-process refusal courts stay. |
+
+Recorded spec gap (C3.1, 2026-11-20): the planned Signal leg of a durable
+mixed open is bounded by World's 64 KiB custody row (the Bridge section caps
+itself at 48 KiB). A durable mixed commit whose leg exceeds the bound refuses
+after its open with `RecoveryRequired { BridgeDefinitionPreparation(Section(SizeLimit)) }`
+and keeps the open, which releases as no-effect on reopen. Only durable mixed
+opens capture a leg; Signal-only publications and MemoryOnly Homes are not
+bounded by it.
+
+#### C3.2 — Cold release of process-local managed custody
+
+A managed run, a managed cleanup obligation or an application-resource
+obligation that was still outstanding when its process died reopens as typed
+pending custody. Close then refuses `ManagedCleanup(ManagedRunPending)`
+indefinitely, because only live custody can record a release.
+
+The cold release contract is owned by `query.obligations`. Its parts:
+- **Proof that the resources are gone.** Every resource these records name is
+  process-local by its owner's R7 route: provider memory and executions,
+  checkpoints, queue capacity, Native admission and Bridge finalization. The
+  proof that they are gone is the Home incarnation fence, not an empty fresh
+  receiver. The Home is serving under a later incarnation than the one that
+  retained the row, and D7 has fenced that earlier incarnation out.
+- **A typed witness.** The witness of an ended incarnation is minted only by
+  the cold fold that runs before service. Every row it reads was retained by
+  an earlier incarnation, which D7 has already fenced, so rows need no new
+  incarnation field. A live row cannot obtain the witness. The R7 route table
+  in [the long-running custody routes](milestone-3-long-running-custody.md)
+  states this contract.
+- **Cold release before service.** Home preparation publishes a typed cold
+  release for each such row. The release keeps the row's original input,
+  request and World original, its recovery cause and its recorded posture. It
+  records the terminal kind the R7 route defines, which is never `Completed`.
+  It never calls a fresh receiver's release, so a fresh empty receiver is
+  never taken as proof of release.
+- **Owner-held resources stay pending.** A resource that its owner holds
+  durably keeps its existing pending obligation until that owner discharges
+  it. A mandatory owned-async request is one example: the cold release never
+  covers it.
+
+Business originals are not touched. World custody (C1) still decides each
+original's fate.
+
+| Evidence | Acceptance |
+|---|---|
+| Owner court (`worth-query-court-execution` `query_obligations`) | Every combination of the managed-run, managed-cleanup and resource record families with each pending posture (`Active`, `CleanupRequired`, and a `WorkflowCleanup` with its artifacts unreleased). A row's cold release and later discharge succeed only with the witness for a fenced incarnation, and they keep the original, the recovery cause and the terminal kind. A live row refuses the cold route. A mandatory owned-async request stays pending, paired with the opted-in process-local control. Repeated fold is idempotent. |
+| Real process kills | Phase 7 "Managed cleanup": kill with cleanup outstanding; the reopened Home shows the cold-released obligation with its original; discharge it; close succeeds. The same holds for an `Active` managed run and an application-resource obligation. |
+| Real process kill | Phase 7 "Owned-async requests": a mandatory owned-async request's custody survives a kill and resumes or terminates per its contract; it is never cold-released. |
+| Moved courts restored | Restore the [Moved courts](#moved-courts) C3 entries in full and unweakened: the `recovered_custody` module and its four children, `inbound_custody::empty_original` (its helper `end_live_home_for_required_reopen` is already in `fixture.rs`), and the five caller rows. The Home courts have moved since `154fd3c893` from `worth-query-court-query-decl-host` to `worth-query-court-decl-host-integration`, so the restored files and caller rows take the current crate path with unchanged content. Replace `pending_support::end_with_pending_managed_run`, `inbound_custody::fixture::end_recovered_home` and Store's private copy in `host_oracle::no_effect_release` with a graceful close and reopen. Delete those helpers. |
+
+#### C3.3 — Mid-step workflow kills, R9 `Indeterminate` and temporal retry
+
+Workflow definitions, instances, transitions and approvals are graph records
+(Phase 7). A managed workflow computation is ended by its R7 terminal route,
+separately from the instance. R9 classifies `OperationIndeterminate` as a
+durable obligation. Today it has no durable record, and graceful handoff
+refuses it as `Unsupported(ConditionalRuntime)`.
+
+C3.3 adds an `Indeterminate` record to the conditional-decision family in
+`query.obligations`. The record holds the original key, the intent and the
+World original association. Its cold consumer joins the row to C1's recovered
+World original before any fresh admission. A retry of the original intent
+continues or releases that original through World's recovery ports and never
+publishes a second original. Release follows C1.2 fate rules: only a proved
+no-effect permits fresh execution. After complete World readmission the row
+is in exactly one of three states:
+- **recovered and unpublished:** it joins that original and follows C1.2;
+- **published** (classified by World's published state, whatever produced
+  the `Indeterminate`): the row finishes with the original occurrence, and a retry returns
+  it and never runs fresh;
+- **no committed open, or an original World released as no-effect:** the row
+  is released as proven no-effect before service, and its key may execute
+  fresh.
+
+A workflow killed between steps or mid-step resumes under its original keys.
+A managed computation that was running at the kill reaches its R7 terminal
+posture through C3.2, and the instance is not cancelled.
+
+| Evidence | Acceptance |
+|---|---|
+| Owner court | The conditional-decision fold and codec, with an `Indeterminate` row: retained across fold, in each of its three states (recovered and joined only to its own World original; published and finished with that occurrence; no committed open and released as no-effect), refused for a foreign or mismatched intent, and finished exactly once. The match stays exhaustive. |
+| Real process kills (Query child re-execution) | A workflow is killed after an approval and between two steps, and again mid-step while its managed computation runs. Reopen resumes under the original keys with the approval still required or recorded, and reaches the reference terminal state. Every step has exactly one effect. |
+| Real process kills (Query child re-execution) | A conditional operation is killed after its decision reached `Indeterminate`, once with its original unpublished and once after World published it. Reopen retains the obligation. Retrying the original intent yields exactly one occurrence in both cases. |
+| Real process kills (Query child re-execution) | A temporal operation is killed between its commit and its response. Re-execution after reopen yields the original occurrence once. |
+| Real process kills (C1.4 `no_pending_owners` seams) | Phase 7 "Workflow migration": a workflow-bearing transition is killed at the first barrier of each workflow-disposition state. Reopen resumes the transition and the dispositions apply exactly once. |
+
+#### C3.4 — Adoption killed at each stage; retirement across a kill
+
+Phase 6 makes branch adoption recovery, stopped branch-set adoption and
+support status durable in `query.obligations`. Today the only interrupted
+adoption courts use an in-process drop at one pause point. C3.4 kills a real
+process at each durable adoption stage and resumes through
+`recover_branch_adoption` and the branch-set resume.
+
+| Evidence | Acceptance |
+|---|---|
+| Real process kills (Store opening or physical control and a killed child, as in the C1.4 seam court) | Kill once at the first durable barrier of each distinct durable adoption state: support custody retained, adoption recovery recorded, each branch of a two-branch set's stopped prefix, World publication durable, and completed. Every reopen resumes to the uninterrupted run's result. Every branch's effect is applied exactly once, and the stopped prefix is never re-prepared. |
+| Real process kill | Phase 6 "Retirement survives restart": retire support, kill, then reopen in a fresh process. The status is still Retired, and interpretation refuses where retirement requires it. |
+
+#### C3.5 — Crashes after dispatch, R14 and disappearance mid-dispatch
+
+The `query.dispatch` journal records an attempt before external contact. A
+kill before the observation is recorded leaves an attempt with no
+observation, and Host open refuses (D18's Dispatch cause).
+
+C3.5 removes that refusal. Every unobserved attempt the cold fold reads came
+from an ended incarnation, and several may be outstanding with later frames
+after them. The fold admits them all. Before service, Home preparation durably
+records each one's observation as `Unresolved(UnknownProviderOutcome)`, the
+existing cause for an unknown external fate. The custody then reaches the existing recovery handles:
+reconcile, safe retry, compensate and resolve. Reconcile resolves the fate
+under the rail's admitted contract and never redispatches a completed effect.
+
+The `Dispatch` branch of `unclean_recovery_unsupported()` and its
+`UnobservedAttempt` readmission refusal are deleted, a clean cutover. C5
+still deletes the accessor and D18.
+
+| Evidence | Acceptance |
+|---|---|
+| Owner court (`dispatch_journal` tests) | Unobserved attempts, including two concurrent ones with later frames after them, fold to recovered custody. Recording their unresolved observations is monotone across repeated fold, and a second observation of the same attempt refuses. A foreign home or a broken prefix still refuses. |
+| Bank rail under application kills (Bank stage executable plus kill) | With the bank external rail as the external party, the application process is killed while the dispatch is in flight (after the attempt is durable, before its observation), not quiescently, for each of these cases: exactly-once completion; lost response; duplicate acknowledgement; completion after timeout; disappearance mid-dispatch; and semantic rejection, which reads as proven no effect. One kill falls between the dispatch and the recording of its response. Reopen shows the unresolved posture, and reconcile resolves it with no second rail effect. |
+| Bank rail under application kills | Inbound: a duplicate delivery across a kill is deduplicated, and an authentic callback after a kill completes the original dispatch. |
+| R14 | One court kills the application, then restarts the rail with its state lost. The application never claims completion: the effect stays unresolved and reconcile reports it under the rail's contract. |
+
+#### C3.6 — Correction split completion and original-owner advancement under a true kill
+
+Phase 9 keeps the authored correction and its required derived settlement
+distinct. A correction killed after the authored correction is durable and
+before derived settlement must recover that exact split. The retained
+correction owner and the pending publication registry's correction entries
+decide it; no settlement is guessed.
+
+| Evidence | Acceptance |
+|---|---|
+| Real process kill (Store court, killed child) | Kill after the authored correction is durable and before derived settlement. Reopen shows the authored correction complete and the settlement pending. Settling once matches the reference lineage and its derived outputs. A second reopen is stable. Positive control: an uninterrupted correction. |
+| Real process kill | An original owner is held across a kill, not a graceful close. A fresh authenticated command, then a dependency edit, then advancement and close of the original owner match the reference. `StaleIncarnation` and `OwnershipMaterialUnavailable` stay guarded by `correction_material::original_operation`; a kill cannot present the dead process's value or remove material. |
+| Real process kill | A correction on a divergent branch is killed and reopened, and keeps its branch's lineage. |
+
+#### C3.7 — Discarding derived caches (D14)
+
+D14's derived-state door, `discard_derived_for_test`, does not exist yet.
+C3.7 adds it as a sealed certification door on the Home. It discards every
+durable derived material the Home holds; that inventory is taken from the
+owners, not guessed. Its callers are recorded in `control-callers.txt`.
+
+Reopen never reads discarded checkpoint members or cached sections. Demand-owned
+derived outputs (such as Signal derived values and Query materializations) stay
+cold across reopen and regenerate only on first demand through the ordinary
+demand, dependency, invalidation and settlement owners. Authoritative Relational
+commit replay may rebuild only the exact Relational branch index selections
+required for branch readmission (`readmit_home_branch_basis` and the Milestone 2
+`ColdReconstructionRequired` live-commit contract), strictly from authored
+commit journals and never from discarded checkpoint members.
+
+| Evidence | Acceptance |
+|---|---|
+| Store court | Phase 6 "Discarded derived state": exercise every family whose derived material is durable, discard derived state, then reopen in a fresh process. Authored truth, history, custody and idempotency outcomes are exact. Demand-owned derived values stay cold and recompute on first demand to the reference, while Relational branch index selections match exact pre-discard entries and on-demand rebuilds with zero discarded checkpoint-member reads. |
+| Store court | The same holds after a kill that follows the discard. |
+
+C3 slice checks select the affected owner tests and named process cases. Keep
+generated cases bounded and reproducible, with the failing seed or the
+shortest operation trace in the output. Each slice that touches a journey's
+path runs that journey.
+
 ### Moved courts
 
-- **C3:** cold discharge of an H7 process-local application-resource obligation whose provider/queue/Native release was outstanding at quiescent kill; keep its original input/request and typed pending record; never release it against fresh empty resources.
-- **C3:** cold discharge of an H7 process-local application-resource obligation whose provider/queue/Native release was outstanding at quiescent kill; keep its original input/request and typed pending record; never release it against fresh empty resources.
-- **C3:** cold discharge of an H7 cleanup obligation whose process-local provider-memory, queue or Bridge release was outstanding at a quiescent kill; reopen retains the typed pending obligation and close refuses until an owner-defined cold release contract lands (coordinator ruling 2026-11-13).
-- **C3: recovered original custody and an empty inbound original whose managed-run release was outstanding at a quiescent kill.** Each court ends its first Home without a graceful close while an interrupted attempt still holds its managed run, then expects a later graceful close. Since `e762cbd447` the reopened Home retains that run as typed pending custody and close refuses `ManagedCleanup(ManagedRunPending)`, which is the ruling above. Restore when C3 lands the cold release contract:
+- **C3 (restored in C3.2):** cold discharge of an H7 process-local application-resource obligation whose provider/queue/Native release was outstanding at quiescent kill; keep its original input/request and typed pending record; never release it against fresh empty resources. Court: `certification::application_graph::source_only::capability::resources::home_seed::process_kill` (worth-query-court-decl-host).
+- **C3 (restored in C3.2):** cold discharge of an H7 cleanup obligation whose process-local provider-memory, queue or Bridge release was outstanding at a quiescent kill; reopen retains the typed pending obligation and close refuses until an owner-defined cold release contract lands (coordinator ruling 2026-11-13). Court: `process::host::durable_retry::cold_release` (worth-query-court-decl-host-integration).
+- **C3 (restored in C3.2): recovered original custody and an empty inbound original whose managed-run release was outstanding at a quiescent kill.** Each court ends its first Home without a graceful close while an interrupted attempt still holds its managed run, then expects a later graceful close. Since `e762cbd447` the reopened Home retains that run as typed pending custody and close refuses `ManagedCleanup(ManagedRunPending)`, which is the ruling above. Restore when C3 lands the cold release contract:
   - `host::application_home::recovered_custody::recovered_original_custody_reaches_service_and_continues_without_reexecution`, `recovered_original_custody_reaches_service_and_release_stays_released` and `continued_recovered_custody_closes_cooperatively_and_resumes_after_reopen`: restore the complete module from `154fd3c893f33d059e44b5b44604f66c27edbda4:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/recovered_custody.rs` and `154fd3c893f33d059e44b5b44604f66c27edbda4:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/recovered_custody/` (`disposition.rs`, `original.rs`, `released.rs`, `terminal.rs`), with `mod recovered_custody;` in `host/application_home.rs`.
-  - `host::application_home::dispatch_custody::inbound_custody::empty_original::an_empty_completion_original_is_released_on_reopen_before_the_callback_retries`: restore `154fd3c893f33d059e44b5b44604f66c27edbda4:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/empty_original.rs`, `mod empty_original;` in its parent, and the helper `end_live_home_for_required_reopen` from `154fd3c893f33d059e44b5b44604f66c27edbda4:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/fixture.rs` (the C1 `unpublished` module above needs the same helper).
+  - `host::application_home::dispatch_custody::inbound_custody::empty_original::an_empty_completion_original_is_released_on_reopen_before_the_callback_retries`: restore `154fd3c893f33d059e44b5b44604f66c27edbda4:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/empty_original.rs`, `mod empty_original;` in its parent, and the helper `end_live_home_for_required_reopen` (C1 already restored it) from `154fd3c893f33d059e44b5b44604f66c27edbda4:workspaces/worth-query/crates/worth-query-court-query-decl-host/tests/worth_query_court_query_decl_host/host/application_home/dispatch_custody/inbound_custody/fixture.rs` (the C1 `unpublished` module above needs the same helper).
   - Restore the five exact caller rows naming these files from `154fd3c893f33d059e44b5b44604f66c27edbda4:tools/boundary-check/config/control-callers.txt`.
   - Every other recovered-custody, inbound-custody and recovery-claim court stays active; the close refusal itself is guarded by `host::application_home::managed_runs::abandoned_managed_direct_work_preserves_failed_terminal_after_directory_reopen`.
-  - The C1-restored `process::host::durable_retry::fate_reopening::cancellation_after_native_effect_retains_key_across_kill_and_reopen` and `host::application_home::dispatch_custody::inbound_custody::unpublished` courts continue their originals, then meet the same pending managed run at close. They first assert that no World recovery custody remains, then end through `pending_support::end_with_pending_managed_run` (and `inbound_custody::fixture::end_recovered_home`), which require the typed `ManagedCleanup(ManagedRunPending)` refusal. When C3 lands the cold release contract, replace those two helpers with a graceful close and reopen.
+  - The C1-restored `process::host::durable_retry::fate_reopening::cancellation_after_native_effect_retains_key_across_kill_and_reopen` and `host::application_home::dispatch_custody::inbound_custody::unpublished` courts continue their originals, then meet the same pending managed run at close. They first assert that no World recovery custody remains, then end through `pending_support::end_with_pending_managed_run` (and `inbound_custody::fixture::end_recovered_home`), which require the typed `ManagedCleanup(ManagedRunPending)` refusal. When C3 lands the cold release contract, replace those two helpers with a graceful close and reopen. Done in C3.2: both helpers and Store's private copy are deleted; the courts assert the cold-released run and close gracefully.
 
 Cleanup courts moved out of the tree are listed under their C item, with `restore from <sha>:<path>`. Existing entries:
 - **C1:** the three transition-source recovery courts, listed in D16 under "Cleanup track: moved courts". Restored in C1; D16 names their new courts.

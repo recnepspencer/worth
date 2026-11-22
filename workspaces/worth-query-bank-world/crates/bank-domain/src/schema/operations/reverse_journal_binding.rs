@@ -3,13 +3,12 @@ use worth_query_decl::facade::{
     worth_query_structured_value_binding,
 };
 
-use crate::model::{BankPrincipalId, InstitutionId};
-use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial};
+use crate::model::InstitutionId;
+use crate::proposals::{BankInvariantApprovedProposal, BankProposalDenial};
 
 use super::{ReverseJournal, ReverseJournalInputBinding};
 use crate::schema::{
-    BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
-    InstitutionIdentityField, MoneyMovementResultBinding, Principal, ReverseJournalOperation,
+    BankSchema, InstitutionIdentityField, MoneyMovementResultBinding, ReverseJournalOperation,
 };
 
 worth_query_structured_value_binding!(
@@ -23,23 +22,16 @@ fn reversal_scope(input: &ReverseJournal) -> InstitutionId {
 }
 
 worth_query_mutation_binding!(
-    pub ReverseJournalMutationBinding for ReverseJournal, schema BankSchema,
+    pub ReverseJournalMutationBinding for ReverseJournal, schema BankSchema, context crate::schema::BankBindingContext,
     identity "bank.operation.reverse-journal.mutation-binding.v1",
     input ReverseJournalInputBinding,
     operation ReverseJournalOperation,
     result MoneyMovementResultBinding,
-    idempotency BankIdempotencyKey,
-        identity "bank.application-mutation-client-key.v1",
     decision BankInvariantApprovedProposal,
     denial ReverseJournalDenialBinding,
     handler identity "bank.operation.reverse-journal.handler.v1",
     program required,
     outputs NoApplicationMutationOutputs,
-    principal BankPrincipalBinding,
-        mapping ExternalPrincipalMapping,
-        principal_entity Principal,
-        principal_identity BankPrincipalId,
-        identity_binding BankPrincipalIdBinding,
     scope InstitutionIdentityField,
     field InstitutionIdentityField::at("InstitutionIdentityField"),
     value reversal_scope,

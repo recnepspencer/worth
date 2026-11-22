@@ -18,6 +18,10 @@ use worth_query_declaration::facade::{
     },
     application_schema::{ApplicationScalarValueBinding, ApplicationSchema},
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 #[derive(Debug)]
 /// A source-disclosure, semantic-comparison or inverse-derivation refusal.
@@ -114,12 +118,13 @@ where
         return Err(Denial::TargetIncarnationChanged);
     }
     let execution = phase
-        .execution_request_for(&application.runtime.product_runtime)
+        .execution_request_for(application.inner.runtime.product_runtime_ref())
         .map_err(|_| Denial::ForeignPhase)?;
     let ancestry = application
+        .inner
         .runtime
-        .product_runtime
-        .owner
+        .product_runtime_ref()
+        .owner_ref()
         .observation_port()
         .select_retained_product_branch_ancestor(
             &execution,
@@ -130,8 +135,9 @@ where
         .map_err(Denial::Ancestry)?;
     if source.occurrence().home_material().is_some() {
         application
+            .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .observe_correction_material(source.occurrence().commit_reference())
             .map_err(Denial::Material)?;
     }

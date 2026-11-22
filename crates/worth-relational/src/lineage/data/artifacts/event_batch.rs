@@ -43,7 +43,7 @@ fn summarize_event_counters(events: &[LineageEventRecord]) -> LineageFinalizatio
             LineageEventKind::Create => counters.created_event_count += 1,
             LineageEventKind::Replace => counters.replaced_event_count += 1,
             LineageEventKind::Retire => counters.retired_event_count += 1,
-            LineageEventKind::Split | LineageEventKind::Merge => {}
+            LineageEventKind::Split | LineageEventKind::Merge | LineageEventKind::Restore => {}
         }
     }
     counters

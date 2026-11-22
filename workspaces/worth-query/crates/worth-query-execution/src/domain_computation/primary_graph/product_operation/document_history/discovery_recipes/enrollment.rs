@@ -1,6 +1,11 @@
 //! Enrollment can bind recipes only to the original current source endpoint.
-use super::super::{WorthQueryDocumentHistory, WorthQueryHistoryOutputProfile};
-use super::*;
+use super::{
+    WorthQueryDocumentHistory, WorthQueryHistoryNavigationDenial as Denial,
+    WorthQueryHistoryOutputProfile,
+};
+use crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding;
+use crate::domain_computation::primary_graph::application_query::request_recipe::CapturedSourceQueryRequest;
+use crate::domain_computation::primary_graph::product_operation::WorthQueryHistoryOutputReadDenial as ReadDenial;
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding,
     application_query::{
@@ -8,6 +13,7 @@ use worth_query_declaration::facade::{
     },
     application_schema::ApplicationSchema,
 };
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
 impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHistory<'_, S, H> {
     /// Captures request data with a newly enrolled source intent. A navigation
@@ -35,18 +41,18 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         let (step, expected) = {
             let selected = self.selection.lock();
             let step = selected.journal.current_step();
-            if step.id().ordinal != 0 || step.endpoint != selected.expected {
+            if step.id().ordinal() != 0 || step.endpoint() != &selected.expected {
                 return Ok(());
             }
             (step.id(), selected.expected.clone())
         };
         let request = CapturedSourceQueryRequest::capture::<S, B>(
             &execution,
-            self.application(),
+            self.application().inner(),
             step,
             intent,
         )?;
-        let key = HistoryDiscoveryRecipeKey::new::<C>(
+        let key = super::history_discovery_recipe_key::<C>(
             profile,
             (
                 WorthQueryOperationScopeEntityBinding::from_entity(

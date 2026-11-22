@@ -1,5 +1,6 @@
 //! The single private assembly of an admitted Home source and installed Query meaning.
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) struct HomeQueryPreparation<
     Schema: ApplicationSchemaComposition,
     Program,
@@ -35,12 +36,15 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
         state.installed.binding_identity(),
         Arc::new(schema.layout),
         owner,
-    );
-    graph.application_publication = Some(Arc::new(
+    )
+    .with_workflow_retention(Arc::new(
+        crate::domain_computation::primary_graph::WorkflowRetentionStore::new(),
+    ));
+    graph.set_application_publication(Some(Arc::new(
         super::super::super::super::root::application_publication::ApplicationPublication::installed(
             &schema.receipt,
         ),
-    ));
+    )));
     let meaning =
         super::super::super::super::bootstrap::prepared_native::PreparedPrimaryGraphMeaning {
             resource_support:

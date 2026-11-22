@@ -1,5 +1,8 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::{
@@ -122,8 +125,8 @@ impl WorthQuerySuspendedGeneratedOutput {
     where
         Schema: ApplicationSchema,
     {
-        self.producer.runtime_authority == runtime.runtime.authority_identity().as_u64()
-            && self.producer.schema == runtime.installed_schema.binding_identity()
+        self.producer.runtime_authority == runtime.inner.runtime.authority_identity().as_u64()
+            && self.producer.schema == runtime.inner.installed_schema.binding_identity()
     }
 
     pub(super) fn matches_retained_lineage<Schema, Producer>(
@@ -135,10 +138,11 @@ impl WorthQuerySuspendedGeneratedOutput {
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
         runtime
+            .inner
             .runtime
-            .primary_provider
-            .graph
-            .output_lineage
+            .primary_provider_ref()
+            .graph_ref()
+            .output_lineage_ref()
             .lock()
             .expect("application output lineage lock is available")
             .qualified_output::<Producer::Operation>(

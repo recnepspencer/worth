@@ -1,4 +1,11 @@
 //! Fresh disclosure and selected native ordered pages at the retained data basis.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_query::facade::ports::AdmittedCapabilityAccessInspectionPort as _;
+use super::WorthQueryWorkflowIndexRead;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use super::admission::WorthQueryWorkflowReadDenial as Denial;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::history_projection;
@@ -7,6 +14,10 @@ use crate::domain_computation::primary_graph::application_installation::WorthQue
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use worth_execution::ExecutionArrayBuilder;
+use worth_query_execution_attempt::facade::ports::{
+    WorkflowHistoryPageInternalPort as _, WorkflowHistoryPageParts,
+    WorkflowReadBasisInternalPort as _,
+};
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
@@ -87,25 +98,29 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         }
         if let Some(prior) = after
             && (!prior
-                .basis
-                .0
-                .belongs_to_selected_occurrence(self.application(), data.product().observation())
-                || prior.instance != target.instance
-                || prior.subject != target.subject
-                || prior.scope != access.resource_entity_id()
-                || prior.width != width
-                || &prior.support != workflow.support_identity_bytes()
-                || prior.basis.selected_commit() != data.product().selected_commit()
-                || prior.basis.branch_identity() != data.product().branch_identity()
+                .basis_ref()
+                .observation()
+                .belongs_to_selected_occurrence(
+                    self.application().inner(),
+                    data.product().observation(),
+                )
+                || prior.instance() != target.instance
+                || prior.subject() != target.subject
+                || prior.scope() != access.resource_entity_id()
+                || prior.width() != width
+                || prior.support() != workflow.support_identity_bytes()
+                || prior.basis_ref().selected_commit() != data.product().selected_commit()
+                || prior.basis_ref().branch_identity() != data.product().branch_identity()
                 || prior.continuation().is_none())
         {
             return Err(Denial::ContinuationMismatch);
         }
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Phase)?;
         let graph = self
             .application()
+            .inner
             .runtime
             .primary_graph()
             .ok_or(Denial::BasisUnavailable)?;
@@ -144,7 +159,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                         BoundedRelatedEntityPrefixLookupRequest::new(
                             ordered,
                             &[],
-                            after.and_then(|p| p.native.next_boundary()),
+                            after.and_then(|p| p.native().next_boundary()),
                         ),
                         &execution,
                     )
@@ -180,15 +195,17 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
                 }
                 Ok((rows.seal().map_err(Denial::Allocation)?, native))
             })?;
-        Ok(WorthQueryWorkflowHistoryPage {
-            basis: WorthQueryWorkflowReadBasis::retained(data),
-            instance: target.instance,
-            subject: target.subject,
-            scope: access.resource_entity_id(),
-            support: *workflow.support_identity_bytes(),
-            width,
-            rows,
-            native,
-        })
+        Ok(WorthQueryWorkflowHistoryPage::from_parts(
+            WorkflowHistoryPageParts {
+                basis: WorthQueryWorkflowReadBasis::retained(data),
+                instance: target.instance,
+                subject: target.subject,
+                scope: access.resource_entity_id(),
+                support: *workflow.support_identity_bytes(),
+                width,
+                rows,
+                native,
+            },
+        ))
     }
 }

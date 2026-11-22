@@ -14,6 +14,9 @@ use crate::domain_computation::{
         application_query::FreshQueryPermissionStop, WorthQueryApplicationBasisSelectionIdentity,
     },
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::identity::EntityId;
 
@@ -210,7 +213,7 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
                 super::super::admission::validate_original_affinity(self.runtime, &installed, before)
                     .map_err(InspectionCause::Admission)?;
             }
-            let branch = match &self.original.source.selection {
+            let branch = match &self.original.source().selection() {
                 WorthQueryApplicationBasisSelectionIdentity::Product(original) => {
                     original.product_branch()
                 }
@@ -231,7 +234,7 @@ impl<'o, Schema: ApplicationSchema, Binding: ApplicationQueryBinding<Schema>>
                     &installed,
                     None,
                     self.external,
-                    &self.original.source,
+                    &self.original.source(),
                     &selected,
                     self.request,
                     |_, principal, scope| {

@@ -36,6 +36,7 @@ impl ExpressionValue {
             | Repr::Decimal { .. }
             | Repr::Enum(_)
             | Repr::Quantity(_)
+            | Repr::Date(_)
             | Repr::None => 0,
         }
     }

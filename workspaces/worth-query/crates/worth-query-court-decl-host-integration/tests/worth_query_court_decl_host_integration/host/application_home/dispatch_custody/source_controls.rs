@@ -120,11 +120,11 @@ pub(super) fn signed_meaning(body: &str) -> [u8; 32] {
         .unwrap();
     *canonicalization().digest().derive(ready).value().bytes()
 }
-struct SourceRoute {
-    handle: WorthQueryInboundVerifierHandle,
+pub(super) struct SourceRoute {
+    pub(super) handle: WorthQueryInboundVerifierHandle,
     envelope: Vec<u8>,
 }
-fn install(home: &Home, audience: &'static str) -> (SourceRoute, SourceRoute, SourceRoute) {
+pub(super) fn install(home: &Home, audience: &'static str) -> (SourceRoute, SourceRoute, SourceRoute) {
     let runtime = home.runtime().runtime();
     let schema = runtime.installed_schema();
     let verifier = Verifier::message(sources::SOURCE, audience);
@@ -161,7 +161,7 @@ fn install(home: &Home, audience: &'static str) -> (SourceRoute, SourceRoute, So
         .unwrap();
     (first, sibling, SourceRoute { handle, envelope })
 }
-fn probe(home: &Home, route: &SourceRoute) -> Denial {
+pub(super) fn probe(home: &Home, route: &SourceRoute) -> Denial {
     let (_, scope) = pending_support::scope();
     home.runtime()
         .runtime()

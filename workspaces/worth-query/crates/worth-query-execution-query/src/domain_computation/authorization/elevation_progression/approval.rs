@@ -1,0 +1,308 @@
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
+pub use worth_query_execution_attempt::facade::domain_computation::authorization::elevation_progression::approval::*;
+mod replay;
+mod support_currentness;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_foundational::facade::AspectValue;
+use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationOperationMarkerIdentity, TypedMutationPreconditions,
+};
+use worth_query_installation::facade::{
+    ApplicationSchema, WorthQueryInstalledApplicationOperation,
+};
+use worth_relational::facade::identity::EntityId;
+
+use super::super::capability_registry::{
+    WorthQueryElevationLifecycleOperationRole, WorthQueryInstalledCapabilityPlan,
+};
+use super::super::operation_progression::{
+    progress_capability_operation, WorthQueryCapabilityOperationProgression,
+};
+use super::super::{
+    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
+    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
+};
+use super::context_identity::{
+    resolve_elevation_identity, resolve_review_identity, selected_elevation_entity,
+};
+use super::operation_role::installed_lifecycle_owner;
+use super::transition_contract::{approval_program_targets, lifecycle_decision_reads};
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolutionDenial,
+    WorthQueryElevationApprovalOutcome, WorthQueryPrimaryGraphApplicationRuntime,
+    WorthQueryRequestedElevation,
+};
+
+use support_currentness::refresh_exact_support;
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    pub fn authorize_elevation_approval<Capability, Operation, Input>(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        requested: WorthQueryRequestedElevation,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+    ) -> Result<
+        WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+        WorthQueryElevationApprovalAuthorizationDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, Capability>,
+        Input: 'static,
+    {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err(approval_denial(requested, denial));
+        }
+        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(execution) => execution,
+            Err(_) => return Err(approval_denial(requested, crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody"))),
+        };
+        self.authorize_elevation_approval_with_request(
+            &execution,
+            requested,
+            access,
+            operation,
+            preconditions,
+        )
+    }
+
+    pub fn authorize_elevation_approval_with_request<Capability, Operation, Input>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        mut requested: WorthQueryRequestedElevation,
+        mut access: WorthQueryAdmittedApplicationCapabilityAccess<
+            Schema,
+            Capability,
+            Operation,
+            Input,
+        >,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+    ) -> Result<
+        WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+        WorthQueryElevationApprovalAuthorizationDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, Capability>,
+        Input: 'static,
+    {
+        if let Err(denial) = access.refuse_stale_incarnation(self) {
+            return Err(approval_denial(requested, denial));
+        }
+        let draft = match bind_approval(execution, self, &requested, &access, operation) {
+            Ok(draft) => draft,
+            Err(denial) => return Err(approval_denial(requested, denial)),
+        };
+        let support_sample =
+            match refresh_exact_support(execution, self, &mut requested, &mut access) {
+                Ok(sample) => sample,
+                Err(denial) => return Err(approval_denial(requested, denial)),
+            };
+        if let Err(denial) =
+            validate_approval_time(requested.binding(), &support_sample, operation.operation())
+        {
+            return Err(approval_denial(requested, denial));
+        }
+        let admission = match progress_capability_operation(
+            execution,
+            self,
+            access,
+            operation,
+            preconditions,
+            WorthQueryCapabilityOperationProgression::ElevationLifecycle,
+        ) {
+            Ok(admission) => admission,
+            Err(denial) => return Err(approval_denial(requested, denial)),
+        };
+        admission
+            .bind_elevation_approval(execution, draft.bind(requested))
+            .map_err(|(denial, binding)| approval_denial(binding.into_requested(), denial))
+    }
+}
+
+fn bind_approval<Schema, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    requested: &WorthQueryRequestedElevation,
+    access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+) -> Result<WorthQueryElevationApprovalDraft, WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+    Input: 'static,
+{
+    let (capability_identity, installed) = installed_lifecycle_owner(
+        runtime,
+        access.installed_capability_identity(),
+        operation,
+        WorthQueryElevationLifecycleOperationRole::Approve,
+    )?;
+    let requested_binding = requested.binding();
+    validate_receipt_authority(runtime, capability_identity, installed, requested, access)?;
+    let lifecycle = installed
+        .elevation()
+        .as_ref()
+        .ok_or_else(|| approval_rejected(installed.contract().name()))?;
+    let elevation_definition = installed
+        .contract()
+        .elevation()
+        .definition()
+        .ok_or_else(|| approval_rejected(installed.contract().name()))?;
+    let (elevation, review) =
+        resolve_approval_entities(execution, runtime, access, installed, requested_binding)?;
+    Ok(WorthQueryElevationApprovalDraft {
+        elevation,
+        review,
+        approver: access.principal_entity_id(),
+        approved_status: lifecycle.lifecycle.approved.clone(),
+        elevation_entity: elevation_definition.status().entity().to_string(),
+        status_field: lifecycle.lifecycle.status.clone(),
+        approver_relation: lifecycle.lifecycle.approver_relation,
+        reviewer_relation: lifecycle.lifecycle.reviewer_relation,
+        required_decision_reads: lifecycle_decision_reads(installed),
+        required_program_targets: approval_program_targets(installed),
+        lifecycle_effect: super::lifecycle_effect::derive_lifecycle_effect(
+            elevation_definition.lifecycle().approve(),
+            access.capability_input(),
+            installed.contract().name(),
+        )?,
+    })
+}
+
+fn resolve_approval_entities<Schema, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    installed: &WorthQueryInstalledCapabilityPlan,
+    requested: &super::WorthQueryElevationRequestBinding,
+) -> Result<(EntityId, EntityId), WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+{
+    let elevation = selected_elevation_entity(access, installed)
+        .ok_or_else(|| approval_rejected(installed.contract().name()))?;
+    let resolved_elevation = resolve_elevation_identity(
+        execution,
+        runtime,
+        access,
+        requested.capability_identity(),
+        installed,
+        requested.elevation_identity(),
+    )?
+    .ok_or_else(|| approval_rejected(installed.contract().name()))?;
+    let review = resolve_review_identity(
+        execution,
+        runtime,
+        access,
+        requested.capability_identity(),
+        installed,
+        requested.review_identity(),
+    )?
+    .ok_or_else(|| approval_rejected(installed.contract().name()))?;
+    if resolved_elevation == elevation {
+        Ok((elevation, review))
+    } else {
+        Err(approval_rejected(installed.contract().name()))
+    }
+}
+
+fn validate_receipt_authority<Schema, Capability, Operation, Input>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    capability_identity: [u8; 32],
+    installed: &WorthQueryInstalledCapabilityPlan,
+    requested: &WorthQueryRequestedElevation,
+    access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+) -> Result<(), WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+{
+    let binding = requested.binding();
+    if binding.runtime_authority() != &runtime.runtime.authority_identity()
+        || binding.branch() != access.graph_work_branch()
+        || requested.commit_receipt().terminal().branch() != binding.branch()
+        || binding.capability_identity() != capability_identity
+        || binding.capability_authority_identity()
+            != installed.capability_authority_identity().as_ref()
+    {
+        return Err(approval_rejected(installed.contract().name()));
+    }
+    Ok(())
+}
+
+fn validate_approval_time(
+    requested: &super::WorthQueryElevationRequestBinding,
+    sample: &super::super::WorthQueryRuntimeTimeSample,
+    subject: &str,
+) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+    match (
+        sample.value(),
+        requested.issued_at(),
+        requested.expires_at(),
+    ) {
+        (AspectValue::UInt64(now), AspectValue::UInt64(start), AspectValue::UInt64(end))
+            if start <= now && now < end =>
+        {
+            Ok(())
+        }
+        _ => Err(denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationExpired,
+            ),
+            subject,
+        )),
+    }
+}
+
+fn approval_denial(
+    requested: WorthQueryRequestedElevation,
+    denial: WorthQueryOperationAuthorizationDenial,
+) -> WorthQueryElevationApprovalAuthorizationDenial {
+    WorthQueryElevationApprovalAuthorizationDenial::new(denial, requested)
+}
+
+fn approval_rejected(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
+    denial(
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ElevationApprovalRejected,
+        ),
+        subject,
+    )
+}
+
+fn denial(
+    kind: WorthQueryOperationAuthorizationDenialKind,
+    subject: impl Into<String>,
+) -> WorthQueryOperationAuthorizationDenial {
+    WorthQueryOperationAuthorizationDenial::new(kind, subject)
+}

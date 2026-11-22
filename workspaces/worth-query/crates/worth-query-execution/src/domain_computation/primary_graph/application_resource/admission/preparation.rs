@@ -21,6 +21,10 @@ use worth_query_declaration::facade::{
     application_resource::ApplicationResourceBinding,
     application_schema::ApplicationSchema,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationResource, WorthQueryResourceAccessPurpose,
 };
@@ -57,8 +61,8 @@ where
 {
     require_request(execution, request)?;
     if !std::ptr::eq(runtime, selected.application())
-        || !std::ptr::eq(principal.selected(), selected)
-        || !std::ptr::eq(scope.selected(), selected)
+        || !std::ptr::eq(principal.selected(), selected.inner())
+        || !std::ptr::eq(scope.selected(), selected.inner())
         || !principal.request().same_request(request)
         || !scope.request().same_request(request)
         || principal.issued_root().admission_identity() != scope.issued_root().admission_identity()
@@ -74,11 +78,15 @@ where
     }
     let reserved = WorthQueryPreparedProductReadSessionIdentity::reserve()
         .map_err(ResourceAdmissionDenial::Session)?;
-    let principal_currentness =
-        capture_principal_currentness_admitted(runtime, principal.principal(), reserved.identity())
-            .map_err(|_| ResourceAdmissionDenial::MissingPrincipalBinding)?;
+    let principal_currentness = capture_principal_currentness_admitted(
+        runtime.inner(),
+        principal.principal(),
+        reserved.identity(),
+    )
+    .map_err(|_| ResourceAdmissionDenial::MissingPrincipalBinding)?;
     let (plan, admission) = plan::admit(runtime, execution, resource, purpose, prepared)?;
     let graph = runtime
+        .inner
         .runtime
         .primary_graph()
         .ok_or(ResourceAdmissionDenial::MissingGraph)?;
@@ -90,7 +98,7 @@ where
         resource,
         purpose,
         plan,
-        runtime.runtime.authority_identity(),
+        runtime.inner.runtime.authority_identity(),
         principal.principal().principal_entity_id(),
         WorthQueryGraphWorkAccessContextAffinity::entity(scope.scope().entity_id()),
         &basis,

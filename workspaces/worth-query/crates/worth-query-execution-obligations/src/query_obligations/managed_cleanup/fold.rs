@@ -9,8 +9,26 @@ pub(in crate::query_obligations) struct ManagedCleanupFold {
     rows: BTreeMap<ManagedCleanupObligationIdentity, QueryManagedCleanupObligation>,
 }
 impl ManagedCleanupFold {
-    pub(super) fn rows(&self) -> impl Iterator<Item = &QueryManagedCleanupObligation> {
+    pub(in crate::query_obligations) fn rows(
+        &self,
+    ) -> impl Iterator<Item = &QueryManagedCleanupObligation> {
         self.rows.values()
+    }
+    pub(in crate::query_obligations) fn row(
+        &self,
+        identity: ManagedCleanupObligationIdentity,
+    ) -> Option<&QueryManagedCleanupObligation> {
+        self.rows.get(&identity)
+    }
+    pub(in crate::query_obligations) fn apply_cold_release(
+        &mut self,
+        identity: ManagedCleanupObligationIdentity,
+        terminal: super::super::QueryColdReleaseTerminal,
+    ) {
+        self.rows
+            .get_mut(&identity)
+            .expect("validated original")
+            .cold_release = Some(terminal);
     }
     pub(in crate::query_obligations) fn validate(
         &self,
@@ -26,7 +44,11 @@ impl ManagedCleanupFold {
                 {
                     return Err(Denial::ObligationIdentityMismatch);
                 }
-                if row.release.is_some() || row.run.is_empty() || row.run.len() > 4096 {
+                if row.release.is_some()
+                    || row.cold_release.is_some()
+                    || row.run.is_empty()
+                    || row.run.len() > 4096
+                {
                     return Err(Denial::MalformedFrame);
                 }
                 if self.rows.contains_key(&row.identity) {
@@ -40,11 +62,7 @@ impl ManagedCleanupFold {
                     return Err(Denial::ForeignHome);
                 }
                 let row = self.rows.get(identity).ok_or(Denial::UnknownObligation)?;
-                if matches!(
-                    row.failure,
-                    WorthQueryMutationCleanupFailureKind::AffinityInconsistent
-                        | WorthQueryMutationCleanupFailureKind::CompletionInconsistent
-                ) {
+                if row.evidence_inconsistent() {
                     return Err(Denial::CleanupInconsistent {
                         identity: *identity,
                     });
@@ -52,11 +70,11 @@ impl ManagedCleanupFold {
                 match record {
                     QueryManagedCleanupRecord::Released { .. }
                     | QueryManagedCleanupRecord::Failed { .. }
-                        if row.release.is_some() =>
+                        if row.released() =>
                     {
                         return Err(Denial::DuplicateObligation);
                     }
-                    QueryManagedCleanupRecord::Discharge { .. } if row.release.is_none() => {
+                    QueryManagedCleanupRecord::Discharge { .. } if !row.released() => {
                         return Err(Denial::CleanupReleaseUnrecorded {
                             identity: *identity,
                         });

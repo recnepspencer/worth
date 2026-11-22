@@ -1,0 +1,358 @@
+use std::collections::BTreeMap;
+use std::sync::{Arc, Mutex, OnceLock, Weak};
+
+use super::follower::WorthQueryProductRetentionFollower;
+use super::{
+    OwnerCleanupRetirements, WorthQueryProductBranchOwnerCleanupCapacityExhausted,
+    WorthQueryProductBranchOwnerCleanupDenial, WorthQueryProductBranchOwnerCleanupReceipt,
+    WorthQueryProductBranchOwnerCleanupRecord, WorthQueryProductBranchOwnerCleanupWork,
+    WorthQueryRetiredProductOccurrence,
+};
+use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
+
+pub struct CleanupEntry {
+    record: Mutex<Option<WorthQueryProductBranchOwnerCleanupRecord>>,
+    scope: CleanupScope,
+}
+
+#[derive(Clone)]
+pub enum CleanupScope {
+    Creation,
+    Application,
+    WorkspaceRetirement,
+    ApplicationRetirement(WorthQueryRetiredProductOccurrence),
+}
+
+pub struct CleanupRegistryState {
+    maximum: Option<usize>,
+    next_identity: u64,
+    reserved: usize,
+    entries: BTreeMap<u64, Arc<CleanupEntry>>,
+}
+
+#[derive(Clone)]
+pub struct WorthQueryProductBranchOwnerCleanupRegistry {
+    state: Arc<Mutex<CleanupRegistryState>>,
+    pub(super) follower: Arc<OnceLock<Weak<dyn WorthQueryProductRetentionFollower>>>,
+}
+
+impl WorthQueryProductBranchOwnerCleanupRegistry {
+    pub fn new(maximum: Option<usize>) -> Self {
+        Self {
+            state: Arc::new(Mutex::new(CleanupRegistryState {
+                maximum,
+                next_identity: 1,
+                reserved: 0,
+                entries: BTreeMap::new(),
+            })),
+            follower: Arc::new(OnceLock::new()),
+        }
+    }
+
+    /// The one follower every history release these cleanups make reaches.
+    pub fn follow_product_retention(&self, follower: Weak<dyn WorthQueryProductRetentionFollower>) {
+        assert!(
+            self.follower.set(follower).is_ok(),
+            "one provider follows a product World's history releases"
+        );
+    }
+
+    pub(super) fn history_released(&self) {
+        if let Some(follower) = self.follower.get().and_then(Weak::upgrade) {
+            follower.history_released();
+        }
+    }
+
+    pub(super) fn reserve(
+        &self,
+        scope: CleanupScope,
+    ) -> Result<
+        WorthQueryProductBranchOwnerCleanupReservation,
+        WorthQueryProductBranchOwnerCleanupCapacityExhausted,
+    > {
+        let entry = Arc::new(CleanupEntry {
+            record: Mutex::new(None),
+            scope,
+        });
+        let mut state = lock(&self.state);
+        let occupied = state
+            .entries
+            .len()
+            .checked_add(state.reserved)
+            .ok_or(WorthQueryProductBranchOwnerCleanupCapacityExhausted)?;
+        if state.maximum.is_some_and(|maximum| occupied >= maximum) {
+            return Err(WorthQueryProductBranchOwnerCleanupCapacityExhausted);
+        }
+        let identity = state.next_identity;
+        state.next_identity = state
+            .next_identity
+            .checked_add(1)
+            .ok_or(WorthQueryProductBranchOwnerCleanupCapacityExhausted)?;
+        state.reserved = state
+            .reserved
+            .checked_add(1)
+            .ok_or(WorthQueryProductBranchOwnerCleanupCapacityExhausted)?;
+        Ok(WorthQueryProductBranchOwnerCleanupReservation {
+            registry: self.clone(),
+            identity,
+            entry,
+            armed: true,
+        })
+    }
+
+    pub fn available_capacity_for_test(&self) -> Option<usize> {
+        let state = lock(&self.state);
+        state.maximum.map(|maximum| {
+            maximum.saturating_sub(state.entries.len().saturating_add(state.reserved))
+        })
+    }
+
+    pub(super) fn pending_identities(&self) -> Vec<u64> {
+        let mut identities: Vec<_> = lock(&self.state).entries.keys().copied().collect();
+        identities.sort_unstable();
+        identities
+    }
+
+    pub(super) fn pending_workspace_identities(&self) -> Vec<u64> {
+        let mut identities: Vec<_> = lock(&self.state)
+            .entries
+            .iter()
+            .filter_map(|(identity, entry)| {
+                matches!(
+                    entry.scope,
+                    CleanupScope::Creation | CleanupScope::WorkspaceRetirement
+                )
+                .then_some(*identity)
+            })
+            .collect();
+        identities.sort_unstable();
+        identities
+    }
+
+    pub(super) fn pending_work(
+        &self,
+        identity: u64,
+    ) -> Vec<WorthQueryProductBranchOwnerCleanupWork> {
+        let entry = lock(&self.state).entries.get(&identity).cloned();
+        let Some(entry) = entry else {
+            return Vec::new();
+        };
+
+        lock(&entry.record)
+            .as_ref()
+            .map(WorthQueryProductBranchOwnerCleanupRecord::described_work)
+            .unwrap_or_default()
+    }
+
+    pub(super) fn pending_signal_references(
+        &self,
+        identity: u64,
+    ) -> Vec<worth_signal::facade::branch::ManagedSignalBranchReference> {
+        let entry = lock(&self.state).entries.get(&identity).cloned();
+        let Some(entry) = entry else {
+            return Vec::new();
+        };
+
+        lock(&entry.record)
+            .as_ref()
+            .map(|record| {
+                record
+                    .pending
+                    .iter()
+                    .filter_map(|work| match work {
+                        worth_runtime_world::facade::OwnerRetirementWork::SignalBranchRetirement {
+                            reference,
+                            ..
+                        } => Some(reference.clone()),
+                        worth_runtime_world::facade::OwnerRetirementWork::RelationalBranchRetirement {
+                            ..
+                        } => None,
+                    })
+                    .collect()
+            })
+            .unwrap_or_default()
+    }
+
+    pub(super) fn release_history(
+        &self,
+        identity: u64,
+        runtime: &WorthQueryProductRuntime,
+        retirements: &mut OwnerCleanupRetirements,
+    ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
+        retirements.bind(self)?;
+        let entry = lock(&self.state)
+            .entries
+            .get(&identity)
+            .cloned()
+            .ok_or(WorthQueryProductBranchOwnerCleanupDenial::CleanupUnavailable)?;
+        let mut record = RetryRecordGuard::take(&entry.record)?;
+        record.record_mut().release_retired_history(runtime)
+    }
+
+    pub(super) fn pending_application_retired_product_occurrences(
+        &self,
+    ) -> Vec<WorthQueryRetiredProductOccurrence> {
+        let mut occurrences: Vec<_> = lock(&self.state)
+            .entries
+            .values()
+            .filter_map(|entry| match &entry.scope {
+                CleanupScope::ApplicationRetirement(occurrence) => Some(occurrence.clone()),
+                CleanupScope::Creation
+                | CleanupScope::Application
+                | CleanupScope::WorkspaceRetirement => None,
+            })
+            .collect();
+        occurrences.sort_by(|left, right| {
+            left.branch()
+                .cmp(right.branch())
+                .then_with(|| left.incarnation().cmp(&right.incarnation()))
+        });
+        occurrences
+    }
+
+    pub(super) fn retry(
+        &self,
+        identity: u64,
+        runtime: &WorthQueryProductRuntime,
+        retirements: &mut OwnerCleanupRetirements,
+    ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
+    {
+        // The unbounded door: its checkpoints admit any work, so its owner
+        // transitions run on an unbounded serial request of their own.
+        let host = worth_execution::SerialRequest::from_memory(
+            worth_execution::SerialMemoryBudget::new(None),
+            worth_execution::CancellationToken::new(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&host);
+        self.retry_admitted(&execution, identity, runtime, retirements, |_| Ok(()))
+    }
+
+    pub(super) fn retry_admitted(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        identity: u64,
+        runtime: &WorthQueryProductRuntime,
+        retirements: &mut OwnerCleanupRetirements,
+        checkpoint: impl FnMut(u64) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial>,
+    ) -> Result<WorthQueryProductBranchOwnerCleanupReceipt, WorthQueryProductBranchOwnerCleanupDenial>
+    {
+        let entry = lock(&self.state)
+            .entries
+            .get(&identity)
+            .cloned()
+            .ok_or(WorthQueryProductBranchOwnerCleanupDenial::CleanupUnavailable)?;
+        retirements.bind(self)?;
+        let mut record = RetryRecordGuard::take(&entry.record)?;
+        match record.record_mut().retry(
+            execution,
+            runtime,
+            retirements,
+            || self.after_component_progress(),
+            checkpoint,
+        ) {
+            Ok(receipt) => {
+                let mut state = lock(&self.state);
+                if state
+                    .entries
+                    .get(&identity)
+                    .is_some_and(|installed| Arc::ptr_eq(installed, &entry))
+                {
+                    state.entries.remove(&identity);
+                }
+                drop(state);
+                record.complete();
+                Ok(receipt)
+            }
+            Err(denial) => Err(denial),
+        }
+    }
+
+    fn after_component_progress(&self) {
+        testing::run_after_component_progress();
+    }
+
+    fn after_install(&self) {
+        testing::run_after_install();
+    }
+
+    pub fn replace_after_install_hook(&self, hook: Option<Box<dyn Fn()>>) {
+        testing::replace_after_install_hook(hook);
+    }
+
+    pub fn replace_after_component_progress_hook(&self, hook: Option<Box<dyn Fn()>>) {
+        testing::replace_after_component_progress_hook(hook);
+    }
+}
+
+// A reservation is non-Clone and created only after incrementing reserved.
+// install consumes self and disarms Drop before callbacks; Drop decrements only
+// an armed reservation. Each decrement therefore owns one distinct reserved slot.
+#[must_use = "cleanup capacity must be installed or released"]
+pub struct WorthQueryProductBranchOwnerCleanupReservation {
+    registry: WorthQueryProductBranchOwnerCleanupRegistry,
+    identity: u64,
+    entry: Arc<CleanupEntry>,
+    armed: bool,
+}
+
+impl WorthQueryProductBranchOwnerCleanupReservation {
+    pub fn install_retirement(
+        self,
+        report: worth_runtime_world::facade::ProductBranchRetirementReport,
+    ) -> u64 {
+        self.install(WorthQueryProductBranchOwnerCleanupRecord::from_retirement(
+            report,
+        ))
+    }
+
+    pub fn install_unpublished(
+        self,
+        cleanup: worth_runtime_world::facade::ProductUnpublishedCleanup,
+    ) -> u64 {
+        self.install(WorthQueryProductBranchOwnerCleanupRecord::from_unpublished(
+            cleanup,
+        ))
+    }
+
+    fn install(mut self, record: WorthQueryProductBranchOwnerCleanupRecord) -> u64 {
+        let entry = Arc::clone(&self.entry);
+        *lock(&entry.record) = Some(record);
+        let mut state = lock(&self.registry.state);
+        state.reserved = state
+            .reserved
+            .checked_sub(1)
+            .expect("a cleanup reservation owns one slot");
+        let replaced = state.entries.insert(self.identity, entry);
+        assert!(replaced.is_none(), "cleanup identities install once");
+        self.armed = false;
+        self.registry.after_install();
+        self.identity
+    }
+}
+
+#[path = "registry/retry.rs"]
+mod retry;
+use retry::RetryRecordGuard;
+#[path = "registry/testing.rs"]
+mod testing;
+
+impl Drop for WorthQueryProductBranchOwnerCleanupReservation {
+    fn drop(&mut self) {
+        if !self.armed {
+            return;
+        }
+        let mut state = lock(&self.registry.state);
+        state.reserved = state
+            .reserved
+            .checked_sub(1)
+            .expect("a cleanup reservation owns one slot");
+        self.armed = false;
+    }
+}
+
+pub fn lock<T>(mutex: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    mutex.lock().unwrap_or_else(|error| error.into_inner())
+}
+
+mod court_doors_for_test;

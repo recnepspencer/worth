@@ -3,6 +3,7 @@ mod transition_body_fence;
 mod transition_catalog_readmission;
 use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRefused as OpenRefusal;
 mod admission_retirement;
+mod adoption_seams;
 mod dispatch_journal;
 mod journal_absence;
 mod query_publication;
@@ -26,6 +27,7 @@ mod transition_step_affinity;
 mod transition_steps;
 mod transition_unopened_resume;
 mod unresolved;
+mod workflow_transition_seams;
 
 use worth_execution::ExecutionRequest;
 use worth_store::physical_runtime::{

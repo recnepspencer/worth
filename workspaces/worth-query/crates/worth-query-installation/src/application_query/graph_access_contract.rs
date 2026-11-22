@@ -11,7 +11,12 @@ use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeId
 mod compilation;
 mod relation_predicate;
 mod root_selection;
+mod where_filter;
 pub use relation_predicate::WorthQueryInstalledGraphRelationPredicate;
+pub use where_filter::{
+    WorthQueryInstalledWhereFilter, WorthQueryInstalledWhereFilterField,
+    WorthQueryInstalledWhereFilterParameter,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct WorthQueryInstalledGraphProjection {
@@ -308,6 +313,7 @@ pub(super) struct WorthQueryInstalledGraphReadMeaning {
         >,
     >,
     pub(super) predicates: Vec<WorthQueryInstalledGraphPredicate>,
+    pub(super) where_filter: Option<WorthQueryInstalledWhereFilter>,
     pub(super) ordering: Vec<WorthQueryInstalledGraphOrdering>,
     pub(super) maximum_traversal_depth: usize,
     pub(super) maximum_result_count: usize,
@@ -354,6 +360,7 @@ impl WorthQueryInstalledGraphReadContract {
             || meaning.orbit.is_some()
             || meaning.component_selection.is_some()
             || meaning.managed_index.is_some()
+            || meaning.where_filter.is_some()
     }
 
     pub fn root_entity(&self) -> &str {

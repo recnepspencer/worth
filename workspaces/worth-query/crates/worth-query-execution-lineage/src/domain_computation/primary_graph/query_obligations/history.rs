@@ -1,0 +1,341 @@
+//! One serialized Query obligation history and its admitted program-support membership.
+use crate::domain_computation::primary_graph::query_obligations as journal;
+use std::collections::BTreeMap;
+use std::sync::{Arc, Mutex};
+
+use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
+use worth_query_installation::facade::{
+    WorthQueryProgramSupportPartialRetirementInventory, WorthQueryProgramSupportRetirementDenial,
+    WorthQueryProgramSupportRetirementInventory, WorthQueryProgramSupportRoster,
+};
+
+use worth_foundational::facade::ProgramSupportStatus;
+pub mod accepted_output;
+pub mod adoption;
+pub mod cold_release;
+pub mod conditional_decision;
+pub use conditional_decision::QueryConditionalRetryAdmission;
+pub mod interpretation_membership;
+pub mod managed_run;
+pub mod original_operation;
+pub mod original_readmission;
+pub mod original_transfer;
+pub mod output_demand;
+pub mod output_source;
+pub mod resource;
+use interpretation_membership::InterpretationMembership;
+pub use resource::ResourceDisposal;
+pub mod journal_publication;
+pub mod managed_cleanup;
+pub mod publication_allocation;
+pub use publication_allocation::QueryObligationJournalState;
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryProgramSupportRetirementReceipt {
+    inventory: WorthQueryProgramSupportRetirementInventory,
+}
+
+impl WorthQueryProgramSupportRetirementReceipt {
+    pub const fn inventory(&self) -> &WorthQueryProgramSupportRetirementInventory {
+        &self.inventory
+    }
+}
+
+/// Read-only cold adoption readmission counts observed before Home service.
+/// Grants no adoption, publication or recovery authority.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct QueryColdAdoptionReadmissionSummary {
+    pub pre_open_retained: usize,
+    pub empty_open_released: usize,
+    pub native_recovery_retained: usize,
+    pub published_discharged: usize,
+    pub released_discharged: usize,
+    pub continued_discharged: usize,
+    pub already_completed: usize,
+    pub already_released: usize,
+    pub stopped_sets_retained: usize,
+}
+
+#[derive(Clone, Copy)]
+pub struct SupportEntryState {
+    pub status: ProgramSupportStatus,
+    pub retained_interpretations: usize,
+    pub mandatory_custody: usize,
+    pub retirement_claimed: bool,
+}
+
+pub struct QueryObligationState {
+    pending_output_discharges: std::collections::BTreeSet<std::num::NonZeroU64>,
+    pub entries: BTreeMap<ApplicationProgramRevision, SupportEntryState>,
+    pub journal: Option<QueryObligationJournalState>,
+    pub cold_adoption_summary: QueryColdAdoptionReadmissionSummary,
+}
+
+pub struct QueryObligationHistory {
+    pub state: Arc<Mutex<QueryObligationState>>,
+    pub medium: std::sync::OnceLock<Arc<dyn journal::QueryObligationsMedium>>,
+    pub publication_driver: Mutex<()>,
+}
+
+impl QueryObligationHistory {
+    pub fn installed<Schema>(roster: &WorthQueryProgramSupportRoster<Schema>) -> Self {
+        let entries = roster
+            .entries()
+            .iter()
+            .map(|entry| {
+                (
+                    *entry.revision(),
+                    SupportEntryState {
+                        status: ProgramSupportStatus::Active,
+                        retained_interpretations: 0,
+                        mandatory_custody: 0,
+                        retirement_claimed: false,
+                    },
+                )
+            })
+            .collect();
+        Self {
+            state: Arc::new(Mutex::new(QueryObligationState {
+                pending_output_discharges: Default::default(),
+                entries,
+                journal: None,
+                cold_adoption_summary: QueryColdAdoptionReadmissionSummary::default(),
+            })),
+            medium: std::sync::OnceLock::new(),
+            publication_driver: Mutex::new(()),
+        }
+    }
+
+    pub fn record_cold_adoption_original(&self, native_present: bool) {
+        let mut state = self.state();
+        if native_present {
+            state.cold_adoption_summary.native_recovery_retained += 1;
+        } else {
+            state.cold_adoption_summary.empty_open_released += 1;
+        }
+    }
+
+    pub fn cold_adoption_summary(&self) -> QueryColdAdoptionReadmissionSummary {
+        self.state().cold_adoption_summary
+    }
+
+    pub fn state(&self) -> std::sync::MutexGuard<'_, QueryObligationState> {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+    fn pending_affects(
+        state: &QueryObligationState,
+        revision: &ApplicationProgramRevision,
+    ) -> bool {
+        state.journal.as_ref().is_some_and(|journal| {
+            journal.pending.as_ref().is_some_and(|frame| {
+                journal.ledger.record_mentions_revision(
+                    frame.record(),
+                    &worth_foundational::facade::CanonicalDigestId::new(*revision.as_bytes()),
+                )
+            })
+        })
+    }
+
+    pub fn is_active(&self, revision: &ApplicationProgramRevision) -> bool {
+        self.state.lock().ok().is_some_and(|state| {
+            !Self::pending_affects(&state, revision)
+                && state.entries.get(revision).is_some_and(|entry| {
+                    entry.status == ProgramSupportStatus::Active && !entry.retirement_claimed
+                })
+        })
+    }
+
+    pub fn retain_interpretation(
+        &self,
+        revision: &ApplicationProgramRevision,
+    ) -> Option<WorthQueryProgramSupportInterpretation> {
+        self.acquire(revision, SupportUse::Interpretation)?;
+        Some(WorthQueryProgramSupportInterpretation {
+            state: Arc::clone(&self.state),
+            revision: *revision,
+            membership: Arc::new(Mutex::new(InterpretationMembership::Local)),
+        })
+    }
+
+    pub fn retain_custody(
+        &self,
+        source: &ApplicationProgramRevision,
+        target: &ApplicationProgramRevision,
+    ) -> Option<WorthQueryProgramSupportCustody> {
+        self.acquire(source, SupportUse::Custody)?;
+        if source != target && self.acquire(target, SupportUse::Custody).is_none() {
+            Self::release(&self.state, source, SupportUse::Custody);
+            return None;
+        }
+        Some(WorthQueryProgramSupportCustody {
+            local: true,
+            state: Arc::clone(&self.state),
+            source: *source,
+            target: (source != target).then_some(*target),
+        })
+    }
+
+    fn acquire(&self, revision: &ApplicationProgramRevision, usage: SupportUse) -> Option<()> {
+        let mut state = self.state.lock().ok()?;
+        if Self::pending_affects(&state, revision) {
+            return None;
+        }
+        let entry = state.entries.get_mut(revision)?;
+        if entry.status != ProgramSupportStatus::Active || entry.retirement_claimed {
+            return None;
+        }
+        let count = match usage {
+            SupportUse::Interpretation => &mut entry.retained_interpretations,
+            SupportUse::Custody => &mut entry.mandatory_custody,
+        };
+        *count = count.checked_add(1)?;
+        Some(())
+    }
+
+    fn release(
+        state: &Arc<Mutex<QueryObligationState>>,
+        revision: &ApplicationProgramRevision,
+        usage: SupportUse,
+    ) {
+        let mut state = state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let Some(entry) = state.entries.get_mut(revision) else {
+            return;
+        };
+        let count = match usage {
+            SupportUse::Interpretation => &mut entry.retained_interpretations,
+            SupportUse::Custody => &mut entry.mandatory_custody,
+        };
+        let Some(remaining) = count.checked_sub(1) else {
+            return;
+        };
+        *count = remaining;
+    }
+
+    pub fn begin_retirement(
+        &self,
+        revision: &ApplicationProgramRevision,
+    ) -> Result<WorthQueryProgramSupportRetirementAttempt, WorthQueryProgramSupportRetirementDenial>
+    {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if self.medium.get().is_some() {
+            return Err(
+                WorthQueryProgramSupportRetirementDenial::RetirementInProgress {
+                    revision: *revision,
+                },
+            );
+        }
+        Self::claim_retirement(&mut state, &self.state, revision)
+    }
+    fn claim_retirement(
+        state: &mut QueryObligationState,
+        owner: &Arc<Mutex<QueryObligationState>>,
+        revision: &ApplicationProgramRevision,
+    ) -> Result<WorthQueryProgramSupportRetirementAttempt, WorthQueryProgramSupportRetirementDenial>
+    {
+        use WorthQueryProgramSupportRetirementDenial as Denial;
+        let entry = state
+            .entries
+            .get_mut(revision)
+            .ok_or(Denial::UnrosteredProgram {
+                revision: *revision,
+            })?;
+        if entry.retirement_claimed {
+            return Err(Denial::RetirementInProgress {
+                revision: *revision,
+            });
+        }
+        match entry.status {
+            ProgramSupportStatus::Active => entry.status = ProgramSupportStatus::Retiring,
+            ProgramSupportStatus::Retiring => {} // Fresh authority resumes acknowledged Retiring.
+            ProgramSupportStatus::Retired => {
+                return Err(Denial::AlreadyRetired {
+                    revision: *revision,
+                })
+            }
+        }
+        entry.retirement_claimed = true;
+        Ok(WorthQueryProgramSupportRetirementAttempt {
+            state: Arc::clone(owner),
+            revision: *revision,
+            finished: false,
+        })
+    }
+}
+
+#[derive(Clone, Copy)]
+enum SupportUse {
+    Interpretation,
+    Custody,
+}
+
+pub struct WorthQueryProgramSupportInterpretation {
+    membership: Arc<Mutex<InterpretationMembership>>,
+    state: Arc<Mutex<QueryObligationState>>,
+    revision: ApplicationProgramRevision,
+}
+
+impl WorthQueryProgramSupportInterpretation {
+    pub const fn revision(&self) -> &ApplicationProgramRevision {
+        &self.revision
+    }
+    pub fn same_support_as(&self, other: &Self) -> bool {
+        self.revision == other.revision && Arc::ptr_eq(&self.state, &other.state)
+    }
+}
+
+impl Drop for WorthQueryProgramSupportInterpretation {
+    fn drop(&mut self) {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let entry = state
+            .entries
+            .get_mut(&self.revision)
+            .expect("issued interpretation entry");
+        self.membership
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .abandon(&mut entry.retained_interpretations);
+    }
+}
+
+pub struct WorthQueryProgramSupportCustody {
+    local: bool,
+    state: Arc<Mutex<QueryObligationState>>,
+    source: ApplicationProgramRevision,
+    target: Option<ApplicationProgramRevision>,
+}
+
+impl std::fmt::Debug for WorthQueryProgramSupportCustody {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("WorthQueryProgramSupportCustody")
+            .field("source", &self.source)
+            .field("target", &self.target)
+            .finish_non_exhaustive()
+    }
+}
+
+impl Drop for WorthQueryProgramSupportCustody {
+    fn drop(&mut self) {
+        if !self.local {
+            return;
+        }
+        QueryObligationHistory::release(&self.state, &self.source, SupportUse::Custody);
+        if let Some(target) = &self.target {
+            QueryObligationHistory::release(&self.state, target, SupportUse::Custody);
+        }
+    }
+}
+
+pub mod retirement;
+pub use retirement::WorthQueryProgramSupportRetirementAttempt;
+
+mod court_doors_for_test;

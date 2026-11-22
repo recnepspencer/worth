@@ -130,6 +130,34 @@ pub(super) fn map_compilation_denial(
             };
             (kind, denial.subject().to_string())
         }
+        ApplicationSchemaCompilationDenial::Naming(denial) => {
+            use worth_query_declaration::facade::application_naming::ApplicationNameSchemeDenial as NamingDenial;
+            let (kind, subject) = match denial {
+                NamingDenial::CyclicRoleOrder { scheme_id, .. } => (
+                    WorthQueryInstalledApplicationSchemaDenialKind::NamingSchemeCyclicRoleOrder,
+                    scheme_id,
+                ),
+                NamingDenial::MissingSplitDiscriminator { scheme_id } => (
+                    WorthQueryInstalledApplicationSchemaDenialKind::NamingSchemeMissingSplitDiscriminator,
+                    scheme_id,
+                ),
+                NamingDenial::DuplicateScheme { scheme_id, .. } => (
+                    WorthQueryInstalledApplicationSchemaDenialKind::NamingSchemeDuplicate,
+                    scheme_id,
+                ),
+                NamingDenial::InvalidSchemeIdentifier { scheme_id }
+                | NamingDenial::InvalidSubjectName { scheme_id, .. }
+                | NamingDenial::EmptyRoleOrder { scheme_id }
+                | NamingDenial::InvalidRoleName { scheme_id, .. }
+                | NamingDenial::InvalidDiscriminatorIdentity { scheme_id, .. }
+                | NamingDenial::UndeclaredRoleDependency { scheme_id, .. }
+                | NamingDenial::MissingSubjectTarget { scheme_id, .. } => (
+                    WorthQueryInstalledApplicationSchemaDenialKind::NamingSchemeInvalid,
+                    scheme_id,
+                ),
+            };
+            (kind, subject)
+        }
     };
     let denial = WorthQueryInstalledApplicationSchemaDenial::new(kind, subject);
     match canonical_denial {

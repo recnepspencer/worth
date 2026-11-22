@@ -6,9 +6,7 @@ pub use bank_domain::proposals::{BankAccountAuthorization, BankSnapshotBuilder};
 pub use bank_domain::schema::AccountStatus;
 pub use bank_server::{BankAuthenticatedPrincipal, BankPrincipalSeed, BankWorldSeed};
 
-pub use crate::facade::support::{
-    block_on, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld,
-};
+pub use crate::facade::support::{runtime, DynamicIdentity, TestIdentityWorld};
 
 pub struct CanonicalScaleFixture {
     pub world: TestIdentityWorld,
@@ -29,12 +27,9 @@ impl CanonicalScaleFixture {
 
     pub fn authenticate(&self, identity: &DynamicIdentity) -> BankAuthenticatedPrincipal {
         let request = crate::facade::support::request_scope();
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(identity),
-            &request,
-        ))
-        .expect("canonical scale actor should authenticate")
+        self.world
+            .authenticate(identity, &request)
+            .expect("canonical scale actor should authenticate")
     }
 }
 

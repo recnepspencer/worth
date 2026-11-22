@@ -2,9 +2,7 @@ pub use worth_query_execution::facade;
 #[path = "temporal_conditional_operation/counted_read_stops.rs"]
 pub mod counted_read_stops;
 pub use crate::facade::host::process_deadline;
-#[allow(dead_code)] // This target uses the request-backed branch of the shared oracle.
-#[path = "../../../worth-query-execution/src/test_read_stops.rs"]
-pub mod test_read_stops;
+pub use worth_query_execution::test_read_stops;
 
 pub use crate::facade::host::adapters;
 pub use crate::facade::host::contract;

@@ -16,9 +16,7 @@ pub use bank_server::{
     BankAuthenticatedPrincipal, BankEmployeeAssignmentSeed, BankPrincipalSeed, BankWorldSeed,
 };
 
-pub use crate::facade::support::{
-    block_on, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld,
-};
+pub use crate::facade::support::{runtime, DynamicIdentity, TestIdentityWorld};
 
 pub struct EstateReadFixture {
     pub world: TestIdentityWorld,
@@ -37,12 +35,9 @@ pub struct EstateReadFixture {
 impl EstateReadFixture {
     pub fn authenticate(&self, ordinal: usize) -> BankAuthenticatedPrincipal {
         let request = crate::facade::support::request_scope();
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(&self.identities[ordinal]),
-            &request,
-        ))
-        .expect("estate fixture principal should authenticate")
+        self.world
+            .authenticate(&self.identities[ordinal], &request)
+            .expect("estate fixture principal should authenticate")
     }
 }
 

@@ -54,14 +54,12 @@ worth_query_application_query!(
 );
 worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateLegalComplianceRequestBinding for EstateLegalComplianceRequest { identity: "EstateLegalComplianceRequest" });
 worth_query_decl::facade::worth_query_query_binding!(
-    pub EstateLegalComplianceQueryBinding for EstateLegalComplianceRequest, schema BankSchema,
+    pub EstateLegalComplianceQueryBinding for EstateLegalComplianceRequest, schema BankSchema, context crate::schema::BankBindingContext,
     identity "worth.bank.estate-legal-compliance-query-binding.v1",
     input EstateLegalComplianceRequestBinding,
     query EstateLegalComplianceQuery,
     parameters EstateLegalComplianceQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
     result EstateLegalComplianceQueryResultBinding,
-    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
-        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
     scope crate::schema::EstateCaseIdentityField,
     field crate::schema::EstateCaseIdentityField::at("EstateCaseIdentityField"),
     value EstateLegalComplianceRequest::estate,

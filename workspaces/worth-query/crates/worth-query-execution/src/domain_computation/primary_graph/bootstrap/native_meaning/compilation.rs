@@ -1,5 +1,6 @@
 //! One compiler produces the complete Native layout, rules and Source owners.
 use super::*;
+use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
 use worth_relational::facade::{
     identity::KindId, runtime::CustomInvariantRegistration, schema::RelationalSchemaRegistry,
 };

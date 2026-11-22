@@ -1,0 +1,127 @@
+//! Central implementation selection: authored bodies cannot be replaced.
+use super::super::super::operation_body::{
+    OperationBodyHandler, WorthQueryOperationBodyDecision, WorthQueryOperationBodyDenial,
+};
+use super::{
+    denial, ApplicationMutationBinding, ApplicationSchema, ApplicationSchemaBindingIdentity,
+    DenialKind, OperationHandler, PendingMutationHandlerRegistry,
+    WorthQueryInstalledApplicationMutationBinding, WorthQueryPrimaryGraphInstallationDenial,
+};
+use worth_query_declaration::facade::application_operation::ApplicationMutationScopeBinding;
+
+type Scope<Schema, Binding> = <<Binding as ApplicationMutationBinding<Schema>>::ScopeBinding
+    as ApplicationMutationScopeBinding<Schema>>::Scope;
+
+impl<Schema: ApplicationSchema> PendingMutationHandlerRegistry<Schema> {
+    pub fn require_operation_body_coverage(
+        &self,
+        schema: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        use std::collections::BTreeSet;
+        use worth_query_declaration::facade::application_schema::ApplicationSchemaMember;
+
+        let covered: BTreeSet<_> = schema
+            .installed_mutation_binding_inventory()
+            .filter(|binding| {
+                self.entries
+                    .get(binding.identity())
+                    .is_some_and(|entry| entry.origin == super::HandlerOrigin::CompiledBody)
+            })
+            .map(|binding| binding.operation_name())
+            .collect();
+        for member in schema.installed_declaration().members() {
+            if let ApplicationSchemaMember::OperationBody { operation, .. } = member
+                && !covered.contains(operation.as_str())
+            {
+                return Err(denial(DenialKind::OperationBodyUnavailable, operation));
+            }
+        }
+        Ok(())
+    }
+
+    pub fn register<Binding, Handler>(
+        &mut self,
+        binding: &ApplicationSchemaBindingIdentity,
+        installed: &WorthQueryInstalledApplicationMutationBinding<Schema, Binding>,
+        handler: Handler,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+        Handler: OperationHandler<Schema, Binding>,
+    {
+        if installed.operation().body().is_some() {
+            return Err(denial(
+                DenialKind::OperationBodyReplacement,
+                Binding::IDENTITY,
+            ));
+        }
+        self.register_resolved(binding, installed, handler, super::HandlerOrigin::Supplier)
+    }
+
+    pub fn register_body<Binding>(
+        &mut self,
+        binding: &ApplicationSchemaBindingIdentity,
+        installed: &WorthQueryInstalledApplicationMutationBinding<Schema, Binding>,
+        handler: OperationBodyHandler<Schema, Binding>,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Binding: ApplicationMutationBinding<
+            Schema,
+            Result = (),
+            Denial = WorthQueryOperationBodyDenial,
+            Decision = WorthQueryOperationBodyDecision<Schema, Scope<Schema, Binding>>,
+        >,
+    {
+        if installed.operation().body() != Some(handler.body()) {
+            return Err(denial(
+                DenialKind::OperationBodyUnavailable,
+                Binding::IDENTITY,
+            ));
+        }
+        if Binding::WORKFLOW_CONTROL
+            && handler
+                .body()
+                .creation()
+                .and_then(|creation| creation.signing())
+                .is_none()
+        {
+            return Err(denial(
+                DenialKind::OperationBodyUnavailable,
+                Binding::IDENTITY,
+            ));
+        }
+        self.register_resolved(
+            binding,
+            installed,
+            handler,
+            super::HandlerOrigin::CompiledBody,
+        )
+    }
+}
+
+impl<Schema: ApplicationSchema> super::WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Native approval composition alone selects this compiled control body.
+    /// Ordinary lookup still rejects every control binding before touching it.
+    pub fn mutation_body_for_approval<Binding>(
+        &self,
+    ) -> Result<
+        std::sync::Arc<dyn OperationHandler<Schema, Binding>>,
+        super::MutationHandlerExecutionDenial,
+    >
+    where
+        Binding: ApplicationMutationBinding<Schema>,
+    {
+        if !Binding::WORKFLOW_CONTROL
+            || !self
+                .mutation_handlers
+                .entries
+                .get(Binding::IDENTITY)
+                .is_some_and(|entry| entry.origin == super::HandlerOrigin::CompiledBody)
+        {
+            return Err(super::MutationHandlerExecutionDenial::WorkflowControl);
+        }
+        self.mutation_handlers
+            .get::<Binding>()
+            .ok_or(super::MutationHandlerExecutionDenial::HandlerNotInstalled)
+    }
+}

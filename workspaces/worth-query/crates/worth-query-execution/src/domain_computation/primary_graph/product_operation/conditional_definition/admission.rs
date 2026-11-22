@@ -1,4 +1,7 @@
 //! One definition successor issuer for selected entries and admitted handlers.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use crate::domain_computation::primary_graph::product_operation::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinitionRuntimeExt as _;
 use super::*;
 use crate::basis::WorthQueryProductBranchLease;
 use crate::domain_computation::primary_graph::{
@@ -23,18 +26,24 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Node: 'static,
         Provider: WorthQueryAuthoredHostConditionalPredicateProvider<Node>,
     {
-        let (anchor, request) = definition_request(self, product, handle, provider)
-            .map_err(|cause| match cause {
-                WorthQueryConditionalDefinitionPublicationDenial::ForeignConditionalOperation => WorthQueryApplicationConditionalDefinitionAdmissionDenial::ForeignConditionalOperation,
-                WorthQueryConditionalDefinitionPublicationDenial::BridgePreparation(cause) => WorthQueryApplicationConditionalDefinitionAdmissionDenial::BridgePreparation(cause),
-                _ => unreachable!("definition preparation does not publish"),
-            })?;
+        // The Bridge basis check belongs to the commit, after its key resolves.
+        let successor = match definition_request(self, product, handle, provider) {
+            Ok(successor) => Ok(successor),
+            Err(WorthQueryConditionalDefinitionPublicationDenial::BridgePreparation(cause)) => {
+                Err(cause)
+            }
+            Err(WorthQueryConditionalDefinitionPublicationDenial::ForeignConditionalOperation) => {
+                return Err(
+                    WorthQueryApplicationConditionalDefinitionAdmissionDenial::ForeignConditionalOperation,
+                )
+            }
+            Err(_) => unreachable!("definition preparation does not publish"),
+        };
         Ok(WorthQueryAdmittedApplicationConditionalDefinition::new(
-            self,
+            self.inner(),
             product,
             *handle.binding_identity_digest(),
-            anchor,
-            request,
+            successor,
         ))
     }
 }
@@ -54,13 +63,20 @@ pub(super) fn definition_request<Schema: ApplicationSchema, Node: 'static, Clock
 where
     Provider: WorthQueryAuthoredHostConditionalPredicateProvider<Node>,
 {
-    let bridge_root = application.runtime.bridge.conditional_operations();
+    let bridge_root = application
+        .inner
+        .runtime
+        .bridge_ref()
+        .conditional_operations();
     let bridge = bridge_root
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     let (predecessor, authored) = if let Some(route) = application
         .conditional_cleanup
+        .routes
         .definitions
+        .read()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
         .route(handle.binding_identity(), handle.lease())
     {
         (
@@ -73,6 +89,7 @@ where
     } else {
         let operation = application
             .conditional_cleanup
+            .routes
             .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -115,13 +132,3 @@ where
     };
     Ok((predecessor, request))
 }
-
-impl std::fmt::Display for WorthQueryApplicationConditionalDefinitionAdmissionDenial {
-    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            formatter,
-            "conditional definition admission refused: {self:?}"
-        )
-    }
-}
-impl std::error::Error for WorthQueryApplicationConditionalDefinitionAdmissionDenial {}

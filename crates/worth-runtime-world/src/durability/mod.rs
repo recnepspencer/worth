@@ -27,13 +27,15 @@ mod medium;
 pub use home_program_lineage::WorldHomeProgramLineage;
 mod occurrence_custody;
 mod open_custody;
+mod planned_signal_leg;
 pub(crate) use occurrence_custody::WorldOccurrenceCustody;
 pub(crate) use open_custody::WorldDurableOpenCustody;
 mod readmission;
 mod readmission_custody;
 pub(crate) use readmission::{
     AdmittedWorldDisposition, AdmittedWorldOccurrence, AdmittedWorldOccurrenceLocation,
-    AdmittedWorldOpenAttempt, PreparedWorldReleasedDisposition, RecoveredCustodyDisposition,
+    AdmittedWorldOpenAttempt, AdmittedWorldPlannedSignalLeg, PreparedWorldReleasedDisposition,
+    RecoveredCustodyDisposition,
 };
 pub use readmission_custody::WorldNativeReadmissionCustody;
 mod release_evidence;
@@ -41,9 +43,9 @@ mod root_readmission;
 pub(crate) use artifact::{
     DurableWorldHead, PreparedWorldArtifact, WorldArtifactInput, WorldBranchCreatedRecord,
     WorldCreatedBranchOwnerEvidence, WorldCreationIntentInput, WorldCreationIntentRecord,
-    WorldHeadInput, WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldRecord,
-    WorldRecordedRelationalCreationPlan, WorldRelationalCreationInput, WorldRelationalEvidence,
-    WorldRelationalForkEvidence,
+    WorldHeadInput, WorldOpenAttemptInput, WorldOpenAttemptRecord, WorldPlannedSignalLegRecord,
+    WorldRecord, WorldRecordedRelationalCreationPlan, WorldRelationalCreationInput,
+    WorldRelationalEvidence, WorldRelationalForkEvidence,
 };
 pub use artifact::{
     WorldDurableArtifact, WorldDurableFrameDenial, WorldOpenComponentIntent,

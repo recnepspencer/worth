@@ -114,6 +114,7 @@ fn preparation_control_stops_retry_at_provider_commit() {
 }
 #[test]
 fn custody_faults_never_retry_through_either_projection() {
+    use worth_query_execution::court_doors_for_test::domain_computation::primary_graph::application_attempt::WorthQueryAdvancementDenialCommitExt as _;
     use worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial as Opening;
     for (opening, resource) in [
         (Opening::NestedOpening, Resource::NestedAdvancementOpening),

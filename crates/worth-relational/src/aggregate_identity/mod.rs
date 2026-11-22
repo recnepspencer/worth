@@ -7,7 +7,9 @@ mod consequence_plan;
 mod derived_source;
 mod final_laws;
 mod funding;
+mod group_lineage;
 pub(crate) use final_laws::validate_final_derived_laws;
+pub use group_lineage::AggregateGroupLineageEvent;
 mod materialization;
 mod membership;
 mod observations;
@@ -39,7 +41,15 @@ pub use read::{
 pub(crate) mod guard;
 pub(crate) mod record;
 
+pub use transition::group::{
+    AggregateContinuityRule, AggregateGroupAssignment, AggregateGroupClaimant,
+    AggregateGroupMember, AggregateGroupMembers, AggregateGroupNaming,
+    AggregateGroupNamingAuthority, AggregateGroupNamingDenial, AggregateGroupOrigin,
+    AggregateGroupScheme, AggregateGroupSchemeId, AggregateGroupTransition, AggregateMemberRole,
+    AggregatePriorGroup,
+};
 pub(crate) use transition::{
     transition, AggregateAssignment, AggregateLineageEvent, AggregateLineageKind,
     AggregateTransitionDenial, PriorAggregate,
 };
+pub use transition::{GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG, GROUP_AGGREGATE_TRANSITION_DOMAIN_TAG};

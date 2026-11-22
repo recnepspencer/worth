@@ -1,0 +1,27 @@
+[package]
+name = "worth-query-execution-contracts"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Shared internal Query execution contracts, denial vocabularies, runtime time, observation guards, and leaf primary-graph value/fragment types."
+publish = false
+
+[dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-proof = { path = "../../../../crates/worth-proof" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-runtime-bridge = { path = "../../../../crates/worth-runtime-bridge" }
+worth-runtime-world = { path = "../../../../crates/worth-runtime-world" }
+worth-signal = { path = "../../../../crates/worth-signal" }
+worth-query-admission = { path = "../worth-query-admission" }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-execution-diagnostics = { path = "../worth-query-execution-diagnostics" }
+worth-query-execution-foundation = { path = "../worth-query-execution-foundation" }
+worth-query-execution-layout = { path = "../worth-query-execution-layout" }
+worth-query-execution-obligations = { path = "../worth-query-execution-obligations" }
+worth-query-installation = { path = "../worth-query-installation" }
+
+[lints]
+workspace = true

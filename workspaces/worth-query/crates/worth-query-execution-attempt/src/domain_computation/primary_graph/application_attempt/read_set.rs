@@ -1,0 +1,182 @@
+pub use super::WorthQueryProjectedApplicationMutation;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+use std::collections::BTreeMap;
+use std::marker::PhantomData;
+use std::sync::Arc;
+
+use worth_query_installation::facade::ApplicationScalarValueBinding;
+
+use super::fact::{WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact};
+use super::read_phase::{
+    WorthQueryOrdinaryApplicationRead,
+};
+use super::read_scope::WorthQueryApplicationReadScope;
+use super::snapshot_lease::WorthQueryApplicationSnapshotLease;
+use super::{WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind};
+use crate::domain_computation::primary_graph::{
+    WorthQueryAdmittedApplicationOperation, WorthQueryApplicationEntityIdentity,
+    WorthQueryInstalledEntityResolutionContext,
+    WorthQueryPrincipalResolutionMode,
+};
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::fact_routes;
+pub use fact_routes::FactRoutes;
+pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::application_projection;
+pub use application_projection::CompletedFactProjection;
+pub mod original_read;
+pub use original_read::CompletedOriginalRead;
+pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::admitted_arrays;
+pub mod completed_facts;
+pub use completed_facts::admit_completed_facts;
+pub mod authority_facts;
+pub mod binding_proof;
+pub mod complete_read_set_core;
+pub mod completion;
+pub mod completion_brand;
+pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::computation_routing;
+pub mod mutation_read_attempt_core;
+pub mod native_completion;
+pub mod value_decode;
+
+pub use computation_routing::{
+    CheckedCallShape, ComputationFactAttribution, ComputationFactIndex, ComputationRead,
+    NativeCallCarriage, SealedComputationFacts,
+};
+pub mod request_liveness;
+pub mod retained_facts;
+pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::scope_bindings;
+pub use admitted_arrays::admit_array;
+pub use scope_bindings::{
+    CompletedReadScopes, InstalledScopePosition,
+};
+pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::decision_reuse;
+pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::fact_observation;
+pub use decision_reuse::{
+    CompletedDecisionReuseProof, PreparedDecisionReuseContext,
+};
+pub use fact_observation::{
+    observe_admitted_applied_fact, observe_admitted_fact,
+};
+pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::handler_fact_boundary;
+pub use handler_fact_boundary::CompletedHandlerFactBoundary;
+pub mod aggregate;
+pub mod captured_input_support;
+pub mod components;
+pub mod observation_admission;
+pub mod observations;
+pub mod projected_completion;
+pub mod projected_extension;
+pub mod relation_observation;
+pub mod source_facts;
+pub mod structural_walk;
+pub mod unique_write_dependencies;
+
+pub use binding_proof::{MutationHandlerBindingProof, WorkflowOperationBindingProof};
+pub use relation_observation::matching_relations;
+pub use relation_observation::WorthQueryObservedApplicationRelation;
+use source_facts::SourceFacts;
+
+/// An in-progress decision read for one admitted operation, begun on a leased
+/// snapshot of the branch.
+///
+/// Get one from the application runtime's `begin_application_read_attempt` (or
+/// its projected form). Observe the entities, fields, and relations the operation
+/// declares it reads, then call `complete` to seal them into a
+/// [`WorthQueryCompleteApplicationReadSet`]. Every read is checked against the
+/// operation's installed reads and its admitted scope.
+/// The attempt borrows its original execution request and retains cumulative
+/// decode grants. An ignored canonical decode refusal still prevents completion.
+pub struct WorthQueryApplicationReadAttempt<
+    'request,
+    'authority,
+    Schema,
+    Operation,
+    Input,
+    Scope,
+    Phase = WorthQueryOrdinaryApplicationRead,
+> {
+    execution: worth_execution::ExecutionRequest<'request, 'authority>,
+    value_decode: super::super::value_decode::ValueDecodeState,
+    admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    lease: WorthQueryApplicationSnapshotLease,
+    layout: Arc<super::super::schema_layout::WorthQueryPrimaryGraphLayout>,
+    entity_resolution: WorthQueryInstalledEntityResolutionContext,
+    read_scope: WorthQueryApplicationReadScope,
+    expected_facts: Option<crate::domain_computation::primary_graph::invariant_projection::ExpectedFactKeys>,
+    /// What a partitioned computation read of the expected facts, and where
+    /// it left its completed run when a producer ran it.
+    computation_reads: (
+        crate::domain_computation::primary_graph::invariant_projection::ObservedComputationInputs,
+        crate::domain_computation::primary_graph::application_contribution::CompletedComputationRetention,
+    ),
+    installed_read_scopes:
+        BTreeMap<WorthQueryApplicationFactKey, InstalledScopePosition>,
+    facts: BTreeMap<WorthQueryApplicationFactKey, WorthQueryApplicationObservedFact>,
+    source_facts: SourceFacts,
+    consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
+    native_completion: Option<computation_routing::NativeReadRefresh>,
+    _phase: PhantomData<fn() -> Phase>,
+}
+
+/// The sealed decision read set of one admitted operation: exactly the facts its
+/// installed reads cover, observed on one snapshot.
+///
+/// Sealing checked that the facts cover the declared reads and
+/// the operation's mutation preconditions. In the projected-mutation phase it
+/// begins the effect program that authors the candidate; an ordinary read-phase
+/// set cannot author effects.
+pub struct WorthQueryCompleteApplicationReadSet<
+    Schema,
+    Operation,
+    Input,
+    Scope,
+    Phase = WorthQueryOrdinaryApplicationRead,
+> {
+    pub(crate) admission:
+        Box<WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>>,
+    pub(crate) lease: WorthQueryApplicationSnapshotLease,
+    pub(crate) application_projection: Option<Arc<CompletedFactProjection>>,
+    pub(crate) original_read: Option<Arc<CompletedOriginalRead>>,
+    pub(crate) installed_read_scopes: CompletedReadScopes,
+    pub(crate) facts: FactPayload,
+    pub(crate) content: Option<super::FactContent>,
+    pub(crate) effect_routes: super::CompletedFactRoutes,
+    pub(crate) postcondition_carry: Option<
+        crate::domain_computation::primary_graph::output_lineage::invalidation::PostconditionCarry,
+    >,
+    pub(crate) consumed_outputs: Vec<super::super::invariant_projection::ConsumedOutputEvidence>,
+    /// The facts the owner calls read, when the handler ran one partitioned
+    /// computation.
+    pub(crate) computation_facts: Option<SealedComputationFacts>,
+    /// The ordinals in `facts`, ascending, of the facts an owner call read.
+    pub(crate) computation_fact_ordinals: Arc<[usize]>,
+    pub(crate) workflow_authority_binding: Option<WorkflowOperationBindingProof>,
+    pub(crate) workflow_birth_binding:
+        Option<super::workflow_instance_program::WorkflowBirthBindingProof>,
+    pub(crate) workflow_succession_binding:
+        Option<super::workflow_instance_program::WorkflowSuccessionBindingProof>,
+    pub(crate) mutation_handler_binding: Option<MutationHandlerBindingProof>,
+    pub(crate) local_action_settlement:
+        Option<super::workflow_transition_program::LocalActionSettlementProof>,
+    /// Earned optional-effect guard disposition from the same sealed decision.
+    /// It cannot be supplied by a caller or inferred from an absent payload.
+    pub(crate) body_external_emission:
+        Option<super::super::operation_body::emission::BodyExternalEffectSelection>,
+    pub(crate) signed_creation: Option<super::signed_creation::SignedCreationState<Schema>>,
+    /// The Unix-epoch millisecond the workflow instance this attempt steps
+    /// must commit before; the provider checks it again at commit.
+    pub(crate) workflow_deadline: Option<u64>,
+    /// A refusal for a new commit only: a retry of a recorded outcome replays.
+    pub(crate) new_commit_refusal: Option<WorthQueryApplicationAttemptDenial>,
+    pub(crate) _phase: PhantomData<fn() -> Phase>,
+    // Completed admission backing drops before its original-request charge.
+    pub(crate) _admission_memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+
+mod admission_port;
+pub mod entity_resolution;
+pub mod workflow_actor;
+
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_attempt::read_set::denial;
+pub use denial::denial;
+
+pub mod court_doors_for_test;

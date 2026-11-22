@@ -67,6 +67,21 @@ where
             .lock()
             .unwrap_or_else(|e| e.into_inner())
             .is_some();
+        if !prepared {
+            // A Native-only mixed original first performs its planned Signal leg.
+            match self.complete_recovered_signal_leg(execution, &effects.record) {
+                Ok(super::recovered_signal_leg::SignalLegProgress::Durable) => {}
+                Ok(super::recovered_signal_leg::SignalLegProgress::Pending) => {
+                    return Outcome::Pending(effects)
+                }
+                Err(cause) => {
+                    return Outcome::Refused {
+                        cause,
+                        custody: effects,
+                    }
+                }
+            }
+        }
         if !prepared
             && let Err(cause) = self.prepare_recovered_continuation(execution, &mut effects)
         {
@@ -107,7 +122,8 @@ where
             return Err(Denial::PredecessorChanged);
         }
         use crate::history::RecoveredWorldOwnerEvidenceRef as Owners;
-        let owners = match (native, effects.record.signal.as_deref()) {
+        let signal = effects.record.signal_effect();
+        let owners = match (native, signal.as_deref()) {
             (Some(native), None) => Owners::RelationalOnly(native.custody()),
             (None, Some(signal)) => Owners::SignalOnly(signal),
             (Some(native), Some(signal)) => Owners::RelationalAndSignal {
@@ -260,7 +276,7 @@ where
         };
         let owners = crate::history::RecoveredWorldOwnerEvidence::from_original_components(
             native,
-            effects.record.signal.clone(),
+            effects.record.signal_effect(),
         )
         .expect("the admitted original has an owner effect");
         let record = crate::history::ReadmittedPublicationRecord::prepare_original(

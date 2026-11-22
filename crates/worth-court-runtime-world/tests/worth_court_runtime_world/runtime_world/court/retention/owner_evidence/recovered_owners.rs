@@ -1,11 +1,12 @@
 //! Both actual owners are terminal before cancellation; only World movement remains.
 use super::super::artifact_source::Fixture;
 use super::*;
-use worth_relational::facade::mvcc::RelationalTransactionIntent;
 #[test]
 fn recovered_signal_only_original_keeps_its_owner_and_continues_without_reexecution() {
     run(false, false);
 }
+/// The mixed original runs World's definition path, the only one a durable
+/// medium admits for a Native and a Signal effect.
 #[test]
 fn recovered_mixed_original_keeps_both_owners_and_continues_without_reexecution() {
     run(true, false);
@@ -19,47 +20,43 @@ fn a_signal_effect_without_its_recorded_open_refuses_before_serving() {
 fn run(mixed: bool, orphan: bool) {
     let funding = crate::test_execution_policy::serial_request();
     let request = &ExecutionRequest::serial(&funding);
-    let mut fixture = Fixture::journal(request);
+    let mut fixture = if mixed {
+        Fixture::bridge_journal(request)
+    } else {
+        Fixture::journal(request)
+    };
     let root = match fixture.offer(request, "primary") {
         WorldDurableBootstrapOutcome::Performed(value) => value.product_branch().clone(),
         other => panic!("actual bootstrap: {other:?}"),
     };
     let port = fixture.world.publication_port();
     let cancellation = RuntimeWorldCancellationSource::new();
-    let opened = match port
-        .prepare_query_publication_with_signal(
-            request,
-            root.clone(),
-            fixture.recorder.program_source(&root),
-            mixed.then(RelationalTransactionIntent::ordinary),
-            &cancellation.token(),
-            None,
-        )
-        .unwrap()
-        .advance(request)
-    {
-        WorldOpenAttemptOutcome::Opened(opened) => opened,
-        other => panic!("actual original open: {other:?}"),
-    };
-    let commit = opened.reserved_commit_identity();
-    let proposal = if mixed {
-        let mut transaction =
-            worth_testkit_relational::aspect_storage::publications::begin_main_transaction(
-                &fixture.native,
-            );
-        transaction
-            .push_batch(
-                worth_testkit_relational::durable_publication::batch_create("mixed-original"),
-                request.allocation_policy(),
-            )
-            .unwrap();
-        Some(transaction.validate(request, &fixture.native).unwrap())
+    let (original, commit) = if mixed {
+        let original = super::mixed_definition::prepare(&fixture, request, &root, "mixed-original");
+        let commit = original.identities[1];
+        (Original::Definition(original), commit)
     } else {
-        None
+        let opened = match port
+            .prepare_query_publication_with_signal(
+                request,
+                root.clone(),
+                fixture.recorder.program_source(&root),
+                None,
+                &cancellation.token(),
+                None,
+            )
+            .unwrap()
+            .advance(request)
+        {
+            WorldOpenAttemptOutcome::Opened(opened) => opened,
+            other => panic!("actual original open: {other:?}"),
+        };
+        let commit = opened.reserved_commit_identity().ordinal();
+        let prepared = opened
+            .prepare_signal(&fixture.native, request, None)
+            .unwrap();
+        (Original::Closure(prepared), commit)
     };
-    let prepared = opened
-        .prepare_signal(&fixture.native, request, proposal)
-        .unwrap();
     let control = fixture.world.world_operation_control_for_test();
     let pause = control.pause_before_product_compare_for_test(std::num::NonZeroUsize::MIN);
     let body_calls = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
@@ -68,16 +65,22 @@ fn run(mixed: bool, orphan: bool) {
     let outcome = std::thread::scope(|scope| {
         let operation = scope.spawn(move || {
             let funding = crate::test_execution_policy::serial_request();
-            port.execute_durable_with_signal(
-                ExecutionRequest::serial(&funding),
-                prepared,
-                &mut (),
-                &token,
-                move |_| {
-                    calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-                    Ok(())
-                },
-            )
+            let request = ExecutionRequest::serial(&funding);
+            match original {
+                Original::Definition(original) => {
+                    super::mixed_definition::publish(&port, &request, original, &token)
+                }
+                Original::Closure(prepared) => port.execute_durable_with_signal(
+                    request,
+                    prepared,
+                    &mut (),
+                    &token,
+                    move |_| {
+                        calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+                        Ok(())
+                    },
+                ),
+            }
         });
         assert!(pause.wait_until_reached(std::time::Duration::from_secs(30)));
         cancellation.cancel();
@@ -94,7 +97,7 @@ fn run(mixed: bool, orphan: bool) {
     assert_eq!(custody.owner_effect_count(), 1 + usize::from(mixed));
     let attempt = custody.attempt_identity().clone();
     let original_native = fixture.native.history().historical_latest_commit();
-    let original_signal = fixture.signal.published_advance_count().unwrap();
+    let original_signal = fixture.signal().published_advance_count().unwrap();
     drop((custody, root, control, pause));
     if orphan {
         fixture
@@ -120,6 +123,7 @@ fn run(mixed: bool, orphan: bool) {
         return;
     }
     let fixture = fixture.reopen(request);
+    let generation = mixed.then(|| super::mixed_definition::served_generation(&fixture));
     let recovery = fixture.world.recovery_port();
     let page = fixture
         .world
@@ -159,16 +163,28 @@ fn run(mixed: bool, orphan: bool) {
     let WorldRecoveredContinuationOutcome::Published { commit: actual } = outcome else {
         panic!("the exact original must continue: {outcome:?}")
     };
-    assert_eq!(actual.ordinal(), commit.ordinal());
+    assert_eq!(actual.ordinal(), commit);
     assert_eq!(
         fixture.native.history().historical_latest_commit(),
         original_native
     );
     assert_eq!(
-        fixture.signal.published_advance_count().unwrap(),
+        fixture.signal().published_advance_count().unwrap(),
         original_signal
     );
-    assert_eq!(body_calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+    // The closure leg's body runs once; the definition leg has no body, so its
+    // non-re-execution evidence is the unchanged Native, Signal and generation
+    // counts around continuation.
+    if !mixed {
+        assert_eq!(body_calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+    }
+    if let Some(generation) = generation {
+        assert_eq!(
+            super::mixed_definition::served_generation(&fixture),
+            generation,
+            "continuation publishes the readmitted definition, never a second one"
+        );
+    }
     assert!(fixture
         .world
         .inspection_port()
@@ -178,4 +194,9 @@ fn run(mixed: bool, orphan: bool) {
         .is_empty());
     drop((recovery, page));
     fixture.finish(request);
+}
+
+enum Original {
+    Definition(super::mixed_definition::MixedOriginal),
+    Closure(WorldPreparedPublicationWithSignal),
 }

@@ -3,7 +3,7 @@ use super::opening::Home;
 use std::sync::Arc;
 use worth_query_host::facade::{primary_graph, product, runtime};
 use worth_query_testkit_host::facade::host::temporal_conditional_operation::{
-    contribution_installation::*, world::program_amendment::publish_definition_on_program_lane,
+    contribution_installation::*, world::program_amendment::commit_definition_on_program_lane,
 };
 
 pub(super) fn branches(home: &Home) -> Vec<product::WorthQueryProductBranch> {
@@ -70,6 +70,19 @@ fn finish_fork(
     }
 }
 pub(super) fn mixed(home: &Home, branch: product::WorthQueryProductBranch, ordinal: u8) {
+    let receipt = commit_mixed(home, branch, ordinal)
+        .require_committed()
+        .unwrap_or_else(|outcome| panic!("the mixed definition commit must land: {outcome:?}"));
+    assert_eq!(receipt.product_branch(), branch);
+    drop(receipt);
+}
+/// One mixed conditional-definition commit under its own idempotency key,
+/// answered exactly as Query answers that key.
+pub(super) fn commit_mixed(
+    home: &Home,
+    branch: product::WorthQueryProductBranch,
+    ordinal: u8,
+) -> primary_graph::WorthQueryApplicationCommitOutcome {
     let app = home.runtime();
     let installed = app.conditional::<TemporalConditional>().unwrap();
     let installed = installed.as_ref().as_ref().unwrap();
@@ -78,7 +91,7 @@ pub(super) fn mixed(home: &Home, branch: product::WorthQueryProductBranch, ordin
         .unwrap()
         .unwrap();
     let (provider, _) = Predicate::controlled(installed.contacts.clone());
-    let receipt = publish_definition_on_program_lane(
+    commit_definition_on_program_lane(
         app,
         &installed.clock,
         &installed.invariant,
@@ -86,9 +99,7 @@ pub(super) fn mixed(home: &Home, branch: product::WorthQueryProductBranch, ordin
         &format!("authored-{ordinal}"),
         Arc::new(provider),
         ordinal,
-    );
-    assert_eq!(receipt.product_branch(), branch);
-    drop(receipt);
+    )
 }
 pub(super) fn definition(home: &Home, branch: product::WorthQueryProductBranch) {
     let app = home.runtime();

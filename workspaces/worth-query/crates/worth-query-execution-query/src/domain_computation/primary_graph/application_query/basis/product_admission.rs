@@ -1,0 +1,160 @@
+use super::{admission_denial, WorthQueryApplicationQueryBasisCustody};
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use crate::basis::WorthQueryProductObservationLease;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationQueryAdmissionDenial, WorthQueryApplicationQueryAdmissionDenialKind,
+    WorthQueryPrimaryGraphApplicationRuntime,
+};
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+
+pub fn admit<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: WorthQueryProductObservationLease,
+    application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
+) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
+    let selected =
+        admit_selected_permission_basis(execution, application, product, application_basis)?;
+    // The installed read admits its selected indexes after basis and permission admission.
+    Ok(selected)
+}
+
+/// Admit the selected Query/Product basis before deciding whether this read
+/// needs graph execution. Read and disclosure permission can use this custody
+/// without rebuilding unrelated indexes on a Clean demand.
+pub fn admit_selected_permission_basis<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: WorthQueryProductObservationLease,
+    application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
+) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
+    admit_selected_permission_basis_with_native_access(
+        execution,
+        application,
+        product,
+        application_basis,
+        &mut super::super::ApplicationQueryNativeAccess::acquire(),
+    )
+}
+
+pub fn admit_selected_permission_basis_with_native_access<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: WorthQueryProductObservationLease,
+    application_basis: super::super::resource_lifecycle::WorthQueryApplicationBasisLease,
+    native: &mut super::super::ApplicationQueryNativeAccess<'_>,
+) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
+    if product.observation().owner_identity()
+        != application
+            .runtime
+            .product_runtime
+            .owner_ref()
+            .owner_identity()
+    {
+        return Err(admission_denial(
+            WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
+            "product World owner",
+        ));
+    }
+    let graph = application.runtime.primary_graph().ok_or_else(|| {
+        admission_denial(
+            WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
+            "primary graph",
+        )
+    })?;
+    let live = native.with_runtime(
+        graph,
+        execution,
+        || {
+            admission_denial(
+                WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
+                "query native owner",
+            )
+        },
+        |runtime| Ok(application_basis.is_live_at(runtime)),
+    )?;
+    if !live {
+        return Err(admission_denial(
+            WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
+            "retained product snapshot",
+        ));
+    }
+    Ok(WorthQueryApplicationQueryBasisCustody::new(
+        product,
+        application_basis,
+    ))
+}
+
+pub fn admit_retained<Schema: worth_query_installation::facade::ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: WorthQueryProductObservationLease,
+) -> Result<WorthQueryApplicationQueryBasisCustody, WorthQueryApplicationQueryAdmissionDenial> {
+    if product.observation().owner_identity()
+        != application
+            .runtime
+            .product_runtime
+            .owner_ref()
+            .owner_identity()
+    {
+        return Err(admission_denial(
+            WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis,
+            "product World owner",
+        ));
+    }
+    let mut application_basis = application
+        .retain_product_application_basis(execution, product.observation())
+        .map_err(map_product_admission_denial)?;
+    let _ = application
+        .bind_selected_program_interpretation(
+            execution,
+            product.relational_basis(),
+            &mut application_basis,
+        )
+        .map_err(map_product_admission_denial)?;
+    admit(execution, application, product, application_basis)
+}
+
+fn map_product_admission_denial(
+    denial: crate::basis::WorthQueryProductBranchAdmissionDenial,
+) -> WorthQueryApplicationQueryAdmissionDenial {
+    use crate::basis::WorthQueryProductBranchAdmissionDenial as Product;
+    let kind = match denial {
+        Product::Refused(AdmissionRefusal::ForeignOwner) => {
+            WorthQueryApplicationQueryAdmissionDenialKind::ForeignBasis
+        }
+        Product::Refused(AdmissionRefusal::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        }) => WorthQueryApplicationQueryAdmissionDenialKind::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        },
+        Product::Refused(AdmissionRefusal::RetentionCapacityExhausted) => {
+            WorthQueryApplicationQueryAdmissionDenialKind::RetentionCapacityExhausted
+        }
+        Product::Refused(AdmissionRefusal::RetentionIdentityExhausted) => {
+            WorthQueryApplicationQueryAdmissionDenialKind::RetentionIdentityExhausted
+        }
+        Product::Refused(AdmissionRefusal::SnapshotIdentityExhausted) => {
+            WorthQueryApplicationQueryAdmissionDenialKind::SnapshotIdentityExhausted
+        }
+        Product::Refused(AdmissionRefusal::RetiredBranch)
+        | Product::Refused(AdmissionRefusal::IncarnationChanged) => {
+            WorthQueryApplicationQueryAdmissionDenialKind::StaleBasis
+        }
+        Product::Stopped(stop) => match stop {
+            Ok(kind) => WorthQueryApplicationQueryAdmissionDenialKind::ExecutionRequest(kind),
+            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled) => {
+                WorthQueryApplicationQueryAdmissionDenialKind::Cancelled
+            }
+            Err(crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut) => {
+                WorthQueryApplicationQueryAdmissionDenialKind::DeadlineExceeded
+            }
+        },
+        Product::Refused(_) => WorthQueryApplicationQueryAdmissionDenialKind::BasisUnavailable,
+    };
+    admission_denial(
+        kind,
+        format!("retained product admission denied: {denial:?}"),
+    )
+}

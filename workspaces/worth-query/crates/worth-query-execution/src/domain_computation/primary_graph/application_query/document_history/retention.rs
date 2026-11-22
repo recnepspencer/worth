@@ -13,6 +13,9 @@ use worth_query_declaration::facade::{
     },
     application_schema::ApplicationOperationRef,
 };
+use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 type RetentionAdmission<S, H, N> = WorthQueryAdmittedApplicationOperation<
     S,
@@ -41,8 +44,8 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     where
         Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
     {
-        let principal = self.plan.principal;
-        let request = self.plan.controls.request_scope().clone();
+        let principal = self.plan.principal_ref();
+        let request = self.plan.controls().request_scope().clone();
         let completed = self.complete_metadata_read(runtime, phase, document, access)?;
         let selected = runtime
             .on_branch(completed.source().identity().product_branch())

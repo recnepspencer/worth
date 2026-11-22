@@ -1,0 +1,12 @@
+//! Immutable performed input custody is separate from rebased currentness facts.
+use super::WorthQueryApplicationCommitReceipt;
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+impl WorthQueryApplicationCommitReceipt {
+    pub(crate) fn performed_output_fields(&self)
+    -> Option<&Result<FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>{
+        self.inner.performed_output_fields.as_ref()
+    }
+    pub(crate) fn performed_input_facts(&self) -> Option<&FactPayload> {
+        self.inner.performed_input_facts.as_ref()
+    }
+}

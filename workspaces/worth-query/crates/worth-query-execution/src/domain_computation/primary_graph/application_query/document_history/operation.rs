@@ -7,6 +7,12 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 type Model<S, M> =
     <<M as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;
@@ -62,7 +68,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if expected != document.selection.lock().expected {
             return Err(Denial::HeadDiverged);
         }
-        confirm_document_head(self, phase, product, ()).map_err(|(_, denial)| denial)?;
+        confirm_document_head(self.inner(), phase, product, ()).map_err(|(_, denial)| denial)?;
         if expected != document.selection.lock().expected {
             return Err(Denial::HeadDiverged);
         }
@@ -88,19 +94,21 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::ForeignRuntime);
         }
         let ownership = self
+            .inner
             .runtime
-            .primary_provider
-            .graph
-            .layout
+            .primary_provider_ref()
+            .graph_ref()
+            .layout_ref()
             .history_ownership(&installed.definition().parts().identity)
             .ok_or(Denial::InstalledBindingMismatch)?;
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let owner = self
+            .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(&execution, |native| {
                 native.observe_model_owner(
                     &execution,

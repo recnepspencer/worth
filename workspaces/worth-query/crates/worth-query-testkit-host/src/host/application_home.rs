@@ -33,7 +33,15 @@ impl ApplicationActionDelivery<HomeIdentitySchema, native_mutation::SetBalanceBi
     type Mode = ApplicationSourceCompletion;
     const IDENTITY: &'static str = "worth.query.host.home.balance-completion.v1";
 }
-struct IdentityFeature;
+pub struct IdentityFeature;
+/// The program's source-completion balance action.
+pub type BalanceAction = ApplicationActionReference<
+    HomeIdentitySchema,
+    ApplicationRootComposition,
+    IdentityFeature,
+    native_mutation::SetBalanceBinding,
+    BalanceCompletion,
+>;
 impl ApplicationFeature<HomeIdentitySchema> for IdentityFeature {
     type Inputs = ApplicationFeatureInputLeaf;
     const IDENTITY: &'static str = "worth.query.host.home-identity.feature.v1";
@@ -91,6 +99,7 @@ pub fn request_with_initializer(
         WorthQueryApplicationHomeLocation::Directory(location),
         build,
         contacts,
+        lifecycle_limits(),
         initial_state,
     )
 }
@@ -101,16 +110,53 @@ pub fn request_at_location(
     initialized: Arc<AtomicUsize>,
     contacts: Arc<AtomicUsize>,
 ) -> WorthQueryApplicationHomeRequest<'static, HomeIdentitySchema, HomeProgram> {
-    request_at_location_with_initializer(location, build, contacts, move |_, graph, schema| {
-        initialized.fetch_add(1, Ordering::SeqCst);
-        schema::seed(graph, schema)
-    })
+    request_at_location_with_initializer(
+        location,
+        build,
+        contacts,
+        lifecycle_limits(),
+        move |_, graph, schema| {
+            initialized.fetch_add(1, Ordering::SeqCst);
+            schema::seed(graph, schema)
+        },
+    )
+}
+
+/// The Directory Home program under caller-selected limits.
+pub fn request_with_limits(
+    location: std::path::PathBuf,
+    build: ApplicationBuildIdentity,
+    contacts: Arc<AtomicUsize>,
+    limits: WorthQueryApplicationLimits,
+    initial_state: impl FnOnce(
+            &worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<
+                '_,
+            >,
+            &mut worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphBootstrap<
+                HomeIdentitySchema,
+            >,
+            &worth_query_host::facade::domain::WorthQueryInstalledApplicationSchema<
+                HomeIdentitySchema,
+            >,
+        ) -> Result<
+            (),
+            worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial,
+        > + 'static,
+) -> WorthQueryApplicationHomeRequest<'static, HomeIdentitySchema, HomeProgram> {
+    request_at_location_with_initializer(
+        WorthQueryApplicationHomeLocation::Directory(location),
+        build,
+        contacts,
+        limits,
+        initial_state,
+    )
 }
 
 fn request_at_location_with_initializer(
     location: WorthQueryApplicationHomeLocation,
     build: ApplicationBuildIdentity,
     contacts: Arc<AtomicUsize>,
+    limits: WorthQueryApplicationLimits,
     initial_state: impl FnOnce(
             &worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<
                 '_,
@@ -137,18 +183,22 @@ fn request_at_location_with_initializer(
         declaration,
         (contacts,),
         build,
-        WorthQueryApplicationLimits::new(
-            // Home lifecycle courts fund cold original-owner reads through the
-            // public policy. Their scopes retain deadlines, and checkpoint
-            // funding courts retain their explicit maintenance limits.
-            identity::world_resources().with_execution_policy(ExecutionRequestPolicy::new(
-                ExecutionPosture::Serial,
-                DeterminismContract::CanonicalBitwise,
-                ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
-            )),
-            WorthQueryApplicationQueryResourceProfile::default(),
-            SignalConditionalEvaluationBudget::development(),
-        ),
+        limits,
         initial_state,
+    )
+}
+
+fn lifecycle_limits() -> WorthQueryApplicationLimits {
+    WorthQueryApplicationLimits::new(
+        // Home lifecycle courts fund cold original-owner reads through the
+        // public policy. Their scopes retain deadlines, and checkpoint
+        // funding courts retain their explicit maintenance limits.
+        identity::world_resources().with_execution_policy(ExecutionRequestPolicy::new(
+            ExecutionPosture::Serial,
+            DeterminismContract::CanonicalBitwise,
+            ExecutionBudget::new(std::num::NonZeroUsize::MIN, None, None),
+        )),
+        WorthQueryApplicationQueryResourceProfile::default(),
+        SignalConditionalEvaluationBudget::development(),
     )
 }

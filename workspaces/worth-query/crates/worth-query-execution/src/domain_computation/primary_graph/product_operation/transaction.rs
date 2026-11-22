@@ -1,3 +1,8 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
+use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryProductEntry;
@@ -77,12 +82,17 @@ where
                 self.change
                     .program
                     .refuse_stale_home_authority(
-                        application.runtime.product_runtime.owner.owner_identity(),
+                        application
+                            .inner
+                            .runtime
+                            .product_runtime_ref()
+                            .owner_ref()
+                            .owner_identity(),
                     )
                     .map_err(|_| WorthQueryProductTransactionCommitError::StaleIncarnation)?;
                 if !self.change.program.belongs_to_application(
-                    application.runtime.authority_identity(),
-                    &application.installed_schema.binding_identity(),
+                    application.inner.runtime.authority_identity(),
+                    &application.inner.installed_schema.binding_identity(),
                 ) {
                     return Err(WorthQueryProductTransactionCommitError::ApplicationMismatch);
                 }
@@ -125,12 +135,12 @@ where
             Ok(execution) => execution,
             Err(cause) => return Ok(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(cause).into_commit_outcome()),
         };
-        self.change.program.refuse_stale_home_authority(application.runtime.product_runtime.owner.owner_identity())
+        self.change.program.refuse_stale_home_authority(application.inner.runtime.product_runtime_ref().owner_ref().owner_identity())
             .map_err(|_| WorthQueryProductTransactionCommitError::StaleIncarnation)?;
         if !std::ptr::eq(application, admitted.runtime.runtime())
             || !self.change.program.belongs_to_application(
-                application.runtime.authority_identity(),
-                &application.installed_schema.binding_identity(),
+                application.inner.runtime.authority_identity(),
+                &application.inner.installed_schema.binding_identity(),
             )
         {
             return Err(WorthQueryProductTransactionCommitError::ApplicationMismatch);

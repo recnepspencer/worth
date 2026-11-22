@@ -1,10 +1,12 @@
 //! Stable identity tags for program operations, literal values, and the
-//! nominal declarations a program references. Tags are spelled explicitly;
-//! Debug text never enters identity.
+//! types a program references: their nominal declarations and the language
+//! version they require. Tags are spelled explicitly; Debug text never
+//! enters identity.
 
 use std::collections::BTreeMap;
 
 use crate::canonicalization::{CanonicalBasisValue, CanonicalFloatWidth, CanonicalIntegerWidth};
+use crate::expressions::language_version::LanguageVersion;
 use crate::expressions::program::{Literal, Op};
 use crate::expressions::syntax::ast::{BinaryOp, ComprehensionKind, UnaryOp};
 use crate::expressions::types::{
@@ -113,18 +115,29 @@ fn limbs_hex(limbs: &[u64]) -> String {
         .collect()
 }
 
-/// Every nominal declaration reachable from `types`, keyed by versioned name.
+/// What the types a program reaches, including record fields, contribute to
+/// its identity.
+pub(super) struct ReferencedTypes {
+    /// Every reachable nominal declaration, keyed by versioned name.
+    pub(super) declarations: BTreeMap<String, String>,
+    /// The oldest language version covering every reachable type.
+    pub(super) language: LanguageVersion,
+}
+
+/// Walks `types` and the fields of every record they reach.
 ///
 /// Records reference only earlier records, so the walk terminates; the
 /// visited map also keeps each declaration to one entry.
-pub(super) fn nominal_declarations<'a>(
+pub(super) fn referenced_types<'a>(
     schema: &ExpressionSchema,
     types: impl Iterator<Item = &'a ExpressionType>,
-) -> BTreeMap<String, String> {
+) -> ReferencedTypes {
     let mut declarations = BTreeMap::new();
+    let mut language = LanguageVersion::V1;
     let mut pending: Vec<&ExpressionType> = types.collect();
     while let Some(ty) = pending.pop() {
         match ty {
+            ExpressionType::Date => language = LanguageVersion::V2,
             ExpressionType::Option(inner) | ExpressionType::List(inner) => pending.push(inner),
             ExpressionType::Map(key, value) | ExpressionType::MapEntry(key, value) => {
                 pending.extend([&**key, &**value]);
@@ -166,5 +179,8 @@ pub(super) fn nominal_declarations<'a>(
             _ => {}
         }
     }
-    declarations
+    ReferencedTypes {
+        declarations,
+        language,
+    }
 }

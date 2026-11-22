@@ -1,4 +1,5 @@
 use worth_foundational::facade::CanonicalDigestDerivationDenial;
+use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort;
 use worth_query_installation::facade::{
     WorthQueryCanonicalWorkEvidence, WorthQueryTemporalIntentCandidate,
 };
@@ -25,7 +26,7 @@ impl WorthQueryPreparedTemporalIdempotency {
 
 /// Publication affinity DATA. A live Home incarnation is deliberately absent.
 #[derive(Clone, Copy)]
-pub(super) enum TemporalIdempotencyScope<'a> {
+pub(in crate::domain_computation::primary_graph::conditional_operation) enum TemporalIdempotencyScope<'a> {
     ProcessLocal,
     Home {
         owner: worth_foundational::facade::DurableWorldOwnerIdentity,
@@ -34,10 +35,13 @@ pub(super) enum TemporalIdempotencyScope<'a> {
     },
 }
 
-pub(super) fn prepare_temporal_idempotency<Clock, Input>(
+fn derive_temporal_idempotency_parts(
     runtime_binding: &WorthQueryTemporalRuntimeBindingIdentity,
-    candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
     scope: TemporalIdempotencyScope<'_>,
+    host_idempotency: &str,
+    intent_identity: &str,
+    revision: u64,
+    input_identity: &str,
 ) -> Result<WorthQueryPreparedTemporalIdempotency, CanonicalDigestDerivationDenial> {
     let mut definition_work = WorthQueryCanonicalWorkEvidence::zero();
     let mut key = CanonicalIdentityMaterial::new(
@@ -72,20 +76,69 @@ pub(super) fn prepare_temporal_idempotency<Clock, Input>(
             key.digest("definition", definition);
         }
     }
-    key.text("host-idempotency", candidate.idempotency().as_str());
+    key.text("host-idempotency", host_idempotency);
     let (key, key_work) = key.derive()?;
 
     let mut intent = CanonicalIdentityMaterial::new(
         "worth-query.temporal-operation-intent",
         "worth-query-temporal-operation-intent-v1",
     );
-    intent.text("identity", candidate.identity().as_str());
-    intent.unsigned_u64("revision", candidate.revision());
-    intent.text("input", candidate.input_identity().as_str());
+    intent.text("identity", intent_identity);
+    intent.unsigned_u64("revision", revision);
+    intent.text("input", input_identity);
     let (intent, intent_work) = intent.derive()?;
 
     Ok(WorthQueryPreparedTemporalIdempotency {
-        binding: WorthQueryApplicationIdempotencyBinding::new(*key.bytes(), *intent.bytes()),
+        binding: <WorthQueryApplicationIdempotencyBinding as IdempotencyBindingInternalPort>::from_identities(*key.bytes(), *intent.bytes()),
         canonical_work: key_work.combine(intent_work).combine(definition_work),
     })
+}
+
+pub(in crate::domain_computation::primary_graph::conditional_operation) fn derive_for_product(
+    runtime_binding: &WorthQueryTemporalRuntimeBindingIdentity,
+    product: &crate::basis::WorthQueryProductBranchLease,
+    intent_identity: &str,
+    revision: u64,
+    host_idempotency: &str,
+    input_identity: &str,
+) -> Result<([u8; 32], [u8; 32]), CanonicalDigestDerivationDenial> {
+    use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+    let selected = product.observation();
+    let scope = match selected.owner_identity().durable() {
+        Some(owner) => TemporalIdempotencyScope::Home {
+            owner,
+            branch: selected.branch_identity().name().as_str(),
+            incarnation: selected.lifecycle_incarnation().ordinal(),
+        },
+        None => TemporalIdempotencyScope::ProcessLocal,
+    };
+    derive_temporal_idempotency_parts(
+        runtime_binding,
+        scope,
+        host_idempotency,
+        intent_identity,
+        revision,
+        input_identity,
+    )
+    .map(|prepared| {
+        (
+            *prepared.binding().key_identity(),
+            *prepared.binding().intent_identity(),
+        )
+    })
+}
+
+pub(super) fn prepare_temporal_idempotency<Clock, Input>(
+    runtime_binding: &WorthQueryTemporalRuntimeBindingIdentity,
+    candidate: &WorthQueryTemporalIntentCandidate<Clock, Input>,
+    scope: TemporalIdempotencyScope<'_>,
+) -> Result<WorthQueryPreparedTemporalIdempotency, CanonicalDigestDerivationDenial> {
+    derive_temporal_idempotency_parts(
+        runtime_binding,
+        scope,
+        candidate.idempotency().as_str(),
+        candidate.identity().as_str(),
+        candidate.revision(),
+        candidate.input_identity().as_str(),
+    )
 }

@@ -1,0 +1,42 @@
+//! Computation input membership survives loss of reusable partition attribution.
+use crate::domain_computation::primary_graph::application_attempt::{
+    ComputationFactAttribution, WorthQueryApplicationFactKey as Key,
+    WorthQueryApplicationObservedFact as Fact,
+};
+use std::collections::BTreeMap;
+
+pub enum ObservedComputationInputs {
+    None,
+    One(std::sync::Arc<ComputationFactAttribution>),
+    Several(std::sync::Arc<ComputationFactAttribution>),
+}
+impl ObservedComputationInputs {
+    pub fn ordinals(&self, facts: &BTreeMap<Key, Fact>) -> Box<[usize]> {
+        facts
+            .keys()
+            .enumerate()
+            .filter_map(|(ordinal, key)| {
+                let read = match self {
+                    Self::None => false,
+                    Self::One(attribution) | Self::Several(attribution) => {
+                        attribution.contains_key(key)
+                    }
+                };
+                read.then_some(ordinal)
+            })
+            .collect()
+    }
+    pub fn into_attribution(self) -> Option<ComputationFactAttribution> {
+        match self {
+            Self::One(attribution) => {
+                let mut attribution =
+                    std::sync::Arc::try_unwrap(attribution).unwrap_or_else(|_| {
+                        panic!("expected key view releases attribution before sealing")
+                    });
+                attribution.materialize_carried();
+                Some(attribution)
+            }
+            Self::None | Self::Several(_) => None,
+        }
+    }
+}

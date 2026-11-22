@@ -1,4 +1,8 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 pub(crate) mod readmission;
 mod readmit;
 pub use readmit::WorthQueryBranchAdoptionReadmissionDenial;
@@ -179,7 +183,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryFailure>
     {
         let _execution = match phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
         {
             Ok(execution) => execution,
             Err(cause) => {
@@ -258,23 +262,25 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     > {
         let mut retained = Some(recovery);
         self.with_application_advancement(request, |phase| {
-            let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
-                Ok(request) => request,
-                Err(_) => {
-                    return Err((
-                        crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
-                            AdmissionRefusal::ForeignPhase,
-                        ),
-                        retained.take().expect("one retained recovery"),
-                    ))
-                }
-            };
+            let phase_request =
+                match phase.execution_request_for(self.inner.runtime.product_runtime_ref()) {
+                    Ok(request) => request,
+                    Err(_) => {
+                        return Err((
+                            crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                                AdmissionRefusal::ForeignPhase,
+                            ),
+                            retained.take().expect("one retained recovery"),
+                        ))
+                    }
+                };
             let execution = &phase_request;
             let recovery = retained.take().expect("one admitted recovery");
 
             let product = match self
+                .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .admit_product_occurrence(branch.occurrence())
             {
                 Ok(product) => product,

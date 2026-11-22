@@ -37,6 +37,19 @@ pub mod application_history {
     pub use crate::application_history::*;
 }
 
+/// Deterministic identity namespaces: one canonical root per action, query
+/// or feature derives its validated sub-identities, with explicit per-role
+/// overrides that keep existing wire identities.
+pub mod application_identity {
+    pub use crate::application_identity::*;
+}
+
+/// Persistent naming declarations: opaque kind-typed names, canonical
+/// discriminators, and declared name schemes.
+pub mod application_naming {
+    pub use crate::application_naming::*;
+}
+
 /// Typed managed-resource declarations, codec profiles and independent actions.
 pub mod application_resource {
     pub use crate::application_resource::*;

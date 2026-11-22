@@ -54,14 +54,12 @@ worth_query_application_query!(
 );
 worth_query_decl::facade::worth_query_structured_value_binding!(pub PaymentAmountRequestBinding for PaymentAmountRequest { identity: "PaymentAmountRequest" });
 worth_query_decl::facade::worth_query_query_binding!(
-    pub PaymentAmountQueryBinding for PaymentAmountRequest, schema BankSchema,
+    pub PaymentAmountQueryBinding for PaymentAmountRequest, schema BankSchema, context crate::schema::BankBindingContext,
     identity "worth.bank.payment-amount-query-binding.v1",
     input PaymentAmountRequestBinding,
     query PaymentAmountQuery,
     parameters PaymentAmountQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
     result PaymentAmountQueryResultBinding,
-    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
-        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
     scope crate::schema::PaymentIdentityField,
     field crate::schema::PaymentIdentityField::at("PaymentIdentityField"),
     value PaymentAmountRequest::payment,

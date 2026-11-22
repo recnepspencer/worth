@@ -1,0 +1,50 @@
+//! Receiver-owned differential verification controls.
+use std::sync::atomic::AtomicU64;
+use std::sync::Arc;
+
+#[derive(Debug, Default)]
+pub struct InvalidationOracleReceiver {
+    pub oracle_guards: AtomicU64,
+    pub oracle_checks: AtomicU64,
+}
+#[derive(Clone, Debug)]
+pub struct WorthQueryInvalidationResources {
+    oracle: Arc<InvalidationOracleReceiver>,
+}
+impl Default for WorthQueryInvalidationResources {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+impl WorthQueryInvalidationResources {
+    pub fn new() -> Self {
+        let resources = Self {
+            oracle: Arc::default(),
+        };
+        // Law 2: construction may finish on a worker after resource installation,
+        // so the receiver joins this thread's construction factory here.
+        resources.attach_runtime_observations();
+        resources
+    }
+    pub fn attach_runtime_observations(&self) {
+        crate::domain_computation::invalidation_equivalence_control::attach_constructed_receiver(
+            &self.oracle,
+        );
+    }
+    pub(crate) fn oracle_receiver(&self) -> &Arc<InvalidationOracleReceiver> {
+        &self.oracle
+    }
+    pub fn invalidation_equivalence_is_armed(&self) -> bool {
+        self.oracle
+            .oracle_guards
+            .load(std::sync::atomic::Ordering::Acquire)
+            != 0
+    }
+    pub fn record_invalidation_shadow_check(&self) {
+        self.oracle
+            .oracle_checks
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
+}
+
+mod court_doors_for_test;

@@ -14,6 +14,11 @@ mod original;
 pub(super) use advancement::Step as SourceStep;
 pub(in crate::application_entry) use binding::sealed::Driver as SourceAssessmentDriver;
 pub use binding::WorthQuerySourceOperationBinding;
+mod submission;
+pub use submission::{
+    WorthQuerySourceCompletionAction, WorthQuerySourceMutation, WorthQuerySourceMutationBinding,
+    WorthQuerySourcelessMutation,
+};
 mod completion;
 mod disposal;
 pub(in crate::application_entry) use disposal::WorthQueryClosingSourceOperation;
@@ -22,7 +27,10 @@ mod entrance;
 mod native_posture;
 mod recorded_correction;
 mod retained_delivery;
-pub use completion::{WorthQueryCompletedSourceOperation, WorthQueryTerminalSourceOperation};
+pub use completion::{
+    WorthQueryCompletedSourceOperation, WorthQueryTerminalSourceEvidence,
+    WorthQueryTerminalSourceOperation,
+};
 
 type NativeOutcome<S, I> = WorthQueryApplicationMutationOutcome<
     <Binding<S, I> as ApplicationMutationBinding<S>>::Denial,

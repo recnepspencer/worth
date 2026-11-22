@@ -12,6 +12,10 @@ use crate::domain_computation::primary_graph::{
     bootstrap::{BootstrapPublicationReservation, BootstrapPublicationStorage},
     program_occurrence::WorthQueryProgramActivationCell,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_lineage::facade::ports::{
+    ApplicationCheckpointInternalPort as _, InterimCheckpointOriginInternalPort as _,
+};
 pub(super) struct PreparedMemoryApplication<S: ApplicationSchemaComposition> {
     pub(super) graph: WorthQueryPrimaryGraphBootstrap<S>,
     pub(super) runtime: WorthQueryExecutionRuntime,
@@ -189,9 +193,10 @@ where
         .map(|_| activation.clone());
     // Codec/program activation may rebind the native publisher. Install the
     // same immutable declaration roster on that final publication authority.
+    let layout = graph.graph.retain_layout();
     super::super::source_scope_ownership::seal(
-        &graph.graph.layout,
-        &mut graph.graph.application_publication,
+        &layout,
+        graph.graph.application_publication_mut(),
         &producers,
     )
     .map_err(Denial::Graph)?;

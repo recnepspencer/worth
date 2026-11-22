@@ -51,7 +51,7 @@ fn pending_creation_keeps_its_original_seat_with_zero_owner_effects_and_resumes_
         0
     );
     let actual = f
-        .signal
+        .signal()
         .source_port()
         .inspect_associated_advances(&request, |effect, _| {
             std::ops::ControlFlow::Break(
@@ -126,7 +126,7 @@ fn creation_completion_unwind_preserves_the_installed_original_without_repeating
         .fork_port()
         .observe_original_frontiers(&request)
         .unwrap();
-    let signal_before = f.signal.published_advance_count().unwrap();
+    let signal_before = f.signal().published_advance_count().unwrap();
     let page = f
         .world
         .inspection_port()
@@ -155,7 +155,7 @@ fn creation_completion_unwind_preserves_the_installed_original_without_repeating
             .unwrap(),
         native_before
     );
-    assert_eq!(f.signal.published_advance_count().unwrap(), signal_before);
+    assert_eq!(f.signal().published_advance_count().unwrap(), signal_before);
     assert_eq!(
         f.world
             .inspection_port()
@@ -182,7 +182,7 @@ fn cancelling_an_original_after_intent_ack_records_release_without_executing_eit
         .fork_port()
         .observe_original_frontiers(&request)
         .unwrap();
-    let signal_before = f.signal.published_advance_count().unwrap();
+    let signal_before = f.signal().published_advance_count().unwrap();
     f.recorder.hold_publication(true);
     let RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) =
         create(&f, &request, &parent, "cancelled", true, true)
@@ -212,7 +212,7 @@ fn cancelling_an_original_after_intent_ack_records_release_without_executing_eit
             .unwrap(),
         native_before
     );
-    assert_eq!(f.signal.published_advance_count().unwrap(), signal_before);
+    assert_eq!(f.signal().published_advance_count().unwrap(), signal_before);
     assert_eq!(descriptions(&f, &request).len(), 1);
     assert_eq!(
         f.world
@@ -241,7 +241,7 @@ fn pending_intent_that_proves_no_effect_completes_without_a_missing_recovery_row
         .fork_port()
         .observe_original_frontiers(&request)
         .unwrap();
-    let signal_before = f.signal.published_advance_count().unwrap();
+    let signal_before = f.signal().published_advance_count().unwrap();
     f.recorder.hold_publication(true);
     let RuntimeWorldBranchCreationOutcome::ProductUnpublished(effects) =
         create(&f, &request, &parent, "refused", true, true)
@@ -279,7 +279,7 @@ fn pending_intent_that_proves_no_effect_completes_without_a_missing_recovery_row
             .unwrap(),
         native_before
     );
-    assert_eq!(f.signal.published_advance_count().unwrap(), signal_before);
+    assert_eq!(f.signal().published_advance_count().unwrap(), signal_before);
     assert_eq!(
         f.world
             .inspection_port()

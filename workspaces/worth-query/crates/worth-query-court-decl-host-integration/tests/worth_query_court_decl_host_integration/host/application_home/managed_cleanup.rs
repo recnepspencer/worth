@@ -3,9 +3,7 @@ use super::*;
 #[test]
 fn failed_managed_cleanup_records_live_release_and_discharges_after_directory_reopen() {
     use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
-    use worth_query_host::facade::primary_graph::{
-        WorthQueryApplicationUncommitted as Uncommitted, WorthQueryHomeRetirementDenial,
-    };
+    use worth_query_host::facade::primary_graph::WorthQueryHomeRetirementDenial;
     let location = fixture::location();
     let contacts = Arc::new(AtomicUsize::new(0));
     let initialized = Arc::new(AtomicUsize::new(0));
@@ -23,17 +21,7 @@ fn failed_managed_cleanup_records_live_release_and_discharges_after_directory_re
     })
     .unwrap()
     .unwrap_or_else(|cause| panic!("cleanup Home: {cause:?}"));
-    let schedule = home
-        .runtime()
-        .runtime()
-        .schedule_next_managed_cleanup_on_worker_for_test()
-        .unwrap();
-    let (_, scope) = pending_support::scope();
-    let required = match pending_support::set(home.runtime(), &scope, 0x4847_0701, 29).unwrap() {
-        Outcome::Commit(Uncommitted::CleanupRequired(required)) => required,
-        other => panic!("the actual native cleanup must refuse: {other:?}"),
-    };
-    drop(schedule);
+    let required = require_cleanup(&home);
     assert!(required.cleanup().durability_denial().is_none());
     let identity = required
         .cleanup()
@@ -126,4 +114,28 @@ fn failed_managed_cleanup_records_live_release_and_discharges_after_directory_re
     home.close(&execution)
         .unwrap_or_else(|cause| panic!("discharged cleanup close: {cause:?}"))
         .reclaim();
+}
+
+/// One real commit whose native cleanup is scheduled onto another worker, so
+/// it refuses and retains a durable cleanup obligation with its original.
+pub(crate) fn require_cleanup(
+    home: &worth_query_host::facade::WorthQueryApplicationHome<
+        fixture::schema::HomeIdentitySchema,
+        fixture::HomeProgram,
+    >,
+) -> Box<worth_query_host::facade::primary_graph::WorthQueryApplicationCleanupRequired> {
+    use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome as Outcome;
+    use worth_query_host::facade::primary_graph::WorthQueryApplicationUncommitted as Uncommitted;
+    let schedule = home
+        .runtime()
+        .runtime()
+        .schedule_next_managed_cleanup_on_worker_for_test()
+        .unwrap();
+    let (_, scope) = pending_support::scope();
+    let required = match pending_support::set(home.runtime(), &scope, 0x4847_0701, 29).unwrap() {
+        Outcome::Commit(Uncommitted::CleanupRequired(required)) => required,
+        other => panic!("the actual native cleanup must refuse: {other:?}"),
+    };
+    drop(schedule);
+    required
 }

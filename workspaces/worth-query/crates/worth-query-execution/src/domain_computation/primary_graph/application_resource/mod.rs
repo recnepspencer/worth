@@ -16,7 +16,8 @@ mod value_capture;
 pub use closed::WorthQueryClosedResource;
 pub use request::{
     WorthQueryApplicationResourcesRequest, WorthQueryResourceCleanupDetail,
-    WorthQueryResourceState, WorthQueryResourceTerminal, WorthQueryRetainedResourceState,
+    WorthQueryResourceColdRelease, WorthQueryResourceState, WorthQueryResourceTerminal,
+    WorthQueryRetainedResourceState,
 };
 pub use selector::{WorthQueryApplicationResource, WorthQueryApplicationResourceReceipt};
 pub use stop::{

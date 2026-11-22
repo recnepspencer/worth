@@ -1,0 +1,361 @@
+use crate::domain_computation::primary_graph::invariant_projection::read_basis::NativeProjectionRead;
+use crate::equality_type_id::EqualityTypeId as TypeId;
+
+use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding;
+use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
+use worth_query_installation::facade::ApplicationEntityRef;
+use worth_query_installation::facade::ApplicationOperationDecisionReadTarget;
+use worth_query_installation::facade::ApplicationSchema;
+use worth_query_installation::facade::OperationReads;
+
+#[path = "resolution/applied_absence.rs"]
+pub mod applied_absence;
+#[path = "resolution/candidate_verification.rs"]
+pub mod candidate_verification;
+#[path = "resolution/cardinality.rs"]
+pub mod cardinality;
+pub mod current_identity;
+#[path = "resolution/decision_plan_denial.rs"]
+pub mod decision_plan_denial;
+#[path = "resolution/source_liveness.rs"]
+pub mod source_liveness;
+
+pub mod verification_denial;
+pub mod work_budget;
+use cardinality::classify_current_entities;
+use cardinality::CurrentOutputCardinality;
+use decision_plan_denial::decision_plan_denial;
+
+use super::WorthQueryCurrentOutputDenial;
+use super::WorthQueryCurrentOutputDenialKind;
+use super::WorthQueryCurrentOutputSelection;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::application_contribution::WorthQueryProducerOutputFamily;
+use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::invariant_projection::consumed_output::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOperationInvariantProjectionReader;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::WorthQueryInvariantEntityIdentity;
+
+impl<'reader, 'runtime, Schema, Operation>
+    WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
+where
+    Schema: ApplicationSchema,
+{
+    /// Select the entity `Family` currently outputs for `producer`. Each
+    /// recorded correspondence uses its producer binding's declared output role.
+    /// For a bound role, native publication order selects its latest head across
+    /// bindings sharing the same source partition and entity before verifying
+    /// currentness. Equal-position competing settlements are unavailable. An
+    /// unbound optional role supplies no entity for this cross-binding join.
+    #[allow(clippy::type_complexity)]
+    pub fn current_output<Family, Producer>(
+        &mut self,
+
+        producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
+    ) -> Result<
+        WorthQueryCurrentOutputSelection<Schema, Family::Entity>,
+        WorthQueryCurrentOutputDenial,
+    >
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        Family::Source: ApplicationQueryBinding<Schema>,
+        <Family::Source as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeBinding<Schema, Scope = Producer>,
+        Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
+        Family::Entity: OperationReads<Operation>,
+    {
+        let execution = self.reader.execution;
+        let subject = Family::IDENTITY;
+        self.require_decision_entity(
+            producer,
+            ApplicationEntityRef::from_schema_identifier(Producer::IDENTIFIER),
+        )
+        .map_err(|denial| decision_plan_denial(denial.kind(), Family::IDENTITY))?;
+        self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Entity {
+            entity: <Family::Entity as ApplicationEntityMarkerIdentity<Schema>>::IDENTIFIER
+                .to_owned(),
+        })
+        .map_err(|_| {
+            WorthQueryCurrentOutputDenial::new(
+                WorthQueryCurrentOutputDenialKind::UndeclaredDecisionTarget,
+                subject,
+            )
+        })?;
+        if !self.current_source_is_live(execution, producer)? {
+            return Ok(WorthQueryCurrentOutputSelection::ObsoleteSource);
+        }
+        let mut replaced = Vec::new();
+        let mut entities = Vec::new();
+        if let Some(pin) = self.reader.native.applied_pin() {
+            let access = self.source_query.ok_or_else(|| {
+                WorthQueryCurrentOutputDenial::new(
+                    WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                    subject,
+                )
+            })?;
+            let selected = access.applied_outputs(
+                execution,
+                self.binding_identity,
+                Family::IDENTITY,
+                producer.entity_id(),
+                pin,
+            )?;
+            replaced = selected.replaced;
+            for evidence in selected.outputs {
+                entities.push(evidence.applied().expect("appended selection").entity());
+                if !self.reader.applied_consumptions.contains(&evidence) {
+                    self.reader.applied_consumptions.push(evidence);
+                }
+            }
+        }
+        if self.read_applied_absence::<Family>(producer.entity_id())? {
+            let partition = self
+                .reader
+                .selected_source_partition_identity
+                .ok_or_else(|| {
+                    WorthQueryCurrentOutputDenial::new(
+                        WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                        subject,
+                    )
+                })?;
+            replaced.push((None, partition));
+        }
+        let committed = match &self.reader.native {
+            NativeProjectionRead::Committed(native) => Some(*native),
+            NativeProjectionRead::Applied { .. } => None,
+        };
+        let correspondences = if let Some(native) = committed {
+            self.current_correspondences::<Family, Producer>(
+                execution, producer, native, &replaced,
+            )?
+        } else {
+            let access = self.source_query.ok_or_else(|| {
+                WorthQueryCurrentOutputDenial::new(
+                    WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                    subject,
+                )
+            })?;
+            let mut result = None;
+            access.with_committed_runtime_dyn(execution, &mut |native| {
+                result = Some(self.current_correspondences::<Family, Producer>(
+                    execution, producer, native, &replaced,
+                ));
+            });
+            result.expect("committed runtime callback ran")?
+        };
+        for (correspondence, output_role) in correspondences {
+            self.charge_current_output_work(1, &output_role)?;
+            self.reader.work.record_output_lineage_role_lookup();
+            let entity = correspondence
+                .current_entity_for_role::<Family::Entity>(&output_role)
+                .map_err(|_| {
+                    WorthQueryCurrentOutputDenial::new(
+                        WorthQueryCurrentOutputDenialKind::EntityMismatch,
+                        output_role.as_str(),
+                    )
+                })?;
+            if let Some(entity) = entity {
+                entities.push(entity);
+            }
+        }
+        Ok(match classify_current_entities(entities) {
+            CurrentOutputCardinality::Missing => WorthQueryCurrentOutputSelection::Missing,
+            CurrentOutputCardinality::Unique(entity) => WorthQueryCurrentOutputSelection::Unique(
+                self.live_current_identity::<Family::Entity>(execution, subject, entity)?,
+            ),
+            CurrentOutputCardinality::Ambiguous(entities) => {
+                WorthQueryCurrentOutputSelection::Ambiguous(
+                    entities
+                        .into_iter()
+                        .map(|entity| {
+                            self.live_current_identity::<Family::Entity>(execution, subject, entity)
+                        })
+                        .collect::<Result<Vec<_>, _>>()?,
+                )
+            }
+        })
+    }
+
+    fn current_correspondences<Family, Producer>(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
+        native: &worth_relational::facade::runtime::RelationalRuntime,
+        replaced: &[(Option<TypeId>, [u8; 32])],
+    ) -> Result<
+        Vec<(
+            std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
+            String,
+        )>,
+        WorthQueryCurrentOutputDenial,
+    >
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+        Family::Source: ApplicationQueryBinding<Schema>,
+        <Family::Source as ApplicationQueryBinding<Schema>>::ScopeBinding:
+            ApplicationQueryScopeBinding<Schema, Scope = Producer>,
+        Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation> + 'static,
+    {
+        let cache_key = (TypeId::of::<Family>(), producer.entity_id());
+        if replaced.is_empty()
+            && let Some(cached) = self.reader.current_output_families.get(&cache_key)
+        {
+            return Ok(cached
+                .iter()
+                .map(super::CertifiedOutputCorrespondence::pair)
+                .collect());
+        }
+        let occurrence = self.reader.selected_product_occurrence.ok_or_else(|| {
+            WorthQueryCurrentOutputDenial::new(
+                WorthQueryCurrentOutputDenialKind::FamilyUnavailable,
+                Family::IDENTITY,
+            )
+        })?;
+        let generation = self.reader.selected_product_generation.ok_or_else(|| {
+            WorthQueryCurrentOutputDenial::new(
+                WorthQueryCurrentOutputDenialKind::FamilyUnavailable,
+                Family::IDENTITY,
+            )
+        })?;
+        self.require_current_output_budget(1, Family::IDENTITY)?;
+        let resolution = self
+            .reader
+            .output_lineage
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .resolve_current_family_overlaid(
+                execution,
+                self.runtime_authority.as_u64(),
+                self.binding_identity,
+                crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(
+                    producer.entity_id(),
+                ),
+                Family::IDENTITY,
+                occurrence,
+                generation,
+                replaced,
+            )
+            .map_err(|stop| {
+                if let worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause) = stop {
+                    return WorthQueryCurrentOutputDenial::new(
+                        WorthQueryCurrentOutputDenialKind::ExecutionRequest(cause), Family::IDENTITY);
+                }
+                self.reader.work_budget.mark_exceeded();
+                WorthQueryCurrentOutputDenial::new(
+                    WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded,
+                    Family::IDENTITY,
+                )
+            })?;
+        if !resolution.family_installed {
+            return Err(WorthQueryCurrentOutputDenial::new(
+                WorthQueryCurrentOutputDenialKind::FamilyUnavailable,
+                Family::IDENTITY,
+            ));
+        }
+        if resolution.ambiguous_publication {
+            return Err(WorthQueryCurrentOutputDenial::new(
+                WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                Family::IDENTITY,
+            ));
+        }
+
+        self.charge_current_output_work(1, Family::IDENTITY)?;
+        let selected_native_root = native
+            .read_truth()
+            .positioned_snapshot(self.reader.snapshot)
+            .map_err(|_| {
+                WorthQueryCurrentOutputDenial::new(
+                    WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                    Family::IDENTITY,
+                )
+            })?;
+        let mut current = Vec::new();
+        let mut retained_selected_native_root = None;
+        let mut stale = false;
+        let mut requested_output = None;
+        let mut obsolete = false;
+        for candidate in resolution.candidates {
+            self.charge_current_output_work(1, Family::IDENTITY)?;
+            let Some(verification) = self.verify_current_candidate(
+                execution,
+                &candidate,
+                native,
+                &selected_native_root,
+                Family::IDENTITY,
+            )?
+            else {
+                stale = true;
+                continue;
+            };
+            match verification {
+                candidate_verification::VerifiedCandidate::Current {
+                    facts,
+                    witness,
+                } => {
+                    let computation = facts.computation();
+                    let evidence = ConsumedOutputEvidence::new(
+                        computation,
+                        std::sync::Arc::clone(&candidate.settlement_identity),
+                        facts.clone(),
+                        std::sync::Arc::clone(&candidate.consumed_outputs),
+                        candidate.verification_requirement,
+                        witness,
+                        std::sync::Arc::clone(retained_selected_native_root.get_or_insert_with(
+                            || std::sync::Arc::new(selected_native_root.clone()),
+                        )),
+                    );
+                    self.reader
+                        .consumed_outputs
+                        .entry(std::sync::Arc::clone(&candidate.settlement_identity))
+                        .or_insert(evidence);
+                    current.push(super::CertifiedOutputCorrespondence::new(
+                        computation,
+                        candidate.correspondence,
+                        candidate.output_role,
+                    ));
+                }
+                candidate_verification::VerifiedCandidate::Changed(
+                    ConsumedOutputVerification::ChangedDirectFact(ordinal),
+                ) => {
+                    if candidate.observed_source_facts.for_comparison().is_some_and(|facts| matches!(facts.get(ordinal), Some(WorthQueryApplicationObservedFact::SourceEntity { entity_id }) if *entity_id == producer.entity_id()))
+                    {
+                        obsolete = true;
+                    } else {
+                        stale = true;
+                        requested_output = Some(self.retain_requested_output(&candidate, &selected_native_root)?);
+                    }
+                }
+                candidate_verification::VerifiedCandidate::Changed(_) => {
+                    stale = true;
+                    requested_output = Some(self.retain_requested_output(&candidate, &selected_native_root)?);
+                }
+            }
+        }
+        if current.is_empty() && obsolete {
+            return Err(WorthQueryCurrentOutputDenial::new(
+                WorthQueryCurrentOutputDenialKind::OutputUnavailable,
+                Family::IDENTITY,
+            ));
+        }
+        if current.is_empty() && stale {
+            let mut denial = WorthQueryCurrentOutputDenial::new(
+                WorthQueryCurrentOutputDenialKind::StaleSource,
+                Family::IDENTITY,
+            );
+            denial.requested_output = requested_output;
+            return Err(denial);
+        }
+        if replaced.is_empty() {
+            self.reader
+                .current_output_families
+                .insert(cache_key, current.clone());
+        }
+        Ok(current
+            .iter()
+            .map(super::CertifiedOutputCorrespondence::pair)
+            .collect())
+    }
+}

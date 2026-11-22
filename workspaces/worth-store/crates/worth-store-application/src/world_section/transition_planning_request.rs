@@ -92,6 +92,9 @@ where
             .map_err(Denial::Transition)?
         {
             HomeTransitionPlanningOrigin::Fresh => {
+                context.opening_observation.observe_transition_for_test(
+                    crate::ApplicationHomeTransitionOpeningObservation::Fresh,
+                );
                 let basis = expected.basis().relational_basis();
                 self.admit_planning_source(expected, basis, request)
                     .map(ApplicationHomeTransitionPlanningRequest::Fresh)

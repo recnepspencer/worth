@@ -99,6 +99,11 @@ impl<'a> WorldOpenAttemptInput<'a> {
 }
 
 pub(crate) enum WorldArtifactInput<'a> {
+    PlannedSignalLeg {
+        association: &'a CompositeAttemptAssociation,
+        custody: DurableProductUnpublishedOwnerEffectsIdentity,
+        leg: &'a worth_runtime_bridge::facade::BridgePlannedDefinitionLeg,
+    },
     Continued {
         association: &'a CompositeAttemptAssociation,
         custody: DurableProductUnpublishedOwnerEffectsIdentity,
@@ -136,13 +141,22 @@ impl WorldArtifactInput<'_> {
                 intent.name_bytes()
             }
             Self::CreationReleased { association, .. } => Ok(association.branch().name().len()),
-            Self::Released { association, .. } | Self::Continued { association, .. } => {
-                Ok(association.branch().name().len())
-            }
+            Self::Released { association, .. }
+            | Self::Continued { association, .. }
+            | Self::PlannedSignalLeg { association, .. } => Ok(association.branch().name().len()),
         }
     }
     pub(super) fn materialize(self) -> Result<WorldRecord, Denial> {
         Ok(match self {
+            Self::PlannedSignalLeg {
+                association,
+                custody,
+                leg,
+            } => WorldRecord::PlannedSignalLeg(super::WorldPlannedSignalLegRecord {
+                association: association.clone(),
+                custody,
+                leg: leg.clone(),
+            }),
             Self::Continued {
                 association,
                 custody,

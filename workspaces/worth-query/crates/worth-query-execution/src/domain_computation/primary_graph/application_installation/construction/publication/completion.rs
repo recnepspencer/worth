@@ -1,5 +1,9 @@
 //! Finalize lineage and recovery only after service publication has returned.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 #[inline(never)]
 pub(super) fn complete<S: ApplicationSchemaComposition>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
@@ -21,23 +25,25 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
         interim_continuation,
     } = completion.consume();
     let execution = phase.execution_request();
-    application.installed_producers = producers;
-    application.installed_conditionals = installed_conditionals;
+    application.inner.installed_producers = producers;
+    application.inner.installed_conditionals = installed_conditionals;
     application
+        .inner
         .runtime
-        .primary_provider
-        .graph
-        .output_lineage
+        .primary_provider_ref()
+        .graph_ref()
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .bind_implementation_build(build_identity);
     if let Some(support) = admitted_program_support {
         application
+            .inner
             .runtime
-            .product_runtime
-            .activations
+            .product_runtime_ref()
+            .activations_ref()
             .require_program_coordination();
-        application.program_support = Some(
+        application.inner.program_support = Some(
             crate::domain_computation::primary_graph::program_occurrence::WorthQueryInstalledProgramSupport::installed(
                 support.roster,
                 activation,
@@ -51,13 +57,13 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
         application
             .restore_interim_registry(origin, interim_continuation.as_ref(), &execution)
             .map_err(Denial::Graph)?;
-        application.runtime.recovered_outputs =
+        *application.inner.runtime.recovered_outputs_mut() =
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryRecoveredOutputs::from_checkpoint(
                 checkpoint,
                 &execution,
                 |accepted| {
-                    application.installed_producers.readmit_checkpoint_output(
-                        &application.installed_schema,
+                    application.inner.installed_producers.readmit_checkpoint_output(
+                        &application.inner.installed_schema,
                         accepted,
                         &execution,
                     )

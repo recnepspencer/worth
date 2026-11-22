@@ -328,3 +328,30 @@ fn funded_extra_refuses_copy_and_replacement_before_growth() {
     drop(old);
     assert_eq!(original.charged_memory_bytes(), 0);
 }
+
+#[test]
+fn same_version_extra_updates_coalesce_to_single_history_entry() {
+    let budget = SerialMemoryBudget::new(Some(64 * 1024));
+    let host = request(&budget);
+    let execution = ExecutionRequest::serial(&host);
+    let mut sequential = arena(extra(&execution, "v1"));
+    sequential
+        .apply_extra_update(0, extra(&execution, "v2-first"), VersionId(2))
+        .unwrap();
+    sequential
+        .apply_extra_update(0, extra(&execution, "v2-final"), VersionId(2))
+        .unwrap();
+    let mut single = arena(extra(&execution, "v1"));
+    single
+        .apply_extra_update(0, extra(&execution, "v2-final"), VersionId(2))
+        .unwrap();
+    let seq_history = sequential.metadata_history_at(0).unwrap();
+    let single_history = single.metadata_history_at(0).unwrap();
+    assert_eq!(seq_history.len(), 2);
+    assert_eq!(seq_history[0].effective_at, VersionId(1));
+    assert_eq!(seq_history[0].retired_at, Some(VersionId(2)));
+    assert_eq!(seq_history[1].effective_at, VersionId(2));
+    assert_eq!(seq_history[1].retired_at, None);
+    assert_eq!(seq_history.len(), single_history.len());
+    assert_eq!(seq_history[1].extra, single_history[1].extra);
+}

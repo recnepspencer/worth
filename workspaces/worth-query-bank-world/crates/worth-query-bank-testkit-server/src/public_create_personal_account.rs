@@ -15,7 +15,7 @@ pub use bank_server::{
 pub use worth_query_host::facade::application_entry::WorthQueryApplicationMutationOutcome;
 pub use worth_query_host::facade::application_entry::WorthQueryApplicationRequestMutationDenialKind;
 
-pub use support::{block_on, request_scope, runtime, CausalCredential, DynamicIdentity};
+pub use support::{request_scope, runtime, DynamicIdentity};
 
 pub fn assert_public_creation(display_name: &str) {
     let actor_identity = DynamicIdentity::new("public-create-personal-account");
@@ -41,12 +41,9 @@ pub fn assert_public_creation(display_name: &str) {
             )),
     );
     let scope = request_scope();
-    let actor = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(&actor_identity),
-        &scope,
-    ))
-    .expect("the teller should authenticate");
+    let actor = world
+        .authenticate(&actor_identity, &scope)
+        .expect("the teller should authenticate");
     let request = world.runtime.request(&actor, &scope);
     let key = BankIdempotencyKey::new("public-create-personal-account")
         .expect("the client key should be valid");

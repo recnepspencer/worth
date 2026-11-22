@@ -4,6 +4,8 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputLeaf, ApplicationRequiredOutputRoot,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<Schema>>
     WorthQueryProgramApplicationRuntime<Schema, Program>
 {
@@ -34,7 +36,7 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
     {
         let phase_request = admit_unavailable_completion(
             phase,
-            &self.backing.runtime().runtime.product_runtime,
+            &self.backing.runtime().inner.runtime.product_runtime_ref(),
             || {
                 self.contains_output_root::<Root>()
                     && demand.target_feature
@@ -46,7 +48,7 @@ impl<Schema: ApplicationSchema + 'static, Program: ApplicationProgramDefinition<
             },
         )?;
         let execution = &phase_request;
-        self.backing.runtime().runtime.output_demands.validate_owned_root_kind(prepared,
+        self.backing.runtime().inner.runtime.output_demands_ref().validate_owned_root_kind(prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()))?;
         self.backing.runtime().finish_unavailable_output_demand(
             execution,
@@ -67,7 +69,9 @@ pub fn admit_unavailable_completion<'scope>(
     runtime: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
     owns_demand: impl FnOnce() -> bool,
 ) -> Result<worth_execution::ExecutionRequest<'scope, 'scope>, WorthQueryOutputDemandDenial> {
-    let request = phase.execution_request_for(runtime).map_err(|cause| {
+    let request = phase
+        .execution_request_for(runtime)
+        .map_err(|cause| {
         WorthQueryOutputDemandDenial::new(
             crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
             "program-source-phase",

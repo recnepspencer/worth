@@ -5,11 +5,13 @@ mod application_correction_authoring;
 mod application_history_authoring;
 mod application_managed_index_authoring;
 mod application_mutation_authoring;
+mod application_naming_authoring;
 mod application_query_authoring;
 mod application_resource_authoring;
 mod authoring_context;
 mod authorization_path_components;
 mod authorization_policy;
+mod binding_context;
 mod binding_identity;
 mod canonical_authorization_identity;
 mod canonical_basis;
@@ -273,6 +275,7 @@ pub use principal_binding_authoring::{
     ApplicationPrincipalMappingIdentityRequirement, ApplicationPrincipalMappingStatusRequirement,
     ApplicationPrincipalTargetRequirement,
 };
+pub use binding_context::ApplicationBindingContext;
 pub use principal_binding_reference::ApplicationPrincipalBindingRef;
 pub use read_authoring::{
     TypedEqualityPredicate, TypedProjection, TypedReadDeclaration, TypedReadDeclarationBuilder,
@@ -317,16 +320,22 @@ pub use value_binding::{
     ApplicationValueIsNotIdentity, ApplicationValueSignedAggregateAvailable,
     ApplicationValueSignedAggregatePosture, ApplicationValueSignedAggregateUnavailable,
     ApplicationValueValidationDenial, ArrayDelegate, BinaryValueDelegate, BinaryValueWriter,
-    BoolApplicationValueBinding, BoxDelegate, CanonicalDocumentCodec, CanonicalValue,
-    CanonicalValueSeed, ContentRefApplicationValueBinding, DelegatedValueSeed,
+    BoolApplicationValueBinding, BoxDelegate, CanonicalDateApplicationValueBinding,
+    CanonicalDocumentCodec, CanonicalF32ApplicationValueBinding,
+    CanonicalF64ApplicationValueBinding, CanonicalTimeApplicationValueBinding,
+    CanonicalTimestampApplicationValueBinding, CanonicalTimestampTzApplicationValueBinding,
+    CanonicalValue, CanonicalValueSeed, ContentRefApplicationValueBinding, DelegatedValueSeed,
     EntityRefApplicationValueBinding, ErasedApplicationSignedAggregateDecode,
     ErasedApplicationValueAdmittedDecode, ErasedApplicationValueDecode,
-    ErasedApplicationValueEncode, ErasedApplicationValueValidation, I64ApplicationValueBinding,
-    InternedStringApplicationValueBinding, OptionalDelegate, PairDelegate, SequenceDelegate,
-    StringApplicationValueBinding, U64ApplicationValueBinding, UsizeDelegate, ValueCodecDenial,
-    ValueDecodeAdmission, ValueDecodeBounds, ValueDelegate, ValueFieldDefinition, ValuePrimitive,
-    ValueSeedDelegate, ValueShape, ValueShapeBody, ValueShapeDefinition, ValueShapeEdge,
-    ValueTaggedVariantDefinition, ValueVariantDefinition, WorthValue,
+    ErasedApplicationValueEncode, ErasedApplicationValueValidation, I16ApplicationValueBinding,
+    I32ApplicationValueBinding, I64ApplicationValueBinding, I8ApplicationValueBinding,
+    InlineBytesApplicationValueBinding, InternedStringApplicationValueBinding, OptionalDelegate,
+    PairDelegate, SequenceDelegate, StringApplicationValueBinding, U16ApplicationValueBinding,
+    U32ApplicationValueBinding, U64ApplicationValueBinding, U8ApplicationValueBinding,
+    UsizeDelegate, UuidApplicationValueBinding, ValueCodecDenial, ValueDecodeAdmission,
+    ValueDecodeBounds, ValueDelegate, ValueFieldDefinition, ValuePrimitive, ValueSeedDelegate,
+    ValueShape, ValueShapeBody, ValueShapeDefinition, ValueShapeEdge, ValueTaggedVariantDefinition,
+    ValueVariantDefinition, WorthValue,
 };
 pub use values::{
     DeclaredApplicationFieldValue, OptionalApplicationFieldValue, RequiredApplicationFieldValue,

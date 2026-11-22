@@ -132,6 +132,10 @@ pub use operation::{
     WorthQueryWorkflowOperationInputs, WorthQueryWorkflowSourceInspection,
     WorthQueryWorkflowSourceInspectionDenial, WorthQueryWorkflowSourcePosture,
 };
+pub use operation::{
+    WorthQuerySourceCompletionAction, WorthQuerySourceMutation, WorthQuerySourceMutationBinding,
+    WorthQuerySourcelessMutation, WorthQueryTerminalSourceEvidence,
+};
 mod programs;
 mod query;
 mod query_batch;
@@ -227,6 +231,7 @@ pub use programs::{
 };
 pub use query::{
     WorthQueryApplicationProjectionRetentionRequest, WorthQueryApplicationQueryRequest,
+    WorthQueryProjectedQuery, WorthQueryProjectedQueryBinding, WorthQueryProjectedValue,
 };
 pub use query_batch::{
     WorthQueryApplicationQueryBatchDenial, WorthQueryApplicationQueryBatchRequest,

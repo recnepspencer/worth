@@ -49,6 +49,8 @@ impl Model {
                     matches!(outcome, WorldRecoveredContinuationOutcome::Published { .. }),
                     "a recovered Native effect continues once: {outcome:?}"
                 );
+                // A Native-only mixed original performs its planned Signal leg.
+                self.signal_commits += usize::from(self.mixed_pending(&original));
                 self.continued
                     .retain(|identity| *identity != original.identities);
                 self.generation += 1;
@@ -77,6 +79,18 @@ impl Model {
             .unwrap();
         let identities = identities(&effects);
         let continued = effects.native_receipt().is_some();
+        // A Native-only mixed original's Signal leg precedes its decision write.
+        if continued {
+            let index = self
+                .originals
+                .iter()
+                .position(|original| original.identities == identities)
+                .unwrap();
+            if self.mixed_pending(&self.originals[index]) {
+                self.signal_commits += 1;
+                self.originals[index].signal = true;
+            }
+        }
         fixture.recorder.undecide_next(landed);
         if continued {
             let outcome = advance(&recovery, request, effects);

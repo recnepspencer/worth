@@ -8,6 +8,11 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHistoryOutputNavigationDenial as Denial, WorthQueryHistoryOutputProfile,
     WorthQueryHistoryOutputReadDenial,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_query::facade::ports::AdmittedApplicationQueryControlsInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     fn validate_navigation_source<H, N, B>(
@@ -27,21 +32,21 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(|cause| ReadDenial::Authority(NavigationDenial::Stopped(cause)))?;
         profile
             .source_intent()
             .require_control(self, &execution, binding, control)?;
         let request = admission.retain_admitted_request();
-        if !request.same_request(control.controls.request_scope())
-            || control.security_product.observation() != read.current_product().observation()
-            || control.basis.selected_product().observation() != read.current_product().observation()
-            || !control.controls.is_current_product_one_shot()
-            || crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(control.principal.principal_entity_id()) != read.principal()
+        if !request.same_request(control.controls().request_scope())
+            || control.security_product().observation() != read.current_product().observation()
+            || control.basis().selected_product().observation() != read.current_product().observation()
+            || !control.controls().is_current_product_one_shot()
+            || crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(control.principal().principal_entity_id()) != read.principal()
         { return Err(ReadDenial::Authority(NavigationDenial::ForeignDocument)); }
         read.confirm(document, ())
             .map_err(|cause| ReadDenial::Authority(NavigationDenial::Document(cause)))?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
+        validate_execution_lifetimes(self.inner(), &control.controls(), control.principal())
             .map_err(super::super::output_read::control_denial)
     }
 
@@ -159,9 +164,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         // A stopped callback leaves its SDK owners in the document registry.
         // The actual Native transition remains authoritative if its delivery lapses.
         if let Some(source) = &source {
-            validate_execution_lifetimes(self, &source.controls, source.principal).map_err(
-                |cause| Denial::Source(super::super::output_read::control_denial(cause)),
-            )?;
+            validate_execution_lifetimes(self.inner(), &source.controls(), source.principal())
+                .map_err(|cause| {
+                    Denial::Source(super::super::output_read::control_denial(cause))
+                })?;
         }
         read.confirm(document, ())
             .map_err(|cause| Denial::Navigation(NavigationDenial::Document(cause)))?;

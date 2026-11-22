@@ -14,6 +14,8 @@ pub(crate) use original_schemas::OriginalSchemaGraph;
 mod recorded_result_schema;
 mod recovered_counter_capacity;
 mod recovered_lineage_artifacts;
+#[cfg(test)]
+mod recovered_lineage_restore_tests;
 mod recovered_schema_basis;
 pub(crate) use recorded_result_schema::RecordedReplayResultSchema;
 mod root_inventory;

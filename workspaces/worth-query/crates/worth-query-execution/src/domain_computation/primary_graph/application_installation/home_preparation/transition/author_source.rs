@@ -1,6 +1,7 @@
 //! An original-request read lens over A, with no live mutation or provider ports.
 use super::super::super::super::schema_layout::WorthQueryPrimaryGraphLayout;
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_relational::facade::{
     identity::KindId,
     runtime::{

@@ -1,4 +1,6 @@
 use std::marker::PhantomData;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryClockCoordinate};
 
@@ -7,7 +9,9 @@ use super::lifecycle::WorthQueryConditionalOperationCell;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(crate) mod erased;
+mod original_retry;
 mod product_admission;
+pub use original_retry::WorthQueryConditionalOriginalResolution;
 pub(in crate::domain_computation::primary_graph) use erased::{
     ErasedClockObservationOutcome, ErasedClockObservationReceipt,
 };
@@ -291,8 +295,9 @@ where
             .lock_operation()
             .reset_retained_wakes_for_replay_for_test();
         self.runtime
+            .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .attempts_for_test()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -302,13 +307,13 @@ where
     #[doc(hidden)]
     pub fn prime_replay_plateau_for_test(&mut self) {
         super::lifecycle::prime_global_plateaus_for_test();
-        let product = &self.runtime.runtime.product_runtime;
+        let product = self.runtime.inner.runtime.product_runtime_ref();
         let expected = product
-            .owner
+            .owner_ref()
             .observation_port()
             .observe_product_branch(product.default_branch())
             .unwrap();
-        let pub_port = product.owner.publication_port();
+        let pub_port = product.owner_ref().publication_port();
         let token = worth_runtime_world::facade::RuntimeWorldCancellationSource::new().token();
         for _ in 0..1_000 {
             let _ = self.runtime.issue_application_mutation_partition();
@@ -337,7 +342,7 @@ where
                 let granular_invalidation_installation =
                     self.runtime.granular_invalidation_installation();
                 let granular_source_read_basis = self.truth.granular_source_read_basis();
-                let bridge_root = self.runtime.runtime.bridge.conditional_operations();
+                let bridge_root = self.runtime.inner.runtime.bridge_ref().conditional_operations();
                 let bridge = bridge_root.read().unwrap_or_else(std::sync::PoisonError::into_inner);
                 let outcome = match bridge.with_view(self.truth.signal_basis(), |view| {
                     self.operation.reenter_retained_wakes_continuation_for_test(&active_phase, &view, self.runtime, &self.truth)
@@ -364,7 +369,7 @@ where
                 let granular_invalidation_installation =
                     self.runtime.granular_invalidation_installation();
                 let granular_source_read_basis = self.truth.granular_source_read_basis();
-                let bridge_root = self.runtime.runtime.bridge.conditional_operations();
+                let bridge_root = self.runtime.inner.runtime.bridge_ref().conditional_operations();
                 let bridge = bridge_root
                     .read()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);

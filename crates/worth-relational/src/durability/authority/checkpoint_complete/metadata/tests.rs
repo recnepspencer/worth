@@ -146,6 +146,9 @@ fn borrowed_lineage_rows_and_funded_routes_keep_original_wire() {
         kind: LineageEventKind::Create,
         sources: Vec::new(),
         targets: vec![LineageId(513)],
+        subject: crate::lineage::data::LineageSubject::Entity,
+        name_birth: None,
+        kept_name: None,
     };
     let borrowed = [OriginalLineageEvent {
         event: &event,

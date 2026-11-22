@@ -6,9 +6,7 @@ pub use bank_domain::proposals::{BankAccountAuthorization, BankSnapshotBuilder};
 pub use bank_domain::schema::AccountStatus;
 pub use bank_server::{BankAuthenticatedPrincipal, BankPrincipalSeed, BankWorldSeed};
 
-pub use super::super::support::{
-    block_on, request_scope, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld,
-};
+pub use super::super::support::{request_scope, runtime, DynamicIdentity, TestIdentityWorld};
 pub use super::id;
 
 pub struct AccountDiscoveryFixture {
@@ -19,12 +17,9 @@ pub struct AccountDiscoveryFixture {
 impl AccountDiscoveryFixture {
     pub fn authenticate(&self) -> BankAuthenticatedPrincipal {
         let request = request_scope();
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(&self.actor),
-            &request,
-        ))
-        .expect("discovery actor should authenticate")
+        self.world
+            .authenticate(&self.actor, &request)
+            .expect("discovery actor should authenticate")
     }
 }
 

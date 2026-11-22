@@ -121,8 +121,7 @@ where
     )
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution) fn validate_pair<S, C>(
-) -> Result<(), Denial>
+pub fn validate_pair<S, C>() -> Result<(), Denial>
 where
     S: ApplicationSchema,
     C: WorthQueryRequiredFeatureContract<S>,
@@ -164,11 +163,7 @@ where
     Ok(())
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution) fn required_producers<
-    S,
-    P,
-    R,
->() -> Vec<String>
+pub fn required_producers<S, P, R>() -> Vec<String>
 where
     S: ApplicationSchema,
     P: Producer<S>,

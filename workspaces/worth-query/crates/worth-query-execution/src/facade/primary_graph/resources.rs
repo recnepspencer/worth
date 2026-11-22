@@ -3,12 +3,12 @@ pub use crate::domain_computation::primary_graph::application_resource::{
     WorthQueryApplicationResource, WorthQueryApplicationResourceProvider,
     WorthQueryApplicationResourceReceipt, WorthQueryApplicationResourcesRequest,
     WorthQueryClosedResource, WorthQueryResourceActionDenial, WorthQueryResourceCleanupDetail,
-    WorthQueryResourceCleanupPosture, WorthQueryResourceEffectRefusal, WorthQueryResourceFrameKind,
-    WorthQueryResourceIngressDenial, WorthQueryResourceIngressWriter,
-    WorthQueryResourceOwnedEffectStartStop, WorthQueryResourceProviderAttempt,
-    WorthQueryResourceProviderFailure, WorthQueryResourceRecoveryCloseStop,
-    WorthQueryResourceStartStop, WorthQueryResourceState, WorthQueryResourceStopKind,
-    WorthQueryResourceTerminal, WorthQueryResourceVerificationFailure,
+    WorthQueryResourceCleanupPosture, WorthQueryResourceColdRelease,
+    WorthQueryResourceEffectRefusal, WorthQueryResourceFrameKind, WorthQueryResourceIngressDenial,
+    WorthQueryResourceIngressWriter, WorthQueryResourceOwnedEffectStartStop,
+    WorthQueryResourceProviderAttempt, WorthQueryResourceProviderFailure,
+    WorthQueryResourceRecoveryCloseStop, WorthQueryResourceStartStop, WorthQueryResourceState,
+    WorthQueryResourceStopKind, WorthQueryResourceTerminal, WorthQueryResourceVerificationFailure,
     WorthQueryResourceVerifiedFrame, WorthQueryRetainedResourceState,
 };
 

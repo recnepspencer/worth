@@ -3,6 +3,9 @@ use super::*;
 use crate::domain_computation::primary_graph::bootstrap::{
     BootstrapPublicationReservation, BootstrapPublicationStorage,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 pub(super) struct PublishedNativeGraph {
     runtime: WorthQueryExecutionRuntime,
     resource_support: crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphResourceSupport,
@@ -24,7 +27,7 @@ pub(super) fn publish_native<S: ApplicationSchema>(
     WorthQueryPrimaryGraphInstallationDenial,
 > {
     let storage = BootstrapPublicationReservation::prepare(&phase.execution_request())?;
-    let bridge_layout = std::sync::Arc::clone(&bootstrap.graph.layout);
+    let bridge_layout = std::sync::Arc::clone(bootstrap.graph.layout_ref());
     let product_world_resources = bootstrap.product_world_resources.clone();
     let recovered_relational_authority = bootstrap.take_recovered_relational_authority();
     let checkpoint_restore_work = bootstrap.recovered_checkpoint_restore_work();
@@ -71,6 +74,7 @@ pub(super) fn install_bridge<S: ApplicationSchema>(
     } = seed.consume();
     let request = phase.execution_request();
     let execution = &request;
+    use worth_query_execution_query::facade::ports::ExecutionRuntimePrimaryGraphPort as _;
     let graph = runtime
         .retain_primary_graph_integration_handle()
         .expect("publishing the primary graph installs its integration authority");
@@ -116,9 +120,14 @@ pub(super) fn install_bridge<S: ApplicationSchema>(
         resource_support,
         installed_schema.installed_view().retain_operation_catalog(),
     );
+    primary_provider.install_managed_views_execution(
+        crate::domain_computation::primary_graph::lineage_ports::downcast_managed_views_arc(
+            std::sync::Arc::clone(&primary_provider.graph_ref().managed_derived_views()),
+        ),
+    );
     primary_provider
-        .graph
-        .output_lineage
+        .graph_ref()
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .install_binding_identities(
@@ -127,7 +136,7 @@ pub(super) fn install_bridge<S: ApplicationSchema>(
                 .map(|binding| (TypeId::from(binding.binding_type()), binding.identity())),
         );
     let primary_graph_authority = super::super::graph_participation::install(
-        &authority,
+        authority.inner_ref(),
         truth_partition_role,
         provider_anchor,
     )?;

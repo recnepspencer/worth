@@ -150,5 +150,62 @@ fn valid_event_shape(event: &crate::lineage::data::LineageEventRecord) -> bool {
             LineageEventKind::Split => sources.len() == 1 && targets.len() >= 2,
             LineageEventKind::Merge => sources.len() >= 2 && targets.len() == 1,
             LineageEventKind::Retire => sources.len() == 1 && targets.is_empty(),
+            LineageEventKind::Restore => sources.len() == 1 && targets.len() == 1,
         }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::valid_event_shape;
+    use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
+    use crate::identity::data::{LineageId, VersionId};
+    use crate::lineage::data::{LineageEventKind, LineageEventRecord, LineageSubject};
+
+    fn restore_event(sources: Vec<LineageId>, targets: Vec<LineageId>) -> LineageEventRecord {
+        let branch_id = BranchId("main".to_owned());
+        LineageEventRecord {
+            event_id: 1,
+            commit: RelationalCommitReceipt {
+                commit_id: CommitId(1),
+                version_id: VersionId(1),
+                branch_id: branch_id.clone(),
+                parents: Vec::new(),
+            },
+            branch_id,
+            kind: LineageEventKind::Restore,
+            sources,
+            targets,
+            subject: LineageSubject::Entity,
+            name_birth: None,
+            kept_name: None,
+        }
+    }
+
+    #[test]
+    fn valid_event_shape_accepts_disjoint_one_to_one_restore_and_rejects_malformed() {
+        assert!(valid_event_shape(&restore_event(
+            vec![LineageId(1)],
+            vec![LineageId(2)],
+        )));
+        assert!(!valid_event_shape(&restore_event(
+            vec![],
+            vec![LineageId(2)],
+        )));
+        assert!(!valid_event_shape(&restore_event(
+            vec![LineageId(1)],
+            vec![],
+        )));
+        assert!(!valid_event_shape(&restore_event(
+            vec![LineageId(1), LineageId(2)],
+            vec![LineageId(3)],
+        )));
+        assert!(!valid_event_shape(&restore_event(
+            vec![LineageId(1)],
+            vec![LineageId(2), LineageId(3)],
+        )));
+        assert!(!valid_event_shape(&restore_event(
+            vec![LineageId(1)],
+            vec![LineageId(1)],
+        )));
+    }
 }

@@ -161,6 +161,11 @@ impl ActiveAttemptCustody {
             .map(|open| open.association.clone())
     }
 
+    /// The committed original open this attempt's owner effects are bound to.
+    pub(crate) fn durable_open(&self) -> Option<Arc<crate::durability::WorldDurableOpenCustody>> {
+        self.record.state().resources.as_ref()?.durable_open.clone()
+    }
+
     pub(crate) fn has_durable_open(&self) -> bool {
         self.record
             .state()

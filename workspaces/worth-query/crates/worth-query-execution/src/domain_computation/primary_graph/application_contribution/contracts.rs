@@ -1,6 +1,7 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::collections::{BTreeMap, BTreeSet};
 use std::marker::PhantomData;
+
 mod feature;
 
 use worth_query_installation::facade::ApplicationSchema;
@@ -28,7 +29,7 @@ impl<'schema, Schema> WorthQueryApplicationContributionContracts<'schema, Schema
 where
     Schema: ApplicationSchema,
 {
-    pub(super) fn for_contribution(
+    pub(crate) fn for_contribution(
         owner: &str,
         declaration: &'schema worth_query_declaration::facade::application_schema::ErasedApplicationSchemaDeclaration,
     ) -> Self {
@@ -118,7 +119,7 @@ where
         Ok(self)
     }
 
-    pub(super) fn append_to(
+    pub(crate) fn append_to(
         self,
         destination: &mut WorthQueryApplicationContractCatalog<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
@@ -165,7 +166,7 @@ impl<Schema> WorthQueryApplicationContractCatalog<Schema>
 where
     Schema: ApplicationSchema,
 {
-    pub(super) fn validate(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    pub(crate) fn validate(&self) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
         let mut family_types = BTreeMap::new();
         let mut families: BTreeMap<
             (&str, &str),
@@ -282,7 +283,7 @@ where
         Ok(())
     }
 
-    pub(super) fn seal_readiness(
+    pub(crate) fn seal_readiness(
         &self,
         installed: &worth_query_installation::facade::WorthQueryInstalledApplicationSchema<Schema>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
@@ -292,7 +293,7 @@ where
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn compose_package(
+    pub(crate) fn compose_package(
         &self,
         mut package: WorthQueryPortableDomainPackage,
     ) -> WorthQueryPortableDomainPackage {
@@ -317,7 +318,7 @@ where
         package
     }
 
-    pub(super) fn into_pending(
+    pub(crate) fn into_pending(
         self,
     ) -> (
         PendingProducerRegistry<Schema>,

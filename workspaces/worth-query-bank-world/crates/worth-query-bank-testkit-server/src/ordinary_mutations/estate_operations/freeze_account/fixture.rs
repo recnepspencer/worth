@@ -17,9 +17,7 @@ pub use bank_server::{
     BankAuthenticatedPrincipal, BankEmployeeAssignmentSeed, BankPrincipalSeed, BankWorldSeed,
 };
 
-pub use crate::facade::support::{
-    block_on, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld,
-};
+pub use crate::facade::support::{runtime, DynamicIdentity, TestIdentityWorld};
 
 pub struct FreezeFixture {
     pub world: TestIdentityWorld,
@@ -83,12 +81,9 @@ impl FreezeFixture {
 
     pub fn authenticate(&self, identity: usize) -> BankAuthenticatedPrincipal {
         let request = crate::facade::support::request_scope();
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(&self.identities[identity]),
-            &request,
-        ))
-        .expect("the causally mapped freeze-world principal should authenticate")
+        self.world
+            .authenticate(&self.identities[identity], &request)
+            .expect("the causally mapped freeze-world principal should authenticate")
     }
 }
 

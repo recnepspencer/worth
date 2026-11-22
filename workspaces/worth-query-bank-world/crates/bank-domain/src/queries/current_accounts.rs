@@ -1,14 +1,10 @@
 //! Current-only managed access to the unchanged principal-specific v1 Source.
 use super::account_discovery::{
-    account_identity, AccountDiscoveryQueryBinding, AccountDiscoveryQueryParameters,
+    AccountDiscoveryQueryBinding, AccountDiscoveryQueryParameters,
     AccountDiscoveryQueryParametersBinding, AccountDiscoveryQueryResultBinding,
 };
 use crate::{authorization::DiscoverOwnAccounts, reads::VisibleAccount, schema::*};
 use worth_query_decl::facade::{application_query::*, application_schema::*, *};
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
-    WorthQueryApplicationProjectionRow,
-};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct CurrentAccountsRequest;
@@ -39,14 +35,12 @@ fn all_accounts(
     ApplicationQueryParameterRef::from_query_identifier("all")
 }
 worth_query_query_binding!(
-    pub CurrentAccountsQueryBinding for CurrentAccountsRequest, schema BankSchema,
+    pub CurrentAccountsQueryBinding for CurrentAccountsRequest, schema BankSchema, context crate::schema::BankBindingContext,
     identity "worth.bank.current-accounts-query-binding.v1",
     input CurrentAccountsRequestBinding,
     query CurrentAccountsQuery,
     parameters AccountDiscoveryQueryParametersBinding => |_| ApplicationQueryParameterSet::new().bind(all_accounts(), AllAccountsProbe {}).unwrap(),
     result AccountDiscoveryQueryResultBinding,
-    principal BankPrincipalBinding, mapping ExternalPrincipalMapping, principal_entity Principal,
-    principal_identity crate::model::BankPrincipalId, identity_binding BankPrincipalIdBinding,
     scope PrincipalIdentityField,
     principal_field PrincipalIdentityField::at("PrincipalIdentityField"),
     limits results 1_024
@@ -77,27 +71,18 @@ pub fn current_accounts_definition() -> ApplicationQueryDefinitionBuilder<
     VisibleAccount,
     Principal,
 > {
-    let identity = account_identity::<CurrentAccountsQuery>();
     ApplicationQueryDefinitionBuilder::declare(CurrentAccountsQuery::reference())
         .root(Account::reference())
         .scope(Principal::reference())
-        .result_shape(
-            ApplicationQueryResultShapeBuilder::new(Account::reference())
-                .field(identity)
-                .build(),
-        )
+        .result_shape(VisibleAccount::result_shape())
         .cardinality(ApplicationQueryCardinality::Many)
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_only())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(DiscoverOwnAccounts::reference())
         .managed_index(CurrentAccountsIndex::reference(), all_accounts())
-        .order_by(identity, ApplicationQueryOrderingDirection::Ascending)
-}
-impl WorthQueryApplicationProjection<BankSchema, CurrentAccountsQuery> for VisibleAccount {
-    fn project(
-        row: &WorthQueryApplicationProjectionRow<'_, BankSchema, CurrentAccountsQuery>,
-    ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
-        Ok(Self::new(row.field(account_identity())?))
-    }
+        .order_by(
+            VisibleAccount::account(),
+            ApplicationQueryOrderingDirection::Ascending,
+        )
 }

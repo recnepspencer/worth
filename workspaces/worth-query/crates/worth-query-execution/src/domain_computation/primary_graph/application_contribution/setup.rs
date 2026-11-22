@@ -1,3 +1,4 @@
+use worth_query_execution_query::facade::ports::InstalledPartitionedComputationInternalPort as _;
 mod collection;
 mod derived_relation;
 mod feature;
@@ -50,7 +51,7 @@ where
 }
 
 impl<'a, Schema: ApplicationSchema> WorthQueryApplicationContributionSetup<'a, Schema> {
-    pub(super) fn new(
+    pub(crate) fn new(
         installed_schema: &'a WorthQueryInstalledApplicationSchema<Schema>,
         contribution: WorthQueryInstalledApplicationContribution<'a>,
         handlers: &'a mut PendingMutationHandlerRegistry<Schema>,

@@ -1,6 +1,9 @@
 //! Rejoin stopped DATA to fresh World-issued branch selectors at Home service.
 use super::*;
 use crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn readmit_stopped_branch_set_adoptions(
         &self,
@@ -9,7 +12,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         use WorthQueryBranchSetAdoptionResumeDenial as Denial;
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 Denial::Preparation(
                     WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause),
@@ -19,9 +22,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             QueryObligationDenial::SupportUnavailable,
         ))?;
         let observed = self
+            .inner
             .runtime
-            .product_runtime
-            .owner
+            .product_runtime_ref()
+            .owner_ref()
             .observation_port()
             .observe_installed_product_branches(&execution)
             .map_err(Denial::Inventory)?;
@@ -64,7 +68,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 progress,
                 target,
                 total_selection_work_units: row.selection_work as usize,
-                owner: self.runtime.product_runtime.owner.owner_identity(),
+                owner: self
+                    .inner
+                    .runtime
+                    .product_runtime_ref()
+                    .owner_ref()
+                    .owner_identity(),
                 durable: Some(row.attempt),
                 _support_custody: Vec::new(),
             });

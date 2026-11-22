@@ -1,6 +1,7 @@
 //! The real fresh programme is handed to Signal before any World attachment.
 use super::program_installation::{HomeServingProgramPreparation, HomeSignalProgramParts};
 use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_runtime_bridge::facade::{
     BridgeConditionalRuntimeBuilder, BridgeReadmittedAuthoredAssembly,
 };
@@ -206,7 +207,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
         &RelationalInitialSchemaInstallationReceipt,
     ) {
         (
-            &self.prepared.bootstrap.graph.layout,
+            self.prepared.bootstrap.graph.layout_ref(),
             self.prepared.bootstrap.installed_native_receipt(),
         )
     }

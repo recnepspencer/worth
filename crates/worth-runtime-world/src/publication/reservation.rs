@@ -117,6 +117,12 @@ impl ReservedCompositePublicationAttempt {
         self.custody.has_durable_open()
     }
 
+    pub(crate) fn durable_open(
+        &self,
+    ) -> Option<std::sync::Arc<crate::durability::WorldDurableOpenCustody>> {
+        self.custody.durable_open()
+    }
+
     pub(crate) fn retain_open_after_refusal(
         self,
         cause: super::NoEffectCause,

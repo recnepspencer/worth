@@ -1,0 +1,29 @@
+//! Borrowed runtime access under installed phase custody.
+use super::WorthQueryPrimaryGraphIntegrationHandle;
+use worth_query_execution_runtime::facade::ports::RelationalSourceOwnerInternalPort as _;
+use worth_relational::facade::runtime::RelationalRuntime;
+
+impl WorthQueryPrimaryGraphIntegrationHandle {
+    pub fn relational_runtime_instance_id(&self) -> u64 {
+        self.source_owner.runtime_instance_id()
+    }
+
+    pub fn with_runtime<T>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        read: impl FnOnce(&RelationalRuntime) -> T,
+    ) -> T {
+        self.source_owner.with_runtime(execution, read)
+    }
+
+    pub fn with_query_runtime<T>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        read: impl FnOnce(&RelationalRuntime, &super::WorthQueryPrimaryGraphLayout) -> T,
+    ) -> T {
+        self.source_owner
+            .with_runtime(execution, |runtime| read(runtime, &self.layout))
+    }
+}
+
+mod court_doors_for_test;

@@ -22,6 +22,12 @@ pub(super) fn selected(
     records
         .validate_read_membership(&selected.membership)
         .map_err(anchor_denial)?;
+    if crate::checkpoint::manifest::is_derived_discarded(selected.bytes.as_ref()) {
+        if !selected.membership.membership().members().is_empty() {
+            return Err(Denial::Manifest(crate::checkpoint::HomeManifestDenial::Malformed));
+        }
+        return Ok(None);
+    }
     SelectedHomeManifest::from_verified_read(selected.bytes.clone(), selected.membership.clone())
         .map(Some)
         .map_err(Denial::Manifest)

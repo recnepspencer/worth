@@ -2,6 +2,11 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial as Denial;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind as Kind;
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as Refusal;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_query::facade::ports::AdmittedCapabilityAccessInspectionPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 /// Only evaluated permission outcomes may withhold audit. Technical causes remain errors.
 pub(super) fn permission_withheld(cause: &Denial) -> bool {
     !cause.causes().is_empty()
@@ -74,9 +79,10 @@ where
 {
     let receiver = current
         .application()
+        .inner
         .runtime
-        .product_runtime
-        .owner
+        .product_runtime_ref()
+        .owner_ref()
         .owner_identity();
     let subject_runtime = subject
         .runtime_authority_for(receiver)
@@ -155,10 +161,11 @@ where
         return Ok(WorthQueryWorkflowAudit::Withheld);
     };
     let execution = phase
-        .execution_request_for(&current.application().runtime.product_runtime)
+        .execution_request_for(current.application().inner.runtime.product_runtime_ref())
         .map_err(WorkflowReadAdmissionDenial::Phase)?;
     let graph = current
         .application()
+        .inner
         .runtime
         .primary_graph()
         .ok_or(WorkflowReadAdmissionDenial::BasisUnavailable)?;

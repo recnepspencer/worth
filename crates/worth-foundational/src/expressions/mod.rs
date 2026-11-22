@@ -25,6 +25,7 @@ mod draft;
 mod evaluation;
 mod functions;
 mod language;
+mod language_version;
 mod native_scalar;
 mod numeric;
 mod operators;
@@ -66,7 +67,7 @@ use crate::responsibilities::ResponsibilityArea;
 pub fn responsibility() -> ResponsibilityArea {
     ResponsibilityArea::new(
         "expressions",
-        "the shared typed expression language: bounded source parsing, closed V1 types with dimensions, units, and digital-logic buses, pure admission into canonical post-order programs, installed expression functions with exact signatures and acyclic closures, canonical program identity over the canonical-basis digest APIs, and pure evaluation of admitted programs over sealed, type-checked input snapshots in resumable slices with semantic cost accounting and consumed-read recording",
+        "the shared typed expression language: bounded source parsing, closed versioned types (V1 with dimensions, units, and digital-logic buses; V2 adds dates and ASCII case-insensitive text matching), pure admission into canonical post-order programs, installed expression functions with exact signatures and acyclic closures, canonical program identity over the canonical-basis digest APIs, and pure evaluation of admitted programs over sealed, type-checked input snapshots in resumable slices with semantic cost accounting and consumed-read recording",
         "binding operands to live owner state, owner authority or currentness, caches, or registries",
     )
 }

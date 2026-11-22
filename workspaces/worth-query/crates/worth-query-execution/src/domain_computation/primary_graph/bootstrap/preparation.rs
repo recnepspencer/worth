@@ -1,4 +1,7 @@
 use super::*;
+use worth_query_execution_lineage::facade::ports::{
+    ApplicationCheckpointInternalPort as _, InterimCheckpointOriginInternalPort as _,
+};
 
 impl WorthQueryExecutionInstallationAuthority {
     pub fn prepare_primary_graph<Schema>(
@@ -133,10 +136,10 @@ impl WorthQueryExecutionInstallationAuthority {
                 let (outcome, authority) = if codec_transition {
                     recovery.restore_interim_checkpoint_for_codec_transition_with_authority(
                         &execution,
-                        &origin.native,
+                        origin.native(),
                     )
                 } else {
-                    recovery.restore_interim_checkpoint_with_authority(&execution, &origin.native)
+                    recovery.restore_interim_checkpoint_with_authority(&execution, origin.native())
                 }
                 .map_err(map_checkpoint_recovery_stop)?;
                 if !authority.codec_transition_pending() {
@@ -191,7 +194,9 @@ impl WorthQueryExecutionInstallationAuthority {
             graph.bind_application_publication(&invariant_installation_receipt);
         }
         let recovered_publication = checkpoint
-            .map(|checkpoint| checkpoint.recover_publication(&execution, &graph))
+            .map(|checkpoint| {
+                super::checkpoint::recover_publication(checkpoint, &execution, &graph)
+            })
             .transpose()?;
         Ok(super::prepared_native::PreparedPrimaryGraphInstallation {
             graph,

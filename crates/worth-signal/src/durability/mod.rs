@@ -64,8 +64,8 @@ pub(crate) mod readmission;
 pub use readmission::{SignalOwnerReadmissionDenial, SignalRecordedIdentityContribution};
 mod tier_vocabulary;
 pub use authored_image::{
-    SignalAuthoredImage, SignalAuthoredImageDenial, SignalRuntimeAuthoredImage,
-    SIGNAL_AUTHORED_IMAGE_PROTOCOL, SIGNAL_AUTHORED_IMAGE_VERSION,
+    SignalAuthoredImage, SignalAuthoredImageDenial, SignalPlannedConditionalDefinition,
+    SignalRuntimeAuthoredImage, SIGNAL_AUTHORED_IMAGE_PROTOCOL, SIGNAL_AUTHORED_IMAGE_VERSION,
     SIGNAL_RUNTIME_AUTHORED_IMAGE_PROTOCOL,
 };
 pub use branch_advance::{SignalAuthoredBranchChange, SignalBranchAdvanceArtifact};

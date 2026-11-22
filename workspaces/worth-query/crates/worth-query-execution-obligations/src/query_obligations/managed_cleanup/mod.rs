@@ -19,6 +19,24 @@ pub struct QueryManagedCleanupObligation {
     /// World remains the authority for this original's business outcome.
     pub original: Option<QueryManagedCleanupOriginal>,
     pub release: Option<QueryManagedCleanupRelease>,
+    /// Recorded once, before service, when the incarnation holding this
+    /// cleanup ended. The failure and original stay as recorded.
+    pub cold_release: Option<super::QueryColdReleaseTerminal>,
+}
+impl QueryManagedCleanupObligation {
+    /// The live owner recorded its release, or the cleanup's incarnation ended.
+    pub const fn released(&self) -> bool {
+        self.release.is_some() || self.cold_release.is_some()
+    }
+    /// Inconsistent business evidence is not a resource failure: no release,
+    /// live or cold, may repair it.
+    pub(super) const fn evidence_inconsistent(&self) -> bool {
+        matches!(
+            self.failure,
+            WorthQueryMutationCleanupFailureKind::AffinityInconsistent
+                | WorthQueryMutationCleanupFailureKind::CompletionInconsistent
+        )
+    }
 }
 
 /// DATA recorded only from the actual native cleanup owner's receipt.

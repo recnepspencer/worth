@@ -220,6 +220,11 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 }
                 _ => support.adoption_admission(&source),
             })
+            .and_then(|admission| {
+                admission
+                    .downcast_ref::<ProgramAdoptionAdmission<Schema>>()
+                    .copied()
+            })
         else {
             return Err(AdoptionEffectRefusal {
                 cause: WorthQueryProgramAdoptionAuthorizationDenial::CapabilityNotDeclared,

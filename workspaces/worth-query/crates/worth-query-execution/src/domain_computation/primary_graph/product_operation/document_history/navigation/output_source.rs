@@ -1,5 +1,6 @@
 //! The original root claim consumes the same disclosed source whose model is checked.
 use super::*;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::{
     application_installation::{
         WorthQueryAdmittedProgramOutput, WorthQueryProgramApplicationRuntime,
@@ -17,6 +18,8 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryBinding,
     application_schema::ApplicationStructuredValueBinding,
 };
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 mod dependent;
 mod progression;
@@ -134,8 +137,10 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             == crate::equality_type_id::EqualityTypeId::of::<P>().into_external()
             && profile.root == crate::equality_type_id::EqualityTypeId::of::<R>().into_external()
             && profile.program == *self.installed_program().revision()
-            && original
-                .belongs_to_selected_occurrence(self.runtime(), original.product_observation())
+            && original.belongs_to_selected_occurrence(
+                self.runtime().inner(),
+                original.product_observation(),
+            )
             && actual.owner_identity() == original.product_observation().owner_identity()
             && actual.branch_identity() == original.product_observation().branch_identity()
             && actual.lifecycle_incarnation()

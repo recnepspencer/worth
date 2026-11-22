@@ -1,13 +1,16 @@
 //! Only the annotation owner can obtain a completed node's real source custody.
 use super::super::{HistoryModelIdentity, WorthQueryHistoryPreview};
 use super::*;
+use worth_query_execution_query::facade::ports::{
+    HistoryNodeIdInternalPort as _, HistoryPreviewInternalPort as _,
+};
 
 impl<S> HistoryJournal<'_, S> {
     pub(in crate::domain_computation::primary_graph) fn owns_node(
         &self,
         id: WorthQueryHistoryNodeId,
     ) -> bool {
-        id.document == self.incarnation
+        id.document() == self.incarnation
     }
 
     pub(in crate::domain_computation::primary_graph) fn preview(
@@ -34,7 +37,7 @@ fn retain_preview(
     id: WorthQueryHistoryNodeId,
     model: HistoryModelIdentity,
 ) -> Result<WorthQueryHistoryPreview, Denial> {
-    if id.document != document {
+    if id.document() != document {
         return Err(Denial::ForeignHistoryNode);
     }
     if let Some(observation) = observation {
@@ -43,24 +46,24 @@ fn retain_preview(
     let Some(HistoryNode {
         binding: NodeBinding::Completed(node),
         ..
-    }) = nodes.get(&id.ordinal)
+    }) = nodes.get(&id.ordinal())
     else {
         return Err(Denial::HistoryNodeUnavailable);
     };
     let retained = retained
-        .get(&id.ordinal)
+        .get(&id.ordinal())
         .filter(|entry| entry.source.is_some())
         .ok_or(Denial::HistoryNodeExcluded)?;
-    Ok(WorthQueryHistoryPreview {
-        discovery_recipes: retained.discovery_recipes.clone(),
-        step: node.step.clone(),
+    Ok(WorthQueryHistoryPreview::from_parts(
+        retained.discovery_recipes.clone(),
+        node.step.clone(),
         model,
-        source: Arc::clone(
+        Arc::clone(
             retained
                 .source
                 .as_ref()
                 .expect("a retained source was checked"),
         ),
-        root_posture: node.root_posture,
-    })
+        node.root_posture,
+    ))
 }

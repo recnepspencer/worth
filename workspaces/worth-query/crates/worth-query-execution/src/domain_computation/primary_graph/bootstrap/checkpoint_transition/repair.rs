@@ -3,6 +3,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCheckpoint, WorthQueryCheckpointCaptureDenial,
     WorthQueryCheckpointCapturePolicy, WorthQueryPrimaryGraphPublication,
 };
+use worth_query_execution_lineage::facade::ports::{
+    ApplicationCheckpointInternalPort as _, InterimCheckpointOriginInternalPort as _,
+};
 use worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority;
 
 /// An acknowledged transition awaiting checkpoint capture. This capsule never

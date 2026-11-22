@@ -10,9 +10,7 @@ pub use worth_query_host::facade::application_entry::{
 };
 
 pub use super::fixture::{funded_independent_sender_world, funded_personal_world, id, key};
-pub use crate::facade::support::{
-    block_on, request_scope, runtime, CausalCredential, DynamicIdentity,
-};
+pub use crate::facade::support::{request_scope, runtime, DynamicIdentity};
 
 pub fn execute_send(
     world: &crate::facade::support::TestIdentityWorld,
@@ -22,12 +20,7 @@ pub fn execute_send(
     operation_key: &str,
 ) -> bank_domain::model::JournalEntryId {
     let request = request_scope();
-    let actor = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(identity),
-        &request,
-    ))
-    .unwrap();
+    let actor = world.authenticate(identity, &request).unwrap();
     let operation = world
         .runtime
         .mutate(mutations::send_money(SendMoney {

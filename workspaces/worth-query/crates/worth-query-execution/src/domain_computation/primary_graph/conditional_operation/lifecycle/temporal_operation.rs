@@ -1,5 +1,10 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 
 use worth_query_installation::facade::{
@@ -93,7 +98,7 @@ where
         &mut self, phase: &WorthQueryAdvancementPhase<'_>, bridge: &BridgeConditionalExecutionView<'_>,
         runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>, truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
-        let execution = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(runtime.inner.runtime.product_runtime_ref()) {
             Ok(execution) => execution,
             Err(cause) => return ErasedClockObservationOutcome::Failed { kind: super::WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(cause.into()), detail: "foreign conditional advancement phase".to_string() },
         };
@@ -157,9 +162,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
 
     fn reconstruct(
         &mut self,
-        _runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        _runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
         Ok(())
     }
@@ -172,10 +175,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
 
     fn prepare_derived_runtime_reinstallation(
         &self,
-execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
         product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
@@ -187,13 +188,13 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         let mut prepared = runtime_rebinding::prepare_temporal_runtime_binding(
             &self.definition.binding,
             bridge,
-            self.active_lowering().ok_or_else(|| super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
+            self.active_lowering().ok_or_else(|| super::super::installation::WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                 super::super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::ApplicationHomeOwnsLifecycle,
                 "authored temporal reinstallation requires its Home lifecycle"))?,
             Arc::clone(&self.runtime_binding_identity),
             product,
         )?;
-        prepared.authoritative_commit_cursor = runtime.runtime.primary_provider.graph.source_owner.invalidation_owner.latest_position();
+        prepared.authoritative_commit_cursor = runtime.inner.runtime.primary_provider_ref().graph_ref().source_owner_ref().invalidation_owner.latest_position();
         let reconstruction = super::super::temporal_reconstruction::reconstruct_temporal_intents(execution,
             runtime, &self.definition.binding, &self.definition.reconstruction, self.definition.execution.identity_field,
             product,
@@ -226,14 +227,11 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     fn observe_clock(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-
         bridge: &BridgeConditionalExecutionView<'_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
-        let execution = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(runtime.inner.runtime.product_runtime_ref()) {
             Ok(execution) => execution,
             Err(cause) => return ErasedClockObservationOutcome::Failed {
                 kind: super::WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(
@@ -382,16 +380,18 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     fn retained_resource_counts(&self) -> WorthQueryConditionalRetainedResourceCounts {
         resource_observation::retained_resource_counts(self)
     }
-
-    fn reconstruction_work(
-        &self,
-    ) -> super::super::temporal_reconstruction::WorthQueryTemporalReconstructionWork {
+    fn reconstruction_work(&self) -> super::super::temporal_reconstruction::WorthQueryTemporalReconstructionWork {
         self.reconstruction_work
     }
-
-    fn lifecycle_resources(
-        &self,
-    ) -> super::super::lifecycle_inventory::WorthQueryConditionalOperationLiveness {
+    fn lifecycle_resources(&self) -> super::super::lifecycle_inventory::WorthQueryConditionalOperationLiveness {
         resource_observation::lifecycle_resources(self)
+    }
+    fn temporal_original_key(
+        &self, product: &crate::basis::WorthQueryProductBranchLease, intent_identity: &str,
+        revision: u64, host_idempotency: &str, input_identity: &str,
+    ) -> Option<Result<([u8; 32], [u8; 32]), worth_foundational::facade::CanonicalDigestDerivationDenial>> {
+        Some(super::super::application_operation_reentry::temporal_idempotency::derive_for_product(
+            &self.runtime_canonical_identity, product, intent_identity, revision, host_idempotency, input_identity,
+        ))
     }
 }

@@ -1,7 +1,8 @@
 use bank_domain::schema::BankSchema;
 use worth_query_host::facade::admission::authenticated_principal::{
     WorthQueryAdmittedAuthenticationAdapter, WorthQueryAuthenticatedExternalPrincipal,
-    WorthQueryAuthenticationAdapter, WorthQueryAuthenticationDenial, WorthQueryRequestScope,
+    WorthQueryAuthenticationAdapter, WorthQueryAuthenticationDenial,
+    WorthQueryLocalProcessPrincipal, WorthQueryRequestScope,
 };
 
 pub struct BankAuthenticationBoundary<Adapter> {
@@ -29,5 +30,16 @@ where
     ) -> Result<WorthQueryAuthenticatedExternalPrincipal<BankSchema>, WorthQueryAuthenticationDenial>
     {
         self.admitted.authenticate(credential, scope).await
+    }
+}
+
+impl BankAuthenticationBoundary<WorthQueryLocalProcessPrincipal> {
+    /// Authenticates the admitted local process on the calling thread.
+    pub(crate) fn authenticate_local(
+        &self,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<WorthQueryAuthenticatedExternalPrincipal<BankSchema>, WorthQueryAuthenticationDenial>
+    {
+        self.admitted.authenticate_local(scope)
     }
 }

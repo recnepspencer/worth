@@ -1,0 +1,67 @@
+//! Native coordinates for deduplicating one observed source fact set.
+
+use super::Fact;
+use worth_foundational::facade::{AspectFieldLocator, AspectKey};
+use worth_relational::facade::{
+    identity::{EntityId, KindId},
+    runtime::RelationalAdjacencyDirection,
+};
+
+#[derive(Eq, PartialEq, Ord, PartialOrd)]
+pub enum SourceFactLocator {
+    SourceAuthorization(
+        crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorizationKey,
+    ),
+    ManagedSource(
+        crate::domain_computation::primary_graph::application_attempt::ManagedSourceReadKey,
+    ),
+    Components(
+        crate::domain_computation::primary_graph::component_selection::ComponentSelectionKey,
+    ),
+    Aggregate(crate::domain_computation::primary_graph::aggregate_observation::AggregateKey),
+    DerivedSource(crate::domain_computation::primary_graph::derived_source::DerivedSourceKey),
+    StructuralWalk(crate::domain_computation::primary_graph::structural_walk::StructuralWalkKey),
+    Entity(EntityId),
+    Aspect(EntityId, AspectKey),
+    Field(EntityId, AspectFieldLocator),
+    OutgoingAdjacency(EntityId, KindId),
+    IncomingAdjacency(EntityId, KindId),
+}
+
+impl SourceFactLocator {
+    pub fn from_fact(fact: &Fact) -> Self {
+        match fact {
+            Fact::SourceReadAuthorization { observation } => {
+                Self::SourceAuthorization(observation.key().clone())
+            }
+            Fact::ManagedIndexSource { observation } => {
+                Self::ManagedSource(observation.key().clone())
+            }
+            Fact::ComponentSelection { observation } => Self::Components(observation.key().clone()),
+            Fact::Aggregate { observation } => Self::Aggregate(observation.key().clone()),
+            Fact::DerivedSource { observation } => Self::DerivedSource(observation.key().clone()),
+            Fact::StructuralWalk { observation } => Self::StructuralWalk(observation.key().clone()),
+            Fact::SourceEntity { entity_id } => Self::Entity(*entity_id),
+            Fact::SourceAspectRevision {
+                entity_id, aspect, ..
+            } => Self::Aspect(*entity_id, aspect.clone()),
+            Fact::SourceFieldRevision {
+                entity_id, locator, ..
+            } => Self::Field(*entity_id, locator.clone()),
+            Fact::SourceAdjacencyRevision {
+                anchor,
+                relation_kind,
+                direction,
+                ..
+            } => match direction {
+                RelationalAdjacencyDirection::Outgoing => {
+                    Self::OutgoingAdjacency(*anchor, *relation_kind)
+                }
+                RelationalAdjacencyDirection::Incoming => {
+                    Self::IncomingAdjacency(*anchor, *relation_kind)
+                }
+            },
+            _ => unreachable!("source conversion emits only native source facts"),
+        }
+    }
+}

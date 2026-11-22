@@ -27,6 +27,7 @@ mod canonical_tests;
 mod denial;
 mod encoded_scalar;
 mod entity_ref;
+mod native_scalar;
 mod primitive;
 mod recipe;
 mod representation_identity;
@@ -38,10 +39,18 @@ pub use denial::{
 };
 pub use encoded_scalar::ApplicationEncodedScalarValue;
 pub use entity_ref::EntityRefApplicationValueBinding;
+pub use native_scalar::{
+    CanonicalDateApplicationValueBinding, CanonicalF32ApplicationValueBinding,
+    CanonicalF64ApplicationValueBinding, CanonicalTimeApplicationValueBinding,
+    CanonicalTimestampApplicationValueBinding, CanonicalTimestampTzApplicationValueBinding,
+    InlineBytesApplicationValueBinding, UuidApplicationValueBinding,
+};
 pub use primitive::{
-    BoolApplicationValueBinding, ContentRefApplicationValueBinding, I64ApplicationValueBinding,
+    BoolApplicationValueBinding, ContentRefApplicationValueBinding, I16ApplicationValueBinding,
+    I32ApplicationValueBinding, I64ApplicationValueBinding, I8ApplicationValueBinding,
     InternedStringApplicationValueBinding, StringApplicationValueBinding,
-    U64ApplicationValueBinding,
+    U16ApplicationValueBinding, U32ApplicationValueBinding, U64ApplicationValueBinding,
+    U8ApplicationValueBinding,
 };
 pub use recipe::{
     ApplicationFieldBindingLocus, ApplicationFieldBindingOwnerKind, ApplicationFieldBindingRecipe,

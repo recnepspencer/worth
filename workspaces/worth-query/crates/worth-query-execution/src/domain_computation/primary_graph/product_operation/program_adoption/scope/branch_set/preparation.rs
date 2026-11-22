@@ -1,5 +1,7 @@
 //! Freshly prepare the ordered remaining branch targets.
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn prepare_branch_set_adoption(
         &self,
@@ -13,7 +15,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         self.with_application_advancement(request, |phase| {
             let phase_request = phase
-                .execution_request_for(&self.runtime.product_runtime)
+                .execution_request_for(self.inner.runtime.product_runtime_ref())
                 .map_err(|cause| {
                     WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause.into())
                 })?;

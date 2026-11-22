@@ -970,6 +970,7 @@ dependencies = [
 name = "worth-court-foundational-expressions"
 version = "0.1.0"
 dependencies = [
+ "proptest",
  "serde",
  "serde_json",
  "stats_alloc",

@@ -1,5 +1,6 @@
 //! Application-owned completion of product cleanup across Query and Bridge.
 
+use worth_query_execution_runtime::facade::ports::ProductBranchOwnerCleanupInternalPort as _;
 use worth_runtime_bridge::facade::BridgeConditionalDenial;
 
 use crate::domain_computation::execution_runtime::product_world::{

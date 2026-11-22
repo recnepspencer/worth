@@ -1,0 +1,125 @@
+//! Effect-free correspondence for an original guarded request. Never mutation authority.
+
+use crate::domain_computation::primary_graph::WorthQuerySourceExpectationDenial;
+pub mod inventory;
+pub use inventory::*;
+use worth_query_declaration::facade::{
+    application_operation::{
+        ApplicationMutationBinding, ApplicationMutationIdentities, ApplicationMutationScopeBinding,
+        ApplicationMutationSourceExpectation,
+    },
+    application_schema::ApplicationStructuredValueBinding,
+};
+use worth_query_installation::facade::ApplicationSchema;
+use worth_relational::facade::identity::EntityId;
+
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationObservedFact, WorthQueryObservedSource,
+};
+pub mod support;
+pub use support::WorkflowCapturedInputSupport;
+
+type Scope<S, B> = <<B as ApplicationMutationBinding<S>>::ScopeBinding as ApplicationMutationScopeBinding<S>>::Scope;
+type Query<S, B> = <<B as ApplicationMutationBinding<S>>::SourceExpectation as ApplicationMutationSourceExpectation<S>>::Query;
+
+/// Owner-derived descriptive request contract. No public raw-digest constructor.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorkflowCapturedInputContract {
+    pub resource: EntityId,
+    pub binding: String,
+    pub input_type: String,
+    pub input: [u8; 32],
+    pub key: [u8; 32],
+    pub source: Option<(u64, [u8; 32], [u8; 32])>,
+    pub preconditions: Option<[u8; 32]>,
+}
+
+/// Prepared description and its resource-resolution dependencies. It performs no action.
+pub struct PreparedWorkflowCapturedInput {
+    pub contract: WorkflowCapturedInputContract,
+    pub facts: Vec<WorthQueryApplicationObservedFact>,
+    pub basis: crate::basis::WorthQueryProductBranchReadIdentity,
+    pub runtime: u64,
+    pub request_work:
+        worth_query_declaration::facade::application_operation::ApplicationCanonicalWork,
+    pub precondition_work: worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
+}
+
+#[derive(Debug)]
+pub enum WorkflowCapturedInputDenial {
+    ForeignSelection,
+    Binding,
+    Preconditions,
+    DuplicateTarget,
+    TargetMismatch,
+    ResourceObservation,
+    ResourceRead(Box<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>),
+    Source(WorthQuerySourceExpectationDenial),
+}
+
+impl std::fmt::Display for WorkflowCapturedInputDenial {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "captured workflow input refused: {self:?}")
+    }
+}
+impl std::error::Error for WorkflowCapturedInputDenial {}
+
+pub enum WorkflowCapturedInputSource<'a, Q> {
+    None,
+    Row(&'a WorthQueryObservedSource<Q>),
+    ResultSet(&'a crate::domain_computation::primary_graph::application_query::WorthQueryObservedResultSet<Q>),
+}
+
+impl WorkflowCapturedInputContract {
+    pub fn validate_admission<S: ApplicationSchema, B, C>(
+        &self,
+        _: &worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess,
+        admission: &crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<S, B::Operation, B::Input, C>,
+        identities: &ApplicationMutationIdentities<'_, S, B>,
+        source: WorkflowCapturedInputSource<'_, Query<S, B>>,
+    ) -> Result<(), WorkflowCapturedInputDenial>
+    where
+        B: ApplicationMutationBinding<S>,
+    {
+        let source = match source {
+            WorkflowCapturedInputSource::None => None,
+            WorkflowCapturedInputSource::Row(s) => {
+                Some((1, s.idempotency_identity().bytes(), s.partition_identity()))
+            }
+            WorkflowCapturedInputSource::ResultSet(s) => Some((
+                2,
+                s.source().idempotency_identity().bytes(),
+                s.source().partition_identity(),
+            )),
+        };
+        if self.resource != admission.scope_entity_id()
+            || self.binding != B::IDENTITY
+            || self.input_type != B::InputBinding::IDENTITY.as_str()
+            || self.input != *identities.input_identity()
+            || self.key != *identities.key_identity()
+            || self.preconditions.as_ref() != admission.mutation_preconditions().identity()
+            || self.source != source
+        {
+            return Err(WorkflowCapturedInputDenial::TargetMismatch);
+        }
+        Ok(())
+    }
+
+    pub fn matches_recorded_node(&self, node: &super::definition::CompiledWorkflowNode) -> bool {
+        match node.kind() {
+            super::definition::CompiledWorkflowNodeKind::Operation {
+                binding: Some(binding),
+                input_type,
+                requires_workflow_authority: true,
+                ..
+            } => binding == &self.binding && input_type == &self.input_type,
+            super::definition::CompiledWorkflowNodeKind::Operation { .. }
+            | super::definition::CompiledWorkflowNodeKind::Assessment { .. }
+            | super::definition::CompiledWorkflowNodeKind::Condition(_)
+            | super::definition::CompiledWorkflowNodeKind::Approval { .. }
+            | super::definition::CompiledWorkflowNodeKind::EvidenceJoin { .. }
+            | super::definition::CompiledWorkflowNodeKind::Terminal
+            | super::definition::CompiledWorkflowNodeKind::AwaitInbound { .. } => false,
+        }
+    }
+}

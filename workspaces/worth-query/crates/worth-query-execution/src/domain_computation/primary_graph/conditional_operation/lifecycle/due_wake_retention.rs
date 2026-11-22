@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 
 use super::{
@@ -106,8 +107,9 @@ pub(super) fn complete_clock_receipt(
         wake.continuation_identity.is_some()
             || !matches!(
                 wake.decision,
-                WorthQueryRetainedConditionalDecision::OperationCommitted(_)
-                    | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_)
+                WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
+                    | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
+                    | WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_)
             )
     });
     let decisions = retained_decision_counts(retained_wakes);
@@ -198,7 +200,7 @@ pub(super) fn complete_continuation_receipt_for_test(
 }
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) fn prime_global_plateaus_for_test() {
-    let _ = crate::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity::restore(100_000);
+    let _ = worth_query_execution_foundation::facade::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity::restore(100_000);
     crate::domain_computation::provider_session::protocol::prime_protocol_session_plateau_for_test();
     crate::domain_computation::provider_session::execution_attempt_identity::prime_execution_attempt_plateau_for_test();
     crate::domain_computation::managed_run::prime_managed_logical_run_plateau_for_test();

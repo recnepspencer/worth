@@ -33,8 +33,8 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
             .map_err(ReadDenial::Authority)?;
         let step = self.restored.recipe_step();
         let result = self.restored.discovery_request(execution, &self.profile.model,
-            super::super::super::discovery_recipes::HistoryDiscoveryRecipeKey::new::<C>(&self.profile, parent),
-            || CapturedSourceQueryRequest::capture::<S, B>(execution, runtime, step,
+            super::super::super::history_discovery_recipe_key::<C>(&self.profile, parent),
+            || CapturedSourceQueryRequest::capture::<S, B>(execution, runtime.inner(), step,
                 intent.ok_or(ReadDenial::Authority(WorthQueryHistoryNavigationDenial::IntentDrift))?),
         ).and_then(|recipe| {
             let installed = runtime.installed_schema().installed_query_binding::<B>()

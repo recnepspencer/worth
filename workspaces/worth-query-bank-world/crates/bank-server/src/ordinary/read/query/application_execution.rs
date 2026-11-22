@@ -1,10 +1,11 @@
 use bank_domain::queries::{
     AccountAuthorizedUsersQuery, AccountAuthorizedUsersQueryResult, AccountAuthorizedUsersRequest,
     AccountDetailQuery, AccountDetailRequest, AccountDiscoveryQuery, AccountDiscoveryRequest,
-    CurrentAccountsQuery, CurrentAccountsRequest, EstateCaseOverviewQuery,
-    EstateCaseOverviewRequest, EstateEmergencyAccountDetails, EstateEmergencyAccountDetailsQuery,
-    EstateEmergencyAccountDetailsRequest, InstitutionAuditQuery, InstitutionAuditRequest,
-    PaymentDetailQuery, PaymentDetailRequest, PendingPaymentsQuery, PendingPaymentsRequest,
+    AccountSearchQuery, AccountSearchRequest, CurrentAccountsQuery, CurrentAccountsRequest,
+    EstateCaseOverviewQuery, EstateCaseOverviewRequest, EstateEmergencyAccountDetails,
+    EstateEmergencyAccountDetailsQuery, EstateEmergencyAccountDetailsRequest,
+    InstitutionAuditQuery, InstitutionAuditRequest, PaymentDetailQuery, PaymentDetailRequest,
+    PendingPaymentsQuery, PendingPaymentsRequest,
 };
 use bank_domain::queries::{AccountSummaryQuery, AccountSummaryRequest};
 use bank_domain::reads::{
@@ -232,6 +233,17 @@ impl BankReadyQuery<'_, '_, InstitutionAuditRequest> {
         self,
     ) -> Result<
         WorthQueryPublishedApplicationResult<InstitutionAuditQuery, InstitutionAuditView>,
+        BankApplicationQueryDenial,
+    > {
+        self.execute_current()
+    }
+}
+
+impl BankReadyQuery<'_, '_, AccountSearchRequest> {
+    pub fn execute(
+        self,
+    ) -> Result<
+        WorthQueryPublishedApplicationResult<AccountSearchQuery, VisibleAccount>,
         BankApplicationQueryDenial,
     > {
         self.execute_current()

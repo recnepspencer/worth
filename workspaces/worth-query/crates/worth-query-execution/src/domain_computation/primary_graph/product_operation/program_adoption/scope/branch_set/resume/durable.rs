@@ -5,6 +5,11 @@ use crate::domain_computation::primary_graph::query_obligations::{
     QueryAdoptionPerformedDescription, QueryObligationDenial, QueryStoppedBranchSetObligation,
 };
 use worth_foundational::facade::{CanonicalDigestId, DurableCompositeCommitIdentity};
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl WorthQueryPreparedBranchSetAdoption {
     pub fn begin_resume<Schema: ApplicationSchema>(
         mut self,
@@ -14,7 +19,7 @@ impl WorthQueryPreparedBranchSetAdoption {
     {
         let result = application.with_application_advancement(request, |phase| {
             let execution = phase
-                .checked_execution_request_for(&application.runtime.product_runtime)
+                .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
                 .map_err(|cause| {
                     WorthQueryBranchSetAdoptionResumeDenial::Preparation(
                         WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause),
@@ -94,7 +99,12 @@ impl WorthQueryPreparedBranchSetAdoption {
                 ))?];
         for pending in &self.pending {
             if pending.adoption.owner_identity
-                != application.runtime.product_runtime.owner.owner_identity()
+                != application
+                    .inner
+                    .runtime
+                    .product_runtime_ref()
+                    .owner_ref()
+                    .owner_identity()
             {
                 return Err(Denial::ForeignRuntime);
             }
@@ -138,7 +148,12 @@ impl WorthQueryPreparedBranchSetAdoption {
             progress: std::mem::take(&mut self.progress),
             target: self.target,
             total_selection_work_units: self.total_selection_work_units,
-            owner: application.runtime.product_runtime.owner.owner_identity(),
+            owner: application
+                .inner
+                .runtime
+                .product_runtime_ref()
+                .owner_ref()
+                .owner_identity(),
             durable: attempt,
             _support_custody: custody,
         })
@@ -237,11 +252,18 @@ impl WorthQueryStoppedBranchSetAdoption {
     {
         let result = application
             .with_application_advancement(request, |phase| {
-                if self.owner != application.runtime.product_runtime.owner.owner_identity() {
+                if self.owner
+                    != application
+                        .inner
+                        .runtime
+                        .product_runtime_ref()
+                        .owner_ref()
+                        .owner_identity()
+                {
                     return Err(WorthQueryBranchSetAdoptionResumeDenial::ForeignRuntime);
                 }
                 let execution = phase
-                    .checked_execution_request_for(&application.runtime.product_runtime)
+                    .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
                     .map_err(|cause| {
                         WorthQueryBranchSetAdoptionResumeDenial::Preparation(
                             WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause),

@@ -1,0 +1,111 @@
+use worth_query_declaration::facade::application_query::ApplicationQueryLiveCauseBinding;
+use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
+use worth_query_installation::facade::WorthQueryInstalledApplicationQuery;
+
+use super::super::outcome::{
+    WorthQueryApplicationLiveOpenDenial, WorthQueryApplicationLiveOpenDenialKind,
+};
+use crate::domain_computation::primary_graph::application_query::authorized_read::WorthQueryAuthorizedApplicationReadDenial;
+use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryAdmissionDenial;
+
+pub fn validate_live_binding<Schema, Query, Parameters, QueryResult, Scope, Target, Binding>(
+    query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+) -> Result<
+    &worth_query_installation::facade::WorthQueryInstalledApplicationLiveContract,
+    WorthQueryApplicationLiveOpenDenial,
+>
+where
+    Binding: ApplicationQueryLiveCauseBinding<Schema, Query, Scope, Target>,
+{
+    let live = query.live().ok_or_else(|| {
+        open_denial(
+            WorthQueryApplicationLiveOpenDenialKind::LiveContractMissing,
+            query.name(),
+        )
+    })?;
+    let binding_matches = live.binding_type()
+        == <Binding as worth_query_declaration::facade::portable_identity::WorthQueryPortableType>::PORTABLE_TYPE_IDENTITY.as_str()
+        && live.effect() == Binding::effect().name()
+        && live.payload_type()
+            == <Binding::PayloadBinding as ApplicationStructuredValueBinding>::IDENTITY.as_str();
+    if binding_matches {
+        Ok(live)
+    } else {
+        Err(open_denial(
+            WorthQueryApplicationLiveOpenDenialKind::BindingMismatch,
+            query.name(),
+        ))
+    }
+}
+
+pub fn open_admission_denial(
+    denial: WorthQueryApplicationQueryAdmissionDenial,
+) -> WorthQueryApplicationLiveOpenDenial {
+    let kind = WorthQueryApplicationLiveOpenDenialKind::Admission(denial.kind());
+    let subject = denial.subject().to_string();
+    match denial.into_authorization_denial() {
+        Some(authorization) => {
+            WorthQueryApplicationLiveOpenDenial::with_authorization(kind, authorization)
+        }
+        None => open_denial(kind, subject),
+    }
+}
+
+pub fn open_read_denial(
+    denial: WorthQueryAuthorizedApplicationReadDenial,
+    subject: &str,
+) -> WorthQueryApplicationLiveOpenDenial {
+    match denial {
+        WorthQueryAuthorizedApplicationReadDenial::StalePrincipal => open_denial(
+            WorthQueryApplicationLiveOpenDenialKind::Admission(
+                super::super::super::WorthQueryApplicationQueryAdmissionDenialKind::StalePrincipal,
+            ),
+            subject,
+        ),
+        WorthQueryAuthorizedApplicationReadDenial::ScopeFreshness(_) => open_denial(
+            WorthQueryApplicationLiveOpenDenialKind::Admission(
+                super::super::super::WorthQueryApplicationQueryAdmissionDenialKind::StaleScope,
+            ),
+            subject,
+        ),
+        WorthQueryAuthorizedApplicationReadDenial::Authorization(authorization) => {
+            let kind =
+                WorthQueryApplicationLiveOpenDenialKind::AuthorizationDenied(authorization.kind());
+            WorthQueryApplicationLiveOpenDenial::with_authorization(kind, authorization)
+        }
+        WorthQueryAuthorizedApplicationReadDenial::Read(read) => {
+            use super::super::super::read_execution::WorthQueryApplicationReadExecutionDenialKind as Read;
+            use super::super::super::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
+            let kind = match read.kind() {
+                Read::Content(cause) => WorthQueryApplicationLiveOpenDenialKind::Content(cause),
+                Read::Cancelled => {
+                    WorthQueryApplicationLiveOpenDenialKind::Admission(Admission::Cancelled)
+                }
+                Read::DeadlineExceeded => {
+                    WorthQueryApplicationLiveOpenDenialKind::Admission(Admission::DeadlineExceeded)
+                }
+                _ => WorthQueryApplicationLiveOpenDenialKind::ScopeIdentityUnavailable,
+            };
+            open_denial(kind, read.subject())
+        }
+        WorthQueryAuthorizedApplicationReadDenial::Session => open_denial(
+            WorthQueryApplicationLiveOpenDenialKind::ScopeIdentityUnavailable,
+            subject,
+        ),
+    }
+}
+
+pub fn open_denial(
+    kind: WorthQueryApplicationLiveOpenDenialKind,
+    subject: impl Into<String>,
+) -> WorthQueryApplicationLiveOpenDenial {
+    WorthQueryApplicationLiveOpenDenial::new(kind, subject)
+}
+
+pub fn subscription_capacity_denial(subject: &str) -> WorthQueryApplicationLiveOpenDenial {
+    use super::super::super::WorthQueryApplicationQueryAdmissionDenialKind as Admission;
+    open_denial(
+        WorthQueryApplicationLiveOpenDenialKind::Admission(Admission::RetentionCapacityExhausted),
+        subject,
+    )
+}

@@ -46,7 +46,11 @@ impl<'runtime, S: ApplicationSchema> HistorySelectionCell<'runtime, S> {
             };
         let journal = match HistoryJournal::attach(
             execution,
-            head.application().runtime.authority_identity().as_u64(),
+            head.application()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64(),
             expected.clone(),
             retained,
             retention_resources,

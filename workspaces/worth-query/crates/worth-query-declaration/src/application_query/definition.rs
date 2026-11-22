@@ -89,6 +89,7 @@ pub struct ApplicationQueryDefinition<Schema, Query, Parameters, QueryResult, Sc
     pub(super) managed_index_recipe: Option<super::ApplicationManagedIndexSelectionRecipe>,
     pub(super) cardinality: ApplicationQueryCardinality,
     pub(super) predicates: Vec<ApplicationQueryPredicate>,
+    pub(super) where_filter: Option<super::ApplicationQueryWhereFilterProgram>,
     pub(super) ordering: Vec<ApplicationQueryOrderingTerm>,
     pub(super) continuation: Option<ApplicationQueryContinuationTarget>,
     pub(super) live_cause: Option<ApplicationQueryLiveCauseContract>,
@@ -174,6 +175,10 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
 
     pub fn predicates(&self) -> &[ApplicationQueryPredicate] {
         &self.predicates
+    }
+
+    pub fn where_filter(&self) -> Option<&super::ApplicationQueryWhereFilterProgram> {
+        self.where_filter.as_ref()
     }
 
     pub fn ordering(&self) -> &[ApplicationQueryOrderingTerm] {

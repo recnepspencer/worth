@@ -4,6 +4,14 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
@@ -80,7 +88,7 @@ where
         let source_identity = source.idempotency_identity();
         let checkpoint_source_identity = source.checkpoint_identity();
         let source_root = source.source_root();
-        let crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity::Product(selection) = source.selection.clone() else {
+        let crate::domain_computation::primary_graph::application_query::WorthQueryApplicationBasisSelectionIdentity::Product(selection) = source.selection().clone() else {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
                 WorthQueryGeneratedOutputSuspensionDenial::SourceMismatch,
             ));
@@ -89,8 +97,8 @@ where
             phase,
             request,
             ExpectedSourceQualification {
-                runtime_authority: source.runtime_authority,
-                schema: source.schema_binding,
+                runtime_authority: source.runtime_authority(),
+                schema: source.schema_binding(),
                 scope: crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(source_root),
                 runtime_source_identity: source_identity,
                 checkpoint_source_identity,
@@ -112,13 +120,14 @@ where
     {
         let (application, product, application_basis) = self.into_parts();
         let execution_request = phase
-            .execution_request_for(&application.runtime.product_runtime)
+            .execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
             })?;
         let execution = &execution_request;
         drop(application_basis);
         if application
+            .inner
             .installed_producers
             .provider::<Producer>()
             .is_none()
@@ -129,9 +138,10 @@ where
         }
         let branch = product.product_branch();
         let gate = application
+            .inner
             .runtime
-            .product_runtime
-            .activations
+            .product_runtime_ref()
+            .activations_ref()
             .gate(product.branch_identity())
             .map_err(|_| {
                 WorthQueryGeneratedOutputSuspensionFailure::ProductActivationUnavailable
@@ -150,10 +160,11 @@ where
         let output_occurrence = observation.lifecycle_incarnation();
         let output_generation = observation.reference_generation().get();
         let lineage = application
+            .inner
             .runtime
-            .primary_provider
-            .graph
-            .output_lineage
+            .primary_provider_ref()
+            .graph_ref()
+            .output_lineage_ref()
             .lock()
             .expect("application output lineage lock is available");
         let exact = lineage
@@ -178,12 +189,12 @@ where
                 WorthQueryGeneratedOutputSuspensionFailure::Qualification(denial)
             })?;
         drop(lineage);
-        if exact.runtime_authority != application.runtime.authority_identity().as_u64() {
+        if exact.runtime_authority != application.inner.runtime.authority_identity().as_u64() {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
                 WorthQueryGeneratedOutputSuspensionDenial::ForeignRuntime,
             ));
         }
-        if exact.schema != application.installed_schema.binding_identity() {
+        if exact.schema != application.inner.installed_schema.binding_identity() {
             return Err(WorthQueryGeneratedOutputSuspensionFailure::Qualification(
                 WorthQueryGeneratedOutputSuspensionDenial::ForeignSchema,
             ));
@@ -202,21 +213,21 @@ where
                 WorthQueryGeneratedOutputSuspensionDenial::NoGeneratedPayload,
             ));
         }
-        let prepared =
-            application
-                .runtime
-                .primary_provider
-                .graph
-                .with_runtime(execution, |runtime| {
-                    runtime
-                        .owner_component_services()
-                        .materialization_port()
-                        .prepare_generated_materialization_suspension(
-                            execution,
-                            product.relational_basis(),
-                            &generated_entities,
-                        )
-                });
+        let prepared = application
+            .inner
+            .runtime
+            .primary_provider_ref()
+            .graph_ref()
+            .with_runtime(execution, |runtime| {
+                runtime
+                    .owner_component_services()
+                    .materialization_port()
+                    .prepare_generated_materialization_suspension(
+                        execution,
+                        product.relational_basis(),
+                        &generated_entities,
+                    )
+            });
         let prepared = prepared.map_err(WorthQueryGeneratedOutputSuspensionFailure::Preparation)?;
         let (candidate, completion) = prepared.into_parts();
         let prepared = product
@@ -282,7 +293,7 @@ fn execute_suspension_publication<Schema: ApplicationSchema>(
 ) -> Result<WorthQuerySuspendedGeneratedOutput, WorthQueryGeneratedOutputSuspensionFailure> {
     match prepared.execute(
         phase
-            .execution_request_for(&application.runtime.product_runtime)
+            .execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
             })?,

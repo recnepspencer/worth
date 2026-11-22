@@ -43,6 +43,7 @@ pub(in crate::query_obligations) fn decode(
             identity,
             original: read(reader)?,
             handoff: QueryResourceHandoff::default(),
+            cold_release: None,
         }),
         1 => QueryResourceRecord::Handoff {
             identity,

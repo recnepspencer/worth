@@ -9,12 +9,12 @@ pub use correction::RestoreRecordedEstateFreeze;
 use crate::schema::{AccountIdentity, BankSchema, EstateAccount, Status};
 use worth_query_decl::facade::{
     application_schema::ApplicationSchemaDeclarationBuilder, worth_query_capability,
-    worth_query_operation, worth_query_operation_reads,
+    worth_query_operation,
 };
 
-worth_query_operation!(pub RestoreFrozenEstateAccountOperation for BankSchema, input RestoreFrozenEstateAccountInputBinding);
-worth_query_operation_reads!(RestoreFrozenEstateAccountOperation => [EstateAccount]);
-
+worth_query_operation!(pub RestoreFrozenEstateAccountOperation for BankSchema, input RestoreFrozenEstateAccountInputBinding;
+    reads [EstateAccount];
+);
 worth_query_capability!(pub RestoreFrozenEstateAccountCapability in BankSchema);
 
 pub(super) fn install(

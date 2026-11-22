@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 impl<Binding, Reconstruction, Execution, Clock, Input>
     WorthQueryInstalledTemporalOperation<Binding, Reconstruction, Execution, Clock, Input>
@@ -20,7 +21,7 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         ) {
             prepare_wake(request, runtime, wake)?;
         }
-        let owner = runtime.runtime.bridge.conditional_operations();
+        let owner = runtime.inner.runtime.bridge_ref().conditional_operations();
         let bridge = owner
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -76,11 +77,13 @@ fn prepare_wake<Schema: worth_query_installation::facade::ApplicationSchema>(
         | Decision::Suppressed(_)
         | Decision::Deferred(_)
         | Decision::OperationBackpressured(_, _)
-        | Decision::OperationCommitted(_)
-        | Decision::OperationAlreadyCommitted(_) => Ok(()),
+        | Decision::OperationCommitted(_, _)
+        | Decision::OperationAlreadyCommitted(_, _)
+        | Decision::OperationRetiredNoEffect(_) => Ok(()),
         Decision::OperationRetryable(_, _)
         | Decision::OperationCommitRetryable(_, _)
-        | Decision::OperationProductStale(_, _) => match wake.continuation_identity {
+        | Decision::OperationProductStale(_, _)
+        | Decision::OperationIndeterminate(_, _) => match wake.continuation_identity {
             Some(_) => Ok(()),
             None => Err(Denial::Unsupported(Owner::ConditionalRuntime)),
         },
@@ -98,7 +101,6 @@ fn prepare_wake<Schema: worth_query_installation::facade::ApplicationSchema>(
         | Decision::OperationExecutionControlRetryable(_, _)
         | Decision::OperationTerminalFailure(_, _)
         | Decision::OperationControlStopped(_, _)
-        | Decision::OperationIndeterminate(_, _)
         | Decision::InterruptedDuringReentry
         | Decision::Failed(_) => Err(Denial::Unsupported(Owner::ConditionalRuntime)),
     }

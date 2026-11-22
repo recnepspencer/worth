@@ -1,5 +1,5 @@
 use super::{
-    wake_retirement::{complete_wake, retire_obsolete},
+    wake_retirement::{complete_wake, retire_wake_with_decision},
     WorthQueryTemporalReentryCounts, WorthQueryTemporalReentryOutcome,
 };
 use crate::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::{
@@ -64,15 +64,48 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
                 WorthQueryRetainedConditionalDecision::OperationNoEffect(evidence, cause);
             counts.failed += 1;
         }
-        WorthQueryTemporalReentryOutcome::Committed => complete_wake(
-            bridge, clock, candidates, wake, identity, evidence, counts, true,
+        WorthQueryTemporalReentryOutcome::Committed(commit) => complete_wake(
+            bridge,
+            clock,
+            candidates,
+            wake,
+            identity,
+            evidence,
+            counts,
+            Ok(commit),
         ),
-        WorthQueryTemporalReentryOutcome::AlreadyCommitted => complete_wake(
-            bridge, clock, candidates, wake, identity, evidence, counts, false,
+        WorthQueryTemporalReentryOutcome::AlreadyCommitted(commit) => complete_wake(
+            bridge,
+            clock,
+            candidates,
+            wake,
+            identity,
+            evidence,
+            counts,
+            Err(commit),
         ),
-        WorthQueryTemporalReentryOutcome::Obsolete => {
-            retire_obsolete(bridge, clock, candidates, wake, identity, evidence, counts)
-        }
+        WorthQueryTemporalReentryOutcome::Obsolete => retire_wake_with_decision(
+            bridge,
+            clock,
+            candidates,
+            wake,
+            identity,
+            evidence,
+            counts,
+            |evidence| {
+                WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence, None)
+            },
+        ),
+        WorthQueryTemporalReentryOutcome::RetiredNoEffect => retire_wake_with_decision(
+            bridge,
+            clock,
+            candidates,
+            wake,
+            identity,
+            evidence,
+            counts,
+            WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect,
+        ),
         WorthQueryTemporalReentryOutcome::RetryableCommitFailure(kind) => {
             wake.decision =
                 WorthQueryRetainedConditionalDecision::OperationCommitRetryable(evidence, kind);

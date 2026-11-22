@@ -1,0 +1,114 @@
+//! One Query-owner preparation for the exact freshly resolved source access.
+
+use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
+use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding;
+use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
+use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
+
+use super::PreparedApplicationQueryPermission;
+use super::*;
+use crate::domain_computation::primary_graph::application_query::WorthQueryApplicationQueryControls;
+use crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial;
+use crate::domain_computation::primary_graph::WorthQueryObservedSource;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial;
+use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
+
+mod access;
+pub mod historical_source;
+
+type Parameters<Schema, Binding> =
+    <<Binding as ApplicationQueryBinding<Schema>>::ParameterBinding as ApplicationStructuredValueBinding>::Value;
+type ResultValue<Schema, Binding> =
+    <<Binding as ApplicationQueryBinding<Schema>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+type Scope<Schema, Binding> =
+    <<Binding as ApplicationQueryBinding<Schema>>::ScopeBinding as ApplicationQueryScopeBinding<
+        Schema,
+    >>::Scope;
+
+/// The terminal Query permission result retains original owner stops. A
+/// caller cannot substitute a stale principal or scope into the read plan.
+pub enum FreshQueryPermissionStop<E> {
+    Principal(WorthQueryPrincipalResolutionDenial),
+    Scope(WorthQueryEntityResolutionDenial),
+    Query(WorthQueryApplicationQueryAdmissionDenial),
+    Inspect(E),
+}
+
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Resolve the installed principal and original descriptive scope on this
+    /// selected root, prepare the retained source, and consume permission in
+    /// one scoped callback. Neither access identity can be supplied separately.
+    #[allow(clippy::too_many_arguments)]
+    pub fn with_fresh_retained_query_permission<'a, Binding, R, E>(
+        &'a self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        installed: &'a WorthQueryInstalledApplicationQueryBinding<Schema, Binding>,
+        validated_principal: Option<
+            &worth_query_installation::facade::WorthQueryValidatedPrincipalBinding,
+        >,
+        external: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        observed: &WorthQueryObservedSource<Binding::Query>,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        truth: Option<&WorthQuerySelectedProductOperation<'_, Schema>>,
+        controls: WorthQueryApplicationQueryControls<'a, Schema>,
+        history: Option<crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation<'_>>,
+        inspect: impl for<'prepared> FnOnce(
+            PreparedApplicationQueryPermission<
+                'prepared,
+                Schema,
+                Binding::Query,
+                Parameters<Schema, Binding>,
+                ResultValue<Schema, Binding>,
+                Binding::Principal,
+                Binding::PrincipalIdentity,
+                Scope<Schema, Binding>,
+            >,
+        ) -> Result<R, E>,
+    ) -> Result<R, FreshQueryPermissionStop<E>>
+    where
+        Binding: ApplicationQueryBinding<Schema>,
+    {
+        if let Some(history) = history {
+            return self.with_historical_source_permission(
+                execution,
+                installed,
+                validated_principal,
+                external,
+                observed,
+                selected,
+                truth,
+                controls,
+                history,
+                inspect,
+            );
+        }
+        let request = controls.request_scope();
+        self.with_fresh_retained_query_access(
+            execution,
+            installed,
+            validated_principal,
+            external,
+            observed,
+            selected,
+            controls,
+            |access, source, principal, scope| {
+                let permission = self
+                    .prepare_application_query_permission(
+                        execution,
+                        installed.query(),
+                        access,
+                        source,
+                        selected,
+                        truth,
+                        request,
+                        principal,
+                        scope,
+                    )
+                    .map_err(FreshQueryPermissionStop::Query)?;
+                inspect(permission).map_err(FreshQueryPermissionStop::Inspect)
+            },
+        )
+    }
+}

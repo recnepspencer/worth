@@ -49,6 +49,18 @@ where
                 custody: prepared.cancel(),
             };
         }
+        // A closure leaves nothing a reopen could perform after Native's
+        // effect, so a durable mixed original never begins one.
+        if prepared
+            .prepared
+            .durable_open()
+            .is_some_and(|open| open.plans_signal_after_native())
+        {
+            return Outcome::RecoveryRequired {
+                cause: Denial::UnrecordableSignalLeg,
+                custody: prepared.cancel(),
+            };
+        }
         let outcome = owner.execute_with_signal_with_cutover(
             execution,
             prepared.prepared,

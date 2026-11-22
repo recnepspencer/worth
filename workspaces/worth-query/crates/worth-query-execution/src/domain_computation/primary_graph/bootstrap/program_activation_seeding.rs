@@ -7,6 +7,7 @@
 //! program's declared rules, with no window in which activation is unreadable.
 
 use std::collections::BTreeMap;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 
 use worth_foundational::facade::AspectValue;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
@@ -54,7 +55,7 @@ pub(super) fn commit_initial_program_activation(
     graph: &WorthQueryPrimaryGraph,
     seed: WorthQueryProgramActivationSeed,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    let layout = graph.layout.program_activation().clone();
+    let layout = graph.layout_ref().program_activation().clone();
     let created = CreatedEntityRef {
         partition_id: PartitionId::main(),
         kind_id: layout.entity_kind,

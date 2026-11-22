@@ -28,6 +28,7 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
             capability_registry: compiled.capability_registry,
             authorization_policy_registry: compiled.authorization_policy_registry,
             value_binding_catalog: compiled.value_binding_catalog,
+            name_scheme_catalog: compiled.name_scheme_catalog,
             native_contract_catalog: compiled.native_contract_catalog,
             portable_native_contracts: compiled.portable_native_contracts,
             portable_operation_contracts: compiled.portable_operation_contracts,

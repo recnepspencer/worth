@@ -1,66 +1,26 @@
 //! Original Query custody survives every admission or retirement refusal.
+
+pub use super::home_retirement_denial::{
+    WorthQueryHomeRetirementDenial, WorthQueryHomeRetirementOwner,
+};
 use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::{
-    handler::HandlerRetirementCursor, WorthQueryOperationHomeRetirementDenial,
-    WorthQueryOperationHomeRetirementProgress as Progress,
+    handler::HandlerRetirementCursor, WorthQueryOperationHomeRetirementProgress as Progress,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_lineage::facade::ports::{
+    ApplicationInvariantProjectionAuthorityInternalPort as _, PrimaryGraphInternalPort as _,
+};
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 mod inbound;
-mod participation;
 mod stages;
-pub(in crate::domain_computation::primary_graph) use participation::PrimaryGraphParticipationCustody;
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum WorthQueryHomeRetirementOwner {
-    ProgramRuntime,
-    ConditionalRuntime,
-    InstalledResources,
-    InstalledProducers,
-    InstalledConditionals,
-    InboundVerifiers,
-    SigningOwners,
-    RelationalSource,
-    GraphProvider,
-    ReceiptBases,
-    PublicationReceipts,
-    HomeMaintenance,
-}
-
-#[derive(Debug)]
-pub enum WorthQueryHomeRetirementDenial {
-    RecoveryCustody(crate::domain_computation::application_aftermath::WorthQueryRecoveryHandleDenial),
-    CorrectionRetention(super::super::WorthQueryCorrectionRetentionDenial),
-    ManagedCleanup(super::super::query_obligations::QueryObligationDenial),
-    Resource(super::super::application_resource::WorthQueryResourceActionDenial),
-    ConditionalClock(worth_runtime_bridge::facade::BridgeManagedTemporalDenialKind),
-    ConditionalBinding(worth_runtime_bridge::facade::BridgeConditionalDenialKind),
-    CorrectionMaterial(crate::facade::correction_material::QueryCorrectionMaterialDenial),
-    Busy(WorthQueryHomeRetirementOwner),
-    Unsupported(WorthQueryHomeRetirementOwner),
-    Handler {
-        binding: &'static str,
-        cause: WorthQueryOperationHomeRetirementDenial,
-    },
-    NativeAlias(
-        worth_relational::facade::change_source::RelationalRuntimeHandleAliasRetirementDenial,
-    ),
-    NativeObservation(
-        worth_relational::facade::change_source::RelationalRetainedObservationRetirementDenial,
-    ),
-    BridgeBasis(worth_runtime_bridge::facade::RelationalBridgeBasisRetirementDenial),
-    CanonicalSubscription(worth_relational::facade::mvcc::PublicationCompanionRetirementDenial),
-    Bridge(worth_runtime_bridge::facade::BridgeHomeRetirementDenial),
-    Publication(worth_runtime_world::facade::ConsumedPublicationRetirementDenial),
-    /// The dispatch journal still holds an executing attempt or an unsettled record.
-    DispatchCustody(
-        crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial,
-    ),
-    Execution(worth_execution::WorkCeilingDenial),
-}
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::application_runtime::home_retirement::participation;
 
 /// Keeps the original runtime and handler cursor, never a replacement service.
-pub(in crate::domain_computation::primary_graph) struct RetiringPrimaryGraphRuntime<Schema> {
+pub struct RetiringPrimaryGraphRuntime<Schema> {
     runtime: WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     handlers: HandlerRetirementCursor,
     stage: QueryRetirementStage,
@@ -97,8 +57,9 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     fn preflight_supplied_home_owners(&mut self) -> Result<(), WorthQueryHomeRetirementDenial> {
         use WorthQueryHomeRetirementDenial::Busy;
         use WorthQueryHomeRetirementOwner as Owner;
-        self.runtime
-            .inbound_verifiers
+        self.inner
+            .runtime
+            .inbound_verifiers_mut()
             .get_mut()
             .map_err(|_| Busy(Owner::InboundVerifiers))?;
         // Verifiers borrow the original journal weakly. Their Home-level source
@@ -111,15 +72,14 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         // The intact signer registry follows this original runtime into inert
         // retirement custody. Its final supplier destruction belongs to reclaim,
         // not budgeted close; external authentication owners are not revoked.
-        self.signing_owners
+        self.inner
+            .signing_owners
             .get_mut()
             .map_err(|_| Busy(Owner::SigningOwners))?;
         Ok(())
     }
 
-    pub(in crate::domain_computation::primary_graph) fn into_home_retirement(
-        self,
-    ) -> RetiringPrimaryGraphRuntime<Schema> {
+    pub(crate) fn into_home_retirement(self) -> RetiringPrimaryGraphRuntime<Schema> {
         RetiringPrimaryGraphRuntime {
             runtime: self,
             handlers: Default::default(),
@@ -130,18 +90,6 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 }
 
 impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
-    pub(in crate::domain_computation::primary_graph) fn home_maintenance_mut(&mut self)
-    -> Option<&mut std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>>{
-        self.runtime
-            .runtime
-            .product_runtime
-            .home_maintenance
-            .as_mut()
-    }
-    pub(in crate::domain_computation::primary_graph) fn take_home_maintenance(&mut self)
-    -> Option<std::sync::Arc<dyn crate::domain_computation::execution_runtime::product_world::WorthQueryHomeMaintenance>>{
-        self.runtime.runtime.product_runtime.home_maintenance.take()
-    }
     #[inline(never)]
     pub(in crate::domain_computation::primary_graph) fn advance(
         &mut self,
@@ -151,9 +99,10 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
     ) -> Result<Progress, WorthQueryHomeRetirementDenial> {
         if self
             .runtime
+            .inner
             .runtime
-            .product_runtime
-            .home_maintenance
+            .product_runtime_ref()
+            .home_maintenance_slot_ref()
             .is_some()
         {
             return Err(WorthQueryHomeRetirementDenial::Unsupported(
@@ -180,24 +129,13 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
             QueryRetirementStage::Complete => return Ok(Progress::Complete),
         };
         if progress == Progress::Complete {
-            self.stage = match self.stage {
-                QueryRetirementStage::Handlers => QueryRetirementStage::InboundCustody,
-                QueryRetirementStage::InboundCustody => QueryRetirementStage::TransportCustody,
-                QueryRetirementStage::TransportCustody => QueryRetirementStage::Participation,
-                QueryRetirementStage::Participation => QueryRetirementStage::InstalledConditionals,
-                QueryRetirementStage::InstalledConditionals => {
-                    QueryRetirementStage::RecoveredOutputs
-                }
-                QueryRetirementStage::RecoveredOutputs => QueryRetirementStage::Provider,
-                QueryRetirementStage::Provider => QueryRetirementStage::Projection,
-                QueryRetirementStage::Projection => QueryRetirementStage::Granular,
-                QueryRetirementStage::Granular => QueryRetirementStage::ProductSource,
-                QueryRetirementStage::ProductSource => QueryRetirementStage::ServingGraph,
-                QueryRetirementStage::ServingGraph => QueryRetirementStage::Bridge,
-                QueryRetirementStage::Bridge => QueryRetirementStage::Complete,
-                QueryRetirementStage::Complete => QueryRetirementStage::Complete,
-            };
+            self.stage = self.stage.next();
         }
         Ok(Progress::Advanced)
     }
 }
+
+#[path = "home_retirement/maintenance.rs"]
+mod maintenance;
+#[path = "home_retirement/stage_order.rs"]
+mod stage_order;

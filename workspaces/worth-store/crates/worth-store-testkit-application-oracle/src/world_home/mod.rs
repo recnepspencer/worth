@@ -3,6 +3,8 @@ mod definition;
 mod derived_signal;
 pub use derived_signal::{open_with_derived_signal, reference_signal_value};
 mod publication;
+mod signal_input;
+pub use signal_input::{signal_open_refusal, ChangedSignalAdvance, SignalOpenRefusal};
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 use worth_store_application::{
     admit_home, readmit_relational, readmit_world, recover_home, ApplicationHomeOpenRefusal,

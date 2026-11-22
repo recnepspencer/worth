@@ -866,6 +866,134 @@ Each role remains `WorthQueryFeatureRoleRuntime::new(handler, provider,
 readiness_configuration)` inside `WorthQueryFeatureRuntime::new(initial, preserve)`.
 Readiness predicates and `bind_output_readiness` remain with their existing owners.
 
+#### Declare each fact once
+
+Use `body_action(Binding, Delivery) { operation: definition(); ... };` when the
+operation definition carries an authored body. The feature declares the
+operation and binding, derives the action's delivery root and installs the
+body through the contribution's existing `operation_body` owner; the runtime
+constructor takes no handler for it. Installation still refuses a body action
+configured by a contribution that does not own it (`ContributionMemberMismatch`)
+or whose operation has no body (`OperationBodyUnavailable`), and a binding
+declared twice is a `DuplicateMember`. A feature for one concrete schema is
+`pub feature Definition<MySchema> for Feature => Runtime { ... }`. Further type
+parameters and a `where` clause apply to the definition, its runtime and every
+generated impl, so one declaration covers a family:
+
+<!-- illustrative -->
+```rust,ignore
+worth_query_application_contribution! {
+    pub feature FlagFamily<S: ApplicationSchema, O: Send> for FlagFeature<O> => FlagRuntime
+    where O: FlagOperation<S>,
+    {
+        schema: |schema| { schema };
+        body_action(O::Binding, O::Delivery) { operation: O::definition(); };
+    }
+}
+```
+
+Bindings that share a principal mapping, idempotency key and denial name one
+`decl::application_schema::ApplicationBindingContext` and write `context
+Context,` after the schema in `worth_query_mutation_binding!` or
+`worth_query_query_binding!`. Omitted principal, `idempotency` and `denial`
+clauses resolve to the context; a clause written on the binding wins. Both
+spellings install the same canonical schema.
+
+`decl::application_identity::ApplicationIdentityNamespace` derives one root's
+identities (`root.input`, `root.binding`, `root.request`, `root.result`,
+`root.slot.<field>` and the other `ApplicationIdentityRole`s) and refuses
+malformed, overlong or colliding identities with
+`ApplicationIdentityNamespaceDenial`. An explicit override keeps a role's
+existing wire identity. In declarations, `const ADD: ApplicationIdentityNamespace
+= worth_query_identity_namespace!("app.tasks.add.v1", Binding => "app.add.binding.v1");`
+and `identity worth_query_identity!(ADD, binding)` evaluate at compile time,
+where a refusal is a compile error.
+
+`worth_query_operation!` accepts the standalone capability macros' clauses
+inline, after the input or its `access` block: `reads [Inbox]; creates [Task];
+links [InboxTasks];`. A fragment whose fields are native scalars uses
+`fragment::NativeScalars` as its `Bindings`, or
+`worth_query_native_scalar_bindings!(pub Codecs);` when it also needs explicit
+`Scalar<T>` impls such as principal identity, content, unit-bearing or
+structured codecs. The [single-source court](../workspaces/worth-query/crates/worth-query-court-decl-host-single-source/tests/worth_query_court_decl_host_single_source/single_source/mod.rs)
+installs and runs body actions, a generic family, binding contexts, identity
+namespaces, a `worth_query_native_scalar_bindings!` set and inline `reads`.
+
+#### Derive declarations
+
+Four derives, re-exported by `worth_query_decl::facade` and
+`worth_query_host::facade`, write the same declarations from one Rust item.
+Each expands only into the public traits and macros above, so derived and
+hand-written members mix in one schema, and a derived declaration with the
+same names and identities installs a byte-identical canonical schema.
+Expansions name `::worth_query_decl`, and `WorthQueryProjection` also names
+`::worth_query_host`: a crate deriving `WorthQuerySchema`, `WorthQueryRecord`
+or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
+`WorthQueryProjection` depends on both.
+
+- `WorthQuerySchema` on a unit struct declares its role: `schema` (a root:
+  `Fragment`, `ApplicationSchema`, `ApplicationSchemaComposition`),
+  `fragment`, `entity` or `relation`. `reference(Schema, Fragment)` adds the
+  usual `reference()`; `name = ".."` keeps a persisted name.
+- `WorthQueryRecord` on a row declares its `aspect = Marker` and its `Record`
+  for `bindings = Codecs`. With `fragment = F, entity = E` it also declares one
+  `FieldSelection` alias per column, named after the column. Columns default
+  to the field name in PascalCase; `column = ".."`, `equality`, `read_only`
+  and `unique` are per field, and `Option<T>` is an optional column.
+- `WorthQueryProjection` on a result row declares a `<row>_slots` module of
+  slot markers, their portable identities (`namespace = NS` gives
+  `NS.slot.<name>`; `slot = ".."` keeps an existing one), a selector per
+  field, `result_shape::<Query>()` and `WorthQueryApplicationProjection` for
+  every query whose result binding carries the row. Each field names its
+  selection with `field = Alias`; a field whose type differs from the column's
+  does not compile.
+- `WorthQueryAction` on an input declares its input binding, operation (with
+  forwarded `access(..)` and inline capabilities such as `reads(Task)`),
+  contextual mutation binding and optional source-completion `delivery`, with
+  identities from `namespace`. Exactly one field carries `scope = Alias`, or
+  the struct declares `principal_scope = Alias`.
+
+<!-- illustrative -->
+```rust,ignore
+#[derive(WorthQueryRecord)]
+#[worth_query(bindings = Codecs, aspect = TaskFacts, fragment = Board, entity = Task)]
+pub struct TaskFactsValue {
+    #[worth_query(column = "TaskKey", equality, read_only)]
+    pub key: u64,
+    pub title: String,
+    pub due: Option<CanonicalDate>,
+}
+#[derive(Clone, Debug, WorthQueryProjection)]
+#[worth_query(schema = Schema, root = Task, namespace = ROWS)]
+pub struct TaskRow {
+    #[worth_query(field = TaskKey)]
+    pub key: u64,
+    #[worth_query(field = Title, slot = "board.row.title.v1")]
+    pub title: String,
+    #[worth_query(field = Due)]
+    pub due: Option<CanonicalDate>,
+}
+#[derive(Clone, Debug, WorthValue, WorthQueryAction)]
+#[worth_query(schema = Schema, context = BoardContext, namespace = RENAME,
+    input = RenameInput, operation = RenameTask, binding = RenameBinding, delivery = Renamed,
+    result = BodyResultBinding, decision = WorthQueryOperationBodyDecision<Schema, Task>,
+    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task))]
+pub struct Rename {
+    #[worth_query(scope = TaskKey)]
+    pub task: u64,
+    pub title: String,
+}
+```
+
+The [macros court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/macros/mod.rs)
+installs a derived board beside hand-written members under
+`bounded_serial` limits, authenticates a `WorthQueryLocalProcessPrincipal`,
+searches with a case-insensitive `where_filter`, filters an
+`Option<CanonicalDate>` column and commits derived and written actions through
+`WorthQuerySourceCustody`; its parity courts compare derived and hand-written
+declarations, wire-identity overrides included. A `CanonicalDate` input
+member is captured through `serde::Serialize`; it is not a `WorthValue`.
+
 Declare operation access once with `worth_query_operation!(... for Schema:
 SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
 access come from those categories. Where a sealed capability family already owns
@@ -2186,10 +2314,12 @@ The owning Home reconstructs the original occurrences and resume positions;
 initializers and business handlers are not replayed. See the executable combined
 Bank journey in `bank-courtroom/examples/h10_graceful_bank_home`.
 
-Failed live cleanup returns an owning close refusal. A pending release after
-process loss belongs to C3: until then, a reopened Home whose prior process died
-while an attempt held a managed run refuses graceful close with
-`ManagedCleanup(ManagedRunPending { .. })`. After a kill, reopen continues a
+Failed live cleanup returns an owning close refusal. After process loss, Home
+preparation cold-releases the managed runs, managed cleanup obligations and
+application-resource requests the dead process still held: each keeps its
+original and reports `cold_release` (never a completion), close succeeds, and
+the ordinary discharge doors remove the rows
+([After a crash](application-home.md#after-a-crash-or-unclean-close)). After a kill, reopen continues a
 Native effect that World had not yet recorded as recovered `ProductUnpublished`
 custody, releases a no-effect original, and resumes an interrupted program
 transition ([After a crash](application-home.md#after-a-crash-or-unclean-close)).
@@ -3049,6 +3179,30 @@ let principal = adapter.authenticate(credential, &scope).await?;
 // -> WorthQueryAuthenticatedExternalPrincipal<Schema>
 ```
 
+A desktop or single-host process that acts as one known identity uses the
+Host-provided `WorthQueryLocalProcessPrincipal` instead of writing an adapter.
+It is admitted the same way and authenticates on the calling thread, with no
+executor:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled court is
+// worth-query-court-decl-host-integration/.../host/application_startup/local_principal.rs.
+let local = WorthQueryLocalProcessPrincipal::new(
+    "board.local-owner.v1",                 // configuration identity
+    WorthQueryExternalPrincipalIdentity::new("local://board", "owner")?,
+    WorthQueryAuthenticationAudience::new("host")?,
+    WorthQueryAuthenticationMethod::new("local-process")?,
+    Duration::from_secs(600),               // finite; zero is refused
+)?;
+let principal = admit_authentication_adapter(schema, admission, local)?
+    .authenticate_local(&scope)?;
+```
+
+The admission's audience, method and clock are checked exactly as for a remote
+adapter, and the proof expires on the installed clock. An unmapped, disabled or
+expired identity is refused at request admission like any other credential.
+
 `IdentityAdapter` implements `WorthQueryAuthenticationAdapter`: it names its
 `Credential` type and returns a `WorthQueryValidatedExternalPrincipal` from
 `validate` (see `.../product_workflow_support/adapters.rs`). The external
@@ -3494,6 +3648,44 @@ to retain and advance that recorded owner. It checks native Fresh receipt/result
 evidence, current and retained product truth, lawful cleanup, and the persisted
 successor after another graceful reopen. The target identity is part of the
 encoded input, so readmission derives the same authored scope from recorded data.
+
+#### Drive a command across interactive frames
+
+A generic helper names one bundled bound per role instead of restating the
+binding's input, key, scope-resolution and native-driver bounds:
+`I: WorthQuerySourcelessMutation<S>` (or `WorthQuerySourceMutation<S>` when the
+command expects an observed source), `A: WorthQuerySourceCompletionAction<S,
+I::Binding>`, and `Q: WorthQueryProjectedQuery<S>` for a query whose rows are
+`WorthQueryProjectedValue<S, Q>`. Each is implemented for every qualifying
+binding, including macro-generated ones, and grants no admission.
+
+`WorthQuerySourceCustody` holds the command's current native owner across
+frames. `resume(&runtime, &fresh_request)` performs at most one durable
+retention, one advance and one close, and returns `Committed` (closed, with the
+`WorthQuerySourceCompletion`), `Declined` (closed, with the exact
+`WorthQueryTerminalSourceEvidence`, such as a `DomainDenied` or a full-history
+`ProductPreparationRefused`) or `Pending` with the retained custody and the
+native owner's own `WorthQuerySourceCustodyPending` cause. No request, principal
+or phase is retained; matching a variant lends or returns the exact owner. Match
+`Pending`'s cause rather than retrying blindly:
+`Close(NativeObligationRetained)` means native recovery still owns the
+command. Report `Declined` evidence and drop it; do not keep the native carrier
+across frames.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled court is
+// worth-query-court-decl-host-integration/.../host/source_custody/interrupted_frames.rs.
+fn submit<S, P, I, A>(runtime: &Runtime<S, P>, request: &Request<'_, '_, '_, S>, intent: I, key: Key<S, I>)
+    -> Option<WorthQuerySourceCustodyStep<S, I, P, A>>
+where S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>,
+      I: WorthQuerySourcelessMutation<S>, A: WorthQuerySourceCompletionAction<S, I::Binding>,
+{
+    let described = request.mutate(intent).without_source().idempotency_owned(key).ok()?;
+    Some(WorthQuerySourceCustody::Described(described).resume(runtime, request))
+}
+// A later frame: `Pending { custody, .. }` => custody.resume(runtime, &fresh_request)
+```
 
 #### Execute a stored typed edit
 
@@ -7658,6 +7850,19 @@ position, so a reader never falls outside a window and never reconstructs its
 state to catch up. A long run of commits between two observations is delivered
 in order, and replacing a conditional runtime remains the explicit
 reinstallation path. Output-lineage retention reads the same subscription.
+
+A single-process application can start from a named preset instead of
+assembling these values. `WorthQueryApplicationLimits::ordinary_serial(clock)`
+uses `without_policy_limits()` with serial canonical execution
+(`WorthQueryApplicationLimits::SERIAL_EXECUTION_POLICY`).
+`WorthQueryApplicationLimits::bounded_serial(clock)` starts from
+`WorthQueryBoundedApplicationLimits::DEFAULT_BUDGETS` (16 branches, 128 retained
+commits and 4 MiB of history metadata, 64 observations, 4 publication attempts,
+4 unpublished records and 4 MiB of partial metadata, 64 pins with 16 in-flight
+reservations, 256 custody records). Each `with_*` override replaces one budget
+group verbatim, and `install()` validates through
+`WorthQueryProductWorldResources::install`, returning the same
+`RuntimeWorldBudgetDenial` an explicit installation would.
 
 Set optional published-snapshot, active-snapshot and prepared-candidate policies
 in `PublicationConfig`; `Some(amount)` selects a finite policy. Retain snapshots

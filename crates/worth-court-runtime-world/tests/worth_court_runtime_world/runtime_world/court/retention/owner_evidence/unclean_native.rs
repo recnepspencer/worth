@@ -4,6 +4,8 @@
 use super::super::artifact_source::Fixture;
 use super::*;
 use proptest::{prelude::*, test_runner::FileFailurePersistence};
+mod mixed;
+mod mixed_refusals;
 mod model;
 mod refusals;
 mod resolution;
@@ -27,6 +29,8 @@ enum Step {
     Undecided {
         landed: bool,
     },
+    /// One mixed conditional-definition original cut at a durable seam.
+    Mixed(mixed::Cut),
 }
 
 proptest! {
@@ -48,6 +52,7 @@ proptest! {
                 Just(Step::Continue),
                 Just(Step::Release),
                 any::<bool>().prop_map(|landed| Step::Undecided { landed }),
+                mixed::cut().prop_map(Step::Mixed),
             ],
             1..=7,
         )
@@ -59,12 +64,12 @@ proptest! {
 fn run(steps: &[Step]) {
     let funding = crate::test_execution_policy::serial_request();
     let request = ExecutionRequest::serial(&funding);
-    let mut fixture = Fixture::journal(&request);
+    let mut fixture = Fixture::bridge_journal(&request);
     match fixture.offer(&request, "primary") {
         WorldDurableBootstrapOutcome::Performed(_) => {}
         other => panic!("real bootstrap: {other:?}"),
     }
-    let mut model = Model::default();
+    let mut model = Model::bootstrapped(&fixture);
     for step in steps.iter().copied() {
         let unresolved = !model.originals.is_empty();
         match step {

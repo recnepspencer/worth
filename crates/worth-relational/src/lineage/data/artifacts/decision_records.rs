@@ -8,6 +8,9 @@ pub enum LineageDecisionKind {
     CreateAccepted,
     ReplaceAccepted,
     RetireAccepted,
+    SplitAccepted,
+    MergeAccepted,
+    RestoreAccepted,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

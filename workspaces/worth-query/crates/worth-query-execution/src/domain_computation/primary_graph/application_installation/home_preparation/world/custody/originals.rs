@@ -1,5 +1,7 @@
 //! Rejoin actual World originals with their owning Query operation family.
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Program: 'static>
     ReadmittedHomeQueryService<Schema, Program>
 {
@@ -9,7 +11,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     ) -> Result<(), QueryHomeCustodyReadmissionDenial> {
         use QueryHomeCustodyReadmissionDenial as Denial;
         let application = self.runtime.runtime();
-        let owner = &application.runtime.product_runtime.owner;
+        let owner = &application.inner.runtime.product_runtime_ref().owner_ref();
         let snapshot = owner
             .inspection_port()
             .recovery_snapshot()
@@ -56,7 +58,11 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                         .is_adoption_original(&effects)
                         .map_err(|_| Denial::UnclassifiedWorldCustody)?
                 {
-                    if effects.native_receipt().is_none() {
+                    let native_present = effects.native_receipt().is_some();
+                    support
+                        .lifecycle()
+                        .record_cold_adoption_original(native_present);
+                    if !native_present {
                         let actual = effects.attempt_identity();
                         let attempt=worth_foundational::facade::DurableCompositePublicationAttemptIdentity::from_recorded(actual.owner_identity().durable().expect("Home original"),actual.ordinal());
                         self.release_empty_original(execution, effects)?;
@@ -73,8 +79,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     continue;
                 }
                 if let Some((entity, completion)) = application
+                    .inner
                     .runtime
-                    .primary_provider
+                    .primary_provider_ref()
                     .recovered_inbound_completion_row(execution, &effects)
                     .map_err(|_| Denial::OriginalBindingUnavailable)?
                 {
@@ -84,8 +91,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     continue;
                 }
                 application
+                    .inner
                     .runtime
-                    .primary_provider
+                    .primary_provider_ref()
                     .admit_recovered_idempotency(execution, row.handle().clone(), &effects)
                     .map_err(original_binding_denial)?;
             }
@@ -116,8 +124,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     continue;
                 }
                 if application
+                    .inner
                     .runtime
-                    .primary_provider
+                    .primary_provider_ref()
                     .released_inbound_completion_row(execution, original)
                     .map_err(|_| Denial::OriginalBindingUnavailable)?
                     .is_some()
@@ -128,8 +137,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                     continue;
                 }
                 application
+                    .inner
                     .runtime
-                    .primary_provider
+                    .primary_provider_ref()
                     .admit_released_idempotency(execution, original)
                     .map_err(original_binding_denial)?;
             }
@@ -141,7 +151,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     }
 }
 
-fn original_binding_denial(
+pub(super) fn original_binding_denial(
     cause: crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial,
 ) -> QueryHomeCustodyReadmissionDenial {
     use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Source;

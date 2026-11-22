@@ -25,9 +25,15 @@ pub use adoption::{
     QueryStoppedBranchSetObligation,
 };
 mod codec;
+mod cold_release;
+pub use cold_release::{
+    QueryColdObligationFold, QueryColdRelease, QueryColdReleaseSubject, QueryColdReleaseTerminal,
+    QueryEndedIncarnation,
+};
 mod conditional_decision;
 pub use conditional_decision::{
-    QueryConditionalDecision, QueryConditionalDecisionRecord, QueryConditionalPosture,
+    QueryConditionalDecision, QueryConditionalDecisionRecord, QueryConditionalOriginal,
+    QueryConditionalPosture,
 };
 mod resource;
 pub use resource::{
@@ -82,6 +88,12 @@ pub enum QueryObligationRecord {
     OutputSource(QueryOutputSourceRecord),
     OutputDemand(QueryOutputDemandRecord),
     AcceptedOutput(QueryAcceptedOutputRecord),
+    ColdRelease(QueryColdRelease),
+}
+impl From<QueryColdRelease> for QueryObligationRecord {
+    fn from(release: QueryColdRelease) -> Self {
+        Self::ColdRelease(release)
+    }
 }
 impl From<QueryOutputSourceRecord> for QueryObligationRecord {
     fn from(record: QueryOutputSourceRecord) -> Self {
@@ -195,6 +207,9 @@ pub enum QueryObligationDenial {
     },
     OwnerUnavailable,
     StaleIncarnation,
+    /// The cold route needs the witness of an ended incarnation's fold, and
+    /// only covers rows that incarnation retained.
+    IncarnationNotEnded,
     PublicationPending,
     PublicationNoEffect,
     PublicationGenerationMismatch,

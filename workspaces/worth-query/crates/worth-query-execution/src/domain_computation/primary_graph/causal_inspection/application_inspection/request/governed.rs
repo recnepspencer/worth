@@ -60,7 +60,7 @@ where
         Scope = <Binding::ScopeBinding as ApplicationQueryScopeBinding<Schema>>::Scope>,
 {
     prepare_funded_pending_disclosure(
-        runtime,
+        runtime.inner(),
         installed.query().binding_identity(),
         principal,
         scope,

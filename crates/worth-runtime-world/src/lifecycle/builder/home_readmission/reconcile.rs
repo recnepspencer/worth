@@ -191,6 +191,7 @@ where
                 | WorldRecord::Occurrence { .. }
                 | WorldRecord::Released { .. }
                 | WorldRecord::Continued { .. }
+                | WorldRecord::PlannedSignalLeg(_)
                 | WorldRecord::CreationIntent(_)
                 | WorldRecord::CreationReleased { .. } => return Err(Denial::BranchLineage),
             };

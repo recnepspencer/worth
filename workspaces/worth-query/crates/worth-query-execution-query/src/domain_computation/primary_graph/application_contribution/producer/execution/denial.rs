@@ -1,0 +1,361 @@
+use super::{WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind};
+use crate::domain_computation::primary_graph::{
+    MutationHandlerExecutionDenial, WorthQueryApplicationAttemptDenialKind,
+};
+use worth_query_declaration::facade::application_operation::ApplicationMutationIdentityDenial;
+
+mod candidate_support;
+pub use candidate_support::candidate_support_denied;
+pub mod content_identity;
+pub mod request_execution;
+pub mod source_readmission;
+pub use content_identity::identity_failed;
+pub use source_readmission::selected_source_read_denied;
+pub use source_readmission::{query_admission_denied, query_execution_denied};
+
+/// A rejected caller cannot terminally fail the output shared by other callers.
+/// Only actual operation/query admission issues the first variant.
+pub enum ProducerExecutionStop {
+    RequestAdmissionDenied(ProducerRequestAdmissionRejection),
+    ExecutionStopped(WorthQueryOutputDemandDenial),
+    /// An exact selection whose producer declares no Preserve posture could
+    /// not reuse its live output. Nothing ran and the shared row is not
+    /// failed: the stop is this caller's.
+    LiveOutputNotReused {
+        producer: &'static str,
+        reason: &'static str,
+    },
+}
+
+impl ProducerExecutionStop {
+    pub fn into_output_denial(self) -> WorthQueryOutputDemandDenial {
+        match self {
+            Self::RequestAdmissionDenied(rejection) => rejection.into_denial(),
+            Self::ExecutionStopped(denial) => denial,
+            Self::LiveOutputNotReused { producer, reason } => {
+                Self::live_output_not_reused(producer, reason)
+            }
+        }
+    }
+    /// The typed refusal of a caller whose exact producer is not applicable
+    /// to the live output it was selected for.
+    pub fn live_output_not_reused(
+        producer: &'static str,
+        reason: &'static str,
+    ) -> WorthQueryOutputDemandDenial {
+        WorthQueryOutputDemandDenial::new(
+            WorthQueryOutputDemandDenialKind::MissingApplicableProducer,
+            format!("{producer}: the exact producer declares no Preserve posture and cannot reuse its live output: {reason}"),
+        )
+    }
+}
+
+pub struct ProducerRequestAdmissionRejection {
+    denial: WorthQueryOutputDemandDenial,
+}
+
+impl ProducerRequestAdmissionRejection {
+    pub fn into_denial(self) -> WorthQueryOutputDemandDenial {
+        self.denial
+    }
+}
+
+pub fn request_admission_denied(
+    subject: &str,
+    error: impl std::fmt::Debug,
+) -> ProducerExecutionStop {
+    request_admission_rejected(failed(subject, error))
+}
+
+/// The request's principal did not resolve; the stop stays with the request.
+pub fn principal_rejected(
+    subject: &str,
+    error: crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial,
+) -> ProducerExecutionStop {
+    let kind = WorthQueryOutputDemandDenialKind::of_principal_resolution(error.kind());
+    request_admission_rejected(denial(kind, format!("{subject}: {error:?}")))
+}
+
+/// The request's scope did not resolve; the stop stays with the request.
+pub fn scope_rejected(
+    subject: &str,
+    error: crate::domain_computation::primary_graph::WorthQueryEntityResolutionDenial,
+) -> ProducerExecutionStop {
+    let kind = WorthQueryOutputDemandDenialKind::of_scope_resolution(error.kind());
+    request_admission_rejected(denial(kind, format!("{subject}: {error:?}")))
+}
+
+pub fn request_authority_denied(
+    subject: &str,
+    error: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+) -> ProducerExecutionStop {
+    request_admission_rejected(request_authority_stop(subject, error.kind()))
+}
+
+/// The stop of a request refused authorization.
+pub fn request_authority_stop(
+    subject: &str,
+    kind: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+) -> WorthQueryOutputDemandDenial {
+    denial(
+        WorthQueryOutputDemandDenialKind::of_request_authorization(kind),
+        subject.to_owned(),
+    )
+}
+
+pub fn request_admission_rejected(denial: WorthQueryOutputDemandDenial) -> ProducerExecutionStop {
+    // Only this typed pre-effect stop relinquishes the selected execution.
+    // The same kinds from a stopped producer/commit keep their native defaults.
+    let denial = if matches!(
+        denial.kind(),
+        WorthQueryOutputDemandDenialKind::Cancelled | WorthQueryOutputDemandDenialKind::TimedOut
+    ) {
+        denial.with_recovery_posture(
+            crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
+        )
+    } else {
+        denial
+    };
+    ProducerExecutionStop::RequestAdmissionDenied(ProducerRequestAdmissionRejection { denial })
+}
+
+impl From<WorthQueryOutputDemandDenial> for ProducerExecutionStop {
+    fn from(denial: WorthQueryOutputDemandDenial) -> Self {
+        Self::ExecutionStopped(denial)
+    }
+}
+
+/// A request that lost its authority mid-attempt stops only that request:
+/// the row it claimed stays for a later advance.
+pub fn execution_failed(
+    subject: &str,
+    error: MutationHandlerExecutionDenial,
+) -> ProducerExecutionStop {
+    let error = match error {
+        MutationHandlerExecutionDenial::Handler(error) => {
+            if let Some(stop) = availability_stop(&error) {
+                return request_admission_rejected(stop);
+            }
+            return handler_execution_failed(subject, error).into();
+        }
+        error => error,
+    };
+    if let MutationHandlerExecutionDenial::Attempt(attempt) = &error
+        && let Some(authority) = attempt.request_authority()
+    {
+        return request_authority_denied(subject, authority.clone());
+    }
+    if let MutationHandlerExecutionDenial::Attempt(attempt) = &error {
+        if let Some(cause) = attempt.unobserved_write() {
+            return denial(
+                WorthQueryOutputDemandDenialKind::UnobservedWrite(cause.clone()),
+                subject.to_owned(),
+            )
+            .into();
+        }
+        match attempt.kind() {
+            WorthQueryApplicationAttemptDenialKind::ExecutionRequest(cause) => {
+                return denial(
+                    request_execution::kind(cause),
+                    format!("{subject}: {error:?}"),
+                )
+                .into();
+            }
+            WorthQueryApplicationAttemptDenialKind::Cancelled => {
+                return request_admission_rejected(denial(
+                    WorthQueryOutputDemandDenialKind::Cancelled,
+                    format!("{subject}: {error:?}"),
+                ));
+            }
+            WorthQueryApplicationAttemptDenialKind::DeadlineExceeded => {
+                return request_admission_rejected(denial(
+                    WorthQueryOutputDemandDenialKind::TimedOut,
+                    format!("{subject}: {error:?}"),
+                ));
+            }
+            _ => {}
+        }
+    }
+    let interruption = match &error {
+        MutationHandlerExecutionDenial::Projection(projection) => projection
+            .invariant_denial()
+            .and_then(|denial| denial.source_retention_interruption()),
+        MutationHandlerExecutionDenial::Attempt(attempt) => attempt.source_retention_interruption(),
+        _ => None,
+    };
+    if let Some(interruption) = interruption {
+        use worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption;
+        let kind = match interruption {
+            WorthQueryRequestInterruption::Cancelled => WorthQueryOutputDemandDenialKind::Cancelled,
+            WorthQueryRequestInterruption::DeadlineExceeded => {
+                WorthQueryOutputDemandDenialKind::TimedOut
+            }
+        };
+        return request_admission_rejected(denial(kind, format!("{subject}: {error:?}")));
+    }
+    if let MutationHandlerExecutionDenial::Projection(projection) = &error
+        && let Some(kind) = projection_budget(projection.kind())
+    {
+        // The reader's captured counters name which work exhausted the budget.
+        let work = projection.projection_work();
+        return denial(kind, format!("{subject}: {projection}; work {work:?}")).into();
+    }
+    if matches!(
+        error,
+        MutationHandlerExecutionDenial::Attempt(ref denial)
+            if matches!(
+                denial.kind(),
+                WorthQueryApplicationAttemptDenialKind::SourceChanged
+                    | WorthQueryApplicationAttemptDenialKind::SourceRetired
+            )
+    ) {
+        denial(
+            WorthQueryOutputDemandDenialKind::Superseded,
+            subject.to_owned(),
+        )
+        .into()
+    } else {
+        failed(subject, error).into()
+    }
+}
+
+/// The budget of the advance a decision projection ran out of, if any. Its
+/// stop stays with the advance and leaves the shared row for a later claim.
+pub fn projection_budget(
+    kind: crate::domain_computation::primary_graph::WorthQueryOperationProjectionDenialKind,
+) -> Option<WorthQueryOutputDemandDenialKind> {
+    use crate::domain_computation::primary_graph::{
+        WorthQueryInvariantProjectionDenialKind as Invariant,
+        WorthQueryOperationProjectionDenialKind as Projection,
+    };
+    match kind {
+        Projection::InvariantAdmission(Invariant::ExecutionRequest(cause)) => {
+            use crate::domain_computation::WorthQueryProviderSessionControlStopKind as Control;
+            Some(match crate::domain_computation::primary_graph::provider::relational_execution_denial::relational_execution_kind(cause, None) {
+                Ok(cause) => request_execution::kind(cause),
+                Err(Control::Cancelled) => WorthQueryOutputDemandDenialKind::Cancelled,
+                Err(Control::TimedOut) => WorthQueryOutputDemandDenialKind::TimedOut,
+            })
+        }
+        Projection::WorkBudgetExceeded => {
+            Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
+        }
+        Projection::InvariantAdmission(Invariant::RetentionCapacityExhausted) => {
+            Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
+        }
+        _ => None,
+    }
+}
+
+/// Preserve an exact native output read through a producer suspension.
+pub fn handler_execution_failed(
+    subject: &str,
+    error: crate::domain_computation::primary_graph::HandlerExecutionDenial,
+) -> WorthQueryOutputDemandDenial {
+    if let Some(stop) = availability_stop(&error) {
+        return stop;
+    }
+    match error
+        .downcast::<crate::domain_computation::primary_graph::WorthQueryCurrentOutputDenial>()
+    {
+        Ok(mut read) => {
+            let requested = worth_query_execution_lineage::facade::ports::CurrentOutputDenialInternalPort::take_requested_output(&mut read);
+            let mut denial = failed(subject, &read);
+            if let Some(requested) = requested {
+                denial = denial
+                    .with_requested_output(requested)
+                    .with_recovery_posture(
+                        crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable,
+                    );
+            }
+            denial
+        }
+        Err(error) => {
+            if let Some(attempt) = std::error::Error::source(&error).and_then(|source| source.downcast_ref::<crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial>())
+                && let Some(cause) = attempt.unobserved_write()
+            {
+                return denial(WorthQueryOutputDemandDenialKind::UnobservedWrite(cause.clone()), subject.to_owned());
+            }
+            failed(subject, error)
+        }
+    }
+}
+
+fn availability_stop(
+    error: &(dyn std::error::Error + 'static),
+) -> Option<WorthQueryOutputDemandDenial> {
+    let mut source = Some(error);
+    while let Some(error) = source {
+        if let Some(stop) = error.downcast_ref::<crate::domain_computation::primary_graph::invariant_projection::WorthQueryOutputAvailabilityDenial>() {
+            return Some(stop.demand_stop());
+        }
+        source = error.source();
+    }
+    None
+}
+
+/// The producer's key or input did not encode; the denial names which one.
+pub fn identity_unavailable(
+    subject: &str,
+    error: ApplicationMutationIdentityDenial,
+) -> WorthQueryOutputDemandDenial {
+    denial(
+        WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+        format!("{subject}: mutation identity unavailable: {error:?}"),
+    )
+}
+
+/// A native stop keeps the same request ownership at source read and commit.
+pub fn commit_execution_stopped(
+    subject: &str,
+    error: impl std::fmt::Debug,
+    cause: Result<
+        crate::domain_computation::WorthQueryProviderSessionDenialKind,
+        crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    >,
+) -> WorthQueryOutputDemandDenial {
+    denial(
+        request_execution::stop(cause)
+            .unwrap_or(WorthQueryOutputDemandDenialKind::ProducerUnavailable),
+        format!("{subject}: {error:?}"),
+    )
+}
+
+pub fn failed(subject: &str, error: impl std::fmt::Debug) -> WorthQueryOutputDemandDenial {
+    denial(
+        WorthQueryOutputDemandDenialKind::ProducerUnavailable,
+        format!("{subject}: {error:?}"),
+    )
+}
+
+pub fn denial(
+    kind: WorthQueryOutputDemandDenialKind,
+    subject: impl Into<std::borrow::Cow<'static, str>>,
+) -> WorthQueryOutputDemandDenial {
+    WorthQueryOutputDemandDenial::new(kind, subject)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain_computation::primary_graph::{
+        WorthQueryInvariantProjectionDenialKind as Invariant,
+        WorthQueryOperationProjectionDenialKind as Projection,
+    };
+
+    #[test]
+    fn projection_budget_stops_belong_to_the_caller_not_the_shared_output() {
+        assert_eq!(
+            projection_budget(Projection::WorkBudgetExceeded),
+            Some(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded)
+        );
+        assert_eq!(
+            projection_budget(Projection::InvariantAdmission(
+                Invariant::RetentionCapacityExhausted
+            )),
+            Some(WorthQueryOutputDemandDenialKind::RetentionBudgetExceeded)
+        );
+    }
+}
+
+mod court_doors_for_test;

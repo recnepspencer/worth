@@ -12,10 +12,7 @@ use worth_query_bank_testkit_server::facade::{
     estate_operations::freeze_account::fixture::{self as estate, DynamicIdentity},
     ordinary_reads::fixture::proposals::{binding, create_business, fund, grant, key},
     recorded_correction::fixture::home_policy,
-    support::{
-        authentication_configuration, block_on, request_scope, CausalBankAuthenticationAdapter,
-        CausalCredential,
-    },
+    support::{authentication_configuration, local_principal, request_scope},
 };
 use worth_query_host::facade::{
     application_contribution::with_bootstrap_advancement, WorthQueryApplicationHomeLocation,
@@ -181,15 +178,11 @@ impl Inputs {
         let authentication = bank
             .admit_authentication_adapter(
                 authentication_configuration(),
-                CausalBankAuthenticationAdapter,
+                local_principal(&self.identities[ordinal]),
             )
             .unwrap();
-        block_on(bank.authenticate_with(
-            &authentication,
-            CausalCredential::for_identity(&self.identities[ordinal]),
-            &request_scope(),
-        ))
-        .unwrap()
+        bank.authenticate_local(&authentication, &request_scope())
+            .unwrap()
     }
 }
 fn notification_estate_inputs() -> bank_domain::estate::BankEstateWorld {

@@ -47,14 +47,12 @@ worth_query_application_query!(
 );
 worth_query_decl::facade::worth_query_structured_value_binding!(pub PendingPaymentsRequestBinding for PendingPaymentsRequest { identity: "PendingPaymentsRequest" });
 worth_query_decl::facade::worth_query_query_binding!(
-    pub PendingPaymentsQueryBinding for PendingPaymentsRequest, schema BankSchema,
+    pub PendingPaymentsQueryBinding for PendingPaymentsRequest, schema BankSchema, context crate::schema::BankBindingContext,
     identity "worth.bank.pending-payments-query-binding.v1",
     input PendingPaymentsRequestBinding,
     query PendingPaymentsQuery,
     parameters PendingPaymentsQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
     result PendingPaymentsQueryResultBinding,
-    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
-        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
     scope crate::schema::PrincipalIdentityField,
     principal_field crate::schema::PrincipalIdentityField::at("PrincipalIdentityField"),
     limits results 1_024

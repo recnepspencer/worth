@@ -5,7 +5,9 @@ mod opening;
 mod owned_effect;
 mod progression;
 mod retained;
-pub use retained::{WorthQueryResourceTerminal, WorthQueryRetainedResourceState};
+pub use retained::{
+    WorthQueryResourceColdRelease, WorthQueryResourceTerminal, WorthQueryRetainedResourceState,
+};
 mod start;
 use super::{installation::InstalledResourceBinding, stop::ResourceCause};
 use crate::domain_computation::{
@@ -87,7 +89,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
             ApplicationCapabilityRequest<Schema, Capability, Scope = AccessScope<Schema, Binding>>,
     {
         prepare_pending_disclosure(
-            self.runtime,
+            self.runtime.inner(),
             installed
                 .installed
                 .access_binding()

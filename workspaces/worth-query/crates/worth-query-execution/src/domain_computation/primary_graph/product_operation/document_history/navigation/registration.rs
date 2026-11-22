@@ -9,6 +9,11 @@ use crate::domain_computation::primary_graph::{
 };
 use std::{collections::BTreeMap, sync::Mutex};
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
 
 pub(in crate::domain_computation::primary_graph::product_operation::document_history) struct NavigationJournal<
@@ -116,7 +121,7 @@ where
     )?;
     drop(current);
     let execution = phase
-        .checked_execution_request_for(&application.runtime.product_runtime)
+        .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
         .map_err(Denial::Stopped)?;
     let allocation =
         reserve_arc::<NavigationAttempt<'runtime, S>>(&execution).map_err(|cause| {
@@ -158,7 +163,7 @@ where
     let pending_slot = selected
         .navigation
         .capacity
-        .acquire(source.step.endpoint().product_branch())?;
+        .acquire(source.step().endpoint().product_branch())?;
     selected
         .journal
         .prepare_navigation(requested)
@@ -189,7 +194,7 @@ where
             model: document.model.clone(),
             ownership: (installed.definition().parts().model_domain
                 == worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain::OwnedModelGraph)
-                .then(|| application.runtime.primary_provider.graph.layout.history_ownership(
+                .then(|| application.inner.runtime.primary_provider_ref().graph_ref().layout_ref().history_ownership(
                     &installed.definition().parts().identity).expect("eligibility admitted the installed recipe")),
             source: Some(source),
             requested,

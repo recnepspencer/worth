@@ -1,0 +1,394 @@
+pub mod approval_text;
+pub mod membership;
+pub use membership::recover_settled_live_membership;
+use worth_foundational::facade::AspectValue;
+use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
+use worth_relational::facade::identity::{EntityId, PartitionId, RelationId};
+
+use super::ObservedWorkflowAssessmentEvidence;
+use super::{adjacency_with_kind, denial, exact, exact_u64, text};
+use crate::domain_computation::primary_graph::application_attempt::{
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
+};
+use crate::domain_computation::primary_graph::workflow::{
+    instance::{
+        decode_transition_outcome, encode_transition_outcome, SettledWorkflowTransition,
+        WorkflowTransitionLocator,
+    },
+    schema::WorthQueryWorkflowLayout,
+};
+
+pub mod approval;
+pub mod dependency;
+
+pub mod proposal;
+pub mod retained_evidence;
+pub mod value;
+pub use approval::observe_retained_approval_binding;
+pub use dependency::observe_evidence_dependencies;
+pub use proposal::observe_retained_workflow_proposal_identity;
+pub use retained_evidence::observe_retained_assessment_evidence;
+use value::{observed_bool, observed_text, observed_u64, optional_identity};
+
+#[derive(Clone, Copy, Eq, PartialEq)]
+enum TransitionReadPurpose {
+    Command,
+    ReadOnly,
+}
+pub fn observe_settled_transition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    observe_transition(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        transition,
+        facts,
+        TransitionReadPurpose::Command,
+    )
+}
+pub fn observe_transition_state(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    observe_transition(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        transition,
+        facts,
+        TransitionReadPurpose::ReadOnly,
+    )
+}
+fn observe_transition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+    purpose: TransitionReadPurpose,
+) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    let kind = layout.transition.entity_kind;
+    facts.push(WorthQueryApplicationObservedFact::Entity {
+        entity_id: transition,
+        kind,
+    });
+    let protocol = exact_u64(
+        execution,
+        runtime,
+        snapshot,
+        transition,
+        kind,
+        &layout.transition.protocol_version,
+        facts,
+    )?;
+    if !matches!(protocol, 2 | 3) {
+        return Err(denial("workflow transition protocol is unsupported"));
+    }
+    let occurrence = exact_u64(
+        execution,
+        runtime,
+        snapshot,
+        transition,
+        kind,
+        &layout.transition.occurrence,
+        facts,
+    )?;
+    let outcome = decode_transition_outcome(exact_u64(
+        execution,
+        runtime,
+        snapshot,
+        transition,
+        kind,
+        &layout.transition.outcome,
+        facts,
+    )?)
+    .ok_or_else(|| denial("workflow transition outcome is unsupported"))?;
+    let operation_receipt_identity = optional_identity(
+        execution,
+        runtime,
+        snapshot,
+        transition,
+        kind,
+        &layout.transition.operation_receipt_identity,
+        facts,
+    )?;
+    if protocol == 3 && operation_receipt_identity.is_none() {
+        return Err(denial(
+            "recorded operation output protocol has no performed operation",
+        ));
+    }
+    if purpose == TransitionReadPurpose::Command {
+        super::transition_roles::observe(
+            execution,
+            runtime,
+            snapshot,
+            layout,
+            transition,
+            operation_receipt_identity.is_some(),
+            facts,
+        )?;
+    }
+    let nodes = adjacency_with_kind(
+        execution,
+        runtime,
+        snapshot,
+        layout.transition_node_relation,
+        transition,
+        2,
+        "workflow transition node relation is unavailable",
+        facts,
+    )?;
+    let [node] = nodes.as_slice() else {
+        return Err(denial("workflow transition node binding is not singular"));
+    };
+    Ok(SettledWorkflowTransition::new(
+        *node,
+        occurrence,
+        outcome,
+        operation_receipt_identity,
+    ))
+}
+
+pub fn observe_retained_transition(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    locator: WorkflowTransitionLocator,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<SettledWorkflowTransition, WorthQueryApplicationAttemptDenial> {
+    let observed = observe_settled_transition(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        locator.entity(),
+        facts,
+    )?;
+    if observed != locator.settlement() {
+        return Err(denial("retained workflow transition locator changed"));
+    }
+    Ok(observed)
+}
+
+pub fn observe_assessment_evidence(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    transition: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<Option<ObservedWorkflowAssessmentEvidence>, WorthQueryApplicationAttemptDenial> {
+    let evidence = adjacency_with_kind(
+        execution,
+        runtime,
+        snapshot,
+        layout.transition_assessment_evidence_relation,
+        transition,
+        2,
+        "workflow assessment evidence relation is unavailable",
+        facts,
+    )?;
+    let ([] | [_]) = evidence.as_slice() else {
+        return Err(denial(
+            "workflow transition has duplicate assessment evidence",
+        ));
+    };
+    let Some(evidence) = evidence.first().copied() else {
+        return Ok(None);
+    };
+    let kind = layout.assessment_evidence.entity_kind;
+    facts.push(WorthQueryApplicationObservedFact::Entity {
+        entity_id: evidence,
+        kind,
+    });
+    exact(execution,
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.protocol_version,
+        AspectValue::UInt64(
+            crate::domain_computation::primary_graph::workflow::schema::version::WORKFLOW_FACT_PROTOCOL_VERSION,
+        ),
+        facts,
+    )?;
+    let identity = observed_text(
+        execution,
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.identity,
+        facts,
+    )?;
+    for locator in [
+        &layout.assessment_evidence.producer,
+        &layout.assessment_evidence.family,
+    ] {
+        observed_text(execution, runtime, snapshot, evidence, kind, locator, facts)?;
+    }
+    let source_identity = observed_text(
+        execution,
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.source_identity,
+        facts,
+    )?;
+    let publication_identity = observed_text(
+        execution,
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.publication_identity,
+        facts,
+    )?;
+    let output_content_identity = observed_text(
+        execution,
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.output_content_identity,
+        facts,
+    )?;
+    let program_revision = observed_text(
+        execution,
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.program_revision,
+        facts,
+    )?;
+    let proposal_identity = observed_text(
+        execution,
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.proposal_identity,
+        facts,
+    )?;
+    let partition = observed_u64(
+        execution,
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.subject_partition,
+        facts,
+    )?;
+    let slot = observed_u64(
+        execution,
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.subject_slot,
+        facts,
+    )?;
+    let generation = observed_u64(
+        execution,
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.subject_generation,
+        facts,
+    )?;
+    let retained_bytes = observed_u64(
+        execution,
+        runtime,
+        snapshot,
+        evidence,
+        kind,
+        &layout.assessment_evidence.retained_bytes,
+        facts,
+    )?;
+    let partition = u32::try_from(partition)
+        .map_err(|_| denial("assessment evidence subject partition is malformed"))?;
+    let generation = u32::try_from(generation)
+        .map_err(|_| denial("assessment evidence subject generation is malformed"))?;
+    Ok(Some(ObservedWorkflowAssessmentEvidence {
+        entity: evidence,
+        identity,
+        retained_bytes,
+        query: observed_text(
+            execution,
+            runtime,
+            snapshot,
+            evidence,
+            kind,
+            &layout.assessment_evidence.query,
+            facts,
+        )?,
+        parameter_type: observed_text(
+            execution,
+            runtime,
+            snapshot,
+            evidence,
+            kind,
+            &layout.assessment_evidence.parameter_type,
+            facts,
+        )?,
+        result_type: observed_text(
+            execution,
+            runtime,
+            snapshot,
+            evidence,
+            kind,
+            &layout.assessment_evidence.result_type,
+            facts,
+        )?,
+        binding: observed_text(
+            execution,
+            runtime,
+            snapshot,
+            evidence,
+            kind,
+            &layout.assessment_evidence.binding,
+            facts,
+        )?,
+        passing: observed_bool(
+            execution,
+            runtime,
+            snapshot,
+            evidence,
+            kind,
+            &layout.assessment_evidence.passing,
+            facts,
+        )?,
+        coverage_identity: observed_text(
+            execution,
+            runtime,
+            snapshot,
+            evidence,
+            kind,
+            &layout.assessment_evidence.coverage_identity,
+            facts,
+        )?,
+        proposal_identity,
+        subject: EntityId::new(PartitionId::new(partition), slot, generation),
+        source_identity,
+        publication_identity,
+        output_content_identity,
+        program_revision,
+    }))
+}

@@ -27,6 +27,7 @@ fn retain(
                 failure,
                 original: None,
                 release: None,
+                cold_release: None,
             }),
             &mut generations,
         )
@@ -157,6 +158,7 @@ fn managed_cleanup_preserves_distinct_world_subject_identity_families() {
                     ),
                     original: Some(original),
                     release: None,
+                    cold_release: None,
                 }),
                 &mut generations,
             )

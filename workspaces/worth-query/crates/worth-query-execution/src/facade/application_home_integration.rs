@@ -32,3 +32,8 @@ pub use crate::domain_computation::primary_graph::workflow::{
 pub use crate::domain_computation::primary_graph::workflow::instance::start_provenance::StartProvenanceReadDenial;
 
 pub use crate::domain_computation::primary_graph::provider::inbound_terminal_index::WorthQueryInboundTerminalIndexDenial;
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::{
+    WorthQueryBranchAdoptionPreparationObserverForTest, WorthQueryBranchAdoptionStageForTest,
+    WorthQueryBranchAdoptionStagePauseForTest,
+};
+pub use crate::domain_computation::primary_graph::query_obligations::history::QueryColdAdoptionReadmissionSummary;

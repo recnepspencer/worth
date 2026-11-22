@@ -49,6 +49,23 @@ pub struct QueryResourceObligation {
     pub identity: OwnedAsyncObligationIdentity,
     pub original: QueryResourceOriginal,
     pub handoff: QueryResourceHandoff,
+    /// Recorded once, before service, when the incarnation holding this
+    /// request ended. The original and handoff stay as recorded.
+    pub cold_release: Option<super::QueryColdReleaseTerminal>,
+}
+impl QueryResourceObligation {
+    /// The live owner recorded its release, or the request's incarnation ended.
+    pub const fn released(&self) -> bool {
+        self.handoff.release.is_some() || self.cold_release.is_some()
+    }
+    /// R7: a request without a recorded result is abandoned; a recorded
+    /// result stands and only its release was outstanding.
+    pub(super) const fn cold_release_terminal(&self) -> super::QueryColdReleaseTerminal {
+        match self.handoff.result {
+            None => super::QueryColdReleaseTerminal::Abandoned,
+            Some(_) => super::QueryColdReleaseTerminal::ReleaseOutstanding,
+        }
+    }
 }
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum QueryResourceRecord {

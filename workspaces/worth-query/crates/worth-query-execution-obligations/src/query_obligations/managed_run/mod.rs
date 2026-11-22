@@ -17,6 +17,23 @@ pub struct QueryManagedRunObligation {
     pub posture: QueryManagedRunPosture,
     pub original: Option<super::QueryManagedCleanupOriginal>,
     pub recovery: Option<QueryManagedRunRecovery>,
+    /// Recorded once, before service, when the incarnation holding this run
+    /// ended. The posture, original and recovery cause stay as recorded.
+    pub cold_release: Option<super::QueryColdReleaseTerminal>,
+}
+impl QueryManagedRunObligation {
+    /// The live owner recorded its release, or the run's incarnation ended.
+    pub const fn released(&self) -> bool {
+        self.posture.resources_released() || self.cold_release.is_some()
+    }
+    /// R7: running work is abandoned; any other pending posture already
+    /// recorded its terminal and only its release was outstanding.
+    pub(super) const fn cold_release_terminal(&self) -> super::QueryColdReleaseTerminal {
+        match self.posture {
+            QueryManagedRunPosture::Active => super::QueryColdReleaseTerminal::Abandoned,
+            _ => super::QueryColdReleaseTerminal::ReleaseOutstanding,
+        }
+    }
 }
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum QueryManagedRunRecovery {

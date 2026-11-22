@@ -17,6 +17,9 @@ use crate::domain_computation::primary_graph::{
 };
 use std::collections::BTreeMap;
 use worth_foundational::facade::{AspectValue, InternedString};
+use worth_query_execution_lineage::facade::ports::{
+    ApplicationCheckpointInternalPort as _, InterimCheckpointOriginInternalPort as _,
+};
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationSchema};
 use worth_relational::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, MutationIntent, RelationMutationIntent,

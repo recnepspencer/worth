@@ -296,4 +296,8 @@ pub enum ApplicationSchemaMember {
         aspect: String,
         field: String,
     },
+    /// Declared persistent name scheme validated and lowered at installation.
+    ApplicationNameScheme {
+        definition: crate::application_naming::ErasedApplicationNameScheme,
+    },
 }

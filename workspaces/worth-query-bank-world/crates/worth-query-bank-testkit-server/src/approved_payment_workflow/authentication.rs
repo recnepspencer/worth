@@ -1,3 +1,7 @@
+use std::future::Future;
+use std::pin::pin;
+use std::task::{Context, Poll, Waker};
+
 pub use bank_server::{BankApprovalAuthenticationConfiguration, BankApprovalCredential};
 pub use worth_query_host::facade::admission::authenticated_principal::WorthQueryRequestScope;
 pub use worth_query_host::facade::admission::authentication_event::{
@@ -43,5 +47,21 @@ impl WorthQueryAuthenticationEventVerifier for ApprovedPaymentTestVerifier {
             }
             Ok(())
         })
+    }
+}
+
+/// Completes one workflow approval on the calling thread.
+///
+/// Step-up approval verification is asynchronous by contract: the Host's
+/// authentication-event verifier has no local, executor-free mode. The
+/// in-process test verifier is always ready, so polling it completes it.
+pub fn complete_approval<F: Future>(approval: F) -> F::Output {
+    let mut approval = pin!(approval);
+    let mut context = Context::from_waker(Waker::noop());
+    loop {
+        match approval.as_mut().poll(&mut context) {
+            Poll::Ready(output) => return output,
+            Poll::Pending => std::thread::yield_now(),
+        }
     }
 }

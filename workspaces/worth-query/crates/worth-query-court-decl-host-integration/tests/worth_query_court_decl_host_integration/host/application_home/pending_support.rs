@@ -120,28 +120,28 @@ pub(crate) fn assert_reopen_actions(
     assert_eq!(effects.next_actions(), &[Inspect, ReopenRequired]);
 }
 
-/// C3 hold: an original whose first Home ended uncleanly still owns its
-/// managed run. Until C3's cold release contract lands, close refuses with
-/// that typed posture; the same serving Home resumes and is abandoned.
-pub(crate) fn end_with_pending_managed_run<Schema, Program>(
-    refused: worth_query_host::facade::WorthQueryApplicationHomeCloseRefused<Schema, Program>,
+/// An original whose first Home ended without close held a managed run. After its
+/// original continued, no World recovery custody remains and Home preparation
+/// cold-released that run before service, so it cannot refuse a graceful close.
+/// Runs of the serving Home publish their release at close, not before.
+pub(crate) fn assert_recovered_runs_cold_released<Schema>(
+    runtime: &worth_query_host::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+        Schema,
+    >,
 ) where
     Schema: worth_query_decl::facade::application_schema::ApplicationSchema,
 {
-    use worth_query_execution::facade::query_obligations::QueryObligationDenial;
-    use worth_query_host::facade::primary_graph::WorthQueryHomeRetirementDenial as Denial;
     assert!(
-        matches!(
-            refused.query_denial(),
-            Some(Denial::ManagedCleanup(
-                QueryObligationDenial::ManagedRunPending { .. }
-            ))
-        ),
-        "C3 managed-run release is the only refusal: {refused:?}"
+        runtime
+            .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+            .unwrap()
+            .rows()
+            .is_empty(),
+        "no World recovery custody remains"
     );
-    drop(
-        refused
-            .resume()
-            .expect("refused close keeps the serving Home"),
+    let runs = runtime.managed_run_obligations();
+    assert!(
+        runs.iter().any(|run| run.cold_release.is_some()),
+        "the ended Home's managed run is cold-released before service: {runs:?}"
     );
 }

@@ -1,0 +1,270 @@
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+mod authored_source;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use crate::domain_computation::primary_graph::{
+    conditional_operation::installation::route_binding::InstalledConditionalRoute,
+    managed_bridge::conditional_execution::ConditionalExecutionOwner,
+};
+use std::collections::BTreeMap;
+use std::sync::Arc;
+
+use worth_runtime_bridge::facade::{
+    BridgeConditionalComputeProvider, BridgeConditionalCondition, BridgeConditionalContract,
+    BridgeConditionalContractParts, BridgeConditionalExecutionRequest, BridgeConditionalLocation,
+    BridgeConditionalProviderHeapRetention, BridgeConditionalProviderRetentionOverflow,
+    BridgeConditionalProviderSemantics, BridgeConditionalProviderSet,
+    BridgeConditionalRuntimeBuilder, BridgeConditionalTriggerProvider,
+    BridgeOwnedConditionalInstallationRequest,
+};
+use worth_signal::facade::{
+    Aspect, AspectVersion, NodeEvaluationResult, SignalConditionalArtifactReuse,
+    SignalConditionalVersionComparator,
+};
+
+use crate::domain_computation::primary_graph::{
+    WorthQueryConditionalSignalDecision, WorthQueryPrimaryGraphInstallationDenial,
+    WorthQueryPrimaryGraphInstallationDenialKind,
+};
+
+pub struct WorthQueryInstalledOutputProducerRoute {
+    pub scheduling: InstalledConditionalRoute,
+    pub output_comparison: Option<super::output_evaluation::InstalledOutputComparison>,
+}
+pub type WorthQueryInstalledOutputProducerRoutes =
+    BTreeMap<String, WorthQueryInstalledOutputProducerRoute>;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct ProducerSchedulingSemantics(Arc<str>);
+
+struct ProducerDemandTrigger {
+    semantics: ProducerSchedulingSemantics,
+}
+
+impl BridgeConditionalProviderSemantics for ProducerDemandTrigger {
+    type SemanticContract = ProducerSchedulingSemantics;
+
+    fn semantic_contract(&self) -> Self::SemanticContract {
+        self.semantics.clone()
+    }
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<BridgeConditionalProviderHeapRetention, BridgeConditionalProviderRetentionOverflow>
+    {
+        Ok(BridgeConditionalProviderHeapRetention::new(
+            BridgeConditionalProviderHeapRetention::arc_allocation_bytes(self.semantics.0.as_ref()),
+            0,
+        ))
+    }
+}
+
+impl BridgeConditionalTriggerProvider for ProducerDemandTrigger {
+    fn requested(&self) -> bool {
+        true
+    }
+}
+
+struct ProducerSignalCompute {
+    semantics: ProducerSchedulingSemantics,
+}
+
+impl BridgeConditionalProviderSemantics for ProducerSignalCompute {
+    type SemanticContract = ProducerSchedulingSemantics;
+
+    fn semantic_contract(&self) -> Self::SemanticContract {
+        self.semantics.clone()
+    }
+
+    fn retained_heap_bytes(
+        &self,
+        _: &Self::SemanticContract,
+    ) -> Result<BridgeConditionalProviderHeapRetention, BridgeConditionalProviderRetentionOverflow>
+    {
+        Ok(BridgeConditionalProviderHeapRetention::new(
+            BridgeConditionalProviderHeapRetention::arc_allocation_bytes(self.semantics.0.as_ref()),
+            0,
+        ))
+    }
+}
+
+impl BridgeConditionalComputeProvider for ProducerSignalCompute {
+    fn compute(&self, context: &mut dyn std::any::Any) -> Result<NodeEvaluationResult, String> {
+        let version = context
+            .downcast_ref::<ProducerSignalComputeContext>()
+            .ok_or_else(|| "producer scheduling lacked Query's demand context".to_owned())?
+            .attempt;
+        Ok(NodeEvaluationResult::from_version(
+            AspectVersion::from_updates([(Aspect::new(0), version)]),
+        ))
+    }
+}
+
+struct ProducerSignalComputeContext {
+    attempt: u64,
+}
+
+pub fn install_output_producer_routes<'a>(
+    identities: impl IntoIterator<
+        Item = (
+            &'a str,
+            Option<(
+                &'a Arc<super::output_equivalence_contract::InstalledProducerOutputEquivalence>,
+                &'a str,
+            )>,
+        ),
+    >,
+    builder: &mut BridgeConditionalRuntimeBuilder,
+) -> Result<WorthQueryInstalledOutputProducerRoutes, WorthQueryPrimaryGraphInstallationDenial> {
+    identities
+        .into_iter()
+        .map(|(identity, output_meaning)| {
+            let scheduling_identity: Arc<str> = Arc::from(format!("{identity}:output-demand"));
+            let semantics = ProducerSchedulingSemantics(Arc::clone(&scheduling_identity));
+            let lowering = builder
+                .install_owned_conditional(BridgeOwnedConditionalInstallationRequest {
+                    contract: BridgeConditionalContract::new(BridgeConditionalContractParts {
+                        identity: Arc::clone(&scheduling_identity),
+                        dependency_count: 0,
+                        condition_dependency_ordinals: Vec::new(),
+                        condition: BridgeConditionalCondition::OnDemand,
+                        dependency_comparator: SignalConditionalVersionComparator::Exact,
+                        output_comparator: SignalConditionalVersionComparator::Exact,
+                        artifact_reuse: SignalConditionalArtifactReuse::NotReusable,
+                    }),
+                    location: BridgeConditionalLocation::operation(scheduling_identity),
+                    dependencies: Vec::new(),
+                    providers: BridgeConditionalProviderSet::new()
+                        .authored_trigger(ProducerDemandTrigger {
+                            semantics: semantics.clone(),
+                        })
+                        .authored_compute(ProducerSignalCompute { semantics }),
+                })
+                .map_err(|denial| installation_denial(identity, denial))?;
+            let output_comparison = output_meaning
+                .map(|(field, role)| {
+                    super::output_evaluation::installation::install(identity, field, role, builder)
+                })
+                .transpose()?;
+            Ok((
+                identity.to_owned(),
+                WorthQueryInstalledOutputProducerRoute {
+                    scheduling: InstalledConditionalRoute::from_installation(lowering),
+                    output_comparison,
+                },
+            ))
+        })
+        .collect()
+}
+
+pub fn schedule_output_producer(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
+    bridge: &ConditionalExecutionOwner<'_>,
+    lowering: &InstalledConditionalRoute,
+    truth: &super::super::super::conditional_operation::WorthQueryConditionalTruthBasis,
+    signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    query_binding_identity: &str,
+    query_identity: u64,
+    execution_identity: &str,
+    attempt: u64,
+) -> Result<
+    WorthQueryConditionalSignalDecision,
+    worth_runtime_bridge::facade::BridgeConditionalDenial,
+> {
+    schedule_output_producer_core(
+        phase
+            .request_for_owner(truth.owner_identity())
+            .expect("private conditional progression uses its admitted runtime"),
+        bridge,
+        lowering,
+        truth.snapshot_projection(),
+        truth.branch_projection(),
+        signal_basis,
+        query_binding_identity,
+        query_identity,
+        execution_identity,
+        attempt,
+    )
+}
+
+pub fn schedule_output_producer_on_selected(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
+    bridge: &ConditionalExecutionOwner<'_>,
+    lowering: &InstalledConditionalRoute,
+    truth: &super::super::super::conditional_operation::WorthQuerySelectedSignalProjections,
+    signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    query_binding_identity: &str,
+    query_identity: u64,
+    execution_identity: &str,
+    attempt: u64,
+) -> Result<
+    WorthQueryConditionalSignalDecision,
+    worth_runtime_bridge::facade::BridgeConditionalDenial,
+> {
+    schedule_output_producer_core(
+        phase
+            .request_for_owner(truth.owner_identity())
+            .expect("private conditional progression uses its admitted runtime"),
+        bridge,
+        lowering,
+        truth.snapshot(),
+        truth.branch(),
+        signal_basis,
+        query_binding_identity,
+        query_identity,
+        execution_identity,
+        attempt,
+    )
+}
+
+// Only the two truth-owner wrappers can reach this bridge call. Its text is
+// the owner-issued reporting projection of their sealed typed identities.
+fn schedule_output_producer_core(
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+
+    bridge: &ConditionalExecutionOwner<'_>,
+    lowering: &InstalledConditionalRoute,
+    snapshot_projection: &str,
+    truth_branch_projection: &str,
+    signal_basis: &worth_signal::facade::branch::AdmittedSignalBranchBasis,
+    query_binding_identity: &str,
+    query_identity: u64,
+    execution_identity: &str,
+    attempt: u64,
+) -> Result<
+    WorthQueryConditionalSignalDecision,
+    worth_runtime_bridge::facade::BridgeConditionalDenial,
+> {
+    let signal_basis = lowering.admit_signal_basis(bridge, signal_basis)?;
+    let mut compute = ProducerSignalComputeContext { attempt };
+    let evidence = bridge.execute(
+        execution,
+        &signal_basis,
+        BridgeConditionalExecutionRequest {
+            lowering: signal_basis.installed_lowering_ref(),
+            query_binding_identity,
+            query_capability_identity: query_identity,
+            snapshot_identity: snapshot_projection,
+            truth_branch_identity: Some(truth_branch_projection),
+            bridge_snapshot_identity: None,
+            execution_identity,
+            attempt,
+        },
+        &mut compute,
+    )?;
+    Ok(super::super::super::conditional_operation::classify_bridge_signal(&evidence))
+}
+
+fn installation_denial(
+    identity: &str,
+    denial: worth_runtime_bridge::facade::BridgeConditionalDenial,
+) -> WorthQueryPrimaryGraphInstallationDenial {
+    WorthQueryPrimaryGraphInstallationDenial::new(
+        WorthQueryPrimaryGraphInstallationDenialKind::RuntimeBridgeRejected,
+        format!("producer `{identity}` Signal installation failed: {denial:?}"),
+    )
+}
+
+mod court_doors_for_test;

@@ -5,6 +5,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitReceipt,
 };
 use worth_execution::MapKernelFailure;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 pub(in super::super::super) enum ConnectedMaterialization {
     Reference(super::super::super::report::FundedConnectedReport),
@@ -114,7 +117,13 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                     source,
                     source_read.scope.entity_kind(),
                     source_admission,
-                    &self.runtime.runtime.primary_provider.graph.layout,
+                    &self
+                        .runtime
+                        .inner
+                        .runtime
+                        .primary_provider_ref()
+                        .graph_ref()
+                        .layout_ref(),
                     self.runtime.installed_schema().native_contracts(),
                 )?;
             }
@@ -130,8 +139,9 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             ) || body.artifact.request().requests_producer_evidence()
             {
                 self.runtime
+                    .inner
                     .runtime
-                    .primary_provider
+                    .primary_provider_ref()
                     .inspection_materialization_prepared();
             }
             Some(body)

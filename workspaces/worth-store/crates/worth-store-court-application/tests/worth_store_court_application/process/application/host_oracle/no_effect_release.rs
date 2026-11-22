@@ -112,7 +112,7 @@ fn fresh_attempt_after_kill_at(cut: &str) -> u64 {
         fresh
     );
     drop((first, again));
-    end_with_pending_managed_run(home.close(&execution).err());
+    close_after_cold_release(home, &execution);
     let contacts = Arc::new(AtomicUsize::new(0));
     let home = open(&contacts);
     assert_eq!(recovery_rows(home.runtime()), 0);
@@ -128,7 +128,7 @@ fn fresh_attempt_after_kill_at(cut: &str) -> u64 {
     assert_eq!(contacts.load(Ordering::SeqCst), 0);
     assert_eq!(requests::balance(home.runtime()), VALUE);
     drop(recorded);
-    end_with_pending_managed_run(home.close(&execution).err());
+    close_after_cold_release(home, &execution);
     attempt
 }
 
@@ -141,33 +141,23 @@ fn recovery_rows(runtime: &host_observation::OracleRuntime) -> usize {
         .len()
 }
 
-/// C3 hold: the killed writer's managed run is still pending, so close
-/// refuses with that typed posture and the serving Home is resumed and dropped.
-fn end_with_pending_managed_run(
-    refused: Option<
-        worth_query_host::facade::WorthQueryApplicationHomeCloseRefused<
-            worth_query_testkit_host::facade::host::application_home::schema::HomeIdentitySchema,
-            worth_query_testkit_host::facade::host::application_home::HomeProgram,
-        >,
+/// The killed writer's managed run was cold-released before service, so the
+/// Home closes gracefully.
+fn close_after_cold_release(
+    home: worth_query_host::facade::WorthQueryApplicationHome<
+        worth_query_testkit_host::facade::host::application_home::schema::HomeIdentitySchema,
+        worth_query_testkit_host::facade::host::application_home::HomeProgram,
     >,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
-    use worth_query_execution::facade::query_obligations::QueryObligationDenial;
-    use worth_query_host::facade::primary_graph::WorthQueryHomeRetirementDenial as Denial;
-    let refused = refused.expect("C3: the killed writer's managed run is still pending");
+    let runs = home.runtime().runtime().managed_run_obligations();
     assert!(
-        matches!(
-            refused.query_denial(),
-            Some(Denial::ManagedCleanup(
-                QueryObligationDenial::ManagedRunPending { .. }
-            ))
-        ),
-        "C3 managed-run release is the only refusal: {refused:?}"
+        runs.iter().any(|run| run.cold_release.is_some()),
+        "the killed writer's managed run is cold-released before service: {runs:?}"
     );
-    drop(
-        refused
-            .resume()
-            .expect("refused close keeps the serving Home"),
-    );
+    home.close(execution)
+        .unwrap_or_else(|refused| panic!("cold-released custody closes: {refused:?}"))
+        .reclaim();
 }
 
 #[test]

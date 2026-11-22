@@ -1,9 +1,19 @@
 //! The original local effect's binding-selected admission owns completion, not Advance.
-use super::super::{local_actions::VerifiedLocalActionCompletion, WorkflowLocalActionKind};
+use super::super::super::application_attempt::workflow_transition_program::local_actions::VerifiedLocalActionCompletion;
+use super::super::super::application_attempt::workflow_transition_program::operation::settlement::PreparedWorkflowOperationSettlementExt as _;
+use super::super::super::application_attempt::workflow_transition_program::{
+    operation, publication, PreparedWorkflowAdvance, RequiredWorkflowOperation,
+    WorkflowLocalActionKind, WorkflowProgressOutcome, WorkflowTransitionPreparationDenial,
+    WorkflowTransitionRequestKind,
+};
 use super::*;
 use crate::domain_computation::primary_graph::{
     workflow::instance::SelectedWorkflowOperation, WorthQueryApplicationCommitReceipt,
 };
+use worth_query_execution_attempt::facade::ports::WorkflowOperationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+#[path = "local_completion/replay.rs"]
 mod replay;
 use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationAdmissionBinding, ApplicationMutationScopeBinding},
@@ -52,10 +62,10 @@ impl WorthQueryWorkflowAdvanceAdapter {
             .ok_or_else(|| {
                 D::Attempt(local_mismatch("original local vocabulary is unavailable"))
             })?;
-        super::local_actions::validate_action_admission::<S, Spec, B, _>(installed, &admission)?;
+        super::super::super::application_attempt::workflow_transition_program::preparation::validate_action_admission::<S, Spec, B, _>(installed, &admission)?;
         let kind = validate_original(selected, installed, required)?;
-        let performed = super::super::operation::validate_operation_receipt::<S, B>(
-            runtime,
+        let performed = operation::validate_operation_receipt::<S, B>(
+            runtime.inner(),
             required,
             admission.scope_entity_id(),
             required.branch(),
@@ -65,7 +75,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         .map_err(D::Attempt)?;
         let receipt_identity = performed.identity();
         let execution = phase
-            .execution_request_for(&runtime.runtime.product_runtime)
+            .execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(|_| D::Attempt(local_mismatch("foreign local completion phase")))?;
         let binding = idempotency.bind_local_workflow_settlement(
             required.transition_identity_bytes(),
@@ -116,8 +126,8 @@ impl WorthQueryWorkflowAdvanceAdapter {
             )));
         }
         let prepared = match recovery {
-            Some(recovery) => prepared.settle_recovered::<B>(runtime, receipt, recovery),
-            None => prepared.settle::<B>(runtime, receipt),
+            Some(recovery) => prepared.settle_recovered::<B>(runtime.inner(), receipt, recovery),
+            None => prepared.settle::<B>(runtime.inner(), receipt),
         }
         .map_err(D::Attempt)?;
         Ok(runtime.compare_and_commit_workflow_advance(&execution, phase, prepared, binding))
@@ -134,10 +144,15 @@ where
 {
     use WorkflowTransitionPreparationDenial as D;
     let origin = required
-        .local_action
-        .as_ref()
+        .local_action_ref()
         .ok_or_else(|| D::Attempt(local_mismatch("not an issued local action")))?;
-    if required.original_runtime() != selected.application().runtime.authority_identity().as_u64()
+    if required.original_runtime()
+        != selected
+            .application()
+            .inner
+            .runtime
+            .authority_identity()
+            .as_u64()
         || required.original_program_revision() != installed.program_revision()
         || origin.spec != Spec::IDENTITY.as_str()
         || &origin.support != installed.support_identity_bytes()

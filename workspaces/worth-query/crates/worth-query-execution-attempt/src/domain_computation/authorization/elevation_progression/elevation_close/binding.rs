@@ -1,0 +1,80 @@
+use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_query_installation::facade::{
+    ApplicationOperationDecisionReadTarget, ApplicationOperationProgramTarget,
+};
+use worth_relational::facade::identity::EntityId;
+
+use super::WorthQueryElevationCloseDraft;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApprovedElevation, WorthQueryElevationClosureKind,
+};
+
+#[derive(Debug)]
+pub struct WorthQueryElevationCloseBinding {
+    approved: WorthQueryApprovedElevation,
+    draft: WorthQueryElevationCloseDraft,
+}
+
+impl WorthQueryElevationCloseDraft {
+    pub fn bind(self, approved: WorthQueryApprovedElevation) -> WorthQueryElevationCloseBinding {
+        WorthQueryElevationCloseBinding {
+            approved,
+            draft: self,
+        }
+    }
+}
+
+impl WorthQueryElevationCloseBinding {
+    pub const fn approved(&self) -> &WorthQueryApprovedElevation {
+        &self.approved
+    }
+    pub const fn elevation(&self) -> EntityId {
+        self.draft.elevation
+    }
+    pub const fn review(&self) -> EntityId {
+        self.draft.review
+    }
+    pub const fn closer(&self) -> EntityId {
+        self.draft.closer
+    }
+    pub const fn closure_kind(&self) -> WorthQueryElevationClosureKind {
+        self.draft.closure_kind
+    }
+    pub const fn closed_at(&self) -> &AspectValue {
+        &self.draft.closed_at
+    }
+    pub const fn closed_at_field(&self) -> &AspectFieldLocator {
+        &self.draft.closed_at_field
+    }
+    pub const fn closed_status(&self) -> &AspectValue {
+        &self.draft.closed_status
+    }
+    pub const fn approved_status(&self) -> &AspectValue {
+        &self.draft.approved_status
+    }
+    pub fn elevation_entity(&self) -> &str {
+        &self.draft.elevation_entity
+    }
+    pub const fn status_field(&self) -> &AspectFieldLocator {
+        &self.draft.status_field
+    }
+    pub const fn approver_relation(&self) -> worth_relational::facade::identity::KindId {
+        self.draft.approver_relation
+    }
+    pub const fn reviewer_relation(&self) -> worth_relational::facade::identity::KindId {
+        self.draft.reviewer_relation
+    }
+    pub fn required_decision_reads(&self) -> &[ApplicationOperationDecisionReadTarget] {
+        &self.draft.required_decision_reads
+    }
+    pub fn required_program_targets(&self) -> &[ApplicationOperationProgramTarget] {
+        &self.draft.required_program_targets
+    }
+    pub const fn lifecycle_effect(&self) -> Option<&worth_query_declaration::lifecycle_effect_derivation_authority::DerivedApplicationCapabilityLifecycleEffect>{
+        self.draft.lifecycle_effect.as_ref()
+    }
+
+    pub fn into_approved(self) -> WorthQueryApprovedElevation {
+        self.approved
+    }
+}

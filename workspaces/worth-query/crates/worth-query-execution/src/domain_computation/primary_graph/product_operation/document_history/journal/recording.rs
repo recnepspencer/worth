@@ -1,5 +1,6 @@
 //! Ordinary edit reservation and exact completed binding use prepaid slots.
 use super::*;
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
 impl<'runtime, S> HistoryJournal<'runtime, S> {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn reserve(
@@ -48,7 +49,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         );
         self.access(Access::Node);
         self.nodes.insert(
-            node.ordinal,
+            node.ordinal(),
             HistoryNode {
                 binding: NodeBinding::Reserved {
                     parent: self.current,
@@ -68,7 +69,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             },
         );
         self.retained.insert(
-            node.ordinal,
+            node.ordinal(),
             RetainedHistorySource {
                 source: None,
                 discovery_recipes: None,
@@ -79,7 +80,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         );
         self.access(Access::Child);
         self.children.insert(
-            (self.current.ordinal, node.ordinal),
+            (self.current.ordinal(), node.ordinal()),
             ChildLink {
                 _allocation: link_allocation,
             },
@@ -100,16 +101,16 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         reserved: ReservedHistoryRecord,
     ) {
         self.access(Access::Node);
-        self.nodes.remove(&reserved.node.ordinal);
+        self.nodes.remove(&reserved.node.ordinal());
         self.access(Access::Attempt);
         self.attempts.remove(&reserved.key);
         self.access(Access::Child);
         self.children
-            .remove(&(reserved.parent.ordinal, reserved.node.ordinal));
+            .remove(&(reserved.parent.ordinal(), reserved.node.ordinal()));
         self.cancel_head(reserved.transition);
         let source = self
             .retained
-            .remove(&reserved.node.ordinal)
+            .remove(&reserved.node.ordinal())
             .expect("prepaid source slot");
         assert!(
             source.source.is_none(),
@@ -132,7 +133,7 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         self.store_previous(reserved.transition, previous);
         self.access(Access::Node);
         self.nodes
-            .get_mut(&reserved.node.ordinal)
+            .get_mut(&reserved.node.ordinal())
             .expect("reserved node")
             .binding = NodeBinding::Completed(completed);
         self.access(Access::Attempt);
@@ -142,14 +143,14 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             .binding = AttemptBinding::Completed(reserved.node);
         let retained = self
             .retained
-            .get_mut(&reserved.node.ordinal)
+            .get_mut(&reserved.node.ordinal())
             .expect("prepaid source destination");
         retained.source = Some(source);
         retained.discovery_recipes = discovery_recipes;
         self.retained_completed += 1;
         self.access(Access::Selection);
         self.current = reserved.node;
-        self.completed_end = reserved.node.ordinal + 1; // Successor was admitted by reserve.
+        self.completed_end = reserved.node.ordinal() + 1; // Successor was admitted by reserve.
         self.view_generation = reserved.view_after;
         self.pending = None;
         self.trim_one()

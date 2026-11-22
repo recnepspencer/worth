@@ -11,6 +11,7 @@ impl<S: ApplicationSchema, P: ApplicationProgramDefinition<S>>
     ) -> Result<(), WorthQueryDocumentHistoryDenial> {
         if self
             .runtime()
+            .inner
             .installed_producers
             .supports_history_group::<Family<S, D>>()
         {

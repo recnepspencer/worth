@@ -54,14 +54,12 @@ worth_query_application_query!(
 );
 worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateMandatoryReviewRequestBinding for EstateMandatoryReviewRequest { identity: "EstateMandatoryReviewRequest" });
 worth_query_decl::facade::worth_query_query_binding!(
-    pub EstateMandatoryReviewQueryBinding for EstateMandatoryReviewRequest, schema BankSchema,
+    pub EstateMandatoryReviewQueryBinding for EstateMandatoryReviewRequest, schema BankSchema, context crate::schema::BankBindingContext,
     identity "worth.bank.estate-mandatory-review-query-binding.v1",
     input EstateMandatoryReviewRequestBinding,
     query EstateMandatoryReviewQuery,
     parameters EstateMandatoryReviewQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
     result EstateMandatoryReviewQueryResultBinding,
-    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
-        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
     scope crate::schema::EstateCaseIdentityField,
     field crate::schema::EstateCaseIdentityField::at("EstateCaseIdentityField"),
     value EstateMandatoryReviewRequest::estate,

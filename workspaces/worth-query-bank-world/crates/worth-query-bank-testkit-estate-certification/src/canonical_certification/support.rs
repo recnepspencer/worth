@@ -1,9 +1,4 @@
-pub use std::{
-    future::Future,
-    pin::pin,
-    task::{Context, Poll, Waker},
-    time::{Duration, Instant, SystemTime},
-};
+pub use std::time::{Duration, Instant, SystemTime};
 
 pub use bank_domain::{
     estate::{
@@ -26,10 +21,8 @@ pub use bank_server::{
 };
 pub use worth_query_host::facade::{
     admission::authenticated_principal::{
-        WorthQueryAuthenticationAdapter, WorthQueryAuthenticationAdapterFailure,
-        WorthQueryAuthenticationAdapterFailureKind, WorthQueryAuthenticationAudience,
-        WorthQueryAuthenticationFuture, WorthQueryAuthenticationMethod,
-        WorthQueryCancellationSource, WorthQueryRequestScope, WorthQueryValidatedExternalPrincipal,
+        WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod,
+        WorthQueryCancellationSource, WorthQueryLocalProcessPrincipal, WorthQueryRequestScope,
     },
     declaration::authentication::WorthQueryExternalPrincipalIdentity,
 };
@@ -66,12 +59,12 @@ pub fn certification_fixture() -> CertificationFixture {
         .estate(estate_world());
     let runtime = BankIdentityRuntime::install_world(seed).expect("the public Bank world installs");
     let authentication = runtime
-        .admit_authentication_adapter(authentication_configuration(), TestAdapter)
+        .admit_authentication_adapter(authentication_configuration(), local_principal(identity))
         .expect("the public authentication boundary installs");
     let request = request_scope();
-    let principal =
-        block_on(runtime.authenticate_with(&authentication, TestCredential(identity), &request))
-            .expect("the mapped compliance principal authenticates");
+    let principal = runtime
+        .authenticate_local(&authentication, &request)
+        .expect("the mapped compliance principal authenticates");
     let controls = BankReadControls::current(request, 1).unwrap();
     CertificationFixture {
         runtime,
@@ -184,48 +177,16 @@ pub fn authentication_configuration() -> BankAuthenticationConfiguration {
     )
 }
 
-pub struct TestCredential(pub WorthQueryExternalPrincipalIdentity);
-pub struct TestAdapter;
-
-impl WorthQueryAuthenticationAdapter for TestAdapter {
-    type Credential = TestCredential;
-
-    fn configuration_identity(&self) -> &str {
-        "bank-estate-external-certification-v1"
-    }
-
-    fn validate<'a>(
-        &'a self,
-        credential: Self::Credential,
-        _scope: &'a WorthQueryRequestScope,
-    ) -> WorthQueryAuthenticationFuture<'a> {
-        Box::pin(async move {
-            let now = SystemTime::now();
-            WorthQueryValidatedExternalPrincipal::new(
-                credential.0,
-                WorthQueryAuthenticationAudience::new("bank-estate-certification").unwrap(),
-                WorthQueryAuthenticationMethod::new("external-certification-adapter").unwrap(),
-                now,
-                now + Duration::from_secs(60),
-                Vec::new(),
-            )
-            .map_err(|_| {
-                WorthQueryAuthenticationAdapterFailure::new(
-                    WorthQueryAuthenticationAdapterFailureKind::ProtocolViolation,
-                )
-            })
-        })
-    }
-}
-
-pub fn block_on<F: Future>(future: F) -> F::Output {
-    let mut future = pin!(future);
-    let waker = Waker::noop();
-    let mut context = Context::from_waker(waker);
-    loop {
-        match future.as_mut().poll(&mut context) {
-            Poll::Ready(output) => return output,
-            Poll::Pending => std::thread::yield_now(),
-        }
-    }
+/// The Host's local process principal acting as the mapped compliance reviewer.
+pub fn local_principal(
+    identity: WorthQueryExternalPrincipalIdentity,
+) -> WorthQueryLocalProcessPrincipal {
+    WorthQueryLocalProcessPrincipal::new(
+        "bank-estate-certification-local-principal-v1",
+        identity,
+        WorthQueryAuthenticationAudience::new("bank-estate-certification").unwrap(),
+        WorthQueryAuthenticationMethod::new("external-certification-adapter").unwrap(),
+        Duration::from_secs(60),
+    )
+    .unwrap()
 }

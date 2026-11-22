@@ -99,19 +99,29 @@ fn append_semantic_changes(
                 push(whole_operation_kind(&binding.binding, false), None, changes)
             }
             super::data::AuthoritativePatchDeltaOperation::FieldLevelPatch { patch } => {
+                let field_changed = |field: &worth_foundational::facade::FieldKey| {
+                    binding
+                        .field_revision_changes
+                        .as_ref()
+                        .is_none_or(|changes| changes.iter().any(|(changed, _)| changed == field))
+                };
                 for (field, _) in patch.field_sets() {
-                    push(
-                        Kind::FieldSet,
-                        Some(CanonicalFieldPath::single(field.clone())),
-                        changes,
-                    );
+                    if field_changed(field) {
+                        push(
+                            Kind::FieldSet,
+                            Some(CanonicalFieldPath::single(field.clone())),
+                            changes,
+                        );
+                    }
                 }
                 for field in patch.field_clears() {
-                    push(
-                        Kind::FieldClear,
-                        Some(CanonicalFieldPath::single(field.clone())),
-                        changes,
-                    );
+                    if field_changed(field) {
+                        push(
+                            Kind::FieldClear,
+                            Some(CanonicalFieldPath::single(field.clone())),
+                            changes,
+                        );
+                    }
                 }
             }
         },

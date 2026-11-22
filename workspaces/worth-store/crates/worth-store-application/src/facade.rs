@@ -46,6 +46,7 @@ pub use crate::opening_control::{
     ApplicationHomeOpeningArrival, ApplicationHomeOpeningControlForTest,
     ApplicationHomeOpeningEdge, ApplicationHomeOpeningObservation, ApplicationHomeOpeningStage,
     ApplicationHomePhysicalControlDenial, ApplicationHomePhysicalControlForTest,
+    ApplicationHomeTransitionOpeningObservation,
 };
 pub use crate::query_dispatch::{
     ApplicationHomeDispatchJournalDenial, ApplicationHomeDispatchJournalOperation,

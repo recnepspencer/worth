@@ -13,6 +13,41 @@ use crate::tests::support::*;
 // CONTRACT: historical_lineage_resolution
 // LANES: success, adversarial, recovery
 
+fn main_resolution_request(
+    lineage_id: crate::facade::identity::LineageId,
+) -> HistoricalResolutionRequest {
+    HistoricalResolutionRequest {
+        branch_id: BranchId("main".to_string()),
+        lineage_id,
+        boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
+    }
+}
+
+fn main_graph_request() -> LineageGraphRequest {
+    LineageGraphRequest {
+        branch_id: BranchId("main".to_string()),
+        traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
+    }
+}
+
+fn replace_batch(entity_id: crate::facade::identity::EntityId) -> WorkerIntentBatch {
+    WorkerIntentBatch::new("replace").push(MutationIntent::Entity(EntityMutationIntent::Replace(
+        ReplaceEntityIntent {
+            entity_id,
+            replacement: crate::transactions::data::EntitySpec {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(1),
+                client_key: crate::symbols::data::ClientKey::raw("replacement"),
+                fields: crate::tests::support::single_string_aspect_field_patch(
+                    crate::tests::support::aspect_key("name"),
+                    crate::tests::support::field_key("name"),
+                    "replacement",
+                ),
+            },
+        },
+    )))
+}
+
 #[test]
 fn historical_lineage_resolution_follows_replace_events() {
     let host_request = crate::test_execution_policy::serial_request();
@@ -30,35 +65,14 @@ fn historical_lineage_resolution_follows_replace_events() {
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
-        WorkerIntentBatch::new("replace").push(MutationIntent::Entity(
-            EntityMutationIntent::Replace(ReplaceEntityIntent {
-                entity_id: entity,
-                replacement: crate::transactions::data::EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw("replacement"),
-                    fields: crate::tests::support::single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        crate::tests::support::field_key("name"),
-                        "replacement",
-                    ),
-                },
-            }),
-        )),
+        replace_batch(entity),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     let outcome = txn.commit(execution, &runtime).unwrap();
     let resolution = runtime
         .lineage_access()
-        .resolve_historical_lineage(
-            execution,
-            HistoricalResolutionRequest {
-                branch_id: BranchId("main".to_string()),
-                lineage_id: start_lineage,
-                boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            },
-        )
+        .resolve_historical_lineage(execution, main_resolution_request(start_lineage))
         .unwrap();
 
     assert_eq!(resolution.start, start_lineage);
@@ -85,13 +99,7 @@ fn historical_lineage_resolution_follows_replace_events() {
     assert_eq!(
         runtime
             .lineage_access()
-            .graph(
-                execution,
-                LineageGraphRequest {
-                    branch_id: BranchId("main".to_string()),
-                    traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-                }
-            )
+            .graph(execution, main_graph_request())
             .unwrap()
             .events
             .iter()
@@ -123,21 +131,7 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
-        WorkerIntentBatch::new("replace").push(MutationIntent::Entity(
-            EntityMutationIntent::Replace(ReplaceEntityIntent {
-                entity_id: entity,
-                replacement: crate::transactions::data::EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw("replacement"),
-                    fields: crate::tests::support::single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        crate::tests::support::field_key("name"),
-                        "replacement",
-                    ),
-                },
-            }),
-        )),
+        replace_batch(entity),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
@@ -145,27 +139,14 @@ fn historical_lineage_resolution_does_not_scan_unrelated_branch_events() {
 
     let total_branch_events = runtime
         .lineage_access()
-        .graph(
-            execution,
-            LineageGraphRequest {
-                branch_id: BranchId("main".to_string()),
-                traversal_basis: LineageGraphTraversalBasis::FullBranchGraphMaterialization,
-            },
-        )
+        .graph(execution, main_graph_request())
         .unwrap()
         .metrics
         .event_count;
 
     let resolution = runtime
         .lineage_access()
-        .resolve_historical_lineage(
-            execution,
-            HistoricalResolutionRequest {
-                branch_id: BranchId("main".to_string()),
-                lineage_id: start_lineage,
-                boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            },
-        )
+        .resolve_historical_lineage(execution, main_resolution_request(start_lineage))
         .unwrap();
 
     assert_eq!(resolution.metrics.traversed_event_count, 1);
@@ -190,49 +171,19 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
 
     let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     txn.push_batch(
-        WorkerIntentBatch::new("replace").push(MutationIntent::Entity(
-            EntityMutationIntent::Replace(ReplaceEntityIntent {
-                entity_id: entity,
-                replacement: crate::transactions::data::EntitySpec {
-                    partition_id: PartitionId::main(),
-                    kind_id: KindId(1),
-                    client_key: crate::symbols::data::ClientKey::raw("replacement"),
-                    fields: crate::tests::support::single_string_aspect_field_patch(
-                        crate::tests::support::aspect_key("name"),
-                        crate::tests::support::field_key("name"),
-                        "replacement",
-                    ),
-                },
-            }),
-        )),
+        replace_batch(entity),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation,
     )
     .expect("test staging stays within configured resource budgets");
     let replacement = txn.commit(execution, &runtime).unwrap();
     let history = runtime
         .lineage_access()
-        .entity_aspect_history(
-            execution,
-            HistoricalResolutionRequest {
-                branch_id: BranchId("main".to_string()),
-                lineage_id: start_lineage,
-                boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            },
-            None,
-        )
+        .entity_aspect_history(execution, main_resolution_request(start_lineage), None)
         .unwrap()
         .unwrap();
     let traced = runtime
         .lineage_access()
-        .entity_aspect_history_with_trace(
-            execution,
-            HistoricalResolutionRequest {
-                branch_id: BranchId("main".to_string()),
-                lineage_id: start_lineage,
-                boundedness_basis: HistoricalResolutionBoundednessBasis::BranchScopedLineageSeed,
-            },
-            None,
-        )
+        .entity_aspect_history_with_trace(execution, main_resolution_request(start_lineage), None)
         .unwrap();
     let artifact = traced.trace.diagnostic_artifact();
     let digest = traced.lineage_aspect_resolution_digest();
@@ -283,4 +234,140 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
         history.entries[2].origin.commit_id,
         replacement.commit.commit_id
     );
+}
+
+#[test]
+fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects() {
+    use super::birth_fixtures::{
+        commit_receipt, create_postures_input, face_birth_request, face_scheme_registry,
+        stage_two_entities, staged_entity_lineage_id,
+    };
+    use crate::facade::identity::EntityId;
+    use crate::facade::lineage::{
+        LineageEventKind, LineageNameDenial, LineagePostureKind, LineageSubject,
+        PersistentNameHolder, PersistentNameMintingAuthority,
+    };
+    use crate::transactions::data::RecordRef;
+    use std::collections::{BTreeMap, BTreeSet};
+
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let runtime = runtime_with_test_schema();
+    let prep = runtime.preparation_runtime_snapshot();
+    let authority = prep.lineage_preparation_authority();
+    let registry = face_scheme_registry();
+    let receipt = commit_receipt();
+    let (empty_holders, empty_retired) = (BTreeMap::new(), BTreeSet::new());
+    let before = prep.lineage_identity.frontiers();
+
+    // 1. Create birth targeting uncreated entity refuses typed with zero allocator or staged effects.
+    let (mut staged_missing, e0, _) = stage_two_entities();
+    let phantom = EntityId::new(PartitionId::main(), 99, 1);
+    let missing_input = create_postures_input(
+        registry.clone(),
+        vec![(
+            phantom,
+            face_birth_request("occ.phantom", "authored", "", phantom),
+        )],
+    );
+    let missing_err = authority
+        .ensure_lineage_for_commit_with_postures(
+            execution,
+            &mut staged_missing,
+            &receipt,
+            &[],
+            &[RecordRef::Entity(e0)],
+            &missing_input,
+        )
+        .err()
+        .expect("birth targeting uncreated entity must refuse");
+    assert!(matches!(
+        missing_err.lineage_name_denial_ref(),
+        Some(LineageNameDenial::LineagePostureMismatch {
+            posture: LineagePostureKind::Create,
+            subject: LineageSubject::Entity,
+            holder,
+            ..
+        }) if holder == &PersistentNameHolder::Entity(phantom)
+    ));
+    assert_eq!(prep.lineage_identity.frontiers(), before);
+    assert_eq!(staged_entity_lineage_id(&staged_missing, e0), None);
+
+    // 2. DuplicateBirth collision refuses typed with both holders and zero effects.
+    let (mut staged_dup, d0, d1) = stage_two_entities();
+    let dup_input = create_postures_input(
+        registry.clone(),
+        vec![
+            (d0, face_birth_request("occ.dup", "cut_piece", "same", d0)),
+            (d1, face_birth_request("occ.dup", "cut_piece", "same", d1)),
+        ],
+    );
+    let dup_err = authority
+        .ensure_lineage_for_commit_with_postures(
+            execution,
+            &mut staged_dup,
+            &receipt,
+            &[],
+            &[RecordRef::Entity(d0), RecordRef::Entity(d1)],
+            &dup_input,
+        )
+        .err()
+        .expect("colliding staged births must refuse");
+    assert!(matches!(
+        dup_err.lineage_name_denial_ref(),
+        Some(LineageNameDenial::DuplicateBirth { first, second, .. })
+            if first == &PersistentNameHolder::Entity(d0)
+                && second == &PersistentNameHolder::Entity(d1)
+    ));
+    assert_eq!(prep.lineage_identity.frontiers(), before);
+    assert_eq!(staged_entity_lineage_id(&staged_dup, d0), None);
+    assert_eq!(staged_entity_lineage_id(&staged_dup, d1), None);
+
+    // 3. Valid staged birth attaches the exact pure-minted birth record to the Create event.
+    let (mut staged_ok, ok0, _) = stage_two_entities();
+    let ok_req = face_birth_request("occ.face.1", "authored", "", ok0);
+    let expected = PersistentNameMintingAuthority::mint_commit_births(
+        &registry,
+        &empty_holders,
+        &empty_retired,
+        std::slice::from_ref(&ok_req),
+    )
+    .unwrap();
+    let ok_input = create_postures_input(registry, vec![(ok0, ok_req)]);
+    let prepared = authority
+        .ensure_lineage_for_commit_with_postures(
+            execution,
+            &mut staged_ok,
+            &receipt,
+            &[],
+            &[RecordRef::Entity(ok0)],
+            &ok_input,
+        )
+        .expect("valid staged birth finalizes cleanly");
+    let events = prepared.artifact().event_batch().events();
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].kind(), LineageEventKind::Create);
+    assert_eq!(events[0].name_birth(), Some(&expected[0]));
+}
+
+#[test]
+fn historical_lineage_resolution_traverses_restore() {
+    use super::name_world_history::restore_traversal_cases;
+
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    for case in restore_traversal_cases() {
+        let runtime = runtime_with_test_schema();
+        for batch in &case.log {
+            runtime
+                .lineage
+                .install_recovered_event_batch(&batch.lineage_events, batch.commit())
+                .expect("install finalized lineage batch");
+        }
+        let resolution = runtime
+            .lineage_access()
+            .resolve_historical_lineage(execution, main_resolution_request(case.start_lineage))
+            .expect("historical lineage resolution succeeds across Restore");
+        case.assert_agrees_with_resolution(&resolution);
+    }
 }
