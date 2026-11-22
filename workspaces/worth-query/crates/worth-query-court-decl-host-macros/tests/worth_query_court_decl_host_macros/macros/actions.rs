@@ -1,7 +1,7 @@
 //! Two derived body actions and one written with the declaration macros,
 //! side by side in one feature.
 use super::schema::*;
-use worth_foundational::facade::{CanonicalDate, WorthValue};
+use worth_foundational::facade::WorthValue;
 use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
 use worth_query_decl::facade::{
     application_operation::*, application_program::*, application_schema::*, worth_query_identity,
@@ -21,11 +21,19 @@ pub const COMPLETE: ApplicationIdentityNamespace =
 #[worth_query(schema = Schema, context = BoardContext, namespace = RENAME,
     input = RenameInput, operation = RenameTask, binding = RenameBinding, delivery = Renamed,
     result = BodyResultBinding, decision = WorthQueryOperationBodyDecision<Schema, Task>,
-    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task))]
+    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task),
+    validate = titled)]
 pub struct Rename {
     #[worth_query(scope = TaskKey)]
     pub task: u64,
     pub title: String,
+}
+
+/// Refuses a blank title when the rename's input is captured.
+pub fn titled(rename: &Rename) -> Result<(), &'static str> {
+    (!rename.title.trim().is_empty())
+        .then_some(())
+        .ok_or("a task needs a title")
 }
 
 /// A native optional date: `Some` sets the due date, `None` clears it.

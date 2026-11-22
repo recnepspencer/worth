@@ -2,7 +2,6 @@
 //! serial limits; and the local-process principal that uses it.
 use super::{actions::*, reads, relations, schema::*};
 use std::time::Duration;
-use worth_foundational::facade::CanonicalDate;
 use worth_query_decl::facade::application_schema::fragment::Registration;
 use worth_query_decl::facade::{application_program::*, application_schema::*, authentication::*};
 use worth_query_host::facade::admission::authenticated_principal::*;

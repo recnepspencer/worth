@@ -1,6 +1,5 @@
 //! The board's schema: derived markers and records, with the principal
 //! record, principal binding and binding context written by hand beside them.
-use worth_foundational::facade::CanonicalDate;
 use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
 use worth_query_decl::facade::application_schema::fragment::*;
 use worth_query_decl::facade::{application_schema::*, authentication::*};

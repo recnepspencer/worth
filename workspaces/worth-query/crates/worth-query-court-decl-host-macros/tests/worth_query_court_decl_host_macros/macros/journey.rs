@@ -5,6 +5,7 @@ use super::program::{day, install, owner, scope, BoardFeature, Host, Program, TA
 use super::reads::{DueBy, Search, TaskRow};
 use super::relations::{Outline, ProjectKeyOnly};
 use super::schema::Schema;
+use std::fmt::Debug;
 use worth_query_host::facade::{
     admission::authenticated_principal::*,
     application_entry::*,
@@ -14,6 +15,7 @@ use worth_query_host::facade::{
         application_program::{
             ApplicationActionReference, ApplicationProgramDefinition, ApplicationRootComposition,
         },
+        application_schema::ApplicationValueEncodeDenial,
     },
     domain::ApplicationSchema,
     WorthQuerySourceCustody, WorthQuerySourceCustodyPending, WorthQuerySourceCustodyStep,
@@ -79,10 +81,16 @@ where
         .to_vec()
 }
 
-fn committed<I: ApplicationMutationIntent<Schema>, A>(step: Step<I, A>) {
+/// Any command's terminal evidence reports why it stopped through one bound.
+fn committed<I: ApplicationMutationIntent<Schema>, A>(step: Step<I, A>)
+where
+    WorthQueryTerminalSourceEvidence<Schema, I>: Debug,
+{
     match step {
         WorthQuerySourceCustodyStep::Committed { .. } => {}
-        WorthQuerySourceCustodyStep::Declined { .. } => panic!("the command declined"),
+        WorthQuerySourceCustodyStep::Declined { evidence, .. } => {
+            panic!("the command declined: {evidence:?}")
+        }
         WorthQuerySourceCustodyStep::Pending { cause, .. } => panic!("still pending: {cause:?}"),
     }
 }
@@ -188,6 +196,54 @@ fn derived_and_written_actions_commit_through_source_custody_across_frames() {
             row(2, "Bore FLANGE holes", false, Some(80)),
             row(3, "Paint", true, Some(50)),
         ]
+    );
+}
+
+#[test]
+fn a_derived_validator_refuses_a_blank_rename_at_capture_before_any_effect() {
+    let clock = WorthQueryAdmissionClock::system();
+    let (host, scope) = (install(&clock), scope(&clock));
+    let principal = owner(&host, &clock, &scope);
+    let request = host.runtime().request(&principal, &scope);
+    let blank = Rename {
+        task: 2,
+        title: "  ".to_owned(),
+    };
+    let refused = request.mutate(blank).without_source().idempotency_owned(1);
+    let Err((_, 1, WorthQueryOperationInputCaptureDenial::Encoding(denial))) = refused else {
+        panic!("a blank title is refused at capture with its key returned");
+    };
+    let ApplicationValueEncodeDenial::Validation(denial) = denial else {
+        panic!("the action's validator refused it: {denial:?}");
+    };
+    assert_eq!(denial.reason(), "a task needs a title");
+    assert_eq!(
+        denial.binding_identity().as_str(),
+        "macros.tasks.rename.v1.input"
+    );
+
+    // Nothing was written, and the refused key still admits a valid rename.
+    assert_eq!(keys(read(&request, search("drill"))), [2]);
+    let valid = Rename {
+        task: 2,
+        title: "Ream holes".to_owned(),
+    };
+    committed::<_, Action<RenameBinding, Renamed>>(submit(&host, &request, valid, 1));
+    assert_eq!(keys(read(&request, search("drill"))), Vec::<u64>::new());
+    assert_eq!(keys(read(&request, search("ream"))), [2]);
+}
+
+#[test]
+fn terminal_source_evidence_formats_why_a_command_stopped() {
+    type Evidence = WorthQueryTerminalSourceEvidence<Schema, Rename>;
+    let cancelled = Evidence::Outcome(WorthQueryApplicationMutationOutcome::Cancelled);
+    let unprogrammed = Evidence::AdmissionStopped(
+        WorthQueryApplicationRequestMutationDenial::ApplicationProgramRequired,
+    );
+    assert_eq!(format!("{cancelled:?}"), "Outcome(Cancelled)");
+    assert_eq!(
+        format!("{unprogrammed:?}"),
+        "AdmissionStopped(ApplicationProgramRequired)"
     );
 }
 

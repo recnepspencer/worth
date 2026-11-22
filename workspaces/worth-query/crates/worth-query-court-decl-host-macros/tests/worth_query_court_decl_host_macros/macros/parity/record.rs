@@ -1,7 +1,6 @@
 //! A derived schema root, fragment, entity and record, with persisted-name
 //! and column overrides, declare exactly the schema their hand-written trait
 //! impls declare.
-use worth_foundational::facade::CanonicalDate;
 use worth_query_decl::facade::application_schema::fragment::*;
 use worth_query_decl::facade::application_schema::*;
 use worth_query_decl::facade::{WorthQueryRecord, WorthQuerySchema};

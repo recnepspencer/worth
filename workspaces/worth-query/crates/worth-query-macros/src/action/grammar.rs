@@ -34,6 +34,7 @@ const STRUCT_KEYS: &[&str] = &[
     "program",
     "access",
     "principal_scope",
+    "validate",
     "reads, writes, creates, deletes, links, unlinks, emits, expects_version, expects_fact",
 ];
 const FIELD_KEYS: &[&str] = &["scope", "column"];
@@ -49,6 +50,8 @@ pub(super) struct ActionDeclaration {
     pub(super) result: Type,
     pub(super) decision: Type,
     pub(super) outputs: Option<Type>,
+    /// The input validator, forwarded as the input binding's `validate:`.
+    pub(super) validate: Option<Path>,
     pub(super) body: bool,
     pub(super) program: bool,
     pub(super) access: Option<TokenStream>,
@@ -82,6 +85,7 @@ struct Keys {
     outputs: Once<Type>,
     access: Once<TokenStream>,
     principal_scope: Once<Type>,
+    validate: Once<Path>,
     body: bool,
     program: bool,
     capabilities: Vec<(Ident, Vec<Type>)>,
@@ -106,6 +110,7 @@ impl ActionDeclaration {
             result: keys.result.required(missing, DERIVE)?,
             decision: keys.decision.required(missing, DERIVE)?,
             outputs: keys.outputs.optional(),
+            validate: keys.validate.optional(),
             body: keys.body,
             program: keys.program,
             access: keys.access.optional(),
@@ -129,6 +134,7 @@ impl Keys {
             outputs: Once::new("outputs"),
             access: Once::new("access"),
             principal_scope: Once::new("principal_scope"),
+            validate: Once::new("validate"),
             body: false,
             program: false,
             capabilities: Vec::new(),
@@ -149,6 +155,7 @@ impl Keys {
             "outputs" => self.outputs.set(meta, value(meta)?),
             "access" => self.access.set(meta, token_group(meta)?),
             "principal_scope" => self.principal_scope.set(meta, value(meta)?),
+            "validate" => self.validate.set(meta, validator(meta)?),
             "body" => flag(meta).map(|body| self.body = body),
             "program" => flag(meta).map(|program| self.program = program),
             _ if CAPABILITIES.contains(&key) => self.capability(meta, key),
@@ -169,6 +176,16 @@ impl Keys {
         self.capabilities.push((kind, type_list(meta)?));
         Ok(())
     }
+}
+
+/// `validate = path::to::check`: a function path, refused at the value otherwise.
+fn validator(meta: &ParseNestedMeta<'_>) -> syn::Result<Path> {
+    value::<Path>(meta).map_err(|error| {
+        syn::Error::new(
+            error.span(),
+            "`validate` takes a function path, such as `validate = rules::check_title`",
+        )
+    })
 }
 
 /// The action's one scope: a marked field or the principal's own field.

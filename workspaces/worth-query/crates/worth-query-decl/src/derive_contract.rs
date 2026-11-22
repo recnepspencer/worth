@@ -53,6 +53,7 @@
 //!     #[worth_query(equality, read_only)]
 //!     pub task_key: u64,
 //!     pub title: String,
+//!     pub due: Option<CanonicalDate>, // named through `application_schema`
 //! }
 //! # pub struct Owner;
 //! # impl Owner {
@@ -86,15 +87,102 @@
 //! #[derive(Clone, Debug, serde::Serialize, WorthQueryAction)]
 //! #[worth_query(schema = Schema, context = Context, namespace = RENAME, input = RenameInput,
 //!     operation = RenameTask, binding = RenameBinding, delivery = Renamed, result = Done,
-//!     decision = (), reads(Task))]
+//!     decision = (), reads(Task), validate = titled)]
 //! pub struct Rename {
 //!     #[worth_query(scope = TaskKey)]
 //!     pub task: u64,
 //!     pub title: String,
 //! }
+//! /// Runs when WORTH captures the input, before any effect.
+//! fn titled(rename: &Rename) -> Result<(), &'static str> {
+//!     (!rename.title.trim().is_empty()).then_some(()).ok_or("a task needs a title")
+//! }
 //! use worth_query_decl::facade::application_operation::ApplicationMutationBinding;
 //! assert_eq!(<RenameBinding as ApplicationMutationBinding<Schema>>::IDENTITY, "doc.legacy.rename");
 //! assert_eq!(<RenameBinding as ApplicationMutationBinding<Schema>>::HANDLER_IDENTITY, "doc.board.rename.v1.handler");
+//! let blank = Rename { task: 1, title: " ".to_owned() };
+//! let denial = RenameInput::validate(&blank).expect_err("a blank title is refused");
+//! assert_eq!(denial.reason(), "a task needs a title");
+//! assert_eq!(denial.binding_identity().as_str(), "doc.board.rename.v1.input");
+//! ```
+//!
+//! `validate` names a `fn(&Action) -> Result<(), &'static str>`, exactly as
+//! a written `worth_query_structured_value_binding!` does; a validator that
+//! takes the input by value does not compile:
+//!
+//! ```compile_fail,E0308
+//! # use worth_query_decl::facade::application_schema::{fragment::*, *};
+//! # use worth_query_decl::facade::{application_identity::*, authentication::*, *};
+//! # #[derive(Clone, Copy, WorthQuerySchema)]
+//! # #[worth_query(schema, owner = "doc.board", name = "board", members(Board))]
+//! # pub struct Schema;
+//! # #[derive(Clone, Copy, WorthQuerySchema)]
+//! # #[worth_query(fragment, bindings = Codecs, members(Mapping, Principal, Task))]
+//! # pub struct Board;
+//! # worth_query_native_scalar_bindings!(pub Codecs);
+//! # impl Scalar<WorthQueryExternalPrincipalIdentity> for Codecs { type Binding = WorthQueryExternalPrincipalIdentityBinding; }
+//! # impl Scalar<WorthQueryPrincipalMappingStatus> for Codecs { type Binding = WorthQueryPrincipalMappingStatusBinding; }
+//! # #[derive(Clone, Copy, WorthQuerySchema)]
+//! # #[worth_query(entity, aspects(MappingFacts), relations(Target))]
+//! # pub struct Mapping;
+//! # #[derive(Clone, Copy, WorthQuerySchema)]
+//! # #[worth_query(entity, aspects(PrincipalFacts))]
+//! # pub struct Principal;
+//! # #[derive(Clone, Copy, WorthQuerySchema)]
+//! # #[worth_query(entity, aspects(TaskFacts), reference(Schema, Board))]
+//! # pub struct Task;
+//! # #[derive(WorthQuerySchema)]
+//! # #[worth_query(relation, to = Principal, from = Mapping, reference(Schema, Board))]
+//! # pub struct Target;
+//! # #[derive(WorthQueryRecord)]
+//! # #[worth_query(bindings = Codecs, aspect = MappingFacts, fragment = Board, entity = Mapping)]
+//! # pub struct MappingRow { #[worth_query(equality)] pub identity: WorthQueryExternalPrincipalIdentity, #[worth_query(equality)] pub status: WorthQueryPrincipalMappingStatus }
+//! # #[derive(WorthQueryRecord)]
+//! # #[worth_query(bindings = Codecs, aspect = PrincipalFacts, fragment = Board, entity = Principal)]
+//! # pub struct PrincipalRow { #[worth_query(equality, read_only)] pub principal_key: u64 }
+//! # #[derive(WorthQueryRecord)]
+//! # #[worth_query(bindings = Codecs, aspect = TaskFacts, fragment = Board, entity = Task)]
+//! # pub struct TaskRow { #[worth_query(equality, read_only)] pub task_key: u64, pub title: String }
+//! # pub struct Owner;
+//! # impl Owner {
+//! #     fn reference() -> ApplicationPrincipalBindingRef<Schema, Self, Mapping, Principal, u64, U64ApplicationValueBinding> {
+//! #         ApplicationPrincipalBindingRef::from_requirements("Owner", ApplicationPrincipalBindingRequirements {
+//! #             mapping_identity: ApplicationPrincipalMappingIdentityRequirement::from_field(Identity::at("Identity")),
+//! #             mapping_status: ApplicationPrincipalMappingStatusRequirement::from_field(Status::at("Status")),
+//! #             target: ApplicationPrincipalTargetRequirement::from_relation(Target::reference()),
+//! #             principal_identity: ApplicationPrincipalIdentityRequirement::from_field(PrincipalKey::at("PrincipalKey")),
+//! #         })
+//! #     }
+//! # }
+//! # worth_query_structured_value_binding!(pub Done for () { identity: "doc.board.done" });
+//! # worth_query_structured_value_binding!(pub Refused for () { identity: "doc.board.refused" });
+//! # pub struct Context;
+//! # impl ApplicationBindingContext<Schema> for Context {
+//! #     type PrincipalBinding = Owner;
+//! #     type Mapping = Mapping;
+//! #     type Principal = Principal;
+//! #     type PrincipalIdentity = u64;
+//! #     type PrincipalIdentityBinding = U64ApplicationValueBinding;
+//! #     type IdempotencyKey = u64;
+//! #     type DenialBinding = Refused;
+//! #     const IDEMPOTENCY_IDENTITY: &'static str = "doc.board.idempotency";
+//! #     fn principal_binding() -> ApplicationPrincipalBindingRef<Schema, Owner, Mapping, Principal, u64, U64ApplicationValueBinding> {
+//! #         Owner::reference()
+//! #     }
+//! # }
+//! # const RENAME: ApplicationIdentityNamespace = worth_query_identity_namespace!("doc.board.rename.v1");
+//! #[derive(Clone, Debug, serde::Serialize, WorthQueryAction)]
+//! #[worth_query(schema = Schema, context = Context, namespace = RENAME, input = RenameInput,
+//!     operation = RenameTask, binding = RenameBinding, result = Done, decision = (),
+//!     validate = titled)]
+//! pub struct Rename {
+//!     #[worth_query(scope = TaskKey)]
+//!     pub task: u64,
+//!     pub title: String,
+//! }
+//! fn titled(rename: Rename) -> Result<(), &'static str> {
+//!     (!rename.title.is_empty()).then_some(()).ok_or("a task needs a title")
+//! }
 //! ```
 //!
 //! An action's scope field carries the scope selection's value, exactly as a
