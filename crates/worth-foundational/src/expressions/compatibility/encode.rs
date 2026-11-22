@@ -4,15 +4,15 @@ use crate::expressions::syntax::ast::{
     QualifiedName, SyntaxNode, SyntaxTree, TypeArgument, TypeSyntax,
 };
 
-use super::{
-    code, tag, BINARY_OPS, COMPREHENSIONS, LANGUAGE_VERSION, MAGIC, UNARY_OPS, WIRE_VERSION,
-};
+use super::language::draft_language;
+use super::{code, tag, BINARY_OPS, COMPREHENSIONS, MAGIC, UNARY_OPS, WIRE_VERSION};
 
 pub(crate) fn encode_draft(tree: &SyntaxTree) -> Vec<u8> {
     let mut out = Writer(Vec::new());
     out.0.extend_from_slice(&MAGIC);
     out.0.extend_from_slice(&WIRE_VERSION.to_le_bytes());
-    out.0.extend_from_slice(&LANGUAGE_VERSION.to_le_bytes());
+    out.0
+        .extend_from_slice(&draft_language(tree).wire_code().to_le_bytes());
     out.count(tree.len());
     for node in tree.nodes() {
         out.node(node);

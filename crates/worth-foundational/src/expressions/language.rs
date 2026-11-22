@@ -4,7 +4,8 @@ use super::denial::ExpressionResult;
 use super::draft::ExpressionDraft;
 use super::profile::ExpressionProfile;
 
-/// The V1 expression language.
+/// The expression language: V1 vocabulary plus the V2 `Date` type and
+/// ASCII case-insensitive text matching.
 ///
 /// Reading is bounded by the reading profile, engineering by default.
 /// Admission then re-checks the draft against the profile it admits under,
@@ -14,7 +15,7 @@ pub struct ExpressionLanguage {
     profile: ExpressionProfile,
 }
 
-/// The V1 expression language, reading under engineering ceilings.
+/// The expression language, reading under engineering ceilings.
 pub fn expressions() -> ExpressionLanguage {
     ExpressionLanguage {
         profile: ExpressionProfile::engineering(),
@@ -28,13 +29,14 @@ impl ExpressionLanguage {
         Self { profile }
     }
 
-    /// Parses V1 source text into a draft.
+    /// Parses source text into a draft.
     pub fn parse(&self, source: &str) -> ExpressionResult<ExpressionDraft> {
         ExpressionDraft::parse(source, &self.profile)
     }
 
     /// Decodes an untrusted encoded draft. Unknown encoding and language
-    /// versions deny before any structure is read.
+    /// versions deny before any structure is read, and a draft whose
+    /// vocabulary needs a different language version than it declares denies.
     pub fn decode(&self, bytes: &[u8]) -> ExpressionResult<ExpressionDraft> {
         ExpressionDraft::decode(bytes, &self.profile)
     }

@@ -123,6 +123,7 @@ impl<const DESTINATION: u64> WorthQueryApplicationContribution<DocumentRetention
                 setup.handler::<super::requirement_control::UnlinkBinding<DESTINATION>, _>(
                     super::requirement_control::UnlinkHandler,
                 )?;
+                super::native_scalars::declaration::configure::<DESTINATION>(setup)?;
             }
             Installation::Missing => {}
             Installation::Replacement => {
@@ -172,6 +173,7 @@ impl<const DESTINATION: u64> ApplicationProgramDefinition<DocumentRetentionSchem
             .finish_action()
             .native_action::<super::requirement_control::UnlinkBinding<DESTINATION>>()
             .finish_action();
+        let feature = super::native_scalars::declaration::actions::<DESTINATION, _>(feature);
         let feature = if matches!(DESTINATION, 30 | 31) {
             feature
                 .native_action::<super::genesis::binding::CreateBinding<DESTINATION>>()
@@ -359,6 +361,7 @@ impl<const DESTINATION: u64>
                 schema.application_mutation_binding::<BodyBinding<DESTINATION>>()
             };
             let schema = super::retirement::declaration::declare::<DESTINATION>(schema);
+            let schema = super::native_scalars::declaration::declare::<DESTINATION>(schema);
             super::genesis::declaration::declare::<DESTINATION>(schema)
         })
     }
