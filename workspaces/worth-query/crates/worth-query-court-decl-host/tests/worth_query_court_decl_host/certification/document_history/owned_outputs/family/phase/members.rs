@@ -5,6 +5,10 @@ macro_rules! producer_decision_refusal {
     (GuardedInputPreserve, $value:ident) => { producer_decision_refusal!(@guarded $value) };
     (GuardedMemberInitial, $value:ident) => { producer_decision_refusal!(@guarded $value) };
     (GuardedPresenceInitial, $value:ident) => { producer_decision_refusal!(@absent $value) };
+    (GuardedFirstInitial, $value:ident) => { producer_decision_refusal!(@absent $value) };
+    (GuardedFirstPreserve, $value:ident) => { producer_decision_refusal!(@absent $value) };
+    (GuardedCurrentInitial, $value:ident) => { producer_decision_refusal!(@absent $value) };
+    (GuardedCurrentPreserve, $value:ident) => { producer_decision_refusal!(@absent $value) };
     (GuardedPresencePreserve, $value:ident) => { producer_decision_refusal!(@absent $value) };
     (@absent $value:ident) => { ($value == 0).then_some(Denial::DerivedValueOutOfRange) };
     (GuardedMemberPreserve, $value:ident) => { producer_decision_refusal!(@guarded $value) };

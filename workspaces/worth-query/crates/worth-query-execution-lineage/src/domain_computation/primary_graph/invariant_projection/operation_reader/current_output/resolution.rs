@@ -74,6 +74,9 @@ where
             ApplicationEntityRef::from_schema_identifier(Producer::IDENTIFIER),
         )
         .map_err(|denial| decision_plan_denial(denial.kind(), Family::IDENTITY))?;
+        // Its lineage lookup can find no output (`Missing`), which no fact key
+        // names: a refusal over it waits on every append (PR C §1.7).
+        self.decision_facts.record_unkeyed_read();
         self.admit_decision_target(&ApplicationOperationDecisionReadTarget::Entity {
             entity: <Family::Entity as ApplicationEntityMarkerIdentity<Schema>>::IDENTIFIER
                 .to_owned(),

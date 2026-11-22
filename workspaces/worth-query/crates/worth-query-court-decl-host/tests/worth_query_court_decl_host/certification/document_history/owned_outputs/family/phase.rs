@@ -53,6 +53,8 @@ macro_rules! producer_operation {
             read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), MemberValue::at("MemberValue")]; creates: [$entity]; links: [$of];
         });
     };
+    (GuardedCurrentInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedCurrentInitial, $entity, $key, $value, $of); };
+    (GuardedCurrentPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedCurrentPreserve, $entity, $key, $value, $of); };
     (SaturatedConsumerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedConsumerInitial, $entity, $key, $value, $of); };
     (SaturatedConsumerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedConsumerPreserve, $entity, $key, $value, $of); };
     (CappedReaderInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedReaderInitial, $entity, $key, $value, $of); };
@@ -105,6 +107,16 @@ macro_rules! producer_decision_dependency {
             producer_decision_dependency!(@current_output $reader, model, super::super::cycle_consumer::Family);
         }
         member.min(5)
+    }};
+    (GuardedCurrentInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@saturated_current $reader) };
+    (GuardedCurrentPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@saturated_current $reader) };
+    // Whether `saturated-input(a)` publishes a current output for model `a`.
+    (@saturated_current $reader:ident) => {{
+        let model = $reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
+        match $reader.current_output::<super::super::saturated_input::Family, Model>(&model)? {
+            WorthQueryCurrentOutputSelection::Unique(_) => 1,
+            _ => 0,
+        }
     }};
     (SaturatedConsumerInitial, $reader:ident, $source:ident, $input:ident) => {{
         let model = $reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
@@ -166,6 +178,12 @@ macro_rules! producer_decision_dependency {
     (GuardedInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@model_b $reader) };
     (GuardedInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@model_b $reader) };
     (GuardedMemberInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (GuardedFirstInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@first_b_presence $reader) };
+    (GuardedFirstPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@first_b_presence $reader) };
+    // Whether output `first:b` exists: an optional indexed lookup.
+    (@first_b_presence $reader:ident) => {
+        u64::from($reader.resolve_optional_entity(FirstKey::at("FirstKey"), "first:b".to_owned())?.is_some())
+    };
     (GuardedPresenceInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@saturated_presence $reader) };
     (GuardedPresencePreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@saturated_presence $reader) };
     // Whether output `saturated:a` exists: an optional indexed lookup, a source fact.
