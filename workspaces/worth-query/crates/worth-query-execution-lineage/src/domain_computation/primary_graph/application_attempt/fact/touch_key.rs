@@ -12,7 +12,7 @@ use worth_relational::facade::mvcc::ValidatedMutationTouch as Touch;
 
 /// One key a fact's support can be changed through.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub(in crate::domain_computation::primary_graph) enum FactTouchKey {
+pub enum FactTouchKey {
     /// Presence of an entity of this kind (creation, selection membership).
     Kind(KindId),
     /// Any field of this aspect on an entity of this kind.
@@ -26,7 +26,7 @@ pub(in crate::domain_computation::primary_graph) enum FactTouchKey {
 }
 
 /// The keys of one fact, or `None` when it is conservative.
-pub(in crate::domain_computation::primary_graph) fn fact_keys(
+pub fn fact_keys(
     fact: &Fact,
 ) -> Option<Vec<FactTouchKey>> {
     use FactTouchKey::*;
@@ -61,7 +61,7 @@ pub(in crate::domain_computation::primary_graph) fn fact_keys(
 }
 
 /// What one certified touch marks.
-pub(in crate::domain_computation::primary_graph) enum TouchProbe {
+pub enum TouchProbe {
     /// Not a write: the record is exactly what it was.
     Nothing,
     /// These keys, plus every conservative fact.
@@ -70,7 +70,7 @@ pub(in crate::domain_computation::primary_graph) enum TouchProbe {
     Everything,
 }
 
-pub(in crate::domain_computation::primary_graph) fn touch_probe(touch: &Touch) -> TouchProbe {
+pub fn touch_probe(touch: &Touch) -> TouchProbe {
     use FactTouchKey::*;
     match touch {
         Touch::RevalidateEntity { .. } | Touch::RevalidateRelation { .. } => TouchProbe::Nothing,
@@ -89,7 +89,7 @@ pub(in crate::domain_computation::primary_graph) fn touch_probe(touch: &Touch) -
 }
 
 /// The one record a single-record fact reads, if it reads exactly one.
-pub(in crate::domain_computation::primary_graph) fn fact_record(
+pub fn fact_record(
     fact: &Fact,
 ) -> Option<worth_relational::facade::identity::EntityId> {
     match fact {
@@ -110,7 +110,7 @@ pub(in crate::domain_computation::primary_graph) fn fact_record(
 /// read of one record, which it reads at the chain head's pre-pin when the
 /// chain wrote that record. Every other single-record fact (presence,
 /// entity, source revisions) is read at the current image.
-pub(in crate::domain_computation::primary_graph) fn overlay_served(fact: &Fact) -> bool {
+pub fn overlay_served(fact: &Fact) -> bool {
     matches!(
         fact,
         Fact::Field { .. } | Fact::AbsentField { .. } | Fact::OptionalAspectAbsent { .. }
@@ -120,7 +120,7 @@ pub(in crate::domain_computation::primary_graph) fn overlay_served(fact: &Fact) 
 /// Whether a certified touch could change what `fact` read. Field reads and
 /// indexed selections compare the field path; every other fact compares
 /// its keys, and a conservative fact always could.
-pub(in crate::domain_computation::primary_graph) fn touch_changes(
+pub fn touch_changes(
     touch: &Touch,
     fact: &Fact,
 ) -> bool {

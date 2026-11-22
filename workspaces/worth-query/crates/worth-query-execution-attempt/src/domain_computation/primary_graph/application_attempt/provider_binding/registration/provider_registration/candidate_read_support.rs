@@ -173,7 +173,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
                 break;
             }
             charge_scan(execution, subject, 1)?;
-            crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::visited_retained_reads(1);
+            crate::domain_computation::execution_observation::record_retained_reads_visited(1);
             let entry = &mut supports.values[slot];
             // Only evidence retained before the invalidating append.
             if entry.position < invalidator && entry.window_end.is_none() {
@@ -260,7 +260,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
         invalidator: usize,
-        settles: impl Fn(&crate::domain_computation::primary_graph::application_contribution::producer::VerifiedAppliedParent) -> bool,
+        settles: impl Fn(&dyn crate::ports::CandidateReadSupportPort) -> bool,
     ) -> Result<RetainedReadRequalification, Denial> {
         let supports = &mut self.candidate_read_support;
         charge_scan(
@@ -272,7 +272,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             // An assembly round reset this support; nothing retained it.
             return Ok(RetainedReadRequalification::Equal);
         };
-        crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::visited_retained_reads(1);
+        crate::domain_computation::execution_observation::record_retained_reads_visited(1);
         let entry = &mut supports.values[slot];
         let CandidateReadSupport::Parent(parent) = &entry.support else {
             unreachable!("matched a verified parent")
@@ -283,7 +283,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         {
             return Ok(RetainedReadRequalification::Equal);
         }
-        if settles(parent) {
+        if settles(parent.as_ref()) {
             return Ok(RetainedReadRequalification::Settled);
         }
         entry.window_end = Some(invalidator);
@@ -299,7 +299,7 @@ fn charge_scan(
 ) -> Result<(), Denial> {
     let work = u64::try_from(entries)
         .map_err(|_| Denial::new(Kind::CandidateCapacityExceeded, subject))?;
-    crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::observe_scheduling_work(work);
+    crate::domain_computation::execution_observation::record_wave_charged(work);
     execution
         .run_native_with_checkpoint(|context| {
             crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)

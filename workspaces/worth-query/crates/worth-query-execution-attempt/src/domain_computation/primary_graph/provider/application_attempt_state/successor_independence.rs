@@ -1,5 +1,6 @@
 //! A successor round re-derives from its chain's own-output view; any other
 //! read of a key an earlier round wrote is that round's effect, not C (§1.5).
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::fact::touch_key;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as ObservedFact;
@@ -12,7 +13,7 @@ use worth_relational::facade::mvcc::ValidatedMutationTouch as Touch;
 
 impl super::super::WorthQueryPrimaryGraphProvider {
     /// The local create coordinate of `session`'s original idempotency record.
-    pub(in crate::domain_computation::primary_graph) fn coupled_writer_original_key(
+    pub fn coupled_writer_original_key(
         &self,
         session: WorthQueryProviderSessionView<'_>,
     ) -> String {
@@ -31,7 +32,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
     /// chain's earlier rounds certified could change and that does not read
     /// the same at the chain head's pre-pin as at `current`, with that read's
     /// record when it has one. `None` when the round is independent.
-    pub(in crate::domain_computation::primary_graph) fn coupled_writer_prior_effect(
+    pub fn coupled_writer_prior_effect(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         session: WorthQueryProviderSessionView<'_>,

@@ -362,7 +362,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         // An authored reader settles a change only by the producer of the same
         // route, owed at or after it (`settles_read_support`).
         let authored = !self.all_stage_captures().is_empty();
-        let settles = |parent: &crate::domain_computation::primary_graph::application_contribution::producer::VerifiedAppliedParent| {
+        let settles = |parent: &dyn worth_query_execution_attempt::facade::ports::CandidateReadSupportPort| {
             authored
                 && invalidator_owed >= position
                 && route.is_some_and(|meaning| parent.has_route(meaning))

@@ -202,7 +202,7 @@ fn settles_read_support(
     let derives = |member: &CoupledApplicationMember| {
         member.settles_after(position) && derives_parent(member, parent.as_ref())
     };
-    (writer.settles_after(position) && derives_parent(writer.member, parent))
+    (writer.settles_after(position) && derives_parent(writer.member, parent.as_ref()))
         || (is_stage(writer.member)
             && members
                 .iter()
