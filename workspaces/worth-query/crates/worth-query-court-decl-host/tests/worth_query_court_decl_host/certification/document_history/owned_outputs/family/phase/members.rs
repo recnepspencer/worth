@@ -36,6 +36,8 @@ macro_rules! producer_member_target {
     (SelfWriteInitial, $reader:ident) => { producer_member_target!(@write $reader) };
     (SelfWritePreserve, $reader:ident) => { producer_member_target!(@write $reader) };
     (DecisionWriteInitial, $reader:ident) => { producer_member_target!(@write $reader) };
+    (AspectProbeInitial, $reader:ident) => { producer_member_target!(@write $reader) };
+    (AspectProbePreserve, $reader:ident) => { producer_member_target!(@write $reader) };
     (DecisionWriteNInitial, $reader:ident) => { producer_member_target!(@write_n $reader) };
     (DecisionWriteNPreserve, $reader:ident) => { producer_member_target!(@write_n $reader) };
     (@write_n $reader:ident) => {{
@@ -67,6 +69,8 @@ macro_rules! producer_member_effect {
     (SelfWriteInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (SelfWritePreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (DecisionWriteInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
+    (AspectProbeInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
+    (AspectProbePreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (DecisionWriteNInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (DecisionWriteNPreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (DecisionWritePreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };

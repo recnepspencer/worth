@@ -43,6 +43,8 @@ macro_rules! producer_operation {
     (DecisionWriteNInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWriteNInitial, $entity, $key, $value, $of); };
     (DecisionWriteNPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWriteNPreserve, $entity, $key, $value, $of); };
     (DecisionWriteInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWriteInitial, $entity, $key, $value, $of); };
+    (AspectProbeInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@aspect_probe AspectProbeInitial, $entity, $key, $value, $of); };
+    (AspectProbePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@aspect_probe AspectProbePreserve, $entity, $key, $value, $of); };
     (DecisionWritePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWritePreserve, $entity, $key, $value, $of); };
     (CrossReaderInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CrossReaderInitial, $entity, $key, $value, $of); };
     (CrossReaderPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CrossReaderPreserve, $entity, $key, $value, $of); };
@@ -75,6 +77,12 @@ macro_rules! producer_operation {
     (GuardedInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedInputPreserve, $entity, $key, $value, $of); };
     (GuardedMemberInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedMemberInitial, $entity, $key, $value, $of); };
     (GuardedMemberPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedMemberPreserve, $entity, $key, $value, $of); };
+    (@aspect_probe $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member, FirstOutput]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), CalibrationReady::at("Ready"), FirstKey::at("FirstKey"), FirstValue::at("FirstValue")];
+            read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), MemberValue::at("MemberValue")]; creates: [$entity]; links: [$of];
+        });
+    };
     (@member_write $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
         worth_query_operation!(pub $operation for Schema, input InputBinding; access {
             read_entities: [SourceEntity, $entity, Member]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];

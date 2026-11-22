@@ -82,6 +82,17 @@ macro_rules! producer_decision_dependency {
     (OrdinaryInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (DecisionInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (SelfRelationInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@self_relation $reader, $source) };
+    (AspectProbeInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@aspect_probe $reader) };
+    (AspectProbePreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@aspect_probe $reader) };
+    // Once `first:a` reads 11, member `m`'s `CalibrationReady`, which it lacks.
+    (@aspect_probe $reader:ident) => {{
+        let first = $reader.resolve_entity(FirstKey::at("FirstKey"), "first:a".to_owned())?;
+        if $reader.field(&first, FirstValue::at("FirstValue"))? == Some(11) {
+            let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
+            $reader.field(&member, CalibrationReady::at("Ready"))?;
+        }
+        0
+    }};
     (SelfRelationPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@self_relation $reader, $source) };
     // Member `m`, and every output the source model owns (`FirstOf`, read
     // at the current image), each of which must have its value.

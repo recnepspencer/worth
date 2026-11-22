@@ -8,6 +8,7 @@ mod alias;
 mod cross_write;
 mod outgoing;
 mod own_output_gap;
+mod own_output_aspect;
 mod prerequisite;
 mod pending_current;
 mod pending_presence;

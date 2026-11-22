@@ -78,7 +78,9 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
             producer.edition,
             component,
             chain.as_ref().map(|chain| &chain.own),
-        )?;
+        )
+        // The capture reads through the same own-output view (#277).
+        .map_err(|stop| self.successor_prepare_stop(candidate, chain.as_ref(), stop))?;
         Ok(Some(PreparedCoupledInputs::Captured(inputs)))
     }
     pub fn prepare_planned_one(
