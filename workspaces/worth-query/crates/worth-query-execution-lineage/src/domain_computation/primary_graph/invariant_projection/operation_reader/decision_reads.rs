@@ -29,6 +29,9 @@ use crate::domain_computation::primary_graph::application_contribution::{
 #[derive(Default)]
 pub struct DecisionReads {
     handler: BTreeSet<WorthQueryApplicationFactKey>,
+    /// A read whose outcome no fact key names (a current output's lineage
+    /// lookup, which can find nothing): a refusal over it is conservative.
+    unkeyed_reads: bool,
     source_publications: Option<std::sync::Arc<source_publications::IssuedSourcePublicationValues>>,
     managed_sources: managed_sources::IssuedManagedSourceValues,
     failed_managed_source: bool,
@@ -68,6 +71,11 @@ pub struct RefusalProofs {
 }
 
 impl DecisionReads {
+    /// Record a read no fact key names (PR C §1.7): a refusal over it
+    /// retries at every append.
+    pub fn record_unkeyed_read(&mut self) {
+        self.unkeyed_reads = true;
+    }
     /// The proofs of a decision that refused (PR C §1.7).
     /// A partitioned computation's reads are its keys too; a computation
     /// run's carried or native reads have none, so any run is conservative.
@@ -81,6 +89,7 @@ impl DecisionReads {
                 .collect(),
             touches: Vec::new(),
             conservative: !matches!(self.runs, ComputationRuns::None)
+                || self.unkeyed_reads
                 || self.failed.is_some()
                 || self.failed_walk
                 || self.failed_component

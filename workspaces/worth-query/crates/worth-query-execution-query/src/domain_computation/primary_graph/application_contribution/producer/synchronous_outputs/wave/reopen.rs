@@ -83,10 +83,19 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         let i = self.canonical(row);
         checkpoint(context.execution, self.tasks[i].subject, 1)?;
         let owed = self.tasks[i].owed.position().max(invalidator_owed);
-        if self.tasks[row].reopen_check.is_some() && !self.is_refused(i) {
-            // Its re-discovery is pending and verified against what it
-            // selected before: that replaces this support too. A pending
-            // refusal reopens below: nothing else would retry it.
+        // Only a children-selection change whose re-discovery has not run yet
+        // is subsumed: that re-discovery selects at a later pin and is
+        // verified against what the row selected before. An incoming change,
+        // a re-discovery already run, or a pending refusal is never dropped:
+        // it merges into the row's check below.
+        let rediscovery_pending = self.tasks[row].reopen_check.is_some()
+            && !incoming
+            && if row != i {
+                !self.tasks[row].continuation_done
+            } else {
+                !self.is_refused(i) && !self.rediscovered.contains(&i)
+            };
+        if rediscovery_pending {
             observation::record(|| format!("reselect task={row} owed={owed} (rediscovering)"));
             self.raise_owed(i, owed);
             return Ok(());
@@ -144,6 +153,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         // Its re-discovery is verified once it derives again, not before.
         self.rediscovered.retain(|&row| row != i);
         let task = &mut self.tasks[i];
+        let was_done = matches!(task.state, TaskState::Done { .. });
         let previous = match std::mem::replace(&mut task.state, TaskState::Identified) {
             TaskState::Done { parent } => parent,
             _ => None,
@@ -152,7 +162,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         task.prerequisites = Vec::new();
         task._prerequisite_memory = None;
         task.state = TaskState::Identified;
-        task.reopened = true;
+        // Only a derivation it supersedes makes it a root of its own: a
+        // never-derived prerequisite stays needed only through its consumer.
+        task.reopened |= was_done;
         task.owed = crate::domain_computation::primary_graph::application_contribution::coupled_publication::OwedDemand::at(owed);
         self.reopen_aliases(context, candidate, i, invalidator)?;
         // Readers that have not run yet close again and wait on it; readers
