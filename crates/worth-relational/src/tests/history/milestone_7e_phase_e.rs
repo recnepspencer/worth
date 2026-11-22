@@ -1,5 +1,5 @@
 use crate::facade::history::BranchId;
-use crate::facade::merge::{MergeExecutionRequest, MergeIntent};
+use crate::facade::merge::{MergeExecutionOutcome, MergeExecutionRequest, MergeIntent};
 use crate::facade::runtime::RelationalRuntime;
 use crate::merge::data::RelationalMergeAdmittedSurfaceRow;
 use crate::tests::support::{
@@ -184,6 +184,65 @@ fn proof_packet_deserialization_rejects_forged_retained_truth() {
     assert!(malformed_planning_digest_result.is_err());
 }
 
+#[test]
+fn replay_rebuild_denies_summary_and_packet_drift() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = merge_ready_runtime(execution);
+    let outcome = execute_merge(execution, &runtime);
+    let honest = runtime
+        .replay()
+        .canonical_commit_envelope(execution, outcome.commit.commit.commit_id)
+        .unwrap()
+        .expect("canonical envelope");
+    assert!(honest
+        .merge_execution_authority
+        .as_ref()
+        .expect("merge execution authority")
+        .retains_consistent_proof_packet_authority());
+
+    let mut digest_drifted = honest.copy_original_for_test(execution);
+    digest_drifted
+        .body_mut_for_test()
+        .merge_execution_authority
+        .as_mut()
+        .expect("merge execution authority")
+        .execution_summary
+        .execution_digest = "forged-summary-digest".to_string();
+    assert!(!digest_drifted
+        .body_mut_for_test()
+        .merge_execution_authority
+        .as_ref()
+        .expect("merge execution authority")
+        .retains_consistent_proof_packet_authority());
+
+    // Inject request drift onto a fresh honest copy so rejection is proved
+    // independently of the forged execution_digest above.
+    let mut request_drifted = honest.copy_original_for_test(execution);
+    request_drifted
+        .body_mut_for_test()
+        .merge_execution_authority
+        .as_mut()
+        .expect("merge execution authority")
+        .execution_summary
+        .request = crate::facade::merge::NormalizedRelationalMergeRequest::admit_full_branch(
+        BranchId("feature".to_string()),
+        BranchId("main".to_string()),
+        MergeIntent::ReconcileIntoTarget,
+        crate::facade::merge::RelationalMergeCorrespondencePosture::Advisory,
+        crate::facade::merge::RelationalMergeSchemaReconciliationPosture::Participate,
+        crate::facade::merge::RelationalMergeTopologyIntent::PreserveTopologySemantics,
+    )
+    .expect("admitted normalized request");
+    assert!(!request_drifted
+        .body_mut_for_test()
+        .merge_execution_authority
+        .as_ref()
+        .expect("merge execution authority")
+        .retains_consistent_proof_packet_authority());
+}
+
 fn merge_ready_runtime(execution: &worth_execution::ExecutionRequest<'_, '_>) -> RelationalRuntime {
     let runtime = runtime_with_test_schema();
     create_entity(execution, &runtime, "root");
@@ -203,6 +262,19 @@ fn merge_request() -> MergeExecutionRequest {
         BranchId("feature".to_string()),
         MergeIntent::ReconcileIntoTarget,
     )
+}
+
+fn execute_merge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+) -> MergeExecutionOutcome {
+    let prepared = runtime
+        .merge()
+        .prepare_merge_execution(execution, merge_request())
+        .expect("prepared merge");
+    runtime
+        .execute_prepared_merge(execution, prepared)
+        .expect("executed merge")
 }
 
 #[derive(serde::Serialize)]

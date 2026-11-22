@@ -4,6 +4,7 @@ mod serde_support;
 use crate::facade::merge::{
     AspectMergePolicyKind, MergeExecutionAuthorityContract, RelationalMergeStrategyWitness,
 };
+use crate::merge::data::{RelationalMergeProofPacket, RelationalMergeTopologyStrategyWitnessRow};
 use crate::tests::support::{create_branch_from_main, create_entity};
 
 use fixtures::{
@@ -199,6 +200,67 @@ fn retained_merge_strategy_witness_differentiates_policy_topology_and_deletion_s
     assert_ne!(baseline.witness_digest(), policy_drift.witness_digest());
     assert_ne!(baseline.witness_digest(), topology_drift.witness_digest());
     assert_ne!(baseline.witness_digest(), deletion_drift.witness_digest());
+}
+
+#[test]
+fn retained_merge_strategy_witness_live_authority_denies_internal_forged_strategy_truth() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = runtime_with_schema_declared_entity_policy(AspectMergePolicyKind::PreferRicher);
+    let shared = create_entity(execution, &runtime, "shared");
+    create_branch_from_main(&runtime, "feature");
+    update_entity_status_on_branch(execution, &runtime, shared, "inactive", "main");
+    update_entity_status_on_branch(execution, &runtime, shared, "active", "feature");
+
+    let prepared = runtime
+        .merge()
+        .prepare_merge_execution(execution, merge_request())
+        .expect("prepared merge");
+    let outcome = runtime
+        .execute_prepared_merge(execution, prepared)
+        .expect("executed merge");
+    let honest_summary = outcome.execution_summary.clone();
+    let honest_witness = honest_summary.strategy_witness.clone();
+    let forged_witness = RelationalMergeStrategyWitness::retained(
+        honest_witness.request_digest().to_string(),
+        honest_witness.branch_basis_digest().to_string(),
+        honest_witness.execution_authority_contract().clone(),
+        std::sync::Arc::from(honest_witness.aspect_policy_rows().to_vec()),
+        std::sync::Arc::from(vec![RelationalMergeTopologyStrategyWitnessRow::retained(
+            honest_witness.aspect_policy_rows()[0].record().clone(),
+            honest_witness.aspect_policy_rows()[0]
+                .target_record()
+                .cloned(),
+            crate::facade::merge::TopologyExecutionClass::TopologyRegionConflict,
+            crate::facade::merge::MergeExecutionReadiness::Admitted,
+            None,
+        )]),
+        std::sync::Arc::from(honest_witness.deletion_rows().to_vec()),
+    );
+    let honest_packet = honest_summary.proof_packet.clone();
+    let forged_packet = RelationalMergeProofPacket::retained_execution_admitted(
+        honest_packet.request().clone(),
+        honest_packet.branch_basis().clone(),
+        std::sync::Arc::from(honest_packet.admitted_merge_surface().to_vec()),
+        honest_packet.correspondence_witness_digest().to_string(),
+        honest_packet
+            .schema_reconciliation_witness_digest()
+            .to_string(),
+        forged_witness.witness_digest().to_string(),
+        honest_packet
+            .foundational_request_lowering_digest()
+            .to_string(),
+        honest_packet.planning_digest().to_string(),
+        honest_packet.execution_digest().to_string(),
+    );
+    let forged_summary = crate::transactions::data::MergeExecutionSummary {
+        strategy_witness: forged_witness,
+        proof_packet: forged_packet,
+        ..honest_summary
+    };
+
+    assert!(!forged_summary.retains_consistent_proof_packet_authority());
 }
 
 fn honest_contract() -> MergeExecutionAuthorityContract {

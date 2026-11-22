@@ -9,6 +9,48 @@ use crate::inspection::support_inspection_witness;
 use fixtures::{prepared_merge, runtime_with_schema_declared_entity_policy};
 
 #[test]
+fn merge_support_inspection_witness_denies_inconsistent_retained_proof_authority() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let runtime = runtime_with_schema_declared_entity_policy();
+    let prepared = prepared_merge(execution, &runtime);
+    let outcome = runtime
+        .execute_prepared_merge(execution, prepared)
+        .expect("executed merge");
+    let honest_summary = outcome.execution_summary.clone();
+    let honest_packet = honest_summary.proof_packet.clone();
+    let forged_packet =
+        crate::facade::merge::RelationalMergeProofPacket::retained_execution_admitted(
+            honest_packet.request().clone(),
+            honest_packet.branch_basis().clone(),
+            std::sync::Arc::from(honest_packet.admitted_merge_surface().to_vec()),
+            honest_packet.correspondence_witness_digest().to_string(),
+            honest_packet
+                .schema_reconciliation_witness_digest()
+                .to_string(),
+            "f".repeat(64),
+            honest_packet
+                .foundational_request_lowering_digest()
+                .to_string(),
+            honest_packet.planning_digest().to_string(),
+            honest_packet.execution_digest().to_string(),
+        );
+    let forged_summary = crate::transactions::data::MergeExecutionSummary {
+        proof_packet: forged_packet,
+        ..honest_summary
+    };
+
+    let denied = runtime
+        .inspect_what_happened()
+        .prepare_merge_support_inspection_witness(&forged_summary);
+    assert!(matches!(
+        denied,
+        Err(crate::facade::inspection::RelationalMergeSupportInspectionDenial::InconsistentRetainedProofAuthority)
+    ));
+}
+
+#[test]
 fn merge_support_inspection_witness_denies_missing_required_proof_family() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
