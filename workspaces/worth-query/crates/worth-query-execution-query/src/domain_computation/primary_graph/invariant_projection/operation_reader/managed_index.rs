@@ -49,7 +49,11 @@ where
 /// A partitioned computation's owner call makes the same issued decision
 /// read. The read's facts are recorded with that call, and its refusal is
 /// retained as a typed, comparable computation read denial.
-pub fn computation_index_query<Schema: ApplicationSchema, Operation, B>(
+pub(in crate::domain_computation::primary_graph) fn computation_index_query<
+    Schema: ApplicationSchema,
+    Operation,
+    B,
+>(
     reader_self: &mut WorthQueryApplicationOperationInvariantProjectionReader<
         '_,
         '_,

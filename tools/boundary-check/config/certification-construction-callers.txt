@@ -221,7 +221,6 @@ query-registered-native workspaces/worth-query/crates/worth-query-execution-runt
 query-world-commit-preparation crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/retention/durable_siblings/unresolved_creation.rs
 query-world-commit-preparation workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/primary_graph/application_runtime/inbound_publication/completion_publication.rs
 query-world-commit-preparation workspaces/worth-query/crates/worth-query-execution-attempt/src/domain_computation/primary_graph/provider/application_attempt_state/commit_preparation/relational_commit/commit_execution.rs
-query-world-commit-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/publication.rs
 query-world-commit-preparation workspaces/worth-query/crates/worth-query-host/src/application_home/transition/step_execution.rs
 query-world-commit-preparation workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/program_adoption/publication/preparation.rs
 query-world-commit-preparation workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_indexes/promotion.rs
