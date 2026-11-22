@@ -18,8 +18,8 @@ use worth_query_host::facade::{
 };
 use worth_query_testkit_host::facade::host::{application_home as fixture, checkpoint_capture};
 
-type Schema = fixture::schema::HomeIdentitySchema;
-type Home = WorthQueryApplicationHome<Schema, fixture::HomeProgram>;
+pub(super) type Schema = fixture::schema::HomeIdentitySchema;
+pub(super) type Home = WorthQueryApplicationHome<Schema, fixture::HomeProgram>;
 
 fn issuer(subject: &str) -> WorthQueryExternalPrincipalIdentity {
     WorthQueryExternalPrincipalIdentity::new("https://issuer.example", subject).unwrap()
@@ -27,7 +27,7 @@ fn issuer(subject: &str) -> WorthQueryExternalPrincipalIdentity {
 
 /// Opens a fresh Directory Home whose seed maps `subject` (enabled) and
 /// `disabled` (disabled); every other identity is unmapped.
-fn open_home(
+pub(super) fn open_home(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     limits: WorthQueryApplicationLimits,
 ) -> Result<Home, WorthQueryApplicationHomeOpenRefused<Schema, fixture::HomeProgram>> {
@@ -54,7 +54,7 @@ fn open_home(
         .expect("the bootstrap execution opens")
 }
 
-fn close_home(home: Home, execution: &worth_execution::ExecutionRequest<'_, '_>) {
+pub(super) fn close_home(home: Home, execution: &worth_execution::ExecutionRequest<'_, '_>) {
     let closed = home
         .close(execution)
         .unwrap_or_else(|refused| panic!("an idle Home closes: {refused:?}"));
@@ -62,7 +62,7 @@ fn close_home(home: Home, execution: &worth_execution::ExecutionRequest<'_, '_>)
     closed.reclaim();
 }
 
-fn scope(clock: &WorthQueryAdmissionClock) -> WorthQueryRequestScope {
+pub(super) fn scope(clock: &WorthQueryAdmissionClock) -> WorthQueryRequestScope {
     WorthQueryRequestScope::new(
         None,
         WorthQueryCancellationSource::new().token(),
@@ -71,7 +71,7 @@ fn scope(clock: &WorthQueryAdmissionClock) -> WorthQueryRequestScope {
 }
 
 /// The installation's admitted local principal for `subject`.
-fn local_principal(
+pub(super) fn local_principal(
     home: &Home,
     clock: &WorthQueryAdmissionClock,
     subject: &str,
@@ -101,7 +101,7 @@ fn admission(clock: &WorthQueryAdmissionClock) -> WorthQueryAuthenticationAdapte
 }
 
 /// The seeded balance read, or the request's refusal.
-fn read_balance(
+pub(super) fn read_balance(
     home: &Home,
     principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
     scope: &WorthQueryRequestScope,

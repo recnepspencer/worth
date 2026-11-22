@@ -379,18 +379,8 @@ pub use crate::application_home::{
 /// Relational DATA for a Home transition author. These values grant no step,
 /// initialization, publication or Native owner access.
 pub mod home_program_transition;
-
-pub use worth_foundational::facade::{
-    CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,
-};
-
-/// Typed refusal from fresh authored-program installation before Home service.
-pub use worth_query_execution::facade::application_home_integration::QueryHomeSignalProgramPreparationDenial;
-
 /// Existing owner refusal vocabulary for retained Home custody.
 pub use crate::application_home::ApplicationHomeCloseDenial;
-pub use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServiceDenial};
-
 /// Store's physical open refusal from `WorthQueryApplicationHomeOpenRefused::
 /// physical_refusal`: an application matches a contended or discard-pending
 /// open by kind. Store owns this vocabulary; Host does not copy it.
@@ -398,3 +388,13 @@ pub use crate::application_home::{
     ApplicationHomePhysicalRefusal, ApplicationHomePhysicalRefusalKind,
     ApplicationHomePhysicalStage,
 };
+/// Interactive custody of one source-only command across frames.
+pub use crate::source_custody::{
+    WorthQuerySourceCustody, WorthQuerySourceCustodyPending, WorthQuerySourceCustodyStep,
+};
+pub use worth_foundational::facade::{
+    CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,
+};
+/// Typed refusal from fresh authored-program installation before Home service.
+pub use worth_query_execution::facade::application_home_integration::QueryHomeSignalProgramPreparationDenial;
+pub use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServiceDenial};
