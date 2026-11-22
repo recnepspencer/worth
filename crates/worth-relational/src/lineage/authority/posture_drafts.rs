@@ -6,8 +6,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::history::data::RelationalCommitReceipt;
 use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::data::{
-    LineageCommitPostureInput, LineageRecordTarget, LineageSubject, PersistentNameHolder,
-    PersistentNameIdentity,
+    LineageCommitPostureInput, LineageNameDenial, LineagePostureKind, LineageRecordTarget,
+    LineageSubject, PersistentNameHolder, PersistentNameIdentity,
 };
 use crate::runtime::WorkingState;
 use crate::transactions::data::{
@@ -16,7 +16,8 @@ use crate::transactions::data::{
 
 use super::posture_validation::{ValidatedMergeTarget, ValidatedPosture, ValidatedPostureBatch};
 use super::staged_effects::{
-    created_entity_lineage_slot, entity_lineage, find_replace_target_entity,
+    created_entity_lineage_slot, entity_lineage, find_claimed_replace_target_entity,
+    find_replace_target_entity,
 };
 
 pub(super) enum PostureEventDraft {
@@ -53,7 +54,7 @@ pub(super) fn build_posture_drafts(
     changed_records: &[RecordRef],
     input: &LineageCommitPostureInput,
     validated: &ValidatedPostureBatch,
-) -> (Vec<PostureEventDraft>, usize) {
+) -> Result<(Vec<PostureEventDraft>, usize), LineageNameDenial> {
     let mut drafts = Vec::new();
     let mut required_lineage_ids = 0usize;
 
@@ -164,8 +165,10 @@ pub(super) fn build_posture_drafts(
     // 3. Emit default entity Delete/Replace and tracked relation Delete intents
     //    not already consumed by an explicit Phase 2 posture.
     //    Pre-seed `consumed_replace_targets` with posture-claimed created entities
-    //    so an unpostured `Replace` never hijacks a posture-claimed target.
-    let mut consumed_replace_targets: BTreeSet<EntityId> = validated
+    //    so an unpostured `Replace` never hijacks a posture-claimed target, and
+    //    fail closed if posture claims leave an unpostured `Replace` with no
+    //    unclaimed successor.
+    let claimed_created_entities: BTreeSet<EntityId> = validated
         .claimed_created_targets
         .iter()
         .filter_map(|target| match target {
@@ -173,6 +176,7 @@ pub(super) fn build_posture_drafts(
             LineageRecordTarget::Relation(_) => None,
         })
         .collect();
+    let mut consumed_replace_targets = claimed_created_entities.clone();
     for intent in merged_plan {
         match intent {
             MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {
@@ -208,6 +212,25 @@ pub(super) fn build_posture_drafts(
                     commit.version_id,
                     &mut consumed_replace_targets,
                 ) else {
+                    if let Some(claimed_target) = find_claimed_replace_target_entity(
+                        staged,
+                        changed_records,
+                        spec.entity_id,
+                        spec.replacement.partition_id,
+                        spec.replacement.kind_id,
+                        commit.version_id,
+                        &claimed_created_entities,
+                    ) {
+                        return Err(LineageNameDenial::LineagePostureMismatch {
+                            posture: claiming_posture_kind(validated, claimed_target),
+                            subject: LineageSubject::Entity,
+                            holder: PersistentNameHolder::Entity(spec.entity_id),
+                            detail: format!(
+                                "unpostured Replace source {:?} has no unclaimed replacement target because candidate {:?} is claimed by an explicit posture",
+                                spec.entity_id, claimed_target
+                            ),
+                        });
+                    }
                     continue;
                 };
                 drafts.push(PostureEventDraft::Replace {
@@ -246,5 +269,38 @@ pub(super) fn build_posture_drafts(
         }
     }
 
-    (drafts, required_lineage_ids)
+    Ok((drafts, required_lineage_ids))
+}
+
+fn claiming_posture_kind(
+    validated: &ValidatedPostureBatch,
+    entity_id: EntityId,
+) -> LineagePostureKind {
+    let target = LineageRecordTarget::Entity(entity_id);
+    for posture in &validated.postures {
+        match posture {
+            ValidatedPosture::Create { target: claimed } if *claimed == target => {
+                return LineagePostureKind::Create;
+            }
+            ValidatedPosture::Split { children, .. } if children.contains(&target) => {
+                return LineagePostureKind::Split;
+            }
+            ValidatedPosture::Merge {
+                target:
+                    ValidatedMergeTarget::MintedNew { target: claimed }
+                    | ValidatedMergeTarget::RecreatedKeeper {
+                        target: claimed, ..
+                    },
+                ..
+            } if *claimed == target => {
+                return LineagePostureKind::Merge;
+            }
+            ValidatedPosture::Create { .. }
+            | ValidatedPosture::Preserve
+            | ValidatedPosture::Retire { .. }
+            | ValidatedPosture::Split { .. }
+            | ValidatedPosture::Merge { .. } => {}
+        }
+    }
+    LineagePostureKind::Create
 }

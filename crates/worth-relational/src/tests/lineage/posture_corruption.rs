@@ -282,3 +282,75 @@ fn corruption_court_5_retire_on_unretired_record_and_empty_split_refuse_with_zer
         }
     ));
 }
+
+#[test]
+fn corruption_court_6_unpostured_replace_blocked_by_posture_claimed_target_refuses_with_zero_effects(
+) {
+    use crate::facade::identity::{KindId, PartitionId};
+    use crate::facade::lineage::PersistentNameHolder;
+    use crate::facade::transactions::{
+        AspectFieldPatch, EntityMutationIntent, EntitySpec, MutationIntent, ReplaceEntityIntent,
+    };
+    use crate::symbols::data::ClientKey;
+
+    let allocator = LineageIdentityAllocator::new();
+    let mut base = setup_corruption_base(&allocator);
+
+    // Retire f1 and create ONLY one entity of the same kind, claimed by an
+    // explicit Create posture, while merged_plan asks for an unpostured Replace of f1.
+    retire_entity(&mut base.staged, base.f1, VersionId(2));
+    let e_claimed = push_entity(&mut base.staged, VersionId(2));
+    let merged_plan = vec![MutationIntent::Entity(EntityMutationIntent::Replace(
+        ReplaceEntityIntent {
+            entity_id: base.f1,
+            replacement: EntitySpec {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(1),
+                client_key: ClientKey::raw("claimed"),
+                fields: AspectFieldPatch::default(),
+            },
+        },
+    ))];
+    let input = base.input_with(vec![LineagePostureClaim::Create {
+        target: LineageRecordTarget::Entity(e_claimed),
+        birth: face_birth("occ.r3.refuse", "authored", vec![], "claimed", e_claimed),
+    }]);
+
+    let before = allocator.frontiers();
+    let err = finalize_postures_in_working_state(
+        &allocator,
+        &mut base.staged,
+        &receipt_at(2, 2),
+        &merged_plan,
+        &[RecordRef::Entity(base.f1), RecordRef::Entity(e_claimed)],
+        &input,
+    )
+    .err()
+    .expect("unpostured Replace whose only candidate is posture-claimed must refuse");
+
+    assert_eq!(
+        allocator.frontiers(),
+        before,
+        "refused Replace-vs-posture conflict must not reserve allocator IDs"
+    );
+    assert_eq!(
+        staged_entity_lineage(&base.staged, e_claimed),
+        None,
+        "refused Replace-vs-posture conflict must install zero staged lineage"
+    );
+    let denial = err
+        .lineage_name_denial_ref()
+        .expect("refusal must carry typed LineageNameDenial");
+    assert!(
+        matches!(
+            denial,
+            LineageNameDenial::LineagePostureMismatch {
+                posture: LineagePostureKind::Create,
+                subject: LineageSubject::Entity,
+                holder,
+                ..
+            } if *holder == PersistentNameHolder::Entity(base.f1)
+        ),
+        "unexpected denial: {denial:?}"
+    );
+}

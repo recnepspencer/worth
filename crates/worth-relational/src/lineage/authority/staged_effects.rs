@@ -166,6 +166,24 @@ fn relation_created_at(staged: &WorkingState, id: RelationId) -> Option<VersionI
         .created_at_for_slot(id.slot_index())
 }
 
+fn is_matching_replace_candidate(
+    staged: &WorkingState,
+    candidate: EntityId,
+    replacement_partition_id: PartitionId,
+    replacement_kind_id: KindId,
+    version_id: VersionId,
+) -> bool {
+    let Some(partition) = staged.get_current_partition(candidate.partition_id) else {
+        return false;
+    };
+    let arena = partition.entity_arena();
+    let created_now = arena.created_at_for_slot(candidate.slot_index()) == Some(version_id);
+    let matching_partition = candidate.partition_id == replacement_partition_id;
+    let matching_kind =
+        arena.get(&candidate).and_then(|slot| slot.kind_id()) == Some(replacement_kind_id);
+    created_now && matching_partition && matching_kind
+}
+
 pub(super) fn find_replace_target_entity(
     staged: &WorkingState,
     changed_records: &[RecordRef],
@@ -185,14 +203,48 @@ pub(super) fn find_replace_target_entity(
         if consumed_replace_targets.contains(candidate) {
             continue;
         }
-        let partition = staged.get_current_partition(candidate.partition_id)?;
-        let arena = partition.entity_arena();
-        let created_now = arena.created_at_for_slot(candidate.slot_index()) == Some(version_id);
-        let matching_partition = candidate.partition_id == replacement_partition_id;
-        let matching_kind =
-            arena.get(candidate).and_then(|slot| slot.kind_id()) == Some(replacement_kind_id);
-        if created_now && matching_partition && matching_kind {
+        if is_matching_replace_candidate(
+            staged,
+            *candidate,
+            replacement_partition_id,
+            replacement_kind_id,
+            version_id,
+        ) {
             consumed_replace_targets.insert(*candidate);
+            return Some(*candidate);
+        }
+    }
+    None
+}
+
+pub(super) fn find_claimed_replace_target_entity(
+    staged: &WorkingState,
+    changed_records: &[RecordRef],
+    source_entity_id: EntityId,
+    replacement_partition_id: PartitionId,
+    replacement_kind_id: KindId,
+    version_id: VersionId,
+    claimed_created_entities: &BTreeSet<EntityId>,
+) -> Option<EntityId> {
+    if claimed_created_entities.is_empty() {
+        return None;
+    }
+    let source_index = changed_records.iter().position(
+        |record| matches!(record, RecordRef::Entity(candidate) if *candidate == source_entity_id),
+    )?;
+    for record in changed_records.iter().skip(source_index + 1) {
+        let RecordRef::Entity(candidate) = record else {
+            continue;
+        };
+        if claimed_created_entities.contains(candidate)
+            && is_matching_replace_candidate(
+                staged,
+                *candidate,
+                replacement_partition_id,
+                replacement_kind_id,
+                version_id,
+            )
+        {
             return Some(*candidate);
         }
     }

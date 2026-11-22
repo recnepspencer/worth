@@ -183,7 +183,14 @@ fn run_multi_op_conservation_sequence(commit_batches: &[Vec<StepOp>]) {
                 | LineageEventKind::Merge
                 | LineageEventKind::Replace => {
                     for &src in ev.sources() {
-                        if acc.expected_retired.contains(&src) {
+                        let is_inplace_keeper =
+                            ev.kind() == LineageEventKind::Merge && ev.targets() == [src];
+                        if !is_inplace_keeper {
+                            assert!(
+                                acc.expected_retired.contains(&src),
+                                "unexpected non-retired source {src:?} in {:?}",
+                                ev.kind()
+                            );
                             assert!(
                                 observed_retired_sources.insert(src),
                                 "retired source {src:?} appeared twice in one commit"

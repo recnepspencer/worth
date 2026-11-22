@@ -272,3 +272,97 @@ fn default_empty_posture_path_emits_exact_create_replace_retire_and_zero_unpostu
         ]
     );
 }
+
+#[test]
+fn unpostured_replace_routes_to_free_entity_and_never_hijacks_posture_claimed_entity() {
+    use crate::facade::identity::{KindId, PartitionId};
+    use crate::facade::transactions::{
+        AspectFieldPatch, EntityMutationIntent, EntitySpec, MutationIntent, ReplaceEntityIntent,
+    };
+    use crate::symbols::data::ClientKey;
+
+    let allocator = LineageIdentityAllocator::new();
+    let registry = cad_scheme_registry();
+    let mut staged = empty_working_state();
+
+    // Commit 1: seed basis entity e0 under the default unpostured path.
+    let e0 = push_entity(&mut staged, VersionId(1));
+    finalize_postures_in_working_state(
+        &allocator,
+        &mut staged,
+        &receipt_at(1, 1),
+        &[],
+        &[RecordRef::Entity(e0)],
+        &LineageCommitPostureInput::default(),
+    )
+    .expect("seed commit succeeds");
+    let e0_lin = staged_entity_lineage(&staged, e0).unwrap();
+
+    // Commit 2: retire e0 with an unpostured Replace intent, create `e_claimed`
+    // (claimed by an explicit Create posture) BEFORE free `e_free` of the same kind.
+    retire_entity(&mut staged, e0, VersionId(2));
+    let e_claimed = push_entity(&mut staged, VersionId(2));
+    let e_free = push_entity(&mut staged, VersionId(2));
+    let merged_plan = vec![MutationIntent::Entity(EntityMutationIntent::Replace(
+        ReplaceEntityIntent {
+            entity_id: e0,
+            replacement: EntitySpec {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(1),
+                client_key: ClientKey::raw("e_free"),
+                fields: AspectFieldPatch::default(),
+            },
+        },
+    ))];
+    let c2 = finalize_postures_in_working_state(
+        &allocator,
+        &mut staged,
+        &receipt_at(2, 2),
+        &merged_plan,
+        &[
+            RecordRef::Entity(e0),
+            RecordRef::Entity(e_claimed),
+            RecordRef::Entity(e_free),
+        ],
+        &LineageCommitPostureInput {
+            scheme_registry: registry,
+            live_holders: BTreeMap::new(),
+            live_lineages: BTreeMap::from([(PersistentNameHolder::Entity(e0), e0_lin)]),
+            postures: vec![LineagePostureClaim::Create {
+                target: LineageRecordTarget::Entity(e_claimed),
+                birth: face_birth("occ.r3", "authored", vec![], "claimed", e_claimed),
+            }],
+        },
+    )
+    .expect("Replace must route to free created entity without hijacking claimed entity");
+
+    let claimed_lin = staged_entity_lineage(&staged, e_claimed).unwrap();
+    let free_lin = staged_entity_lineage(&staged, e_free).unwrap();
+    assert_ne!(claimed_lin, free_lin);
+
+    let events = c2.artifact().event_batch().events();
+    let claimed_create = events
+        .iter()
+        .find(|e| e.kind() == LineageEventKind::Create && e.targets() == [claimed_lin])
+        .expect("claimed entity receives posture Create event");
+    assert!(claimed_create.name_birth().is_some());
+
+    let free_create = events
+        .iter()
+        .find(|e| e.kind() == LineageEventKind::Create && e.targets() == [free_lin])
+        .expect("free entity receives default Create event");
+    assert!(free_create.name_birth().is_none());
+    assert!(free_create.kept_name().is_none());
+
+    let replace_events: Vec<_> = events
+        .iter()
+        .filter(|e| e.kind() == LineageEventKind::Replace)
+        .collect();
+    assert_eq!(replace_events.len(), 1);
+    assert_eq!(replace_events[0].sources(), &[e0_lin]);
+    assert_eq!(
+        replace_events[0].targets(),
+        &[free_lin],
+        "unpostured Replace must pair with free entity, never posture-claimed entity"
+    );
+}

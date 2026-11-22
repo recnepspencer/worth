@@ -109,7 +109,8 @@ where
         changed_records,
         input,
         &validated,
-    );
+    )
+    .map_err(TransactionCommitError::lineage_name_denial)?;
 
     let lineage_width = u64::try_from(required_lineage_ids)
         .map_err(|_| lineage_error("lineage id batch capacity exceeded u64".to_owned()))?;
