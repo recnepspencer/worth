@@ -1,6 +1,21 @@
 //! Complete feature members lower through the existing declaration and Host owners.
+mod members;
+
 /// Declares one complete static feature definition.
-/// Runtime constructor arguments are explicit values; no semantic default is inferred.
+///
+/// The header names the definition's generics. The first parameter is the
+/// schema: `Definition<S: Bound>` is generic over every schema satisfying
+/// `Bound`; `Definition<MySchema>` targets one concrete schema. Further type
+/// parameters (`O: Operation`) and a trailing `where` clause are carried onto
+/// the definition, its runtime and every generated impl, so one declaration
+/// can describe a family such as
+/// `pub feature OperationFamily<S: FamilySchema, O: Operation> for OperationFeature<O> => OperationRuntime where O: Send { .. }`.
+///
+/// Runtime constructor arguments are explicit values for caller-supplied
+/// handlers. A `body_action(Binding, Delivery)` declares its operation and
+/// binding, derives its delivery root and installs the schema-owned
+/// operation body through the contribution's existing body owner; it takes
+/// no handler value.
 /// A complete definition cannot substitute an operation-only roster for typed members.
 /// ```compile_fail
 /// use worth_query_execution::facade::declaration::{application_program::*, application_schema::*};
@@ -19,141 +34,36 @@
 /// ```
 #[macro_export]
 macro_rules! worth_query_application_contribution {
-    ($vis:vis feature $Definition:ident<$Schema:ident: $Bound:path>
-        for $Feature:ty => $Runtime:ident {
-        schema: |$schema:ident| $body:block;
-        $($members:tt)*
-    }) => {
-        $crate::__worth_query_complete_feature!(@members
-            [$vis $Definition $Schema $Bound, $Feature, $Runtime, $schema $body]
-            [] [] []; $($members)*
+    ($vis:vis feature $Definition:ident<
+        $Schema:ident: $Bound:path $(, $Param:ident $(: $ParamBound:path)?)* $(,)?
+    > for $Feature:ty => $Runtime:ident { $($block:tt)* }) => {
+        $crate::__worth_query_complete_feature!(@block
+            [$vis $Definition [$Schema, $($Param,)*] [$Schema: $Bound, $($Param $(: $ParamBound)?,)*] []
+                $Schema, $Feature, $Runtime] $($block)*
         );
     };
-
-}
-
-#[doc(hidden)]
-#[macro_export]
-macro_rules! __worth_query_complete_feature {
-    (@members $head:tt [$($actions:tt)*] [$($roles:tt)*] [$($spec:tt)*];
-        action $field:ident($Binding:ty, $Delivery:ty, $Handler:ty) {
-            operation: $operation:expr; $($clauses:tt)*
-        }; $($rest:tt)*
-    ) => {
-        $crate::__worth_query_complete_feature!(@members $head
-            [$($actions)* ($field, $Binding, $Delivery, $Handler, [declare $operation])]
-            [$($roles)*] [$($spec)* action($Binding, $Delivery) { $($clauses)* };]; $($rest)*
+    ($vis:vis feature $Definition:ident<
+        $Schema:ident: $Bound:path $(, $Param:ident $(: $ParamBound:path)?)* $(,)?
+    > for $Feature:ty => $Runtime:ident where $($rest:tt)+) => {
+        $crate::__worth_query_complete_feature!(@where
+            [$vis $Definition [$Schema, $($Param,)*] [$Schema: $Bound, $($Param $(: $ParamBound)?,)*]]
+            [$Schema, $Feature, $Runtime] [] $($rest)+
         );
     };
-    (@members $head:tt [$($actions:tt)*] [$($roles:tt)*] [$($spec:tt)*];
-        action_ref $field:ident($Binding:ty, $Delivery:ty, $Handler:ty) {
-            $($clauses:tt)*
-        }; $($rest:tt)*
-    ) => {
-        $crate::__worth_query_complete_feature!(@members $head
-            [$($actions)* ($field, $Binding, $Delivery, $Handler, [owned])]
-            [$($roles)*] [$($spec)* action($Binding, $Delivery) { $($clauses)* };]; $($rest)*
+    ($vis:vis feature $Definition:ident<
+        $Schema:ty $(, $Param:ident $(: $ParamBound:path)?)* $(,)?
+    > for $Feature:ty => $Runtime:ident { $($block:tt)* }) => {
+        $crate::__worth_query_complete_feature!(@block
+            [$vis $Definition [$($Param,)*] [$($Param $(: $ParamBound)?,)*] []
+                $Schema, $Feature, $Runtime] $($block)*
         );
     };
-    (@members $head:tt [$($actions:tt)*] [$($roles:tt)*] [$($spec:tt)*];
-        required_pair $field:ident($Roles:ty, $InitialHandler:ty, $PreserveHandler:ty) {
-            initial_operation: $initial:expr;
-            preserve_operation: $preserve:expr;
-        }; $($rest:tt)*
-    ) => {
-        $crate::__worth_query_complete_feature!(@members $head
-            [$($actions)*]
-            [$($roles)* ($field, $Roles, $InitialHandler, $PreserveHandler, $initial, $preserve)]
-            [$($spec)* required_pair($Roles);]; $($rest)*
+    ($vis:vis feature $Definition:ident<
+        $Schema:ty $(, $Param:ident $(: $ParamBound:path)?)* $(,)?
+    > for $Feature:ty => $Runtime:ident where $($rest:tt)+) => {
+        $crate::__worth_query_complete_feature!(@where
+            [$vis $Definition [$($Param,)*] [$($Param $(: $ParamBound)?,)*]]
+            [$Schema, $Feature, $Runtime] [] $($rest)+
         );
-    };
-    (@members $head:tt $actions:tt $roles:tt [$($spec:tt)*];
-        $kind:ident($Member:ty); $($rest:tt)*
-    ) => {
-        $crate::__worth_query_complete_feature!(@descriptive $kind);
-        $crate::__worth_query_complete_feature!(@members $head $actions $roles
-            [$($spec)* $kind($Member);]; $($rest)*
-        );
-    };
-    (@descriptive provides) => {};
-    (@descriptive derived_artifact) => {};
-    (@descriptive derived_collection) => {};
-    (@descriptive managed_computation) => {};
-    (@members
-        [$vis:vis $Definition:ident $Schema:ident $Bound:path, $Feature:ty, $Runtime:ident, $schema:ident $body:block]
-        [$(($field:ident, $Binding:ty, $Delivery:ty, $Handler:ty, $operation:tt))*]
-        [$(($role:ident, $Roles:ty, $IH:ty, $PH:ty, $initial:expr, $preserve:expr))*]
-        [$($spec:tt)*];
-    ) => {
-        $vis struct $Definition<$Schema>(::std::marker::PhantomData<fn() -> $Schema>);
-        $vis struct $Runtime<$Schema: $Bound> {
-            $(pub $field: Option<$Handler>,)*
-            $(pub $role: $crate::facade::application_contribution::WorthQueryFeaturePairConfiguration<$Schema, $Roles, $IH, $PH>,)*
-            schema: ::std::marker::PhantomData<fn() -> $Schema>,
-        }
-        impl<$Schema: $Bound> $Runtime<$Schema> {
-            pub fn new(
-                $($field: $Handler,)*
-                $($role: $crate::facade::application_contribution::WorthQueryFeaturePairConfiguration<$Schema, $Roles, $IH, $PH>,)*
-            ) -> Self {
-                Self { $($field: Some($field),)* $($role,)* schema: ::std::marker::PhantomData }
-            }
-        }
-        impl<$Schema: $Bound> $crate::facade::declaration::application_program::ApplicationFeatureDefinition<$Schema>
-            for $Definition<$Schema>
-        {
-            type Outputs = $crate::facade::declaration::application_program::ApplicationFeatureOutputs<
-                $crate::__worth_query_complete_feature!(@roots $(($Binding, $Delivery))*)
-            >;
-            fn members(
-                $schema: $crate::facade::declaration::application_schema::ApplicationSchemaDeclarationBuilder<$Schema>,
-            ) -> $crate::facade::declaration::application_schema::ApplicationSchemaDeclarationBuilder<$Schema> {
-                let $schema = $body;
-                $(let $schema = $crate::__worth_query_complete_feature!(@declare $schema, $Schema, $Binding, $operation);)*
-                $(let $schema = $schema
-                    .declared_operation::<<<$Roles as $crate::facade::declaration::application_program::ApplicationRequiredFeatureRoles<$Schema>>::InitialMutation as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Operation>($initial)
-                    .application_mutation_binding::<<$Roles as $crate::facade::declaration::application_program::ApplicationRequiredFeatureRoles<$Schema>>::InitialMutation>()
-                    .declared_operation::<<<$Roles as $crate::facade::declaration::application_program::ApplicationRequiredFeatureRoles<$Schema>>::PreserveMutation as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Operation>($preserve)
-                    .application_mutation_binding::<<$Roles as $crate::facade::declaration::application_program::ApplicationRequiredFeatureRoles<$Schema>>::PreserveMutation>();)*
-                $schema
-            }
-            fn feature_specs() -> Vec<$crate::facade::declaration::application_program::ApplicationFeatureSpec> {
-                vec![$crate::facade::worth_query_feature_spec!(root($Schema, $Feature); $($spec)*)]
-            }
-        }
-        impl<$Schema: $Bound> $crate::facade::application_contribution::WorthQueryFeatureDefinition<$Schema>
-            for $Definition<$Schema>
-        {
-            type Configuration = $Runtime<$Schema>;
-            fn contracts(contracts: &mut $crate::facade::application_contribution::WorthQueryApplicationContributionContracts<$Schema>)
-                -> Result<(), $crate::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-                $(contracts.feature::<$Roles>()?;)*
-                let _ = contracts;
-                Ok(())
-            }
-            fn configure(configuration: Self::Configuration, setup: &mut $crate::facade::application_contribution::WorthQueryApplicationContributionSetup<'_, $Schema>)
-                -> Result<(), $crate::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial> {
-                $(configuration.$role.validate_for::<$Schema, $Roles>()?;)*
-                $(let $field = configuration.$field.ok_or_else(||
-                    $crate::facade::primary_graph::WorthQueryPrimaryGraphInstallationDenial::missing_mutation_handler::<$Schema, $Binding>()
-                )?;)*
-                $(setup.handler::<$Binding, _>($field)?;)*
-                $(setup.feature::<$Roles>(configuration.$role)?;)*
-                let _ = (configuration.schema, setup);
-                Ok(())
-            }
-        }
-    };
-    (@declare $schema:ident, $Schema:ident, $Binding:ty, [owned]) => {
-        $schema.reference_application_mutation_binding::<$Binding>()
-    };
-    (@declare $schema:ident, $Schema:ident, $Binding:ty, [declare $operation:expr]) => {
-        $schema.declared_operation::<<$Binding as $crate::facade::declaration::application_operation::ApplicationMutationBinding<$Schema>>::Operation>($operation)
-            .application_mutation_binding::<$Binding>()
-    };
-    (@roots) => { $crate::facade::declaration::application_program::ApplicationNoOutputGraph };
-    (@roots ($Binding:ty, $Delivery:ty) $($rest:tt)*) => {
-        ($crate::facade::declaration::application_program::ApplicationActionOutput<$Binding, $Delivery>,
-         $crate::__worth_query_complete_feature!(@roots $($rest)*))
     };
 }

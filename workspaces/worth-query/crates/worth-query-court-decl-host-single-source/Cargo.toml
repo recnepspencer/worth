@@ -1,0 +1,25 @@
+[package]
+name = "worth-query-court-decl-host-single-source"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+worth-foundational = { path = "../../../../crates/worth-foundational" }
+worth-query-decl = { path = "../worth-query-decl" }
+worth-query-host = { path = "../worth-query-host" }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_decl_host_single_source"
+path = "tests/worth_query_court_decl_host_single_source.rs"
+
+[dev-dependencies.serde]
+version = "1"
+features = ["derive"]

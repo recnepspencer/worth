@@ -11,6 +11,7 @@ mod field_selection;
 mod identity;
 mod lowering;
 mod membership;
+mod native_scalars;
 mod one_of;
 pub(crate) mod provenance;
 mod record;
@@ -48,6 +49,7 @@ pub use lowering::{AspectMembers, FragmentMembers, RelationMembers};
 #[doc(hidden)]
 pub use lowering::{OptionalWitness, RequiredWitness};
 pub use membership::{In, Position};
+pub use native_scalars::NativeScalars;
 pub use one_of::{CaseDefinition, GroupDefinition};
 #[doc(hidden)]
 pub use one_of::{CaseRows, CaseWitness, GroupWitness, OptionalCaseWitness, OptionalGroupWitness};

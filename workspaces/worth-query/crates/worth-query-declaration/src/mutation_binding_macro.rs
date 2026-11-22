@@ -1,15 +1,26 @@
 /// Associates a domain input with one installed mutation binding.
+///
+/// Every clause may be written out, or `context Context,` after the schema
+/// supplies the principal group, idempotency and denial from one
+/// `ApplicationBindingContext`; see `__worth_query_contextual_mutation_binding`.
+/// Identity positions accept any `&'static str` constant expression,
+/// including `worth_query_identity!`.
 #[macro_export]
 macro_rules! worth_query_mutation_binding {
+    ($vis:vis $Binding:ident for $Input:ty, schema $Schema:ty, context $($rest:tt)*) => {
+        $crate::__worth_query_contextual_mutation_binding!(
+            $vis $Binding for $Input, schema $Schema, context $($rest)*
+        );
+    };
     (
         $vis:vis $Binding:ident for $Input:ty, schema generic $Schema:ident: $SchemaBound:path,
-        identity $identity:literal,
+        identity $identity:expr,
         input $InputBinding:path,
         operation $Operation:path,
         result $ResultBinding:path,
-        idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
-        decision $Decision:ty, denial $DenialBinding:path,
-        handler identity $handler_identity:literal,
+        idempotency $IdempotencyKey:ty, identity $idempotency_identity:expr,
+        decision $Decision:ty, denial $DenialBinding:ty,
+        handler identity $handler_identity:expr,
         $(admission $Admission:ty,)?
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
@@ -105,13 +116,13 @@ macro_rules! worth_query_mutation_binding {
     };
     (
         $vis:vis $Binding:ident for $Input:ty, schema $Schema:ty,
-        identity $identity:literal,
+        identity $identity:expr,
         input $InputBinding:path,
         operation $Operation:path,
         result $ResultBinding:path,
-        idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
-        decision $Decision:ty, denial $DenialBinding:path,
-        handler identity $handler_identity:literal,
+        idempotency $IdempotencyKey:ty, identity $idempotency_identity:expr,
+        decision $Decision:ty, denial $DenialBinding:ty,
+        handler identity $handler_identity:expr,
         $(admission $Admission:ty,)?
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
@@ -119,8 +130,8 @@ macro_rules! worth_query_mutation_binding {
         $(inspection_disclosure $InspectionDisclosure:ty,)?
         $(coupled_outputs |$coupled_visitor:ident| $coupled_outputs:block,)?
         outputs $Output:ty,
-        principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
-            principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
+        principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
+            principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,
         scope $Selected:ty,
         field $scope_field:expr_2021,
         value $scope_value:path,
@@ -167,13 +178,13 @@ macro_rules! worth_query_mutation_binding {
     };
     (
         $vis:vis $Binding:ident for $Input:ty, schema $Schema:ty,
-        identity $identity:literal,
+        identity $identity:expr,
         input $InputBinding:path,
         operation $Operation:path,
         result $ResultBinding:path,
-        idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
-        decision $Decision:ty, denial $DenialBinding:path,
-        handler identity $handler_identity:literal,
+        idempotency $IdempotencyKey:ty, identity $idempotency_identity:expr,
+        decision $Decision:ty, denial $DenialBinding:ty,
+        handler identity $handler_identity:expr,
         $(admission $Admission:ty,)?
         $(program $program_requirement:ident,)?
         $(workflow_authority $workflow_authority:ident,)?
@@ -181,8 +192,8 @@ macro_rules! worth_query_mutation_binding {
         $(inspection_disclosure $InspectionDisclosure:ty,)?
         $(coupled_outputs |$coupled_visitor:ident| $coupled_outputs:block,)?
         outputs $Output:ty,
-        principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
-            principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
+        principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
+            principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,
         scope $Selected:ty,
         principal_field $scope_field:expr_2021,
 
@@ -227,10 +238,10 @@ macro_rules! worth_query_mutation_binding {
     };
     (@binding
         $vis:vis $Binding:ident for $Input:ty, schema $Schema:ty,
-        identity $identity:literal, input $InputBinding:path, operation $Operation:path,
+        identity $identity:expr, input $InputBinding:path, operation $Operation:path,
         result $ResultBinding:path,
-        idempotency $IdempotencyKey:ty, identity $idempotency_identity:literal,
-        decision $Decision:ty, denial $DenialBinding:path, handler identity $handler_identity:literal,
+        idempotency $IdempotencyKey:ty, identity $idempotency_identity:expr,
+        decision $Decision:ty, denial $DenialBinding:ty, handler identity $handler_identity:expr,
         $(admission $Admission:ty,)?
         program $($program_requirement:ident)?,
         workflow_authority $($workflow_authority:ident)?,
@@ -238,11 +249,12 @@ macro_rules! worth_query_mutation_binding {
         inspection_disclosure $($InspectionDisclosure:ty)?,
         $(coupled_outputs $(|$coupled_visitor:ident| $coupled_outputs:block)?,)?
         outputs $Output:ty,
-        principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
-        principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
+        principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
+        principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,
         scope_binding $ScopeBinding:ty,
         scope_field_type $Selected:ty,
         scope_field $scope_field:expr_2021,
+        $(principal_reference $principal_reference:expr_2021,)?
 
     ) => {
         $vis struct $Binding;
@@ -296,10 +308,14 @@ macro_rules! worth_query_mutation_binding {
                 $Schema, Self::PrincipalBinding, Self::Mapping, Self::Principal,
                 Self::PrincipalIdentity, Self::PrincipalIdentityBinding,
             > {
-                <$PrincipalBinding>::reference()
+                $crate::worth_query_mutation_binding!(
+                    @principal_reference [$($principal_reference)?] $PrincipalBinding
+                )
             }
         }
     };
+    (@principal_reference [$reference:expr_2021] $PrincipalBinding:ty) => { $reference };
+    (@principal_reference [] $PrincipalBinding:ty) => { <$PrincipalBinding>::reference() };
     (@coupled_outputs $Schema:ty; |$visitor:ident| $body:block) => {
         fn visit_coupled_outputs<Visitor: $crate::facade::application_program::ApplicationCoupledOutputVisitor<$Schema, Self>>($visitor: &mut Visitor) $body
     };

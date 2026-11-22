@@ -38,6 +38,9 @@ mod portable_identity_macro;
 mod application_aftermath;
 mod application_capability;
 mod application_history;
+mod application_identity;
+#[macro_use]
+mod application_identity_macro;
 mod application_naming;
 #[macro_use]
 mod application_naming_macro;
@@ -57,6 +60,8 @@ mod application_query_macro;
 mod query_binding_macro;
 #[macro_use]
 mod mutation_binding_macro;
+#[macro_use]
+mod binding_context_macro;
 mod application_schema;
 mod authentication;
 mod authoring;
@@ -72,6 +77,8 @@ mod value_binding_macro;
 mod binary_value_binding_macro;
 #[macro_use]
 mod structured_value_binding_macro;
+#[macro_use]
+mod native_scalar_bindings_macro;
 mod binding;
 mod branch;
 mod canonicalization;
@@ -119,3 +126,12 @@ mod basis {
 }
 
 pub mod facade;
+
+/// Native scalar carriers named by `worth_query_native_scalar_bindings!`.
+#[doc(hidden)]
+pub mod __native_scalar_carriers {
+    pub use worth_foundational::facade::{
+        CanonicalDate, CanonicalF32, CanonicalF64, CanonicalTime, CanonicalTimestamp,
+        CanonicalTimestampTz, InlineBytes, InternedString,
+    };
+}
