@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 734cb70ab708b382cd82c7c5232d72ce3daa528356f3aeca0d80570e3276b005 # shrinks to rule_code = 1, steps = [[(0, 0), (2, 0), (0, 0), (0, 0), (0, 0), (4, 0), (0, 0), (2, 0)]], first = [41, 3, 150, 230, 64, 19, 7, 88], second = [41, 7, 230, 19, 88, 3, 150, 64], dummies = (0, 0)
+cc 532e4d51258908b7f941de4f2210dbf4e538a8f23d6c7418fff1d1999b947647 # shrinks to rule_code = 0, steps = [[(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0)], [(0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (0, 0), (1, 0)]], first = [41, 7, 230, 19, 88, 3, 150, 64], second = [41, 7, 230, 19, 88, 3, 150, 64], dummies = (0, 0)

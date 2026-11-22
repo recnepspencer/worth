@@ -2,9 +2,11 @@
 use super::*;
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, PartitionId};
+use AggregateContinuityRule as Rule;
 mod continuity;
 mod property;
 mod refusals;
+mod roles;
 
 pub(super) type Spec<'a> = &'a [(u8, Role)];
 
@@ -76,19 +78,24 @@ pub(super) fn prior_of(transition: &AggregateGroupTransition) -> Vec<AggregatePr
         .map(|assignment| AggregatePriorGroup {
             identity: assignment.identity,
             anchor: assignment.anchor,
+            sources: assignment.sources.clone(),
             members: assignment.members.clone(),
         })
         .collect()
 }
 
+/// One next-state group without its native carriers.
+pub(super) type ProjectedGroup = (
+    AggregateIdentity,
+    Name,
+    Vec<AggregateIdentity>,
+    AggregateGroupOrigin,
+    Vec<(Name, Role)>,
+);
+
 /// Everything observable except native carriers.
 pub(super) type Projection = (
-    Vec<(
-        AggregateIdentity,
-        Name,
-        AggregateGroupOrigin,
-        Vec<(Name, Role)>,
-    )>,
+    Vec<ProjectedGroup>,
     BTreeSet<AggregateIdentity>,
     BTreeSet<Event>,
 );
@@ -99,7 +106,8 @@ pub(super) fn project(transition: &AggregateGroupTransition) -> Projection {
         .iter()
         .map(|group| {
             let members = group.members.iter().map(|(n, m)| (*n, m.role)).collect();
-            (group.identity, group.anchor, group.origin, members)
+            let sources = group.sources.clone();
+            (group.identity, group.anchor, sources, group.origin, members)
         })
         .collect();
     (
@@ -111,6 +119,11 @@ pub(super) fn project(transition: &AggregateGroupTransition) -> Projection {
 
 pub(super) fn id(rule: Rule, anchor: u8) -> AggregateIdentity {
     AggregateIdentity::from_group_name(scheme(rule).id(), name(anchor), rule)
+}
+
+/// The successor name of an unkept split/merge group fed by `sources`.
+pub(super) fn tid(rule: Rule, anchor: u8, sources: &[AggregateIdentity]) -> AggregateIdentity {
+    AggregateIdentity::from_group_transition(scheme(rule).id(), name(anchor), rule, sources)
 }
 
 /// Every creation order of `names`, each in a distinct allocation world.
@@ -160,6 +173,30 @@ fn group_name_hashes_only_scheme_anchor_and_rule_under_v2_domain() {
         EntityId::new(PartitionId::new(0), 4, 0),
     );
     assert_ne!(legacy, base, "v1 bytes are never reinterpreted as v2 names");
+    let (low, high) = (id(Rule::Anchor, 1), id(Rule::Anchor, 2));
+    let (low, high) = (low.min(high), low.max(high));
+    let successor = AggregateIdentity::from_group_transition(
+        &scheme_id,
+        name(4),
+        Rule::Anchor,
+        &[high, low, high],
+    );
+    let mut expected = sha2::Sha256::new();
+    expected.update(b"worth.relational.group-aggregate-transition.v2\0");
+    expected.update(8u64.to_be_bytes());
+    expected.update(b"cad.loop");
+    expected.update(name(4).as_bytes());
+    expected.update([1u8]);
+    expected.update(2u64.to_be_bytes());
+    expected.update(low.bytes());
+    expected.update(high.bytes());
+    let expected: [u8; 32] = expected.finalize().into();
+    assert_eq!(
+        successor.bytes(),
+        &expected,
+        "sources hash sorted and deduplicated"
+    );
+    assert_ne!(successor, base);
 }
 
 #[test]

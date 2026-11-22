@@ -413,6 +413,13 @@ pub enum ApplicationGroupContinuityRule {
 2. On group split or merge, Relational evaluates the declared
    `ApplicationGroupContinuityRule` to pick the keeper (or mints new names when
    tied/unkept) and emits canonical `Split`/`Merge` lineage events.
+   An unkept successor receiving members from live prior groups is named under
+   `worth.relational.group-aggregate-transition.v2\0` from `(scheme, anchor,
+   rule, count-prefixed sorted prior identities)`; only source-free groups use
+   the pure `(scheme, anchor, rule)` name, and a source-free name equal to any
+   live or same-commit-retiring prior group refuses typed.
+   A continuity role counts only when the member holds it before and after,
+   and every proposed group must contain its rule's required role member.
 3. Re-forming a previously retired group around the same anchor revives its
    original `AggregateIdentity` cleanly.
 

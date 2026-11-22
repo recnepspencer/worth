@@ -48,8 +48,8 @@ pub use transition::group::{
     AggregateGroupScheme, AggregateGroupSchemeId, AggregateGroupTransition, AggregateMemberRole,
     AggregatePriorGroup,
 };
-pub use transition::GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG;
 pub(crate) use transition::{
     transition, AggregateAssignment, AggregateLineageEvent, AggregateLineageKind,
     AggregateTransitionDenial, PriorAggregate,
 };
+pub use transition::{GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG, GROUP_AGGREGATE_TRANSITION_DOMAIN_TAG};

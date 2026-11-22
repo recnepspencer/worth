@@ -1,11 +1,11 @@
 //! Split and merge keepers follow each declared continuity rule in every
-//! native creation order.
+//! native creation order; unkept successors carry their prior sources.
 use super::*;
 use AggregateGroupOrigin::{Born, Kept};
 
 /// Runs one prior/next scenario in every allocation world and returns the
 /// single carrier-free outcome they all agree on.
-fn agreed(
+pub(super) fn agreed(
     rule: Rule,
     names: &[u8],
     before: &[Spec<'_>],
@@ -31,6 +31,8 @@ fn group_with(transition: &AggregateGroupTransition, n: u8) -> &AggregateGroupAs
         .unwrap()
 }
 
+const B: Role = Role::Boundary;
+
 #[test]
 fn anchor_rule_split_keeps_the_anchor_fragment_not_the_least_member() {
     let rule = Rule::Anchor;
@@ -45,12 +47,20 @@ fn anchor_rule_split_keeps_the_anchor_fragment_not_the_least_member() {
         ],
     );
     let (kept, split) = (group_with(&next, 7), group_with(&next, 2));
+    let fragment = tid(rule, 2, &[id(rule, 7)]);
     assert_eq!((kept.identity, kept.origin), (id(rule, 7), Kept));
-    assert_eq!((split.identity, split.origin), (id(rule, 2), Born));
-    assert!(next.lineage.contains(&Event::SplitFrom {
-        fragment: id(rule, 2),
-        source: id(rule, 7),
-    }));
+    assert_eq!((split.identity, split.origin), (fragment, Born));
+    assert_eq!(split.sources, [id(rule, 7)]);
+    assert_eq!(
+        next.lineage,
+        BTreeSet::from([
+            Event::Born { group: fragment },
+            Event::SplitFrom {
+                fragment,
+                source: id(rule, 7),
+            },
+        ])
+    );
     assert!(next.retired.is_empty());
 }
 
@@ -82,85 +92,106 @@ fn anchor_rule_merge_keeps_the_least_anchor_name() {
 #[test]
 fn boundary_rule_split_follows_the_most_walls_even_away_from_the_anchor() {
     let rule = Rule::Boundary;
-    let walls: Spec<'_> = &[
-        (10, Role::Boundary),
-        (11, Role::Boundary),
-        (12, Role::Boundary),
-        (1, Role::Ordinary),
-    ];
+    let walls: Spec<'_> = &[(10, B), (11, B), (12, B), (1, Role::Ordinary)];
     let next = agreed(
         rule,
         &[10, 11, 12, 1, 30],
         &[walls],
         &[
-            &[
-                (11, Role::Boundary),
-                (12, Role::Boundary),
-                (1, Role::Ordinary),
-            ],
-            &[(10, Role::Ordinary), (30, Role::Boundary)],
+            &[(11, B), (12, B), (1, Role::Ordinary)],
+            &[(10, B), (30, B)],
         ],
     );
     let (kept, split) = (group_with(&next, 11), group_with(&next, 10));
     assert_eq!((kept.identity, kept.anchor), (id(rule, 10), name(10)));
     assert_eq!(kept.origin, Kept);
-    assert_eq!((split.identity, split.origin), (id(rule, 30), Born));
+    let fragment = tid(rule, 10, &[id(rule, 10)]);
+    assert_eq!((split.identity, split.origin), (fragment, Born));
+    assert!(next.lineage.contains(&Event::SplitFrom {
+        fragment,
+        source: id(rule, 10),
+    }));
 }
 
 #[test]
-fn boundary_rule_merge_keeps_the_most_walls_and_a_tied_split_mints_new_names() {
+fn boundary_rule_merge_keeps_the_most_walls() {
     let rule = Rule::Boundary;
     let merged = agreed(
         rule,
         &[10, 11, 20, 21, 22],
-        &[
-            &[(10, Role::Boundary), (11, Role::Boundary)],
-            &[
-                (20, Role::Boundary),
-                (21, Role::Boundary),
-                (22, Role::Boundary),
-            ],
-        ],
-        &[&[
-            (10, Role::Boundary),
-            (11, Role::Boundary),
-            (20, Role::Boundary),
-            (21, Role::Boundary),
-            (22, Role::Boundary),
-        ]],
+        &[&[(10, B), (11, B)], &[(20, B), (21, B), (22, B)]],
+        &[&[(10, B), (11, B), (20, B), (21, B), (22, B)]],
     );
     assert_eq!(merged.assignments[0].identity, id(rule, 20));
     assert_eq!(merged.retired, BTreeSet::from([id(rule, 10)]));
+}
+
+#[test]
+fn boundary_two_by_two_split_tie_mints_two_successors_and_retires_the_source() {
+    let rule = Rule::Boundary;
     let tied = agreed(
         rule,
         &[10, 11, 12, 13],
-        &[&[
-            (10, Role::Boundary),
-            (11, Role::Boundary),
-            (12, Role::Boundary),
-            (13, Role::Boundary),
-        ]],
-        &[
-            &[(11, Role::Boundary), (12, Role::Boundary)],
-            &[(10, Role::Ordinary), (13, Role::Boundary)],
-        ],
+        &[&[(10, B), (11, B), (12, B), (13, B)]],
+        &[&[(10, B), (11, B)], &[(12, B), (13, B)]],
     );
+    let source = id(rule, 10);
+    let (left, right) = (tid(rule, 10, &[source]), tid(rule, 12, &[source]));
     let born: BTreeSet<_> = tied
         .assignments
         .iter()
         .map(|g| (g.identity, g.origin))
         .collect();
+    assert_eq!(born, BTreeSet::from([(left, Born), (right, Born)]));
+    assert_eq!(tied.retired, BTreeSet::from([source]));
     assert_eq!(
-        born,
-        BTreeSet::from([(id(rule, 11), Born), (id(rule, 13), Born)])
+        tied.lineage,
+        BTreeSet::from([
+            Event::Born { group: left },
+            Event::Born { group: right },
+            Event::SplitFrom {
+                fragment: left,
+                source,
+            },
+            Event::SplitFrom {
+                fragment: right,
+                source,
+            },
+            Event::Retired { group: source },
+        ])
     );
-    assert_eq!(tied.retired, BTreeSet::from([id(rule, 10)]));
-    for fragment in [id(rule, 11), id(rule, 13)] {
-        assert!(tied.lineage.contains(&Event::SplitFrom {
-            fragment,
-            source: id(rule, 10),
-        }));
-    }
+}
+
+#[test]
+fn boundary_two_by_two_merge_tie_mints_a_successor_of_both_sources() {
+    let rule = Rule::Boundary;
+    let tied = agreed(
+        rule,
+        &[10, 11, 20, 21],
+        &[&[(10, B), (11, B)], &[(20, B), (21, B)]],
+        &[&[(10, B), (11, B), (20, B), (21, B)]],
+    );
+    let (first, second) = (id(rule, 10), id(rule, 20));
+    let merged = tid(rule, 10, &[first, second]);
+    assert_eq!(tied.assignments[0].identity, merged);
+    assert_eq!(tied.assignments[0].origin, Born);
+    assert_eq!(tied.retired, BTreeSet::from([first, second]));
+    assert_eq!(
+        tied.lineage,
+        BTreeSet::from([
+            Event::Born { group: merged },
+            Event::MergedInto {
+                absorbed: first,
+                keeper: merged,
+            },
+            Event::MergedInto {
+                absorbed: second,
+                keeper: merged,
+            },
+            Event::Retired { group: first },
+            Event::Retired { group: second },
+        ])
+    );
 }
 
 #[test]
@@ -177,7 +208,10 @@ fn producer_role_rule_follows_the_producer_and_merges_to_the_least_producer() {
     );
     assert_eq!(group_with(&split, 50).identity, id(rule, 50));
     assert_eq!(group_with(&split, 50).origin, Kept);
-    assert_eq!(group_with(&split, 1).identity, id(rule, 60));
+    assert_eq!(
+        group_with(&split, 1).identity,
+        tid(rule, 60, &[id(rule, 50)])
+    );
     let merged = agreed(
         rule,
         &[50, 40, 1],

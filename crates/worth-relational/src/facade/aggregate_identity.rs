@@ -5,5 +5,6 @@ pub use crate::aggregate_identity::{
     AggregateGroupNamingAuthority, AggregateGroupNamingDenial, AggregateGroupOrigin,
     AggregateGroupScheme, AggregateGroupSchemeId, AggregateGroupTransition, AggregateMemberRole,
     AggregatePriorGroup, GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG,
+    GROUP_AGGREGATE_TRANSITION_DOMAIN_TAG,
 };
 pub use worth_foundational::facade::AggregateIdentity;

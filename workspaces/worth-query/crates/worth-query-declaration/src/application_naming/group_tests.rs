@@ -86,3 +86,37 @@ fn group_scheme_refuses_missing_undeclared_and_ambiguous_roles() {
         ))
     );
 }
+
+#[test]
+fn group_scheme_ids_share_relationals_dotted_grammar() {
+    for lawful in ["cad.Space.v1", "cad.loop", "a", "worth.example.face.v1"] {
+        let built = Builder::<Cad, Space>::new(lawful, "Space", Rule::Anchor)
+            .role_order(&["wall"])
+            .build();
+        assert!(built.is_ok(), "{lawful}");
+    }
+    for unlawful in [
+        "",
+        "...",
+        ".a..b.",
+        ".cad",
+        "cad.",
+        "a..b",
+        "cad space",
+        " cad",
+        "cad\n",
+    ] {
+        let built = Builder::<Cad, Space>::new(unlawful, "Space", Rule::Anchor)
+            .role_order(&["wall"])
+            .build();
+        assert_eq!(
+            built,
+            Err(Denial::Scheme(
+                ApplicationNameSchemeDenial::InvalidSchemeIdentifier {
+                    scheme_id: unlawful.to_owned(),
+                }
+            )),
+            "{unlawful:?}"
+        );
+    }
+}

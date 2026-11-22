@@ -51,9 +51,25 @@ impl Run {
         let next = self.world.run(rule, &self.prior, &self.retired, &groups)?;
         let mut held = BTreeSet::new();
         for group in &next.assignments {
-            assert_eq!(group.identity, id(rule, group.anchor.as_bytes()[0]));
+            let anchor = group.anchor.as_bytes()[0];
+            let minted = match group.sources.as_slice() {
+                [] => id(rule, anchor),
+                sources => tid(rule, anchor, sources),
+            };
+            assert_eq!(group.identity, minted);
             assert!(held.insert(group.identity), "one live name per group");
             self.retired.remove(&group.identity);
+        }
+        assert!(
+            next.retired.is_disjoint(&held),
+            "a retired name is never live"
+        );
+        for event in &next.lineage {
+            match *event {
+                Event::SplitFrom { fragment, source } => assert_ne!(fragment, source),
+                Event::MergedInto { absorbed, keeper } => assert_ne!(absorbed, keeper),
+                _ => {}
+            }
         }
         self.retired.extend(next.retired.iter().copied());
         self.prior = prior_of(&next);

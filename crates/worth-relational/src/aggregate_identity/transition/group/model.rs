@@ -43,16 +43,22 @@ pub enum AggregateMemberRole {
     Boundary,
 }
 
-/// Validated group scheme identifier (`[a-z0-9._-]+`, never empty).
+/// Validated dotted group scheme identifier (e.g. `cad.Space.v1`).
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub struct AggregateGroupSchemeId(String);
 
 impl AggregateGroupSchemeId {
+    /// Accepts exactly the dotted grammar of Declaration's
+    /// `validate_scheme_identifier`: nonempty, no whitespace or control
+    /// characters, no leading/trailing `.`, and no empty `..` segment.
     pub fn new(id: impl Into<String>) -> Result<Self, AggregateGroupNamingDenial> {
         let id = id.into();
-        let lawful =
-            |byte: u8| byte.is_ascii_lowercase() || byte.is_ascii_digit() || b"._-".contains(&byte);
-        if id.is_empty() || !id.bytes().all(lawful) {
+        let invalid = id.is_empty()
+            || id.starts_with('.')
+            || id.ends_with('.')
+            || id.contains("..")
+            || id.chars().any(|ch| ch.is_whitespace() || ch.is_control());
+        if invalid {
             return Err(AggregateGroupNamingDenial::InvalidSchemeId { scheme_id: id });
         }
         Ok(Self(id))
@@ -152,6 +158,9 @@ impl AggregateGroupMembers {
 pub struct AggregatePriorGroup {
     pub identity: AggregateIdentity,
     pub anchor: PersistentNameIdentity,
+    /// Strictly ascending prior sources of a split/merge successor name;
+    /// empty for a pure `(scheme, anchor, rule)` group name.
+    pub sources: Vec<AggregateIdentity>,
     pub members: AggregateGroupMembers,
 }
 
@@ -160,7 +169,8 @@ pub struct AggregatePriorGroup {
 pub enum AggregateGroupOrigin {
     /// Continues a prior live group selected by the continuity rule.
     Kept,
-    /// A fresh identity minted from its birth anchor.
+    /// A fresh identity: a pure group name with no live prior source, or a
+    /// split/merge successor qualified by its prior sources.
     Born,
     /// A retired identity re-formed around its original anchor.
     Revived,
@@ -171,6 +181,8 @@ pub enum AggregateGroupOrigin {
 pub struct AggregateGroupAssignment {
     pub identity: AggregateIdentity,
     pub anchor: PersistentNameIdentity,
+    /// The prior sources hashed into this name (empty for a pure group name).
+    pub sources: Vec<AggregateIdentity>,
     pub members: AggregateGroupMembers,
     pub origin: AggregateGroupOrigin,
 }
@@ -182,6 +194,7 @@ pub struct AggregateGroupClaimant {
     pub anchor: PersistentNameIdentity,
     /// The group's least member name, which names the group itself.
     pub least_member: PersistentNameIdentity,
-    /// The prior identity this group continues, when it is a keeper.
-    pub kept_from: Option<AggregateIdentity>,
+    /// The prior live identity this claimant holds: the group it keeps, or
+    /// itself when the claimant is a prior group retiring in this commit.
+    pub live_prior: Option<AggregateIdentity>,
 }

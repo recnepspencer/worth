@@ -65,4 +65,27 @@ pub use worth_query_declaration::{
 /// #     name
 /// # }
 /// ```
+///
+/// Group name schemes declare one closed continuity rule through this facade:
+///
+/// ```
+/// use worth_query_decl::facade::application_naming::{
+///     ApplicationGroupContinuityRule, ApplicationGroupNameSchemeBuilder,
+/// };
+/// struct Cad;
+/// struct Space;
+/// let scheme = ApplicationGroupNameSchemeBuilder::<Cad, Space>::new(
+///     "cad.space.v1",
+///     "Space",
+///     ApplicationGroupContinuityRule::Boundary,
+/// )
+/// .role_order(&["wall"])
+/// .boundary_role("wall")
+/// .build()
+/// .unwrap();
+/// assert_eq!(
+///     scheme.erased().continuity_rule(),
+///     ApplicationGroupContinuityRule::Boundary
+/// );
+/// ```
 pub use worth_query_declaration::facade::canonicalization::CanonicalQueryArtifact;

@@ -9,7 +9,7 @@ use crate::history::data::CommitId;
 pub(crate) mod group;
 mod mint;
 pub(super) use mint::mint;
-pub use mint::GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG;
+pub use mint::{GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG, GROUP_AGGREGATE_TRANSITION_DOMAIN_TAG};
 #[cfg(test)]
 mod tests;
 
