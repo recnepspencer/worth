@@ -1,0 +1,145 @@
+//! Stable and restored settlements carry only their genuine readonly posture.
+use super::*;
+use crate::domain_computation::primary_graph::{
+    OriginalSettledProducerObservationExt, ReadObservationRuntimeExt,
+};
+use worth_query_execution_lineage::facade::ports::{
+    OutputDemandSettlementInternalPort as _, OutputDemandSettlementParts,
+};
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+
+pub trait OutputDemandSettlementReusedExt: Sized {
+    fn from_restoration<Schema>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        restored: &super::super::WorthQueryRestoredAcceptedOutput,
+        output_family_identity: &str,
+        producer_contacts_in_this_demand: usize,
+    ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema;
+
+    fn from_stable<Schema>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        stable: &super::super::super::output_lineage::PublishedStableLineage,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        producer_identity: &str,
+        output_family_identity: &str,
+        producer_contacts_in_this_demand: usize,
+    ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema;
+}
+
+impl OutputDemandSettlementReusedExt for WorthQueryOutputDemandSettlement {
+    fn from_restoration<Schema>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        restored: &super::super::WorthQueryRestoredAcceptedOutput,
+        output_family_identity: &str,
+        producer_contacts_in_this_demand: usize,
+    ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        use super::super::RestoredOutputOrigin;
+        if matches!(restored.origin, RestoredOutputOrigin::Checkpoint(_)) {
+            runtime
+                .runtime
+                .product_runtime
+                .recovered_root_authority_ref()
+                .as_ref()
+                .filter(|authority| authority.product_branch() == &restored.observation)
+                .ok_or_else(|| {
+                    WorthQueryOutputDemandDenial::new(
+                        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                        "restored output is not bound to this World's recovered root authority",
+                    )
+                })?;
+        }
+        let product = runtime
+            .runtime
+            .product_runtime
+            .lease_from_observation(restored.observation.clone())
+            .map_err(|error| {
+                WorthQueryOutputDemandDenial::product_selection(
+                    error,
+                    "recovered output root is no longer current",
+                )
+            })?;
+        Ok(Arc::new(Self::from_parts(OutputDemandSettlementParts {
+            original_delivery_memory: None,
+            posture: restored.settlement_posture(),
+            runtime_authority: runtime.runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema.binding_identity(),
+            producer_identity: match &restored.origin {
+                RestoredOutputOrigin::Checkpoint(checkpoint) => {
+                    SettlementProducerIdentity::from_checkpoint(checkpoint)
+                }
+                RestoredOutputOrigin::HistoricalSelection(origin) => {
+                    SettlementProducerIdentity::HistoricalSelection(origin.publication().clone())
+                }
+            },
+            output_family_identity: output_family_identity.to_owned(),
+            receipt: None,
+            stable: None,
+            output_correspondence: Arc::clone(&restored.correspondence),
+            restored_source: Some(restored.clone()),
+            readiness_delivery: None,
+            producer_contacts_in_this_demand,
+            observation: WorthQueryApplicationReadObservation::from_settled_product(
+                runtime,
+                observation::OriginalSettledProducerObservation::restored(
+                    execution,
+                    runtime,
+                    restored,
+                    product.read_lease_ref(),
+                )?,
+                product.read_lease(),
+            ),
+        })))
+    }
+
+    fn from_stable<Schema>(
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        stable: &super::super::super::output_lineage::PublishedStableLineage,
+        selected: &WorthQuerySelectedProductOperation<'_, Schema>,
+        producer_identity: &str,
+        output_family_identity: &str,
+        producer_contacts_in_this_demand: usize,
+    ) -> Result<Arc<Self>, WorthQueryOutputDemandDenial>
+    where
+        Schema: worth_query_installation::facade::ApplicationSchema,
+    {
+        Ok(Arc::new(Self::from_parts(OutputDemandSettlementParts {
+            original_delivery_memory: None,
+            posture: WorthQueryOutputSettlementPosture::StableReused,
+            runtime_authority: runtime.runtime.authority_identity().as_u64(),
+            schema_binding: runtime.installed_schema.binding_identity(),
+            producer_identity: producer_identity.to_owned().into(),
+            output_family_identity: output_family_identity.to_owned(),
+            receipt: None,
+            stable: Some(stable.clone()),
+            output_correspondence: Arc::clone(stable.output_correspondence()),
+            restored_source: None,
+            readiness_delivery: Some(
+                WorthQueryOutputReadinessDeliveryEvidence::without_execution(),
+            ),
+            producer_contacts_in_this_demand,
+            observation: WorthQueryApplicationReadObservation::from_settled_product(
+                runtime,
+                observation::OriginalSettledProducerObservation::stable(
+                    execution,
+                    runtime,
+                    stable,
+                    selected.product().read_lease_ref(),
+                )?,
+                selected.product().read_lease(),
+            ),
+        })))
+    }
+}

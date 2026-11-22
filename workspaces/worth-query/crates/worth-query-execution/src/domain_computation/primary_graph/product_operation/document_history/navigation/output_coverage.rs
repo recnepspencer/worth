@@ -3,6 +3,8 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryHistoryOutputQualificationDenial as Denial, WorthQueryOutputDemandSettlement,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn require<'s, S: ApplicationSchema>(
@@ -17,7 +19,12 @@ pub(super) fn require<'s, S: ApplicationSchema>(
     if authority.selected_graph().is_none() {
         return Ok(());
     }
-    let graph = &selected_output.application().runtime.primary_provider.graph;
+    let graph = &selected_output
+        .application()
+        .inner
+        .runtime
+        .primary_provider_ref()
+        .graph_ref();
     graph.with_runtime(execution, |native| {
         let evidence = authority.selected_output_read(execution, native)
             .map_err(Denial::SelectionRead)?;
@@ -61,7 +68,7 @@ impl<S: ApplicationSchema + 'static, P: worth_query_declaration::facade::applica
             {
                 return Err(control(WorthQueryHistoryNavigationDenial::IntentDrift));
             }
-            let execution = phase.checked_execution_request_for(&self.runtime().runtime.product_runtime)
+            let execution = phase.checked_execution_request_for(self.runtime().inner.runtime.product_runtime_ref())
                 .map_err(|cause| control(WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
             let completed = self.qualify_original_history_outputs::<R>(phase, access, authority.request(), source, root, dependents.clone(), dependencies).map_err(Denial::Original)?;
             let selected_output = self.runtime().select_application_read_observation(phase, completed.original.endpoint())

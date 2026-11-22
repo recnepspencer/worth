@@ -12,6 +12,7 @@ use worth_query_execution::publication_boundary::workflow_proposal::{
     PreparedWorkflowProposal, PublishedWorkflowInstanceRef, WorkflowProposalOutcome,
     WorkflowProposalPreparationDenial, WorthQueryWorkflowProposalAdapter,
 };
+use worth_query_execution::publication_boundary::WorthQueryAdvancementDenialCommitExt as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::application_entry::{

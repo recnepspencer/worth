@@ -2,6 +2,9 @@
 
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::RecoveredProgramOutputSourceInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
 use worth_query_declaration::facade::application_program::{
@@ -52,7 +55,7 @@ where
                     "selected program does not own the original discovered source",
                 )
             })?;
-        if source.runtime_authority != self.backing.runtime().runtime.authority_identity().as_u64()
+        if source.runtime_authority != self.backing.runtime().inner.runtime.authority_identity().as_u64()
             || source.program != *presented.rendering()
             || source.binding != TypeId::of::<Source>()
             || source.payload.root_kind() != PreparedOutputRootKind::Discovered(TypeId::of::<Root>())
@@ -96,7 +99,14 @@ where
                     "selected program does not own the original required source",
                 )
             })?;
-        if source.runtime_authority != self.backing.runtime().runtime.authority_identity().as_u64()
+        if source.runtime_authority
+            != self
+                .backing
+                .runtime()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64()
             || source.program != *presented.rendering()
             || source.binding != TypeId::of::<Source>()
             || source.payload.root_kind() != PreparedOutputRootKind::Required(TypeId::of::<Root>())
@@ -130,7 +140,7 @@ where
     > {
         let retained = (|| {
             let execution = phase
-                .execution_request_for(&self.runtime().runtime.product_runtime)
+                .execution_request_for(self.runtime().inner.runtime.product_runtime_ref())
                 .map_err(|cause| {
                     WorthQueryOutputDemandDenial::new(
                         WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
@@ -138,9 +148,15 @@ where
                     )
                 })?;
             if source.runtime_authority
-                != self.backing.runtime().runtime.authority_identity().as_u64()
+                != self
+                    .backing
+                    .runtime()
+                    .inner
+                    .runtime
+                    .authority_identity()
+                    .as_u64()
                 || source.branch != receipt.product_branch()
-                || carrier.publication.composite_commit()
+                || carrier.publication_ref().composite_commit()
                     != receipt.committed_product_publication().composite_commit()
             {
                 return Err(denied(
@@ -148,13 +164,13 @@ where
                     "published receipt does not name the original recovered source",
                 ));
             }
-            let change = carrier.change.as_ref().ok_or_else(|| {
+            let change = carrier.change_ref().ok_or_else(|| {
                 denied(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                     "original recovered source has no one-use performed carrier",
                 )
             })?;
-            let observation = carrier.observation.as_ref().ok_or_else(|| {
+            let observation = carrier.observation_ref().ok_or_else(|| {
                 denied(
                     WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
                     "original recovered source has no retained output observation",

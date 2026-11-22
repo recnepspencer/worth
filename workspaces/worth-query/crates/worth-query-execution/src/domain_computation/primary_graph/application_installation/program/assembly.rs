@@ -11,6 +11,8 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::{
     install_rostered_application_program, WorthQueryInstalledApplicationProgram,
     WorthQueryInstalledApplicationSchema, WorthQueryProgramSupportAdmission,
@@ -93,28 +95,34 @@ where
             }
         };
     }
-    if runtime.program_support.is_none() {
+    if runtime.inner.program_support.is_none() {
         return Err(ProgramAssemblyRefused {
             runtime,
             admitted: Some((installed, supported)),
             cause: WorthQueryApplicationPreparationDenial::ProgramAdmissionIncomplete,
         });
     }
-    if let Some(support) = runtime.program_support.as_mut() {
+    if let Some(support) = runtime.inner.program_support.as_mut() {
         use crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::admit_program;
         support
             .adoption_admissions
-            .insert(*installed.revision(), admit_program::<Schema, Program>);
+            .insert(*installed.revision(), Box::new(admit_program::<Schema, Program> as crate::domain_computation::primary_graph::product_operation::program_adoption::authorization::ProgramAdoptionAdmission<Schema>));
         for record in &supported {
-            support
-                .adoption_admissions
-                .insert(*record.revision(), record.adoption_admission::<Schema>());
+            support.adoption_admissions.insert(
+                *record.revision(),
+                Box::new(record.adoption_admission::<Schema>()),
+            );
         }
     }
-    if !runtime.runtime.product_runtime.is_directory_home() {
+    if !runtime
+        .inner
+        .runtime
+        .product_runtime_ref()
+        .is_directory_home()
+    {
         retain_on_refusal!(super::conditional::validate_conditional_actions(
             installed.actions(),
-            runtime.installed_conditionals.operation_types()
+            runtime.inner.installed_conditionals.operation_types()
         ));
     }
     let mut seen_action_bindings = std::collections::HashSet::new();
@@ -125,20 +133,22 @@ where
         .map(TypeId::from)
         .filter(|binding| seen_action_bindings.insert(*binding))
         .collect::<Vec<_>>();
-    runtime.program_required_operations.extend(
+    runtime.inner.program_required_operations.extend(
         installed
             .actions()
             .iter()
             .map(|action| TypeId::from(action.operation_type())),
     );
-    runtime.program_required_operations.extend(
+    runtime.inner.program_required_operations.extend(
         runtime
+            .inner
             .installed_schema
             .installed_mutation_binding_inventory()
             .filter(|binding| action_bindings.contains(&TypeId::from(binding.binding_type())))
             .map(|binding| TypeId::from(binding.operation_type())),
     );
     runtime
+        .inner
         .program_required_bindings
         .extend(action_bindings.iter().copied());
     let output_source_bindings = super::output_roots::required_output_bindings::<
@@ -151,6 +161,7 @@ where
         &output_source_bindings
     ));
     runtime
+        .inner
         .program_required_bindings
         .extend(output_source_bindings.iter().copied());
     let installed = std::sync::Arc::new(installed);
@@ -164,12 +175,13 @@ where
     ));
     let supported: Box<[_]> = supported.into_iter().map(std::sync::Arc::new).collect();
     runtime
-        .program_support
+        .inner.program_support
         .as_mut()
         .expect("program support was admitted before consuming installed program meaning")
         .complete_native_installation(
             std::iter::once(std::sync::Arc::clone(&initial))
                 .chain(supported.iter().cloned())
+                .map(|record| record as std::sync::Arc<dyn worth_query_execution_attempt::facade::ports::SupportedProgramRecordPort>)
                 .collect(),
         );
     Ok(WorthQueryProgramApplicationRuntime {

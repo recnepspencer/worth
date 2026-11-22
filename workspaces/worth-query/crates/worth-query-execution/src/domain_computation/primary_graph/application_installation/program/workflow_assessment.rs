@@ -1,5 +1,7 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::WorthQueryWorkflowVocabulary;
@@ -30,7 +32,7 @@ where
     where
         Family: WorthQueryProducerOutputFamily<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.runtime().runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.runtime().inner.runtime.product_runtime_ref()) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -41,12 +43,15 @@ where
     }
 }
 
-impl crate::publication_boundary::WorthQueryProgramPublicationAccess {
-    pub fn advance_workflow_assessment_output<Schema, Family>(
+impl<Schema>
+    crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    pub fn advance_workflow_assessment_output<Family>(
         &self,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        _: &crate::publication_boundary::WorthQueryProgramPublicationAccess,
         phase: &WorthQueryAdvancementPhase<'_>,
-
         demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
         principal: &worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal<Schema>,
         request_scope: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
@@ -57,18 +62,17 @@ impl crate::publication_boundary::WorthQueryProgramPublicationAccess {
         >,
     ) -> Result<WorthQueryOutputDemandAdvance, WorthQueryOutputDemandDenial>
     where
-        Schema: ApplicationSchema + 'static,
         Family: WorthQueryProducerOutputFamily<Schema>,
         SourceValue<Schema, Family>: 'static,
         SourceQuery<Schema, Family>: 'static,
     {
-        let phase_request = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.inner.runtime.product_runtime_ref()) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
         let execution = &phase_request;
 
-        runtime.advance_program_output_demand(
+        self.advance_program_output_demand(
             execution,
             phase,
             demand,

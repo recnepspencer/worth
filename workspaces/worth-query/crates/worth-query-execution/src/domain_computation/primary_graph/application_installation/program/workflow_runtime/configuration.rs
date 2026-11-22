@@ -1,6 +1,8 @@
 //! One installed workflow configuration shared by Memory and Home owners.
 use super::*;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::RuntimeWorldOwnerIdentity;
 mod affinity;
 
@@ -52,11 +54,12 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
             supported: Vec::new(),
             owner: self
                 .runtime()
+                .inner
                 .runtime
-                .product_runtime
-                .owner
+                .product_runtime_ref()
+                .owner_ref()
                 .owner_identity(),
-            authority: self.runtime().runtime.authority_identity(),
+            authority: self.runtime().inner.runtime.authority_identity(),
         })
     }
 }
@@ -95,11 +98,12 @@ where
             self.authority,
             runtime
                 .runtime()
+                .inner
                 .runtime
-                .product_runtime
-                .owner
+                .product_runtime_ref()
+                .owner_ref()
                 .owner_identity(),
-            runtime.runtime().runtime.authority_identity(),
+            runtime.runtime().inner.runtime.authority_identity(),
         )?;
         if self.workflow.schema_binding() != &runtime.installed_schema().binding_identity() {
             return Err(WorthQueryWorkflowRuntimeBindingDenial::ForeignSchema);

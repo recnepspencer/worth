@@ -3,6 +3,10 @@ use super::super::*;
 use crate::domain_computation::primary_graph::workflow::correction::{
     retain_current_continuation, unavailable, PreparedWorkflowCorrection,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph::product_operation::correction_source) fn prepare_workflow<
     S,
@@ -32,9 +36,9 @@ where
     };
     let application = target.application();
     let execution = phase
-        .execution_request_for(&application.runtime.product_runtime)
+        .execution_request_for(application.inner.runtime.product_runtime_ref())
         .map_err(|_| Denial::ForeignPhase)?;
-    application.runtime.primary_provider.graph.with_runtime(&execution, |runtime| {
+    application.inner.runtime.primary_provider_ref().graph_ref().with_runtime(&execution, |runtime| {
         let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
             runtime, target.product().relational_basis(),
         ).map_err(Denial::Basis)?;

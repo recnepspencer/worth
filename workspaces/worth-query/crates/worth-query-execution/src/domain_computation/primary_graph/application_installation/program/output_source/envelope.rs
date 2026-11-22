@@ -2,12 +2,16 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_installation::WorthQuerySelectedProgramOwner;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryPresentedProgram;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitOutcome,
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationRequiredOutputConnection,
     WorthQueryApplicationRequiredOutputSource,
 };
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
+use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<S, P> WorthQueryProgramApplicationRuntime<S, P>
 where
     S: worth_query_installation::facade::ApplicationSchema,
@@ -64,7 +68,8 @@ where
             Ok(execution) => execution,
             Err(cause) => return cause.into_commit_outcome(),
         };
-        if program.authored_stages.is_empty() || program.synchronous_outputs.is_empty() {
+        use worth_query_execution_attempt::facade::ports::EffectProgramInternalPort as _;
+        if program.authored_stages().is_empty() || program.synchronous_outputs().is_empty() {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::required_output_preparation_missing(B::IDENTITY),
             );
@@ -112,12 +117,13 @@ where
         B::Input: Clone + Send + Sync,
     {
         use super::super::WorthQueryProgramOwner;
+        use worth_query_execution_attempt::facade::ports::EffectProgramInternalPort as _;
         if !std::ptr::eq(owner.owned_runtime(), self.runtime())
             || !self.contains_action::<B>()
             || !owner.contains_action::<B>()
             || self.owns_output_source(std::any::TypeId::of::<B>())
             || owner.owns_output_source(std::any::TypeId::of::<B>())
-            || program.authored_stages.is_empty()
+            || program.authored_stages().is_empty()
         {
             return WorthQueryApplicationCommitOutcome::Denied(
                 WorthQueryApplicationCommitDenial::application_program_required(),
@@ -125,7 +131,7 @@ where
         }
         let causality = match source {
             Some(source) => {
-                if let Err(cause) = source.admit_receiver(self.runtime().runtime.product_runtime.owner.owner_identity()) {
+                if let Err(cause) = source.admit_receiver(self.runtime().inner.runtime.product_runtime_ref().owner_ref().owner_identity()) {
                     return WorthQueryApplicationCommitOutcome::Denied(cause);
                 }
                 if !source.is_action_binding::<B>() || !source.matches_input(identities.input_identity()) || !source.requires_root(None) {

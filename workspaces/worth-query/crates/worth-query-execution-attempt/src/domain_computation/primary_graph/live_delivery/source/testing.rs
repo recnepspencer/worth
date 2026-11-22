@@ -1,0 +1,51 @@
+use std::sync::{atomic::Ordering, Arc};
+
+use super::WorthQueryLiveDeliverySource;
+use crate::domain_computation::primary_graph::{
+    application_attempt::WorthQueryApplicationEmission, WorthQueryCommittedProductPublication,
+};
+
+impl WorthQueryLiveDeliverySource {
+    pub fn set_limits(&self, batch_capacity: usize) {
+        self.batch_capacity.store(batch_capacity, Ordering::Release);
+    }
+
+    pub fn set_after_reservation_hook(&self, hook: Option<Arc<dyn Fn() + Send + Sync>>) {
+        *self
+            .after_reservation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = hook;
+    }
+
+    pub fn emissions(
+        &self,
+        publication: &WorthQueryCommittedProductPublication,
+    ) -> Vec<WorthQueryApplicationEmission> {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .partitions
+            .values()
+            .flat_map(|partition| partition.batches.iter())
+            .find(|batch| batch.batch().publication == *publication)
+            .map(|batch| batch.batch().emissions.clone())
+            .unwrap_or_default()
+    }
+
+    pub fn published_commit_count(&self) -> usize {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .published_commit_count
+    }
+
+    pub fn active_partition_count(&self) -> usize {
+        self.state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .partitions
+            .len()
+    }
+}
+
+pub mod court_doors_for_test;

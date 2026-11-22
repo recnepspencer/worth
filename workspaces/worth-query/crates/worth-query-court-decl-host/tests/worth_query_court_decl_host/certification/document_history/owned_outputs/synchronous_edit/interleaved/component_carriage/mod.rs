@@ -272,11 +272,11 @@ pub(super) fn seed(
 pub(super) fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
-    availability::declare(authored_parent::declare(value_observation::declare(pending::declare(
-        parent::declare(outgoing::declare(topology::declare(attach::declare(
-            schema,
+    availability::declare(authored_parent::declare(value_observation::declare(
+        pending::declare(parent::declare(outgoing::declare(topology::declare(
+            attach::declare(schema),
         )))),
-    ))))
+    )))
 }
 pub(super) fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,

@@ -1,5 +1,7 @@
 //! Read-only exact-field inspection through the current Query and native codecs.
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub use worth_relational::facade::durability::RecordAllocationClass as WorthQueryCheckpointRecordClass;
 pub use worth_relational::facade::durability::{
     CheckpointAllocatorInspection, CheckpointRecordFrontier, CheckpointRecordIdentity,
@@ -45,7 +47,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
     ) -> Result<WorthQueryApplicationCheckpointInspection<'a>, WorthQueryCheckpointInspectionDenial>
     {
         let execution = phase
-            .execution_request_for(&self.runtime.product_runtime)
+            .execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(WorthQueryCheckpointInspectionDenial::ForeignPhase)?;
         let header::CurrentSections {
             query_header,

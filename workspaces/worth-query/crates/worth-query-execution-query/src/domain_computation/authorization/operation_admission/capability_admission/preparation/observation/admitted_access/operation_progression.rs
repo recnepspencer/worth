@@ -1,0 +1,365 @@
+//! Capability-access progression into installed operation authority.
+
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_lineage::facade::ports::OperationScopeBindingInternalPort as _;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
+use crate::domain_computation::authorization::graph_work_session::start_capability_operation_graph_work;
+use crate::domain_computation::authorization::operation_progression::WorthQueryCapabilityOperationProgression;
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use crate::domain_computation::authorization::{
+    WorthQueryAdmittedApplicationCapabilityAccess, WorthQueryAdmittedApplicationOperation,
+    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
+    WorthQueryOperationScopeBinding,
+};
+use crate::domain_computation::primary_graph::{
+    WorthQueryBoundMutationPreconditions, WorthQueryPrimaryGraphApplicationRuntime,
+};
+use worth_query_declaration::facade::{
+    application_capability::ApplicationCapabilityRequest,
+    application_schema::{ApplicationOperationMarkerIdentity, TypedMutationPreconditions},
+};
+use worth_query_installation::facade::{
+    ApplicationSchema, WorthQueryCanonicalWorkEvidence, WorthQueryCanonicalWorkPhases,
+    WorthQueryInstalledApplicationOperation,
+};
+
+mod authority_validation;
+mod borrowed_capability;
+mod precondition_binding;
+mod projection_equivalence;
+
+use super::super::super::super::super::{
+    brand_tag::BrandTag, original_input::retain_original_scope, ErasedAuthorizationBasis,
+    WorthQueryAdmittedApplicationOperation as OwnerAdmittedOperation, WorthQueryAdmittedOperation,
+    WorthQueryAdmittedOperationData,
+};
+use authority_validation::{
+    validate_operation_graph_work_authority, validate_progression_authority,
+};
+use precondition_binding::bind_progression_preconditions;
+use projection_equivalence::same_projection;
+
+struct RevalidatedOperationAuthority {
+    authorization:
+        crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
+    graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+}
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema,
+{
+    pub fn authorize_capability_operation<Capability, Operation, Input>(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+    ) -> Result<
+        WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+        WorthQueryOperationAuthorizationDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, Capability>,
+    {
+        let phase_request = match phase.execution_request_for(&self.runtime.product_runtime) {
+            Ok(request) => request,
+            Err(_) => return Err(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial::new(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase), "phase-custody")),
+        };
+        let execution = &phase_request;
+        self.authorize_capability_operation_with_request(
+            execution,
+            access,
+            operation,
+            preconditions,
+        )
+    }
+
+    pub fn authorize_capability_operation_with_request<Capability, Operation, Input>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+        operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+        preconditions: impl std::borrow::Borrow<
+            TypedMutationPreconditions<
+                Schema,
+                Operation,
+                <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+            >,
+        >,
+    ) -> Result<
+        WorthQueryAdmittedApplicationOperation<
+            Schema,
+            Operation,
+            Input,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+        WorthQueryOperationAuthorizationDenial,
+    >
+    where
+        Operation: ApplicationOperationMarkerIdentity<Schema>,
+        Input: ApplicationCapabilityRequest<Schema, Capability>,
+    {
+        crate::domain_computation::authorization::operation_progression::progress_capability_operation(execution,
+            self,
+            access,
+            operation,
+            preconditions,
+            WorthQueryCapabilityOperationProgression::Ordinary,
+        )
+    }
+}
+
+pub fn validate_capability_operation_authority<Schema, Capability, Operation, Input>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+    progression: WorthQueryCapabilityOperationProgression,
+) -> Result<(), WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+{
+    validate_progression_authority(runtime, access, operation, progression)?;
+    validate_current_projection(access)
+}
+
+pub fn bind_capability_operation_preconditions<Schema, Capability, Operation, Input>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+    preconditions: impl std::borrow::Borrow<
+        TypedMutationPreconditions<
+            Schema,
+            Operation,
+            <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        >,
+    >,
+) -> Result<WorthQueryBoundMutationPreconditions, WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+{
+    bind_progression_preconditions(runtime, access, operation, preconditions)
+}
+
+pub fn transition_capability_operation<Schema, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+    preconditions: WorthQueryBoundMutationPreconditions,
+) -> Result<
+    OwnerAdmittedOperation<
+        Schema,
+        Operation,
+        Input,
+        <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+    >,
+    WorthQueryOperationAuthorizationDenial,
+>
+where
+    Schema: ApplicationSchema,
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+{
+    let resource_binding_identity = access
+        .operation_admission_identity
+        .resource_binding_identity();
+    let resource_entity_id = access.resource_entity_id();
+    let operation_scope_binding = WorthQueryOperationScopeBinding::mint(
+        runtime.runtime.authority_identity(),
+        operation.binding_identity(),
+        operation.authority_identity(),
+        access.principal_entity_id,
+        resource_entity_id,
+    );
+    let scope_entity_kind = access.resource_entity_kind();
+    let scope_entity_name = access.resource_entity_name().to_string();
+    let authentication = access.authentication.clone();
+    let authentication_valid_until = access.authentication_valid_until;
+    let request_scope = access.request_scope.clone();
+    let original_scope =
+        retain_original_scope(execution, access.resolved.resource(), operation.contracts())?;
+    let product = access.read_product(runtime).ok_or_else(|| {
+        denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::GraphWorkAdmissionUnavailable,
+            ),
+            operation.operation(),
+        )
+    })?;
+    // Re-admission names the current occurrence; its program source must be
+    // bound by the selected-product owner before the mutation lease retains it.
+    let selected = runtime.on_product(execution, product).map_err(|_| {
+        denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::GraphWorkAdmissionUnavailable,
+            ),
+            operation.operation(),
+        )
+    })?;
+    let product = selected.product().retained_clone();
+    let principal = access.principal_entity_id;
+    let installed_capability = access.authorization.installed_capability_identity();
+    let super::WorthQueryAdmittedApplicationCapabilityAccess {
+        input,
+        home_owner,
+        governed_input_identity,
+        canonical_work,
+        authorization,
+        operation_admission_identity,
+        ..
+    } = access;
+    let graph_work = start_capability_operation_graph_work(
+        execution,
+        runtime,
+        operation,
+        &resource_binding_identity,
+        resource_entity_id,
+        principal,
+        installed_capability,
+        product,
+    )?;
+    validate_operation_graph_work_authority(&graph_work, operation)?;
+    let revalidated = revalidate_operation_authorization(
+        execution,
+        runtime,
+        authorization,
+        graph_work,
+        operation.operation(),
+    )?;
+    let contracts = operation.retain_compiled_contracts_for_admission();
+    let canonical_work = WorthQueryCanonicalWorkPhases::new(
+        contracts.canonical_work(),
+        preconditions.canonical_work().combine(canonical_work),
+        WorthQueryCanonicalWorkEvidence::zero(),
+        WorthQueryCanonicalWorkEvidence::zero(),
+        WorthQueryCanonicalWorkEvidence::zero(),
+    );
+    let tag = BrandTag::new(
+        runtime.runtime.authority_identity(),
+        operation.authority_identity_bytes(),
+        operation.definition_identity_bytes(),
+        operation.operation_type_id(),
+        operation.input_type_id(),
+    );
+    let core = WorthQueryAdmittedOperation::retain_original(
+        execution,
+        home_owner,
+        WorthQueryAdmittedOperationData {
+            runtime_authority: runtime.runtime.authority_identity(),
+            binding_identity: operation.binding_identity().clone(),
+            operation: operation.operation().to_string(),
+            operation_authority_identity: operation.authority_identity().into(),
+            operation_authority_identity_bytes: operation.authority_identity_bytes(),
+            operation_definition_identity: operation.definition_identity_bytes(),
+            admission_identity: operation_admission_identity,
+            resource_binding_identity,
+            operation_scope_binding,
+            canonical_work,
+            scope_entity_id: resource_entity_id,
+            scope_entity_kind,
+            scope_entity_name,
+            authentication_valid_until,
+            request_scope,
+            contracts,
+            mutation_preconditions: preconditions,
+            authorization: Some(revalidated.authorization),
+            governed_input_identity,
+            original_input: None,
+            original_inspection_disclosure: None,
+            original_scope,
+            authorization_basis: ErasedAuthorizationBasis::Capability,
+            graph_work: revalidated
+                .graph_work
+                .with_actor_authentication(authentication),
+            source_partition_identity: None,
+            source_expectation_kind: None,
+            source_facts: Vec::new(),
+            query_context: None,
+            required_output_demand: None,
+        },
+    )?;
+    OwnerAdmittedOperation::mint(core, tag, Some(input))
+}
+
+fn revalidate_operation_authorization<Schema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    mut authorization: crate::domain_computation::authorization::WorthQueryRetainedCapabilityAuthorization,
+    mut graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    subject: &str,
+) -> Result<RevalidatedOperationAuthority, WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+{
+    runtime.refresh_capability_authorization_for_graph_work(
+        execution,
+        &mut authorization,
+        &graph_work,
+    )?;
+    graph_work.set_retained_decision_facts(authorization.exact_fact_count());
+    let session = graph_work.identity();
+    let authorization =
+        crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts::capability(
+            authorization,
+        );
+    if !authorization.belongs_to_session(session) {
+        return Err(WorthQueryOperationAuthorizationDenial::new(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::InconsistentDecision,
+            ),
+            subject,
+        ));
+    }
+    Ok(RevalidatedOperationAuthority {
+        authorization,
+        graph_work,
+    })
+}
+
+fn validate_current_projection<Schema, Capability, Operation, Input>(
+    access: &WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+) -> Result<(), WorthQueryOperationAuthorizationDenial>
+where
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+{
+    let current = access.input.capability_request().map_err(|rejection| {
+        denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityProjectionRejected,
+            ),
+            rejection.subject(),
+        )
+    })?;
+    if same_projection(&access.projection, &current) {
+        Ok(())
+    } else {
+        Err(denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityProjectionRejected,
+            ),
+            access.operation.as_ref(),
+        ))
+    }
+}
+
+fn denial(
+    kind: WorthQueryOperationAuthorizationDenialKind,
+    subject: impl Into<String>,
+) -> WorthQueryOperationAuthorizationDenial {
+    WorthQueryOperationAuthorizationDenial::new(kind, subject)
+}

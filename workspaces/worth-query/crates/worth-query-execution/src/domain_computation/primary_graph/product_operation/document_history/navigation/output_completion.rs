@@ -1,4 +1,9 @@
 //! Original SDK qualification preserves typed root/model provenance through adoption.
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::CompletedOriginalReadOutputsInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 mod denial;
 pub use denial::WorthQueryHistoryOutputQualificationDenial;
 mod forest;
@@ -111,7 +116,8 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
                 .compare(exact.observation())
                 .is_err()
             || !endpoint.same_application_occurrence(source)
-            || !endpoint.belongs_to_selected_occurrence(self.application, exact.observation())
+            || !endpoint
+                .belongs_to_selected_occurrence(self.application.inner(), exact.observation())
         {
             return Err(Denial::IntentDrift);
         }
@@ -137,7 +143,7 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
         let endpoint = endpoint.retained_product_lease();
         drop(selected);
         phase
-            .check_live_for(&self.application.runtime.product_runtime)
+            .check_live_for(self.application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let NavigationPhase::AwaitingOutputs {
             candidate,

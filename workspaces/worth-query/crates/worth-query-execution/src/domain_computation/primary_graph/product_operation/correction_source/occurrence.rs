@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::application_aftermath::{
     OriginalCorrectionDisclosure, WorthQueryCommittedAftermathCausality, WorthQueryRetainedPreImage,
 };
+use crate::domain_computation::primary_graph::CommitAuthorityBindingExt;
 use crate::domain_computation::primary_graph::{
     application_checkpoint::facts::FactPayload, retained_correction::RetainedCorrectionMaterial,
     OriginalProgramMeaning, WorthQueryApplicationOutputCorrespondence,
@@ -10,6 +11,9 @@ use crate::domain_computation::primary_graph::{
 };
 use std::sync::Arc;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 use worth_query_installation::facade::WorthQueryInstalledAftermathContract;
 use worth_relational::facade::history::RelationalCommitReceipt;
 mod presence;

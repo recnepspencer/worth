@@ -1,5 +1,7 @@
 //! Actual World originals select the Native effects excluded from terminal readmission.
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use QueryHomeCustodyReadmissionDenial as Denial;
 
 impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Program: 'static>
@@ -11,7 +13,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     ) -> Result<std::collections::BTreeSet<worth_relational::facade::history::CommitId>, Denial>
     {
         let application = self.runtime.runtime();
-        let owner = &application.runtime.product_runtime.owner;
+        let owner = &application.inner.runtime.product_runtime_ref().owner_ref();
         let recovery = owner.recovery_port();
         let mut commits = std::collections::BTreeSet::new();
         let mut after = None;

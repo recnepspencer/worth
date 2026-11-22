@@ -1,61 +1,15 @@
 //! Governed data values. No view or historical actor grants command authority.
 use crate::domain_computation::primary_graph::application_attempt::workflow_instance_observation::ReadOnlyWorkflowHistory;
 use crate::domain_computation::primary_graph::application_attempt::PublishedWorkflowInstanceRef;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
-use std::sync::Arc;
-use worth_execution::ExecutionArray;
-use worth_relational::facade::identity::EntityId;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
-/// Complete historical identity, disclosed only by independently admitted audit.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryWorkflowRecordedActor(EntityId);
-impl WorthQueryWorkflowRecordedActor {
-    pub(in crate::domain_computation::primary_graph) fn observed(entity: EntityId) -> Self {
-        Self(entity)
-    }
-    /// Recorded identity, with generation preserved; it carries no permission.
-    pub fn entity_id(&self) -> EntityId {
-        self.0
-    }
-}
-/// Recorded roles of one transition at the selected observation.
-pub struct WorthQueryWorkflowTransitionActors {
-    pub(super) advancer: WorthQueryWorkflowRecordedActor,
-    pub(super) executor: Option<WorthQueryWorkflowRecordedActor>,
-}
-impl WorthQueryWorkflowTransitionActors {
-    pub(in crate::domain_computation::primary_graph) fn observed(
-        advancer: WorthQueryWorkflowRecordedActor,
-        executor: Option<WorthQueryWorkflowRecordedActor>,
-    ) -> Self {
-        Self { advancer, executor }
-    }
+use worth_query_execution_attempt::facade::ports::WorkflowReadBasisInternalPort as _;
 
-    pub fn advancer(&self) -> WorthQueryWorkflowRecordedActor {
-        self.advancer
-    }
-    pub fn executor(&self) -> Option<WorthQueryWorkflowRecordedActor> {
-        self.executor
-    }
-}
-/// Independent audit may withhold identities without hiding lifecycle state.
-pub enum WorthQueryWorkflowAudit {
-    Withheld,
-    Visible {
-        start: WorthQueryWorkflowRecordedActor,
-        end: Option<worth_foundational::facade::WorkflowEndingActorProvenance>,
-        transitions: ExecutionArray<WorthQueryWorkflowTransitionActors>,
-    },
-}
-/// Recorded instance state, independent of whether a command is currently legal.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub enum WorthQueryWorkflowObservedState {
-    Ready,
-    Completed,
-    Cancelled,
-    Migrated,
-    Terminated,
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::application_discovery::{
+    WorthQueryWorkflowAudit, WorthQueryWorkflowObservedState, WorthQueryWorkflowTransitionActors,
+};
 /// Why the discovered record is descriptive history rather than a live reference.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryWorkflowHistoricalPosture {
@@ -79,10 +33,17 @@ pub enum WorthQueryWorkflowInstanceRead {
     },
 }
 /// Owns the exact data basis even when no instance exists; carries no admission.
-#[derive(Clone)]
-pub struct WorthQueryWorkflowReadBasis(pub(super) Arc<WorthQueryApplicationReadObservation>);
-impl WorthQueryWorkflowReadBasis {
-    pub(super) fn retained<Schema: worth_query_installation::facade::ApplicationSchema>(
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_discovery::workflow::WorthQueryWorkflowReadBasis;
+pub(super) trait WorthQueryWorkflowReadBasisRuntimeExt {
+    fn retained<Schema: worth_query_installation::facade::ApplicationSchema>(
+        selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
+            '_,
+            Schema,
+        >,
+    ) -> Self;
+}
+impl WorthQueryWorkflowReadBasisRuntimeExt for WorthQueryWorkflowReadBasis {
+    fn retained<Schema: worth_query_installation::facade::ApplicationSchema>(
         selected: &crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation<
             '_,
             Schema,
@@ -90,16 +51,10 @@ impl WorthQueryWorkflowReadBasis {
     ) -> Self {
         // Retain only the native read lease for the result's observer lifetime.
         // The selected operation's publication source and fresh admission stay private.
-        Self(WorthQueryApplicationReadObservation::from_product(
-            selected.application(),
+        Self::from_observation(WorthQueryApplicationReadObservation::from_product(
+            selected.application().inner(),
             selected.product().read_lease(),
         ))
-    }
-    pub fn selected_commit(&self) -> &worth_runtime_world::facade::CompositeCommitIdentity {
-        self.0.selected_commit()
-    }
-    pub fn branch_identity(&self) -> &worth_runtime_world::facade::ProductBranchIdentity {
-        self.0.branch_identity()
     }
 }
 /// State and bounded history at the explicit retained data observation.

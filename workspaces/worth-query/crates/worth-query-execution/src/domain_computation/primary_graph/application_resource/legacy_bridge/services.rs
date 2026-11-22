@@ -2,6 +2,7 @@ use super::{WorthQueryOwnedAsyncRequestCustody, WorthQueryOwnedAsyncRuntimeDenia
 use crate::domain_computation::execution_runtime::{
     product_world::WorthQueryProductRuntime, WorthQueryRuntimeAuthorityIdentity,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_runtime_bridge::facade::BridgeSealedRuntimeAssembly;
 
 /// Borrows the actual World and Bridge of the old engine's installed product.
@@ -42,8 +43,9 @@ impl<'runtime> WorthQueryOwnedAsyncRuntimeServices<'runtime> {
         &self,
         selected: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<(), Denial> {
+        use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
         self.world
-            .owner
+            .owner_ref()
             .owner_identity()
             .admit_incarnation(selected.observation().owner_identity())
             .map_err(|cause| match cause {

@@ -1,6 +1,7 @@
 //! Prepaid actual head custody and the bounded retirement queue.
 use super::super::head_custody::HistoryHeadCustody;
 use super::*;
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
 impl<'r, S> HistoryJournal<'r, S> {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn ensure_policy_ready(
@@ -101,7 +102,7 @@ impl<'r, S> HistoryJournal<'r, S> {
         if canonical {
             let node = self
                 .nodes
-                .get_mut(&self.current.ordinal)
+                .get_mut(&self.current.ordinal())
                 .expect("current completed node");
             debug_assert!(node.head_slot.is_none());
             node.head_slot = Some(slot);

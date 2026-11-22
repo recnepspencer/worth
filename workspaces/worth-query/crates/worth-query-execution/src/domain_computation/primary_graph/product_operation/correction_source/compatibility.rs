@@ -3,6 +3,9 @@ use super::disclosure::WorthQueryCorrectionDerivationDenial as Denial;
 use super::*;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation;
 use worth_query_declaration::facade::application_aftermath::ApplicationInverseBinding;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// The compatibility owner's exact handoff into correction preparation.
 ///
@@ -101,7 +104,7 @@ where
         worth_query_installation::facade::InstalledCorrectionMechanism::Compensation(_)
     ) {
         let execution = phase
-            .execution_request_for(&target.application().runtime.product_runtime)
+            .execution_request_for(target.application().inner.runtime.product_runtime_ref())
             .map_err(|_| Denial::ForeignPhase)?;
         let facts = source
             .occurrence()
@@ -144,6 +147,11 @@ where
         .ok_or(Denial::UnsupportedTargetProgram)?;
     let record = support
         .native_program(inspection.revision())
+        .map(|r| {
+            crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(
+                r.as_ref(),
+            )
+        })
         .ok_or(Denial::UnsupportedTargetProgram)?;
     if required_root.is_none()
         && record.requires_output_source(crate::equality_type_id::EqualityTypeId::of::<C::Source>())
@@ -208,6 +216,11 @@ where
         .ok_or(Denial::UnsupportedTargetProgram)?;
     let record = support
         .native_program(inspection.revision())
+        .map(|r| {
+            crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(
+                r.as_ref(),
+            )
+        })
         .ok_or(Denial::UnsupportedTargetProgram)?;
     let declared = original
         .action_inventory()

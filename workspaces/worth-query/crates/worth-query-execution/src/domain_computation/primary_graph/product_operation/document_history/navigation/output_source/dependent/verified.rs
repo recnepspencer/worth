@@ -8,6 +8,9 @@ use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationFixedOutputRoot, ApplicationOutputGraphShape,
     ApplicationProgramDefinition,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 type Artifact =
@@ -221,9 +224,9 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             .map_err(Original::Observation)?;
         let current =
             runtime
-                .runtime
-                .primary_provider
-                .graph
+                .inner.runtime
+                .primary_provider_ref()
+                .graph_ref()
                 .with_runtime(&execution, |native| {
                     if let Some(model)=authority.recording_model() {
                         return super::super::super::output_verification::current_recording_route_is_current(

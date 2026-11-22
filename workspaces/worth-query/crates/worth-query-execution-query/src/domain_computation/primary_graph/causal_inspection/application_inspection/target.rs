@@ -1,0 +1,237 @@
+//! One funded clone retains the actual opaque original observation, never a reader.
+use super::super::application_observation::WorthQueryApplicationQueryObservation;
+use crate::domain_computation::primary_graph::admitted_capture::{
+    checkpoint, run_retained_stage, CaptureStop, RetainedStorageDenial,
+};
+use std::{
+    alloc::Layout,
+    sync::{atomic::AtomicUsize, Arc},
+};
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_installation::facade::WorthQueryInstalledApplicationInspectionContract;
+
+pub struct WorthQueryApplicationInspectionTarget {
+    original: InspectionOriginal,
+    contract: WorthQueryInstalledApplicationInspectionContract,
+    connection_source: Option<Arc<Self>>,
+    rich: Option<super::rich::WorthQueryApplicationMaterializationRequest>,
+}
+
+enum InspectionOriginal {
+    Query {
+        original: WorthQueryApplicationQueryObservation,
+        before: Option<WorthQueryApplicationQueryObservation>,
+    },
+    Source(super::source_original::SourceOriginal),
+}
+
+pub enum InspectionTargetDenial {
+    ForeignBinding,
+    Storage(CaptureStop<RetainedStorageDenial>),
+}
+
+impl WorthQueryApplicationInspectionTarget {
+    pub fn capture(
+        execution: &ExecutionRequest<'_, '_>,
+        original: &WorthQueryApplicationQueryObservation,
+        before: Option<&WorthQueryApplicationQueryObservation>,
+        contract: WorthQueryInstalledApplicationInspectionContract,
+        memory: &mut Option<ExecutionMemoryReservation>,
+    ) -> Result<Arc<Self>, InspectionTargetDenial> {
+        if original.source.original_binding() != Some(contract.binding_observation())
+            || before.is_some_and(|before| {
+                before.source.original_binding() != Some(contract.binding_observation())
+            })
+        {
+            return Err(InspectionTargetDenial::ForeignBinding);
+        }
+        run_retained_stage(execution, memory, |context, memory| {
+            checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
+            let bytes = clone_bytes(original, before)
+                .ok_or(MapKernelFailure::Domain(RetainedStorageDenial::Overflow))?;
+            checkpoint(context, bytes).map_err(MapKernelFailure::Stop)?;
+            if let Some(memory) = memory {
+                memory.resize(bytes).map_err(MapKernelFailure::Domain)?;
+            }
+            Ok(Arc::new(Self {
+                original: InspectionOriginal::Query {
+                    original: original.clone(),
+                    before: before.cloned(),
+                },
+                contract,
+                connection_source: None,
+                rich: None,
+            }))
+        })
+        .map_err(InspectionTargetDenial::Storage)
+    }
+
+    pub fn capture_source(
+        execution: &ExecutionRequest<'_, '_>,
+        original: &super::source_original::SourceOriginal,
+        contract: WorthQueryInstalledApplicationInspectionContract,
+        memory: &mut Option<ExecutionMemoryReservation>,
+    ) -> Result<Arc<Self>, InspectionTargetDenial> {
+        run_retained_stage(execution, memory, |context, memory| {
+            let bytes = Layout::new::<[AtomicUsize; 2]>()
+                .extend(Layout::new::<Self>())
+                .ok()
+                .and_then(|(layout, _)| u64::try_from(layout.pad_to_align().size()).ok())
+                .ok_or(MapKernelFailure::Domain(RetainedStorageDenial::Overflow))?;
+            checkpoint(context, bytes).map_err(MapKernelFailure::Stop)?;
+            if let Some(memory) = memory {
+                memory.resize(bytes).map_err(MapKernelFailure::Domain)?;
+            }
+            Ok(Arc::new(Self {
+                original: InspectionOriginal::Source(original.clone()),
+                contract,
+                connection_source: None,
+                rich: None,
+            }))
+        })
+        .map_err(InspectionTargetDenial::Storage)
+    }
+    /// Only an actual admitted source becomes a direct member of this immutable target.
+    pub fn capture_connection(
+        execution: &ExecutionRequest<'_, '_>,
+        original: &WorthQueryApplicationQueryObservation,
+        contract: WorthQueryInstalledApplicationInspectionContract,
+        source: Arc<Self>,
+        memory: &mut Option<ExecutionMemoryReservation>,
+    ) -> Result<Arc<Self>, InspectionTargetDenial> {
+        let mut target = Self::capture(execution, original, None, contract, memory)?;
+        Arc::get_mut(&mut target)
+            .expect("unpublished target")
+            .connection_source = Some(source);
+        Ok(target)
+    }
+    pub fn admits_member(&self, target: &Arc<Self>) -> bool {
+        std::ptr::eq(self, target.as_ref())
+            || self
+                .connection_source
+                .as_ref()
+                .is_some_and(|source| Arc::ptr_eq(source, target))
+    }
+    pub fn original_subject(&self) -> worth_relational::facade::identity::EntityId {
+        match &self.original {
+            InspectionOriginal::Query { original, .. } => {
+                original.source.retained_scope_selector().subject()
+            }
+            InspectionOriginal::Source(source) => source.disclosure.scope().subject(),
+        }
+    }
+    pub fn admits_member_subject(
+        &self,
+        target: &Arc<Self>,
+        subject: worth_relational::facade::identity::EntityId,
+    ) -> bool {
+        self.admits_member(target) && target.original_subject() == subject
+    }
+    pub fn connection_source(&self) -> Option<&Arc<Self>> {
+        self.connection_source.as_ref()
+    }
+    pub fn bind_rich_request(
+        target: &mut Arc<Self>,
+        request: super::rich::WorthQueryApplicationMaterializationRequest,
+    ) {
+        Arc::get_mut(target).expect("unpublished rich target").rich = Some(request);
+    }
+    pub fn rich_request(&self) -> Option<super::rich::WorthQueryApplicationMaterializationRequest> {
+        self.rich
+    }
+    pub fn needs_diagnostic(&self) -> bool {
+        self.before().is_some() || self.connection_source.is_some() || self.rich.is_some()
+    }
+    pub fn source(&self) -> Option<&super::source_original::SourceOriginal> {
+        match &self.original {
+            InspectionOriginal::Source(source) => Some(source),
+            _ => None,
+        }
+    }
+    pub fn parameters(&self) -> worth_foundational::facade::CanonicalDigestId {
+        match &self.original {
+            InspectionOriginal::Query { original, .. } => {
+                original.source.parameter_binding_identity()
+            }
+            InspectionOriginal::Source(source) => {
+                *source.disclosure.disclosure().parameters().identity()
+            }
+        }
+    }
+
+    pub fn contract(&self) -> &WorthQueryInstalledApplicationInspectionContract {
+        &self.contract
+    }
+
+    pub fn runtime_authority(&self) -> u64 {
+        match &self.original {
+            InspectionOriginal::Query { original, .. } => original.source.runtime_authority(),
+            InspectionOriginal::Source(source) => source.runtime,
+        }
+    }
+
+    pub fn schema_binding(
+        &self,
+    ) -> &worth_query_installation::facade::ApplicationSchemaBindingIdentity {
+        match &self.original {
+            InspectionOriginal::Query { original, .. } => original.source.schema_binding_ref(),
+            InspectionOriginal::Source(source) => source.disclosure.schema(),
+        }
+    }
+
+    pub fn matches_original(&self, original: &WorthQueryApplicationQueryObservation) -> bool {
+        self.original()
+            .is_some_and(|actual| same_original(actual, original))
+    }
+
+    pub fn matches_before(&self, before: &WorthQueryApplicationQueryObservation) -> bool {
+        self.before()
+            .is_some_and(|actual| same_original(actual, before))
+    }
+
+    pub fn before(&self) -> Option<&WorthQueryApplicationQueryObservation> {
+        match &self.original {
+            InspectionOriginal::Query { before, .. } => before.as_ref(),
+            InspectionOriginal::Source(_) => None,
+        }
+    }
+
+    pub fn original(&self) -> Option<&WorthQueryApplicationQueryObservation> {
+        match &self.original {
+            InspectionOriginal::Query { original, .. } => Some(original),
+            InspectionOriginal::Source(_) => None,
+        }
+    }
+}
+
+fn same_original(
+    actual: &WorthQueryApplicationQueryObservation,
+    original: &WorthQueryApplicationQueryObservation,
+) -> bool {
+    actual.basis == original.basis
+        && actual.result_count == original.result_count
+        && actual.source.shares_original_custody(&original.source)
+}
+
+fn clone_bytes(
+    original: &WorthQueryApplicationQueryObservation,
+    before: Option<&WorthQueryApplicationQueryObservation>,
+) -> Option<u64> {
+    let backing = original
+        .basis
+        .retained_clone_heap_bytes()?
+        .checked_add(match before {
+            Some(before) => before.basis.retained_clone_heap_bytes()?,
+            None => 0,
+        })?;
+    let arc = Layout::new::<[AtomicUsize; 2]>()
+        .extend(Layout::new::<WorthQueryApplicationInspectionTarget>())
+        .ok()?
+        .0
+        .pad_to_align()
+        .size();
+    u64::try_from(arc).ok()?.checked_add(backing)
+}
+
+mod court_doors_for_test;

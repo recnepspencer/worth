@@ -1,0 +1,281 @@
+mod native_preparation;
+
+use super::WorthQueryProviderSessionProtocolCounters;
+
+pub use worth_query_execution_contracts::facade::{
+    WorthQueryProviderSessionDenialKind, WorthQueryProviderSessionProtocolStage,
+    WorthQueryProviderSessionRecoveryPosture,
+};
+
+/// A provider session's exact failure, protocol stage and recovery posture.
+/// Native preparation and allocation causes remain available for inspection;
+/// this description does not itself grant retry or cleanup authority.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryProviderSessionFailure {
+    correction_material: Option<worth_query_execution_obligations::facade::aftermath::correction_material::QueryCorrectionMaterialDenial>,
+    relation_preimage: Option<
+        std::sync::Arc<
+            crate::domain_computation::application_aftermath::WorthQueryRelationPreImageFailure,
+        >,
+    >,
+    candidate_support:
+        Option<std::sync::Arc<crate::domain_computation::WorthQueryInvariantExecutionFailure>>,
+    preimage:
+        Option<crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial>,
+    managed_index:
+        Option<crate::domain_computation::primary_graph::WorthQueryManagedIndexWorkDenial>,
+    kind: WorthQueryProviderSessionDenialKind,
+    stage: WorthQueryProviderSessionProtocolStage,
+    recovery_posture: WorthQueryProviderSessionRecoveryPosture,
+    detail: String,
+    counters: WorthQueryProviderSessionProtocolCounters,
+    allocation: Option<worth_execution::ExecutionAllocationDenial>,
+    native_preparation: Option<std::sync::Arc<native_preparation::NativePreparationFailure>>,
+    managed_source_publication: Option<
+        std::sync::Arc<worth_relational::facade::runtime::ManagedIndexSourcePreparationDenial>,
+    >,
+    source_query_authorization: Option<
+        Box<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>,
+    >,
+    output_verification_capacity:
+        Option<crate::domain_computation::primary_graph::VerificationCapacityStop>,
+    checked_read: Option<
+        Box<
+            Result<
+                WorthQueryProviderSessionDenialKind,
+                super::WorthQueryProviderSessionControlStopKind,
+            >,
+        >,
+    >,
+}
+
+impl WorthQueryProviderSessionFailure {
+    pub fn with_correction_material_denial(
+        mut self,
+        cause: worth_query_execution_obligations::facade::aftermath::correction_material::QueryCorrectionMaterialDenial,
+    ) -> Self {
+        self.correction_material = Some(cause);
+        self
+    }
+    pub fn correction_material_denial(
+        &self,
+    ) -> Option<&worth_query_execution_obligations::facade::aftermath::correction_material::QueryCorrectionMaterialDenial>{
+        self.correction_material.as_ref()
+    }
+    pub fn relation_preimage_failure(
+        &self,
+    ) -> Option<&crate::domain_computation::application_aftermath::WorthQueryRelationPreImageFailure>
+    {
+        self.relation_preimage.as_deref()
+    }
+    pub fn with_relation_preimage_failure(
+        mut self,
+        cause: crate::domain_computation::application_aftermath::WorthQueryRelationPreImageFailure,
+    ) -> Self {
+        self.relation_preimage = Some(std::sync::Arc::new(cause));
+        self
+    }
+    /// Exact typed complete-candidate support refusal, including the affected writer source.
+    pub fn candidate_support_failure(
+        &self,
+    ) -> Option<&crate::domain_computation::WorthQueryInvariantExecutionFailure> {
+        self.candidate_support.as_deref()
+    }
+    pub fn with_candidate_support_failure(
+        mut self,
+        cause: crate::domain_computation::WorthQueryInvariantExecutionFailure,
+    ) -> Self {
+        self.detail = cause.detail().to_owned();
+        self.candidate_support = Some(std::sync::Arc::new(cause));
+        self
+    }
+
+    pub fn with_preimage_retention_denial(
+        mut self,
+        cause: crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial,
+    ) -> Self {
+        self.preimage = Some(cause);
+        self
+    }
+    pub fn preimage_retention_denial(
+        &self,
+    ) -> Option<crate::domain_computation::application_aftermath::WorthQueryPreImageRetentionDenial>
+    {
+        self.preimage
+    }
+    pub fn new(
+        kind: WorthQueryProviderSessionDenialKind,
+        stage: WorthQueryProviderSessionProtocolStage,
+        detail: impl Into<String>,
+        counters: WorthQueryProviderSessionProtocolCounters,
+    ) -> Self {
+        Self {
+            correction_material: None,
+            relation_preimage: None,
+            candidate_support: None,
+            preimage: None,
+            managed_index: None,
+            kind,
+            stage,
+            recovery_posture: WorthQueryProviderSessionRecoveryPosture::Closed,
+            detail: detail.into(),
+            counters,
+            allocation: None,
+            native_preparation: None,
+            managed_source_publication: None,
+            checked_read: None,
+            source_query_authorization: None,
+            output_verification_capacity: None,
+        }
+    }
+
+    pub fn with_output_verification_capacity_stop(
+        mut self,
+        stop: crate::domain_computation::primary_graph::VerificationCapacityStop,
+    ) -> Self {
+        self.output_verification_capacity = Some(stop);
+        self
+    }
+
+    /// Original capacity refusal from consumed-output verification before
+    /// publication, separate from native transaction preparation. Diagnostic
+    /// data does not change the failure's category or recovery posture.
+    pub const fn output_verification_capacity_stop(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::VerificationCapacityStop> {
+        self.output_verification_capacity
+    }
+
+    pub fn checked_read_stopped(
+        stop: Result<
+            WorthQueryProviderSessionDenialKind,
+            super::WorthQueryProviderSessionControlStopKind,
+        >,
+        stage: WorthQueryProviderSessionProtocolStage,
+        detail: impl Into<String>,
+    ) -> Self {
+        let mut failure = Self::new(
+            stop.unwrap_or(WorthQueryProviderSessionDenialKind::ProviderRejected),
+            stage,
+            detail,
+            Default::default(),
+        );
+        failure.checked_read = Some(Box::new(stop));
+        failure
+    }
+
+    /// Exact request stop retained while the protocol holds publication custody.
+    pub fn checked_read_stop(
+        &self,
+    ) -> Option<
+        Result<
+            WorthQueryProviderSessionDenialKind,
+            super::WorthQueryProviderSessionControlStopKind,
+        >,
+    > {
+        self.checked_read.as_deref().copied()
+    }
+
+    /// Exact source-query permission refusal retained through precommit custody.
+    pub fn source_query_authorization_stop(
+        &self,
+    ) -> Option<crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind>
+    {
+        self.source_query_authorization.as_deref().copied()
+    }
+
+    pub fn with_source_query_authorization_stop(
+        mut self,
+        stop: crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ) -> Self {
+        self.source_query_authorization = Some(Box::new(stop));
+        self
+    }
+
+    pub fn allocation_denied(
+        denial: worth_execution::ExecutionAllocationDenial,
+        subject: &'static str,
+    ) -> Self {
+        let mut failure = Self::new(
+            WorthQueryProviderSessionDenialKind::AllocationDenied,
+            WorthQueryProviderSessionProtocolStage::Commit,
+            format!("{subject} allocation denied: {denial:?}"),
+            WorthQueryProviderSessionProtocolCounters::default(),
+        );
+        failure.allocation = Some(denial);
+        failure
+    }
+
+    pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
+        self.allocation.as_ref()
+    }
+
+    pub fn with_native_preparation_error(
+        mut self,
+        error: worth_relational::facade::mvcc::TransactionCommitError,
+    ) -> Self {
+        self.native_preparation = Some(std::sync::Arc::new(
+            native_preparation::NativePreparationFailure(error),
+        ));
+        self
+    }
+
+    /// Exact native refusal at the pre-publication candidate preparation port.
+    pub fn native_preparation_error(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::TransactionCommitError> {
+        self.native_preparation.as_deref().map(|failure| &failure.0)
+    }
+
+    pub fn unsupported() -> Self {
+        Self::new(
+            WorthQueryProviderSessionDenialKind::SessionProtocolUnsupported,
+            WorthQueryProviderSessionProtocolStage::PlanReadmission,
+            "installed provider does not implement the sealed session protocol",
+            WorthQueryProviderSessionProtocolCounters::default(),
+        )
+    }
+
+    pub fn kind(&self) -> WorthQueryProviderSessionDenialKind {
+        self.kind
+    }
+
+    pub fn stage(&self) -> WorthQueryProviderSessionProtocolStage {
+        self.stage
+    }
+
+    pub fn detail(&self) -> &str {
+        &self.detail
+    }
+
+    pub fn recovery_posture(&self) -> WorthQueryProviderSessionRecoveryPosture {
+        self.recovery_posture
+    }
+
+    pub fn counters(&self) -> WorthQueryProviderSessionProtocolCounters {
+        self.counters
+    }
+
+    pub(super) fn at_stage(
+        mut self,
+        stage: WorthQueryProviderSessionProtocolStage,
+        counters: WorthQueryProviderSessionProtocolCounters,
+    ) -> Self {
+        self.stage = stage;
+        self.counters = counters;
+        self
+    }
+
+    pub fn with_recovery_posture(
+        mut self,
+        posture: WorthQueryProviderSessionRecoveryPosture,
+    ) -> Self {
+        self.recovery_posture = posture;
+        self
+    }
+}
+
+mod managed_index;
+mod managed_source;
+
+mod court_doors_for_test;

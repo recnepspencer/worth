@@ -4,6 +4,11 @@ use super::super::{
     application_query::WorthQueryCheckpointSourceIdentity, output_lineage::RecordedSourceIdentity,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ApplicationOutputLineageInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn restore<Schema: ApplicationSchema>(
@@ -11,9 +16,10 @@ pub(super) fn restore<Schema: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     let checkpoint_observation = application
+        .inner
         .runtime
-        .product_runtime
-        .recovered_root_authority
+        .product_runtime_ref()
+        .recovered_root_authority_ref()
         .as_ref()
         .map(|authority| authority.product_branch());
     execution.consult().map_err(|cause| {
@@ -21,15 +27,16 @@ pub(super) fn restore<Schema: ApplicationSchema>(
             .into_installation_denial()
     })?;
     let mut lineage = application
+        .inner
         .runtime
-        .primary_provider
-        .graph
-        .output_lineage
+        .primary_provider_ref()
+        .graph_ref()
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     // This is one pass over bounded, installed-producer-readmitted checkpoint records.
     // Current-output reads stay indexed and check these facts at their selected basis.
-    for recovered in application.runtime.recovered_outputs.iter() {
+    for recovered in application.inner.runtime.recovered_outputs_ref().iter() {
         let Some(observation) = recovered.observation.as_ref().or(checkpoint_observation) else {
             continue;
         };
@@ -54,8 +61,8 @@ pub(super) fn restore<Schema: ApplicationSchema>(
         .into_parts();
         lineage.record_restoration(
             binding,
-            application.runtime.authority_identity().as_u64(),
-            application.installed_schema.binding_identity(),
+            application.inner.runtime.authority_identity().as_u64(),
+            application.inner.installed_schema.binding_identity(),
             checkpoint.scope,
             observation,
             std::sync::Arc::clone(&recovered.correspondence),
@@ -89,9 +96,10 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
         return Ok(());
     };
     let branches = application
+        .inner
         .runtime
-        .product_runtime
-        .owner
+        .product_runtime_ref()
+        .owner_ref()
         .observation_port()
         .observe_installed_product_branches(execution)
         .map_err(|_| Denial::ObligationSubjectMismatch)?;
@@ -135,8 +143,9 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
             return Err(Denial::ObligationSubjectMismatch);
         }
         let correspondence = application
+            .inner
             .installed_producers
-            .readmit_checkpoint_output(&application.installed_schema, &checkpoint, execution)
+            .readmit_checkpoint_output(&application.inner.installed_schema, &checkpoint, execution)
             .map_err(|_| Denial::ObligationSubjectMismatch)?;
         accepted.push(
             super::super::application_output_demand::WorthQueryReadmittedAcceptedOutput {
@@ -157,8 +166,9 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
         );
     }
     application
+        .inner
         .runtime
-        .recovered_outputs
+        .recovered_outputs_ref()
         .readmit_journal(accepted, execution)
         .map_err(|_| Denial::MalformedFrame)?;
     restore(application, execution).map_err(|_| Denial::ObligationSubjectMismatch)

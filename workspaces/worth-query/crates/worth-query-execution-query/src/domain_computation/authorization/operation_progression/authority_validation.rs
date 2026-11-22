@@ -1,0 +1,135 @@
+//! Exact operation-authority validation phase owner.
+
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_declaration::facade::application_capability::ApplicationCapabilityRequest;
+use worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity;
+use worth_query_installation::facade::{
+    ApplicationSchema, WorthQueryInstalledApplicationOperation,
+};
+
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal,
+};
+
+use super::WorthQueryCapabilityOperationProgression;
+
+pub mod precondition_binding;
+pub use precondition_binding::WorthQueryAdmittedApplicationCapabilityAccess;
+pub use precondition_binding::WorthQueryAdmittedApplicationOperation;
+pub use precondition_binding::WorthQueryOperationAdmissionIdentity;
+pub use precondition_binding::{admit_capability_access, admit_encoded_capability_access};
+pub use precondition_binding::{
+    authorize_applied_control_mutation_on_selected, authorize_current_control_mutation_on_selected,
+    authorize_historical_control_mutation_on_selected, authorize_public_mutation_on_selected,
+    SelectedConventionalAdmissionStop,
+};
+pub use precondition_binding::{
+    bind_capability_preconditions, bind_conventional_preconditions,
+    transition_capability_operation, transition_conventional_operation,
+};
+pub use precondition_binding::{
+    WorthQueryCapabilityContextKey, WorthQueryCurrentCapabilityObservation,
+    WorthQueryDelegationResolvedRequest, WorthQueryExactCapabilityObservationContext,
+    WorthQueryResolvedCapabilityRequest,
+};
+
+pub struct ValidatedConventionalOperation<
+    'a,
+    Schema,
+    Principal,
+    PrincipalIdentity,
+    Operation,
+    Input,
+    Scope,
+> {
+    pub runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub product: &'a crate::basis::WorthQueryProductBranchLease,
+    pub principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    pub scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    pub operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+    pub request: &'a WorthQueryRequestScope,
+}
+
+pub fn validate_conventional_operation<
+    'a,
+    Schema,
+    Principal,
+    PrincipalIdentity,
+    Operation,
+    Input,
+    Scope,
+>(
+    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: &'a crate::basis::WorthQueryProductBranchLease,
+    principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+    request: &'a WorthQueryRequestScope,
+) -> Result<
+    ValidatedConventionalOperation<
+        'a,
+        Schema,
+        Principal,
+        PrincipalIdentity,
+        Operation,
+        Input,
+        Scope,
+    >,
+    WorthQueryOperationAuthorizationDenial,
+>
+where
+    Schema: ApplicationSchema,
+{
+    crate::domain_computation::authorization::admission::validate_conventional_preflight(
+        runtime, principal, scope, operation.installed_view(), request,
+        crate::domain_computation::authorization::admission::ConventionalPreflightEntrance::TypedOperation,
+    )?;
+    crate::domain_computation::authorization::admission::validate_installed_operation(
+        runtime, operation,
+    )?;
+    Ok(ValidatedConventionalOperation {
+        runtime,
+        product,
+        principal,
+        scope,
+        operation,
+        request,
+    })
+}
+
+pub struct ValidatedCapabilityOperation<'a, Schema, Capability, Operation, Input>
+where
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+{
+    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+}
+
+pub fn validate_capability_operation<'a, Schema, Capability, Operation, Input>(
+    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    access: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    operation: &'a WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+    progression: WorthQueryCapabilityOperationProgression,
+) -> Result<
+    ValidatedCapabilityOperation<'a, Schema, Capability, Operation, Input>,
+    WorthQueryOperationAuthorizationDenial,
+>
+where
+    Schema: ApplicationSchema,
+    Operation: ApplicationOperationMarkerIdentity<Schema>,
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+{
+    access.validate_operation_authority(runtime, operation, progression)?;
+    Ok(ValidatedCapabilityOperation {
+        runtime,
+        access,
+        operation,
+    })
+}
+
+pub use precondition_binding::{BrandTag, ReadCompletionAdmission, WorthQueryAdmittedOperation};

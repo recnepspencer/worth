@@ -6,11 +6,11 @@ use crate::domain_computation::primary_graph::{
         output_source_observation::SourceQueryRequest, request_recipe::CapturedSourceQueryRequest,
         ApplicationQueryNativeAccess, SourceQueryReaderAccess,
     },
-    product_operation::document_history::discovery_recipes::HistoryDiscoveryRecipeKey,
     WorthQueryApplicationOutputDemandSource, WorthQueryApplicationReadObservation,
     WorthQueryHistoryOutputReadDenial as Denial, WorthQueryHistoryRecordingOutputOrigin,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryScopeResolution;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
     WorthQueryProgramApplicationRuntime<S, P>
 {
@@ -61,14 +61,14 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         {
             return Err(foreign());
         }
-        let key = HistoryDiscoveryRecipeKey::new::<C>(
+        let key = crate::domain_computation::primary_graph::product_operation::document_history::history_discovery_recipe_key::<C>(
             profile,
             parent.retained.source_route().ok_or_else(foreign)?,
         );
         let recipe = origin.recipe_recorder().record(&execution, key, || {
             CapturedSourceQueryRequest::capture::<S, DiscoveryBinding<S, C>>(
                 &execution,
-                runtime,
+                runtime.inner(),
                 origin.recipe_step(),
                 intent,
             )
@@ -77,7 +77,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?
             .prepare_shared_query_basis().map_err(|(_, cause)| Denial::Resource(cause))?;
         let reader =
-            SourceQueryReaderAccess::new(runtime, &selected, None, None, external, request)
+            SourceQueryReaderAccess::new(runtime.inner(), &selected, None, None, external, request)
                 .map_err(Denial::Demand)?;
         reader.with_request_plan::<DiscoveryBinding<S, C>, _, Denial>(
             &execution,

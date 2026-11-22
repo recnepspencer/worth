@@ -1,3 +1,4 @@
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
@@ -125,14 +126,16 @@ where
     pub fn inspect_conditional_runtime(&self) -> WorthQueryConditionalRuntimeInspection {
         let registry = self
             .conditional_cleanup
+            .routes
             .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .snapshot();
         let retained = registry.retained_resource_counts();
         let bridge = self
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .conditional_lifecycle_probe();
         WorthQueryConditionalRuntimeInspection::from_live_resources(
@@ -153,12 +156,14 @@ where
         &self,
     ) -> super::WorthQueryConditionalRuntimeLifecycleProbe {
         let bridge = self
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .conditional_lifecycle_probe();
         let registry = self
             .conditional_cleanup
+            .routes
             .operations
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

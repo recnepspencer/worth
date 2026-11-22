@@ -1,0 +1,312 @@
+use super::WorthQueryApplicationBasisIdentity;
+use worth_foundational::facade::CanonicalDigestId;
+use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
+use worth_query_installation::facade::{
+    WorthQueryCanonicalWorkPhases, WorthQueryInstalledApplicationQuery,
+    WorthQueryInstalledApplicationQueryIdentity,
+};
+use worth_relational::facade::indexes::DerivedIndexId;
+use worth_relational::facade::indexes::{DerivedIndexGenerationId, RelatedEntityOrderingBoundary};
+
+use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+
+use super::super::{WorthQueryApplicationEntityIdentity, WorthQueryAuthenticatedPrincipal};
+use super::{
+    basis::WorthQueryApplicationQueryBasisCustody, WorthQueryAdmittedApplicationQueryControls,
+};
+
+pub enum WorthQueryQueryIndexPosture {
+    HistoricalAllPrimary,
+    SelectedInstalled(super::PreparedSelectedReadIndexes),
+}
+
+/// Sealed execution authority for one exact installed query admission.
+///
+/// Descriptive query identities, support inventories, and graph-plan reviews
+/// cannot construct this value.
+pub struct WorthQueryAdmittedApplicationQueryPlan<
+    'a,
+    Schema,
+    Query,
+    Parameters,
+    QueryResult,
+    Principal,
+    PrincipalIdentity,
+    Scope,
+> {
+    pub(crate) planned_batch_item: Option<super::batch::PlannedBatchItem>,
+    pub(crate) retain_expression_context: bool,
+    pub(crate) retain_projection_for_inspection: bool,
+    pub(crate) runtime_authority: WorthQueryRuntimeAuthorityIdentity,
+    pub(crate) graph_authority_identity: String,
+    pub(crate) provider_identity: String,
+    pub(crate) query:
+        &'a WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
+    pub principal: &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    pub(crate) scope: &'a WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    pub(crate) parameters: WorthQueryAdmittedApplicationQueryParameters,
+    pub(crate) controls: WorthQueryAdmittedApplicationQueryControls<'a>,
+    pub(crate) canonical_work: WorthQueryCanonicalWorkPhases,
+    pub(crate) continuation_index_id: Option<DerivedIndexId>,
+    pub(crate) continuation_state: Option<WorthQueryAdmittedContinuationState>,
+    pub(crate) basis: WorthQueryApplicationQueryBasisCustody,
+    pub(crate) index_posture: WorthQueryQueryIndexPosture,
+    pub(crate) security_product: crate::basis::WorthQueryProductObservationLease,
+    pub(crate) security_basis: Option<super::basis::WorthQueryApplicationQueryBasisCustody>,
+    pub graph_work: crate::domain_computation::provider_session::WorthQueryManagedGraphWorkSession,
+    pub(crate) authorization:
+        crate::domain_computation::authorization::WorthQueryRetainedAuthorizationDecisionFacts,
+    pub(crate) authorization_work: super::WorthQueryApplicationAuthorizationWorkEvidence,
+    pub(crate) selected_access: Option<
+        super::admission::SelectedIssuedAccessRoot<'a, Schema, Principal, PrincipalIdentity, Scope>,
+    >,
+    pub(crate) governance: super::disclosure::WorthQueryApplicationQueryGovernance,
+    pub(crate) history_metadata: Option<super::history::HistoryMetadataAdmission>,
+}
+
+pub struct WorthQueryAdmittedContinuationState {
+    pub expected_generation: DerivedIndexGenerationId,
+    pub boundary: RelatedEntityOrderingBoundary,
+    pub page_ordinal: u64,
+}
+
+impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>
+    WorthQueryAdmittedApplicationQueryPlan<
+        'a,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >
+{
+    /// Retains the native, fully disclosed exactly-one result as an immutable
+    /// expression context beside its observed source. This grants no authority
+    /// and does not replace query admission or mutation source validation.
+    pub fn retain_expression_context(mut self) -> Self {
+        self.retain_expression_context = true;
+        self
+    }
+
+    /// Retains the actual disclosed Native projection under the original
+    /// execution request. This descriptive backing grants no inspection
+    /// permission and does not capture application DTOs. Unsupported shapes
+    /// are refused by one-shot completion.
+    pub fn retain_projection_for_inspection(mut self) -> Self {
+        self.retain_projection_for_inspection = true;
+        self
+    }
+}
+
+impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>
+    crate::ports::AdmittedQueryPlanInternalPort<
+        'a,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >
+    for WorthQueryAdmittedApplicationQueryPlan<
+        'a,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >
+{
+    fn basis(&self) -> &super::basis::WorthQueryApplicationQueryBasisCustody {
+        &self.basis
+    }
+
+    fn controls(&self) -> &WorthQueryAdmittedApplicationQueryControls<'a> {
+        &self.controls
+    }
+
+    fn governance(&self) -> &super::disclosure::WorthQueryApplicationQueryGovernance {
+        &self.governance
+    }
+
+    fn take_governance_readmission(
+        &mut self,
+    ) -> Option<super::disclosure::WorthQueryPendingApplicationQueryGovernance> {
+        std::mem::replace(
+            &mut self.governance,
+            super::disclosure::WorthQueryApplicationQueryGovernance::Public,
+        )
+        .into_readmission()
+    }
+
+    fn history_metadata(&self) -> Option<&super::history::HistoryMetadataAdmission> {
+        self.history_metadata.as_ref()
+    }
+
+    fn set_history_metadata(&mut self, metadata: Option<super::history::HistoryMetadataAdmission>) {
+        self.history_metadata = metadata;
+    }
+
+    fn parameters(&self) -> &WorthQueryAdmittedApplicationQueryParameters {
+        &self.parameters
+    }
+
+    fn principal_ref(
+        &self,
+    ) -> &'a WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
+        self.principal
+    }
+
+    fn query(
+        &self,
+    ) -> &'a WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>
+    {
+        self.query
+    }
+
+    fn scope(&self) -> &'a WorthQueryApplicationEntityIdentity<Schema, Scope> {
+        self.scope
+    }
+
+    fn security_product(&self) -> &crate::basis::WorthQueryProductObservationLease {
+        &self.security_product
+    }
+
+    fn carry_planned_batch_item(&mut self, item: Option<super::batch::PlannedBatchItem>) {
+        Self::carry_planned_batch_item(self, item);
+    }
+}
+
+impl<'a, Schema, Query, Parameters, QueryResult, Principal, PrincipalIdentity, Scope>
+    WorthQueryAdmittedApplicationQueryPlan<
+        'a,
+        Schema,
+        Query,
+        Parameters,
+        QueryResult,
+        Principal,
+        PrincipalIdentity,
+        Scope,
+    >
+{
+    pub(crate) fn carry_planned_batch_item(
+        &mut self,
+        item: Option<super::batch::PlannedBatchItem>,
+    ) {
+        self.planned_batch_item = item;
+    }
+
+    pub fn query_identity(&self) -> &WorthQueryInstalledApplicationQueryIdentity {
+        self.query.identity()
+    }
+
+    pub fn parameter_binding_identity(&self) -> &CanonicalDigestId {
+        self.parameters.identity()
+    }
+
+    pub fn controls(&self) -> &WorthQueryAdmittedApplicationQueryControls<'a> {
+        &self.controls
+    }
+
+    pub fn graph_read_plan(
+        &self,
+    ) -> &worth_query_admission::facade::graph_read_access::WorthQueryGraphReadPlanReview {
+        self.graph_work.graph_read_review()
+    }
+
+    pub const fn canonical_work(&self) -> WorthQueryCanonicalWorkPhases {
+        self.canonical_work
+    }
+
+    pub fn continuation_index_id(&self) -> Option<DerivedIndexId> {
+        self.continuation_index_id
+    }
+
+    pub fn basis_identity(&self) -> &WorthQueryApplicationBasisIdentity {
+        self.graph_work
+            .query_basis()
+            .expect("an application-query graph-work session retains its exact basis")
+    }
+
+    pub fn graph_work_session_identity(
+        &self,
+    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity {
+        self.graph_work.identity()
+    }
+
+    pub fn graph_work_managed_run_identity(
+        &self,
+    ) -> crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity {
+        self.graph_work.managed_run_identity()
+    }
+
+    pub fn graph_work_branch(&self) -> &worth_relational::facade::history::BranchId {
+        self.graph_work.branch().relational()
+    }
+
+    pub fn graph_work_decision_fact_count(&self) -> usize {
+        self.graph_work.retained_decision_facts()
+    }
+
+    pub fn graph_work_runtime_ordinal(&self) -> u64 {
+        self.graph_work.runtime_ordinal()
+    }
+
+    pub fn graph_work_principal_entity_id(&self) -> worth_relational::facade::identity::EntityId {
+        self.graph_work.principal()
+    }
+
+    pub fn graph_work_scope_entity_id(
+        &self,
+    ) -> Option<worth_relational::facade::identity::EntityId> {
+        self.graph_work.entity_access_context()
+    }
+
+    pub fn graph_work_capability_identity(&self) -> Option<[u8; 32]> {
+        self.graph_work.capability_access_context()
+    }
+
+    pub fn graph_work_provider(&self) -> &str {
+        self.graph_work.provider()
+    }
+
+    pub fn principal(
+        &self,
+    ) -> &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity> {
+        self.principal
+    }
+
+    pub fn scope(&self) -> &WorthQueryApplicationEntityIdentity<Schema, Scope> {
+        self.scope
+    }
+
+    pub fn runtime_authority_identity(&self) -> u64 {
+        self.runtime_authority.as_u64()
+    }
+
+    pub fn authorization_decision_fact_count(&self) -> usize {
+        self.authorization.exact_fact_count()
+    }
+
+    pub const fn authorization_work(
+        &self,
+    ) -> super::WorthQueryApplicationAuthorizationWorkEvidence {
+        self.authorization_work
+    }
+
+    pub(crate) fn take_governance(
+        &mut self,
+    ) -> super::disclosure::WorthQueryApplicationQueryGovernance {
+        std::mem::replace(
+            &mut self.governance,
+            super::disclosure::WorthQueryApplicationQueryGovernance::Public,
+        )
+    }
+}
+
+mod court_doors_for_test;

@@ -1,4 +1,5 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryConditionalNodeLocation,
     WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
@@ -163,7 +164,7 @@ fn denial(
     kind: DenialKind,
     subject: impl Into<String>,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
-    WorthQueryConditionalRuntimeInstallationDenial::new(kind, subject)
+    WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(kind, subject)
 }
 
 #[cfg(test)]

@@ -30,4 +30,7 @@ pub mod court_doors_for_test;
 pub(crate) mod inline_type_budget;
 #[cfg(test)]
 mod inline_type_sizes;
-pub mod test_read_stops;
+pub use worth_query_execution_lineage::facade::test_read_stops;
+
+#[cfg(doctest)]
+pub mod doctest_boundaries;

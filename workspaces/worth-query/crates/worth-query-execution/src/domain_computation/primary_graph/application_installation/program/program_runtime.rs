@@ -2,7 +2,13 @@
 //! installation, and with every other program it rostered.
 
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use crate::domain_computation::primary_graph::query_obligations::history::durable_retirement::QueryObligationHistoryDurableRetirementExt;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
@@ -193,9 +199,10 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             let barrier = match self
                 .backing
                 .runtime()
+                .inner
                 .runtime
-                .product_runtime
-                .activations
+                .product_runtime_ref()
+                .activations_ref()
                 .begin_program_retirement(revision)
             {
                 Ok(barrier) => barrier,
@@ -208,9 +215,10 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
             let occurrences = match self
                 .backing
                 .runtime()
+                .inner
                 .runtime
-                .product_runtime
-                .activations
+                .product_runtime_ref()
+                .activations_ref()
                 .live_occurrences()
             {
                 Ok(occurrences) => occurrences,
@@ -225,8 +233,9 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                 let selected = match self
                     .backing
                     .runtime()
+                    .inner
                     .runtime
-                    .product_runtime
+                    .product_runtime_ref()
                     .admit_product_occurrence(occurrence)
                 {
                     Ok(selected) => selected,
@@ -273,7 +282,7 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                     }
                 };
                 let inspection = match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution,
-                    self.backing.runtime(),
+                    self.backing.runtime().inner(),
                     selected.relational_basis(),
                 ) {
                     Ok(inspection) => inspection,
@@ -327,7 +336,7 @@ where
         crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenial,
     > {
         let backing = std::sync::Arc::get_mut(&mut self.backing).ok_or_else(|| {
-            crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenial::new(
+            crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                 crate::domain_computation::primary_graph::WorthQueryConditionalRuntimeInstallationDenialKind::RuntimeKeepaliveRetained,
                 "installed program runtime remains retained by another handle",
             )
@@ -336,29 +345,7 @@ where
     }
 }
 
-/// A retirement's inventory denial or the exact request that stopped reading it.
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum WorthQueryProgramSupportRetirementFailure {
-    Durability(super::super::super::query_obligations::QueryObligationDenial),
-    Policy(worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial),
-    ReadExecution {
-        stop: Result<
-            crate::domain_computation::WorthQueryProviderSessionDenialKind,
-            crate::domain_computation::WorthQueryProviderSessionControlStopKind,
-        >,
-        inventory:
-            worth_query_installation::facade::WorthQueryProgramSupportPartialRetirementInventory,
-    },
-}
-impl From<worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial>
-    for WorthQueryProgramSupportRetirementFailure
-{
-    fn from(
-        denial: worth_query_installation::facade::WorthQueryProgramSupportRetirementDenial,
-    ) -> Self {
-        Self::Policy(denial)
-    }
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::application_installation::WorthQueryProgramSupportRetirementFailure;
 
 impl<Schema, Program> Clone for WorthQueryProgramApplicationRuntime<Schema, Program> {
     fn clone(&self) -> Self {

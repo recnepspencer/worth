@@ -4,6 +4,8 @@ use super::super::{
     WorthQueryResourceCleanupPosture,
 };
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph::application_resource) fn drain_candidate<Schema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
@@ -23,8 +25,9 @@ where
             return Err(ResourceCause::Unavailable);
         };
         runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -42,8 +45,9 @@ where
             return Err(ResourceCause::Unavailable);
         };
         let drained = runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -114,8 +118,9 @@ where
     };
     if owner.wake_cleanup_pending() {
         runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -132,8 +137,9 @@ where
         && !completion.timeout_cleanup_complete()
     {
         runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -148,8 +154,9 @@ where
     }
     if owner.has_pending_retry() {
         runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -165,8 +172,9 @@ where
     occurrence.retry = None;
     if completion.is_none() {
         runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -188,8 +196,9 @@ where
         .signal_basis();
     let lifecycle = &mut occurrence.lifecycle;
     runtime
+        .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional()
         .with_view(basis, |bridge| {
             let prior = std::mem::replace(lifecycle, ResourceLifecycle::Reserved { clock: None });

@@ -12,7 +12,7 @@ use graph::{
     WorthQueryPrincipalResolutionDenialKind as PrincipalKind,
 };
 
-mod classification;
+use worth_query_execution_lineage::facade::domain_computation::primary_graph::conditional_operation::execution_provenance::classification;
 mod commit_cause;
 pub(in crate::domain_computation::primary_graph::conditional_operation) use classification::signal_decision;
 pub use classification::{

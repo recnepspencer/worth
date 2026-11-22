@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 
 use worth_query_installation::facade::{
     ApplicationIdentityScalarValueBinding, ApplicationSchema, WorthQueryExternalPrincipalIdentity,
@@ -37,12 +38,11 @@ mod initial_installation;
 mod managed_source_initialization;
 pub(super) mod native_meaning;
 mod preparation;
-pub(in crate::domain_computation::primary_graph) use preparation::map_checkpoint_recovery_stop;
 pub(super) mod prepared_native;
 mod program_activation_recovery;
 pub(in crate::domain_computation::primary_graph) use program_activation_recovery::read_activation;
 mod program_activation_seeding;
-mod publication;
+pub(crate) use worth_query_execution_lineage::facade::primary_graph::bootstrap::publication;
 mod publication_target;
 mod seed_batches;
 pub(super) mod unique_seed_values;
@@ -122,6 +122,24 @@ where
         self.recovered_checkpoint_restore_work
     }
 
+    pub fn install_handler<Binding, Handler>(
+        &mut self,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationMutationBinding<
+            Schema,
+            Binding,
+        >,
+        handler: Handler,
+    ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial>
+    where
+        Binding: worth_query_declaration::facade::application_operation::ApplicationMutationBinding<
+            Schema,
+        >,
+        Handler: super::application_entry::mutation::OperationHandler<Schema, Binding>,
+    {
+        self.mutation_handlers
+            .register(self.graph.binding_identity(), installed, handler)
+    }
+
     pub fn bind_principal<
         Binding,
         Mapping,
@@ -160,7 +178,7 @@ where
         }
         let layout = self
             .graph
-            .layout
+            .layout_ref()
             .principal_binding(installed_binding.binding())
             .cloned()
             .ok_or_else(|| {
@@ -263,7 +281,7 @@ pub(super) fn request_denial(
     primary_graph_denial(kind, "bootstrap request admission")
 }
 
-pub(super) mod request_read_denial;
+pub(super) use worth_query_execution_attempt::facade::domain_computation::primary_graph::bootstrap::request_read_denial;
 
 mod court_doors_for_test;
 

@@ -1,6 +1,12 @@
 //! Product branch lifecycle enriched with primary-provider custody.
 
 use std::num::NonZeroUsize;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeOwnerCleanupInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{
@@ -44,12 +50,15 @@ pub struct WorthQueryApplicationProductBranches<'runtime, Schema> {
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn current_world(&self) -> WorthQueryProductBranch {
-        self.runtime.product_runtime.root_product_branch()
+        self.inner
+            .runtime
+            .product_runtime_ref()
+            .root_product_branch()
     }
 
     pub fn branches(&self) -> WorthQueryApplicationProductBranches<'_, Schema> {
         WorthQueryApplicationProductBranches {
-            branches: self.runtime.product_runtime.product_branches(),
+            branches: self.inner.runtime.product_runtime_ref().product_branches(),
             application: self,
         }
     }
@@ -66,7 +75,7 @@ impl<Schema: ApplicationSchema> crate::basis::WorthQuerySourceProgramResolver
         Option<worth_query_declaration::facade::application_program::ApplicationProgramRevision>,
         crate::basis::WorthQueryProductBranchAdmissionDenial,
     > {
-        match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution, self, source.relational_basis()) {
+        match crate::domain_computation::primary_graph::product_activation::inspect_selected_program(execution, self.inner(), source.relational_basis()) {
             Ok(selected) => Ok(Some(*selected.revision())),
             Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) => Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(stop)),
             Err(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable | crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered) => Ok(None),
@@ -86,9 +95,10 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
         let coverage = WorthQueryProgramAdoptionCoverage::issue(branches, maximum_targets)?;
         let unadmitted = self
             .application
+            .inner
             .runtime
-            .product_runtime
-            .activations
+            .product_runtime_ref()
+            .activations_ref()
             .first_unadmitted_live_occurrence(
                 coverage.branches().iter().map(|branch| branch.occurrence()),
             )
@@ -121,16 +131,25 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
     }
 
     pub fn fork(self, source: WorthQueryProductBranch) -> WorthQueryProductBranchFork<'runtime> {
+        use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
         self.branches.fork(source).with_application_lifecycle(
-            std::sync::Arc::clone(
-                &self
-                    .application
-                    .runtime
-                    .primary_provider
-                    .graph
-                    .output_lineage,
+            std::sync::Arc::new(
+                crate::domain_computation::runtime_ports::OutputLineageForkAdapter(
+                    std::sync::Arc::clone(
+                        self.application
+                            .inner
+                            .runtime
+                            .primary_provider_ref()
+                            .graph_ref()
+                            .output_lineage_ref(),
+                    ),
+                ),
             ),
-            &self.application.runtime.primary_provider,
+            self.application
+                .inner
+                .runtime
+                .primary_provider_ref()
+                .as_ref(),
             self.application,
         )
     }
@@ -157,26 +176,35 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
     pub fn pending_cleanup(&self) -> Vec<WorthQueryApplicationProductBranchCleanup> {
         for occurrence in self
             .application
+            .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .pending_application_retired_product_occurrences()
         {
             self.application
+                .inner
                 .runtime
-                .output_demands
+                .output_demands_ref()
                 .release_product_occurrence(occurrence.incarnation());
             self.application
+                .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .release_product_occurrence_retention(
                     occurrence.branch(),
                     occurrence.incarnation(),
                 );
         }
-        let conditional = self.application.runtime.bridge.conditional_operations();
-        self.application
+        let conditional = self
+            .application
+            .inner
             .runtime
-            .product_runtime
+            .bridge_ref()
+            .conditional_operations();
+        self.application
+            .inner
+            .runtime
+            .product_runtime_ref()
             .pending_owner_cleanup()
             .into_iter()
             .map(|cleanup| {

@@ -168,10 +168,12 @@ fn continued_effect_refuses(worker: bool, changed_patch: bool) {
         .expect("Native continued-round refusal");
     assert_eq!(
         error.authored_retirement_refusal(),
-        Some(AuthoredRetirementRefusal::CoupledContinuationProvenancePostponed {
-            issue: 119,
-            reason: CoupledProvenancePostponement::ContinuedRoundEffect,
-        })
+        Some(
+            AuthoredRetirementRefusal::CoupledContinuationProvenancePostponed {
+                issue: 119,
+                reason: CoupledProvenancePostponement::ContinuedRoundEffect,
+            }
+        )
     );
     assert_eq!(
         error.context.affected_records,

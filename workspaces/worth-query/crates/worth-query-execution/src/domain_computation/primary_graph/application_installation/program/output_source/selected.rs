@@ -6,8 +6,11 @@
 //! selection. The occurrence gate still decides: a successor the occurrence
 //! no longer runs is refused before any effect.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use crate::facade::runtime::ExecutionAllocationPolicy;
 
@@ -94,7 +97,9 @@ where
         Source::Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
+            match phase
+                .execution_request_for(self.backing.runtime().inner.runtime.product_runtime_ref())
+            {
                 Ok(request) => request,
                 Err(cause) => return Ok((
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
@@ -157,7 +162,9 @@ where
         Source::Input: Clone + Send + Sync + 'static,
     {
         let phase_request =
-            match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
+            match phase
+                .execution_request_for(self.backing.runtime().inner.runtime.product_runtime_ref())
+            {
                 Ok(request) => request,
                 Err(cause) => return Ok((
                     crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(

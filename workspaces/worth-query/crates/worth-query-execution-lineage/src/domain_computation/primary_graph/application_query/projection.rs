@@ -1,0 +1,287 @@
+use std::marker::PhantomData;
+
+use super::super::value_decode::ValueDecodeSession;
+use worth_query_declaration::facade::application_query::{
+    ApplicationQueryMarkerIdentity, ApplicationQueryOptionalResultFieldRef,
+    ApplicationQueryResultFieldRef, ApplicationQueryResultRelationCardinality,
+    ApplicationQueryResultRelationRef, ApplicationQueryResultTraversal, ExactlyOneResult,
+    ManyResults, OptionalOneResult,
+};
+use worth_query_declaration::facade::portable_identity::WorthQueryPortableType;
+use worth_query_installation::facade::ApplicationReadableScalarValueBinding;
+use worth_relational::facade::identity::EntityId;
+
+pub mod denial;
+pub mod disclosed;
+pub mod required_field;
+pub use denial::{
+    WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
+};
+pub mod optional_aspect;
+pub mod prerequisite_selection;
+pub use prerequisite_selection::WorthQueryPrerequisiteSelection;
+pub mod projected_tree;
+pub use projected_tree::content::ContentWriter;
+pub use projected_tree::content_storage::ContentScratch;
+pub use projected_tree::content_storage::ProjectionContentStorageFault;
+pub use projected_tree::ProjectionContentComparisonFault;
+pub use projected_tree::{OwnedProjectionRows, ProjectionDisposal};
+pub mod retained_projection;
+
+pub use disclosed::{WorthQueryApplicationDisclosed, WorthQueryApplicationOmission};
+
+pub use projected_tree::{
+    WorthQueryApplicationDisclosedProjectionNode, WorthQueryApplicationDisclosedProjectionTree,
+    WorthQueryApplicationProjectedField, WorthQueryApplicationProjectedRelation,
+    WorthQueryApplicationProjectionNode, WorthQueryApplicationWorkingProjectionTree,
+};
+
+/// Query-owned authoritative row presented to domain projection code.
+///
+/// Construction is private. Reads require query-bound result selectors whose
+/// slot, path meaning, field or relation contract, and cardinality match the
+/// installed application query.
+pub struct WorthQueryApplicationProjectionRow<'row, Schema, Query> {
+    node: WorthQueryApplicationDisclosedProjectionNode<'row>,
+    governance: &'row dyn crate::ports::QueryGovernancePort,
+    decode: &'row ValueDecodeSession<'row>,
+    _marker: PhantomData<fn() -> (Schema, Query)>,
+}
+
+/// The rows of a many-valued relation, read from a projection row.
+///
+/// Iterate to get one projection row per related result.
+pub struct WorthQueryApplicationProjectionRows<'row, Schema, Query> {
+    rows: &'row [WorthQueryApplicationProjectionNode],
+    disclosure_parent: WorthQueryApplicationDisclosedProjectionNode<'row>,
+    governance: &'row dyn crate::ports::QueryGovernancePort,
+    decode: &'row ValueDecodeSession<'row>,
+    _marker: PhantomData<fn() -> (Schema, Query)>,
+}
+
+impl<'row, Schema, Query> WorthQueryApplicationProjectionRow<'row, Schema, Query> {
+    /// Returns the authorized graph identity represented by this projected row.
+    ///
+    /// Domain projectors can use this to distinguish repeated traversal of one
+    /// entity from traversal of distinct entities without inferring identity
+    /// from field values.
+    pub const fn entity_id(&self) -> EntityId {
+        self.node.entity_id()
+    }
+
+    pub fn field<Slot, Entity, Aspect, Field, Value>(
+        &self,
+        selector: ApplicationQueryResultFieldRef<Query, Slot, Schema, Field>,
+    ) -> Result<Value, WorthQueryApplicationProjectionDenial>
+    where
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
+        Field::Binding: ApplicationReadableScalarValueBinding,
+
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        Slot: WorthQueryPortableType,
+    {
+        self.disclosed_field(selector)?
+            .into_required(WorthQueryApplicationProjectionDenialKind::FieldOmitted)
+    }
+
+    pub fn optional_field<Slot, Entity, Aspect, Field, Value>(
+        &self,
+        selector: ApplicationQueryOptionalResultFieldRef<Query, Slot, Schema, Field>,
+    ) -> Result<Option<Value>, WorthQueryApplicationProjectionDenial>
+    where
+        Field: worth_query_declaration::facade::application_schema::fragment::RecordSelection<
+            Entity = Entity,
+            Aspect = Aspect,
+            Value = Value,
+        >,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        Slot: WorthQueryPortableType,
+    {
+        self.disclosed_optional_field(selector)?
+            .into_required(WorthQueryApplicationProjectionDenialKind::FieldOmitted)
+    }
+
+    pub fn optional<Slot, Relation, From, To, Direction>(
+        &self,
+        selector: ApplicationQueryResultRelationRef<
+            Query,
+            Slot,
+            Schema,
+            Relation,
+            From,
+            To,
+            Direction,
+            OptionalOneResult,
+        >,
+    ) -> Result<
+        Option<WorthQueryApplicationProjectionRow<'_, Schema, Query>>,
+        WorthQueryApplicationProjectionDenial,
+    >
+    where
+        Direction: ApplicationQueryResultTraversal,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        Slot: WorthQueryPortableType,
+    {
+        let relation = self.relation(&selector)?;
+        match relation.rows() {
+            [] => Ok(None),
+            [row] => Ok(Some(WorthQueryApplicationProjectionRow::new(
+                self.node.child(row),
+                self.governance,
+                self.decode,
+            ))),
+            _ => Err(relation_cardinality_denial(relation)),
+        }
+    }
+
+    pub fn one<Slot, Relation, From, To, Direction>(
+        &self,
+        selector: ApplicationQueryResultRelationRef<
+            Query,
+            Slot,
+            Schema,
+            Relation,
+            From,
+            To,
+            Direction,
+            ExactlyOneResult,
+        >,
+    ) -> Result<
+        WorthQueryApplicationProjectionRow<'_, Schema, Query>,
+        WorthQueryApplicationProjectionDenial,
+    >
+    where
+        Direction: ApplicationQueryResultTraversal,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        Slot: WorthQueryPortableType,
+    {
+        let relation = self.relation(&selector)?;
+        match relation.rows() {
+            [row] => Ok(WorthQueryApplicationProjectionRow::new(
+                self.node.child(row),
+                self.governance,
+                self.decode,
+            )),
+            _ => Err(relation_cardinality_denial(relation)),
+        }
+    }
+
+    pub fn many<Slot, Relation, From, To, Direction>(
+        &self,
+        selector: ApplicationQueryResultRelationRef<
+            Query,
+            Slot,
+            Schema,
+            Relation,
+            From,
+            To,
+            Direction,
+            ManyResults,
+        >,
+    ) -> Result<
+        WorthQueryApplicationProjectionRows<'_, Schema, Query>,
+        WorthQueryApplicationProjectionDenial,
+    >
+    where
+        Direction: ApplicationQueryResultTraversal,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        Slot: WorthQueryPortableType,
+    {
+        let relation = self.relation(&selector)?;
+        Ok(WorthQueryApplicationProjectionRows {
+            rows: relation.rows(),
+            disclosure_parent: self.node,
+            governance: self.governance,
+            decode: self.decode,
+            _marker: PhantomData,
+        })
+    }
+
+    fn relation<Slot, Relation, From, To, Direction, Cardinality>(
+        &self,
+        selector: &ApplicationQueryResultRelationRef<
+            Query,
+            Slot,
+            Schema,
+            Relation,
+            From,
+            To,
+            Direction,
+            Cardinality,
+        >,
+    ) -> Result<&WorthQueryApplicationProjectedRelation, WorthQueryApplicationProjectionDenial>
+    where
+        Direction: ApplicationQueryResultTraversal,
+        Cardinality: ApplicationQueryResultRelationCardinality,
+        Query: ApplicationQueryMarkerIdentity<Schema>,
+        Slot: WorthQueryPortableType,
+    {
+        self.disclosed_relation(selector)?
+            .into_required(WorthQueryApplicationProjectionDenialKind::RelationOmitted)
+    }
+
+    pub const fn new(
+        node: WorthQueryApplicationDisclosedProjectionNode<'row>,
+        governance: &'row dyn crate::ports::QueryGovernancePort,
+        decode: &'row ValueDecodeSession<'row>,
+    ) -> Self {
+        Self {
+            node,
+            governance,
+            decode,
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<'row, Schema, Query> WorthQueryApplicationProjectionRows<'row, Schema, Query> {
+    pub const fn len(&self) -> usize {
+        self.rows.len()
+    }
+
+    pub const fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+
+    pub fn iter(
+        &self,
+    ) -> impl ExactSizeIterator<Item = WorthQueryApplicationProjectionRow<'_, Schema, Query>> {
+        self.rows.iter().map(|row| {
+            WorthQueryApplicationProjectionRow::new(
+                self.disclosure_parent.child(row),
+                self.governance,
+                self.decode,
+            )
+        })
+    }
+}
+
+/// Application code that turns one query result row into a typed value.
+///
+/// Implement `project` by reading fields and relations through the row's
+/// query-bound selectors. Returning a denial refuses the whole read.
+pub trait WorthQueryApplicationProjection<Schema, Query>: Sized {
+    fn project(
+        row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
+    ) -> Result<Self, WorthQueryApplicationProjectionDenial>;
+}
+
+fn projection_denial(
+    kind: WorthQueryApplicationProjectionDenialKind,
+    subject: impl Into<String>,
+) -> WorthQueryApplicationProjectionDenial {
+    WorthQueryApplicationProjectionDenial::new(kind, subject)
+}
+
+fn relation_cardinality_denial(
+    relation: &WorthQueryApplicationProjectedRelation,
+) -> WorthQueryApplicationProjectionDenial {
+    projection_denial(
+        WorthQueryApplicationProjectionDenialKind::RelationCardinalityMismatch,
+        relation.result_path(),
+    )
+}

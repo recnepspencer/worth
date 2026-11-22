@@ -12,6 +12,8 @@ use crate::domain_computation::{
     provider_session::WorthQueryGraphWorkSessionIdentity,
 };
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 
 pub(in super::super) struct RichReportScope {
@@ -49,11 +51,11 @@ impl AdmittedRichProjection<'_> {
                 .original()
                 .ok_or(InspectionAdmissionDenial::ForeignIssuedAccess)?;
             // The actual diagnostic loan exists before even this availability lookup.
-            match original.source.original_projection() {
+            match original.source().original_projection() {
                 None=>OriginalQueryDetail::NotRetained,
                 Some(projection)=>OriginalQueryDetail::Provided(
                     crate::domain_computation::primary_graph::application_query::materialize_original_projection(
-                        execution,memory,projection,self.diagnostic).map_err(InspectionAdmissionDenial::Rich)?),
+                        execution,memory,projection,&self.diagnostic).map_err(InspectionAdmissionDenial::Rich)?),
             }
         };
         Ok(PreparedRichMaterialization {
@@ -128,8 +130,9 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             capture_original_query(execution, self.memory, &self.target, &self.session, loan)?;
         if matches!(body.artifact.original, OriginalQueryDetail::Provided(_)) {
             self.runtime
+                .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .inspection_materialization_prepared();
         }
         drop(self.check(execution)?);

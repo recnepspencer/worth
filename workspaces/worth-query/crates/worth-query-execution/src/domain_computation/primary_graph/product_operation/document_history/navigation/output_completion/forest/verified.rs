@@ -1,6 +1,9 @@
 //! A complete discovered tree can retain a verified root without minting a settlement.
 use super::*;
+use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryVerifiedHistoryParent;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 pub(super) struct VerifiedHistoryOutputTree {
     pub(super) dependents: Vec<Arc<WorthQueryOutputDemandSettlement>>,
@@ -61,7 +64,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         let mut retained = Vec::with_capacity(count);
         for dependent in dependents {
             checkpoint(&execution)?;
-            if retained.len() == count || !dependent.belongs_to(self.runtime()) {
+            if retained.len() == count || !dependent.belongs_to(self.runtime().inner()) {
                 return Err(foreign());
             }
             retained.push(dependent);
@@ -162,9 +165,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         >,
         profile: &WorthQueryHistoryOutputProfile,
     ) -> Result<(), ReadDenial> {
-        self.runtime
-            .primary_provider
-            .graph
+        self.inner
+            .runtime
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(execution, |native| {
                 let evidence = authority
                     .selected_output_read(execution, native)
@@ -194,7 +198,7 @@ impl WorthQueryRetainedHistoryOutputTree {
     ) -> Result<(), ReadDenial> {
         match &self.kind {
             HistoryRetainedOutputTree::Original(original) => original
-                .require_current_at(selected, phase, access, request)
+                .require_current_at(selected.into_inner(), phase, access, request)
                 .map_err(ReadDenial::Original),
             HistoryRetainedOutputTree::Verified(verified) => {
                 if let Some(dependencies) = &verified.dependencies {

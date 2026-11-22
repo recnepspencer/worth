@@ -1,0 +1,67 @@
+//! Original request admission precedes every copied pending-disclosure byte.
+use super::*;
+use crate::domain_computation::primary_graph::admitted_capture::{
+    checkpoint, run_retained_stage, CaptureStop, RetainedStorageDenial,
+};
+use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelFailure};
+
+/// Governance keeps the pending value and its computation/disclosure copy alive
+/// together, so both copies are admitted before the first is constructed.
+/// Existing capability authorization remains shared under its original owner.
+pub fn prepare_funded_pending_disclosure<Schema, Scope, Capability, Operation, Input, E>(
+    runtime: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
+    binding: &ApplicationSchemaBindingIdentity,
+    principal: EntityId,
+    scope: EntityId,
+    capability: WorthQueryAdmittedApplicationCapabilityAccess<Schema, Capability, Operation, Input>,
+    validate_original_request: impl FnOnce(
+        &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    ) -> Result<(), E>,
+    validate_current_request: impl FnOnce() -> Result<(), E>,
+    mismatch: impl Fn() -> E,
+    incarnation_refusal: impl FnOnce(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial,
+    ) -> E,
+    missing_disclosure: impl FnOnce() -> E,
+    execution: &ExecutionRequest<'_, '_>,
+    memory: &mut Option<ExecutionMemoryReservation>,
+    storage_stop: impl Fn(CaptureStop<RetainedStorageDenial>) -> E,
+) -> Result<WorthQueryPendingApplicationQueryGovernance, E>
+where
+    Schema: ApplicationSchema,
+    Input: ApplicationCapabilityRequest<Schema, Capability, Scope = Scope>,
+{
+    let runtime = runtime.runtime_inner();
+    prepare_with_capture(
+        runtime,
+        binding,
+        principal,
+        scope,
+        capability,
+        validate_original_request,
+        validate_current_request,
+        mismatch,
+        incarnation_refusal,
+        missing_disclosure,
+        |name, kind, value| {
+            let copied = run_retained_stage(execution, memory, |context, memory| {
+                checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
+                let values = value.owned_allocation_capacity_bytes().checked_mul(2);
+                let bytes = name
+                    .len()
+                    .checked_add(kind.len())
+                    .and_then(|bytes| bytes.checked_add(values?))
+                    .and_then(|bytes| u64::try_from(bytes).ok())
+                    .ok_or(MapKernelFailure::Domain(RetainedStorageDenial::Overflow))?;
+                checkpoint(context, bytes).map_err(MapKernelFailure::Stop)?;
+                if let Some(memory) = memory {
+                    memory.resize(bytes).map_err(MapKernelFailure::Domain)?;
+                }
+                Ok((name.to_owned(), kind.to_owned(), value.clone()))
+            })
+            .map_err(storage_stop)?;
+            Ok((copied.0, copied.1, copied.2, ()))
+        },
+    )
+    .map(|(pending, ())| pending)
+}

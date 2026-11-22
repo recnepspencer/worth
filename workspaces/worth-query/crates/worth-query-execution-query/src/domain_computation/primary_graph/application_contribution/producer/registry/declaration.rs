@@ -1,0 +1,117 @@
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
+
+use worth_query_declaration::facade::application_operation::{
+    ApplicationMutationBinding, ApplicationMutationOutputContract,
+    WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationOutputRole,
+};
+use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
+use worth_query_installation::facade::ApplicationSchema;
+
+use super::DeclaredProducerBinding;
+use crate::domain_computation::primary_graph::application_contribution::{
+    WorthQueryApplicationProducerBinding, WorthQueryApplicationProducerProvider,
+    WorthQueryProducerOutputFamily,
+};
+
+impl DeclaredProducerBinding {
+    pub fn of<Schema, Binding>(owner: &str) -> Self
+    where
+        Schema: ApplicationSchema,
+        Binding: WorthQueryApplicationProducerBinding<Schema>,
+    {
+        // A producer whose output role its operation's contract does not
+        // declare fails to compile here, where the binding is registered.
+        const { <Binding::OutputRole as WorthQueryApplicationDeclaredOutputRole>::DECLARED };
+        Self {
+            owner: owner.to_owned(),
+            identity: Binding::IDENTITY.to_owned(),
+            source_selector:
+                <Binding::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source::IDENTITY
+                    .to_owned(),
+            output_family: Binding::OutputFamily::IDENTITY.to_owned(),
+            output_family_type: TypeId::of::<Binding::OutputFamily>(),
+            output_role_descriptors:
+                <Binding::Operation as ApplicationMutationBinding<Schema>>::Output::ROLES.to_vec(),
+            output_role_families:
+                <Binding::Operation as ApplicationMutationBinding<Schema>>::Output::ROLE_FAMILIES
+                    .to_vec(),
+            output_role: <Binding::OutputRole as WorthQueryApplicationOutputRole>::NAME.to_owned(),
+            operation: Binding::Operation::IDENTITY.to_owned(),
+            handler_identity: Binding::Operation::HANDLER_IDENTITY.to_owned(),
+            provider_identity: Binding::Provider::SEMANTIC_IDENTITY.to_owned(),
+            applicability: Binding::APPLICABILITY.to_vec(),
+            supported: Binding::OutputFamily::SUPPORTED.to_vec(),
+            required_invariants: Binding::REQUIRED_INVARIANTS.to_vec(),
+            reuse_policy: Binding::REUSE_POLICY.to_owned(),
+            ownership: Binding::OWNERSHIP,
+            owned_scope_entity: (Binding::OWNERSHIP
+                == worth_foundational::facade::ProducerPublicationOwnership::SourceScopeCascade)
+                .then(|| Binding::Operation::scope_field().entity().to_owned()),
+            predecessor_reads: Binding::PREDECESSOR_READS.map(|contract| contract.meaning()),
+            original_reads: Binding::ORIGINAL_READS.map(|contract| contract.meaning()),
+            input_reuse: Binding::INPUT_REUSE,
+            input_capture: Binding::input_capture().map(|contract| contract.meaning),
+            output_equivalence: Binding::output_equivalence().map(|contract| contract.into_field()),
+            installed_output_equivalence: None,
+            binding_type: TypeId::of::<Binding>(),
+            source_type: TypeId::of::<
+                <Binding::OutputFamily as WorthQueryProducerOutputFamily<Schema>>::Source,
+            >(),
+            operation_binding_type: TypeId::of::<Binding::Operation>(),
+            operation_type: TypeId::of::<
+                <Binding::Operation as ApplicationMutationBinding<Schema>>::Operation,
+            >(),
+            output_contract_type: TypeId::of::<
+                <Binding::Operation as ApplicationMutationBinding<Schema>>::Output,
+            >(),
+            provider_type: TypeId::of::<Binding::Provider>(),
+        }
+    }
+
+    pub fn meaning_matches<Schema, Binding>(&self) -> bool
+    where
+        Schema: ApplicationSchema,
+        Binding: WorthQueryApplicationProducerBinding<Schema>,
+    {
+        let expected = Self::of::<Schema, Binding>(&self.owner);
+        self.same_binding_declaration(&expected)
+    }
+
+    pub fn has_same_meaning_as(&self, expected: &Self) -> bool {
+        self.same_binding_declaration(expected)
+            && self.installed_output_equivalence == expected.installed_output_equivalence
+    }
+
+    fn same_binding_declaration(&self, expected: &Self) -> bool {
+        self.identity == expected.identity
+            && self.source_selector == expected.source_selector
+            && self.output_family == expected.output_family
+            && self.output_family_type == expected.output_family_type
+            && self.output_role_descriptors == expected.output_role_descriptors
+            && self.output_role_families == expected.output_role_families
+            && self.output_role == expected.output_role
+            && self.operation == expected.operation
+            && self.handler_identity == expected.handler_identity
+            && self.provider_identity == expected.provider_identity
+            && self.applicability == expected.applicability
+            && self.supported == expected.supported
+            && self.required_invariants == expected.required_invariants
+            && self.ownership == expected.ownership
+            && self.owned_scope_entity == expected.owned_scope_entity
+            && self.reuse_policy == expected.reuse_policy
+            && self.predecessor_reads == expected.predecessor_reads
+            && self.original_reads == expected.original_reads
+            && self.input_reuse == expected.input_reuse
+            && self.input_capture == expected.input_capture
+            && self.output_equivalence == expected.output_equivalence
+            && self.binding_type == expected.binding_type
+            && self.source_type == expected.source_type
+            && self.operation_binding_type == expected.operation_binding_type
+            && self.operation_type == expected.operation_type
+            && self.output_contract_type == expected.output_contract_type
+            && self.provider_type == expected.provider_type
+    }
+}
+
+mod court_doors_for_test;

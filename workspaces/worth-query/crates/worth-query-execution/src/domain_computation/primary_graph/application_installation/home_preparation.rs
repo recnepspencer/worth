@@ -11,6 +11,7 @@ use crate::domain_computation::execution_runtime::{
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
 };
+use worth_query_execution_lineage::facade::ports::ApplicationInvariantProjectionAuthorityInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationProgram;
 use worth_relational::facade::durability::{RecoveredRelationalRuntimeAuthority, RecoveryOutcome};
 use worth_relational::facade::runtime::{
@@ -24,6 +25,7 @@ pub fn retain_home_invariant_projection<Schema: ApplicationSchemaComposition, Pr
 ) -> super::super::WorthQueryApplicationInvariantProjectionAuthority<Schema> {
     runtime
         .runtime()
+        .inner
         .mutation_projection
         .retain_for_installation()
 }

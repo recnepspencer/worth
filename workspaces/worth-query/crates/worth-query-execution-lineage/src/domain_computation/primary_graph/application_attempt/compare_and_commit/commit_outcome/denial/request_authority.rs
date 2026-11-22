@@ -1,0 +1,131 @@
+//! The typed owner evidence a denial carries beside its kind.
+
+use super::{
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
+    WorthQueryApplicationCommitDenialStage,
+};
+use crate::domain_computation::authorization::{
+    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
+};
+
+use super::denial_cause::DenialCause;
+
+impl WorthQueryApplicationCommitDenial {
+    pub fn with_provider_session_failure(
+        mut self,
+        failure: crate::domain_computation::WorthQueryProviderSessionFailure,
+    ) -> Self {
+        if failure.allocation_denial().is_some() || failure.candidate_support_failure().is_some() {
+            self.detail = Some(failure.detail().into());
+        }
+        if failure.allocation_denial().is_some()
+            || failure.relation_preimage_failure().is_some()
+            || failure.preimage_retention_denial().is_some()
+            || failure.native_preparation_error().is_some()
+            || failure.candidate_support_failure().is_some()
+            || failure.output_verification_capacity_stop().is_some()
+        {
+            self.cause = Some(Box::new(DenialCause::ProviderSession(failure)));
+        }
+        self
+    }
+
+    /// Original capacity refusal from pre-publication consumed-output
+    /// verification. This is not a native transaction-preparation stop, and
+    /// it grants no retry, capacity increase or cleanup authority.
+    pub fn output_verification_capacity_stop(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::VerificationCapacityStop> {
+        match self.cause.as_deref() {
+            Some(DenialCause::ProviderSession(failure)) => {
+                failure.output_verification_capacity_stop()
+            }
+            _ => None,
+        }
+    }
+
+    /// Complete native diagnostics for a refusal proven to precede publication.
+    pub fn native_preparation_error(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::TransactionCommitError> {
+        match self.cause.as_deref() {
+            Some(DenialCause::ProviderSession(failure)) => failure.native_preparation_error(),
+            _ => None,
+        }
+    }
+
+    /// The request was refused authorization at `stage`. The refusal is the
+    /// request's own, so whoever shares the attempt's subject is not refused.
+    pub fn request_authority_denied(
+        stage: WorthQueryApplicationCommitDenialStage,
+        denial: &WorthQueryOperationAuthorizationDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
+            stage,
+            detail: Some(denial.to_string().into()),
+            cause: Some(Box::new(DenialCause::RequestAuthority(denial.kind()))),
+        }
+    }
+
+    /// Descriptive retained authorization cause, not access or retry authority.
+    /// `None` means this denial carries no request-authorization cause.
+    pub fn authorization_denial_kind(&self) -> Option<WorthQueryOperationAuthorizationDenialKind> {
+        match self.cause.as_deref() {
+            Some(DenialCause::RequestAuthority(kind)) => Some(*kind),
+            _ => None,
+        }
+    }
+
+    pub fn custom_invariant(
+        &self,
+    ) -> Option<&crate::domain_computation::WorthQueryCustomInvariantDenial> {
+        match self.cause.as_deref() {
+            Some(DenialCause::InvariantExecution(failure)) => failure.custom_invariant_denial(),
+            _ => None,
+        }
+    }
+}
+
+impl WorthQueryApplicationCommitDenial {
+    pub fn source_rebase_denied(
+        denial: crate::domain_computation::primary_graph::provider::PreparedRebaseDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::ProviderRejected,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: None,
+            cause: Some(Box::new(DenialCause::SourceRebase(denial))),
+        }
+    }
+    /// Exact physical owner refusal; not logical count policy or graph authority.
+    pub fn allocation_denial(&self) -> Option<&worth_execution::ExecutionAllocationDenial> {
+        match self.cause.as_deref() {
+            Some(DenialCause::ProviderSession(failure)) => failure.allocation_denial(),
+            Some(DenialCause::InvariantExecution(failure)) => failure.allocation_denial(),
+            Some(DenialCause::DecisionReadSet(failure)) => failure.allocation_denial(),
+            Some(DenialCause::SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial::Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::Allocation(denial)))) => Some(denial),
+            _ => None,
+        }
+    }
+    pub fn source_rebase_interruption(
+        &self,
+    ) -> Option<worth_query_admission::facade::authenticated_principal::WorthQueryRequestInterruption>
+    {
+        match self.cause.as_deref() { Some(DenialCause::SourceRebase(crate::domain_computation::primary_graph::provider::PreparedRebaseDenial::Retention(crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StoreDenial::RequestInterruption(stop)))) => Some(*stop), _ => None }
+    }
+    pub fn source_rebase_temporary_reservation_error(
+        &self,
+    ) -> Option<&std::collections::TryReserveError> {
+        match self.cause.as_deref() {
+            Some(DenialCause::SourceRebase(
+                crate::domain_computation::primary_graph::provider::PreparedRebaseDenial::Temporary(
+                    error,
+                ),
+            )) => Some(error),
+            _ => None,
+        }
+    }
+}
+
+mod court_doors_for_test;

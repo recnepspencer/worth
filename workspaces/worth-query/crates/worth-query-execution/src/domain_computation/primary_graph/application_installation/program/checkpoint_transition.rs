@@ -2,6 +2,7 @@ use super::{
     WorthQueryApplicationProgramRoots, WorthQueryApplicationProgramRoster,
     WorthQueryProgramApplicationRuntime,
 };
+use crate::domain_computation::primary_graph::application_contribution::request_execution::BootstrapCapturePolicyExt;
 use crate::domain_computation::primary_graph::{
     application_installation::{
         WorthQueryApplicationLimits, WorthQueryApplicationPreparationDenial,

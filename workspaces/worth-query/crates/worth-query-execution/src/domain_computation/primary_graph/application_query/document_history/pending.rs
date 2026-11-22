@@ -3,6 +3,10 @@ use crate::basis::{
     WorthQueryProductBranch, WorthQueryProductBranchReadIdentity, WorthQueryProductObservationLease,
 };
 use crate::domain_computation::primary_graph::product_operation::document_history::HistoryModelIdentity;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
+use worth_query_execution_query::facade::ports::AdmittedApplicationQueryControlsInternalPort as _;
+use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 pub(super) struct PendingDocumentRead {
     product: WorthQueryProductObservationLease,
@@ -21,7 +25,7 @@ impl PendingDocumentRead {
         crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation,
     > {
         crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product(
-            runtime,
+            runtime.inner(),
             self.product.retained_clone(),
         )
     }
@@ -30,9 +34,9 @@ impl PendingDocumentRead {
         plan: &WorthQueryAdmittedApplicationQueryPlan<'_, S, Q, P, R, A, I, E>,
     ) -> Self {
         Self {
-            product: plan.basis.retained_product(),
-            model: HistoryModelIdentity::from_resolved(plan.scope),
-            current: plan.controls.is_current_product_one_shot(),
+            product: plan.basis().retained_product(),
+            model: HistoryModelIdentity::from_resolved(plan.scope()),
+            current: plan.controls().is_current_product_one_shot(),
         }
     }
 
@@ -57,7 +61,7 @@ impl PendingDocumentRead {
         if self.identity().product_branch() != branch {
             return Err((value, Denial::HeadDiverged));
         }
-        confirm_document_head(runtime, phase, &self.product, value)
+        confirm_document_head(runtime.inner(), phase, &self.product, value)
     }
 
     /// Native/World checks run outside the cell. Rechecking the same physical

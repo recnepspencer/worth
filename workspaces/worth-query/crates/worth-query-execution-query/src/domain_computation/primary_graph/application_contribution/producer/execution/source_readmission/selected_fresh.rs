@@ -1,0 +1,75 @@
+//! Source disclosure for an exact required cue on the wave's selected Product.
+
+use super::*;
+use crate::domain_computation::primary_graph::application_query::PreparedApplicationQueryPermission;
+use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
+use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+
+type Parameters<Schema, Binding> = <<SourceBinding<Schema, Binding> as ApplicationQueryBinding<
+    Schema,
+>>::ParameterBinding as ApplicationStructuredValueBinding>::Value;
+type ResultValue<Schema, Binding> = <<SourceBinding<Schema, Binding> as ApplicationQueryBinding<
+    Schema,
+>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
+
+/// Consume the same permission used by the Clean probe. Its access owners stay
+/// alive until the one-shot read returns an owned, inseparable disclosure.
+#[allow(clippy::too_many_arguments)]
+pub fn disclose_prepared_on_selected<'prepared, Schema, Binding>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &'prepared WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    permission: PreparedApplicationQueryPermission<
+        'prepared,
+        Schema,
+        SourceQuery<Schema, Binding>,
+        Parameters<Schema, Binding>,
+        ResultValue<Schema, Binding>,
+        BoundPrincipal<Schema, Binding>,
+        BoundPrincipalIdentity<Schema, Binding>,
+        BoundScope<Schema, Binding>,
+    >,
+    principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+    request: &WorthQueryRequestScope,
+    branch: WorthQueryProductBranch,
+    retained: &WorthQueryObservedSource<SourceQuery<Schema, Binding>>,
+    shared: &SharedSelectedProductOperation<'_, Schema>,
+    edition: super::super::super::InstalledProducerEdition,
+) -> Result<
+    super::super::super::demand::disclosure::FreshOutputDisclosure<
+        SourceQuery<Schema, Binding>,
+        SourceValue<Schema, Binding>,
+    >,
+    ProducerExecutionStop,
+>
+where
+    Schema: ApplicationSchema + 'static,
+    Binding: WorthQueryApplicationProducerBinding<Schema>,
+    SourceValue<Schema, Binding>:
+        WorthQueryApplicationProjection<Schema, SourceQuery<Schema, Binding>>,
+{
+    let plan = runtime
+        .finish_prepared_application_query_permission(execution, permission)
+        .map_err(|stop| query_admission_denied(Binding::IDENTITY, stop))?;
+    let access =
+        crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(
+            runtime, shared, principal, request);
+    let read = access.read_admitted_result::<SourceBinding<Schema, Binding>>(execution, plan, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+        .map_err(|stop| super::super::denial::selected_source_read_denied(Binding::IDENTITY, stop))?;
+    crate::domain_computation::primary_graph::application_output_demand::observe_retained_source_selection(
+        retained.source_root(),retained.selected_product_commit().expect("retained Product source").clone(),
+        shared.selected().product().observation().selected_commit().clone());
+    super::super::super::demand::disclosure::validate_readmitted_on_selected(
+        execution,
+        runtime,
+        retained,
+        principal,
+        request,
+        branch,
+        shared,
+        read.into_admitted_disclosed().into_output_demand_source(),
+        edition,
+        Binding::IDENTITY,
+    )
+    .map_err(ProducerExecutionStop::ExecutionStopped)
+}

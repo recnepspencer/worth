@@ -3,9 +3,12 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationUncommitted,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn resolve<S, O, I, Scope>(
+pub fn resolve<S, O, I, Scope>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<S>,
     admission: &WorthQueryAdmittedApplicationOperation<S, O, I, Scope>,
@@ -24,10 +27,11 @@ where
         .try_into()
         .expect("one native settlement key");
     let locator = runtime
+        .inner
         .runtime
-        .primary_provider
-        .graph
-        .layout
+        .primary_provider_ref()
+        .graph_ref()
+        .layout_ref()
         .workflow()
         .transition
         .identity
@@ -41,17 +45,18 @@ where
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::idempotency_intent_drift())))),
         WorthQueryApplicationIdempotencyResolution::ReleasedOriginal(_) => return Ok(Some(WorkflowProgressOutcome::Application(WorthQueryApplicationUncommitted::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::original_effect_released())))),
             WorthQueryApplicationIdempotencyResolution::Unseen => {
-            super::super::super::publication::transition_entity_in_receipt(original, required.transition_identity(), &locator)
+            publication::transition_entity_in_receipt(original, required.transition_identity(), &locator)
                 .map(|_| original.clone())
         }
     };
     Ok(receipt.map(|receipt| {
         runtime
+            .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(execution, |relational| {
-                super::super::super::publication::project(
+                publication::project(
                     execution,
                     relational,
                     receipt,

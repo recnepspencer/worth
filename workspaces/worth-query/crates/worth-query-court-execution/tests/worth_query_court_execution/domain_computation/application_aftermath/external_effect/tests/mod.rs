@@ -267,17 +267,17 @@ fn external_effect_source_rejects_cdc_checkpoint_vocabulary() {
         "SubscriberResumeRequest",
     ];
     let sources = [
-        include_str!("../../../../../../../worth-query-execution/src/domain_computation/application_aftermath/external_effect/posture.rs"),
-        include_str!("../../../../../../../worth-query-execution/src/domain_computation/application_aftermath/external_effect/correlation.rs"),
-        include_str!("../../../../../../../worth-query-execution/src/domain_computation/application_aftermath/external_effect/classification.rs"),
-        include_str!("../../../../../../../worth-query-execution/src/domain_computation/application_aftermath/external_effect/outbox.rs"),
-        include_str!("../../../../../../../worth-query-execution/src/domain_computation/application_aftermath/external_effect/identity.rs"),
-        include_str!("../../../../../../../worth-query-execution/src/domain_computation/application_aftermath/external_effect/identity_derivation.rs"),
-        include_str!("../../../../../../../worth-query-execution/src/domain_computation/application_aftermath/external_effect/causal_event.rs"),
-        include_str!("../../../../../../../worth-query-execution/src/domain_computation/application_aftermath/external_effect/dispatch.rs"),
-        include_str!("../../../../../../../worth-query-execution/src/domain_computation/application_aftermath/external_effect/observation.rs"),
-        include_str!("../../../../../../../worth-query-execution/src/domain_computation/application_aftermath/external_effect/transport.rs"),
-        include_str!("../../../../../../../worth-query-execution/src/domain_computation/application_aftermath/external_effect/mod.rs"),
+        include_str!("../../../../../../../worth-query-execution-lineage/src/domain_computation/application_aftermath/external_effect/posture.rs"),
+        include_str!("../../../../../../../worth-query-execution-lineage/src/domain_computation/application_aftermath/external_effect/correlation.rs"),
+        include_str!("../../../../../../../worth-query-execution-lineage/src/domain_computation/application_aftermath/external_effect/classification.rs"),
+        include_str!("../../../../../../../worth-query-execution-lineage/src/domain_computation/application_aftermath/external_effect/outbox.rs"),
+        include_str!("../../../../../../../worth-query-execution-lineage/src/domain_computation/application_aftermath/external_effect/identity.rs"),
+        include_str!("../../../../../../../worth-query-execution-lineage/src/domain_computation/application_aftermath/external_effect/identity_derivation.rs"),
+        include_str!("../../../../../../../worth-query-execution-lineage/src/domain_computation/application_aftermath/external_effect/causal_event.rs"),
+        include_str!("../../../../../../../worth-query-execution-lineage/src/domain_computation/application_aftermath/external_effect/dispatch.rs"),
+        include_str!("../../../../../../../worth-query-execution-attempt/src/domain_computation/application_aftermath/external_effect/observation.rs"),
+        include_str!("../../../../../../../worth-query-execution-lineage/src/domain_computation/application_aftermath/external_effect/transport.rs"),
+        include_str!("../../../../../../../worth-query-execution-lineage/src/domain_computation/application_aftermath/external_effect/mod.rs"),
     ];
     for source in sources {
         for forbidden in CDC_RESIDUE_FORBIDDEN {

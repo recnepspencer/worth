@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     application_query::request_recipe::CapturedSourceQueryRequest,
     WorthQueryHistoryNavigationDenial, WorthQueryHistoryOutputReadDenial as ReadDenial,
 };
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 impl<S> HistoryJournal<'_, S> {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn enroll_discovery_recipe(
         &mut self,
@@ -17,7 +18,7 @@ impl<S> HistoryJournal<'_, S> {
     ) -> Result<(), ReadDenial> {
         let Some(node) = self
             .retained
-            .get_mut(&step.ordinal)
+            .get_mut(&step.ordinal())
             .filter(|source| source.source.is_some())
         else {
             return Err(ReadDenial::Authority(

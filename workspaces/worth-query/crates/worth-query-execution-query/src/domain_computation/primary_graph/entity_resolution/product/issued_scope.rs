@@ -1,0 +1,164 @@
+use super::*;
+use worth_query_declaration::facade::application_schema::fragment::RecordSelection;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+
+/// An installed scope resolved on the selected Product's exact native root.
+/// The selected operation is borrowed until the scoped Query read completes.
+pub struct WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Scope> {
+    scope: WorthQueryApplicationEntityIdentity<Schema, Scope>,
+    selected: &'selected WorthQuerySelectedProductOperation<'runtime, Schema>,
+    request: WorthQueryRequestScope,
+}
+
+impl<Schema, Scope> WorthQueryIssuedSelectedScope<'_, '_, Schema, Scope> {
+    pub fn scope(&self) -> &WorthQueryApplicationEntityIdentity<Schema, Scope> {
+        &self.scope
+    }
+
+    pub fn issued_root(&self) -> &worth_relational::facade::branch::AdmittedRelationalBranchBasis {
+        self.selected.product().relational_basis()
+    }
+
+    pub fn issued_snapshot(&self) -> &worth_relational::facade::snapshots::SnapshotHandle {
+        self.selected.application_basis().snapshot_handle()
+    }
+
+    pub fn request(&self) -> &WorthQueryRequestScope {
+        &self.request
+    }
+
+    pub fn selected(&self) -> &WorthQuerySelectedProductOperation<'_, Schema> {
+        self.selected
+    }
+}
+
+impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    /// Mint the same exact-root custody for a conventional mutation's typed
+    /// equality scope. The selected native resolver remains the acceptance
+    /// owner; this wrapper only retains its request and selected root.
+    pub fn resolve_mutation_scope_issued<'selected, Field: RecordSelection>(
+        &'selected self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: Field,
+        value: Field::Value,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    > {
+        self.resolve_query_scope_issued_with_native_access(execution, field, value, request, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+    }
+
+    pub fn resolve_query_scope_issued_with_native_access<'selected, Field: RecordSelection>(
+        &'selected self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: Field,
+        value: Field::Value,
+        request: &WorthQueryRequestScope,
+
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<
+        WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    > {
+        let scope = self
+            .resolve_entity_admitted_with_native_access(execution, field, value, request, native)?;
+
+        Ok(WorthQueryIssuedSelectedScope {
+            scope,
+            selected: self,
+            request: request.clone(),
+        })
+    }
+
+    pub fn resolve_query_scope_selector_issued_with_native_access<
+        'selected,
+        Field: RecordSelection,
+    >(
+        &'selected self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: Field,
+        value: &Field::Value,
+        request: &WorthQueryRequestScope,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<
+        WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    > {
+        let scope = self.resolve_entity_selector_admitted_with_native_access(
+            execution, field, value, request, native,
+        )?;
+
+        Ok(WorthQueryIssuedSelectedScope {
+            scope,
+            selected: self,
+            request: request.clone(),
+        })
+    }
+
+    /// A normalized request retains value data, never a resolved scope or grant.
+    pub fn resolve_query_scope_value_issued_with_native_access<
+        'selected,
+        Field: RecordSelection,
+    >(
+        &'selected self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: Field,
+        value: &worth_foundational::facade::AspectValue,
+        request: &WorthQueryRequestScope,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<
+        WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    > {
+        let scope = self.resolve_query_scope_value_with_native_access(
+            execution, field, None, value, request, native,
+        )?;
+        Ok(WorthQueryIssuedSelectedScope {
+            scope,
+            selected: self,
+            request: request.clone(),
+        })
+    }
+
+    pub fn resolve_retained_query_scope_issued<'selected, Field: RecordSelection>(
+        &'selected self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: Field,
+        selector: &WorthQueryObservedScopeSelector,
+        request: &WorthQueryRequestScope,
+    ) -> Result<
+        WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    > {
+        self.resolve_retained_query_scope_issued_with_native_access(execution, field, selector, request,
+            &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
+    }
+
+    pub fn resolve_retained_query_scope_issued_with_native_access<
+        'selected,
+        Field: RecordSelection,
+    >(
+        &'selected self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        field: Field,
+        selector: &WorthQueryObservedScopeSelector,
+        request: &WorthQueryRequestScope,
+        native: &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
+    ) -> Result<
+        WorthQueryIssuedSelectedScope<'selected, 'runtime, Schema, Field::Entity>,
+        WorthQueryEntityResolutionDenial,
+    > {
+        let scope = self.resolve_retained_query_scope_with_native_access(
+            execution, field, selector, request, native,
+        )?;
+
+        Ok(WorthQueryIssuedSelectedScope {
+            scope,
+            selected: self,
+            request: request.clone(),
+        })
+    }
+}
+
+mod court_doors_for_test;

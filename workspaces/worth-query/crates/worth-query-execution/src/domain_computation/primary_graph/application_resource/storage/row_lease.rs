@@ -1,6 +1,7 @@
 //! A row action releases its lock before arbitrary provider code and restores
 //! the same occurrence even when an original request or callback unwinds.
 use super::*;
+use worth_query_execution_query::facade::ports::ClosedResourceInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph::application_resource) struct ResourceRowLease {
     storage: Arc<ResourceStorage>,
@@ -139,12 +140,11 @@ impl ResourceRowLease {
         // The remaining fields, including result-slot and original input
         // funding, release after the shared free-list locks are gone.
         drop(occurrence.result.take());
-        Ok(super::super::closed::WorthQueryClosedResource {
-            native,
-            clock_only,
-            action,
-            detail: None,
-        })
+        Ok(
+            super::super::closed::WorthQueryClosedResource::from_completed_action(
+                native, clock_only, action,
+            ),
+        )
     }
 }
 

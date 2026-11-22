@@ -15,6 +15,13 @@ use crate::{
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 
 #[must_use = "retain the original restriction for every native attempt preparation"]
 pub struct WorthQueryDocumentHistoryOperationConstraint {
@@ -107,8 +114,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         binding: WorthQueryApplicationIdempotencyBinding,
     ) -> Result<(), Denial> {
         if !admitted.belongs_to(
-            self.runtime.authority_identity(),
-            &self.installed_schema.binding_identity(),
+            self.inner.runtime.authority_identity(),
+            &self.inner.installed_schema.binding_identity(),
         ) {
             return Err(Denial::ForeignRuntime);
         }
@@ -116,7 +123,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::ForeignModel);
         }
         admitted
-            .validate_installed_operation(&self.runtime.installed_operations)
+            .validate_installed_operation(&self.inner.runtime.installed_operations_ref())
             .map_err(Denial::OperationAdmission)?;
         admitted
             .validate_current_authority()
@@ -136,15 +143,17 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::ForeignRecording);
         }
         let current = self
+            .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .admit_product_occurrence(restriction.original_source().occurrence())
             .map_err(Denial::CandidateSelection)?;
         if current.observation() != restriction.source.observation() {
             return Err(Denial::HeadDiverged);
         }
         drop(current);
-        confirm_document_head(self, phase, &restriction.source, ()).map_err(|(_, denial)| denial)
+        confirm_document_head(self.inner(), phase, &restriction.source, ())
+            .map_err(|(_, denial)| denial)
     }
 }
 

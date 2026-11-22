@@ -1,4 +1,7 @@
 //! Actual Native/provider progression writes custody before each fallible handoff.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 mod advance;
 pub(super) mod close;
 mod completion;
@@ -39,8 +42,9 @@ where
     let reading = installed.clock.observe().map_err(ResourceCause::Clock)?;
     execution.consult().map_err(ResourceCause::Request)?;
     let clock = runtime
+        .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional()
         .with_view(
             row.occurrence()
@@ -50,8 +54,9 @@ where
                 .signal_basis(),
             |bridge| {
                 runtime
+                    .inner
                     .runtime
-                    .product_runtime
+                    .product_runtime_ref()
                     .advance_owned_async_source_clock(
                         &bridge,
                         &slot.declaration,
@@ -65,8 +70,9 @@ where
     row.occurrence_mut().lifecycle = ResourceLifecycle::Reserved { clock: Some(clock) };
     execution.consult().map_err(ResourceCause::Request)?;
     let owner = runtime
+        .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional()
         .with_view(
             row.occurrence()
@@ -76,8 +82,9 @@ where
                 .signal_basis(),
             |bridge| {
                 runtime
+                    .inner
                     .runtime
-                    .product_runtime
+                    .product_runtime_ref()
                     .admit_managed_owned_async_request(
                         &bridge,
                         &slot.declaration,

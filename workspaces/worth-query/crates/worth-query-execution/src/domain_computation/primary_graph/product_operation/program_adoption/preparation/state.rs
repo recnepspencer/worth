@@ -1,6 +1,12 @@
 use crate::domain_computation::execution_runtime::product_world::publication_denial::WorthQueryProductPublicationDenial as PublicationDenial;
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
 use std::collections::{BTreeMap, BTreeSet};
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryProgramAdoptionRequirements};
@@ -142,8 +148,8 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         .activation()
         .published()
         .ok_or(WorthQueryBranchAdoptionPreparationDenial::ProgramActivationUnavailable)?;
-    let graph = &application.runtime.primary_provider.graph;
-    let layout = graph.layout.program_activation().clone();
+    let graph = &application.inner.runtime.primary_provider_ref().graph_ref();
+    let layout = graph.layout_ref().program_activation().clone();
     let basis = selected.product().relational_basis();
 
     // One view of the branch's own root serves both reads.
@@ -152,7 +158,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         let selection = selection::select(
             execution,
             &view,
-            &graph.layout,
+            &graph.layout_ref(),
             &requirements,
             maximum_selection_work,
         )?;
@@ -160,9 +166,9 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
             return Ok((selection, None));
         }
         let workflow_request = WorkflowAdoptionInventoryRequest {
-            layout: graph.layout.workflow(),
+            layout: graph.layout_ref().workflow(),
             branch_occurrence: selected.product().product_branch().occurrence_ordinal(),
-            coverage: &application.runtime.workflow_coverage,
+            coverage: &application.inner.runtime.workflow_coverage_ref(),
             requirements: &requirements,
             source: &source,
             target,
@@ -175,7 +181,7 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     let selected_entity_count = selection.entities.len();
     let workflow_intents = match workflow_inventory.as_ref() {
         Some(inventory) => prepare_workflow_dispositions(
-            graph.layout.workflow(), inventory, workflow.as_ref(),
+            graph.layout_ref().workflow(), inventory, workflow.as_ref(),
             selected.product().product_branch(), target,
             &crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&admission).ending_actor(),
         ).map_err(|cause| match cause {
@@ -240,8 +246,9 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     let recovery = selected.product().publication_binding().recovery();
     let disposition = selected
         .application()
+        .inner
         .runtime
-        .primary_provider
+        .primary_provider_ref()
         .unpublished_idempotency_disposition();
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
     use super::super::publication::preparation::{
@@ -271,9 +278,10 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
         branch: selected.product().product_branch(),
         owner_identity: selected
             .application()
+            .inner
             .runtime
-            .product_runtime
-            .owner
+            .product_runtime_ref()
+            .owner_ref()
             .owner_identity(),
         source,
         target: *target,

@@ -1,3 +1,4 @@
+use worth_query_execution_lineage::facade::ports::ApplicationInvariantProjectionExecutionInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,
     WorthQueryTemporalIntentRevisionValue,

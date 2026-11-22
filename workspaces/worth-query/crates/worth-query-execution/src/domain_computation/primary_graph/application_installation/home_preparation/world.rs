@@ -4,6 +4,11 @@ use super::super::super::WorthQueryBootstrapAdvancementPhase;
 use super::source::assembly::HomeQueryPreparation;
 use super::*;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::QueryProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::*;
 mod creation_originals;
 mod custody;
@@ -241,18 +246,24 @@ where
             readiness_routes,
             definition_routes,
         );
-        application.conditional_cleanup.operations = std::sync::Mutex::new(operations);
-        application.program_support = Some(
+        *application
+            .conditional_cleanup
+            .routes
+            .operations
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = operations;
+        application.inner.program_support = Some(
             super::super::super::program_occurrence::WorthQueryInstalledProgramSupport::installed(
                 state.support.roster,
                 state.activation,
             ),
         );
         application
+            .inner
             .runtime
-            .primary_provider
-            .graph
-            .output_lineage
+            .primary_provider_ref()
+            .graph_ref()
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .bind_implementation_build(state.build_identity);

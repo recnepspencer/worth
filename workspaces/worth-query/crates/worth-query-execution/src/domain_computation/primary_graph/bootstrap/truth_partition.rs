@@ -1,4 +1,5 @@
 use super::WorthQueryPrimaryGraphBootstrap;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphBootstrap<Schema> {
     /// Binds the single primary Relational partition to its cross-runtime

@@ -13,6 +13,8 @@ use worth_query_declaration::facade::{
     application_resource::ApplicationResourceInput,
     application_schema::ApplicationScalarValueBinding,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryResourceAccessPurpose as Purpose;
 
 pub use crate::domain_computation::primary_graph::query_obligations::QueryOwnedAsyncTerminal as WorthQueryResourceTerminal;
@@ -198,10 +200,11 @@ impl<S: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_, S> 
                     &mut ApplicationQueryNativeAccess::acquire(),
                 )
                 .map_err(ResourceCause::Scope)?;
-            let parameters = capture_parameters::<S, B::Access>(execution, self.runtime, 0, || {
-                Ok(B::parameters(input))
-            })
-            .map_err(ResourceCause::ParameterCapture)?;
+            let parameters =
+                capture_parameters::<S, B::Access>(execution, self.runtime.inner(), 0, || {
+                    Ok(B::parameters(input))
+                })
+                .map_err(ResourceCause::ParameterCapture)?;
             let pending = pending(
                 &installed,
                 principal.principal().principal_entity_id(),

@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationOutputPosture, WorthQueryPrimaryGraphLayout,
 };
 use worth_execution::MapKernelContext;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 mod input;
 mod output;
 mod performed_input;
@@ -44,7 +45,7 @@ impl ObservationConnection<'_, '_> {
             if revision.version() != source.commit_reference().version_id {
                 continue;
             }
-            for row in self.original.source.original_row_footprints() {
+            for row in self.original.source().original_row_footprints() {
                 for observed in &row.aspects {
                     checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
                     if !row.complete

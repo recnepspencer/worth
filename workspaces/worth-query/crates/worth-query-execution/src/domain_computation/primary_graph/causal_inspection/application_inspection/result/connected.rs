@@ -7,6 +7,7 @@ use super::super::{
     report::FundedConnectedReport,
 };
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 use worth_runtime_bridge::facade::BridgeIdentityEvidence;
 /// One original query with its verified performed source/producer connection.
 pub struct WorthQueryConnectedApplicationInspection<'original> {
@@ -43,7 +44,7 @@ impl<'a> WorthQueryConnectedApplicationInspection<'a> {
         &self,
     ) -> Option<&[crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryHistoricalProducerRead]>{
         self.original
-            .source
+            .source()
             .original_settled_producer()?
             .predecessor_reads()
     }
