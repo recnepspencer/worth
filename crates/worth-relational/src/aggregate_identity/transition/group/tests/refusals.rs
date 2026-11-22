@@ -154,3 +154,24 @@ fn malformed_states_refuse_with_the_true_subject() {
         Err(Denial::DuplicateCarrier { name: name(2) })
     );
 }
+
+#[test]
+fn non_canonical_prior_sources_refuse_without_hashing() {
+    let world = World::new(&[1, 2], 0, 1, 1);
+    let (a, b) = (id(Rule::Anchor, 3), id(Rule::Anchor, 4));
+    let (low, high) = (a.min(b), a.max(b));
+    for sources in [vec![high, low], vec![low, low]] {
+        let mut prior = world.born(Rule::Anchor, &[&[(1, Role::Ordinary)]]);
+        let identity = prior[0].identity;
+        prior[0].sources = sources;
+        assert_eq!(
+            world.run(
+                Rule::Anchor,
+                &prior,
+                &BTreeSet::new(),
+                &[&[(1, Role::Ordinary)]]
+            ),
+            Err(Denial::PriorIdentityMismatch { identity })
+        );
+    }
+}

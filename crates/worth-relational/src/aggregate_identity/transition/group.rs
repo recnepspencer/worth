@@ -171,8 +171,11 @@ fn index_prior(
             return Err(Denial::DuplicatePriorIdentity { identity });
         }
         let canonical = group.sources.windows(2).all(|pair| pair[0] < pair[1]);
-        let minted = mint_group_identity(scheme.id(), group.anchor, scheme.rule(), &group.sources);
-        if !canonical || identity != minted {
+        // Non-canonical sources refuse before any hashing sees them.
+        if !canonical
+            || identity
+                != mint_group_identity(scheme.id(), group.anchor, scheme.rule(), &group.sources)
+        {
             return Err(Denial::PriorIdentityMismatch { identity });
         }
         if retired_history.contains(&identity) {
