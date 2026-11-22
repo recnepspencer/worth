@@ -127,20 +127,6 @@ where
     } = attempt.commit;
     let original_completion = attempt_basis.take_original_completion();
     let request = admission.publication_request().clone();
-    let fail = |completion: WorthQueryProviderProgressionCompletion,
-                running: crate::domain_computation::WorthQueryRunningDirectRun,
-                lease,
-                original_completion,
-                completion_storage: super::super::completion_storage::ApplicationCommitCompletionStorage| {
-        progressed::finish_coupled_application_commit(
-            execution,
-            phase,
-            application,
-            completion_storage.complete(completion.finish(
-                lease, running, workflow_settlement_publication, request, original_completion,
-            )),
-        )
-    };
     use session_admission::CoupledProviderSessionAdmission as Admission;
     let (session, returned) = match session_admission::admit_coupled_provider_session(
         execution,
@@ -159,13 +145,18 @@ where
             let denial = crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::provider_rejected_with_detail(
                 crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::ResourceAdmission,
                 format!("coupled provider run retention: {cause:?}"));
-            return Err(fail(
+            return Err(finish_coupled_registration_failure(
+                execution,
+                phase,
+                application,
                 WorthQueryProviderProgressionCompletion {
                     outcome: WorthQueryProviderProgressionOutcome::Denied(denial),
                     cleanup: WorthQueryApplicationMutationCleanupOwner::Unbound(mutation_run),
                 },
                 run,
                 lease,
+                workflow_settlement_publication,
+                request,
                 original_completion,
                 completion_storage,
             ));
@@ -174,10 +165,15 @@ where
     let session = match session {
         Ok(session) => session,
         Err(failure) => {
-            return Err(fail(
+            return Err(finish_coupled_registration_failure(
+                execution,
+                phase,
+                application,
                 failure.into_completion(),
                 returned.take().expect("closed plan returned actual run"),
                 lease,
+                workflow_settlement_publication,
+                request,
                 original_completion,
                 completion_storage,
             ))
@@ -198,12 +194,17 @@ where
     ) {
         Ok(registered) => registered,
         Err(failure) => {
-            return Err(fail(
+            return Err(finish_coupled_registration_failure(
+                execution,
+                phase,
+                application,
                 failure.into_completion(),
                 returned
                     .take()
                     .expect("closed registration returned actual run"),
                 lease,
+                workflow_settlement_publication,
+                request,
                 original_completion,
                 completion_storage,
             ))
@@ -212,10 +213,15 @@ where
     let Some(authorization) = authorization.finish_registration() else {
         let completion = registered.deny(crate::domain_computation::primary_graph::application_attempt::provider_execution::progression_denied(
             crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage::DecisionReadSet));
-        return Err(fail(
+        return Err(finish_coupled_registration_failure(
+            execution,
+            phase,
+            application,
             completion,
             returned.take().expect("closed session returned actual run"),
             lease,
+            workflow_settlement_publication,
+            request,
             original_completion,
             completion_storage,
         ));
@@ -237,6 +243,36 @@ where
         original_completion,
         completion_storage,
     })
+}
+
+#[inline(never)]
+#[allow(clippy::too_many_arguments)]
+fn finish_coupled_registration_failure<S: ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
+    completion: WorthQueryProviderProgressionCompletion,
+    running: crate::domain_computation::WorthQueryRunningDirectRun,
+    lease: WorthQueryApplicationSnapshotLease,
+    workflow_settlement_publication: Option<
+        crate::domain_computation::primary_graph::application_attempt::provider_execution::phase::prepared::LocalWorkflowSettlementPublication,
+    >,
+    request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+    original_completion: crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
+    completion_storage: super::super::completion_storage::ApplicationCommitCompletionStorage,
+) -> WorthQueryApplicationCommitOutcome {
+    progressed::finish_coupled_application_commit(
+        execution,
+        phase,
+        application,
+        completion_storage.complete(completion.finish(
+            lease,
+            running,
+            workflow_settlement_publication,
+            request,
+            original_completion,
+        )),
+    )
 }
 
 mod inspection;

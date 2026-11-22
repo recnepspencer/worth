@@ -7,6 +7,10 @@ use crate::domain_computation::WorthQueryProviderSessionFailure;
 /// publication owner before this result is returned. A failed reply or pending
 /// projection remains visible in the admitted idempotency read's posture.
 pub struct WorthQueryManagedApplicationRecoveryPerformed {
+    pub(super) inner: Box<ManagedApplicationRecoveryPerformedBody>,
+}
+
+pub(super) struct ManagedApplicationRecoveryPerformedBody {
     pub(super) read:
         Result<WorthQueryAdmittedIdempotencyRead, WorthQueryApplicationIdempotencyResolutionDenial>,
     pub(super) publication_failure: Option<WorthQueryProviderSessionFailure>,
@@ -21,6 +25,13 @@ pub struct WorthQueryManagedApplicationRecoveryPerformed {
 }
 
 impl WorthQueryManagedApplicationRecoveryPerformed {
+    #[inline(never)]
+    pub(super) fn from_body(body: ManagedApplicationRecoveryPerformedBody) -> Self {
+        Self {
+            inner: Box::new(body),
+        }
+    }
+
     /// Match actual retained recovery custody to original owner data. No live
     /// receipt or publication witness is constructed by this comparison.
     pub fn matches_original_receipt(
@@ -31,19 +42,19 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
         use worth_foundational::facade::RecordedProductBranchReference;
         let same_world = match receipt.new_product_head() {
             RecordedProductBranchReference::Home(head) => {
-                self.original_owner.durable() == Some(head.branch().owner())
-                    && head.selected_commit().ordinal() == self.original_world_commit
+                self.inner.original_owner.durable() == Some(head.branch().owner())
+                    && head.selected_commit().ordinal() == self.inner.original_world_commit
             }
             RecordedProductBranchReference::Memory(head) => {
-                self.original_owner.durable().is_none()
-                    && head.owner() == self.original_owner.get()
-                    && head.selected_commit() == self.original_world_commit
+                self.inner.original_owner.durable().is_none()
+                    && head.owner() == self.inner.original_owner.get()
+                    && head.selected_commit() == self.inner.original_world_commit
             }
         };
         same_world
-            && receipt.idempotency_key_identity() == &self.original_key
-            && receipt.commit_reference().commit_id.0 == self.original_native_commit
-            && receipt.commit_reference().version_id.as_u64() == self.original_native_version
+            && receipt.idempotency_key_identity() == &self.inner.original_key
+            && receipt.commit_reference().commit_id.0 == self.inner.original_native_commit
+            && receipt.commit_reference().version_id.as_u64() == self.inner.original_native_version
     }
 
     /// Carries the performed handler's definition into a fresh-authorized read.
@@ -61,7 +72,7 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
         fresh: WorthQueryApplicationIdempotencyBinding,
     ) -> WorthQueryApplicationIdempotencyBinding {
         if fresh.conditional_definition_identity().is_none() {
-            fresh.bind_conditional_definition(self.conditional_definition_identity.as_ref())
+            fresh.bind_conditional_definition(self.inner.conditional_definition_identity.as_ref())
         } else {
             fresh
         }
@@ -78,7 +89,7 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
     pub(in crate::domain_computation::primary_graph) fn take_original_cleanup(
         &mut self,
     ) -> Option<WorthQueryProductUnpublishedRecovery> {
-        self.pending_cleanup.take()
+        self.inner.pending_cleanup.take()
     }
 
     pub fn take_prior_cleanup_failure(
@@ -91,7 +102,7 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
     pub(in crate::domain_computation::primary_graph) fn take_original_cleanup_failure(
         &mut self,
     ) -> Option<WorthQueryProductUnpublishedRecoveryReleaseFailure> {
-        self.prior_cleanup_failure.take()
+        self.inner.prior_cleanup_failure.take()
     }
 
     pub fn into_parts(
@@ -102,11 +113,13 @@ impl WorthQueryManagedApplicationRecoveryPerformed {
         Option<WorthQueryProductUnpublishedRecoveryReleaseFailure>,
         Option<WorthQueryProductUnpublishedRecovery>,
     ) {
-        (
-            self.read,
-            self.publication_failure,
-            self.prior_cleanup_failure,
-            self.pending_cleanup,
-        )
+        let ManagedApplicationRecoveryPerformedBody {
+            read,
+            publication_failure,
+            prior_cleanup_failure,
+            pending_cleanup,
+            ..
+        } = *self.inner;
+        (read, publication_failure, prior_cleanup_failure, pending_cleanup)
     }
 }

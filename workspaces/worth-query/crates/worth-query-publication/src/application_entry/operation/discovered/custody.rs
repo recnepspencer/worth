@@ -41,8 +41,8 @@ where
     A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
 {
-    pub(super) installed_action: ApplicationActionDeclaration,
-    pub(super) description: WorthQueryOperationDescription<S, I>,
+    pub(super) installed_action: Box<ApplicationActionDeclaration>,
+    pub(super) description: Box<WorthQueryOperationDescription<S, I>>,
     pub(super) readmitted_recovery: Option<
         worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecovery,
     >,
@@ -51,9 +51,9 @@ where
     pub(super) result: Option<<I::Binding as ApplicationMutationBinding<S>>::Result>,
     pub(super) recovered: Option<WorthQueryManagedApplicationRecoveryPerformed>,
     pub(super) prior_cleanup: Vec<WorthQueryProductUnpublishedRecoveryReleaseFailure>,
-    pub(super) cleanup: WorthQueryOperationCleanup,
+    pub(super) cleanup: Box<WorthQueryOperationCleanup>,
     pub(super) action: std::marker::PhantomData<A>,
-    pub(super) state: DiscoveredState<S, I, P, R>,
+    pub(super) state: Box<DiscoveredState<S, I, P, R>>,
     // Native carriers above release while the authentic allocation remains retained.
     pub(super) runtime: WorthQueryProgramApplicationRuntime<S, P>,
 }
@@ -69,17 +69,17 @@ where
     A: ApplicationAction<S, I::Binding>,
     ActionDelivery<S, I, A>: ApplicationDiscoveredActionDelivery<S, I::Binding, Root = R>,
 {
-    pub(super) installed_action: ApplicationActionDeclaration,
-    pub(super) description: WorthQueryOperationDescription<S, I>,
+    pub(super) installed_action: Box<ApplicationActionDeclaration>,
+    pub(super) description: Box<WorthQueryOperationDescription<S, I>>,
     pub(super) initial_cause:
         Option<worth_query_execution::facade::runtime::ProductUnpublishedCause>,
     pub(super) result: Option<<I::Binding as ApplicationMutationBinding<S>>::Result>,
     pub(super) recovered: Option<WorthQueryManagedApplicationRecoveryPerformed>,
     pub(super) prior_cleanup: Vec<WorthQueryProductUnpublishedRecoveryReleaseFailure>,
-    pub(super) cleanup: WorthQueryOperationCleanup,
+    pub(super) cleanup: Box<WorthQueryOperationCleanup>,
     pub(super) action: std::marker::PhantomData<A>,
     pub(super) settlement:
-        WorthQueryDiscoveredProgramOutputSettlement<RootQuery<S, R>, RootDemand<S, R>>,
+        Box<WorthQueryDiscoveredProgramOutputSettlement<RootQuery<S, R>, RootDemand<S, R>>>,
     // Native carriers above release while the authentic allocation remains retained.
     pub(super) runtime: WorthQueryProgramApplicationRuntime<S, P>,
 }
@@ -174,14 +174,14 @@ where
     /// Genuine Fresh result where the native handoff makes it directly available.
     /// A partial recovery never manufactures the original handler result.
     pub fn handler_result(&self) -> Option<&<I::Binding as ApplicationMutationBinding<S>>::Result> {
-        match &self.state {
+        match &*self.state {
             State::Retention(failure) => Some(failure.result()),
             State::Performed(performed) => Some(performed.result()),
             _ => self.result.as_ref(),
         }
     }
     pub fn recovered_progress(&self) -> Option<&WorthQueryManagedApplicationRecoveryPerformed> {
-        match &self.state {
+        match &*self.state {
             State::Unpublished(partial) => partial.performed(),
             _ => self.recovered.as_ref(),
         }
@@ -195,7 +195,7 @@ where
         mut self,
         denial: WorthQueryOperationAdvanceDenial,
     ) -> DiscoveredAdvance<S, I, P, R, A> {
-        if let State::Unpublished(partial) = &mut self.state {
+        if let State::Unpublished(partial) = &mut *self.state {
             self.prior_cleanup = partial.take_prior_cleanup();
         }
         WorthQueryOperationAdvance::Terminal {

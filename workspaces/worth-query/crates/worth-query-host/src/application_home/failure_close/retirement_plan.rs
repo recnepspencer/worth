@@ -3,14 +3,14 @@ use super::*;
 
 pub(super) enum OpeningClosePlan<Schema: ApplicationSchemaComposition, Program> {
     NoHome,
-    RelationalAttachment(RelationalAttachmentRefused),
-    Unrecovered(UnrecoveredApplicationHome),
-    Unshared(UnsharedReadmittedApplicationHome),
-    NativeReadmitted(ReadmittedApplicationHome),
-    WorldReadmission(WorldHomeReadmissionRefused),
+    RelationalAttachment(Box<RelationalAttachmentRefused>),
+    Unrecovered(Box<UnrecoveredApplicationHome>),
+    Unshared(Box<UnsharedReadmittedApplicationHome>),
+    NativeReadmitted(Box<ReadmittedApplicationHome>),
+    WorldReadmission(Box<WorldHomeReadmissionRefused>),
     World {
-        query: WorldQueryPreparation<Schema, Program>,
-        home: DirectoryHome,
+        query: Box<WorldQueryPreparation<Schema, Program>>,
+        home: Box<DirectoryHome>,
     },
 }
 
@@ -23,12 +23,12 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
         Preparation(_) => OpeningClosePlan::NoHome,
         SignalProgramPreparation { home, query } => {
             drop(query);
-            OpeningClosePlan::NativeReadmitted(home.into_home())
+            OpeningClosePlan::NativeReadmitted(Box::new((*home).into_home()))
         }
         TransitionComposition { query, home, cause } => world(
             WorldQueryPreparation::TransitionComposition {
-                _query: query,
-                _cause: cause,
+                _query: *query,
+                _cause: *cause,
             },
             home,
         ),
@@ -43,9 +43,9 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
             _bindings,
         } => world(
             WorldQueryPreparation::TransitionProgramme {
-                _query: query,
-                _handoff: handoff,
-                _bindings,
+                _query: *query,
+                _handoff: *handoff,
+                _bindings: *_bindings,
             },
             home,
         ),
@@ -81,11 +81,11 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
         }
         NativeReadmission { query, home } => {
             drop(query);
-            OpeningClosePlan::Unrecovered(home.into_home())
+            OpeningClosePlan::Unrecovered(Box::new((*home).into_home()))
         }
         QueryPublicationReadmissionRequired { query, home } => {
             drop(query);
-            OpeningClosePlan::Unshared(home.into_home())
+            OpeningClosePlan::Unshared(Box::new((*home).into_home()))
         }
         NativeFinalizationInput {
             query,
@@ -118,30 +118,30 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
         }
         ExistingComposition { query, home, cause } => world(
             WorldQueryPreparation::ExistingComposition {
-                _query: query,
-                _cause: cause,
+                _query: *query,
+                _cause: *cause,
             },
             home,
         ),
         ExistingSourceAttachment { query, home } => {
-            world(WorldQueryPreparation::ExistingSource(query), home)
+            world(WorldQueryPreparation::ExistingSource(*query), home)
         }
         ExistingCheckpointMaintenance { query, home, cause } => world(
             WorldQueryPreparation::ExistingMaintenance {
-                _query: query,
-                _cause: cause,
+                _query: *query,
+                _cause: *cause,
             },
             home,
         ),
         ExistingWorldRoot { query, home, cause } => world(
             WorldQueryPreparation::ExistingRoot {
-                _query: query,
+                _query: *query,
                 _cause: cause,
             },
             home,
         ),
         ExistingQueryAttachment { query, home } => {
-            world(WorldQueryPreparation::ExistingAttachment(query), home)
+            world(WorldQueryPreparation::ExistingAttachment(*query), home)
         }
         NativeFinalization { query, home } => {
             drop(query);
@@ -168,66 +168,70 @@ pub(super) fn prepare<Schema: ApplicationSchemaComposition, Program: 'static>(
         }
         Composition { query, home, cause } => world(
             WorldQueryPreparation::Composition {
-                _query: query,
-                _cause: cause,
+                _query: *query,
+                _cause: *cause,
             },
             home,
         ),
-        SourceAttachment { query, home } => world(WorldQueryPreparation::Source(query), home),
+        SourceAttachment { query, home } => world(WorldQueryPreparation::Source(*query), home),
         InitialState { query, home, cause } => world(
             WorldQueryPreparation::Bootstrap {
-                _query: query,
+                _query: *query,
                 _cause: BootstrapFailure::InitialState(cause),
             },
             home,
         ),
         SeedPublication { query, home, cause } => world(
             WorldQueryPreparation::Bootstrap {
-                _query: query,
-                _cause: BootstrapFailure::Seed(cause),
+                _query: *query,
+                _cause: BootstrapFailure::Seed(*cause),
             },
             home,
         ),
         CheckpointMaintenance { query, home, cause } => world(
             WorldQueryPreparation::Bootstrap {
-                _query: query,
-                _cause: BootstrapFailure::Maintenance(cause),
+                _query: *query,
+                _cause: BootstrapFailure::Maintenance(*cause),
             },
             home,
         ),
         WorldRoot { query, home, cause } => world(
             WorldQueryPreparation::Bootstrap {
-                _query: query,
-                _cause: BootstrapFailure::Root(cause),
+                _query: *query,
+                _cause: BootstrapFailure::Root(*cause),
             },
             home,
         ),
-        QueryAttachment { query, home } => world(WorldQueryPreparation::Attachment(query), home),
+        QueryAttachment { query, home } => world(WorldQueryPreparation::Attachment(*query), home),
         CustodyReadmission { query, home, cause } => world(
             WorldQueryPreparation::Custody {
-                _query: query,
+                _query: *query,
                 _cause: cause,
             },
             home,
         ),
         OwnerAdmission { query, home } => {
-            let (home, cause) = home.into_parts();
+            let (home, cause) = (*home).into_parts();
             world(
                 WorldQueryPreparation::OwnerAdmission {
-                    _query: query,
+                    _query: *query,
                     _cause: cause,
                 },
-                home,
+                Box::new(home),
             )
         }
     }
 }
 
+#[inline(never)]
 fn world<Schema: ApplicationSchemaComposition, Program>(
     query: WorldQueryPreparation<Schema, Program>,
-    home: DirectoryHome,
+    home: Box<DirectoryHome>,
 ) -> OpeningClosePlan<Schema, Program> {
-    OpeningClosePlan::World { query, home }
+    OpeningClosePlan::World {
+        query: Box::new(query),
+        home,
+    }
 }
 
 impl<Schema: ApplicationSchemaComposition, Program: 'static> OpeningClosePlan<Schema, Program> {
@@ -245,7 +249,7 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static> OpeningClosePlan<Sc
                 retired_query: None,
             }),
             Self::RelationalAttachment(home) => {
-                let outcome = match home {
+                let outcome = match *home {
                     RelationalAttachmentRefused::BeforeConstruction { home, cause: _ } => {
                         home.consume(|home| home.close(request))
                     }
@@ -253,11 +257,11 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static> OpeningClosePlan<Sc
                 };
                 classify_released(outcome)
             }
-            Self::Unrecovered(home) => close_unrecovered(home, request),
-            Self::Unshared(home) => close_unshared(home, request),
-            Self::NativeReadmitted(home) => classify_released(home.close(request)),
-            Self::WorldReadmission(home) => classify_released(home.into_home().close(request)),
-            Self::World { query, home } => close_world_preparation(query, home, request),
+            Self::Unrecovered(home) => close_unrecovered(*home, request),
+            Self::Unshared(home) => close_unshared(*home, request),
+            Self::NativeReadmitted(home) => classify_released((*home).close(request)),
+            Self::WorldReadmission(home) => classify_released((*home).into_home().close(request)),
+            Self::World { query, home } => close_world_preparation(query, *home, request),
         }
     }
 }

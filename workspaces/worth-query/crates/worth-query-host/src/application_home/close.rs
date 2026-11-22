@@ -44,7 +44,15 @@ impl WorthQueryApplicationHomeClosed {
 }
 
 pub struct WorthQueryApplicationHomeCloseRefused<Schema, Program> {
-    custody: CloseCustody<Schema, Program>,
+    custody: Box<CloseCustody<Schema, Program>>,
+}
+impl<Schema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
+    #[inline(never)]
+    fn from_custody(custody: CloseCustody<Schema, Program>) -> Self {
+        Self {
+            custody: Box::new(custody),
+        }
+    }
 }
 enum CloseCustody<Schema, Program> {
     MemoryLifecycleRequired(WorthQueryApplicationHome<Schema, Program>),
@@ -85,7 +93,7 @@ impl<Schema, Program> std::fmt::Debug for WorthQueryApplicationHomeCloseRefused<
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut output = f.debug_struct("WorthQueryApplicationHomeCloseRefused");
         output.field("reason", &self.detail());
-        let phase = match &self.custody {
+        let phase = match self.custody.as_ref() {
             CloseCustody::MemoryLifecycleRequired(_) => "memory-lifecycle",
             CloseCustody::WorldAdmission { .. } => "world-admission",
             CloseCustody::QueryAdmission { .. } => "query-admission",
@@ -98,7 +106,7 @@ impl<Schema, Program> std::fmt::Debug for WorthQueryApplicationHomeCloseRefused<
         if let CloseCustody::QueryReleased {
             posture: ApplicationHomeClosePosture::RecoveryRequired(custody),
             ..
-        } = &self.custody
+        } = self.custody.as_ref()
         {
             output.field("checkpoint", custody.checkpoint_result());
         }
@@ -130,53 +138,53 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
             checkpoint_limits,
         } = self;
         let Some(home) = directory else {
-            return Err(WorthQueryApplicationHomeCloseRefused {
-                custody: CloseCustody::MemoryLifecycleRequired(Self {
+            return Err(WorthQueryApplicationHomeCloseRefused::from_custody(
+                CloseCustody::MemoryLifecycleRequired(Self {
                     query,
                     directory: None,
                     checkpoint_limits,
                 }),
-            });
+            ));
         };
         if let Err(cause) = home.preflight_world_close(request) {
-            return Err(WorthQueryApplicationHomeCloseRefused {
-                custody: CloseCustody::WorldAdmission {
+            return Err(WorthQueryApplicationHomeCloseRefused::from_custody(
+                CloseCustody::WorldAdmission {
                     query,
                     home,
                     checkpoint_limits,
                     cause,
                 },
-            });
+            ));
         }
         let query = match query.prepare_home_retirement(request) {
             Ok(query) => query,
             Err((query, cause)) => {
-                return Err(WorthQueryApplicationHomeCloseRefused {
-                    custody: CloseCustody::QueryAdmission {
+                return Err(WorthQueryApplicationHomeCloseRefused::from_custody(
+                    CloseCustody::QueryAdmission {
                         query,
                         home,
                         checkpoint_limits,
                         cause,
                     },
-                })
+                ))
             }
         };
         // No supplier callback occurs under World's final logical admission gates.
         match home.seal_world(request) {
             Ok(home) => retirement::finish_after_world(query, home, request),
-            Err(home) => Err(WorthQueryApplicationHomeCloseRefused {
-                custody: CloseCustody::World {
+            Err(home) => Err(WorthQueryApplicationHomeCloseRefused::from_custody(
+                CloseCustody::World {
                     query,
                     home,
                     checkpoint_limits,
                 },
-            }),
+            )),
         }
     }
 }
 impl<Schema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
     pub fn directory_denial(&self) -> Option<&ApplicationHomeCloseDenial> {
-        match &self.custody {
+        match self.custody.as_ref() {
             CloseCustody::World { home, .. } => Some(home.reason()),
             CloseCustody::WorldAdmission { cause, .. } => Some(cause),
             CloseCustody::QueryReleased { cause, .. } => Some(cause),
@@ -185,14 +193,14 @@ impl<Schema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
         }
     }
     pub fn query_denial(&self) -> Option<&WorthQueryHomeRetirementDenial> {
-        match &self.custody {
+        match self.custody.as_ref() {
             CloseCustody::QueryAdmission { cause, .. }
             | CloseCustody::QueryRetirement { cause, .. } => Some(cause),
             _ => None,
         }
     }
     pub fn detail(&self) -> String {
-        match &self.custody {
+        match self.custody.as_ref() {
             CloseCustody::MemoryLifecycleRequired(_) => {
                 "memory Home World lifecycle has not been readmitted".to_owned()
             }
@@ -208,7 +216,7 @@ impl<Schema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
 impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<Schema, Program> {
     /// Only actual pre-seal custody may restore the original Query service.
     pub fn resume(self) -> Result<WorthQueryApplicationHome<Schema, Program>, Self> {
-        match self.custody {
+        match *self.custody {
             CloseCustody::MemoryLifecycleRequired(home) => Ok(home),
             CloseCustody::WorldAdmission {
                 query,
@@ -240,15 +248,13 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHomeCloseRefused<S
                     directory: Some(home),
                     checkpoint_limits,
                 }),
-                Err(home) => Err(Self {
-                    custody: CloseCustody::World {
-                        query,
-                        home,
-                        checkpoint_limits,
-                    },
-                }),
+                Err(home) => Err(Self::from_custody(CloseCustody::World {
+                    query,
+                    home,
+                    checkpoint_limits,
+                })),
             },
-            custody => Err(Self { custody }),
+            custody => Err(Self::from_custody(custody)),
         }
     }
 }
@@ -266,13 +272,13 @@ pub(super) fn classify_released_query<Schema, Program>(
             })
         }
         ApplicationHomeCloseOutcome::CloseRefused { reason, posture } => {
-            Err(WorthQueryApplicationHomeCloseRefused {
-                custody: CloseCustody::QueryReleased {
+            Err(WorthQueryApplicationHomeCloseRefused::from_custody(
+                CloseCustody::QueryReleased {
                     cause: reason,
                     posture,
                     retired_query,
                 },
-            })
+            ))
         }
     }
 }

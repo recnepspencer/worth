@@ -58,8 +58,8 @@ where
             ApplicationHomeInitializationDenial::Execution(_)
             | ApplicationHomeInitializationDenial::OpportunityAlreadyConsumed => {
                 Err(Refused::QueryPublicationReadmissionRequired {
-                    query: query.take().expect("refused origin retained Query"),
-                    home,
+                    query: Box::new(query.take().expect("refused origin retained Query")),
+                    home: Box::new(home),
                 })
             }
         },

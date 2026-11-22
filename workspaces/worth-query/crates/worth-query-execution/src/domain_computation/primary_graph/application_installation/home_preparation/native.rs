@@ -8,7 +8,7 @@ use super::super::super::{
 use super::*;
 
 pub struct QueryHomeNativeInstallationRefused<Schema: ApplicationSchemaComposition, Program> {
-    _state: HomeApplicationState<Schema, Program>,
+    _state: Box<HomeApplicationState<Schema, Program>>,
     cause: WorthQueryPrimaryGraphInstallationDenial,
 }
 pub struct QueryHomeNativeReadmissionRefused<Schema: ApplicationSchemaComposition, Program> {
@@ -48,10 +48,13 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
             &state.runtime,
             &state.installed,
             native,
-            invariants,
+            *invariants,
             initialization,
         ) {
-            Ok(schema) => Ok(PreparedHomeNativeMeaning { state, schema }),
+            Ok(schema) => Ok(PreparedHomeNativeMeaning {
+                state,
+                schema: Box::new(schema),
+            }),
             Err(cause) => Err(QueryHomeNativeInstallationRefused {
                 _state: state,
                 cause,
@@ -85,12 +88,15 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
             &state.runtime,
             &state.installed,
             native,
-            invariants,
+            *invariants,
             source,
             maximum_kind,
             maximum_aspect,
         ) {
-            Ok(schema) => Ok(PreparedHomeNativeMeaning { state, schema }),
+            Ok(schema) => Ok(PreparedHomeNativeMeaning {
+                state,
+                schema: Box::new(schema),
+            }),
             Err(cause) => Err(QueryHomeNativeInstallationRefused {
                 _state: state,
                 cause,
@@ -138,7 +144,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
                 activation_seed: super::super::super::bootstrap::WorthQueryProgramActivationSeed::for_initial_program(
                     &self.state.support.initial_revision, self.state.activation.clone()),
                 state: self.state,
-                schema: self.schema.bind_sources(&native.main_branch_identity()),
+                schema: Box::new(self.schema.bind_sources(&native.main_branch_identity())),
                 restore_work: None,
             }),
             Err(cause) => Err(QueryHomeNativeReadmissionRefused {

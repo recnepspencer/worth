@@ -6,7 +6,7 @@ use worth_proof::AdmittedHomeProgramTransitionSuccessor;
 
 pub struct QueryHomeTransitionPromotionRefused<Schema: ApplicationSchemaComposition, Program> {
     _target: PreparedHomeProgramTransitionTarget<Schema, Program>,
-    _receipt: RelationalInitialSchemaInstallationReceipt,
+    _receipt: Box<RelationalInitialSchemaInstallationReceipt>,
     _installation: AdmittedHomeProgramTransitionSuccessor<HomeProgramTransitionInstallationBinding>,
     cause: QueryHomeTransitionPreparationDenial,
 }
@@ -61,7 +61,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
         if let Err(cause) = checked {
             return Err(QueryHomeTransitionPromotionRefused {
                 _target: self,
-                _receipt: receipt,
+                _receipt: Box::new(receipt),
                 _installation: installation,
                 cause,
             });
@@ -72,16 +72,18 @@ impl<Schema: ApplicationSchemaComposition, Program>
             _managed_sources,
             _source_initializer,
             _inventory,
-        } = self._pending;
+        } = *self._pending;
         _state.transition_installation = Some(installation);
-        let schema = PreparedNativeSchemaMeaning {
-            managed_sources: _managed_sources,
-            source_initializer: _source_initializer,
-            layout: _layout,
-            receipt,
-            expected_invariant_inventory_digest: _inventory.digest(),
-        }
-        .bind_sources(&native.main_branch_identity());
+        let schema = Box::new(
+            PreparedNativeSchemaMeaning {
+                managed_sources: _managed_sources,
+                source_initializer: _source_initializer,
+                layout: _layout,
+                receipt,
+                expected_invariant_inventory_digest: _inventory.digest(),
+            }
+            .bind_sources(&native.main_branch_identity()),
+        );
         Ok(ReadmittedExistingHomeNativeMeaning::from_transition(
             _state, schema,
         ))

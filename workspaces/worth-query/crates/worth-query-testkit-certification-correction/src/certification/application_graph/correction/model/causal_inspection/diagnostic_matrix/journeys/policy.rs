@@ -1,19 +1,45 @@
+use super::super::super::super::output_program::OutputProgram;
 use super::super::super::super::query::full;
+use super::super::super::super::schema::NumericSchema;
 use super::super::super::query as lawful_query;
 use super::*;
+use worth_query_host::facade::{
+    admission::authenticated_principal::{
+        WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
+    },
+    application_installation::WorthQueryProgramApplicationRuntime,
+};
+
 pub fn current_policy_and_original_parameters_precede_body_availability() {
     let application = host::install_with_outputs();
     let scope = request_scope();
     let principal = authenticate_operator(application.installed_schema(), &scope);
     let readers = application.application_query_basis_observer();
     let baseline = readers.observe().active();
-    let access = || journey::access(&application, &principal, &scope);
-    let request = application.runtime().request(&principal, &scope);
+    assert_missing_body_policies(&application, &principal, &scope);
+    let (before, after, different, foreign_binding) =
+        assert_parameter_and_foreign_binding_policies(&application, &principal, &scope);
+    assert_public_and_withdrawn_grant_policies(&application, &principal, &scope, &different);
+    before.close();
+    after.close();
+    different.close();
+    foreign_binding.close();
+    assert_eq!(readers.observe().active(), baseline);
+}
+
+#[inline(never)]
+fn assert_missing_body_policies(
+    application: &WorthQueryProgramApplicationRuntime<NumericSchema, OutputProgram>,
+    principal: &WorthQueryAuthenticatedExternalPrincipal<NumericSchema>,
+    scope: &WorthQueryRequestScope,
+) {
+    let access = || journey::access(application, principal, scope);
+    let request = application.runtime().request(principal, scope);
     macro_rules! denied {
         ($read:ident, $binding:ident) => {{
-            let (before, rows) = read!(application, &principal, &scope, $read, false, false);
+            let (before, rows) = read!(application, principal, scope, $read, false, false);
             assert!(rows.is_empty());
-            let (after, rows) = read!(application, &principal, &scope, $read, false, false);
+            let (after, rows) = read!(application, principal, scope, $read, false, false);
             assert!(rows.is_empty());
             let denial = request
                 .inspect::<$binding>(&after)
@@ -35,9 +61,9 @@ pub fn current_policy_and_original_parameters_precede_body_availability() {
     denied!(InternalRead, InternalBinding);
     denied!(RelationRead, RelationBinding);
     denied!(FieldRead, FieldBinding);
-    let (before, rows) = read!(application, &principal, &scope, Read, false, true);
+    let (before, rows) = read!(application, principal, scope, Read, false, true);
     assert!(rows.is_empty());
-    let (after, rows) = read!(application, &principal, &scope, Read, false, true);
+    let (after, rows) = read!(application, principal, scope, Read, false, true);
     assert!(rows.is_empty());
     let report = request
         .inspect::<Binding>(&after)
@@ -49,9 +75,24 @@ pub fn current_policy_and_original_parameters_precede_body_availability() {
     report.close();
     before.close();
     after.close();
-    let (before, rows) = read!(application, &principal, &scope, Read, true, false);
+}
+
+#[inline(never)]
+fn assert_parameter_and_foreign_binding_policies(
+    application: &WorthQueryProgramApplicationRuntime<NumericSchema, OutputProgram>,
+    principal: &WorthQueryAuthenticatedExternalPrincipal<NumericSchema>,
+    scope: &WorthQueryRequestScope,
+) -> (
+    WorthQueryApplicationQueryObservation,
+    WorthQueryApplicationQueryObservation,
+    WorthQueryApplicationQueryObservation,
+    WorthQueryApplicationQueryObservation,
+) {
+    let access = || journey::access(application, principal, scope);
+    let request = application.runtime().request(principal, scope);
+    let (before, rows) = read!(application, principal, scope, Read, true, false);
     assert_eq!(rows.len(), 1);
-    let (after, rows) = read!(application, &principal, &scope, Read, true, false);
+    let (after, rows) = read!(application, principal, scope, Read, true, false);
     assert_eq!(rows.len(), 1);
     let denied = request
         .inspect::<Binding>(&after)
@@ -65,7 +106,7 @@ pub fn current_policy_and_original_parameters_precede_body_availability() {
         WorthQueryApplicationInspectionStopKind::Unavailable
     );
     drop(denied);
-    let (different, rows) = read!(application, &principal, &scope, Read, false, false);
+    let (different, rows) = read!(application, principal, scope, Read, false, false);
     assert!(rows.is_empty());
     let denied = request
         .inspect::<Binding>(&different)
@@ -115,6 +156,18 @@ pub fn current_policy_and_original_parameters_precede_body_availability() {
         WorthQueryApplicationInspectionStopKind::Admission
     );
     drop(denied);
+    (before, after, different, foreign_binding)
+}
+
+#[inline(never)]
+fn assert_public_and_withdrawn_grant_policies(
+    application: &WorthQueryProgramApplicationRuntime<NumericSchema, OutputProgram>,
+    principal: &WorthQueryAuthenticatedExternalPrincipal<NumericSchema>,
+    scope: &WorthQueryRequestScope,
+    different: &WorthQueryApplicationQueryObservation,
+) {
+    let access = || journey::access(application, principal, scope);
+    let request = application.runtime().request(principal, scope);
     let result = request
         .query(full::Read {
             key: "numeric".into(),
@@ -146,7 +199,7 @@ pub fn current_policy_and_original_parameters_precede_body_availability() {
         })
         .without_source()
         .idempotency(&"matrix-withdraw-inspection".to_owned())
-        .execute_in_program(&application, ExecutionAllocationPolicy::SystemAllocation)
+        .execute_in_program(application, ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
     assert!(
         matches!(
@@ -156,8 +209,8 @@ pub fn current_policy_and_original_parameters_precede_body_availability() {
         "{outcome:?}"
     );
     let denied = request
-        .inspect::<Binding>(&different)
-        .why_changed(&different)
+        .inspect::<Binding>(different)
+        .why_changed(different)
         .reference_only()
         .execute_governed(stale_metadata, stale_diagnostic)
         .err()
@@ -168,9 +221,4 @@ pub fn current_policy_and_original_parameters_precede_body_availability() {
     );
     assert!(denied.materialization_refusal().is_none());
     drop(denied);
-    before.close();
-    after.close();
-    different.close();
-    foreign_binding.close();
-    assert_eq!(readers.observe().active(), baseline);
 }

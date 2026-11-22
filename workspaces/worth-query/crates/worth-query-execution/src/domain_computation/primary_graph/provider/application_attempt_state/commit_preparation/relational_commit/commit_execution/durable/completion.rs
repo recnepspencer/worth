@@ -6,62 +6,16 @@ pub(super) fn finish(
     mut guard: QueryDurablePreparationGuard,
     outcome: Result<progression::Progress, worth_execution::WorkCeilingDenial>,
 ) -> Result<WorthQueryCommittedApplicationSession, Stop> {
-    let product = guard
-        .preparation_mut()
-        .query
-        .attempt
-        .affinity()
-        .product_publication()
-        .clone();
     // Actual terminal custody wins over a late framework stop. No performed
     // result or deleted-record refusal is reconstructed from a progress marker.
     if matches!(guard.preparation_mut().world, World::OpenRefused(_)) {
-        let (mut retained, reservation) = guard.finish();
-        let World::OpenRefused(cause) = std::mem::replace(&mut retained.world, World::RecoveryOnly)
-        else {
-            unreachable!()
-        };
-        reservation.release();
-        return Err(refused_before_open(retained.query, cause));
+        return Err(finish_open_refused(guard));
     }
     if matches!(guard.preparation_mut().world, World::Performed(_)) {
-        let (mut retained, reservation) = guard.finish();
-        let World::Performed(performed) =
-            std::mem::replace(&mut retained.world, World::RecoveryOnly)
-        else {
-            unreachable!()
-        };
-        let generation = retained.authored_completion.as_ref().map(|completion| {
-            let output = performed
-                .component_results()
-                .signal()
-                .durable_advance_output()
-                .expect("the authored intent performed with its original Signal output");
-            completion
-                .installed_lowering(output)
-                .expect("World admitted the original projection before movement")
-                .signal_definition_generation()
-        });
-        let committed = into_managed(retained).complete_live(performed, generation);
-        reservation.release();
-        return Ok(committed);
+        return Ok(finish_performed(guard));
     }
     if matches!(guard.preparation_mut().world, World::Unpublished(_)) {
-        let (mut retained, reservation) = guard.finish();
-        let World::Unpublished(effects) =
-            std::mem::replace(&mut retained.world, World::RecoveryOnly)
-        else {
-            unreachable!()
-        };
-        let handle = effects.recovery_handle();
-        reservation.retain_managed(handle, into_managed(retained));
-        return Err(Stop::ProductUnpublished(
-            crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
-                effects,
-                product.recovery(),
-                provider.unpublished_idempotency_disposition(),
-            ),
-        ));
+        return Err(finish_unpublished(provider, guard));
     }
     match outcome {
         Ok(progression::Progress::Pending(stage)) => Err(pending(guard, provider, stage)),
@@ -76,6 +30,70 @@ pub(super) fn finish(
         }
     }
 }
+
+#[inline(never)]
+fn finish_open_refused(guard: QueryDurablePreparationGuard) -> Stop {
+    let (mut retained, reservation) = guard.finish();
+    let World::OpenRefused(cause) = std::mem::replace(&mut retained.world, World::RecoveryOnly)
+    else {
+        unreachable!()
+    };
+    reservation.release();
+    refused_before_open(retained.query, cause)
+}
+
+#[inline(never)]
+fn finish_performed(guard: QueryDurablePreparationGuard) -> WorthQueryCommittedApplicationSession {
+    let (mut retained, reservation) = guard.finish();
+    let World::Performed(performed) = std::mem::replace(&mut retained.world, World::RecoveryOnly)
+    else {
+        unreachable!()
+    };
+    let generation = retained.authored_completion.as_ref().map(|completion| {
+        let output = performed
+            .component_results()
+            .signal()
+            .durable_advance_output()
+            .expect("the authored intent performed with its original Signal output");
+        completion
+            .installed_lowering(output)
+            .expect("World admitted the original projection before movement")
+            .signal_definition_generation()
+    });
+    let committed = into_managed(retained).complete_live(performed, generation);
+    reservation.release();
+    committed
+}
+
+#[inline(never)]
+fn finish_unpublished(
+    provider: &WorthQueryPrimaryGraphProvider,
+    mut guard: QueryDurablePreparationGuard,
+) -> Stop {
+    let product = guard
+        .preparation_mut()
+        .query
+        .attempt
+        .affinity()
+        .product_publication()
+        .clone();
+    let (mut retained, reservation) = guard.finish();
+    let World::Unpublished(effects) = std::mem::replace(&mut retained.world, World::RecoveryOnly)
+    else {
+        unreachable!()
+    };
+    let handle = effects.recovery_handle();
+    reservation.retain_managed(handle, into_managed(retained));
+    Stop::ProductUnpublished(
+        crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
+            effects,
+            product.recovery(),
+            provider.unpublished_idempotency_disposition(),
+        ),
+    )
+}
+
+#[inline(never)]
 fn pending(
     mut guard: QueryDurablePreparationGuard,
     provider: &WorthQueryPrimaryGraphProvider,
@@ -97,6 +115,7 @@ fn pending(
     Stop::ProductPreparationPending(pending.retaining_preparation(guard))
 }
 
+#[inline(never)]
 fn into_managed(retained: RetainedQueryDurablePreparation) -> ManagedUnpublishedAttempt {
     let query = retained.query;
     ManagedUnpublishedAttempt {

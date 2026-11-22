@@ -29,14 +29,23 @@ where
     // Only the user initializer is caught by this borrowed Query operation;
     // the actual Home and Query bootstrap remain outside its unwind boundary.
     if let Err(cause) = query.initialize_home_query_state(phase, initial_state) {
-        return Err(Refused::InitialState { query, home, cause });
+        return Err(Refused::InitialState {
+            query: Box::new(query),
+            home: Box::new(home),
+            cause,
+        });
     }
     if let Err(cause) = query.publish_home_query_seed(phase) {
-        return Err(Refused::SeedPublication { query, home, cause });
+        return Err(Refused::SeedPublication {
+            query: Box::new(query),
+            home: Box::new(home),
+            cause: Box::new(cause),
+        });
     }
     finish_world(phase, query, home, checkpoint_limits, observation)
 }
 
+#[inline(never)]
 fn prepare_source<Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     mut home: UnsharedReadmittedApplicationHome,
@@ -58,26 +67,42 @@ where
         Ok(parts) => parts,
         Err(cause) => {
             return Err(Refused::NativeFinalizationInput {
-                query,
-                home,
-                cause: ApplicationHomeOpenRefusal::Relational(cause),
+                query: Box::new(query),
+                home: Box::new(home),
+                cause: Box::new(ApplicationHomeOpenRefusal::Relational(cause)),
             })
         }
     };
     let query = match query.finish_fresh_home_native_readmission(phase, native, admission) {
         Ok(query) => query,
-        Err(query) => return Err(Refused::NativeFinalization { query, home }),
+        Err(query) => {
+            return Err(Refused::NativeFinalization {
+                query: Box::new(query),
+                home: Box::new(home),
+            })
+        }
     };
     let bridge = match query.home_bridge_definition() {
         Ok(bridge) => bridge,
-        Err(cause) => return Err(Refused::BridgeDefinition { query, home, cause }),
+        Err(cause) => {
+            return Err(Refused::BridgeDefinition {
+                query: Box::new(query),
+                home: Box::new(home),
+                cause: Box::new(cause),
+            })
+        }
     };
     let (budgets, clock, policy, execution, _conditionals) = query.home_world_resources();
     let definition =
         ApplicationHomeWorldDefinition::new(bridge, "primary", budgets, clock, policy, execution);
     let source = match prepare_query_home_source(home.share(), definition, &request) {
         Ok(source) => source,
-        Err(home) => return Err(Refused::WorldSourcePreparation { query, home }),
+        Err(home) => {
+            return Err(Refused::WorldSourcePreparation {
+                query: Box::new(query),
+                home: Box::new(home),
+            })
+        }
     };
     let (registered, ordinary) = source.query_source_parts();
     let (query, builder, mut bindings) =
@@ -85,7 +110,7 @@ where
             Ok(parts) => parts,
             Err(query) => {
                 return Err(Refused::SignalProgramPreparation {
-                    home: source,
+                    home: Box::new(source),
                     query: Box::new(query),
                 })
             }
@@ -94,9 +119,9 @@ where
         Ok(signal) => signal,
         Err(home) => {
             return Err(Refused::WorldReadmission {
-                query,
-                home,
-                _bindings: bindings,
+                query: Box::new(query),
+                home: Box::new(home),
+                _bindings: Box::new(bindings),
             })
         }
     };
@@ -104,15 +129,21 @@ where
         Ok(home) => home.consume(|home| home),
         Err(home) => {
             return Err(Refused::WorldReadmission {
-                query,
-                home,
-                _bindings: bindings,
+                query: Box::new(query),
+                home: Box::new(home),
+                _bindings: Box::new(bindings),
             })
         }
     };
     let (_, _, conditional) = match home.query_composition_parts() {
         Ok(parts) => parts,
-        Err(cause) => return Err(Refused::Composition { query, home, cause }),
+        Err(cause) => {
+            return Err(Refused::Composition {
+                query: Box::new(query),
+                home: Box::new(home),
+                cause: Box::new(cause),
+            })
+        }
     };
     observation.arrive_for_test(
         ApplicationHomeOpeningStage::QueryReadmission,
@@ -120,11 +151,17 @@ where
     );
     let query = match query.attach_home_authored_signal(conditional) {
         Ok(query) => query,
-        Err(query) => return Err(Refused::SourceAttachment { query, home }),
+        Err(query) => {
+            return Err(Refused::SourceAttachment {
+                query: Box::new(query),
+                home: Box::new(home),
+            })
+        }
     };
     Ok((query, home))
 }
 
+#[inline(never)]
 fn finish_world<Schema, Program>(
     phase: &WorthQueryBootstrapAdvancementPhase<'_>,
     query: PreparedHomeQueryRuntime<Schema, Program>,
@@ -145,11 +182,23 @@ where
     let request = phase.execution_request();
     let maintenance = match super::super::maintenance::prepare(&home, checkpoint_limits, &request) {
         Ok(operation) => operation,
-        Err(cause) => return Err(Refused::CheckpointMaintenance { query, home, cause }),
+        Err(cause) => {
+            return Err(Refused::CheckpointMaintenance {
+                query: Box::new(query),
+                home: Box::new(home),
+                cause: Box::new(cause),
+            })
+        }
     };
     let root = match home.select_query_root(&request) {
         Ok(root) => root,
-        Err(cause) => return Err(Refused::WorldRoot { query, home, cause }),
+        Err(cause) => {
+            return Err(Refused::WorldRoot {
+                query: Box::new(query),
+                home: Box::new(home),
+                cause: Box::new(cause),
+            })
+        }
     };
     let ports = home.world();
     let query = match query.attach_home_world(
@@ -164,7 +213,12 @@ where
         home.branch_program_source_owner(),
     ) {
         Ok(query) => query.consume(|query| query),
-        Err(query) => return Err(Refused::QueryAttachment { query, home }),
+        Err(query) => {
+            return Err(Refused::QueryAttachment {
+                query: Box::new(query),
+                home: Box::new(home),
+            })
+        }
     };
     observation.arrive_for_test(
         ApplicationHomeOpeningStage::QueryReadmission,

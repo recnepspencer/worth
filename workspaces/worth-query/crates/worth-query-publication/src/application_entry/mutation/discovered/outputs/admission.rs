@@ -6,6 +6,8 @@ use worth_query_execution::facade::primary_graph::{
     WorthQueryPreparedRequiredOutputSource,
 };
 
+mod stages;
+
 pub(super) type DiscoveryBinding<Schema, Root> =
     <Discovery<Schema, Root> as ApplicationQueryIntent<Schema>>::Binding;
 pub(super) type DiscoveryQuery<Schema, Root> =
@@ -124,204 +126,33 @@ where
     where
         Program: ApplicationProgramDefinition<Schema>,
     {
-        if self.discovery_source.is_none() && self.dependencies.is_none() {
-            let discovered = match self.discovery.live() {
-                Some(live) => request
-                    .at(retained)
-                    .query(live.clone())
-                    .execute_in_advancement(phase)
-                    .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?
-                    .into_output_demand_source(),
-                None => application
-                    .runtime()
-                    .read_recorded_output_discovery::<DiscoveryBinding<Schema, Root>>(
-                        phase,
-                        &worth_query_execution::publication_boundary::program_publication_access(),
-                        &self.discovery,
-                        request.principal,
-                        request.scope,
-                        &retained.retained,
-                    )
-                    .map_err(WorthQueryRequiredOutputPreparationDenial::DemandExecution)?,
-            };
-            self.discovery_source = Some(discovered);
+        self.discover_demands(phase, application, request, retained)?;
+        if !self.bound {
+            self.bind_root_sources(phase, application, request, prepared, retained)?;
         }
-        if self.demands.is_none() {
-            let discovered = self
-                .discovery_source
-                .as_ref()
-                .expect("original discovery pairing remains owned");
-            let row = discovered
-                .rows()
-                .first()
-                .filter(|_| discovered.rows().len() == 1)
-                .ok_or(WorthQueryRequiredOutputPreparationDenial::MissingSource)?;
-            self.demands = Some(
-                RootConnection::<Schema, Root>::demands_from_discovery(row)
-                    .map_err(WorthQueryRequiredOutputPreparationDenial::Connection)?,
-            );
-        }
-        if self.dependencies.is_none() {
-            let proof = request.at(retained).retain_query_dependencies(
-                phase,
-                self.discovery_source
-                    .as_ref()
-                    .expect("capture borrows original pairing"),
-            )?;
-            self.dependencies = Some(proof);
-            self.discovery_source = None;
-        }
-        let demands = self
+        let demand_count = self
             .demands
             .as_ref()
-            .expect("discovery retains its root list");
-        if !self.bound {
-            while self.current.len() < demands.len() {
-                let index = self.current.len();
-                if self.sources.len() == index {
-                    self.sources.push(read_source::<Schema, Root>(
-                        phase,
-                        request,
-                        retained,
-                        &demands[index],
-                    )?);
-                }
-                let current = if matches!(self.kind, DiscoveredRootStartKind::Recovery) {
-                    let result = request
-                        .query(demands[index].source_intent())
-                        .execute_in_advancement(phase)
-                        .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?;
-                    let current = result.into_output_demand_source();
-                    match application
-                        .validate_recovered_discovered_program_root_currentness::<Root>(
-                        &worth_query_execution::publication_boundary::program_publication_access(),
-                        prepared,
-                        &self.sources[index],
-                        &current,
-                    ) {
-                        Ok(()) => {}
-                        Err(denial)
-                            if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded =>
-                        {
-                            self.stale.push(index);
-                        }
-                        Err(denial) => {
-                            self.first_denial.get_or_insert_with(|| denial.clone());
-                            return Err(
-                                WorthQueryRequiredOutputPreparationDenial::DemandExecution(denial),
-                            );
-                        }
-                    }
-                    Some(current)
-                } else {
-                    None
-                };
-                self.current.push(current);
-            }
-            application
-                .bind_prepared_discovered_program_root_sources::<Root>(
-                    phase,
-                    &worth_query_execution::publication_boundary::program_publication_access(),
-                    prepared,
-                    &self.sources,
-                )
-                .map_err(|denial| {
-                    self.first_denial.get_or_insert_with(|| denial.clone());
-                    WorthQueryRequiredOutputPreparationDenial::DemandExecution(denial)
-                })?;
-            self.inputs = std::mem::take(&mut self.sources)
-                .into_iter()
-                .zip(std::mem::take(&mut self.current))
-                .enumerate()
-                .map(|(index, (source, current))| RootInput {
-                    source: Some(source),
-                    current,
-                    superseded: self.stale.contains(&index),
-                })
-                .collect();
-            self.bound = true;
-        }
-        while self.next < demands.len() {
-            let demand = demands[self.next].clone();
-            let input = &mut self.inputs[self.next];
-            if input.superseded {
-                superseded.push(demand);
-                self.next += 1;
-                continue;
-            }
-            application
-                .validate_discovered_program_source::<Root>(
-                    phase,
-                    &worth_query_execution::publication_boundary::program_publication_access(),
-                    prepared,
-                    receipt,
-                    &retained.retained,
-                    request.principal,
-                    request.scope,
-                    request.branch,
-                )
-                .map_err(WorthQueryRequiredOutputPreparationDenial::DemandExecution)?;
-            // Admission consumes a linear disclosure even on refusal. Only the
-            // unadmitted root reacquires it, at the original retained observation.
-            let source = match input.source.take() {
-                Some(source) => source,
-                None => read_source::<Schema, Root>(phase, request, retained, &demand)?,
-            };
-            let limits = controls.resolve(application.runtime().output_demand_resource_profile());
-            let admitted = match self.kind {
-                DiscoveredRootStartKind::Performed => application
-                    .admit_performed_discovered_program_root_output::<Root>(
-                        phase,
-                        &worth_query_execution::publication_boundary::program_publication_access(),
-                        source,
-                        limits,
-                        prepared,
-                        std::sync::Arc::clone(&retained.retained),
-                    ),
-                DiscoveredRootStartKind::Recovery => {
-                    let current = match input.current.take() {
-                        Some(current) => current,
-                        None => request
-                            .query(demand.source_intent())
-                            .execute_in_advancement(phase)
-                            .map_err(WorthQueryRequiredOutputPreparationDenial::SourceQuery)?
-                            .into_output_demand_source(),
-                    };
-                    application.validate_recovered_discovered_program_root_currentness::<Root>(
-                        &worth_query_execution::publication_boundary::program_publication_access(), prepared, &source, &current)
-                        .and_then(|()| application.recover_discovered_program_root_output::<Root>(phase,
-                            &worth_query_execution::publication_boundary::program_publication_access(), source, current, limits, receipt))
-                }
-            };
-            match admitted {
-                Ok(admitted) => roots.push(RootNode {
-                    demand: demand.clone(),
-                    handle: Some(WorthQueryApplicationProgramDemandHandle::new(
-                        admitted, demand, None,
-                    )),
-                    settlement: None,
-                    pending_authority: None,
-                    continuation: None,
-                    dependencies: None,
-                    outputs: Vec::new(),
-                    work: ProgramOutputTraversalWork::default(),
-                }),
-                Err(denial) if denial.kind() == WorthQueryOutputDemandDenialKind::Superseded => {
-                    superseded.push(demand)
-                }
-                Err(denial) => {
-                    self.first_denial.get_or_insert_with(|| denial.clone());
-                    return Err(WorthQueryRequiredOutputPreparationDenial::DemandExecution(
-                        denial,
-                    ));
-                }
-            }
-            self.next += 1;
+            .expect("discovery retains its root list")
+            .len();
+        while self.next < demand_count {
+            self.admit_next_root(
+                phase,
+                application,
+                request,
+                receipt,
+                prepared,
+                retained,
+                controls,
+                roots,
+                superseded,
+            )?;
         }
         Ok(())
     }
 }
 
+#[inline(never)]
 fn read_source<Schema, Root>(
     phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'_>,
     request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,

@@ -25,11 +25,11 @@ use worth_relational::facade::{
 };
 
 pub struct PreparedHomeProgramTransitionTarget<Schema: ApplicationSchemaComposition, Program> {
-    _pending: HomeTransitionTargetCustody<Schema, Program>,
-    pub(super) contracts: PreparedRelationalHomeProgramContracts,
+    _pending: Box<HomeTransitionTargetCustody<Schema, Program>>,
+    pub(super) contracts: Box<PreparedRelationalHomeProgramContracts>,
 }
 struct HomeTransitionTargetCustody<Schema: ApplicationSchemaComposition, Program> {
-    _state: HomeApplicationState<Schema, Program>,
+    _state: Box<HomeApplicationState<Schema, Program>>,
     _layout: super::super::super::schema_layout::WorthQueryPrimaryGraphLayout,
     _managed_sources:
         super::super::super::application_query::managed_index::ManagedSourceInstallation,
@@ -44,15 +44,15 @@ pub enum QueryHomeTransitionPreparationDenial {
     Indexes(String),
 }
 pub struct QueryHomeTransitionPreparationRefused<Schema: ApplicationSchemaComposition, Program> {
-    _custody: TransitionPreparationCustody<Schema, Program>,
+    _custody: Box<TransitionPreparationCustody<Schema, Program>>,
     cause: QueryHomeTransitionPreparationDenial,
 }
 enum TransitionPreparationCustody<Schema: ApplicationSchemaComposition, Program> {
     Installed {
-        _state: HomeApplicationState<Schema, Program>,
+        _state: Box<HomeApplicationState<Schema, Program>>,
     },
     Compiled {
-        _pending: HomeTransitionTargetCustody<Schema, Program>,
+        _pending: Box<HomeTransitionTargetCustody<Schema, Program>>,
     },
 }
 impl<Schema: ApplicationSchemaComposition, Program>
@@ -90,7 +90,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
         let (predecessor_layout, predecessor_receipt) = predecessor.predecessor_native_meaning();
         if predecessor_receipt.runtime_instance_id() != native.runtime_instance_id() {
             return Err(QueryHomeTransitionPreparationRefused {
-                _custody: TransitionPreparationCustody::Installed { _state: state },
+                _custody: Box::new(TransitionPreparationCustody::Installed { _state: state }),
                 cause: QueryHomeTransitionPreparationDenial::Native(
                     RelationalHomeProgramContractDenial::ForeignRuntime,
                 ),
@@ -110,29 +110,29 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
                 base: &definition.configuration().schema.registry,
                 predecessor: predecessor_layout,
             },
-            invariants,
+            *invariants,
         ) {
             Ok(compiled) => compiled,
             Err(cause) => {
                 return Err(QueryHomeTransitionPreparationRefused {
-                    _custody: TransitionPreparationCustody::Installed { _state: state },
+                    _custody: Box::new(TransitionPreparationCustody::Installed { _state: state }),
                     cause: QueryHomeTransitionPreparationDenial::Compiler(cause),
                 })
             }
         };
         let mut inventory = NativeSchemaInventory::compile(&layout, &registrations);
         let sources = inventory.take_public_sources();
-        let mut pending = HomeTransitionTargetCustody {
+        let mut pending = Box::new(HomeTransitionTargetCustody {
             _state: state,
             _layout: layout,
             _managed_sources: managed_sources,
             _source_initializer: source_initializer,
             _inventory: inventory,
-        };
+        });
         let registry = match definition.configuration().schema.registry.clone().extend(additions) {
             Ok(registry) => registry,
             Err(cause) => return Err(QueryHomeTransitionPreparationRefused {
-                _custody: TransitionPreparationCustody::Compiled { _pending: pending },
+                _custody: Box::new(TransitionPreparationCustody::Compiled { _pending: pending }),
                 cause: QueryHomeTransitionPreparationDenial::Compiler(WorthQueryPrimaryGraphInstallationDenial::new(
                     super::super::super::WorthQueryPrimaryGraphInstallationDenialKind::InvalidSchemaMember, format!("successor Native registry composition refused: {cause:?}"))) }),
         };
@@ -191,10 +191,10 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeApplication<Sche
         match compiled {
             Ok(contracts) => Ok(PreparedHomeProgramTransitionTarget {
                 _pending: pending,
-                contracts,
+                contracts: Box::new(contracts),
             }),
             Err(cause) => Err(QueryHomeTransitionPreparationRefused {
-                _custody: TransitionPreparationCustody::Compiled { _pending: pending },
+                _custody: Box::new(TransitionPreparationCustody::Compiled { _pending: pending }),
                 cause,
             }),
         }

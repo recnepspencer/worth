@@ -61,13 +61,13 @@ pub(in crate::application_home) fn finish_service<
                 home,
             })),
             Err(home) => Err(WorthQueryApplicationHomeOpenRefused::OwnerAdmission {
-                query: super::super::UnadmittedHomeQueryService::retain(
+                query: Box::new(super::super::UnadmittedHomeQueryService::retain(
                     query,
                     obligations,
                     material,
                     dispatch,
-                ),
-                home,
+                )),
+                home: Box::new(home),
             }),
         }
     })?;

@@ -86,104 +86,154 @@ where
         }
         let state = self.phase.take().expect("owned phase");
         match state {
-            Phase::Selected { completed, step } => {
-                let current = WorthQueryApplicationRequest {
-                    application: self.document.owner.application(),
-                    principal: request.principal,
-                    scope: request.scope,
-                    branch: Mode::<S, I, A>::completed_target(&completed),
-                };
-                match Mode::<S, I, A>::finish_recorded(completed, step.clone(), &current) {
-                    Ok(outcome) => Ok(WorthQueryHistoryEditFinish {
-                        document: self.document,
-                        outcome,
-                    }),
-                    Err((completed, cause)) => {
-                        self.phase = Some(Phase::Selected { completed, step });
-                        Err((self, WorthQueryHistoryEditDenial::Close(cause)))
-                    }
-                }
-            }
+            Phase::Selected { completed, step } => self.finish_selected(completed, step, request),
             Phase::AlreadyRecorded { operation, step } => {
-                let current = WorthQueryApplicationRequest {
-                    application: self.document.owner.application(),
-                    principal: request.principal,
-                    scope: request.scope,
-                    branch: Mode::<S, I, A>::target(&operation),
-                };
-                match Mode::<S, I, A>::finish_already(operation, step.clone(), &current) {
-                    Ok(outcome) => Ok(WorthQueryHistoryEditFinish {
-                        document: self.document,
-                        outcome,
-                    }),
-                    Err((operation, cause)) => {
-                        self.phase = Some(Phase::AlreadyRecorded { operation, step });
-                        Err((self, WorthQueryHistoryEditDenial::Close(cause)))
-                    }
-                }
+                self.finish_already_recorded(operation, step, request)
             }
             Phase::Terminal {
                 terminal,
                 reservation,
                 candidate,
-            } => {
-                let current = WorthQueryApplicationRequest {
-                    application: self.document.owner.application(),
-                    principal: request.principal,
-                    scope: request.scope,
-                    branch: Mode::<S, I, A>::terminal_target(&terminal),
-                };
-                match Mode::<S, I, A>::close_terminal(terminal, &current) {
-                    Ok(terminal) => {
-                        self.phase = Some(Phase::TerminalCleanup {
-                            terminal,
-                            reservation,
-                            candidate: DiscardedCandidate::Live {
-                                head: candidate.into_owned_head(),
-                                denial: None,
-                            },
-                        });
-                        self.finish(request)
-                    }
-                    Err((terminal, cause)) => {
-                        self.phase = Some(Phase::Terminal {
-                            terminal,
-                            reservation,
-                            candidate,
-                        });
-                        Err((self, WorthQueryHistoryEditDenial::Close(cause)))
-                    }
-                }
-            }
+            } => self.finish_terminal(terminal, reservation, candidate, request),
             Phase::TerminalCleanup {
                 terminal,
                 reservation,
                 candidate,
-            } => match super::discard::close_candidate(&self.document, request, candidate) {
-                Ok(_) => {
-                    self.document
-                        .owner
-                        .cancel_history_record(&program_publication_access(), reservation)
-                        .unwrap_or_else(|_| {
-                            unreachable!("the same terminal edit owns this reservation")
-                        });
-                    Ok(WorthQueryHistoryEditFinish {
-                        document: self.document,
-                        outcome: Mode::<S, I, A>::finish_terminal(terminal),
-                    })
-                }
-                Err((candidate, denial)) => {
-                    self.phase = Some(Phase::TerminalCleanup {
-                        terminal,
-                        reservation,
-                        candidate,
-                    });
-                    Err((self, denial))
-                }
-            },
+            } => self.finish_terminal_cleanup(terminal, reservation, candidate, request),
             state => {
                 self.phase = Some(state);
                 Err((self, WorthQueryHistoryEditDenial::NotReady))
+            }
+        }
+    }
+
+    #[inline(never)]
+    fn finish_selected(
+        mut self,
+        completed: Completed<S, I, P, A>,
+        step: WorthQueryHistoryStep,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<
+        WorthQueryHistoryEditFinish<'runtime, S, H, I, P, A, Payload, Outputs>,
+        (Self, WorthQueryHistoryEditDenial),
+    > {
+        let current = WorthQueryApplicationRequest {
+            application: self.document.owner.application(),
+            principal: request.principal,
+            scope: request.scope,
+            branch: Mode::<S, I, A>::completed_target(&completed),
+        };
+        match Mode::<S, I, A>::finish_recorded(completed, step.clone(), &current) {
+            Ok(outcome) => Ok(WorthQueryHistoryEditFinish {
+                document: self.document,
+                outcome,
+            }),
+            Err((completed, cause)) => {
+                self.phase = Some(Phase::Selected { completed, step });
+                Err((self, WorthQueryHistoryEditDenial::Close(cause)))
+            }
+        }
+    }
+
+    #[inline(never)]
+    fn finish_already_recorded(
+        mut self,
+        operation: Operation<S, I, P, A>,
+        step: WorthQueryHistoryStep,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<
+        WorthQueryHistoryEditFinish<'runtime, S, H, I, P, A, Payload, Outputs>,
+        (Self, WorthQueryHistoryEditDenial),
+    > {
+        let current = WorthQueryApplicationRequest {
+            application: self.document.owner.application(),
+            principal: request.principal,
+            scope: request.scope,
+            branch: Mode::<S, I, A>::target(&operation),
+        };
+        match Mode::<S, I, A>::finish_already(operation, step.clone(), &current) {
+            Ok(outcome) => Ok(WorthQueryHistoryEditFinish {
+                document: self.document,
+                outcome,
+            }),
+            Err((operation, cause)) => {
+                self.phase = Some(Phase::AlreadyRecorded { operation, step });
+                Err((self, WorthQueryHistoryEditDenial::Close(cause)))
+            }
+        }
+    }
+
+    #[inline(never)]
+    fn finish_terminal(
+        mut self,
+        terminal: Terminal<S, I, P, A>,
+        reservation: WorthQueryDocumentHistoryReservation,
+        candidate: WorthQueryExpectedProductBranch<'runtime, S>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<
+        WorthQueryHistoryEditFinish<'runtime, S, H, I, P, A, Payload, Outputs>,
+        (Self, WorthQueryHistoryEditDenial),
+    > {
+        let current = WorthQueryApplicationRequest {
+            application: self.document.owner.application(),
+            principal: request.principal,
+            scope: request.scope,
+            branch: Mode::<S, I, A>::terminal_target(&terminal),
+        };
+        match Mode::<S, I, A>::close_terminal(terminal, &current) {
+            Ok(terminal) => {
+                self.phase = Some(Phase::TerminalCleanup {
+                    terminal,
+                    reservation,
+                    candidate: DiscardedCandidate::Live {
+                        head: candidate.into_owned_head(),
+                        denial: None,
+                    },
+                });
+                self.finish(request)
+            }
+            Err((terminal, cause)) => {
+                self.phase = Some(Phase::Terminal {
+                    terminal,
+                    reservation,
+                    candidate,
+                });
+                Err((self, WorthQueryHistoryEditDenial::Close(cause)))
+            }
+        }
+    }
+
+    #[inline(never)]
+    fn finish_terminal_cleanup(
+        mut self,
+        terminal: ClosedTerminal<S, I, P, A>,
+        reservation: WorthQueryDocumentHistoryReservation,
+        candidate: DiscardedCandidate<'runtime, S>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<
+        WorthQueryHistoryEditFinish<'runtime, S, H, I, P, A, Payload, Outputs>,
+        (Self, WorthQueryHistoryEditDenial),
+    > {
+        match super::discard::close_candidate(&self.document, request, candidate) {
+            Ok(_) => {
+                self.document
+                    .owner
+                    .cancel_history_record(&program_publication_access(), reservation)
+                    .unwrap_or_else(|_| {
+                        unreachable!("the same terminal edit owns this reservation")
+                    });
+                Ok(WorthQueryHistoryEditFinish {
+                    document: self.document,
+                    outcome: Mode::<S, I, A>::finish_terminal(terminal),
+                })
+            }
+            Err((candidate, denial)) => {
+                self.phase = Some(Phase::TerminalCleanup {
+                    terminal,
+                    reservation,
+                    candidate,
+                });
+                Err((self, denial))
             }
         }
     }

@@ -38,13 +38,23 @@ pub struct WorthQueryApplicationHomeOpeningCloseRefused<
     Schema: ApplicationSchemaComposition,
     Program,
 > {
-    custody: OpeningCloseCustody<Schema, Program>,
+    custody: Box<OpeningCloseCustody<Schema, Program>>,
+}
+impl<Schema: ApplicationSchemaComposition, Program>
+    WorthQueryApplicationHomeOpeningCloseRefused<Schema, Program>
+{
+    #[inline(never)]
+    fn from_custody(custody: OpeningCloseCustody<Schema, Program>) -> Self {
+        Self {
+            custody: Box::new(custody),
+        }
+    }
 }
 enum OpeningCloseCustody<Schema: ApplicationSchemaComposition, Program> {
     Unrecovered(UnrecoveredApplicationHomeCloseRefused),
     Unshared(UnsharedApplicationHomeCloseRefused),
     World {
-        query: WorldQueryPreparation<Schema, Program>,
+        query: Box<WorldQueryPreparation<Schema, Program>>,
         home: WorldHomeCloseRefused<(), (), (), (), ()>,
     },
     ReleasedQuery(WorthQueryApplicationHomeCloseRefused<Schema, Program>),
@@ -77,6 +87,7 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
     }
 }
 
+#[inline(never)]
 fn close_unrecovered<Schema: ApplicationSchemaComposition, Program>(
     home: UnrecoveredApplicationHome,
     request: &ExecutionRequest<'_, '_>,
@@ -86,11 +97,12 @@ fn close_unrecovered<Schema: ApplicationSchemaComposition, Program>(
 > {
     match home.close(request) {
         Ok(outcome) => classify_released(outcome),
-        Err(home) => Err(WorthQueryApplicationHomeOpeningCloseRefused {
-            custody: OpeningCloseCustody::Unrecovered(home),
-        }),
+        Err(home) => Err(WorthQueryApplicationHomeOpeningCloseRefused::from_custody(
+            OpeningCloseCustody::Unrecovered(home),
+        )),
     }
 }
+#[inline(never)]
 fn close_unshared<Schema: ApplicationSchemaComposition, Program>(
     home: UnsharedReadmittedApplicationHome,
     request: &ExecutionRequest<'_, '_>,
@@ -100,13 +112,14 @@ fn close_unshared<Schema: ApplicationSchemaComposition, Program>(
 > {
     match home.close(request) {
         Ok(outcome) => classify_released(outcome),
-        Err(home) => Err(WorthQueryApplicationHomeOpeningCloseRefused {
-            custody: OpeningCloseCustody::Unshared(home),
-        }),
+        Err(home) => Err(WorthQueryApplicationHomeOpeningCloseRefused::from_custody(
+            OpeningCloseCustody::Unshared(home),
+        )),
     }
 }
+#[inline(never)]
 fn close_world_preparation<Schema: ApplicationSchemaComposition, Program>(
-    query: WorldQueryPreparation<Schema, Program>,
+    query: Box<WorldQueryPreparation<Schema, Program>>,
     home: DirectoryHome,
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<
@@ -118,11 +131,12 @@ fn close_world_preparation<Schema: ApplicationSchemaComposition, Program>(
             drop(query);
             classify_released(home.finish_close(request))
         }
-        Err(home) => Err(WorthQueryApplicationHomeOpeningCloseRefused {
-            custody: OpeningCloseCustody::World { query, home },
-        }),
+        Err(home) => Err(WorthQueryApplicationHomeOpeningCloseRefused::from_custody(
+            OpeningCloseCustody::World { query, home },
+        )),
     }
 }
+#[inline(never)]
 fn classify_released<Schema: ApplicationSchemaComposition, Program>(
     outcome: ApplicationHomeCloseOutcome,
 ) -> Result<
@@ -131,15 +145,17 @@ fn classify_released<Schema: ApplicationSchemaComposition, Program>(
 > {
     super::close::classify_released_query(outcome, None)
         .map(WorthQueryApplicationHomeOpeningClosed::from_query_closed)
-        .map_err(|home| WorthQueryApplicationHomeOpeningCloseRefused {
-            custody: OpeningCloseCustody::ReleasedQuery(home),
+        .map_err(|home| {
+            WorthQueryApplicationHomeOpeningCloseRefused::from_custody(
+                OpeningCloseCustody::ReleasedQuery(home),
+            )
         })
 }
 impl<Schema: ApplicationSchemaComposition, Program> std::fmt::Debug
     for WorthQueryApplicationHomeOpeningCloseRefused<Schema, Program>
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.custody {
+        match self.custody.as_ref() {
             OpeningCloseCustody::Unrecovered(home) => {
                 f.debug_tuple("Unrecovered").field(home.reason()).finish()
             }
@@ -172,34 +188,29 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
         self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<WorthQueryApplicationHomeOpeningClosed, Self> {
-        match self.custody {
+        match *self.custody {
             OpeningCloseCustody::Unrecovered(home) => match home.try_close(request) {
                 Ok(outcome) => classify_released(outcome),
-                Err(home) => Err(Self {
-                    custody: OpeningCloseCustody::Unrecovered(home),
-                }),
+                Err(home) => Err(Self::from_custody(OpeningCloseCustody::Unrecovered(home))),
             },
             OpeningCloseCustody::Unshared(home) => match home.try_close(request) {
                 Ok(outcome) => classify_released(outcome),
-                Err(home) => Err(Self {
-                    custody: OpeningCloseCustody::Unshared(home),
-                }),
+                Err(home) => Err(Self::from_custody(OpeningCloseCustody::Unshared(home))),
             },
             OpeningCloseCustody::World { query, home } => match home.try_seal_world(request) {
                 Ok(home) => {
                     drop(query);
                     classify_released(home.finish_close(request))
                 }
-                Err(home) => Err(Self {
-                    custody: OpeningCloseCustody::World { query, home },
-                }),
+                Err(home) => Err(Self::from_custody(OpeningCloseCustody::World {
+                    query,
+                    home,
+                })),
             },
             OpeningCloseCustody::ReleasedQuery(home) => home
                 .try_close(request)
                 .map(WorthQueryApplicationHomeOpeningClosed::from_query_closed)
-                .map_err(|home| Self {
-                    custody: OpeningCloseCustody::ReleasedQuery(home),
-                }),
+                .map_err(|home| Self::from_custody(OpeningCloseCustody::ReleasedQuery(home))),
         }
     }
 }

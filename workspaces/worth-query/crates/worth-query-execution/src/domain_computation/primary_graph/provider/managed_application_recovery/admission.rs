@@ -8,7 +8,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         recovery: &WorthQueryProductUnpublishedRecovery,
         admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
         idempotency: WorthQueryApplicationIdempotencyBinding,
-        mut delivery: RecoveredPublicationDelivery<'_>,
+        delivery: RecoveredPublicationDelivery<'_>,
     ) -> Result<
         (
             WorthQueryManagedApplicationRecoveryOutcome,
@@ -140,87 +140,152 @@ Err(PublicationDenial::Stopped(stop)) => {
                     ))
                 }
                 Ok(PublicationOutcome::Performed((publication, definition_generation))) => {
-                    let original_owner = publication
-                        .new_product_head()
-                        .branch_identity()
-                        .owner_identity();
-                    let original_world_commit =
-                        publication.new_product_head().selected_commit().ordinal();
-                    let native = publication
-                        .new_product_head()
-                        .basis()
-                        .relational_basis()
-                        .reference()
-                        .target()
-                        .as_basis()
-                        .expect("actual performed Native successor");
-                    let original_native_commit = native.selected_commit_id();
-                    let original_native_version = native.version_id();
-                    let session = guard
-                        .take_attempt()
-                        .complete(publication, definition_generation);
-                    let mut source = match &mut delivery {
-                        RecoveredPublicationDelivery::Ordinary
-                        | RecoveredPublicationDelivery::OwningSource => None,
-                        RecoveredPublicationDelivery::ProgramSource | RecoveredPublicationDelivery::Producer(_) => {
-                            super::super::recovered_program_source_delivery::consume_first_if_armed(
-                                self,
-                                || session.take_recovered_output_source(),
-                            );
-                            Some(session.take_recovered_output_source())
-                        }
-                    };
-                    let ordinary = matches!(&delivery, RecoveredPublicationDelivery::Ordinary);
-                    let producer = matches!(&delivery, RecoveredPublicationDelivery::Producer(_));
-                    let publication_result = match delivery {
-                        RecoveredPublicationDelivery::Producer(retain) => publish_recovered(
-                            &request, &self.runtime.primary_provider, session, producer_memory,
-                            |facts| {
-                                retain(ProducerRecoveryCustody {
-                                    facts: facts.expect("producer recovery reserved original evidence"),
-                                    carrier: source.take(), binding: bound, cleanup: Some(recovery.clone()),
-                                });
-                                // The producer continuation now owns the performed bundle.
-                                // Do not restore an empty unpublished entry on unwind.
-                                guard.finish();
-                            }),
-                        RecoveredPublicationDelivery::Ordinary | RecoveredPublicationDelivery::ProgramSource | RecoveredPublicationDelivery::OwningSource => {
-                            let result = publish_recovered(&request, &self.runtime.primary_provider, session, producer_memory, |_| {});
-                            guard.finish();
-                            result
-                        }
-                    };
-                    let publication_failure = publication_result.err();
-                    let (prior_cleanup_failure, pending_cleanup) = if ordinary {
-                        (self.release_product_publication_recovery_in_advancement(phase, recovery.clone(), 0).err(), None)
-                    } else if producer { (None, None) } else { (None, Some(recovery.clone())) };
-                    drop(coordination);
-                    // The installed pending/completed handoff now owns visibility.
-                    drop(command_coordination);
-                    let read = self.resolve_admitted_application_idempotency(
+                    self.complete_performed_unpublished_recovery(
                         phase,
+                        &request,
+                        recovery,
                         admission,
                         idempotency,
-                    );
-                    Ok((
-                        WorthQueryManagedApplicationRecoveryOutcome::Performed(
-                            WorthQueryManagedApplicationRecoveryPerformed {
-                                original_owner,
-                                original_world_commit,
-                                original_native_commit,
-                                original_native_version,
-                                original_key: *bound.key_identity(),
-                                conditional_definition_identity: definition_identity,
-                                read,
-                                publication_failure,
-                                prior_cleanup_failure,
-                                pending_cleanup,
-                            },
-                        ),
-                        source,
-                    ))
+                        bound,
+                        definition_identity,
+                        delivery,
+                        guard,
+                        producer_memory,
+                        coordination,
+                        command_coordination,
+                        publication,
+                        definition_generation,
+                    )
                 }
             }
         }
+    }
+
+    #[inline(never)]
+    #[allow(clippy::too_many_arguments)]
+    fn complete_performed_unpublished_recovery<Operation, Input, Scope>(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        recovery: &WorthQueryProductUnpublishedRecovery,
+        admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+        idempotency: WorthQueryApplicationIdempotencyBinding,
+        bound: WorthQueryApplicationIdempotencyBinding,
+        definition_identity: Option<[u8; 32]>,
+        mut delivery: RecoveredPublicationDelivery<'_>,
+        mut guard: crate::domain_computation::primary_graph::provider::unpublished_idempotency::ManagedUnpublishedRecoveryGuard,
+        producer_memory: Option<Option<worth_execution::ExecutionMemoryReservation>>,
+        coordination: super::super::WorthQueryApplicationBranchCommitCoordination<'_>,
+        command_coordination: Option<std::sync::MutexGuard<'_, ()>>,
+        publication: worth_runtime_world::facade::PerformedCompositePublication,
+        definition_generation: Option<u64>,
+    ) -> Result<
+        (
+            WorthQueryManagedApplicationRecoveryOutcome,
+            Option<WorthQueryRecoveredProgramOutputSource>,
+        ),
+        WorthQueryManagedApplicationRecoveryDenial,
+    >
+    where
+        Input: Clone + Send + Sync + 'static,
+    {
+        let original_owner = publication
+            .new_product_head()
+            .branch_identity()
+            .owner_identity();
+        let original_world_commit = publication.new_product_head().selected_commit().ordinal();
+        let native = publication
+            .new_product_head()
+            .basis()
+            .relational_basis()
+            .reference()
+            .target()
+            .as_basis()
+            .expect("actual performed Native successor");
+        let original_native_commit = native.selected_commit_id();
+        let original_native_version = native.version_id();
+        let session = guard
+            .take_attempt()
+            .complete(publication, definition_generation);
+        let mut source = match &mut delivery {
+            RecoveredPublicationDelivery::Ordinary
+            | RecoveredPublicationDelivery::OwningSource => None,
+            RecoveredPublicationDelivery::ProgramSource
+            | RecoveredPublicationDelivery::Producer(_) => {
+                super::super::recovered_program_source_delivery::consume_first_if_armed(self, || {
+                    session.take_recovered_output_source()
+                });
+                Some(session.take_recovered_output_source())
+            }
+        };
+        let ordinary = matches!(&delivery, RecoveredPublicationDelivery::Ordinary);
+        let producer = matches!(&delivery, RecoveredPublicationDelivery::Producer(_));
+        let publication_result = match delivery {
+            RecoveredPublicationDelivery::Producer(retain) => publish_recovered(
+                request,
+                &self.runtime.primary_provider,
+                session,
+                producer_memory,
+                |facts| {
+                    retain(ProducerRecoveryCustody {
+                        facts: facts.expect("producer recovery reserved original evidence"),
+                        carrier: source.take(),
+                        binding: bound,
+                        cleanup: Some(recovery.clone()),
+                    });
+                    // The producer continuation now owns the performed bundle.
+                    // Do not restore an empty unpublished entry on unwind.
+                    guard.finish();
+                },
+            ),
+            RecoveredPublicationDelivery::Ordinary
+            | RecoveredPublicationDelivery::ProgramSource
+            | RecoveredPublicationDelivery::OwningSource => {
+                let result = publish_recovered(
+                    request,
+                    &self.runtime.primary_provider,
+                    session,
+                    producer_memory,
+                    |_| {},
+                );
+                guard.finish();
+                result
+            }
+        };
+        let publication_failure = publication_result.err();
+        let (prior_cleanup_failure, pending_cleanup) = if ordinary {
+            (
+                self.release_product_publication_recovery_in_advancement(phase, recovery.clone(), 0)
+                    .err(),
+                None,
+            )
+        } else if producer {
+            (None, None)
+        } else {
+            (None, Some(recovery.clone()))
+        };
+        drop(coordination);
+        // The installed pending/completed handoff now owns visibility.
+        drop(command_coordination);
+        let read = self.resolve_admitted_application_idempotency(phase, admission, idempotency);
+        Ok((
+            WorthQueryManagedApplicationRecoveryOutcome::Performed(
+                WorthQueryManagedApplicationRecoveryPerformed::from_body(
+                    performed::ManagedApplicationRecoveryPerformedBody {
+                        original_owner,
+                        original_world_commit,
+                        original_native_commit,
+                        original_native_version,
+                        original_key: *bound.key_identity(),
+                        conditional_definition_identity: definition_identity,
+                        read,
+                        publication_failure,
+                        prior_cleanup_failure,
+                        pending_cleanup,
+                    },
+                ),
+            ),
+            source,
+        ))
     }
 }

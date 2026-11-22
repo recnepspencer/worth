@@ -43,13 +43,13 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
         Err(refused) => {
             let (query, cause) = refused.into_parts();
             return Err(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-                query: super::super::UnadmittedHomeQueryService::retain(
+                query: Box::new(super::super::UnadmittedHomeQueryService::retain(
                     query,
                     obligations,
                     material,
                     dispatch,
-                ),
-                home,
+                )),
+                home: Box::new(home),
                 cause: HomeCustodyReadmissionDenial::Query(cause),
             });
         }
@@ -60,13 +60,13 @@ pub(super) fn readmit<Schema: ApplicationSchemaComposition, Program: 'static>(
             home,
         })),
         Err(cause) => Err(WorthQueryApplicationHomeOpenRefused::CustodyReadmission {
-            query: super::super::UnadmittedHomeQueryService::retain(
+            query: Box::new(super::super::UnadmittedHomeQueryService::retain(
                 query,
                 obligations,
                 material,
                 dispatch,
-            ),
-            home,
+            )),
+            home: Box::new(home),
             cause,
         }),
     }

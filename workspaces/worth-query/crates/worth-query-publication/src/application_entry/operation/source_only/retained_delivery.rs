@@ -12,7 +12,7 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
         maximum_history_work: Option<std::num::NonZeroUsize>,
     ) -> Result<(), WorthQuerySourceOnlyDenial> {
-        let SourceState::<S, I>::RetainedPending(evidence) = &self.state else {
+        let SourceState::<S, I>::RetainedPending(evidence) = &*self.state else {
             unreachable!("retained delivery owns recovered evidence")
         };
         let retained = match evidence {
@@ -28,7 +28,7 @@ where
         }
         .map_err(WorthQuerySourceOnlyDenial::History)?
         .retained_observation();
-        let SourceState::<S, I>::RetainedPending(evidence) = &mut self.state else {
+        let SourceState::<S, I>::RetainedPending(evidence) = &mut *self.state else {
             unreachable!()
         };
         match evidence {

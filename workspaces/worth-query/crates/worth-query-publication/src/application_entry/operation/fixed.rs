@@ -20,9 +20,9 @@ where
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
     pub(super) installed_action:
-        worth_query_declaration::facade::application_program::ApplicationActionDeclaration,
-    pub(super) description: WorthQueryOperationDescription<Schema, Intent>,
-    pub(super) state: FixedState<Schema, Intent, Program, Root>,
+        Box<worth_query_declaration::facade::application_program::ApplicationActionDeclaration>,
+    pub(super) description: Box<WorthQueryOperationDescription<Schema, Intent>>,
+    pub(super) state: Box<FixedState<Schema, Intent, Program, Root>>,
     pub(super) readmitted_recovery: Option<
         worth_query_execution::facade::domain_computation::WorthQueryProductUnpublishedRecovery,
     >,
@@ -33,7 +33,7 @@ where
     >,
     pub(super) result:
         Option<<Binding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Result>,
-    pub(super) cleanup: WorthQueryOperationCleanup,
+    pub(super) cleanup: Box<WorthQueryOperationCleanup>,
     pub(super) action: std::marker::PhantomData<Action>,
     // Native carriers above release while the authentic allocation remains retained.
     pub(super) runtime: WorthQueryProgramApplicationRuntime<Schema, Program>,
@@ -66,7 +66,7 @@ where
         &self,
     ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationCommitReceipt>
     {
-        match &self.state {
+        match &*self.state {
             FixedState::Preparation(preparation) => Some(preparation.receipt()),
             _ => None,
         }

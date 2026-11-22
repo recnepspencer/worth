@@ -26,7 +26,7 @@ where
         mut self,
         restriction: WorthQueryDocumentHistoryOperationConstraint,
     ) -> Result<Self, (Self, Denial)> {
-        if !matches!(self.state, SourceState::<S, I>::Initial)
+        if !matches!(&*self.state, SourceState::<S, I>::Initial)
             || self.admission.workflow.is_some()
             || self.admission.recorded_correction.is_some()
             || self.admission.description.history.is_some()

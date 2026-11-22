@@ -43,11 +43,11 @@ impl<Schema, Program> ReadmittedHomeQueryService<Schema, Program> {
 }
 
 pub struct QueryHomeWorldAttachmentRefused<Schema: ApplicationSchemaComposition, Program> {
-    pub(super) custody: HomeWorldAttachmentCustody<Schema, Program>,
+    pub(super) custody: Box<HomeWorldAttachmentCustody<Schema, Program>>,
 }
 pub(super) enum HomeWorldAttachmentCustody<Schema: ApplicationSchemaComposition, Program> {
     Prepared {
-        _prepared: HomeQueryPreparation<Schema, Program>,
+        _prepared: Box<HomeQueryPreparation<Schema, Program>>,
         _root: ProductBranchObservation,
         cause: WorthQueryPrimaryGraphInstallationDenial,
     },
@@ -57,7 +57,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
     QueryHomeWorldAttachmentRefused<Schema, Program>
 {
     pub fn detail(&self) -> String {
-        match &self.custody {
+        match &*self.custody {
             HomeWorldAttachmentCustody::Prepared { cause, .. } => cause.to_string(),
             HomeWorldAttachmentCustody::Program(refused) => refused.cause.to_string(),
         }
@@ -88,11 +88,11 @@ where
     > {
         let Some(publication) = self.publication else {
             return Err(QueryHomeWorldAttachmentRefused {
-                custody: HomeWorldAttachmentCustody::Prepared {
+                custody: Box::new(HomeWorldAttachmentCustody::Prepared {
                     _prepared: self.prepared,
                     _root: root,
                     cause: home_world_denial("actual Home Query seed publication is required"),
-                },
+                }),
             });
         };
         self.prepared.attach_world(
@@ -117,7 +117,7 @@ where
         ApplicationProgramOutputsShape<Schema> + WorthQueryApplicationProgramRoots<Schema>,
 {
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn attach_world(
-        mut self,
+        mut self: Box<Self>,
         phase: &WorthQueryBootstrapAdvancementPhase<'_>,
         publication: super::super::super::WorthQueryPrimaryGraphPublication,
         publication_port: RuntimeWorldPublicationPort<(), (), (), (), ()>,
@@ -188,11 +188,11 @@ where
             Ok(product) => product,
             Err(cause) => {
                 return Err(QueryHomeWorldAttachmentRefused {
-                    custody: HomeWorldAttachmentCustody::Prepared {
+                    custody: Box::new(HomeWorldAttachmentCustody::Prepared {
                         _prepared: self,
                         _root: root,
                         cause,
-                    },
+                    }),
                 })
             }
         };
@@ -210,7 +210,7 @@ where
             readiness_routes,
             definition_routes,
             operations,
-        } = self;
+        } = *self;
         let home_attachment::HomeApplicationServices {
             provider,
             participation,
@@ -269,7 +269,7 @@ where
             })
         })
         .map_err(|refused| QueryHomeWorldAttachmentRefused {
-            custody: HomeWorldAttachmentCustody::Program(refused),
+            custody: Box::new(HomeWorldAttachmentCustody::Program(refused)),
         })
     }
 }

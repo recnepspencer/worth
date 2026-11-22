@@ -8,7 +8,8 @@ impl WorthQueryApplicationCommitReceipt {
     /// Ordinary `Clone` continues to retain its original publication custody.
     pub fn descriptive_copy(&self) -> Self {
         let mut copy = self.clone();
-        copy.committed_product_publication = self.committed_product_publication.descriptive();
+        copy.inner.committed_product_publication =
+            self.inner.committed_product_publication.descriptive();
         copy
     }
 }

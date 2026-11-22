@@ -43,7 +43,7 @@ where
         let runtime = phase_keepalive.runtime();
         let outcome = runtime.with_application_advancement(request.scope, |phase| {
             let result = self.step(&phase, request, maximum_history_work);
-            if matches!(self.state, SourceState::<S, I>::RetryableNoEffect(_))
+            if matches!(&*self.state, SourceState::<S, I>::RetryableNoEffect(_))
                 && let Some(original) = &mut self.admission.description.original {
                     original
                         .mark(
@@ -80,7 +80,7 @@ where
         {
             return self.readmit_original(phase, request);
         }
-        match &mut self.state {
+        match &mut *self.state {
             SourceState::<S, I>::Initial | SourceState::<S, I>::RetryableNoEffect(_) => {
                 if let Some(original) = &mut self.admission.description.original {
                     original.mark(phase,request.application,worth_query_execution::publication_boundary::original_operation::QueryOriginalOperationPosition::Resolving).map_err(WorthQuerySourceOnlyDenial::Original)?;
@@ -88,7 +88,7 @@ where
                 let outcome = match self.admission.execute_in_advancement(phase, request) {
                     Ok(outcome) => outcome,
                     Err(denial) if native_posture::pinned_source_moved(&denial) => {
-                        self.state = SourceState::<S, I>::AdmissionStopped(denial);
+                        *self.state = SourceState::<S, I>::AdmissionStopped(denial);
                         return Ok(Step::Terminal);
                     }
                     Err(denial) => {
@@ -172,7 +172,7 @@ where
                             }
                         };
                         if !same {
-                            self.keyed_terminal = Some(Resolution::IntentDrift);
+                            self.keyed_terminal = Some(Box::new(Resolution::IntentDrift));
                             return Ok(Step::Terminal);
                         }
                     }
@@ -181,7 +181,7 @@ where
                     | Resolution::IntentDrift
                     | Resolution::ProductPreparationPending(_)
                     | Resolution::ProductUnpublished(_)) => {
-                        self.keyed_terminal = Some(resolution);
+                        self.keyed_terminal = Some(Box::new(resolution));
                         return Ok(Step::Terminal);
                     }
                 }
@@ -224,14 +224,14 @@ where
                     initial_advancement_failure: None,
                 };
                 if M::RETAIN_COMMIT {
-                    self.state = SourceState::<S, I>::RetainedPending(evidence);
+                    *self.state = SourceState::<S, I>::RetainedPending(evidence);
                     Ok(Step::Progress)
                 } else {
                     Ok(self.complete(evidence))
                 }
             }
             O::AlreadyCommitted(receipt) if M::RETAIN_COMMIT => {
-                self.state =
+                *self.state =
                     SourceState::<S, I>::RetainedPending(WorthQuerySourceCompletion::Recovered {
                         retained: None,
                         receipt,
@@ -268,11 +268,11 @@ where
                     && self.admission.recorded_correction.is_none()
                     && native_posture::fresh_retry_eligible::<S, I>(&other) =>
             {
-                self.state = SourceState::<S, I>::RetryableNoEffect(other);
+                *self.state = SourceState::<S, I>::RetryableNoEffect(other);
                 Ok(Step::Progress)
             }
             other => {
-                self.state = SourceState::<S, I>::Stopped(other);
+                *self.state = SourceState::<S, I>::Stopped(other);
                 Ok(Step::Terminal)
             }
         }
@@ -297,7 +297,7 @@ where
                     initial_advancement_failure: recovered.initial_advancement_failure,
                 };
                 if M::RETAIN_COMMIT {
-                    self.state = SourceState::<S, I>::RetainedPending(evidence);
+                    *self.state = SourceState::<S, I>::RetainedPending(evidence);
                     Ok(Step::Progress)
                 } else {
                     Ok(self.complete(evidence))
@@ -305,12 +305,12 @@ where
             }
             NativeKeyedProgress::Progress { proved_abort } => {
                 if self.admission.workflow.is_some() && proved_abort.is_some() {
-                    self.guarded_abort = proved_abort;
+                    self.guarded_abort = proved_abort.map(Box::new);
                 }
                 Ok(Step::Progress)
             }
             NativeKeyedProgress::Terminal(resolution) => {
-                self.keyed_terminal = Some(resolution);
+                self.keyed_terminal = Some(Box::new(resolution));
                 Ok(Step::Terminal)
             }
         }

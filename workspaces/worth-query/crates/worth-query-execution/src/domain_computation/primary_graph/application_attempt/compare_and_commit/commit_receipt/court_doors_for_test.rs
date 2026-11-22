@@ -4,14 +4,14 @@ use super::*;
 impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
     pub fn authority_binding_for_test(&self) -> &WorthQueryApplicationCommitAuthorityBinding {
-        &self.authority_binding
+        &self.inner.authority_binding
     }
 }
 
 impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
     pub fn provider_runtime_instance_id_for_test(&self) -> &u64 {
-        &self.provider_runtime_instance_id
+        &self.inner.provider_runtime_instance_id
     }
 }
 
@@ -24,14 +24,14 @@ impl WorthQueryApplicationCommitReceipt {
             crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
         >,
     > {
-        &mut self.exact_output_settlement
+        &mut self.inner.exact_output_settlement
     }
 }
 
 impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
     pub fn provider_runtime_instance_id_mut_for_test(&mut self) -> &mut u64 {
-        &mut self.provider_runtime_instance_id
+        &mut self.inner.provider_runtime_instance_id
     }
 }
 
@@ -53,7 +53,7 @@ impl WorthQueryApplicationCommitReceipt {
     pub fn authority_binding_mut_for_test(
         &mut self,
     ) -> &mut WorthQueryApplicationCommitAuthorityBinding {
-        &mut self.authority_binding
+        &mut self.inner.authority_binding
     }
 }
 
