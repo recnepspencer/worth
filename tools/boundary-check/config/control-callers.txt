@@ -206,6 +206,7 @@ crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/process/host/durable_retry/fate_reopening.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/process/host/durable_retry/temporal_home.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/temporal/indeterminate_live.rs
+crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/temporal/indeterminate_memory.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/recovered_custody/disposition.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/recovered_custody/original.rs
 crates/worth-runtime-world/ workspaces/worth-query/crates/worth-query-execution/src/domain_computation/execution_runtime/product_world/read_observation.rs
@@ -1532,6 +1533,7 @@ workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crat
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/process/host/durable_retry/temporal_home.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/process/host/durable_retry/temporal_reexecution.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/temporal/indeterminate_live.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/temporal/indeterminate_memory.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/process/host/durable_retry/fate_reopening.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/recovered_custody/disposition.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-query/crates/worth-query-court-decl-host-integration/tests/worth_query_court_decl_host_integration/host/application_home/recovered_custody/original.rs

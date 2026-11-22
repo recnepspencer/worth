@@ -76,6 +76,7 @@ pub(crate) fn retry_original_intent_on_branch(
 }
 
 mod indeterminate_live;
+mod indeterminate_memory;
 
 #[test]
 fn conditional_temporal_custody_consumes_original_key_after_directory_reopen() {

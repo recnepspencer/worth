@@ -280,25 +280,23 @@ where
         .primary_provider
         .live_conditional_key_fate(&product.publication_binding(), idempotency.binding())
     {
-        Ok(Some(
-            crate::domain_computation::primary_graph::provider::WorthQueryConditionalKeyFate::LiveUnpublishedOrPending,
-        )) => {
+        Ok(Some(fate)) => {
+            let outcome = recovered_original::outcome_for_resolved_key_fate(fate)
+                .expect("live_conditional_key_fate never returns RecoveredUnpublished");
             return Ok(WorthQueryTemporalReentryAttempt {
-                outcome: recovered_original::live_unpublished_unresolved(),
+                outcome,
                 continuation_identity,
                 admission_canonical_work,
             });
         }
-        Ok(Some(
-            crate::domain_computation::primary_graph::provider::WorthQueryConditionalKeyFate::Released,
-        )) => {
+        Err(_) => {
             return Ok(WorthQueryTemporalReentryAttempt {
-                outcome: WorthQueryTemporalReentryOutcome::AlreadyCommitted(None),
+                outcome: recovered_original::live_fate_unavailable(),
                 continuation_identity,
                 admission_canonical_work,
             });
         }
-        Ok(Some(_)) | Ok(None) | Err(_) => {}
+        Ok(None) => {}
     }
     let result = attempt_progression::try_reentry(
         request_execution,

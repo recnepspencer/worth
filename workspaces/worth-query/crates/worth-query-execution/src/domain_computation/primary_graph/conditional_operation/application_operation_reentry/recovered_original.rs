@@ -69,6 +69,33 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn conti
     )
 }
 
+/// Single owner mapping resolved World or live conditional key fate into a
+/// temporal reentry outcome. Used by both live pre-invocation fencing and
+/// changed/removed-candidate retirement so `Released` can never diverge into
+/// `RetiredNoEffect` and `OtherIntent` is always refused before authored work.
+pub(super) fn outcome_for_resolved_key_fate(
+    fate: crate::domain_computation::primary_graph::provider::WorthQueryConditionalKeyFate,
+) -> Result<Outcome, worth_runtime_world::facade::ProductUnpublishedRecoveryHandle> {
+    use crate::domain_computation::primary_graph::provider::WorthQueryConditionalKeyFate as Fate;
+    Ok(match fate {
+        Fate::LiveUnpublishedOrPending => live_unpublished_unresolved(),
+        Fate::Published(receipt) => Outcome::AlreadyCommitted(
+            receipt
+                .new_product_head()
+                .durable()
+                .map(|head| head.selected_commit()),
+        ),
+        Fate::Released => Outcome::AlreadyCommitted(None),
+        Fate::Absent => Outcome::RetiredNoEffect,
+        Fate::RecoveredUnpublished(handle) => return Err(handle),
+        Fate::OtherIntent => Outcome::TerminalFailure(
+            super::WorthQueryTemporalTerminalFailure::ApplicationCommit(
+                crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialKind::IdempotencyIntentDrift,
+            ),
+        ),
+    })
+}
+
 /// Consult World's owning fate for a live indeterminate decision when the
 /// current candidate disappeared or changed revision. Never finishes the
 /// obligation unless World itself establishes publication, release, or proven
@@ -80,48 +107,43 @@ pub(super) fn resolve_live_indeterminate_world_fate<Schema>(
     key: [u8; 32],
     intent: [u8; 32],
 ) -> Outcome {
-    use crate::domain_computation::primary_graph::provider::WorthQueryConditionalKeyFate as Fate;
     let provider = &runtime.runtime.primary_provider;
     let publication = product.publication_binding();
     match provider.conditional_key_fate(execution, &publication, key, intent) {
-        Ok(Fate::LiveUnpublishedOrPending) => live_unpublished_unresolved(),
-        Ok(Fate::Published(receipt)) => Outcome::AlreadyCommitted(
-            receipt
-                .new_product_head()
-                .durable()
-                .map(|head| head.selected_commit()),
-        ),
-        Ok(Fate::Released) => Outcome::AlreadyCommitted(None),
-        Ok(Fate::Absent) => Outcome::RetiredNoEffect,
-        Ok(Fate::RecoveredUnpublished(_)) => {
-            let joined = runtime
-                .installed_program_support()
-                .and_then(|support| {
-                    match support
-                        .lifecycle()
-                        .retained_indeterminate_original(&key)
-                    {
-                        crate::domain_computation::primary_graph::query_obligations::QueryConditionalOriginal::Recovered(original) => Some(original),
-                        crate::domain_computation::primary_graph::query_obligations::QueryConditionalOriginal::Unclassified => None,
-                    }
-                });
-            continue_recovered_original(
-                execution,
-                runtime,
-                product,
-                WorthQueryApplicationIdempotencyBinding::new(key, intent),
-                joined,
-            )
-            .unwrap_or_else(|| unresolved("recovered original disappeared before continuation"))
-        }
-        Ok(Fate::OtherIntent) | Err(_) => {
-            unresolved("World did not resolve the indeterminate key")
-        }
+        Ok(fate) => match outcome_for_resolved_key_fate(fate) {
+            Ok(outcome) => outcome,
+            Err(_) => {
+                let joined = runtime
+                    .installed_program_support()
+                    .and_then(|support| {
+                        match support
+                            .lifecycle()
+                            .retained_indeterminate_original(&key)
+                        {
+                            crate::domain_computation::primary_graph::query_obligations::QueryConditionalOriginal::Recovered(original) => Some(original),
+                            crate::domain_computation::primary_graph::query_obligations::QueryConditionalOriginal::Unclassified => None,
+                        }
+                    });
+                continue_recovered_original(
+                    execution,
+                    runtime,
+                    product,
+                    WorthQueryApplicationIdempotencyBinding::new(key, intent),
+                    joined,
+                )
+                .unwrap_or_else(|| unresolved("recovered original disappeared before continuation"))
+            }
+        },
+        Err(_) => live_fate_unavailable(),
     }
 }
 
 pub(super) fn live_unpublished_unresolved() -> Outcome {
     unresolved("live unpublished or pending original still held for indeterminate key")
+}
+
+pub(super) fn live_fate_unavailable() -> Outcome {
+    unresolved("World live idempotency fate could not be inspected")
 }
 
 /// The decision stays indeterminate; its row keeps the original association.
