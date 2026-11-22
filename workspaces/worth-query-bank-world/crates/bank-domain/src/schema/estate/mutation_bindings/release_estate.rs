@@ -1,26 +1,21 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
-        ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
-        NoApplicationMutationSource,
+        ApplicationCapabilityAdmission, ApplicationCapabilityMutationBinding,
+        NoApplicationMutationOutputs,
     },
-    application_schema::ApplicationPrincipalBindingRef,
+    worth_query_mutation_binding,
 };
 
 use crate::{
     estate::{EstateAction, EstateCaseId, LegalAuthorityId, MandatoryReviewId},
     model::BankPrincipalId,
-    proposals::BankIdempotencyKey,
     schema::{
-        BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, EstateCaseIdentityField,
-        ExternalPrincipalMapping, Principal, ReleaseEstateCapability, ReleaseEstateOperation,
+        BankBindingContext, BankSchema, EstateActionInputBinding, EstateCaseIdentityField,
+        ReleaseEstateCapability, ReleaseEstateOperation,
     },
 };
 
-use super::{
-    EstateMutationDenial, EstateMutationDenialBinding, EstateMutationResult,
-    EstateMutationResultBinding,
-};
+use super::{EstateMutationDenialBinding, EstateMutationResultBinding};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ReleaseEstate {
@@ -45,85 +40,36 @@ impl ReleaseEstate {
             estate,
         }
     }
-}
 
-pub struct ReleaseEstateMutationBinding;
-
-impl ApplicationMutationBinding<BankSchema> for ReleaseEstateMutationBinding {
-    fn workflow_execution_requirements(
-    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
-    {
-        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
-    }
-
-    type Input = EstateAction;
-    type InputBinding = super::super::EstateActionInputBinding;
-    type Result = EstateMutationResult;
-    type ResultBinding = EstateMutationResultBinding;
-    type IdempotencyKey = BankIdempotencyKey;
-    type Operation = ReleaseEstateOperation;
-    type Decision = EstateAction;
-    type Denial = EstateMutationDenial;
-    type DenialBinding = EstateMutationDenialBinding;
-    type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<EstateCaseIdentityField>;
-    type PrincipalBinding = BankPrincipalBinding;
-    type Mapping = ExternalPrincipalMapping;
-    type Principal = Principal;
-    type PrincipalIdentity = BankPrincipalId;
-    type PrincipalIdentityBinding = BankPrincipalIdBinding;
-    type SourceExpectation = NoApplicationMutationSource;
-
-    const IDENTITY: &'static str = "bank.estate.release.mutation-binding.v1";
-    const HANDLER_IDENTITY: &'static str = "bank.estate.release.handler.v1";
-    const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
-    const REQUIRES_APPLICATION_PROGRAM: bool = true;
-
-    fn scope_field() -> EstateCaseIdentityField {
-        EstateCaseIdentityField::at("EstateCaseIdentityField")
-    }
-
-    fn principal_binding() -> ApplicationPrincipalBindingRef<
-        BankSchema,
-        BankPrincipalBinding,
-        ExternalPrincipalMapping,
-        Principal,
-        BankPrincipalId,
-        BankPrincipalIdBinding,
-    > {
-        BankPrincipalBinding::reference()
-    }
-}
-
-impl ApplicationCapabilityMutationBinding<BankSchema> for ReleaseEstateMutationBinding {
-    type Capability = ReleaseEstateCapability;
-}
-
-impl ApplicationMutationIntent<BankSchema> for ReleaseEstate {
-    type Binding = ReleaseEstateMutationBinding;
-
-    fn input(&self) -> &EstateAction {
+    const fn shared_action(&self) -> &EstateAction {
         &self.action
     }
 
-    fn scope_binding(
-        &self,
-    ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(
-            EstateCaseIdentityField::at("EstateCaseIdentityField"),
-            self.estate,
-        )
+    const fn scope_estate(&self) -> EstateCaseId {
+        self.estate
     }
 }
 
-impl
-    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
-    for ReleaseEstateMutationBinding
-{
-    type Admission =
-        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
-            ReleaseEstateCapability,
-        >;
+worth_query_mutation_binding!(
+    pub ReleaseEstateMutationBinding for EstateAction, schema BankSchema, context BankBindingContext,
+    intent ReleaseEstate => ReleaseEstate::shared_action,
+    identity "bank.estate.release.mutation-binding.v1",
+    input EstateActionInputBinding,
+    operation ReleaseEstateOperation,
+    result EstateMutationResultBinding,
+    decision EstateAction,
+    denial EstateMutationDenialBinding,
+    handler identity "bank.estate.release.handler.v1",
+    admission ApplicationCapabilityAdmission<ReleaseEstateCapability>,
+    program required,
+    outputs NoApplicationMutationOutputs,
+    scope EstateCaseIdentityField,
+    field EstateCaseIdentityField::at("EstateCaseIdentityField"),
+    value ReleaseEstate::scope_estate,
+);
+
+impl ApplicationCapabilityMutationBinding<BankSchema> for ReleaseEstateMutationBinding {
+    type Capability = ReleaseEstateCapability;
 }
 
 impl TryFrom<EstateAction> for ReleaseEstate {

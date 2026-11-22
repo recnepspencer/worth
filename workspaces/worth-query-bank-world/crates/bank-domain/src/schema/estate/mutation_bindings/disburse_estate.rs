@@ -1,26 +1,21 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
-        ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
-        NoApplicationMutationSource,
+        ApplicationCapabilityAdmission, ApplicationCapabilityMutationBinding,
+        NoApplicationMutationOutputs,
     },
-    application_schema::ApplicationPrincipalBindingRef,
+    worth_query_mutation_binding,
 };
 
 use crate::{
     estate::{EstateAction, EstateCaseId, EstateDisbursement},
-    model::BankPrincipalId,
-    proposals::{BankIdempotencyKey, BankInvariantApprovedProposal},
+    proposals::BankInvariantApprovedProposal,
     schema::{
-        BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, DisburseEstateCapability,
-        DisburseEstateOperation, EstateCaseIdentityField, ExternalPrincipalMapping, Principal,
+        BankBindingContext, BankSchema, DisburseEstateCapability, DisburseEstateOperation,
+        EstateActionInputBinding, EstateCaseIdentityField,
     },
 };
 
-use super::{
-    EstateMutationDenial, EstateMutationDenialBinding, EstateMutationResult,
-    EstateMutationResultBinding,
-};
+use super::{EstateMutationDenialBinding, EstateMutationResultBinding};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct DisburseEstate {
@@ -35,85 +30,36 @@ impl DisburseEstate {
             estate: disbursement.estate,
         }
     }
-}
 
-pub struct DisburseEstateMutationBinding;
-
-impl ApplicationMutationBinding<BankSchema> for DisburseEstateMutationBinding {
-    fn workflow_execution_requirements(
-    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
-    {
-        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
-    }
-
-    type Input = EstateAction;
-    type InputBinding = super::super::EstateActionInputBinding;
-    type Result = EstateMutationResult;
-    type ResultBinding = EstateMutationResultBinding;
-    type IdempotencyKey = BankIdempotencyKey;
-    type Operation = DisburseEstateOperation;
-    type Decision = BankInvariantApprovedProposal;
-    type Denial = EstateMutationDenial;
-    type DenialBinding = EstateMutationDenialBinding;
-    type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<EstateCaseIdentityField>;
-    type PrincipalBinding = BankPrincipalBinding;
-    type Mapping = ExternalPrincipalMapping;
-    type Principal = Principal;
-    type PrincipalIdentity = BankPrincipalId;
-    type PrincipalIdentityBinding = BankPrincipalIdBinding;
-    type SourceExpectation = NoApplicationMutationSource;
-
-    const IDENTITY: &'static str = "bank.estate.disburse.mutation-binding.v1";
-    const HANDLER_IDENTITY: &'static str = "bank.estate.disburse.handler.v1";
-    const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
-    const REQUIRES_APPLICATION_PROGRAM: bool = true;
-
-    fn scope_field() -> EstateCaseIdentityField {
-        EstateCaseIdentityField::at("EstateCaseIdentityField")
-    }
-
-    fn principal_binding() -> ApplicationPrincipalBindingRef<
-        BankSchema,
-        BankPrincipalBinding,
-        ExternalPrincipalMapping,
-        Principal,
-        BankPrincipalId,
-        BankPrincipalIdBinding,
-    > {
-        BankPrincipalBinding::reference()
-    }
-}
-
-impl ApplicationCapabilityMutationBinding<BankSchema> for DisburseEstateMutationBinding {
-    type Capability = DisburseEstateCapability;
-}
-
-impl ApplicationMutationIntent<BankSchema> for DisburseEstate {
-    type Binding = DisburseEstateMutationBinding;
-
-    fn input(&self) -> &EstateAction {
+    const fn shared_action(&self) -> &EstateAction {
         &self.action
     }
 
-    fn scope_binding(
-        &self,
-    ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(
-            EstateCaseIdentityField::at("EstateCaseIdentityField"),
-            self.estate,
-        )
+    const fn scope_estate(&self) -> EstateCaseId {
+        self.estate
     }
 }
 
-impl
-    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
-    for DisburseEstateMutationBinding
-{
-    type Admission =
-        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
-            DisburseEstateCapability,
-        >;
+worth_query_mutation_binding!(
+    pub DisburseEstateMutationBinding for EstateAction, schema BankSchema, context BankBindingContext,
+    intent DisburseEstate => DisburseEstate::shared_action,
+    identity "bank.estate.disburse.mutation-binding.v1",
+    input EstateActionInputBinding,
+    operation DisburseEstateOperation,
+    result EstateMutationResultBinding,
+    decision BankInvariantApprovedProposal,
+    denial EstateMutationDenialBinding,
+    handler identity "bank.estate.disburse.handler.v1",
+    admission ApplicationCapabilityAdmission<DisburseEstateCapability>,
+    program required,
+    outputs NoApplicationMutationOutputs,
+    scope EstateCaseIdentityField,
+    field EstateCaseIdentityField::at("EstateCaseIdentityField"),
+    value DisburseEstate::scope_estate,
+);
+
+impl ApplicationCapabilityMutationBinding<BankSchema> for DisburseEstateMutationBinding {
+    type Capability = DisburseEstateCapability;
 }
 
 impl TryFrom<EstateAction> for DisburseEstate {

@@ -5,6 +5,7 @@
 mod actions;
 mod program;
 mod reads;
+mod relations;
 mod schema;
 
 mod journey;

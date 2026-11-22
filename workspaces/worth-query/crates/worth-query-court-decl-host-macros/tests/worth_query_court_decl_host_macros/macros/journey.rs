@@ -1,8 +1,9 @@
 //! The derived board runs through the public Host: a local-process principal,
 //! bounded serial limits, parameterized reads and source custody across frames.
 use super::actions::*;
-use super::program::{day, install, owner, scope, BoardFeature, Host, Program};
+use super::program::{day, install, owner, scope, BoardFeature, Host, Program, TASKS};
 use super::reads::{DueBy, Search, TaskRow};
+use super::relations::{Outline, ProjectKeyOnly};
 use super::schema::Schema;
 use worth_query_host::facade::{
     admission::authenticated_principal::*,
@@ -121,6 +122,32 @@ fn a_derived_board_reads_case_insensitively_and_by_native_due_date() {
             row(3, "Paint", false, Some(50)),
         ]
     );
+}
+
+#[test]
+fn a_derived_projection_reads_related_tasks_and_their_project_in_reverse() {
+    let clock = WorthQueryAdmissionClock::system();
+    let (host, scope) = (install(&clock), scope(&clock));
+    let principal = owner(&host, &clock, &scope);
+    let request = host.runtime().request(&principal, &scope);
+    let [outline] =
+        <[_; 1]>::try_from(read(&request, Outline { project: 1 })).expect("one project outline");
+    assert_eq!(outline.key, 1);
+    let expected = TASKS
+        .iter()
+        .filter(|(_, project, ..)| *project == 1)
+        .map(|(task, _, title, ..)| (*task, *title))
+        .collect::<Vec<_>>();
+    let read_tasks = outline
+        .tasks
+        .iter()
+        .map(|task| (task.key(), task.title.as_str()))
+        .collect::<Vec<_>>();
+    assert_eq!(read_tasks, expected);
+    assert!(outline
+        .tasks
+        .iter()
+        .all(|task| task.project == ProjectKeyOnly { key: 1 }));
 }
 
 #[test]

@@ -1,11 +1,10 @@
-use crate::{
-    estate::EstateCaseId,
-    model::{AccountId, BankPrincipalId},
-    proposals::BankIdempotencyKey,
-    schema::*,
-};
+use crate::{estate::EstateCaseId, model::AccountId, schema::*};
 use worth_query_decl::facade::{
-    application_operation::*, application_schema::*, worth_query_structured_value_binding,
+    application_operation::{
+        ApplicationCapabilityAdmission, ApplicationCapabilityMutationBinding,
+        NoApplicationMutationOutputs,
+    },
+    worth_query_mutation_binding, worth_query_structured_value_binding,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, serde::Serialize)]
@@ -20,66 +19,28 @@ worth_query_structured_value_binding!(
     }
 );
 
-pub struct RestoreFrozenEstateAccountBinding;
-impl ApplicationMutationBinding<BankSchema> for RestoreFrozenEstateAccountBinding {
-    type Input = RestoreFrozenEstateAccount;
-    type InputBinding = RestoreFrozenEstateAccountInputBinding;
-    type Result = EstateMutationResult;
-    type ResultBinding = EstateMutationResultBinding;
-    type IdempotencyKey = BankIdempotencyKey;
-    type Operation = RestoreFrozenEstateAccountOperation;
-    type Decision = RestoreFrozenEstateAccount;
-    type Denial = EstateMutationDenial;
-    type DenialBinding = EstateMutationDenialBinding;
-    type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = <FreezeEstateAccountMutationBinding as ApplicationMutationBinding<
-        BankSchema,
-    >>::ScopeBinding;
-    type PrincipalBinding = BankPrincipalBinding;
-    type Mapping = ExternalPrincipalMapping;
-    type Principal = Principal;
-    type PrincipalIdentity = BankPrincipalId;
-    type PrincipalIdentityBinding = BankPrincipalIdBinding;
-    type SourceExpectation = NoApplicationMutationSource;
-    const IDENTITY: &'static str = "bank.estate.restore-frozen-account.binding.v1";
-    const HANDLER_IDENTITY: &'static str = "bank.estate.restore-frozen-account.handler.v1";
-    const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
-    const REQUIRES_APPLICATION_PROGRAM: bool = true;
-
-    fn workflow_execution_requirements() -> ApplicationWorkflowExecutionRequirements {
-        ApplicationWorkflowExecutionRequirements::not_applicable()
-    }
-    fn scope_field() -> EstateCaseIdentityField {
-        EstateCaseIdentityField::at("EstateCaseIdentityField")
-    }
-    fn principal_binding() -> ApplicationPrincipalBindingRef<
-        BankSchema,
-        BankPrincipalBinding,
-        ExternalPrincipalMapping,
-        Principal,
-        BankPrincipalId,
-        BankPrincipalIdBinding,
-    > {
-        BankPrincipalBinding::reference()
-    }
+fn restore_scope(input: &RestoreFrozenEstateAccount) -> EstateCaseId {
+    input.estate
 }
+
+worth_query_mutation_binding!(
+    pub RestoreFrozenEstateAccountBinding for RestoreFrozenEstateAccount, schema BankSchema,
+    context BankBindingContext,
+    identity "bank.estate.restore-frozen-account.binding.v1",
+    input RestoreFrozenEstateAccountInputBinding,
+    operation RestoreFrozenEstateAccountOperation,
+    result EstateMutationResultBinding,
+    decision RestoreFrozenEstateAccount,
+    denial EstateMutationDenialBinding,
+    handler identity "bank.estate.restore-frozen-account.handler.v1",
+    admission ApplicationCapabilityAdmission<RestoreFrozenEstateAccountCapability>,
+    program required,
+    outputs NoApplicationMutationOutputs,
+    scope EstateCaseIdentityField,
+    field EstateCaseIdentityField::at("EstateCaseIdentityField"),
+    value restore_scope,
+);
+
 impl ApplicationCapabilityMutationBinding<BankSchema> for RestoreFrozenEstateAccountBinding {
     type Capability = RestoreFrozenEstateAccountCapability;
-}
-impl ApplicationMutationAdmissionBinding<BankSchema> for RestoreFrozenEstateAccountBinding {
-    type Admission = ApplicationCapabilityAdmission<RestoreFrozenEstateAccountCapability>;
-}
-impl ApplicationMutationIntent<BankSchema> for RestoreFrozenEstateAccount {
-    type Binding = RestoreFrozenEstateAccountBinding;
-    fn input(&self) -> &Self {
-        self
-    }
-    fn scope_binding(
-        &self,
-    ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(
-            EstateCaseIdentityField::at("EstateCaseIdentityField"),
-            self.estate,
-        )
-    }
 }
