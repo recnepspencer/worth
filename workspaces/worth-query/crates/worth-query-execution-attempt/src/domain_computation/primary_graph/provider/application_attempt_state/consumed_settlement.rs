@@ -5,7 +5,7 @@ use super::*;
 impl super::super::WorthQueryPrimaryGraphProvider {
     /// Whether `replacement`'s round settles `consumer`'s consumption of the
     /// same route; with `settle`, the consumption takes it as its replacement.
-    pub(in crate::domain_computation::primary_graph) fn settle_consumed_output(
+    pub fn settle_consumed_output(
         &self,
         consumer: WorthQueryProviderSessionView<'_>,
         replacement: WorthQueryProviderSessionView<'_>,
