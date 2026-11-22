@@ -4,12 +4,16 @@ use crate::history::data::RelationalCommitReceipt;
 use crate::identity::data::{EntityId, KindId, LineageId, PartitionId, VersionId};
 use crate::lineage::authority::LineagePreparationAuthority;
 use crate::lineage::data::{
-    FinalizedLineageEventBatch, LineageDecisionKind, LineageDecisionLog, LineageEventKind,
-    LineageFinalizationArtifact, LineageNode, PreparedLineageFinalization,
+    FinalizedLineageEventBatch, InstalledPersistentNameSchemeRegistry, LineageDecisionKind,
+    LineageDecisionLog, LineageEventKind, LineageFinalizationArtifact, LineageNode,
+    PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameHolder,
+    PersistentNameIdentity, PreparedLineageFinalization,
 };
 use crate::runtime::WorkingState;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{EntityMutationIntent, MutationIntent, RecordRef};
+use crate::transactions::data::{
+    EntityMutationIntent, MutationIntent, RecordRef, TransactionCommitError,
+};
 
 struct LineageFinalizationPlan {
     drafts: Vec<LineageEventDraft>,
@@ -37,6 +41,7 @@ struct AssignedLineageEvent {
     sources: Vec<LineageId>,
     targets: Vec<LineageId>,
     node: Option<AssignedLineageNode>,
+    name_birth: Option<PersistentNameBirthRecord>,
 }
 
 struct AssignedLineageNode {
@@ -53,10 +58,52 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         commit: &RelationalCommitReceipt,
         merged_plan: &[MutationIntent],
         changed_records: &[RecordRef],
-    ) -> Result<PreparedLineageFinalization, crate::transactions::data::TransactionCommitError>
-    {
+    ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
+        self.ensure_lineage_for_commit_with_births(
+            execution,
+            staged,
+            commit,
+            merged_plan,
+            changed_records,
+            &InstalledPersistentNameSchemeRegistry::new(),
+            &BTreeMap::new(),
+            &BTreeSet::new(),
+            &BTreeMap::new(),
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub(crate) fn ensure_lineage_for_commit_with_births(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        staged: &mut WorkingState,
+        commit: &RelationalCommitReceipt,
+        merged_plan: &[MutationIntent],
+        changed_records: &[RecordRef],
+        scheme_registry: &InstalledPersistentNameSchemeRegistry,
+        live_holders: &BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
+        retired_in_commit: &BTreeSet<PersistentNameIdentity>,
+        named_births: &BTreeMap<EntityId, PersistentNameBirthRequest>,
+    ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
+        // Verify every birth targets a created entity before minting or reserving IDs.
         let plan =
             LineageFinalizationPlan::from_staged(staged, commit, merged_plan, changed_records);
+        let created_entities: BTreeSet<EntityId> = plan
+            .drafts
+            .iter()
+            .filter_map(|draft| match draft {
+                LineageEventDraft::Create { entity_id, .. } => Some(*entity_id),
+                _ => None,
+            })
+            .collect();
+        let mut minted_births = super::name_minting::mint_entity_births(
+            scheme_registry,
+            live_holders,
+            retired_in_commit,
+            &created_entities,
+            named_births,
+        )
+        .map_err(TransactionCommitError::lineage_name_denial)?;
         let lineage_width = u64::try_from(plan.required_lineage_ids)
             .map_err(|_| lineage_error("lineage id batch capacity exceeded u64".to_owned()))?;
         let event_width = u64::try_from(plan.drafts.len())
@@ -68,8 +115,12 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             .map_err(lineage_error)?;
         let lineage_end = lineage_start + lineage_width;
         let assigned = plan
-            .assign_lineage_ids(staged, lineage_start..lineage_end)
+            .assign_lineage_ids(staged, lineage_start..lineage_end, &mut minted_births)
             .map_err(lineage_error)?;
+        debug_assert!(
+            minted_births.is_empty(),
+            "all verified entity births must be attached to Create lineage events"
+        );
 
         let mut events = Vec::with_capacity(assigned.len());
         let mut decisions = Vec::with_capacity(assigned.len());
@@ -96,6 +147,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
                 assigned.kind,
                 assigned.sources,
                 assigned.targets,
+                assigned.name_birth,
             );
             decisions.push(self.accepted_decision_record(assigned.decision_kind, &event));
             events.push(event);
@@ -196,6 +248,7 @@ impl LineageFinalizationPlan {
         self,
         staged: &WorkingState,
         mut reserved: std::ops::Range<u64>,
+        minted_births: &mut BTreeMap<EntityId, PersistentNameBirthRecord>,
     ) -> Result<Vec<AssignedLineageEvent>, String> {
         let mut created_lineages = BTreeMap::new();
         let mut assigned = Vec::with_capacity(self.drafts.len());
@@ -222,6 +275,7 @@ impl LineageFinalizationPlan {
                             lineage_id,
                             install_in_staged_state: existing_lineage_id.is_none(),
                         }),
+                        name_birth: minted_births.remove(&entity_id),
                     }
                 }
                 LineageEventDraft::Retire { lineage_id } => AssignedLineageEvent {
@@ -230,6 +284,7 @@ impl LineageFinalizationPlan {
                     sources: vec![lineage_id],
                     targets: Vec::new(),
                     node: None,
+                    name_birth: None,
                 },
                 LineageEventDraft::Replace {
                     source_lineage_id,
@@ -248,6 +303,7 @@ impl LineageFinalizationPlan {
                         sources: vec![source_lineage_id],
                         targets: vec![target_lineage_id],
                         node: None,
+                        name_birth: None,
                     }
                 }
             };
@@ -273,27 +329,26 @@ fn created_entity_lineage_slot(
     Some(arena.get(&entity_id)?.extra().lineage_id)
 }
 
-fn lineage_error(detail: String) -> crate::transactions::data::TransactionCommitError {
-    crate::transactions::data::TransactionCommitError::publication(
-        crate::publication::data::PublicationError::new(
-            crate::publication::bundle::PublicationStage::BundleAssembly,
-            detail,
-        ),
-    )
+fn lineage_error(detail: String) -> TransactionCommitError {
+    TransactionCommitError::publication(crate::publication::data::PublicationError::new(
+        crate::publication::bundle::PublicationStage::BundleAssembly,
+        detail,
+    ))
 }
+
 fn install_lineage_id(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     staged: &mut WorkingState,
     entity_id: EntityId,
     lineage_id: LineageId,
-) -> Result<(), crate::transactions::data::TransactionCommitError> {
+) -> Result<(), TransactionCommitError> {
     staged
         .get_partition_mut(entity_id.partition_id)
         .entity_arena
         .install_lineage_id(execution, entity_id.slot_index(), lineage_id)
         .map_err(|denial| match denial {
             crate::storage::substrate::ExtraLineageDenial::Request(cause) => {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                TransactionCommitError::execution(cause.into())
             }
             crate::storage::substrate::ExtraLineageDenial::Missing(detail) => {
                 lineage_error(detail.to_owned())

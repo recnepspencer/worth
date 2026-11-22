@@ -8,6 +8,7 @@ use crate::denial::{
 
 use super::super::decode_budget::RecordDecodeAttempt;
 
+mod application_naming;
 mod authorization;
 mod capability;
 mod component_set;
@@ -77,6 +78,7 @@ pub(super) fn require_encoding_contract(
             | ApplicationSchemaMember::DerivedComponentSet { .. }
             | ApplicationSchemaMember::ApplicationMutation { .. }
             | ApplicationSchemaMember::OperationBody { .. }
+            | ApplicationSchemaMember::ApplicationNameScheme { .. }
             | ApplicationSchemaMember::Relation { integrity: worth_query_declaration::facade::application_schema::ApplicationRelationIntegrityRecord { reaches_at_least: Some(_), .. }, .. }
     ) && maximum_depth < 2
     {
@@ -191,6 +193,9 @@ pub(super) fn write(
         ApplicationSchemaMember::Unit { .. } | ApplicationSchemaMember::Effect { .. } => {
             vocabulary::write(output, member)
         }
+        ApplicationSchemaMember::ApplicationNameScheme { definition } => {
+            application_naming::write(output, definition)
+        }
     }
 }
 
@@ -199,6 +204,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<ApplicationSchemaMember, Denial> {
     match input.u16()? {
+        57 => application_naming::decode(input, budget),
         tag @ 55..=56 => decision_read_scope::decode(tag, input, budget),
         51 => document_history::decode(input, budget),
         49 => invariant_source::decode(input, budget),
@@ -303,5 +309,6 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::AbilityPolicy { .. } => 22,
         ApplicationSchemaMember::Unit { .. } => 23,
         ApplicationSchemaMember::Effect { .. } => 24,
+        ApplicationSchemaMember::ApplicationNameScheme { .. } => 57,
     }
 }

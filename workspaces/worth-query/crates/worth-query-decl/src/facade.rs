@@ -18,24 +18,24 @@
 //! ```
 
 pub use worth_query_declaration::facade::{
-    application_aftermath, application_capability, application_history, application_operation,
-    application_program, application_query, application_resource, application_schema,
-    authentication, authoring, binding, branch, canonicalization, collection, diagnostics,
-    identity, identity_authority, portable_identity, schema_view, typed, validation,
+    application_aftermath, application_capability, application_history, application_naming,
+    application_operation, application_program, application_query, application_resource,
+    application_schema, authentication, authoring, binding, branch, canonicalization, collection,
+    diagnostics, identity, identity_authority, portable_identity, schema_view, typed, validation,
     view_declaration,
 };
 pub use worth_query_declaration::{
     worth_query_ability, worth_query_application_query, worth_query_capability,
     worth_query_capability_context, worth_query_capability_context_entity_slot,
     worth_query_capability_provenance, worth_query_effect, worth_query_feature_spec,
-    worth_query_mutation_binding, worth_query_operation, worth_query_operation_creates,
-    worth_query_operation_deletes, worth_query_operation_emits, worth_query_operation_expects_fact,
-    worth_query_operation_expects_version, worth_query_operation_links,
-    worth_query_operation_reads, worth_query_operation_removes_aspects,
-    worth_query_operation_requires, worth_query_operation_unlinks, worth_query_operation_writes,
-    worth_query_policy, worth_query_portable_type, worth_query_query_binding,
-    worth_query_structured_value_binding, worth_query_unit, worth_query_value_binding,
-    worth_query_workflow,
+    worth_query_mutation_binding, worth_query_name_discriminator, worth_query_operation,
+    worth_query_operation_creates, worth_query_operation_deletes, worth_query_operation_emits,
+    worth_query_operation_expects_fact, worth_query_operation_expects_version,
+    worth_query_operation_links, worth_query_operation_reads,
+    worth_query_operation_removes_aspects, worth_query_operation_requires,
+    worth_query_operation_unlinks, worth_query_operation_writes, worth_query_policy,
+    worth_query_portable_type, worth_query_query_binding, worth_query_structured_value_binding,
+    worth_query_unit, worth_query_value_binding, worth_query_workflow,
 };
 
 /// Canonical proof-carrying query artifact for declaration consumers.
@@ -44,6 +44,25 @@ pub use worth_query_declaration::{
 /// use worth_query_decl::facade::CanonicalQueryArtifact;
 /// # fn _retain(artifact: CanonicalQueryArtifact) -> CanonicalQueryArtifact {
 /// #     artifact
+/// # }
+/// ```
+///
+/// Persistent names re-exported through this audience facade remain
+/// non-forgeable and kind-typed:
+///
+/// ```compile_fail
+/// use worth_query_decl::facade::application_naming::WorthQueryName;
+/// struct Face;
+/// let _forged: WorthQueryName<Face> = WorthQueryName::from_bytes([0u8; 32]);
+/// ```
+///
+/// ```
+/// use worth_query_decl::facade::application_naming::WorthQueryName;
+/// struct Face;
+/// # fn _same_type(
+/// #     name: worth_query_declaration::facade::application_naming::WorthQueryName<Face>,
+/// # ) -> WorthQueryName<Face> {
+/// #     name
 /// # }
 /// ```
 pub use worth_query_declaration::facade::canonicalization::CanonicalQueryArtifact;

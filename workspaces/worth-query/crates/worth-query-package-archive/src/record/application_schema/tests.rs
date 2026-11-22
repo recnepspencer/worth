@@ -1,3 +1,4 @@
+mod application_naming;
 mod canonical_contract;
 mod component_scope;
 mod component_set;

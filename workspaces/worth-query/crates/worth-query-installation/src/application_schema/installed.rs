@@ -60,6 +60,7 @@ pub struct WorthQueryInstalledApplicationSchema<Schema> {
     pub(crate) capability_registry: ApplicationCapabilityRegistry,
     authorization_policy_registry: ApplicationAuthorizationPolicyRegistry,
     value_binding_catalog: WorthQueryInstalledApplicationValueBindingCatalog,
+    name_scheme_catalog: crate::naming::InstalledNameSchemeCatalog,
     native_contract_catalog: Arc<WorthQueryInstalledApplicationSchemaContractCatalog>,
     portable_native_contracts: Arc<Vec<WorthQueryPortableNativeAspectContractRecord>>,
     portable_operation_contracts: Arc<Vec<WorthQueryPortableApplicationOperationContractRecord>>,
@@ -166,6 +167,11 @@ where
 
     pub fn native_contracts(&self) -> &WorthQueryInstalledApplicationSchemaContractCatalog {
         self.native_contract_catalog.as_ref()
+    }
+
+    /// Validated persistent name scheme catalog lowered at installation.
+    pub fn name_schemes(&self) -> &crate::naming::InstalledNameSchemeCatalog {
+        &self.name_scheme_catalog
     }
 
     /// Returns the exact mutation-binding inventory retained at installation.

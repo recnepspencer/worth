@@ -5,6 +5,7 @@ mod application_correction_authoring;
 mod application_history_authoring;
 mod application_managed_index_authoring;
 mod application_mutation_authoring;
+mod application_naming_authoring;
 mod application_query_authoring;
 mod application_resource_authoring;
 mod authoring_context;

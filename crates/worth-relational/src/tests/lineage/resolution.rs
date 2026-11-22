@@ -284,3 +284,114 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
         replacement.commit.commit_id
     );
 }
+
+#[test]
+fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects() {
+    use super::birth_fixtures::{
+        commit_receipt, face_birth_request, face_scheme_registry, stage_two_entities,
+        staged_entity_lineage_id,
+    };
+    use crate::facade::identity::EntityId;
+    use crate::facade::lineage::{
+        LineageEventKind, LineageNameDenial, PersistentNameHolder, PersistentNameMintingAuthority,
+    };
+    use crate::transactions::data::RecordRef;
+    use std::collections::{BTreeMap, BTreeSet};
+
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let runtime = runtime_with_test_schema();
+    let prep = runtime.preparation_runtime_snapshot();
+    let authority = prep.lineage_preparation_authority();
+    let registry = face_scheme_registry();
+    let receipt = commit_receipt();
+    let (empty_holders, empty_retired) = (BTreeMap::new(), BTreeSet::new());
+    let before = prep.lineage_identity.frontiers();
+
+    // 1. BirthWithoutCreate refuses typed with zero allocator or staged effects.
+    let (mut staged_missing, e0, _) = stage_two_entities();
+    let phantom = EntityId::new(PartitionId::main(), 99, 1);
+    let missing_births = BTreeMap::from([(
+        phantom,
+        face_birth_request("occ.phantom", "authored", "", phantom),
+    )]);
+    let missing_err = authority
+        .ensure_lineage_for_commit_with_births(
+            execution,
+            &mut staged_missing,
+            &receipt,
+            &[],
+            &[RecordRef::Entity(e0)],
+            &registry,
+            &empty_holders,
+            &empty_retired,
+            &missing_births,
+        )
+        .err()
+        .expect("birth targeting uncreated entity must refuse");
+    assert!(matches!(
+        missing_err.lineage_name_denial_ref(),
+        Some(LineageNameDenial::BirthWithoutCreate { holder, .. })
+            if holder == &PersistentNameHolder::Entity(phantom)
+    ));
+    assert_eq!(prep.lineage_identity.frontiers(), before);
+    assert_eq!(staged_entity_lineage_id(&staged_missing, e0), None);
+
+    // 2. DuplicateBirth collision refuses typed with both holders and zero effects.
+    let (mut staged_dup, d0, d1) = stage_two_entities();
+    let dup_births = BTreeMap::from([
+        (d0, face_birth_request("occ.dup", "cut_piece", "same", d0)),
+        (d1, face_birth_request("occ.dup", "cut_piece", "same", d1)),
+    ]);
+    let dup_err = authority
+        .ensure_lineage_for_commit_with_births(
+            execution,
+            &mut staged_dup,
+            &receipt,
+            &[],
+            &[RecordRef::Entity(d0), RecordRef::Entity(d1)],
+            &registry,
+            &empty_holders,
+            &empty_retired,
+            &dup_births,
+        )
+        .err()
+        .expect("colliding staged births must refuse");
+    assert!(matches!(
+        dup_err.lineage_name_denial_ref(),
+        Some(LineageNameDenial::DuplicateBirth { first, second, .. })
+            if first == &PersistentNameHolder::Entity(d0)
+                && second == &PersistentNameHolder::Entity(d1)
+    ));
+    assert_eq!(prep.lineage_identity.frontiers(), before);
+    assert_eq!(staged_entity_lineage_id(&staged_dup, d0), None);
+    assert_eq!(staged_entity_lineage_id(&staged_dup, d1), None);
+
+    // 3. Valid staged birth attaches the exact pure-minted birth record to the Create event.
+    let (mut staged_ok, ok0, _) = stage_two_entities();
+    let ok_req = face_birth_request("occ.face.1", "authored", "", ok0);
+    let expected = PersistentNameMintingAuthority::mint_commit_births(
+        &registry,
+        &empty_holders,
+        &empty_retired,
+        std::slice::from_ref(&ok_req),
+    )
+    .unwrap();
+    let prepared = authority
+        .ensure_lineage_for_commit_with_births(
+            execution,
+            &mut staged_ok,
+            &receipt,
+            &[],
+            &[RecordRef::Entity(ok0)],
+            &registry,
+            &empty_holders,
+            &empty_retired,
+            &BTreeMap::from([(ok0, ok_req)]),
+        )
+        .expect("valid staged birth finalizes cleanly");
+    let events = prepared.artifact().event_batch().events();
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0].kind(), LineageEventKind::Create);
+    assert_eq!(events[0].name_birth(), Some(&expected[0]));
+}

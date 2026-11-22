@@ -37,6 +37,12 @@ pub mod application_history {
     pub use crate::application_history::*;
 }
 
+/// Persistent naming declarations: opaque kind-typed names, canonical
+/// discriminators, and declared name schemes.
+pub mod application_naming {
+    pub use crate::application_naming::*;
+}
+
 /// Typed managed-resource declarations, codec profiles and independent actions.
 pub mod application_resource {
     pub use crate::application_resource::*;

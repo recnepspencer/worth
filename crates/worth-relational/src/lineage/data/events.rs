@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::history::data::{BranchId, RelationalCommitReceipt};
 use crate::identity::data::LineageId;
+use crate::lineage::data::PersistentNameBirthRecord;
 
 /// What a committed lineage event did to entity lineages, as recorded in a
 /// [`LineageEventRecord`].
@@ -38,6 +39,8 @@ pub struct LineageEventRecord {
     pub(crate) kind: LineageEventKind,
     pub(crate) sources: Vec<LineageId>,
     pub(crate) targets: Vec<LineageId>,
+    #[serde(skip)]
+    pub(crate) name_birth: Option<PersistentNameBirthRecord>,
 }
 
 impl LineageEventRecord {
@@ -63,5 +66,9 @@ impl LineageEventRecord {
 
     pub fn targets(&self) -> &[LineageId] {
         &self.targets
+    }
+
+    pub fn name_birth(&self) -> Option<&PersistentNameBirthRecord> {
+        self.name_birth.as_ref()
     }
 }

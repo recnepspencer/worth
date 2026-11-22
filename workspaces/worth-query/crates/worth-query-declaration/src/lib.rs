@@ -38,6 +38,9 @@ mod portable_identity_macro;
 mod application_aftermath;
 mod application_capability;
 mod application_history;
+mod application_naming;
+#[macro_use]
+mod application_naming_macro;
 mod application_operation;
 mod application_program;
 #[doc(hidden)]
@@ -80,6 +83,8 @@ mod identity;
 mod identity_authority;
 #[doc(hidden)]
 pub mod lifecycle_effect_derivation_authority;
+#[doc(hidden)]
+pub mod persistent_name_admission_authority;
 mod result_shape;
 #[macro_use]
 mod schema_macro;

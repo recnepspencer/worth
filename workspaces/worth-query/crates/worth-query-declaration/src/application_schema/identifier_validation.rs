@@ -355,6 +355,9 @@ pub(super) fn validate_member_identifiers(
                 validate_simple_identifier(effect)?;
                 validate_portable_type_identity(payload_type)?;
             }
+            ApplicationSchemaMember::ApplicationNameScheme { definition } => {
+                crate::application_naming::validate_erased_scheme_identifiers(definition)?;
+            }
         }
     }
     Ok(())

@@ -3,6 +3,8 @@ mod events;
 mod graph;
 mod invariants;
 mod metrics;
+mod naming;
+mod naming_denial;
 mod resolution;
 
 pub use artifacts::{
@@ -19,6 +21,13 @@ pub use graph::{
 };
 pub use invariants::LineageInvariant;
 pub use metrics::LineageFinalizationCounters;
+pub use naming::{
+    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry, PersistentNameBirthParts,
+    PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameDiscriminatorReference,
+    PersistentNameHolder, PersistentNameIdentity, PersistentNameReferenceBasis,
+    PersistentNameSubjectKind,
+};
+pub use naming_denial::{DiscriminatorBasisDenialReason, LineageNameDenial};
 pub use resolution::{
     HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,
     HistoricalLineageResolutionMetrics, HistoricalResolutionBoundednessBasis,
