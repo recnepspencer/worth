@@ -288,12 +288,13 @@ fn lineage_aspect_history_keeps_origin_events_and_marks_resolution_context() {
 #[test]
 fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects() {
     use super::birth_fixtures::{
-        commit_receipt, face_birth_request, face_scheme_registry, stage_two_entities,
-        staged_entity_lineage_id,
+        commit_receipt, create_postures_input, face_birth_request, face_scheme_registry,
+        stage_two_entities, staged_entity_lineage_id,
     };
     use crate::facade::identity::EntityId;
     use crate::facade::lineage::{
-        LineageEventKind, LineageNameDenial, PersistentNameHolder, PersistentNameMintingAuthority,
+        LineageEventKind, LineageNameDenial, LineagePostureKind, LineageSubject,
+        PersistentNameHolder, PersistentNameMintingAuthority,
     };
     use crate::transactions::data::RecordRef;
     use std::collections::{BTreeMap, BTreeSet};
@@ -308,52 +309,56 @@ fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects(
     let (empty_holders, empty_retired) = (BTreeMap::new(), BTreeSet::new());
     let before = prep.lineage_identity.frontiers();
 
-    // 1. BirthWithoutCreate refuses typed with zero allocator or staged effects.
+    // 1. Create birth targeting uncreated entity refuses typed with zero allocator or staged effects.
     let (mut staged_missing, e0, _) = stage_two_entities();
     let phantom = EntityId::new(PartitionId::main(), 99, 1);
-    let missing_births = BTreeMap::from([(
-        phantom,
-        face_birth_request("occ.phantom", "authored", "", phantom),
-    )]);
+    let missing_input = create_postures_input(
+        registry.clone(),
+        vec![(
+            phantom,
+            face_birth_request("occ.phantom", "authored", "", phantom),
+        )],
+    );
     let missing_err = authority
-        .ensure_lineage_for_commit_with_births(
+        .ensure_lineage_for_commit_with_postures(
             execution,
             &mut staged_missing,
             &receipt,
             &[],
             &[RecordRef::Entity(e0)],
-            &registry,
-            &empty_holders,
-            &empty_retired,
-            &missing_births,
+            &missing_input,
         )
         .err()
         .expect("birth targeting uncreated entity must refuse");
     assert!(matches!(
         missing_err.lineage_name_denial_ref(),
-        Some(LineageNameDenial::BirthWithoutCreate { holder, .. })
-            if holder == &PersistentNameHolder::Entity(phantom)
+        Some(LineageNameDenial::LineagePostureMismatch {
+            posture: LineagePostureKind::Create,
+            subject: LineageSubject::Entity,
+            holder,
+            ..
+        }) if holder == &PersistentNameHolder::Entity(phantom)
     ));
     assert_eq!(prep.lineage_identity.frontiers(), before);
     assert_eq!(staged_entity_lineage_id(&staged_missing, e0), None);
 
     // 2. DuplicateBirth collision refuses typed with both holders and zero effects.
     let (mut staged_dup, d0, d1) = stage_two_entities();
-    let dup_births = BTreeMap::from([
-        (d0, face_birth_request("occ.dup", "cut_piece", "same", d0)),
-        (d1, face_birth_request("occ.dup", "cut_piece", "same", d1)),
-    ]);
+    let dup_input = create_postures_input(
+        registry.clone(),
+        vec![
+            (d0, face_birth_request("occ.dup", "cut_piece", "same", d0)),
+            (d1, face_birth_request("occ.dup", "cut_piece", "same", d1)),
+        ],
+    );
     let dup_err = authority
-        .ensure_lineage_for_commit_with_births(
+        .ensure_lineage_for_commit_with_postures(
             execution,
             &mut staged_dup,
             &receipt,
             &[],
             &[RecordRef::Entity(d0), RecordRef::Entity(d1)],
-            &registry,
-            &empty_holders,
-            &empty_retired,
-            &dup_births,
+            &dup_input,
         )
         .err()
         .expect("colliding staged births must refuse");
@@ -377,17 +382,15 @@ fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects(
         std::slice::from_ref(&ok_req),
     )
     .unwrap();
+    let ok_input = create_postures_input(registry, vec![(ok0, ok_req)]);
     let prepared = authority
-        .ensure_lineage_for_commit_with_births(
+        .ensure_lineage_for_commit_with_postures(
             execution,
             &mut staged_ok,
             &receipt,
             &[],
             &[RecordRef::Entity(ok0)],
-            &registry,
-            &empty_holders,
-            &empty_retired,
-            &BTreeMap::from([(ok0, ok_req)]),
+            &ok_input,
         )
         .expect("valid staged birth finalizes cleanly");
     let events = prepared.artifact().event_batch().events();

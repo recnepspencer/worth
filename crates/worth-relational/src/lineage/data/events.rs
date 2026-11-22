@@ -2,10 +2,20 @@ use serde::{Deserialize, Serialize};
 
 use crate::history::data::{BranchId, RelationalCommitReceipt};
 use crate::identity::data::LineageId;
-use crate::lineage::data::PersistentNameBirthRecord;
+use crate::lineage::data::{PersistentNameBirthRecord, PersistentNameIdentity};
 
-/// What a committed lineage event did to entity lineages, as recorded in a
-/// [`LineageEventRecord`].
+/// Subject class whose continuity a [`LineageEventRecord`] records.
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
+)]
+pub enum LineageSubject {
+    #[default]
+    Entity,
+    Relation,
+}
+
+/// What a committed lineage event did to entity or relation lineages, as
+/// recorded in a [`LineageEventRecord`].
 ///
 /// Lineage resolution follows `Replace`, `Split`, and `Merge` events from
 /// their sources to their targets; `Create` and `Retire` start or end a
@@ -40,7 +50,11 @@ pub struct LineageEventRecord {
     pub(crate) sources: Vec<LineageId>,
     pub(crate) targets: Vec<LineageId>,
     #[serde(skip)]
+    pub(crate) subject: LineageSubject,
+    #[serde(skip)]
     pub(crate) name_birth: Option<PersistentNameBirthRecord>,
+    #[serde(skip)]
+    pub(crate) kept_name: Option<PersistentNameIdentity>,
 }
 
 impl LineageEventRecord {
@@ -68,7 +82,15 @@ impl LineageEventRecord {
         &self.targets
     }
 
+    pub fn subject(&self) -> LineageSubject {
+        self.subject
+    }
+
     pub fn name_birth(&self) -> Option<&PersistentNameBirthRecord> {
         self.name_birth.as_ref()
+    }
+
+    pub fn kept_name(&self) -> Option<PersistentNameIdentity> {
+        self.kept_name
     }
 }

@@ -2,11 +2,18 @@ mod commit_finalization;
 mod discriminator_scan;
 mod event_emission;
 mod name_minting;
+mod posture_drafts;
+mod posture_finalization;
+mod posture_merge_validation;
+mod posture_validation;
+mod staged_effects;
 
 #[cfg(test)]
 mod name_minting_tests;
 
 pub use name_minting::{PersistentNameMintingAuthority, PERSISTENT_NAME_DOMAIN_TAG};
+#[cfg(test)]
+pub(crate) use posture_finalization::finalize_postures_in_working_state;
 
 use crate::runtime::RelationalRuntime;
 
