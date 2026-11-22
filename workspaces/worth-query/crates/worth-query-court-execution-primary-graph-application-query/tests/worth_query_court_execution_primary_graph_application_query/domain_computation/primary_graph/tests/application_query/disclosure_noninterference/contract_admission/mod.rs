@@ -393,5 +393,7 @@ pub fn controls(
     )
 }
 
+#[path = "filter_access/mod.rs"]
+pub mod filter_access;
 #[path = "predicate_access/mod.rs"]
 pub mod predicate_access;

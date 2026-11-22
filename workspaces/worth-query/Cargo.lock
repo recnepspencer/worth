@@ -1634,6 +1634,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-court-decl-host-where-filter"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-execution",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-execution",
+ "worth-query-host",
+ "worth-query-testkit-document-retention",
+]
+
+[[package]]
 name = "worth-query-court-execution"
 version = "0.1.0"
 dependencies = [

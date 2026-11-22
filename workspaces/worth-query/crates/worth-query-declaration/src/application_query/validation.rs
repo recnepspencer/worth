@@ -52,6 +52,10 @@ pub enum ApplicationQueryDefinitionDenial {
     LiveCauseRequiresContinuation,
     LiveCauseScopeSelectorMismatch,
     LiveCauseTargetSelectorMismatch,
+    WhereFilterUnknownParameter,
+    WhereFilterParameterMismatch,
+    WhereFilterFieldOutsideRoot,
+    WhereFilterUnsupportedShape,
 }
 
 pub(crate) fn validate_portable_application_query_freshly(
@@ -84,6 +88,7 @@ pub(crate) fn validate_portable_application_query_freshly(
     }
     disclosure::validate(definition)?;
     validate_predicates(definition)?;
+    super::where_filter::validation::validate(definition)?;
     validate_ordering(definition)?;
     validate_continuation(definition)?;
     validate_live_cause(definition)?;

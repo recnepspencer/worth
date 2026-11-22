@@ -19,6 +19,7 @@ pub(super) fn validate(
     validate_root_selection(definition)?;
     validate_result_shape(definition.result_shape())?;
     validate_predicates_and_ordering(definition)?;
+    validate_where_filter(definition)?;
     validate_lifecycle(definition)?;
     validate_authorization_and_disclosure(definition)
 }
@@ -98,6 +99,26 @@ fn validate_predicates_and_ordering(
     for ordering in definition.ordering() {
         let (entity, aspect, field) = ordering.field();
         validate_identifiers([entity, aspect, field, ordering.output_name()])?;
+    }
+    Ok(())
+}
+
+/// Untrusted filter operands name slots, fields and parameters before any
+/// installed key is minted from them.
+fn validate_where_filter(
+    definition: &ErasedApplicationQueryDefinition,
+) -> Result<(), ApplicationSchemaDeclarationDenial> {
+    for operand in definition
+        .where_filter()
+        .map_or(&[][..], |filter| filter.operands())
+    {
+        validate_identifiers([operand.name()])?;
+        if let Some((entity, aspect, field)) = operand.field() {
+            validate_identifiers([entity, aspect, field])?;
+        }
+        if let Some(parameter) = operand.parameter() {
+            validate_identifiers([parameter])?;
+        }
     }
     Ok(())
 }

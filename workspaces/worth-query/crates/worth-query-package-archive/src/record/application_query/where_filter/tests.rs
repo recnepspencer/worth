@@ -1,0 +1,138 @@
+//! Filtered queries round-trip; unfiltered bytes and malformed drafts are exact.
+use crate::binary_input::BinaryInput;
+use crate::binary_output::BinaryOutput;
+use crate::denial::WorthQueryPackageArchiveDenialKind as Kind;
+use crate::record::application_query::{decode, write};
+use crate::record::decode_budget::RecordDecodeAttempt;
+use worth_foundational::expression_api::expressions;
+use worth_foundational::facade::ScalarAspectType;
+use worth_query_declaration::facade::application_query::*;
+use worth_query_declaration::facade::application_schema::*;
+use worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity;
+use worth_query_declaration::*;
+
+struct Schema;
+struct Task;
+struct Row;
+worth_query_portable_type!(Row => "worth.tests.archive.where-filter-row.v1");
+worth_query_structured_value_binding!(ParametersBinding for () { identity: "worth.rust.unit" });
+worth_query_structured_value_binding!(RowsBinding for Row { identity: "worth.tests.archive.where-filter-row.v1" });
+worth_query_application_query!(Query for Schema, identity "worth.tests.archive.where-filter.v1",
+    parameters ParametersBinding, result RowsBinding, scope Task => "Task", name "where_filter");
+
+fn unfiltered() -> ErasedApplicationQueryDefinition {
+    let task = ApplicationEntityRef::<Schema, Task>::from_schema_identifier("Task");
+    let mut parts = ApplicationQueryDefinitionBuilder::declare(Query::reference())
+        .root(task)
+        .scope(task)
+        .result_shape(
+            ApplicationQueryResultShapeBuilder::<Schema, Query, Task, Row, RowsBinding>::new(task)
+                .build(),
+        )
+        .cardinality(ApplicationQueryCardinality::OptionalOne)
+        .disclosure(ApplicationQueryDisclosureContract::public())
+        .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
+        .lanes(ApplicationQueryLaneEligibility::one_shot())
+        .public()
+        .into_erased()
+        .into_parts();
+    parts.parameters = vec![ApplicationQueryParameterDefinition::from_untrusted_fields(
+        "max_due".to_owned(),
+        ScalarAspectType::Date,
+        WorthQueryPortableTypeIdentity::declared("worth.tests.archive.date.v1"),
+        None,
+        None,
+    )];
+    ErasedApplicationQueryDefinition::from_untrusted_parts(parts)
+}
+
+fn filter() -> ApplicationQueryWhereFilterProgram {
+    let operands = vec![
+        ApplicationQueryWhereFilterOperand::from_untrusted(
+            "due".to_owned(),
+            ApplicationQueryWhereFilterSource::Field {
+                entity: "Task".to_owned(),
+                aspect: "Schedule".to_owned(),
+                field: "due".to_owned(),
+                scalar_family: ScalarAspectType::Date,
+                presence: ApplicationFieldPresence::Optional,
+            },
+        ),
+        ApplicationQueryWhereFilterOperand::from_untrusted(
+            "max_due".to_owned(),
+            ApplicationQueryWhereFilterSource::Parameter {
+                parameter: "max_due".to_owned(),
+                scalar_family: ScalarAspectType::Date,
+            },
+        ),
+    ];
+    let draft = expressions()
+        .parse("is_some(due) && unwrap(due) <= max_due")
+        .unwrap()
+        .encode();
+    ApplicationQueryWhereFilterProgram::from_untrusted(operands, &draft).unwrap()
+}
+
+fn filtered() -> ErasedApplicationQueryDefinition {
+    let mut parts = unfiltered().into_parts();
+    parts.where_filter = Some(filter());
+    ErasedApplicationQueryDefinition::from_untrusted_parts(parts)
+}
+
+fn encode(query: &ErasedApplicationQueryDefinition) -> Vec<u8> {
+    let mut out = BinaryOutput::with_capacity(1024);
+    write(&mut out, query).unwrap();
+    out.into_bytes()
+}
+
+fn decode_bytes(
+    bytes: &[u8],
+) -> Result<(ErasedApplicationQueryDefinition, bool), crate::denial::WorthQueryPackageArchiveDenial>
+{
+    let mut input = BinaryInput::new(bytes);
+    let mut budget = RecordDecodeAttempt::begin(
+        Default::default(),
+        bytes.len() as u64,
+        crate::limits::WorthQueryPackageArchiveLimits::DEFAULT,
+    )
+    .unwrap();
+    let query = decode(&mut input, &mut budget)?;
+    Ok((query, input.is_finished()))
+}
+
+#[test]
+fn a_filtered_query_round_trips_and_the_unfiltered_prefix_is_byte_identical() {
+    let plain = encode(&unfiltered());
+    let with_filter = encode(&filtered());
+    assert!(
+        with_filter.starts_with(&plain),
+        "the extension only appends; every unfiltered byte is unchanged"
+    );
+    assert_eq!(&with_filter[plain.len()..plain.len() + 4], b"WQWF");
+    assert!(!plain.windows(4).any(|window| window == b"WQWF"));
+    assert_eq!(decode_bytes(&plain).unwrap(), (unfiltered(), true));
+    let (decoded, finished) = decode_bytes(&with_filter).unwrap();
+    assert!(finished);
+    assert_eq!(decoded, filtered());
+    assert_eq!(decoded.canonical_basis(), filtered().canonical_basis());
+}
+
+#[test]
+fn malformed_filter_extensions_refuse_with_typed_archive_denials() {
+    let plain_len = encode(&unfiltered()).len();
+    let bytes = encode(&filtered());
+    let kind = |bytes: &[u8]| decode_bytes(bytes).unwrap_err().kind();
+    let mut version = bytes.clone();
+    version[plain_len + 5] = 9;
+    assert_eq!(kind(&version), Kind::UnsupportedRecordVersion);
+    assert_eq!(kind(&bytes[..bytes.len() - 1]), Kind::Truncated);
+    let mut draft = bytes.clone();
+    let last = draft.len() - 1;
+    draft[last] ^= 0xff;
+    assert_eq!(kind(&draft), Kind::InvalidRecordShape);
+    let mut variant = bytes;
+    // marker(4) + version(2) + operand count(4) + first name text, then its kind tag.
+    let name_end = plain_len + 10 + 4 + "due".len();
+    variant[name_end] = 7;
+    assert_eq!(kind(&variant), Kind::UnsupportedRecordVariant);
+}

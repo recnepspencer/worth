@@ -55,6 +55,7 @@ mod result_slot_key;
 mod result_traversal;
 mod root_selection;
 mod validation;
+mod where_filter;
 
 pub use authorization_requirement::ApplicationQueryAuthorizationRequirement;
 pub use basis_support::ApplicationQueryBasisSupport;
@@ -146,6 +147,11 @@ pub use root_selection::{
 };
 pub(crate) use validation::validate_portable_application_query_freshly;
 pub use validation::ApplicationQueryDefinitionDenial;
+pub use where_filter::{
+    ApplicationQueryWhereFilter, ApplicationQueryWhereFilterDenial,
+    ApplicationQueryWhereFilterOperand, ApplicationQueryWhereFilterOperands,
+    ApplicationQueryWhereFilterProgram, ApplicationQueryWhereFilterSource,
+};
 
 #[cfg(test)]
 mod parameter_dimensions_tests;

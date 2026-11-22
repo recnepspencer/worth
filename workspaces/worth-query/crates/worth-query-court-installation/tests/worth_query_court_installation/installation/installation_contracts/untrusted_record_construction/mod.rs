@@ -83,6 +83,7 @@ fn downstream_decoder_constructs_owned_untrusted_application_query_meaning() {
             managed_index: None,
             cardinality: ApplicationQueryCardinality::ExactlyOne,
             predicates: Vec::new(),
+            where_filter: None,
             ordering: Vec::new(),
             continuation: None,
             live_cause: None,
