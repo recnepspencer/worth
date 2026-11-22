@@ -54,6 +54,34 @@ pub struct DecisionReads {
     failed_component: bool,
 }
 
+/// What a refused decision read, as proofs a pending refusal waits on (PR C
+/// §1.7): the handler's keyed reads, and whether any read had no key (a walk,
+/// aggregate, component, managed source or publication) or failed, which
+/// makes every append a possible change.
+#[derive(Clone, Debug)]
+pub struct RefusalProofs {
+    pub keys: Vec<WorthQueryApplicationFactKey>,
+    pub conservative: bool,
+}
+
+impl DecisionReads {
+    /// The proofs of a decision that refused (PR C §1.7).
+    pub fn refusal_proofs(&self) -> RefusalProofs {
+        RefusalProofs {
+            keys: self.handler.iter().cloned().collect(),
+            conservative: self.failed.is_some()
+                || self.failed_walk
+                || self.failed_component
+                || self.failed_managed_source
+                || self.source_publications.is_some()
+                || !self.managed_sources.is_empty()
+                || !self.walks.is_empty()
+                || !self.aggregates.is_empty()
+                || !self.components.is_empty(),
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub enum FailedDecisionRead {
     Key(WorthQueryApplicationFactKey),
