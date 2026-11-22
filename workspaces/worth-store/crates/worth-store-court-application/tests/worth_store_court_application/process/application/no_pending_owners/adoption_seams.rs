@@ -278,6 +278,7 @@ pub(super) fn verify_p1_and_close(
     let v_branch = v_host.current_world();
     assert_eq!(read_retention(v_host.runtime(), v_branch), SEED_RETENTION, "{label}: seeded value after reopen before probes");
     assert_branch_revision(&verified, v_branch, &p1, label);
+    assert_eq!(v_host.runtime().world_history_snapshot_for_test().installed_commits(), expected_commits, "{label}: installed commit parity after reopen");
     assert_single_p0_to_p1_occurrence(
         &verified, v_branch, Some(expected_history_len), ExpectedAdoptionCommit::Durable(durable_adopted), label,
     );
