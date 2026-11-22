@@ -34,7 +34,7 @@ use crate::storage::data::RelationalStorageUnavailableCause as StorageCause;
 #[path = "durability/owned_medium.rs"]
 mod owned_medium;
 use owned_medium::{bounded_bytes, downcast_snapshot, map_owned_denial, OwnedMediumAttachment};
-pub(crate) use owned_medium::OwnedTestDurableMedium;
+pub(crate) use owned_medium::{OwnedTestDurableMedium, ScriptedPublication};
 
 pub(crate) fn expect_durability_failure(
     stop: crate::durability::data::RelationalRecoveryStop,
@@ -153,11 +153,7 @@ impl DurableMedium for OwnedMediumAttachment {
         TransArt::from_untrusted_bytes(bytes).map_err(TransReadErr::Frame)
     }
     fn publish(&self, artifact: &CommitArt) -> Fate<String> {
-        if self.0.lock().commits.publish(artifact.position().0, artifact.as_bytes()) {
-            Fate::Committed
-        } else {
-            Fate::ProvenNoEffect { detail: "not next or identical original position".into() }
-        }
+        self.0.publish_commit(artifact)
     }
     fn publish_transition(&self, artifact: &TransArt) -> Fate<String> {
         if self.0.lock().transitions.publish(artifact.sequence().0, artifact.as_bytes()) {

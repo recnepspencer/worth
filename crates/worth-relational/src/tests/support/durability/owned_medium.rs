@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use worth_testkit_relational::durable_medium::{
@@ -12,7 +13,7 @@ use crate::durability::data::{
     RelationalCheckpointMember, RelationalNativeCheckpoint as NativeCheckpoint,
 };
 use crate::durability::medium::{
-    OpaqueCapturedCheckpointSubject as CheckpointSubject,
+    DurablePublicationFate as Fate, OpaqueCapturedCheckpointSubject as CheckpointSubject,
     RelationalDurableCheckpointSource as CheckpointSrc, RelationalDurableMedium as DurableMedium,
     RelationalDurableOwnedReadRefusal as ReadRefusal,
     RelationalDurableRecoverySource as RecoverySrc,
@@ -20,6 +21,11 @@ use crate::durability::medium::{
 use crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact as InitArt;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as StorageCause;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ScriptedPublication {
+    IndeterminateWithoutEffect,
+}
 
 #[derive(Debug, Default)]
 pub(super) struct OwnedMediumContents {
@@ -29,6 +35,7 @@ pub(super) struct OwnedMediumContents {
     pub(super) members: MemberBytes,
     pub(super) checkpoint: Option<CheckpointSrc>,
     pub(super) selected: Option<CheckpointSubject>,
+    pub(super) scripted: VecDeque<ScriptedPublication>,
 }
 
 /// Explicitly owned in-crate durable medium reusing `worth-testkit-relational`'s
@@ -91,6 +98,29 @@ impl OwnedTestDurableMedium {
     }
     pub(super) fn replace_commit_bytes(&self, position: PatchStreamPosition, bytes: Box<[u8]>) {
         self.lock().commits.entries.insert(position.0, bytes);
+    }
+    pub(crate) fn script_next_publication(&self, answer: ScriptedPublication) {
+        self.lock().scripted.push_back(answer);
+    }
+    pub(super) fn publish_commit(&self, artifact: &CommitArt) -> Fate<String> {
+        let mut contents = self.lock();
+        if let Some(scripted) = contents.scripted.pop_front() {
+            return match scripted {
+                ScriptedPublication::IndeterminateWithoutEffect => Fate::Indeterminate {
+                    detail: "scripted: the append's fate is unknown (not appended)".to_owned(),
+                },
+            };
+        }
+        if contents
+            .commits
+            .publish(artifact.position().0, artifact.as_bytes())
+        {
+            Fate::Committed
+        } else {
+            Fate::ProvenNoEffect {
+                detail: "not next or identical original position".into(),
+            }
+        }
     }
     pub(crate) fn file_checkpoint(&self, checkpoint: NativeCheckpoint) {
         let mut contents = self.lock();
