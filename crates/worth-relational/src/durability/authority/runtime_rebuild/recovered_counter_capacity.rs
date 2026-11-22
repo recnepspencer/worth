@@ -1,6 +1,6 @@
 //! Recovery lineage allocator frontiers advance across every lineage-allocating
 //! `Create` and `Restore` event, so replay never reuses a recorded lineage id.
-use super::super::lineage_allocation::allocated_lineage;
+use super::super::lineage_allocation::{allocated_lineage, maximum_allocated_lineage};
 use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 use crate::runtime::RelationalRuntime;
 
@@ -102,9 +102,22 @@ pub(super) fn refresh_checkpoint_counters(
             .max()
             .copied()
     });
-    let next_lineage_id = checked_checkpoint_successor(
-        restored.lineage.maximum_node_id().max(cold_node_max),
-        "lineage id",
+    let cold_event_lineage_max = directory.as_ref().and_then(|directory| {
+        directory
+            .manifest
+            .lineage_events
+            .iter()
+            .map(|page| page.last_node)
+            .max()
+    });
+    let resident_events = restored.lineage.shared_events();
+    let next_lineage_id = recovered_lineage_frontier(
+        restored
+            .lineage
+            .maximum_node_id()
+            .max(cold_node_max)
+            .max(cold_event_lineage_max),
+        resident_events.iter().map(std::sync::Arc::as_ref),
     )?;
     let next_event_id = checked_checkpoint_successor(
         restored.lineage.maximum_event_id().max(cold_event_max),
@@ -117,6 +130,19 @@ pub(super) fn refresh_checkpoint_counters(
         .lineage
         .set_identity_frontiers(next_lineage_id, next_event_id);
     Ok(())
+}
+
+/// The recovered lineage-id frontier: strictly past every recorded entity
+/// node and cold event page (`recorded_maximum`) and past every resident
+/// `Create` or `Restore` allocation of either subject, refusing exhaustion.
+pub(super) fn recovered_lineage_frontier<'event>(
+    recorded_maximum: Option<u64>,
+    resident_events: impl IntoIterator<Item = &'event crate::lineage::data::LineageEventRecord>,
+) -> Result<u64, DurabilityError> {
+    checked_checkpoint_successor(
+        recorded_maximum.max(maximum_allocated_lineage(resident_events)),
+        "lineage id",
+    )
 }
 
 fn checked_checkpoint_successor(

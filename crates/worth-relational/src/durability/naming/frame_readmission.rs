@@ -14,11 +14,11 @@ use crate::lineage::authority::{
     verify_persisted_birth_digest, BirthReadmissionRefusal, PersistedNameBytes, VerifiedBirthDigest,
 };
 use crate::lineage::data::{
-    LineageEventKind, LineageEventRecord, PersistentNameIdentity, PersistentNameKey,
-    PersistentNameSubjectKind,
+    LineageEventRecord, PersistentNameIdentity, PersistentNameKey, PersistentNameSubjectKind,
 };
 use crate::lineage::index::PersistentNameCommittedBatch;
 
+use super::event_shape::require_canonical_event_shape;
 use super::frame_decoding::{DecodedCarriers, DecodedCommitFrame, DecodedLineageEvent};
 use super::refusal::{PersistentNameDurabilityError as Refusal, PersistentNameReferenceRole};
 
@@ -52,7 +52,7 @@ pub(super) fn readmit_commit_frame(
 ) -> Result<PersistentNameCommittedBatch, Refusal> {
     let mut verified = Vec::with_capacity(frame.events.len());
     for mut event in frame.events {
-        require_naming_shape(&event)?;
+        require_canonical_event_shape(&event)?;
         let birth = match event.birth.take() {
             Some(claim) => {
                 let digest = verify_persisted_birth_digest(claim).map_err(birth_refusal)?;
@@ -82,31 +82,6 @@ pub(super) fn readmit_commit_frame(
         group_events: frame.group_events.into_iter().collect(),
         carriers,
     })
-}
-
-/// Births belong only to `Create`; kept names only to the kinds that carry
-/// one name across a record change.
-fn require_naming_shape(event: &DecodedLineageEvent) -> Result<(), Refusal> {
-    let refusal = |detail| Refusal::InvalidEventShape {
-        event_id: event.event_id,
-        detail,
-    };
-    if event.birth.is_some() && event.kind != LineageEventKind::Create {
-        return Err(refusal("only a Create can carry a name birth"));
-    }
-    let keeps_name = matches!(
-        event.kind,
-        LineageEventKind::Create
-            | LineageEventKind::Replace
-            | LineageEventKind::Merge
-            | LineageEventKind::Restore
-    );
-    if event.kept_name.is_some() && !keeps_name {
-        return Err(refusal(
-            "only Create, Replace, Merge, or Restore can keep a name",
-        ));
-    }
-    Ok(())
 }
 
 fn bind_event(

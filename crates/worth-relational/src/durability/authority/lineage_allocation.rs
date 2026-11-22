@@ -100,6 +100,20 @@ pub(super) fn commit_allocations(
     Ok(allocations)
 }
 
+/// The highest lineage any `Create` or `Restore` of either subject in
+/// `events` allocates; the lineage-id allocator must resume past it.
+///
+/// Complexity: O(events).
+pub(super) fn maximum_allocated_lineage<'event>(
+    events: impl IntoIterator<Item = &'event LineageEventRecord>,
+) -> Option<u64> {
+    events
+        .into_iter()
+        .filter_map(|event| allocated_lineage(event).ok().flatten())
+        .map(|allocation| allocation.lineage.0)
+        .max()
+}
+
 /// One commit's lineage events and the entities its patch created.
 pub(super) struct CommitAllocationView<'commit> {
     pub(super) commit: &'commit RelationalCommitReceipt,

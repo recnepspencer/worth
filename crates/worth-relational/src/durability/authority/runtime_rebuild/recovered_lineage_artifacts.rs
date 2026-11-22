@@ -3,7 +3,7 @@
 //! in ascending order within each commit.
 use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
 
-use super::super::lineage_allocation::allocated_lineage;
+use super::super::lineage_allocation::{allocated_lineage, maximum_allocated_lineage};
 use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailureClass};
 use crate::history::data::{
     BranchId, CanonicalCommitEnvelope, PositionedCanonicalCommit, RelationalCommitReceipt,
@@ -184,6 +184,9 @@ pub(super) fn reconcile_recovered_lineage_artifacts(
     let next_lineage_id = restored
         .lineage
         .maximum_node_id()
+        .max(maximum_allocated_lineage(
+            events_by_id.values().map(|(event, _)| event),
+        ))
         .and_then(|lineage_id| lineage_id.checked_add(1));
     restored
         .lineage

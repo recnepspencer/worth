@@ -4,35 +4,18 @@
 
 use std::collections::BTreeMap;
 
-use crate::facade::history::CommitId;
 use crate::facade::lineage::{
-    admit_persisted_name, encode_durable_persistent_name_log, rebuild_name_index_from_durable_log,
-    LineageEventKind, PersistentNameCommittedBatch, PersistentNameDurabilityError,
-    PersistentNameHolder, PersistentNameIdentity, PersistentNameKey,
+    admit_persisted_name, rebuild_name_index_from_durable_log, LineageEventKind,
+    PersistentNameDurabilityError, PersistentNameHolder, PersistentNameIdentity, PersistentNameKey,
     PersistentNameMintingAuthority, PersistentNameReferenceRole, PersistentNameSubjectKind,
 };
 use crate::identity::data::{EntityId, PartitionId};
 
-use super::name_durable_world::{durable_naming_history, DurableNamingHistory};
-use super::name_index_fixtures::main_branch;
+use super::name_durable_world::durable_naming_history;
 use super::posture_fixtures::{cad_scheme_registry, face_birth};
 
 fn fabricated() -> PersistentNameIdentity {
     PersistentNameIdentity::from_minted_digest([0xab; 32])
-}
-
-fn rebuild_mutated(
-    history: &DurableNamingHistory,
-    mutate: impl FnOnce(&mut Vec<(PersistentNameCommittedBatch, Option<CommitId>)>),
-) -> Result<(), PersistentNameDurabilityError> {
-    let mut commits = history.commits.clone();
-    mutate(&mut commits);
-    let bytes = encode_durable_persistent_name_log(
-        &main_branch(),
-        commits.iter().map(|(batch, floor)| (batch, *floor)),
-    )
-    .expect("the mutated log still encodes");
-    rebuild_name_index_from_durable_log(&bytes).map(|_| ())
 }
 
 fn unverified(
@@ -96,7 +79,7 @@ fn fresh_installation_readmits_every_recorded_name_and_refuses_bare_identities()
 #[test]
 fn bare_kept_names_and_carriers_without_verified_births_refuse_typed() {
     let history = durable_naming_history();
-    let refused = rebuild_mutated(&history, |commits| {
+    let refused = history.rebuild_mutated(|commits| {
         let restore = commits
             .iter_mut()
             .flat_map(|(batch, _)| batch.lineage_events.iter_mut())
@@ -112,7 +95,7 @@ fn bare_kept_names_and_carriers_without_verified_births_refuse_typed() {
         ))
     );
 
-    let refused = rebuild_mutated(&history, |commits| {
+    let refused = history.rebuild_mutated(|commits| {
         let (batch, _) = commits
             .iter_mut()
             .find(|(batch, _)| {
@@ -135,7 +118,7 @@ fn bare_kept_names_and_carriers_without_verified_births_refuse_typed() {
         ))
     );
 
-    let refused = rebuild_mutated(&history, |commits| {
+    let refused = history.rebuild_mutated(|commits| {
         let (batch, _) = &mut commits[2];
         batch
             .carriers
@@ -172,7 +155,7 @@ fn a_digest_consistent_birth_with_an_unborn_parent_refuses_typed() {
     )
     .expect("the minting authority mints over a parent it was told is live")
     .remove(0);
-    let refused = rebuild_mutated(&history, |commits| {
+    let refused = history.rebuild_mutated(|commits| {
         let birth = commits[1]
             .0
             .lineage_events

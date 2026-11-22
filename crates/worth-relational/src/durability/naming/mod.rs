@@ -7,6 +7,7 @@
 //! frames alone, readmitting each persisted identity only by re-verifying
 //! its birth against the one canonical persistent-name hash.
 
+mod event_shape;
 mod format;
 mod frame_decoding;
 mod frame_encoding;

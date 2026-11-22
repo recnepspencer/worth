@@ -17,8 +17,10 @@ use crate::aggregate_identity::{
 };
 use crate::facade::history::CommitId;
 use crate::facade::lineage::{
-    encode_commit_frame, encode_log_header, LineageEventKind, LineageSubject,
-    PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameSelection,
+    encode_commit_frame, encode_durable_persistent_name_log, encode_log_header,
+    rebuild_name_index_from_durable_log, LineageEventKind, LineageSubject,
+    PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameDurabilityError,
+    PersistentNameSelection,
 };
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, PartitionId};
@@ -125,6 +127,21 @@ impl DurableNamingHistory {
             }
         }
         index
+    }
+
+    /// Rebuilds from the log with `mutate` applied to its committed batches.
+    pub(super) fn rebuild_mutated(
+        &self,
+        mutate: impl FnOnce(&mut Vec<(PersistentNameCommittedBatch, Option<CommitId>)>),
+    ) -> Result<PersistentNameBranchIndex, PersistentNameDurabilityError> {
+        let mut commits = self.commits.clone();
+        mutate(&mut commits);
+        let bytes = encode_durable_persistent_name_log(
+            &main_branch(),
+            commits.iter().map(|(batch, floor)| (batch, *floor)),
+        )
+        .expect("the mutated log still encodes");
+        rebuild_name_index_from_durable_log(&bytes)
     }
 
     pub(super) fn selections(&self) -> Vec<PersistentNameSelection> {
