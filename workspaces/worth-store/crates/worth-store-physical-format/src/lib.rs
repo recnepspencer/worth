@@ -137,9 +137,10 @@ pub use canonical_basis::{
     prepare_physical_page_header_canonical_basis, PhysicalPageHeaderCanonicalBasisOutcome,
 };
 pub use canonical_redo::{
-    decode_canonical_redo_v3, decode_canonical_redo_v3_with_storage, CanonicalRedoExtentCoordinate,
-    CanonicalRedoTarget, CanonicalRedoTargetIdentity, CanonicalRedoWireDenial,
-    CanonicalRedoWireRecord, CANONICAL_REDO_V3_DOMAIN,
+    decode_canonical_redo_v3, decode_canonical_redo_v3_with_distinct_and_storage,
+    decode_canonical_redo_v3_with_storage, CanonicalRedoExtentCoordinate, CanonicalRedoTarget,
+    CanonicalRedoTargetIdentity, CanonicalRedoWireDenial, CanonicalRedoWireRecord,
+    CANONICAL_REDO_V3_DOMAIN,
 };
 pub use checkpoint::{
     checkpoint_certificate_frame_bytes, checkpoint_stream_encoded_digest,

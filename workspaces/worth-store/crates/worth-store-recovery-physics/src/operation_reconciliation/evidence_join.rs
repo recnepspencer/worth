@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use super::{
     classify_binding_freshness, OperationReconciliationDenial, ReconciledOperationFate,
     RecoveryOperationEvidenceInput,
@@ -28,16 +26,17 @@ pub fn reconcile_operation_fates(
         return Err(OperationReconciliationDenial::BindingLimit);
     }
     inputs.sort_unstable_by_key(|input| input.identity);
-    let mut seen = BTreeSet::new();
+    let mut prior_identity = None;
     let mut operations = Vec::with_capacity(inputs.len());
     let mut counts = [0_u64; 4];
     for input in inputs {
         if input.lease_issuance_generation >= input.lease_expiry_generation {
             return Err(OperationReconciliationDenial::InvalidLease);
         }
-        if !seen.insert(input.identity) {
+        if prior_identity == Some(input.identity) {
             return Err(OperationReconciliationDenial::DuplicateIdentity);
         }
+        prior_identity = Some(input.identity);
         let freshness = classify_binding_freshness(
             selected_checkpoint_generation,
             input.lease_expiry_generation,
@@ -140,6 +139,29 @@ mod tests {
             reconcile_operation_fates(4, vec![input], 1),
             Err(OperationReconciliationDenial::FreshnessMismatch),
             "MUTANT_PREDICATE:c8-freshness-expiry-boundary-widened"
+        );
+    }
+
+    #[test]
+    fn duplicate_identity_is_rejected_without_set_allocation_and_invalid_lease_precedes_it() {
+        let mk = |ordinal, issuance, expiry| {
+            RecoveryOperationEvidenceInput::new(
+                RecoveryOperationIdentity::new([1; 16], 1, 1, ordinal, [ordinal as u8; 32])
+                    .unwrap(),
+                [ordinal as u8; 32],
+                issuance,
+                expiry,
+                RecoveryBindingFreshness::Retained,
+                RecoveryOperationFate::Indeterminate,
+            )
+        };
+        assert_eq!(
+            reconcile_operation_fates(3, vec![mk(2, 1, 4), mk(1, 1, 4), mk(2, 1, 4)], 3),
+            Err(OperationReconciliationDenial::DuplicateIdentity)
+        );
+        assert_eq!(
+            reconcile_operation_fates(3, vec![mk(1, 1, 4), mk(1, 4, 4)], 2),
+            Err(OperationReconciliationDenial::InvalidLease)
         );
     }
 }

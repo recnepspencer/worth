@@ -13,12 +13,14 @@ use super::{
     member_admission::{self, MemberDenial},
     source_basis::SamplingSource,
     storage::{copy_bytes, push, SamplingStorage},
+    LocalSamplingBudget,
 };
 use crate::physical_runtime::durability::RetirementRecord;
 use worth_store_physical_format::{BlobManifestResidueCleanup, TierEpochActivationV1};
 use worth_store_recovery_physics::RetirementReleaseIntent;
 use worth_store_wal::WalLsnRange;
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn observe_wal<'frame, Frame: RecoveryWalFrameInput + 'frame>(
     storage: &mut SamplingStorage,
     source: &SamplingSource<'_>,
@@ -28,6 +30,7 @@ pub(super) fn observe_wal<'frame, Frame: RecoveryWalFrameInput + 'frame>(
     maximum_operations: u64,
     maximum_redo: u64,
     cleanup_limit: u64,
+    local_budget: Option<LocalSamplingBudget>,
 ) -> Result<(), StoreRecoveryBindingSampleFailure> {
     for (ordinal, frame) in frames.enumerate() {
         let range = frame.recovery_lsn_range();
@@ -73,6 +76,7 @@ pub(super) fn observe_wal<'frame, Frame: RecoveryWalFrameInput + 'frame>(
                     binding,
                     redo,
                     maximum_redo,
+                    local_budget,
                 )?;
             }
         }
@@ -158,6 +162,7 @@ fn observe_tier(
         .map_err(|denial| storage.failure(denial))
 }
 
+#[allow(clippy::too_many_arguments)]
 fn observe_member(
     storage: &mut SamplingStorage,
     source: &SamplingSource<'_>,
@@ -166,6 +171,7 @@ fn observe_member(
     binding: &[u8],
     redo: &[u8],
     maximum_redo: u64,
+    local_budget: Option<LocalSamplingBudget>,
 ) -> Result<(), StoreRecoveryBindingSampleFailure> {
     storage.redo_bytes = storage
         .redo_bytes
@@ -181,6 +187,7 @@ fn observe_member(
         source.context,
         range,
         source.generation,
+        local_budget,
     )
     .map_err(|denial| match denial {
         MemberDenial::Semantic => storage.failure(Denial::InvalidWalMember),

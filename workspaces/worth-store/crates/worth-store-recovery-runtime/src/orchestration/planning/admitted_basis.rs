@@ -1,5 +1,3 @@
-use std::collections::BTreeSet;
-
 use worth_store::physical_runtime::{
     PhysicalRecoveryFreshnessPort, StoreRecoveryBindingFreshnessSample, StoreRecoverySamplingBasis,
 };
@@ -7,10 +5,11 @@ use worth_store_physical_format::{
     PhysicalRecordFormatDeclaration, PhysicalRecoveryProjectionDecodeLimits,
 };
 use worth_store_recovery_physics::{
-    admit_physical_redo_members, AdmittedPhysicalRedoMembers, PhysicalRedoAdmissionLimits,
-    PhysicalRedoMemberInput, PhysicalRedoPlanCounters, PhysicalRedoTargetIdentity,
-    ReconciledOperationFate, ReconciledOperationFates, RecoveryOperationEvidenceInput,
-    RecoveryOperationFate, RecoveryPlanCostDenial, RecoveryPlanningCounters,
+    admit_physical_redo_members_with_memory_budget, AdmittedPhysicalRedoMembers,
+    PhysicalRedoAdmissionLimits, PhysicalRedoMemberInput, PhysicalRedoPlanCounters,
+    PhysicalRedoTargetIdentity, ReconciledOperationFate, ReconciledOperationFates,
+    RecoveryOperationEvidenceInput, RecoveryOperationFate, RecoveryPlanCostDenial,
+    RecoveryPlanningCounters,
 };
 
 use crate::entry::{
@@ -135,25 +134,13 @@ pub(super) fn admit(
         let planning_counters = counters::after_sample(&sample);
         return Err(memory_block(context, planning_counters, denial));
     }
-    let reconcile_transient =
-        PlanningResidentAllowance::slot_bytes::<RecoveryOperationEvidenceInput>(
-            sample.operations().len(),
-        )
-        .and_then(|inputs| {
-            let output = PlanningResidentAllowance::slot_bytes::<ReconciledOperationFate>(
-                sample.operations().len(),
-            )?;
-            inputs
-                .checked_add(output)
-                .ok_or(PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX })
-        });
-    if let Err(denial) = reconcile_transient.and_then(|bytes| allowance.transient(bytes)) {
-        let planning_counters = counters::after_sample(&sample);
-        return Err(memory_block(context, planning_counters, denial));
-    }
-    let fates = match operation_join::reconcile_sample(&sample, context.limits.operation_bindings) {
+    let fates = match admit_reconciled_fates(&sample, context.limits.operation_bindings, &mut allowance) {
         Ok(fates) => fates,
-        Err(denial) => {
+        Err(ReconcileAdmissionError::Memory(denial)) => {
+            let planning_counters = counters::after_sample(&sample);
+            return Err(memory_block(context, planning_counters, denial));
+        }
+        Err(ReconcileAdmissionError::Reconciliation(denial)) => {
             let planning_counters = counters::after_sample(&sample);
             return Err(context.block_with_planning_attempt_denial(
                 PhysicalRecoveryBlockKind::OperationReconciliation,
@@ -164,14 +151,6 @@ pub(super) fn admit(
             ));
         }
     };
-    let fates_bytes = fates
-        .owned_heap_bytes()
-        .ok_or(PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX });
-    if let Err(denial) = fates_bytes.and_then(|bytes| allowance.retain(bytes)) {
-        let planning_counters =
-            counters::after_fates(&sample, &fates, PhysicalRedoPlanCounters::default(), 0, 0);
-        return Err(memory_block(context, planning_counters, denial));
-    }
     let redo_copy_bytes = sample
         .wal_members()
         .iter()
@@ -189,9 +168,7 @@ pub(super) fn admit(
     let redo_inputs_transient = redo_inputs_live.clone().and_then(|live| {
         let index = PlanningResidentAllowance::slot_bytes::<([u8; 32], RecoveryOperationFate)>(
             fates.operations().len(),
-        )?
-        .checked_mul(2)
-        .ok_or(PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX })?;
+        )?;
         live.checked_add(index)
             .ok_or(PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX })
     });
@@ -243,12 +220,13 @@ pub(super) fn admit(
         .manifest_entries
         .saturating_sub(context.counters.manifest_entries);
     let format = context.selection.root().selected().selector().format();
-    let redo = match admit_physical_redo_members(
+    let redo_budget = allowance.remaining();
+    let redo = match admit_physical_redo_members_with_memory_budget(
         redo_inputs,
         context.authority.media.store_identity(),
         format,
         PhysicalRedoAdmissionLimits {
-            recovery_memory_bytes: allowance.remaining(),
+            recovery_memory_bytes: redo_budget,
             targets: context.limits.redo_targets,
             distinct_targets: context.limits.distinct_pages_and_extents,
             projection: PhysicalRecoveryProjectionDecodeLimits {
@@ -263,6 +241,7 @@ pub(super) fn admit(
                 inline_allocations: remaining_manifest_entries,
             },
         },
+        redo_budget,
     ) {
         Ok(redo) => redo,
         Err(denial) => {
@@ -271,25 +250,26 @@ pub(super) fn admit(
             return Err(context.redo_denial_block(planning_counters, denial));
         }
     };
-    let targets = redo.target_identities();
-    let targets_bytes = u64::try_from(std::mem::size_of_val(&*targets))
-        .ok()
+    // `admit_physical_redo_members` consumed `redo_inputs`; replace its debit
+    // with the retained admitted redo before admitting the target roster.
+    allowance.release(redo_inputs_live);
+    let redo_live_bytes = redo
+        .owned_heap_bytes()
         .ok_or(PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX });
-    let targets_transient = targets_bytes.clone().and_then(|slice_bytes| {
-        slice_bytes
-            .checked_mul(3)
-            .ok_or(PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX })
-    });
-    if let Err(denial) = targets_transient
-        .and_then(|bytes| allowance.transient(bytes))
-        .and_then(|()| allowance.retain(targets_bytes?))
-    {
+    if let Err(denial) = redo_live_bytes.and_then(|bytes| allowance.retain(bytes)) {
         let planning_counters =
             counters::after_fates(&sample, &fates, PhysicalRedoPlanCounters::default(), 0, 0);
         return Err(memory_block(context, planning_counters, denial));
     }
-    let _ = redo_inputs_live;
-    let distinct_targets = targets.iter().copied().collect::<BTreeSet<_>>().len() as u64;
+    let targets = match admit_target_identities(&redo, &mut allowance) {
+        Ok(targets) => targets,
+        Err(denial) => {
+            let planning_counters =
+                counters::after_fates(&sample, &fates, PhysicalRedoPlanCounters::default(), 0, 0);
+            return Err(memory_block(context, planning_counters, denial));
+        }
+    };
+    let distinct_targets = redo.distinct_target_count();
     let distinct = RecoveryAllowance::declared(
         &context.limits,
         PhysicalRecoveryLimitDimension::DistinctPagesAndExtents,
@@ -313,3 +293,59 @@ pub(super) fn admit(
         },
     ))
 }
+
+#[derive(Debug)]
+pub(super) enum ReconcileAdmissionError {
+    Memory(PlanningMemoryDenial),
+    Reconciliation(worth_store_recovery_physics::OperationReconciliationDenial),
+}
+
+pub(super) fn admit_reconciled_fates(
+    sample: &StoreRecoveryBindingFreshnessSample,
+    maximum_bindings: u64,
+    allowance: &mut PlanningResidentAllowance,
+) -> Result<ReconciledOperationFates, ReconcileAdmissionError> {
+    let inputs = PlanningResidentAllowance::slot_bytes::<RecoveryOperationEvidenceInput>(
+        sample.operations().len(),
+    )
+    .map_err(ReconcileAdmissionError::Memory)?;
+    let output = PlanningResidentAllowance::slot_bytes::<ReconciledOperationFate>(
+        sample.operations().len(),
+    )
+    .map_err(ReconcileAdmissionError::Memory)?;
+    let transient = inputs
+        .checked_add(output)
+        .ok_or(ReconcileAdmissionError::Memory(
+            PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX },
+        ))?;
+    allowance
+        .transient(transient)
+        .map_err(ReconcileAdmissionError::Memory)?;
+    let fates = operation_join::reconcile_sample(sample, maximum_bindings)
+        .map_err(ReconcileAdmissionError::Reconciliation)?;
+    let retained = fates
+        .owned_heap_bytes()
+        .ok_or(ReconcileAdmissionError::Memory(
+            PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX },
+        ))?;
+    allowance
+        .retain(retained)
+        .map_err(ReconcileAdmissionError::Memory)?;
+    Ok(fates)
+}
+
+pub(super) fn admit_target_identities(
+    redo: &AdmittedPhysicalRedoMembers,
+    allowance: &mut PlanningResidentAllowance,
+) -> Result<Box<[PhysicalRedoTargetIdentity]>, PlanningMemoryDenial> {
+    let targets_bytes =
+        PlanningResidentAllowance::slot_bytes::<PhysicalRedoTargetIdentity>(
+            redo.target_identity_count(),
+        )?;
+    allowance.retain(targets_bytes)?;
+    Ok(redo.target_identities())
+}
+
+#[cfg(test)]
+#[path = "admitted_basis_tests.rs"]
+mod tests;

@@ -53,8 +53,9 @@ impl PhysicalRecoveryFreshnessPort {
     }
 
     /// Like `sample_binding`, and also enforces a caller-supplied total
-    /// sampling byte ceiling (`maximum_sampling_bytes`) against the census
-    /// before reserving native backing or allocating sampling storage.
+    /// sampling byte ceiling (`maximum_sampling_bytes`) across the primary
+    /// sampling backing and each co-live WAL member decode scratch grant before
+    /// reserving native backing or allocating sampling storage.
     pub fn sample_binding_with_budget<'frame>(
         coordination: &crate::physical_runtime::PhysicalRecoveryCoordination,
         media: &AdmittedRecoveryFilesystemMedia,

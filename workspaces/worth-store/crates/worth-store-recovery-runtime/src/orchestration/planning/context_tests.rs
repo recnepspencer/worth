@@ -172,13 +172,13 @@ fn plan_admits_context_backing_before_allocation_and_debits_early_sampling() {
     }
 
     // 3. Exact context boundary (0 remaining): `plan()` must deny in binding sampling
-    //    before reserving native backing, reporting the exact census requirement.
+    //    before reserving primary native backing.
     let (selected, _) = with_memory_limit(select_real(retained.path()), live_before + slot_bytes);
     let Err(PhysicalRecoveryOutcome::Blocked(blocked)) = selected.plan() else {
         panic!("zero remaining sampling allowance must deny before reserving");
     };
     assert_eq!(blocked.recovery_effects(), 0);
-    let sample_requested = match &blocked.evidence().planning_denial {
+    let primary_requested = match &blocked.evidence().planning_denial {
         Some(PhysicalRecoveryPlanningDenial::BindingSamplingAllocation(
             StoreRecoveryBindingSampleAllocationDenial::LocalLimit { required, admitted },
         )) => {
@@ -193,39 +193,72 @@ fn plan_admits_context_backing_before_allocation_and_debits_early_sampling() {
         limit.dimension(),
         PhysicalRecoveryLimitDimension::RecoveryMemoryBytes
     );
-    assert_eq!(limit.observed(), live_before + slot_bytes + sample_requested);
+    assert_eq!(limit.observed(), live_before + slot_bytes + primary_requested);
     assert_eq!(limit.admitted(), live_before + slot_bytes);
 
-    // 4. One byte short of nonempty sampling boundary: still refuses in sampling before reserve.
+    // 4. Primary-only ceiling still refuses in sampling when the co-live WAL member
+    //    decode grant exceeds the total sampling ceiling.
     let (selected, _) = with_memory_limit(
         select_real(retained.path()),
-        live_before + slot_bytes + sample_requested - 1,
+        live_before + slot_bytes + primary_requested,
     );
     let Err(PhysicalRecoveryOutcome::Blocked(blocked)) = selected.plan() else {
-        panic!("one byte short of nonempty sampling census must deny before reserving");
+        panic!("primary-only ceiling must deny co-live WAL decode grant");
+    };
+    assert_eq!(blocked.recovery_effects(), 0);
+    let full_sampling_peak = match &blocked.evidence().planning_denial {
+        Some(PhysicalRecoveryPlanningDenial::BindingSamplingAllocation(
+            StoreRecoveryBindingSampleAllocationDenial::LocalLimit { required, admitted },
+        )) => {
+            assert_eq!(*admitted, primary_requested);
+            assert!(*required > primary_requested);
+            *required
+        }
+        other => panic!("expected sampling LocalLimit for decode grant, got {other:?}"),
+    };
+    let limit = blocked.cause().limit().expect("full sampling limit");
+    assert_eq!(
+        limit.observed(),
+        live_before + slot_bytes + full_sampling_peak
+    );
+    assert_eq!(
+        limit.admitted(),
+        live_before + slot_bytes + primary_requested
+    );
+
+    // 5. One byte short of full sampling peak refuses in sampling before decode grant.
+    let (selected, _) = with_memory_limit(
+        select_real(retained.path()),
+        live_before + slot_bytes + full_sampling_peak - 1,
+    );
+    let Err(PhysicalRecoveryOutcome::Blocked(blocked)) = selected.plan() else {
+        panic!("one byte short of full sampling peak must deny before decode grant");
     };
     assert_eq!(blocked.recovery_effects(), 0);
     assert_eq!(
         blocked.evidence().planning_denial,
         Some(PhysicalRecoveryPlanningDenial::BindingSamplingAllocation(
             StoreRecoveryBindingSampleAllocationDenial::LocalLimit {
-                required: sample_requested,
-                admitted: sample_requested - 1,
+                required: full_sampling_peak,
+                admitted: full_sampling_peak - 1,
             },
         ))
     );
     let limit = blocked.cause().limit().expect("sampling boundary limit");
-    assert_eq!(limit.observed(), live_before + slot_bytes + sample_requested);
+    assert_eq!(
+        limit.observed(),
+        live_before + slot_bytes + full_sampling_peak
+    );
     assert_eq!(
         limit.admitted(),
-        live_before + slot_bytes + sample_requested - 1
+        live_before + slot_bytes + full_sampling_peak - 1
     );
 
-    // 5. Exact nonempty sampling boundary: sampling admits, then carried co-live debit
-    //    gates downstream reconciliation/redo before allocation.
+    // 6. Exact full sampling peak admits sampling cleanly, then blocks downstream
+    //    under the carried co-live allowance.
     let (selected, _) = with_memory_limit(
         select_real(retained.path()),
-        live_before + slot_bytes + sample_requested,
+        live_before + slot_bytes + full_sampling_peak,
     );
     let Err(PhysicalRecoveryOutcome::Blocked(blocked)) = selected.plan() else {
         panic!("exact sampling boundary leaves insufficient co-live budget for downstream redo");
@@ -236,20 +269,11 @@ fn plan_admits_context_backing_before_allocation_and_debits_early_sampling() {
             &blocked.evidence().planning_denial,
             Some(PhysicalRecoveryPlanningDenial::BindingSamplingAllocation(_))
         ),
-        "sampling must admit at its exact boundary; got {:?}",
+        "sampling must admit at its exact full peak; got {:?}",
         blocked.evidence().planning_denial
     );
-    assert!(matches!(
-        &blocked.evidence().planning_denial,
-        Some(
-            PhysicalRecoveryPlanningDenial::Cost(RecoveryPlanCostDenial::RecoveryMemoryBytes)
-                | PhysicalRecoveryPlanningDenial::Redo(
-                    PhysicalRedoPlanningDenial::RecoveryMemoryLimit { .. }
-                )
-        )
-    ));
 
-    // 6. Healthy budget plans cleanly.
+    // 7. Healthy budget plans cleanly.
     let planned = select_real(retained.path())
         .plan()
         .expect("healthy budget plans cleanly");

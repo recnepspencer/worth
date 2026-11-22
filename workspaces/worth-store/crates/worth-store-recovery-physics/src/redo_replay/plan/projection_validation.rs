@@ -1,5 +1,5 @@
 use super::projection_admission::{admit_projection, IntegrityAdmittedRecoveryProjection};
-use super::projection_materialization::{projected_record_bytes, validate_extent_closure};
+use super::projection_materialization::{matches_projected_record_bytes, validate_extent_closure};
 use super::*;
 use worth_store_physical_format::RecordArtifactFile;
 mod blob_semantic;
@@ -12,26 +12,29 @@ pub(super) fn validate_projection_semantics(
     projection: &PersistedPhysicalRecoveryProjection,
     store: StableStoreIdentity,
     format: PhysicalRecordFormatDeclaration,
+    budget: &mut RedoAllocationBudget,
 ) -> Result<Box<[super::projection_admission::AdmittedInlineFrame]>, PhysicalRedoPlanningDenial> {
-    let admitted = admit_projection(projection, store, format)?;
+    let admitted = admit_projection(projection, store, format, budget)?;
     validate_root_state(projection)?;
     if records.len() != projection.record_identities().len() {
         return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
     }
     for (record, identity) in records.iter().zip(projection.record_identities()) {
-        let placements = projection
+        let mut placements = projection
             .placements()
             .iter()
-            .filter(|placement| placement.record() == *identity)
-            .collect::<Vec<_>>();
-        if placements.len() != 1
-            || placements[0].payload_bytes() != record.bytes().len() as u64
-            || projected_record_bytes(*identity, *placements[0], &admitted)? != record.bytes()
+            .filter(|placement| placement.record() == *identity);
+        let Some(placement) = placements.next() else {
+            return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
+        };
+        if placements.next().is_some()
+            || placement.payload_bytes() != record.bytes().len() as u64
+            || !matches_projected_record_bytes(*identity, *placement, &admitted, record.bytes())?
         {
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
         if worth_store_physical_format::decode_blob_record(record.bytes()).is_ok()
-            && !matches!(*placements[0], CurrentPhysicalRecordPlacement::Extent(_))
+            && !matches!(*placement, CurrentPhysicalRecordPlacement::Extent(_))
         {
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
@@ -96,7 +99,7 @@ pub(super) fn validate_projection_semantics(
     validate_bidirectional_closure(projection, &admitted)?;
     validate_resulting_lsns(records, projection, &admitted)?;
     validate_release_head_effect(records, projection, store, format)?;
-    Ok(admitted.into_inline_frames())
+    admitted.into_inline_frames(budget)
 }
 
 fn validate_bidirectional_closure(
@@ -170,33 +173,41 @@ fn validate_bidirectional_closure(
 fn validate_segment_frame_cardinality(
     projection: &PersistedPhysicalRecoveryProjection,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
-    let mut exact_counts = BTreeMap::<(u64, u64), u32>::new();
-    for frame in projection
+    let frames = projection
         .frames()
-        .expect("frame-only recovery projection admitted before planning")
-    {
+        .expect("frame-only recovery projection admitted before planning");
+    for frame in frames {
         let PersistedPhysicalDataFrameSubject::InlinePage(_) = frame.subject() else {
             continue;
         };
-        let count = exact_counts
-            .entry(match frame.coordinate().artifact() {
+        if !matches!(
+            frame.coordinate().artifact(),
+            RecordArtifactFile::Segment { .. }
+        ) {
+            return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
+        }
+    }
+    for update in projection.segment_updates() {
+        let target_segment = update.page_cell().segment_id().get();
+        let target_generation = update.data_generation();
+        let mut count = 0_u32;
+        for frame in frames {
+            let PersistedPhysicalDataFrameSubject::InlinePage(_) = frame.subject() else {
+                continue;
+            };
+            if matches!(
+                frame.coordinate().artifact(),
                 RecordArtifactFile::Segment {
                     segment,
                     generation,
-                } => (segment, generation),
-                _ => return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection),
-            })
-            .or_default();
-        *count = count
-            .checked_add(1)
-            .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
-    }
-    for update in projection.segment_updates() {
-        let key = (
-            update.page_cell().segment_id().get(),
-            update.data_generation(),
-        );
-        if exact_counts.get(&key).copied() != Some(update.data_page_count()) {
+                } if segment == target_segment && generation == target_generation
+            ) {
+                count = count
+                    .checked_add(1)
+                    .ok_or(PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
+            }
+        }
+        if count != update.data_page_count() {
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
     }
