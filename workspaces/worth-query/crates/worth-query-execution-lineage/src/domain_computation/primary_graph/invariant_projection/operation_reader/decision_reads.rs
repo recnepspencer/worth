@@ -58,7 +58,7 @@ pub struct DecisionReads {
 /// §1.7): the handler's keyed reads, and whether any read had no key (a walk,
 /// aggregate, component, managed source or publication) or failed, which
 /// makes every append a possible change.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RefusalProofs {
     pub keys: Vec<WorthQueryApplicationFactKey>,
     pub conservative: bool,

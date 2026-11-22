@@ -283,10 +283,11 @@ where
             },
             execution.allocation_policy(),
         );
-    let report = match prepared_handler {
+    let mut report = match prepared_handler {
         Ok(handler) => handler.run(runtime, &identities),
         Err(report) => report.into_uncompleted_report(),
     };
+    let refusal_proofs = report.take_refusal_proofs();
     if let Some(stop) = source_query.take_control_failure() {
         return Err(super::denial::request_admission_rejected(stop));
     }
@@ -300,7 +301,8 @@ where
             .into_outcome()
             .map_err(|cause| execution_failed(Binding::IDENTITY, cause))?,
         |cause| installed.provider.domain_denial_reason(cause),
-    )?;
+    )
+    .map_err(|denial| denial.with_refusal_proofs(refusal_proofs))?;
     let (mut program, _) = completed.into_parts();
     let implementation = worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(
         edition.build_identity(),
