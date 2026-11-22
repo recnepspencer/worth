@@ -3519,6 +3519,44 @@ evidence, current and retained product truth, lawful cleanup, and the persisted
 successor after another graceful reopen. The target identity is part of the
 encoded input, so readmission derives the same authored scope from recorded data.
 
+#### Drive a command across interactive frames
+
+A generic helper names one bundled bound per role instead of restating the
+binding's input, key, scope-resolution and native-driver bounds:
+`I: WorthQuerySourcelessMutation<S>` (or `WorthQuerySourceMutation<S>` when the
+command expects an observed source), `A: WorthQuerySourceCompletionAction<S,
+I::Binding>`, and `Q: WorthQueryProjectedQuery<S>` for a query whose rows are
+`WorthQueryProjectedValue<S, Q>`. Each is implemented for every qualifying
+binding, including macro-generated ones, and grants no admission.
+
+`WorthQuerySourceCustody` holds the command's current native owner across
+frames. `resume(&runtime, &fresh_request)` performs at most one durable
+retention, one advance and one close, and returns `Committed` (closed, with the
+`WorthQuerySourceCompletion`), `Declined` (closed, with the exact
+`WorthQueryTerminalSourceEvidence`, such as a `DomainDenied` or a full-history
+`ProductPreparationRefused`) or `Pending` with the retained custody and the
+native owner's own `WorthQuerySourceCustodyPending` cause. No request, principal
+or phase is retained; matching a variant lends or returns the exact owner. Match
+`Pending`'s cause rather than retrying blindly:
+`Close(NativeObligationRetained)` means native recovery still owns the
+command. Report `Declined` evidence and drop it; do not keep the native carrier
+across frames.
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled court is
+// worth-query-court-decl-host-integration/.../host/source_custody/interrupted_frames.rs.
+fn submit<S, P, I, A>(runtime: &Runtime<S, P>, request: &Request<'_, '_, '_, S>, intent: I, key: Key<S, I>)
+    -> Option<WorthQuerySourceCustodyStep<S, I, P, A>>
+where S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>,
+      I: WorthQuerySourcelessMutation<S>, A: WorthQuerySourceCompletionAction<S, I::Binding>,
+{
+    let described = request.mutate(intent).without_source().idempotency_owned(key).ok()?;
+    Some(WorthQuerySourceCustody::Described(described).resume(runtime, request))
+}
+// A later frame: `Pending { custody, .. }` => custody.resume(runtime, &fresh_request)
+```
+
 #### Execute a stored typed edit
 
 Decode the stored input through its declared field codec, then pass the typed
