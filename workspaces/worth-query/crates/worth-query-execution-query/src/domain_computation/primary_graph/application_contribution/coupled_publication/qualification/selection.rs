@@ -2,7 +2,8 @@
 //! live query support a wave task's selector retained. A change ends that
 //! support at the append, its authenticated invalidator, and the task selects
 //! again before any later use, owed at the later of its own demand and the
-//! invalidator (R1). A root selector's support stays strict.
+//! invalidator (R1). A root selector's support holds only within its own
+//! stage: an authored stage's append ends it there, never re-seeding it.
 use super::*;
 
 /// What qualified use reopens.
@@ -25,6 +26,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
         invalidator: usize,
         invalidator_owed: usize,
+        stage: bool,
     ) -> Result<(), CoupledSourceReadStop> {
         let provider = &self.application.runtime.primary_provider;
         if !provider
@@ -33,9 +35,23 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         {
             return Ok(());
         }
+        let first_root = synchronous_outputs::SynchronousOutputWave::<S>::first_root_owner();
+        if stage {
+            // Every earlier root's stage ends at this authored stage's append.
+            provider
+                .end_root_selections(execution, &self.root_session, first_root, invalidator)
+                .map_err(CoupledSourceReadStop::capture)?;
+        }
         let current = candidate.pin_source(execution)?;
         let owners = provider
-            .changed_selection_owners(execution, &self.root_session, self.before, &current, invalidator)
+            .changed_selection_owners(
+                execution,
+                &self.root_session,
+                self.before,
+                &current,
+                invalidator,
+                first_root,
+            )
             .map_err(CoupledSourceReadStop::capture)?;
         let mut reopens = self.reopens.borrow_mut();
         for (task, incoming) in owners {

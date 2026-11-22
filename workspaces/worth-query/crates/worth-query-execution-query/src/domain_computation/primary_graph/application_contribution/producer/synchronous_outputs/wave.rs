@@ -14,6 +14,7 @@ mod occurrences;
 mod outgoing;
 mod prerequisites;
 mod reopen;
+mod roots;
 mod settlement;
 mod state;
 use state::{capacity_denied, push_funded, Scheduled, TaskState};
@@ -45,6 +46,8 @@ pub struct SynchronousOutputWave<S: ApplicationSchema> {
     by_read: ExecutionOrderedMap<usize, usize>,
     /// Reopened rows that discovered again, to verify once identified.
     rediscovered: Vec<usize>,
+    /// Roots seeded so far: each owns its selector's support (#238).
+    roots: usize,
     needed_undone_count: usize,
     needed_dirty: bool,
     last_allowed: Option<Option<Vec<String>>>,
@@ -64,6 +67,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             done_components: ExecutionOrderedMap::default(),
             by_read: ExecutionOrderedMap::default(),
             rediscovered: Vec::new(),
+            roots: 0,
             needed_undone_count: 0,
             needed_dirty: true,
             last_allowed: None,
