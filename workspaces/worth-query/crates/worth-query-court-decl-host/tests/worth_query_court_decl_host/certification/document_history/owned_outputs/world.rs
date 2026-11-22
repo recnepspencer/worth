@@ -1,6 +1,7 @@
 //! Separate installed world: model `a` (value 1) owning member `m`, plus NAV grant.
 use super::*;
 pub(super) mod authorization_clock;
+mod second_member;
 use worth_query_host::facade::product::WorthQueryProductBranch;
 pub type Host = WorthQueryProgramApplicationRuntime<Schema, program::Program>;
 pub type Document<'a> = WorthQueryApplicationHistoryDocument<'a, Schema, History>;
@@ -233,41 +234,12 @@ where
                 synchronous_edit::reconciliation::peer_caps::seed(graph)?;
             }
             if let Some(value) = configuration.second_member {
-                seed_second_member(graph, value)?;
+                second_member::seed(graph, value)?;
             }
             Ok(())
         },
     )
     .unwrap()
-}
-/// Member `n` (`value`) owned by model `a`, and model `c` (9).
-fn seed_second_member(
-    graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
-    value: u64,
-) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    graph.bind_entity(
-        WorthQueryApplicationEntitySeed::new(
-            Member::reference(),
-            WorthQueryApplicationEntityKey::new("n").unwrap(),
-        )
-        .field(MemberKey::at("MemberKey"), "n".to_owned())
-        .field(MemberValue::at("MemberValue"), value),
-    )?;
-    graph.bind_relation(WorthQueryApplicationRelationSeed::new(
-        ModelMember::reference(),
-        "owns:a:n",
-        WorthQueryApplicationEntityKey::new("a").unwrap(),
-        WorthQueryApplicationEntityKey::new("n").unwrap(),
-    ))?;
-    graph.bind_entity(
-        WorthQueryApplicationEntitySeed::new(
-            Model::reference(),
-            WorthQueryApplicationEntityKey::new("c").unwrap(),
-        )
-        .field(ModelKey::at("ModelKey"), "c".to_owned())
-        .field(ModelValue::at("ModelValue"), 9),
-    )?;
-    Ok(())
 }
 /// Attach the model history on a fresh owned head forked from the current world.
 pub fn attach<P: ApplicationProgramDefinition<Schema>>(
