@@ -56,10 +56,15 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             }
             charge_scan(execution, subject, 1)?;
             crate::domain_computation::execution_observation::record_retained_reads_visited(1);
-            let changed = entry
+            let changed = match entry
                 .support
-                .changed_fact(execution, runtime, before, entry.support.pin(), current)?
-                .is_some();
+                .changed_fact(execution, runtime, before, entry.support.pin(), current)
+            {
+                Ok(changed) => changed.is_some(),
+                // Unavailable at this image: re-close the row.
+                Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => true,
+                Err(cause) => return Err(cause),
+            };
             let into = if changed { &mut touched } else { &mut equal };
             charge_scan(execution, subject, log_work(into.len()))?;
             if !into.contains_key(&owner) {
