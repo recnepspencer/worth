@@ -8,7 +8,6 @@
 //!
 //! Program-output publication custody is deliberately absent from this facade;
 //! the workspace boundary checker reserves its issuer to the publication owner.
-
 //! Inbound completion has separate declaration, installed source, decoded
 //! occurrence, and accepted receipt roles. Only the runtime can issue an
 //! installed route or accepted receipt:
@@ -354,6 +353,7 @@ pub use worth_query_installation::facade::{
     WorthQueryGraphObligationAdoptionRow,
 };
 pub use worth_query_installation::worth_query_conditional_node;
+pub use worth_query_macros::*;
 pub use worth_query_publication::facade as publication;
 pub use worth_query_publication::facade::application_entry;
 

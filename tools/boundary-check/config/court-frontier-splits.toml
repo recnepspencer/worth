@@ -251,6 +251,13 @@ owners = ["single_source"]
 delegates = []
 
 [[splits]]
+court = "worth-query-court-decl-host-macros"
+frontier = ["worth-query-decl", "worth-query-host"]
+area = "macros"
+owners = ["macros"]
+delegates = []
+
+[[splits]]
 court = "worth-query-court-decl-host-native-fragments"
 frontier = ["worth-query-decl", "worth-query-host"]
 area = "native-fragments"

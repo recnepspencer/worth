@@ -21,6 +21,7 @@ worth-query-admission = { path = "../worth-query-admission" }
 worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-execution = { path = "../worth-query-execution" }
 worth-query-installation = { path = "../worth-query-installation" }
+worth-query-macros = { path = "../worth-query-macros" }
 worth-query-publication = { path = "../worth-query-publication" }
 
 [dev-dependencies]
