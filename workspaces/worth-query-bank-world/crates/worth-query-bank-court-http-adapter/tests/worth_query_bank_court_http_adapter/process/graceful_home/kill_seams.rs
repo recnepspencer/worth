@@ -45,14 +45,27 @@ struct ParkedChildGuard {
 }
 
 impl ParkedChildGuard {
+    fn new(marker_dir: PathBuf) -> Self {
+        Self {
+            child: None,
+            marker_dir,
+        }
+    }
+
+    fn set_child(&mut self, child: std::process::Child) {
+        self.child = Some(child);
+    }
+
     fn child_mut(&mut self) -> &mut std::process::Child {
         self.child.as_mut().expect("bank kill child still owned")
     }
 
-    fn kill_and_reap(mut self) -> std::process::ExitStatus {
-        let mut child = self.child.take().expect("bank kill child still owned");
+    fn kill_and_reap(&mut self) -> std::process::ExitStatus {
+        let child = self.child.as_mut().expect("bank kill child still owned");
         child.kill().expect("kill parked bank child without close");
-        child.wait().expect("reap killed bank child")
+        let status = child.wait().expect("reap killed bank child");
+        self.child = None;
+        status
     }
 }
 
@@ -84,6 +97,7 @@ pub(super) fn spawn_and_kill_child(
         key,
         mode.replace(':', "_")
     ));
+    let mut guard = ParkedChildGuard::new(marker_dir.clone());
     let _ = std::fs::create_dir_all(&marker_dir);
     let ready = marker_dir.join("ready.json");
     let _ = std::fs::remove_file(&ready);
@@ -102,10 +116,7 @@ pub(super) fn spawn_and_kill_child(
     if let Some(cb) = callback_file {
         cmd.env(ENV_CB, cb);
     }
-    let mut guard = ParkedChildGuard {
-        child: Some(cmd.spawn().expect("bank kill child starts")),
-        marker_dir,
-    };
+    guard.set_child(cmd.spawn().expect("bank kill child starts"));
     let deadline = Instant::now() + Duration::from_secs(60);
     while !ready.is_file() {
         if let Some(status) = guard.child_mut().try_wait().unwrap() {
