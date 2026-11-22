@@ -57,10 +57,10 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
                     .build()
                     .unwrap(),
                 state.limits.world.clone(),
-                invariants,
+                *invariants,
             )
             .unwrap();
-        let mut state = state;
+        let mut state = *state;
         bootstrap.managed_indexes = std::mem::take(&mut state.pending.managed_indexes);
         bootstrap.program_activation = Some(state.activation.clone());
         bootstrap.program_activation_seed = Some(
@@ -141,7 +141,7 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
             },
         };
         let prepared = PreparedHomeQueryRuntime {
-            prepared: HomeQueryPreparation {
+            prepared: Box::new(HomeQueryPreparation {
                 state,
                 bootstrap,
                 bridge,
@@ -152,7 +152,7 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
                 readiness_routes: Default::default(),
                 definition_routes: Default::default(),
                 operations: Default::default(),
-            },
+            }),
             publication: Some(publication),
         };
         let instances = prepared
@@ -179,7 +179,7 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
             _prepared: prepared,
             cause,
             ..
-        } = refused.custody
+        } = *refused.custody
         else {
             panic!("refusal must retain the original preparation before assembly")
         };

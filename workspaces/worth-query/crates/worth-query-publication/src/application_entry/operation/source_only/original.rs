@@ -45,14 +45,14 @@ where
                     initial_advancement_failure: None,
                 };
                 if M::RETAIN_COMMIT {
-                    self.state = SourceState::<S, I>::RetainedPending(completion);
+                    *self.state = SourceState::<S, I>::RetainedPending(completion);
                     Ok(Step::Progress)
                 } else {
                     Ok(self.complete(completion))
                 }
             }
             R::ProductUnpublished(partial) => {
-                self.state = SourceState::<S, I>::Unpublished(partial.into_recovery());
+                *self.state = SourceState::<S, I>::Unpublished(partial.into_recovery());
                 self.admission
                     .description
                     .original
@@ -67,7 +67,7 @@ where
             resolution @ (R::ReleasedOriginal(_)
             | R::IntentDrift
             | R::ProductPreparationPending(_)) => {
-                self.keyed_terminal = Some(resolution);
+                self.keyed_terminal = Some(Box::new(resolution));
                 Ok(Step::Terminal)
             }
         }
@@ -99,7 +99,7 @@ where
             return Err((self, WorthQueryOperationCloseDenial::Original(cause)));
         }
         if !matches!(
-            self.state,
+            &*self.state,
             SourceState::<S, I>::Initial
                 | SourceState::<S, I>::RetryableNoEffect(_)
                 | SourceState::<S, I>::RetainedPending(_)

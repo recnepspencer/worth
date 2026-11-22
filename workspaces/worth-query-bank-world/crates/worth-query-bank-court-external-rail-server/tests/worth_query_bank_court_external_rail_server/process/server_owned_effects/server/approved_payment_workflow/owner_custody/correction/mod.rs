@@ -154,74 +154,14 @@ fn correction_waits_for_original_rail_owner_then_preserves_completed_settlement(
         );
     }
 
-    let prepared = runtime
-        .prepare_approved_payment_correction(
-            &teller,
-            &ready.scope,
-            &source_coordinates.coordinates(),
-            "approved-payment:journal-compensation",
-            limits(),
-        )
-        .unwrap();
-    let WorthQueryOperationCorrectionPreparation::Prepared(prepared) = prepared else {
-        panic!("settled source prepares its installed journal compensation");
-    };
-    assert_eq!(support::balances(&ready), after_payment);
-    let WorthQuerySourceOnlyAdvance::Completed(completed) = prepared.publish().unwrap() else {
-        panic!("ordinary teller compensation publishes with retained delivery");
-    };
-    let WorthQuerySourceCompletion::Fresh {
-        receipt: inverse,
-        retained: Some(retained),
-        ..
-    } = completed.evidence()
-    else {
-        panic!("fresh compensation owns its exact retained publication");
-    };
-    let inverse = inverse.clone();
-    assert_eq!(
-        retained.selected_commit(),
-        inverse.committed_product_publication().composite_commit()
+    publish_and_replay_journal_compensation(
+        &ready,
+        &teller,
+        &teller_request,
+        &source_coordinates,
+        before_payment,
+        after_payment,
     );
-    assert_eq!(support::balances(&ready), before_payment);
-    assert_eq!(
-        inverse.aftermath_causality().unwrap().recorded_source(),
-        &source_coordinates
-    );
-    assert!(completed.close(&teller_request).is_ok());
-    let replay = runtime
-        .prepare_approved_payment_correction(
-            &teller,
-            &ready.scope,
-            &source_coordinates.coordinates(),
-            "approved-payment:journal-compensation",
-            limits(),
-        )
-        .unwrap();
-    let WorthQueryOperationCorrectionPreparation::Continued(WorthQuerySourceOnlyAdvance::Progress(
-        replay,
-    )) = replay
-    else {
-        panic!("exact compensation retry retains the original inverse delivery");
-    };
-    let WorthQuerySourceOnlyAdvance::Completed(replay) = replay.advance(&teller_request, None)
-    else {
-        panic!("exact compensation retry delivers the original inverse");
-    };
-    let WorthQuerySourceCompletion::Recorded {
-        receipt,
-        retained: Some(retained),
-        ..
-    } = replay.evidence()
-    else {
-        panic!("replay retains its original publication evidence");
-    };
-    worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(receipt, &inverse);
-    assert_eq!(
-        retained.selected_commit(),
-        inverse.committed_product_publication().composite_commit()
-    );
-    assert!(replay.close(&teller_request).is_ok());
     drop(selected_source);
     assert_eq!(support::balances(&ready), before_payment);
     let retained = runtime
@@ -252,4 +192,89 @@ fn correction_waits_for_original_rail_owner_then_preserves_completed_settlement(
         Err(bank_server::BankApprovedPaymentWorkflowError::InstanceCancellation(
             WorthQueryWorkflowInstancePreparationDenial::InstancePreparation(WorkflowInstancePreparationDenial::Attempt(ref denial))))
                 if denial.kind() == WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCompleted));
+}
+
+#[inline(never)]
+fn publish_and_replay_journal_compensation(
+    ready: &ReadyPaymentWorld,
+    teller: &bank_server::BankAuthenticatedPrincipal,
+    teller_request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
+        '_,
+        '_,
+        '_,
+        bank_domain::schema::BankSchema,
+    >,
+    source_coordinates: &worth_query_host::facade::primary_graph::WorthQueryRecordedCorrectionSource,
+    before_payment: (i64, i64),
+    after_payment: (i64, i64),
+) {
+    let runtime = &ready.fixture.world.runtime;
+    let prepared = runtime
+        .prepare_approved_payment_correction(
+            teller,
+            &ready.scope,
+            &source_coordinates.coordinates(),
+            "approved-payment:journal-compensation",
+            limits(),
+        )
+        .unwrap();
+    let WorthQueryOperationCorrectionPreparation::Prepared(prepared) = prepared else {
+        panic!("settled source prepares its installed journal compensation");
+    };
+    assert_eq!(support::balances(ready), after_payment);
+    let WorthQuerySourceOnlyAdvance::Completed(completed) = prepared.publish().unwrap() else {
+        panic!("ordinary teller compensation publishes with retained delivery");
+    };
+    let WorthQuerySourceCompletion::Fresh {
+        receipt: inverse,
+        retained: Some(retained),
+        ..
+    } = completed.evidence()
+    else {
+        panic!("fresh compensation owns its exact retained publication");
+    };
+    let inverse = inverse.clone();
+    assert_eq!(
+        retained.selected_commit(),
+        inverse.committed_product_publication().composite_commit()
+    );
+    assert_eq!(support::balances(ready), before_payment);
+    assert_eq!(
+        inverse.aftermath_causality().unwrap().recorded_source(),
+        source_coordinates
+    );
+    assert!(completed.close(teller_request).is_ok());
+    let replay = runtime
+        .prepare_approved_payment_correction(
+            teller,
+            &ready.scope,
+            &source_coordinates.coordinates(),
+            "approved-payment:journal-compensation",
+            limits(),
+        )
+        .unwrap();
+    let WorthQueryOperationCorrectionPreparation::Continued(WorthQuerySourceOnlyAdvance::Progress(
+        replay,
+    )) = replay
+    else {
+        panic!("exact compensation retry retains the original inverse delivery");
+    };
+    let WorthQuerySourceOnlyAdvance::Completed(replay) = replay.advance(teller_request, None)
+    else {
+        panic!("exact compensation retry delivers the original inverse");
+    };
+    let WorthQuerySourceCompletion::Recorded {
+        receipt,
+        retained: Some(retained),
+        ..
+    } = replay.evidence()
+    else {
+        panic!("replay retains its original publication evidence");
+    };
+    worth_query_bank_testkit_server::facade::recorded_commit_axes::assert_agrees(receipt, &inverse);
+    assert_eq!(
+        retained.selected_commit(),
+        inverse.committed_product_publication().composite_commit()
+    );
+    assert!(replay.close(teller_request).is_ok());
 }

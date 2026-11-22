@@ -39,8 +39,8 @@ impl<Schema: ApplicationSchemaComposition, Program> ReadmittedHomeNativeMeaning<
             bindings,
         } = super::program_installation::prepare(
             phase,
-            Box::new(state),
-            Box::new(schema),
+            state,
+            schema,
             restore_work,
             source,
             ordinary,
@@ -85,8 +85,8 @@ impl<Schema: ApplicationSchemaComposition, Program>
             bindings,
         } = super::program_installation::prepare(
             phase,
-            Box::new(state),
-            Box::new(schema),
+            state,
+            schema,
             restore_work,
             source,
             ordinary,
@@ -110,7 +110,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeSignalProgram<Sc
         QueryHomeSourceAttachmentRefused<Schema, Program>,
     > {
         attach(self.prepared, assembly).map(|prepared| PreparedHomeQueryRuntime {
-            prepared,
+            prepared: Box::new(prepared),
             publication: None,
         })
     }
@@ -126,7 +126,11 @@ impl<Schema: ApplicationSchemaComposition, Program>
         super::super::QueryExistingHomeSourceAttachmentRefused<Schema, Program>,
     > {
         attach(self.prepared, assembly)
-            .map(super::super::PreparedExistingHomeQueryRuntime::from_authored_preparation)
+            .map(|prepared| {
+                super::super::PreparedExistingHomeQueryRuntime::from_authored_preparation(
+                    Box::new(prepared),
+                )
+            })
             .map_err(|inner| super::super::QueryExistingHomeSourceAttachmentRefused { inner })
     }
 }

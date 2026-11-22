@@ -159,14 +159,14 @@ impl<Schema: ApplicationSchema + 'static, Intent: ApplicationMutationIntent<Sche
         }
         Ok(WorthQueryFixedOperation {
             readmitted_recovery: None,
-            installed_action: installed_action.clone(),
+            installed_action: Box::new(installed_action.clone()),
             runtime: program.clone(),
-            description: self,
-            state: FixedState::Initial,
+            description: Box::new(self),
+            state: Box::new(FixedState::Initial),
             initial_cause: None,
             recovered: None,
             result: None,
-            cleanup: WorthQueryOperationCleanup::default(),
+            cleanup: Box::default(),
             action: std::marker::PhantomData,
         })
     }

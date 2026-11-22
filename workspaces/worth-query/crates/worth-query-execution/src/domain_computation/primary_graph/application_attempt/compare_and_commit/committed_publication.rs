@@ -27,7 +27,7 @@ enum PublicationCustody {
     /// An actual group member shares the committed endpoint and owns no delivery.
     CoCommitted {
         description: Arc<DescriptiveProductPublication>,
-        endpoint: crate::basis::WorthQueryProductBranchReadIdentity,
+        endpoint: Box<crate::basis::WorthQueryProductBranchReadIdentity>,
     },
 }
 
@@ -58,7 +58,7 @@ impl WorthQueryCommittedProductPublication {
         Self {
             custody: PublicationCustody::CoCommitted {
                 description,
-                endpoint,
+                endpoint: Box::new(endpoint),
             },
         }
     }

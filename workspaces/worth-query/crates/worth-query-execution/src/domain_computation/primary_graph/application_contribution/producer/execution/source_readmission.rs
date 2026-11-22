@@ -35,6 +35,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 
 mod current_product;
+mod query_execution;
 mod ready;
 mod ready_on_selected;
 mod selected_fresh;
@@ -249,57 +250,28 @@ where
     let installed_limits = runtime.resolve_application_query_limits(installed.limits());
     let maximum_results = installed_limits.maximum_results();
     let read = if query.read_graph().managed_index_selection().is_none() {
-        // The ordinary current executor refreshes governed authorization. It is
-        // a different supported admission purpose from selected read-only disclosure.
-        let selection_origin = selected.selection_origin();
-        let (_, product, application_basis) = selected.into_parts();
-        let controls = WorthQueryApplicationQueryControls::product_one_shot(
-            product,
-            application_basis,
+        query_execution::readmit_ordinary_source::<Schema, Binding>(
+            execution,
+            runtime,
+            query,
+            &access,
+            retained,
+            selected,
             maximum_results,
             request,
-        )
-        .with_selection_origin(selection_origin);
-        let plan = runtime
-            .readmit_application_query_from_observed(execution, query, &access, retained, controls)
-            .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
-        runtime
-            .execute_application_query_one_shot_with_request(execution, plan)
-            .map_err(|error| query_execution_denied(Binding::IDENTITY, error))?
+        )?
     } else {
-        let shared = selected
-            .prepare_shared_query_basis()
-            .map_err(|(_, stop)| ready::ready_resource_denial(Binding::IDENTITY, stop))?;
-        let (product, application_basis) = runtime
-            .retain_selected_query_basis_admitted(&shared)
-            .map_err(|stop| match stop {
-                SelectedQueryBasisRetentionStop::Admission(stop) => {
-                    ready::ready_resource_denial(Binding::IDENTITY, stop)
-                }
-                SelectedQueryBasisRetentionStop::Basis => {
-                    ProducerExecutionStop::ExecutionStopped(denial(
-                        WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
-                        Binding::IDENTITY,
-                    ))
-                }
-            })?;
-        let controls = WorthQueryApplicationQueryControls::selected_read_one_shot(
-            product,
-            application_basis,
+        query_execution::readmit_selected_source::<Schema, Binding>(
+            execution,
+            runtime,
+            external_principal,
+            query,
+            &access,
+            retained,
+            selected,
             maximum_results,
             request,
-        )
-        .map_err(|stop| ready::ready_resource_denial(Binding::IDENTITY, stop))?
-        .with_selection_origin(shared.selected().selection_origin());
-        let plan = runtime
-            .readmit_application_query_from_observed(execution, query, &access, retained, controls)
-            .map_err(|error| query_admission_denied(Binding::IDENTITY, error))?;
-        let reader =
-            crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(
-                runtime, &shared, external_principal, request);
-
-        reader.read_admitted_result::<SourceBinding<Schema, Binding>>(execution, plan, &mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess::acquire())
-            .map_err(|stop| super::denial::selected_source_read_denied(Binding::IDENTITY, stop))?
+        )?
     };
 
     super::super::demand::disclosure::validate_readmitted(

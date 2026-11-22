@@ -20,14 +20,14 @@ pub(super) fn advance<Schema: ApplicationSchema, Program: 'static>(
     match query.retire_home_maintenance(|original| maintenance::retire(original, &home, request)) {
         Ok(Ok(())) => {}
         Ok(Err(cause)) => {
-            return Err(WorthQueryApplicationHomeCloseRefused {
-                custody: CloseCustody::MaintenanceRetirement { query, home, cause },
-            })
+            return Err(WorthQueryApplicationHomeCloseRefused::from_custody(
+                CloseCustody::MaintenanceRetirement { query, home, cause },
+            ))
         }
         Err(cause) => {
-            return Err(WorthQueryApplicationHomeCloseRefused {
-                custody: CloseCustody::QueryRetirement { query, home, cause },
-            })
+            return Err(WorthQueryApplicationHomeCloseRefused::from_custody(
+                CloseCustody::QueryRetirement { query, home, cause },
+            ))
         }
     }
     loop {
@@ -39,9 +39,9 @@ pub(super) fn advance<Schema: ApplicationSchema, Program: 'static>(
                 return classify_released_query(home.finish_close(request), Some(retired));
             }
             Err((query, cause)) => {
-                return Err(WorthQueryApplicationHomeCloseRefused {
-                    custody: CloseCustody::QueryRetirement { query, home, cause },
-                })
+                return Err(WorthQueryApplicationHomeCloseRefused::from_custody(
+                    CloseCustody::QueryRetirement { query, home, cause },
+                ))
             }
         }
     }

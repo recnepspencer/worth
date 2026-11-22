@@ -53,6 +53,7 @@ where
             _ => unreachable!("selected or original replay owner"),
         }
     }
+    #[inline(never)]
     pub(super) fn dispose(
         &mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -62,30 +63,13 @@ where
         let result = match member {
             Self::Description(_) => Ok(()),
             Self::Unbound(Some(operation)) | Self::Operation(Some(operation)) => {
-                match Mode::<S, I, A>::begin_group_disposal(operation) {
-                    Ok(closing) => Self::close_original(closing, request, aborting),
-                    Err((operation, cause)) => Err((Self::Operation(Some(operation)), cause)),
-                }
+                Self::dispose_operation(operation, request, aborting)
             }
             Self::ClosingOriginal(Some(closing)) => {
                 Self::close_original(closing, request, aborting)
             }
-            Self::Completed(Some(completed)) => {
-                let current = WorthQueryApplicationRequest {
-                    application: request.application,
-                    principal: request.principal,
-                    scope: request.scope,
-                    branch: Mode::<S, I, A>::completed_target(&completed),
-                };
-                Mode::<S, I, A>::discard_completed(completed, &current)
-                    .map_err(|(completed, cause)| (Self::Completed(Some(completed)), cause))
-            }
-            Self::Terminal(Some(terminal)) => {
-                match Mode::<S, I, A>::begin_group_terminal_disposal(terminal) {
-                    Ok(closing) => Self::close_original(closing, request, aborting),
-                    Err((terminal, cause)) => Err((Self::Terminal(Some(terminal)), cause)),
-                }
-            }
+            Self::Completed(Some(completed)) => Self::dispose_completed(completed, request),
+            Self::Terminal(Some(terminal)) => Self::dispose_terminal(terminal, request, aborting),
             _ => unreachable!("each unclosed original owner is retained"),
         };
         result.map_err(|(member, cause)| {
@@ -93,6 +77,47 @@ where
             cause
         })
     }
+
+    #[inline(never)]
+    fn dispose_operation(
+        operation: Operation<S, I, P, A>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        aborting: Option<&WorthQueryDocumentHistoryGroupAborting>,
+    ) -> Result<(), (Self, crate::application_entry::WorthQueryOperationCloseDenial)> {
+        match Mode::<S, I, A>::begin_group_disposal(operation) {
+            Ok(closing) => Self::close_original(closing, request, aborting),
+            Err((operation, cause)) => Err((Self::Operation(Some(operation)), cause)),
+        }
+    }
+
+    #[inline(never)]
+    fn dispose_completed(
+        completed: Completed<S, I, P, A>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<(), (Self, crate::application_entry::WorthQueryOperationCloseDenial)> {
+        let current = WorthQueryApplicationRequest {
+            application: request.application,
+            principal: request.principal,
+            scope: request.scope,
+            branch: Mode::<S, I, A>::completed_target(&completed),
+        };
+        Mode::<S, I, A>::discard_completed(completed, &current)
+            .map_err(|(completed, cause)| (Self::Completed(Some(completed)), cause))
+    }
+
+    #[inline(never)]
+    fn dispose_terminal(
+        terminal: Terminal<S, I, P, A>,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+        aborting: Option<&WorthQueryDocumentHistoryGroupAborting>,
+    ) -> Result<(), (Self, crate::application_entry::WorthQueryOperationCloseDenial)> {
+        match Mode::<S, I, A>::begin_group_terminal_disposal(terminal) {
+            Ok(closing) => Self::close_original(closing, request, aborting),
+            Err((terminal, cause)) => Err((Self::Terminal(Some(terminal)), cause)),
+        }
+    }
+
+    #[inline(never)]
     fn close_original(
         closing: Closing<S, I, P, A>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,

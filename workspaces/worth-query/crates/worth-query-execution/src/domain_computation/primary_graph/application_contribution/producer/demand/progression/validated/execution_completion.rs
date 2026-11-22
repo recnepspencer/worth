@@ -108,6 +108,25 @@ pub(super) fn finish(
         }
     };
     let (receipt, ready_backing) = receipt;
+    publish_completed_receipt(
+        receipt,
+        ready_backing,
+        selected_execution_finish,
+        original_publication,
+        execution,
+    )
+}
+
+#[inline(never)]
+fn publish_completed_receipt(
+    mut receipt: crate::domain_computation::primary_graph::WorthQueryApplicationCommitReceipt,
+    ready_backing: crate::domain_computation::primary_graph::application_output_demand::PreparedReadyBacking,
+    selected_execution_finish: RunningSelectedExecution<'_>,
+    original_publication: Option<std::sync::Arc<
+        crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication,
+    >>,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<CheckpointProgress, CompletionRefusal> {
     let retained = crate::domain_computation::primary_graph::application_output_demand::OriginalProducingPublication::for_successor(
         execution, original_publication, (&receipt).into(),
     );
@@ -115,22 +134,19 @@ pub(super) fn finish(
         Ok(original) => (original, None),
         Err(denial) => (None, Some(denial)),
     };
-    let mut receipt = (
-        receipt,
-        ready_backing.bind_original_producing_publication(original_publication),
-    );
+    let ready_backing = ready_backing.bind_original_producing_publication(original_publication);
     own_effect_observation::record(Stage::Published);
-    let publication = OwnPublication(receipt.0.committed_product_publication().clone());
-    let delivery = receipt.0
+    let publication = OwnPublication(receipt.committed_product_publication().clone());
+    let delivery = receipt
             .take_performed_relational_product_change()
             .map_or(
                 crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputDelivery::NoChange,
                 crate::domain_computation::primary_graph::application_output_demand::WorthQueryPendingOutputDelivery::Change,
             );
     let checkpoint = crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputCheckpoint::Published {
-            receipt: receipt.0,
+            receipt,
             delivery,
-            ready_backing: receipt.1,
+            ready_backing,
         };
     if let Some(denial) = continuation_denial {
         // The effect already exists. Keep its receipt, delivery and prepaid

@@ -111,8 +111,8 @@ pub struct WorthQueryCommittedAftermathCausality {
     parent: RelationalCommitReceipt,
     child: RelationalCommitReceipt,
     fact_record: RecordRef,
-    source: WorthQueryRecordedCorrectionSource,
-    lineage: WorthQueryCorrectionLineageBinding,
+    source: Box<WorthQueryRecordedCorrectionSource>,
+    lineage: Box<WorthQueryCorrectionLineageBinding>,
 }
 
 impl WorthQueryCommittedAftermathCausality {
@@ -135,8 +135,8 @@ impl WorthQueryCommittedAftermathCausality {
             parent: pending.parent,
             child,
             fact_record,
-            source: pending.source,
-            lineage: pending.lineage,
+            source: Box::new(pending.source),
+            lineage: Box::new(pending.lineage),
         })
     }
 
@@ -170,8 +170,8 @@ impl WorthQueryCommittedAftermathCausality {
     pub(crate) fn answers(&self, pending: &WorthQueryPendingAftermathCausality) -> bool {
         self.role == pending.role
             && self.parent == pending.parent
-            && self.source == pending.source
-            && self.lineage == pending.lineage
+            && *self.source == pending.source
+            && *self.lineage == pending.lineage
             && self.child.branch_id == pending.target_branch
     }
 }

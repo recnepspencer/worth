@@ -30,7 +30,7 @@ where
     A: ApplicationAction<S, I::Binding>,
     A::Delivery: ApplicationFixedActionDelivery<S, I::Binding, Root = R>,
 {
-    original: Original<S, I, P, R, A>,
+    original: Box<Original<S, I, P, R, A>>,
     closed: Option<WorthQueryClosedOperation>,
 }
 
@@ -83,13 +83,13 @@ where
             Ok(()) => {
                 // A live partial has not transferred its original ledger.
                 // TerminalFixedOperation::new already performed this move.
-                if let FixedState::Unpublished(partial) = &mut operation.state {
+                if let FixedState::Unpublished(partial) = &mut *operation.state {
                     operation
                         .cleanup
                         .retain_original_failures(partial.take_prior_cleanup());
                 }
                 Ok(Self {
-                    original: Original::Operation(operation),
+                    original: Box::new(Original::Operation(operation)),
                     closed: None,
                 })
             }
@@ -107,7 +107,7 @@ where
     > {
         match Self::prepare_cleanup(&mut terminal.operation) {
             Ok(()) => Ok(Self {
-                original: Original::Terminal(terminal),
+                original: Box::new(Original::Terminal(terminal)),
                 closed: None,
             }),
             Err(cause) => Err((terminal, cause)),
@@ -116,7 +116,7 @@ where
     fn prepare_cleanup(
         operation: &mut WorthQueryFixedOperation<S, I, P, R, A>,
     ) -> Result<(), WorthQueryOperationCloseDenial> {
-        match &mut operation.state {
+        match &mut *operation.state {
             FixedState::Unpublished(partial) => {
                 partial.retain_group_disposal_cleanup(&mut operation.cleanup)?
             }
@@ -154,10 +154,10 @@ where
         let outcome=runtime.runtime().with_application_advancement(request.scope,|phase|{
             if self.closed.is_none(){
                 let operation=self.original.operation_mut();
-                if !matches!(operation.state,FixedState::Initial){
+                if !matches!(&*operation.state,FixedState::Initial){
                     aborting.ok_or(Denial::NativeObligationRetained)?.validate_candidate_cleanup(&phase,&worth_query_execution::publication_boundary::program_publication_access(),runtime.runtime(),operation.description.branch).map_err(Denial::HistoryGroup)?;
                 }
-                if let FixedState::Outputs(tree)=&mut operation.state{
+                if let FixedState::Outputs(tree)=&mut *operation.state{
                     tree.close_group_original(&phase,&runtime,operation.description.branch,aborting.ok_or(Denial::NativeObligationRetained)?)?;
                 }
                 self.closed=Some(WorthQueryClosedOperation::from_cleanup(operation.cleanup.close_original_in_advancement(&phase,runtime.runtime())?));

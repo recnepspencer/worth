@@ -38,6 +38,53 @@ where
             workflow_authority,
         } = executed;
         let (mut program, result) = completed.into_parts();
+        program = self.bind_executed_candidate_program(
+            phase,
+            program,
+            &identities,
+            workflow_authority.as_ref(),
+            allocation_policy,
+        )?;
+        let program = Self::prepare_candidate_signed_creation(
+            phase,
+            self.request.application,
+            program,
+            &identities,
+        )?;
+        Ok(CandidatePreparation::Prepared(PreparedCandidate {
+            program,
+            result,
+            identities,
+            principal: self.request.principal,
+            extension,
+            decision_work: work,
+        }))
+    }
+
+    #[inline(never)]
+    fn bind_executed_candidate_program(
+        &self,
+        phase: &AdvancementPhase<'_>,
+        mut program: worth_query_execution::facade::primary_graph::WorthQueryApplicationEffectProgram<
+            Schema,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Input,
+            <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        identities: &ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
+        workflow_authority: Option<
+            &worth_query_execution::publication_boundary::workflow_advance::WorkflowOperationAuthority,
+        >,
+        allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationEffectProgram<
+            Schema,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Input,
+            <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        WorthQueryApplicationRequestMutationDenial,
+    > {
         let publication_access =
             worth_query_execution::publication_boundary::program_publication_access();
         program = program.with_producer_round_limits(
@@ -83,23 +130,43 @@ where
                     WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
                 )?;
         }
-        if let Some(authority) = workflow_authority.as_ref() {
+        if let Some(authority) = workflow_authority {
             program = program
                 .bind_workflow_operation_authority(phase, authority, allocation_policy)
                 .map_err(
                     WorthQueryApplicationRequestMutationDenial::WorkflowTransitionCurrentness,
                 )?;
         }
-        let program = worth_query_execution::publication_boundary::signed_creation::WorthQuerySignedCreationAdapter::prepare::<Schema, Intent::Binding>(
-            &worth_query_execution::publication_boundary::program_publication_access(), phase, self.request.application, program, &identities,
-        ).map_err(WorthQueryApplicationRequestMutationDenial::SignedCreation)?;
-        Ok(CandidatePreparation::Prepared(PreparedCandidate {
+        Ok(program)
+    }
+
+    #[inline(never)]
+    fn prepare_candidate_signed_creation(
+        phase: &AdvancementPhase<'_>,
+        application: &worth_query_execution::facade::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        program: worth_query_execution::facade::primary_graph::WorthQueryApplicationEffectProgram<
+            Schema,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Input,
+            <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        identities: &ApplicationMutationIdentities<'_, Schema, Intent::Binding>,
+    ) -> Result<
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationEffectProgram<
+            Schema,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Operation,
+            <Intent::Binding as ApplicationMutationBinding<Schema>>::Input,
+            <<Intent::Binding as ApplicationMutationBinding<Schema>>::ScopeBinding as ApplicationMutationScopeBinding<Schema>>::Scope,
+        >,
+        WorthQueryApplicationRequestMutationDenial,
+    > {
+        worth_query_execution::publication_boundary::signed_creation::WorthQuerySignedCreationAdapter::prepare::<Schema, Intent::Binding>(
+            &worth_query_execution::publication_boundary::program_publication_access(),
+            phase,
+            application,
             program,
-            result,
             identities,
-            principal: self.request.principal,
-            extension,
-            decision_work: work,
-        }))
+        )
+        .map_err(WorthQueryApplicationRequestMutationDenial::SignedCreation)
     }
 }

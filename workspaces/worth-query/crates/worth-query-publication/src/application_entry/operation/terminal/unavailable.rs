@@ -20,7 +20,7 @@ where
         mut self,
         completion: Option<ProgramOutputUnavailableCompletion<Schema, Program, Root>>,
     ) -> Self {
-        self.output_completion = completion;
+        self.output_completion = completion.map(Box::new);
         self
     }
 

@@ -48,15 +48,15 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    cleanup: WorthQueryOperationCleanup,
-    state: SourceState<S, I>,
-    guarded_abort: Option<WorthQueryApplicationUncommitted>,
+    cleanup: Box<WorthQueryOperationCleanup>,
+    state: Box<SourceState<S, I>>,
+    guarded_abort: Option<Box<WorthQueryApplicationUncommitted>>,
     keyed_terminal: Option<
-        worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution,
+        Box<worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution>,
     >,
     // Keep the authentic runtime alive while every bounded native carrier drops.
     pub(in crate::application_entry) admission:
-        WorthQuerySourceOperationAdmission<S, I, P, A, Mode>,
+        Box<WorthQuerySourceOperationAdmission<S, I, P, A, Mode>>,
 }
 
 type SourceState<S, I> = super::native_publication::NativePublicationState<
@@ -168,7 +168,7 @@ impl<
         WorthQueryProgramApplicationRuntime<S, P>,
         WorthQueryOperationCleanup,
     ) {
-        (self.admission.runtime, self.cleanup)
+        (self.admission.runtime, *self.cleanup)
     }
 
     /// Exact managed-run cleanup custody retained independently of business evidence.
@@ -181,13 +181,13 @@ impl<
     }
     /// Exact completed native no-effect evidence retained for a fresh admitted attempt.
     pub fn native_retry_outcome(&self) -> Option<&NativeOutcome<S, I>> {
-        match &self.state {
+        match &*self.state {
             SourceState::<S, I>::RetryableNoEffect(outcome) => Some(outcome),
             _ => None,
         }
     }
     pub fn posture(&self) -> WorthQuerySourceOnlyPosture {
-        match self.state {
+        match &*self.state {
             SourceState::<S, I>::Initial => WorthQuerySourceOnlyPosture::Initial,
             SourceState::<S, I>::RetryableNoEffect(_) => {
                 WorthQuerySourceOnlyPosture::RetryableNoEffect
@@ -237,9 +237,9 @@ where
         admission: WorthQuerySourceOperationAdmission<S, I, P, A, Mode>,
     ) -> Self {
         Self {
-            admission,
-            cleanup: Default::default(),
-            state: SourceState::<S, I>::Initial,
+            admission: Box::new(admission),
+            cleanup: Box::default(),
+            state: Box::new(SourceState::<S, I>::Initial),
             keyed_terminal: None,
             guarded_abort: None,
         }
@@ -259,7 +259,7 @@ impl<
     pub(super) fn completion(
         &self,
     ) -> &WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result> {
-        let SourceState::<S, I>::RetainedPending(evidence) = &self.state else {
+        let SourceState::<S, I>::RetainedPending(evidence) = &*self.state else {
             unreachable!("completed source owns its native evidence")
         };
         evidence
@@ -269,12 +269,12 @@ impl<
         &mut self,
         evidence: WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>,
     ) -> SourceStep {
-        self.state = SourceState::<S, I>::RetainedPending(evidence);
+        *self.state = SourceState::<S, I>::RetainedPending(evidence);
         SourceStep::Completed
     }
 
     pub(super) fn guarded_abort(&self) -> Option<&WorthQueryApplicationUncommitted> {
-        self.guarded_abort.as_ref()
+        self.guarded_abort.as_deref()
     }
     pub(super) fn record_unresolved_advancement(
         &mut self,

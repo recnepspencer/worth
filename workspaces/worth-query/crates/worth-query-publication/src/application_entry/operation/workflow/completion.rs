@@ -44,7 +44,7 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
-    pub(super) state: TerminalWorkflowState<S, I, P, A>,
+    pub(super) state: Box<TerminalWorkflowState<S, I, P, A>>,
 }
 pub(super) enum TerminalWorkflowState<S, I, P, A>
 where
@@ -127,7 +127,7 @@ where
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
-        let outcome = match &mut self.state {
+        let outcome = match &mut *self.state {
             TerminalWorkflowState::Recovery { operation, .. }
             | TerminalWorkflowState::Spent { operation, .. } => operation.close_in_place(request),
             TerminalWorkflowState::Native { source, .. } => source.close_in_place(request),
@@ -138,14 +138,14 @@ where
         &self,
     ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryApplicationUncommitted>
     {
-        match &self.state {
+        match &*self.state {
             TerminalWorkflowState::Spent { operation, .. }
             | TerminalWorkflowState::Recovery { operation, .. } => operation.source.guarded_abort(),
             TerminalWorkflowState::Native { source, .. } => source.operation.guarded_abort(),
         }
     }
     pub fn denial(&self) -> Option<&WorthQuerySourceOnlyDenial> {
-        match &self.state {
+        match &*self.state {
             TerminalWorkflowState::Spent { denial, .. } => Some(denial),
             _ => None,
         }
@@ -154,7 +154,7 @@ where
         &self,
     ) -> Option<&WorthQuerySourceCompletion<<I::Binding as ApplicationMutationBinding<S>>::Result>>
     {
-        match &self.state {
+        match &*self.state {
             TerminalWorkflowState::Recovery { operation, .. } => operation
                 .source_completed
                 .then(|| operation.source.completion()),
@@ -164,7 +164,7 @@ where
     pub fn recovery_denial(
         &self,
     ) -> Option<&worth_query_execution::facade::primary_graph::WorthQueryRecoveryHandleDenial> {
-        match &self.state {
+        match &*self.state {
             TerminalWorkflowState::Recovery { denial, .. } => Some(denial),
             _ => None,
         }
@@ -172,7 +172,7 @@ where
     pub fn native_terminal(
         &self,
     ) -> Option<&WorthQueryTerminalSourceOperation<S, I, P, A, ApplicationSourceCompletion>> {
-        match &self.state {
+        match &*self.state {
             TerminalWorkflowState::Native { source, .. } => Some(source),
             _ => None,
         }
