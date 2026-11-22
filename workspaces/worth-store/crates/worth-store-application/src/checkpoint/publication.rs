@@ -48,6 +48,8 @@ pub enum ApplicationHomeCheckpointDenial {
     /// Derived state was explicitly discarded via D14's sealed test door; close
     /// leaves `home.checkpoint` discarded instead of re-capturing it.
     DerivedStateDiscarded,
+    /// Another D14 discard operation is currently serialized on this Home's checkpoint slot.
+    DiscardInProgress,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

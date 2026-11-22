@@ -6,6 +6,8 @@ use worth_runtime_world::facade::*;
 use worth_signal::facade::{SignalGraph, SignalRuntime};
 #[path = "readmission/checkpoint_accounting.rs"]
 mod checkpoint_accounting;
+#[path = "readmission/discard_derived.rs"]
+mod discard_derived;
 #[path = "readmission/selected_source.rs"]
 mod selected_source;
 

@@ -155,6 +155,9 @@ impl ApplicationHomeCheckpointOperation {
         if self.owner.pending().is_some() {
             return self.recover_checkpoint(request).map(Some);
         }
+        if self.owner.is_derived_discarded() {
+            return Err(Denial::DerivedStateDiscarded);
+        }
         let observed = super::inspection::inspect(
             &self.serving,
             &self.owner,

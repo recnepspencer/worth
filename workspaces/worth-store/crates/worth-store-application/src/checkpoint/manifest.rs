@@ -13,15 +13,24 @@ pub const HOME_CHECKPOINT_PROTOCOL: BoundaryProtocolIdentity =
 pub const HOME_CHECKPOINT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(3);
 const MAGIC: &[u8; 8] = b"WAPHCKP1";
 pub(super) const HEADER_BYTES: usize = 44;
-/// Sealed D14 marker published on `home.checkpoint` with zero members when
-/// derived material is discarded. `decode()` still refuses it as malformed so
-/// no owner ever reads bytes from a discarded checkpoint.
-pub(super) const DERIVED_DISCARDED_PAYLOAD: [u8; 14] = [
+/// Sealed D14 marker prefix published on `home.checkpoint` with zero members and
+/// an 8-byte monotonic attempt nonce when derived material is discarded. `decode()`
+/// still refuses count == 0 as malformed so no owner ever reads bytes from a
+/// discarded checkpoint.
+const DERIVED_DISCARDED_PREFIX: [u8; 14] = [
     b'W', b'A', b'P', b'H', b'C', b'K', b'P', b'1', 3, 0, 0, 0, 0, 0,
 ];
+pub(super) const DERIVED_DISCARDED_BYTES: usize = 22;
+
+pub(super) fn encode_derived_discarded(nonce: u64) -> [u8; DERIVED_DISCARDED_BYTES] {
+    let mut out = [0_u8; DERIVED_DISCARDED_BYTES];
+    out[..14].copy_from_slice(&DERIVED_DISCARDED_PREFIX);
+    out[14..22].copy_from_slice(&nonce.to_le_bytes());
+    out
+}
 
 pub(super) fn is_derived_discarded(bytes: &[u8]) -> bool {
-    bytes == DERIVED_DISCARDED_PAYLOAD
+    bytes.len() == DERIVED_DISCARDED_BYTES && bytes[..14] == DERIVED_DISCARDED_PREFIX
 }
 
 #[derive(Debug)]

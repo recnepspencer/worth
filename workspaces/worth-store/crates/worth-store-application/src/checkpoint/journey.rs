@@ -28,6 +28,12 @@ pub(crate) fn checkpoint(
     if let Some(attempt) = owner.pending() {
         return Err(Denial::RecoveryRequired(attempt.observation()));
     }
+    if owner.is_discarding() {
+        return Err(Denial::DiscardInProgress);
+    }
+    if owner.is_derived_discarded() {
+        return Err(Denial::DerivedStateDiscarded);
+    }
     execution.consult().map_err(Denial::Execution)?;
     let world = world.ok_or(Denial::WorldSectionRequired)?;
     let signal = signal.ok_or(Denial::SignalSectionRequired)?;

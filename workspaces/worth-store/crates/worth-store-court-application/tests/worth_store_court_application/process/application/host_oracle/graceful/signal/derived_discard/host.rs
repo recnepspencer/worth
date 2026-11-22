@@ -1,5 +1,6 @@
-//! Full Query Host D14 derived-cache discard across graceful close and kill.
+//! Full Query Host + Signal mixed-branch D14 derived-cache discard across close and kill.
 use super::super::{opening, operations, session::Session, FIRST, SECOND};
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
@@ -18,6 +19,17 @@ use worth_store_application::ApplicationHomeCheckpointDenial;
 const CHILD: &str =
     "process::application::host_oracle::graceful::signal::derived_discard::host::derived_discard_host_child";
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+struct ReceiptSnapshot {
+    ordinal: u8,
+    commit_id: u64,
+    version_id: u64,
+    truth_version: u64,
+    outcome_identity: Option<u64>,
+    changed_record_count: usize,
+    emitted_effect_count: usize,
+}
+
 #[derive(serde::Serialize, serde::Deserialize)]
 enum Command {
     PrepareCheckpointDiscard,
@@ -32,11 +44,11 @@ struct Reply {
     frontiers: Vec<(u64, u64, u64)>,
     initialized: usize,
     contacts: (usize, usize, usize, usize),
-    covered: [u64; 5],
-    heads: [u64; 5],
+    cadence: BTreeMap<String, (u64, u64)>,
     discard_generation: Option<u64>,
     close_checkpoint_generation: Option<u64>,
-    replayed_recovered: usize,
+    original_receipts: Vec<ReceiptSnapshot>,
+    replayed_receipts: Vec<ReceiptSnapshot>,
     closed: bool,
 }
 
@@ -81,7 +93,11 @@ fn run_host_discard(kill: bool, reopen_build: &str) {
 
     let discarded: Reply = session.exchange(&Command::PrepareCheckpointDiscard);
     assert_eq!(discarded.states, expected);
-    assert_eq!(discarded.covered[0], 0, "native coverage cleared by discard");
+    assert_eq!(
+        discarded.cadence["relational.canonical-commits"].0, 0,
+        "native coverage cleared by discard"
+    );
+    assert_eq!(discarded.original_receipts.len(), 2);
     let discard_generation = discarded
         .discard_generation
         .expect("discard_derived_for_test reports new anchor generation");
@@ -101,16 +117,24 @@ fn run_host_discard(kill: bool, reopen_build: &str) {
         Session::start_child(&path, &directory.path().join("second"), reopen_build, CHILD);
     assert_eq!(recovered.initialized, 0, "reopen never initializes again");
     assert_eq!(recovered.contacts, (0, 0, 0, 0), "no eager provider calls");
-    assert_eq!(
-        recovered.covered, [0, 0, 0, 0, 0],
-        "reopen after discard reads no checkpoint coverage"
+    assert_eq!(recovered.cadence.len(), 5);
+    assert!(
+        recovered.cadence.values().all(|&(covered, _)| covered == 0),
+        "reopen after discard reports zero checkpoint coverage across all 5 cadence journals: {:?}",
+        recovered.cadence
     );
-    assert!(recovered.heads[0] > 0 && recovered.heads[2] > 0);
+    assert!(recovered.cadence["relational.canonical-commits"].1 > 0);
+    assert!(recovered.cadence["relational.branch-transitions"].1 > 0);
+    assert!(recovered.cadence["world.branches"].1 > 0);
+    assert!(recovered.cadence["world.occurrences"].1 > 0);
     assert_eq!(recovered.frontiers, discarded.frontiers);
     assert_eq!(recovered.states, expected);
 
     let replayed: Reply = session.exchange(&Command::ReplayCommitted);
-    assert_eq!(replayed.replayed_recovered, 2);
+    assert_eq!(
+        replayed.replayed_receipts, discarded.original_receipts,
+        "replaying committed mixed keys must return the exact original receipts"
+    );
     assert_eq!(
         replayed.contacts,
         (0, 0, 0, 0),
@@ -149,14 +173,16 @@ fn run_host_discard(kill: bool, reopen_build: &str) {
     drop(refused.resume().unwrap());
 }
 
-fn inspect_arrays(
+fn inspect_cadence(
     home: &opening::Home,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-) -> ([u64; 5], [u64; 5]) {
-    let inspection = home.inspect_checkpoint(execution).unwrap();
-    let covered = std::array::from_fn(|index| inspection.journals[index].covered);
-    let heads = std::array::from_fn(|index| inspection.journals[index].head);
-    (covered, heads)
+) -> BTreeMap<String, (u64, u64)> {
+    home.inspect_checkpoint(execution)
+        .unwrap()
+        .journals
+        .into_iter()
+        .map(|j| (j.name.to_owned(), (j.covered, j.head)))
+        .collect()
 }
 
 #[test]
@@ -185,17 +211,16 @@ fn derived_discard_host_child() {
             &serde_json::to_vec(&reply).unwrap(),
         );
     };
-    let (covered, heads) = inspect_arrays(home.as_ref().unwrap(), &execution);
     respond(Reply {
         states: operations::observe(home.as_ref().unwrap(), &branches),
         frontiers: operations::frontiers(home.as_ref().unwrap(), &branches),
         initialized: initialized.load(Ordering::SeqCst),
         contacts: contacts.snapshot(),
-        covered,
-        heads,
+        cadence: inspect_cadence(home.as_ref().unwrap(), &execution),
         discard_generation: None,
         close_checkpoint_generation: None,
-        replayed_recovered: 0,
+        original_receipts: Vec::new(),
+        replayed_receipts: Vec::new(),
         closed: false,
     });
     loop {
@@ -208,18 +233,38 @@ fn derived_discard_host_child() {
             serde_json::from_slice(&std::fs::read(&req_path).unwrap()).unwrap();
         std::fs::remove_file(req_path).unwrap();
         let mut discard_generation = None;
-        let mut replayed_recovered = 0;
+        let mut original_receipts = Vec::new();
+        let mut replayed_receipts = Vec::new();
         match command {
             Command::PrepareCheckpointDiscard => {
                 let home = home.as_ref().unwrap();
                 branches = operations::branches(home);
-                operations::mixed(home, branches[0], 1);
-                operations::definition(home, branches[1]);
-                operations::mixed(home, branches[2], 2);
+                for (branch, ordinal) in [(branches[0], 1_u8), (branches[2], 2_u8)] {
+                    if ordinal == 2 {
+                        operations::definition(home, branches[1]);
+                    }
+                    let receipt = operations::commit_mixed(home, branch, ordinal)
+                        .require_committed()
+                        .unwrap_or_else(|o| panic!("mixed commit {ordinal} must land: {o:?}"));
+                    assert_eq!(receipt.product_branch(), branch);
+                    original_receipts.push(ReceiptSnapshot {
+                        ordinal,
+                        commit_id: receipt.commit_reference().commit_id.0,
+                        version_id: receipt.commit_reference().version_id.as_u64(),
+                        truth_version: receipt.basis_descriptor().truth_version().as_u64(),
+                        outcome_identity: receipt.outcome_identity().map(|id| id.get()),
+                        changed_record_count: receipt.changed_record_count(),
+                        emitted_effect_count: receipt.emitted_effect_count(),
+                    });
+                }
                 let checkpoint = home.checkpoint(&execution).unwrap();
                 assert!(checkpoint.generation() >= 1);
-                let (before_cov, before_head) = inspect_arrays(home, &execution);
-                assert!(before_cov[0] > 0 && before_cov[0] == before_head[0]);
+                let before = inspect_cadence(home, &execution);
+                assert!(
+                    before["relational.canonical-commits"].0 > 0
+                        && before["relational.canonical-commits"].0
+                            == before["relational.canonical-commits"].1
+                );
                 let discarded = home.discard_derived_for_test(&execution).unwrap();
                 assert_eq!(discarded, checkpoint.generation() + 1);
                 discard_generation = Some(discarded);
@@ -231,7 +276,15 @@ fn derived_discard_host_child() {
                         WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
                             assert!(receipt.world_journal_position().is_some());
                             assert!(receipt.native_journal_position().0 > 0);
-                            replayed_recovered += 1;
+                            replayed_receipts.push(ReceiptSnapshot {
+                                ordinal,
+                                commit_id: receipt.commit_reference().commit_id.0,
+                                version_id: receipt.commit_reference().version_id.as_u64(),
+                                truth_version: receipt.basis_descriptor().truth_version().as_u64(),
+                                outcome_identity: Some(receipt.outcome_identity().get()),
+                                changed_record_count: receipt.changed_record_count(),
+                                emitted_effect_count: receipt.emitted_effect_count(),
+                            });
                         }
                         other => panic!(
                             "expected RecoveredCommitted for ordinal {ordinal}, got {other:?}"
@@ -256,16 +309,12 @@ fn derived_discard_host_child() {
                         checkpoint: Ok(checkpoint),
                         ..
                     } if !expect_discarded => Some(checkpoint.generation()),
-                    WorthQueryApplicationHomeCloseOutcome::Closed { checkpoint, .. } => {
-                        panic!(
-                            "unexpected close checkpoint (expect_discarded={expect_discarded}): {checkpoint:?}"
-                        )
-                    }
-                    WorthQueryApplicationHomeCloseOutcome::CloseRefused { reason, .. } => {
-                        panic!(
-                            "unexpected CloseRefused (expect_discarded={expect_discarded}): {reason:?}"
-                        )
-                    }
+                    WorthQueryApplicationHomeCloseOutcome::Closed { checkpoint, .. } => panic!(
+                        "unexpected close checkpoint (expect_discarded={expect_discarded}): {checkpoint:?}"
+                    ),
+                    WorthQueryApplicationHomeCloseOutcome::CloseRefused { reason, .. } => panic!(
+                        "unexpected CloseRefused (expect_discarded={expect_discarded}): {reason:?}"
+                    ),
                 };
                 closed.reclaim();
                 respond(Reply {
@@ -273,27 +322,26 @@ fn derived_discard_host_child() {
                     frontiers: Vec::new(),
                     initialized: initialized.load(Ordering::SeqCst),
                     contacts: contacts.snapshot(),
-                    covered: [0; 5],
-                    heads: [0; 5],
+                    cadence: BTreeMap::new(),
                     discard_generation: None,
                     close_checkpoint_generation,
-                    replayed_recovered: 0,
+                    original_receipts: Vec::new(),
+                    replayed_receipts: Vec::new(),
                     closed: true,
                 });
                 return;
             }
         }
-        let (covered, heads) = inspect_arrays(home.as_ref().unwrap(), &execution);
         respond(Reply {
             states: operations::observe(home.as_ref().unwrap(), &branches),
             frontiers: operations::frontiers(home.as_ref().unwrap(), &branches),
             initialized: initialized.load(Ordering::SeqCst),
             contacts: contacts.snapshot(),
-            covered,
-            heads,
+            cadence: inspect_cadence(home.as_ref().unwrap(), &execution),
             discard_generation,
             close_checkpoint_generation: None,
-            replayed_recovered,
+            original_receipts,
+            replayed_receipts,
             closed: false,
         });
     }

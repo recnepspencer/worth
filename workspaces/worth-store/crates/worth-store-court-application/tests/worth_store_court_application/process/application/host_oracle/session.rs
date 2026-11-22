@@ -14,8 +14,17 @@ pub(super) struct Session {
 }
 impl Session {
     pub fn start(path: &Path, channel: &Path, seed: u64) -> (Self, Response) {
+        Self::start_with_build(path, channel, seed, None)
+    }
+    pub fn start_with_build(
+        path: &Path,
+        channel: &Path,
+        seed: u64,
+        build: Option<&str>,
+    ) -> (Self, Response) {
         std::fs::create_dir_all(channel).unwrap();
-        let child = Command::new(std::env::current_exe().unwrap())
+        let mut command = Command::new(std::env::current_exe().unwrap());
+        command
             .args(["--exact", CHILD, "--nocapture"])
             .env("WORTH_HOST_ORACLE_CHANNEL", channel)
             .env("WORTH_HOST_ORACLE_HOME", path)
@@ -25,9 +34,11 @@ impl Session {
             ))
             .stderr(Stdio::from(
                 std::fs::File::create(channel.join("stderr.log")).unwrap(),
-            ))
-            .spawn()
-            .unwrap();
+            ));
+        if let Some(build) = build {
+            command.env("WORTH_HOST_ORACLE_BUILD", build);
+        }
+        let child = command.spawn().unwrap();
         let mut session = Self {
             child,
             channel: channel.into(),
@@ -94,9 +105,13 @@ fn host_oracle_service_child() {
     let execution = worth_execution::ExecutionRequest::serial(&request);
     let initialized = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
     let contacts = std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(0));
+    let build = std::env::var("WORTH_HOST_ORACLE_BUILD")
+        .ok()
+        .map(|value| worth_foundational::facade::ApplicationBuildIdentity::parse(&value).unwrap())
+        .unwrap_or_else(super::opening::build);
     let mut home = Some(host_observation::opening::open(
         worth_query_host::facade::WorthQueryApplicationHomeLocation::Directory(path),
-        super::opening::build(),
+        build,
         initialized.clone(),
         contacts.clone(),
         None,
@@ -150,8 +165,58 @@ fn host_oracle_service_child() {
                     .unwrap()
                     .close(&execution)
                     .unwrap_or_else(|refused| panic!("graceful oracle close: {refused:?}"));
+                let generation = match result.outcome() {
+                    worth_query_host::facade::WorthQueryApplicationHomeCloseOutcome::Closed {
+                        checkpoint: Ok(checkpoint),
+                        ..
+                    } => Some(checkpoint.generation()),
+                    _ => None,
+                };
                 closed = result.is_closed();
                 result.reclaim();
+                disposition = Some(super::protocol::Disposition::ClosedWithCheckpoint {
+                    generation,
+                });
+            }
+            Request::CheckpointAndDiscard => {
+                let home = home.as_ref().unwrap();
+                let checkpoint = home.checkpoint(&execution).unwrap();
+                let discard_generation = home.discard_derived_for_test(&execution).unwrap();
+                assert_eq!(discard_generation, checkpoint.generation() + 1);
+                disposition = Some(super::protocol::Disposition::Discarded {
+                    checkpoint_generation: checkpoint.generation(),
+                    discard_generation,
+                });
+            }
+            Request::CloseExpectingDiscarded => {
+                let result = home
+                    .take()
+                    .unwrap()
+                    .close(&execution)
+                    .unwrap_or_else(|refused| panic!("discarded oracle close: {refused:?}"));
+                assert!(matches!(
+                    result.outcome(),
+                    worth_query_host::facade::WorthQueryApplicationHomeCloseOutcome::Closed {
+                        checkpoint: Err(
+                            worth_store_application::ApplicationHomeCheckpointDenial::DerivedStateDiscarded
+                        ),
+                        ..
+                    }
+                ));
+                closed = result.is_closed();
+                result.reclaim();
+                disposition = Some(super::protocol::Disposition::ClosedWithCheckpoint {
+                    generation: None,
+                });
+            }
+            Request::InspectCadence => {
+                let inspection = home.as_ref().unwrap().inspect_checkpoint(&execution).unwrap();
+                let journals = inspection
+                    .journals
+                    .iter()
+                    .map(|j| (j.name.to_owned(), j.covered, j.head))
+                    .collect();
+                disposition = Some(super::protocol::Disposition::Cadence { journals });
             }
             Request::Observe => (),
             Request::ObserveReleased { key, value } => {

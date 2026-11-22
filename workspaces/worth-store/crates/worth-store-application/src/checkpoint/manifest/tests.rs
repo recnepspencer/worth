@@ -77,13 +77,18 @@ fn lengths_are_checked_against_the_actual_remaining_payload() {
 }
 #[test]
 fn derived_discarded_marker_is_recognized_and_refused_by_manifest_decode() {
-    assert!(is_derived_discarded(&DERIVED_DISCARDED_PAYLOAD));
+    let first = encode_derived_discarded(1);
+    let second = encode_derived_discarded(2);
+    assert_ne!(first, second);
+    assert!(is_derived_discarded(&first));
+    assert!(is_derived_discarded(&second));
     assert!(!is_derived_discarded(&literal()));
+    assert!(!is_derived_discarded(&first[..14]));
     assert!(matches!(
-        decode(&DERIVED_DISCARDED_PAYLOAD),
+        decode(&first),
         Err(HomeManifestDenial::Malformed)
     ));
-    let mut wrong_version = DERIVED_DISCARDED_PAYLOAD;
+    let mut wrong_version = first;
     wrong_version[8] = 2;
     assert!(!is_derived_discarded(&wrong_version));
 }

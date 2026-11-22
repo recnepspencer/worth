@@ -1,8 +1,9 @@
 //! The Home's single actual checkpoint attempt; returned observers own no work.
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, Mutex, Weak,
-};
+mod discard_slot;
+mod selection_source;
+pub(crate) use discard_slot::DiscardSlotGuard;
+use selection_source::HomeCheckpointSelectionSource;
+use std::sync::{Arc, Mutex};
 use worth_relational::facade::durability::OpaqueCapturedCheckpointSubject;
 use worth_runtime_world::facade::{
     PreparedWorldCheckpoint, WorldCheckpointSubject, WorldDurableMediumDenial,
@@ -13,11 +14,24 @@ use worth_store_relational::{
 };
 
 #[derive(Default)]
+pub(super) enum CheckpointSlot {
+    #[default]
+    Idle,
+    Checkpoint(Arc<HomeCheckpointAttempt>),
+    Discarding,
+}
+
+#[derive(Default)]
+pub(super) struct HomeCheckpointOwnerState {
+    pub(super) slot: CheckpointSlot,
+    pub(super) acknowledged_native: [u64; 2],
+    pub(super) derived_discarded: bool,
+}
+
+#[derive(Default)]
 pub(crate) struct HomeCheckpointOwner {
     pub(super) maintenance: super::maintenance::CheckpointMaintenance,
-    pending: Mutex<Option<Arc<HomeCheckpointAttempt>>>,
-    acknowledged_native: Mutex<[u64; 2]>,
-    derived_discarded: AtomicBool,
+    pub(super) state: Mutex<HomeCheckpointOwnerState>,
 }
 
 pub(crate) struct HomeCheckpointAttempt {
@@ -76,33 +90,61 @@ impl HomeCheckpointOwner {
     /// Only the actual successful section readmission supplies this seed.
     /// Zero denotes no selected scheduling prefix, never absent owner state.
     pub(crate) fn admit_selected_native_coverage(&self, selected: Option<[u64; 2]>) {
-        *self
-            .acknowledged_native
-            .lock()
-            .unwrap_or_else(|error| error.into_inner()) = selected.unwrap_or([0; 2]);
-    }
-    pub(crate) fn acknowledged_native(&self) -> [u64; 2] {
-        *self
-            .acknowledged_native
+        self.state
             .lock()
             .unwrap_or_else(|error| error.into_inner())
+            .acknowledged_native = selected.unwrap_or([0; 2]);
+    }
+    pub(crate) fn acknowledged_native(&self) -> [u64; 2] {
+        self.state
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .acknowledged_native
     }
     pub(super) fn acknowledge_native(&self, coverage: [u64; 2]) {
-        *self
-            .acknowledged_native
+        let mut state = self
+            .state
             .lock()
-            .unwrap_or_else(|error| error.into_inner()) = coverage;
-        self.derived_discarded.store(false, Ordering::Release);
+            .unwrap_or_else(|error| error.into_inner());
+        state.acknowledged_native = coverage;
+        state.derived_discarded = false;
     }
-    pub(super) fn mark_derived_discarded(&self) {
-        *self
-            .acknowledged_native
+    pub(crate) fn begin_discard(
+        &self,
+    ) -> Result<DiscardSlotGuard<'_>, super::ApplicationHomeCheckpointDenial> {
+        let mut state = self
+            .state
             .lock()
-            .unwrap_or_else(|error| error.into_inner()) = [0; 2];
-        self.derived_discarded.store(true, Ordering::Release);
+            .unwrap_or_else(|error| error.into_inner());
+        match &state.slot {
+            CheckpointSlot::Idle => {
+                state.slot = CheckpointSlot::Discarding;
+                Ok(DiscardSlotGuard::new(self))
+            }
+            CheckpointSlot::Checkpoint(attempt) => {
+                Err(super::ApplicationHomeCheckpointDenial::RecoveryRequired(
+                    attempt.observation(),
+                ))
+            }
+            CheckpointSlot::Discarding => {
+                Err(super::ApplicationHomeCheckpointDenial::DiscardInProgress)
+            }
+        }
     }
     pub(crate) fn is_derived_discarded(&self) -> bool {
-        self.derived_discarded.load(Ordering::Acquire)
+        self.state
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .derived_discarded
+    }
+    pub(super) fn is_discarding(&self) -> bool {
+        matches!(
+            self.state
+                .lock()
+                .unwrap_or_else(|error| error.into_inner())
+                .slot,
+            CheckpointSlot::Discarding
+        )
     }
     #[cfg(feature = "certification-test-authority")]
     pub(crate) fn input_memory_bytes_for_test(&self) -> Option<u64> {
@@ -114,10 +156,15 @@ impl HomeCheckpointOwner {
             .bytes()
     }
     pub(super) fn pending(&self) -> Option<Arc<HomeCheckpointAttempt>> {
-        self.pending
+        match &self
+            .state
             .lock()
             .unwrap_or_else(|error| error.into_inner())
-            .clone()
+            .slot
+        {
+            CheckpointSlot::Checkpoint(attempt) => Some(attempt.clone()),
+            CheckpointSlot::Idle | CheckpointSlot::Discarding => None,
+        }
     }
     pub(super) fn install(
         &self,
@@ -139,14 +186,23 @@ impl HomeCheckpointOwner {
         let funding = request
             .reserve_retained_memory(quote as u64)
             .map_err(super::ApplicationHomeCheckpointDenial::Execution)?;
-        let mut pending = self
-            .pending
+        let mut state = self
+            .state
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if let Some(attempt) = pending.as_ref() {
-            return Err(super::ApplicationHomeCheckpointDenial::RecoveryRequired(
-                attempt.observation(),
-            ));
+        match &state.slot {
+            CheckpointSlot::Checkpoint(attempt) => {
+                return Err(super::ApplicationHomeCheckpointDenial::RecoveryRequired(
+                    attempt.observation(),
+                ));
+            }
+            CheckpointSlot::Discarding => {
+                return Err(super::ApplicationHomeCheckpointDenial::DiscardInProgress);
+            }
+            CheckpointSlot::Idle => {}
+        }
+        if state.derived_discarded {
+            return Err(super::ApplicationHomeCheckpointDenial::DerivedStateDiscarded);
         }
         let attempt = Arc::new(HomeCheckpointAttempt {
             world_subject: world.publication_subject().clone(),
@@ -164,19 +220,18 @@ impl HomeCheckpointOwner {
         let driver = attempt
             .try_driver()
             .expect("unexposed attempt has its initial driver");
-        *pending = Some(attempt.clone());
+        state.slot = CheckpointSlot::Checkpoint(attempt.clone());
         Ok((attempt, driver))
     }
     pub(super) fn clear(&self, attempt: &Arc<HomeCheckpointAttempt>) {
-        let mut pending = self
-            .pending
+        let mut state = self
+            .state
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        if pending
-            .as_ref()
-            .is_some_and(|current| Arc::ptr_eq(current, attempt))
+        if let CheckpointSlot::Checkpoint(current) = &state.slot
+            && Arc::ptr_eq(current, attempt)
         {
-            pending.take();
+            state.slot = CheckpointSlot::Idle;
         }
     }
     pub(crate) fn selection_source(
@@ -322,68 +377,13 @@ impl HomeCheckpointAttempt {
 
 impl Drop for HomeCheckpointOwner {
     fn drop(&mut self) {
-        if let Some(attempt) = self
-            .pending
+        if let CheckpointSlot::Checkpoint(attempt) = &self
+            .state
             .get_mut()
             .unwrap_or_else(|error| error.into_inner())
-            .as_ref()
+            .slot
         {
             attempt.stop_advancement();
         }
-    }
-}
-
-struct HomeCheckpointSelectionSource {
-    owner: Weak<HomeCheckpointOwner>,
-}
-impl std::fmt::Debug for HomeCheckpointSelectionSource {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str("HomeCheckpointSelectionSource")
-    }
-}
-impl RelationalCheckpointSelectionSource for HomeCheckpointSelectionSource {
-    fn selected_version(
-        &self,
-        subject: &OpaqueCapturedCheckpointSubject,
-    ) -> Result<
-        Option<worth_store::physical_runtime::AnchoredRecordVersion>,
-        worth_relational::facade::durability::RelationalDurableOwnedReadRefusal,
-    > {
-        use worth_relational::facade::{
-            durability::RelationalDurableOwnedReadRefusal as Refusal,
-            storage::RelationalStorageUnavailableCause,
-        };
-        let owner = self.owner.upgrade().ok_or(Refusal::Storage(
-            RelationalStorageUnavailableCause::SourceUnavailable,
-        ))?;
-        let attempt = owner.pending.try_lock().map_err(|_| Refusal::Busy)?.clone();
-        let Some(attempt) = attempt else {
-            return Ok(None);
-        };
-        if !attempt
-            .subject
-            .as_ref()
-            .is_some_and(|original| original.same_capture(subject))
-        {
-            return Err(Refusal::ForeignProtection);
-        }
-        let receipt = attempt.receipt.try_lock().map_err(|_| Refusal::Busy)?;
-        Ok(receipt.as_ref().map(|receipt| receipt.version()))
-    }
-    fn selected_membership(
-        &self,
-        subject: &OpaqueCapturedCheckpointSubject,
-    ) -> Option<AnchoredRecordMembership> {
-        let owner = self.owner.upgrade()?;
-        let attempt = owner.pending()?;
-        if !attempt.subject.as_ref()?.same_capture(subject) {
-            return None;
-        }
-
-        attempt
-            .receipt
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .clone()
     }
 }
