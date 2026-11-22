@@ -1,64 +1,32 @@
 //! Actual admitted authentication for the Host identity fixture.
-use std::{
-    future::Future,
-    pin::pin,
-    task::{Context, Poll, Waker},
-    time::{Duration, SystemTime},
-};
+use std::time::Duration;
 use worth_query_decl::facade::authentication::WorthQueryExternalPrincipalIdentity;
 use worth_query_host::facade::{
     admission::authenticated_principal::*, domain::WorthQueryInstalledApplicationSchema,
 };
 
-pub(super) struct IdentityAdapter;
-impl WorthQueryAuthenticationAdapter for IdentityAdapter {
-    type Credential = ();
-    fn configuration_identity(&self) -> &str {
-        "worth.query.host.inspection.authentication.v1"
-    }
-    fn validate<'a>(
-        &'a self,
-        _: (),
-        _: &'a WorthQueryRequestScope,
-    ) -> WorthQueryAuthenticationFuture<'a> {
-        Box::pin(async move {
-            let now = SystemTime::now();
-            WorthQueryValidatedExternalPrincipal::new(
-                WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject")
-                    .unwrap(),
-                WorthQueryAuthenticationAudience::new("host").unwrap(),
-                WorthQueryAuthenticationMethod::new("test").unwrap(),
-                now,
-                now + Duration::from_secs(3600),
-                Vec::new(),
-            )
-            .map_err(|_| {
-                WorthQueryAuthenticationAdapterFailure::new(
-                    WorthQueryAuthenticationAdapterFailureKind::ProtocolViolation,
-                )
-            })
-        })
-    }
-}
-
 pub fn authenticate<Schema: worth_query_decl::facade::application_schema::ApplicationSchema>(
     schema: &WorthQueryInstalledApplicationSchema<Schema>,
     scope: &WorthQueryRequestScope,
 ) -> WorthQueryAuthenticatedExternalPrincipal<Schema> {
-    let adapter = admit_authentication_adapter(
+    let principal = WorthQueryLocalProcessPrincipal::new(
+        "worth.query.host.inspection.authentication.v1",
+        WorthQueryExternalPrincipalIdentity::new("https://issuer.example", "subject").unwrap(),
+        WorthQueryAuthenticationAudience::new("host").unwrap(),
+        WorthQueryAuthenticationMethod::new("test").unwrap(),
+        Duration::from_secs(3600),
+    )
+    .unwrap();
+    admit_authentication_adapter(
         schema,
         WorthQueryAuthenticationAdapterAdmission::new(
             WorthQueryAuthenticationAudience::new("host").unwrap(),
-            WorthQueryAuthenticationMethod::new("test").unwrap(), worth_query_admission::facade::authenticated_principal::WorthQueryAdmissionClock::system()),
-        IdentityAdapter,
+            WorthQueryAuthenticationMethod::new("test").unwrap(),
+            WorthQueryAdmissionClock::system(),
+        ),
+        principal,
     )
-    .unwrap();
-    let mut future = pin!(adapter.authenticate((), scope));
-    let mut context = Context::from_waker(Waker::noop());
-    loop {
-        match future.as_mut().poll(&mut context) {
-            Poll::Ready(output) => return output.unwrap(),
-            Poll::Pending => std::thread::yield_now(),
-        }
-    }
+    .unwrap()
+    .authenticate_local(scope)
+    .unwrap()
 }

@@ -3049,6 +3049,30 @@ let principal = adapter.authenticate(credential, &scope).await?;
 // -> WorthQueryAuthenticatedExternalPrincipal<Schema>
 ```
 
+A desktop or single-host process that acts as one known identity uses the
+Host-provided `WorthQueryLocalProcessPrincipal` instead of writing an adapter.
+It is admitted the same way and authenticates on the calling thread, with no
+executor:
+
+<!-- illustrative -->
+```rust,ignore
+// Illustrative: not compiled. The compiled court is
+// worth-query-court-decl-host-integration/.../host/application_startup/local_principal.rs.
+let local = WorthQueryLocalProcessPrincipal::new(
+    "board.local-owner.v1",                 // configuration identity
+    WorthQueryExternalPrincipalIdentity::new("local://board", "owner")?,
+    WorthQueryAuthenticationAudience::new("host")?,
+    WorthQueryAuthenticationMethod::new("local-process")?,
+    Duration::from_secs(600),               // finite; zero is refused
+)?;
+let principal = admit_authentication_adapter(schema, admission, local)?
+    .authenticate_local(&scope)?;
+```
+
+The admission's audience, method and clock are checked exactly as for a remote
+adapter, and the proof expires on the installed clock. An unmapped, disabled or
+expired identity is refused at request admission like any other credential.
+
 `IdentityAdapter` implements `WorthQueryAuthenticationAdapter`: it names its
 `Credential` type and returns a `WorthQueryValidatedExternalPrincipal` from
 `validate` (see `.../product_workflow_support/adapters.rs`). The external
@@ -7658,6 +7682,19 @@ position, so a reader never falls outside a window and never reconstructs its
 state to catch up. A long run of commits between two observations is delivered
 in order, and replacing a conditional runtime remains the explicit
 reinstallation path. Output-lineage retention reads the same subscription.
+
+A single-process application can start from a named preset instead of
+assembling these values. `WorthQueryApplicationLimits::ordinary_serial(clock)`
+uses `without_policy_limits()` with serial canonical execution
+(`WorthQueryApplicationLimits::SERIAL_EXECUTION_POLICY`).
+`WorthQueryApplicationLimits::bounded_serial(clock)` starts from
+`WorthQueryBoundedApplicationLimits::DEFAULT_BUDGETS` (16 branches, 128 retained
+commits and 4 MiB of history metadata, 64 observations, 4 publication attempts,
+4 unpublished records and 4 MiB of partial metadata, 64 pins with 16 in-flight
+reservations, 256 custody records). Each `with_*` override replaces one budget
+group verbatim, and `install()` validates through
+`WorthQueryProductWorldResources::install`, returning the same
+`RuntimeWorldBudgetDenial` an explicit installation would.
 
 Set optional published-snapshot, active-snapshot and prepared-candidate policies
 in `PublicationConfig`; `Some(amount)` selects a finite policy. Retain snapshots

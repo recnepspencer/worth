@@ -189,6 +189,8 @@ pub(in crate::application_entry) fn native_retry_eligible(
 }
 
 /// Disposal eligibility is not effect retry or proof that managed cleanup completed.
+/// A preparation refusal precedes Native effects and releases its business
+/// entry; closing drops its partial successor reservations.
 pub(in crate::application_entry) fn native_terminal_can_close(
     posture: &WorthQueryApplicationUncommitted,
 ) -> bool {
@@ -201,5 +203,6 @@ pub(in crate::application_entry) fn native_terminal_can_close(
             | Native::Stale(_)
             | Native::ProductStale(_)
             | Native::NoEffect(_)
+            | Native::ProductPreparationRefused(_)
     )
 }

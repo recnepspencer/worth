@@ -126,14 +126,7 @@ where
         scope: &WorthQueryRequestScope,
     ) -> Result<WorthQueryAuthenticatedExternalPrincipal<Schema>, WorthQueryAuthenticationDenial>
     {
-        if !self.clock.same_clock(scope.clock()) {
-            return Err(WorthQueryAuthenticationDenial::new(
-                WorthQueryAuthenticationDenialKind::ForeignClock,
-            ));
-        }
-        if let Some(interruption) = scope.interruption() {
-            return Err(WorthQueryAuthenticationDenial::interrupted(interruption));
-        }
+        self.admit_scope(scope)?;
         let candidate = self
             .adapter
             .validate(credential, scope)
@@ -149,7 +142,23 @@ where
         self.admit_candidate(candidate)
     }
 
-    fn admit_candidate(
+    /// Refuses a scope on another clock, or one already cancelled or past its deadline.
+    pub(super) fn admit_scope(
+        &self,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<(), WorthQueryAuthenticationDenial> {
+        if !self.clock.same_clock(scope.clock()) {
+            return Err(WorthQueryAuthenticationDenial::new(
+                WorthQueryAuthenticationDenialKind::ForeignClock,
+            ));
+        }
+        match scope.interruption() {
+            Some(interruption) => Err(WorthQueryAuthenticationDenial::interrupted(interruption)),
+            None => Ok(()),
+        }
+    }
+
+    pub(super) fn admit_candidate(
         &self,
         candidate: super::WorthQueryValidatedExternalPrincipal,
     ) -> Result<WorthQueryAuthenticatedExternalPrincipal<Schema>, WorthQueryAuthenticationDenial>
