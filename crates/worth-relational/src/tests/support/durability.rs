@@ -153,31 +153,17 @@ impl DurableMedium for OwnedMediumAttachment {
         TransArt::from_untrusted_bytes(bytes).map_err(TransReadErr::Frame)
     }
     fn publish(&self, artifact: &CommitArt) -> Fate<String> {
-        if self
-            .0
-            .lock()
-            .commits
-            .publish(artifact.position().0, artifact.as_bytes())
-        {
+        if self.0.lock().commits.publish(artifact.position().0, artifact.as_bytes()) {
             Fate::Committed
         } else {
-            Fate::ProvenNoEffect {
-                detail: "not next or identical original position".into(),
-            }
+            Fate::ProvenNoEffect { detail: "not next or identical original position".into() }
         }
     }
     fn publish_transition(&self, artifact: &TransArt) -> Fate<String> {
-        if self
-            .0
-            .lock()
-            .transitions
-            .publish(artifact.sequence().0, artifact.as_bytes())
-        {
+        if self.0.lock().transitions.publish(artifact.sequence().0, artifact.as_bytes()) {
             Fate::Committed
         } else {
-            Fate::ProvenNoEffect {
-                detail: "not next or identical original transition".into(),
-            }
+            Fate::ProvenNoEffect { detail: "not next or identical original transition".into() }
         }
     }
 }
@@ -200,9 +186,7 @@ impl ColdSource for OwnedTestDurableMedium {
         original: &(dyn Any + Send + Sync),
         limit: u64,
     ) -> Result<Option<ImmBytes>, ReadRefusal> {
-        downcast_snapshot(original)?
-            .initial_inputs(request, limit)
-            .map_err(map_owned_denial)
+        downcast_snapshot(original)?.initial_inputs(request, limit).map_err(map_owned_denial)
     }
     fn checkpoint_read_protection(
         &self,
@@ -212,11 +196,7 @@ impl ColdSource for OwnedTestDurableMedium {
         let snapshot = OwnedNativeReadSnapshot::capture(
             request,
             contents.commits.entries.iter().map(|(id, b)| (*id, b.as_ref())),
-            contents
-                .transitions
-                .entries
-                .iter()
-                .map(|(id, b)| (*id, b.as_ref())),
+            contents.transitions.entries.iter().map(|(id, b)| (*id, b.as_ref())),
             &contents.members,
             contents.initial_inputs.as_ref().map(|a| a.as_bytes()),
         )
@@ -351,10 +331,7 @@ pub(crate) fn capture_and_file_checkpoint(
         .native_checkpoint_with_policy(
             execution,
             execution.allocation_policy(),
-            CheckpointPolicy::ExternalMembers {
-                current_members: &[],
-                source: None,
-            },
+            CheckpointPolicy::ExternalMembers { current_members: &[], source: None },
         )
         .expect("native checkpoint capture");
     medium.file_checkpoint(checkpoint.clone());
@@ -365,16 +342,50 @@ pub(crate) fn recover_runtime_from_medium(
     recovered: &mut RelationalRuntime,
     medium: &Arc<OwnedTestDurableMedium>,
 ) -> RecoveryOutcome {
-    let plan = recovered
-        .durability()
-        .recovery_plan_from_source(
-            execution,
-            medium.recovery_source(),
-            RecoveryMode::NormalRecoveryVerification,
-        )
+    let plan = medium
+        .recovery_plan(execution, recovered, RecoveryMode::NormalRecoveryVerification)
         .expect("medium-sourced recovery plan");
-    recovered
-        .durability_recovery()
-        .recover(execution, plan)
-        .expect("medium-sourced recovery")
+    recovered.durability_recovery().recover(execution, plan).expect("medium-sourced recovery")
+}
+impl OwnedTestDurableMedium {
+    pub(crate) fn file_embedded_checkpoint(
+        &self,
+        execution: &Req<'_, '_>,
+        runtime: &RelationalRuntime,
+    ) -> NativeCheckpoint {
+        let checkpoint = runtime
+            .durability_authority()
+            .native_checkpoint(execution, execution.allocation_policy())
+            .expect("embedded native checkpoint capture");
+        self.file_checkpoint(checkpoint.clone());
+        checkpoint
+    }
+    pub(crate) fn recovery_plan(
+        self: &Arc<Self>,
+        execution: &Req<'_, '_>,
+        target: &RelationalRuntime,
+        mode: RecoveryMode,
+    ) -> Result<crate::durability::data::RecoveryPlan, crate::durability::data::RelationalRecoveryStop> {
+        target.durability().recovery_plan_from_source(execution, self.recovery_source(), mode)
+    }
+    pub(crate) fn rewrite_artifact_envelope(
+        &self,
+        execution: &Req<'_, '_>,
+        position: PatchStreamPosition,
+        edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
+    ) {
+        let bytes = self
+            .commit_bytes_at(position)
+            .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
+        let readmitted = CommitArt::readmit(&bytes, execution)
+            .expect("the medium's own artifact readmits before it is rewritten");
+        let mut envelope = readmitted.envelope().copy_original_for_test(execution);
+        edit(envelope.body_mut_for_test());
+        let rewritten = CommitArt::from_positioned(
+            &crate::history::data::PositionedCanonicalCommit::for_test(position, Arc::new(envelope)),
+            execution.allocation_policy(),
+        )
+        .expect("a rewritten envelope still encodes");
+        self.replace_commit_bytes(position, Box::from(rewritten.as_bytes()));
+    }
 }

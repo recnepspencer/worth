@@ -18,6 +18,7 @@ use crate::durability::medium::{
     RelationalDurableRecoverySource as RecoverySrc,
 };
 use crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact as InitArt;
+use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as StorageCause;
 
 #[derive(Debug, Default)]
@@ -65,6 +66,31 @@ impl OwnedTestDurableMedium {
     }
     pub(crate) fn has_filed_checkpoint(&self) -> bool {
         self.lock().checkpoint.is_some()
+    }
+    pub(crate) fn flip_checkpoint_byte(&self, offset: usize) {
+        let mut contents = self.lock();
+        let filed = contents
+            .checkpoint
+            .take()
+            .expect("medium holds a checkpoint");
+        let mut bytes = filed.checkpoint().bytes().to_vec();
+        bytes[offset] ^= 0xff;
+        contents.checkpoint = Some(CheckpointSrc::new(
+            filed.covered(),
+            filed.covered_transitions(),
+            NativeCheckpoint::from_untrusted_bytes(bytes),
+        ));
+    }
+    pub(crate) fn damage_checkpoint_payload(&self) {
+        self.flip_checkpoint_byte(
+            crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC.len(),
+        );
+    }
+    pub(super) fn commit_bytes_at(&self, position: PatchStreamPosition) -> Option<Box<[u8]>> {
+        self.lock().commits.entries.get(&position.0).cloned()
+    }
+    pub(super) fn replace_commit_bytes(&self, position: PatchStreamPosition, bytes: Box<[u8]>) {
+        self.lock().commits.entries.insert(position.0, bytes);
     }
     pub(crate) fn file_checkpoint(&self, checkpoint: NativeCheckpoint) {
         let mut contents = self.lock();

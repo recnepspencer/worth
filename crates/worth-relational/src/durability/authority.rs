@@ -16,6 +16,10 @@ pub use checkpoint_complete::{
 };
 pub(in crate::durability) mod checkpoint_components;
 mod checkpoint_image;
+#[cfg(test)]
+pub(crate) use checkpoint_image::{
+    recompute_branch_root_digests_for_test, recompute_branch_root_image_digest_for_test,
+};
 mod checkpoint_lineage_basis;
 mod checkpoint_member_carry;
 mod checkpoint_memory_demand;
