@@ -78,6 +78,21 @@ impl RelationalBranchBasisDescriptor {
         }
     }
 
+    pub(crate) fn with_reference(&self, reference: RelationalBranchReferenceObservation) -> Self {
+        Self::with_posture(
+            RelationalLiveBranchBasisDescriptorAxes {
+                runtime_instance_id: self.runtime_instance_id,
+                branch_id: self.branch_id.clone(),
+                reference,
+                truth_version: self.truth_version,
+                root_identity: self.root_identity,
+                schema_commitment: *self.schema_commitment.bytes(),
+                visibility_commitment: *self.visibility_commitment.bytes(),
+            },
+            self.posture,
+        )
+    }
+
     pub const fn descriptor_version(&self) -> u16 {
         self.descriptor_version
     }

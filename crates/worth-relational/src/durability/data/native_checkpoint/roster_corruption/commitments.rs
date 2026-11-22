@@ -80,6 +80,16 @@ pub(super) fn rebind(
             rebind_observation(source, &checkpoint.commit_descriptors);
         }
     }
+    for descriptors in checkpoint.recorded_components.values_mut() {
+        for descriptor in descriptors.iter_mut() {
+            let mut reference = descriptor.reference().clone();
+            rebind_observation(&mut reference, &checkpoint.commit_descriptors);
+            *descriptor = descriptor.with_reference(reference);
+        }
+        descriptors.sort_by_cached_key(|descriptor| {
+            rmp_serde::to_vec_named(descriptor).expect("rebound component descriptor encodes")
+        });
+    }
     Ok(())
 }
 fn rebind_observation(

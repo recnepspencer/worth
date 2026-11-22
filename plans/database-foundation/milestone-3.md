@@ -1121,6 +1121,10 @@ other active controls. Production current-ownership selection, membership,
 metadata, retargeting, merge and ordinary authored-correction courts stay live.
 Both actual failing executions remain red historical evidence; no passing
 completion or successful cold reconstruction is claimed.
+C4 ruling (2026-11-22): restores the exact same-SHA (`89039fa735`)
+`external_cold_pairing` Native/Query `control-callers.txt` rows (spanning
+`worth-query-execution/` and `worth-query-execution-query/` per PR #280,
+matching its `locality.rs` sibling).
 
 ### Landing 2a Query cancellation sweeps and temporal identity cost
 
@@ -1143,6 +1147,10 @@ That source contains the full tests and their original arming closure.
   remain live. The sweep's real run was externally stopped after exceeding the
   committed CI deadline under a runner that had omitted that deadline; no pass
   or native-timeout event is asserted.
+  C4 ruling (2026-11-22): restores the exact same-SHA (`89039fa735`)
+  `crates/worth-execution/` `control-callers.txt` row for
+  `process/host/durable_retry/request_stops.rs` (relocated under
+  `worth-query-court-decl-host-integration` per PR #280).
 
 - **C2 — typed terminal at every charged work prefix.**
   `conditional_operation_work_stop_terminal_matches_its_typed_cause` first
