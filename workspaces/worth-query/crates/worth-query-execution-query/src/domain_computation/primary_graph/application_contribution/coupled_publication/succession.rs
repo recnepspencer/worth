@@ -122,7 +122,7 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
                 .application
                 .runtime
                 .primary_provider
-                .application_attempt_operation_control
+                .application_attempt_operation_control_ref()
                 .take_coupled_participant_corruption(self.writers.borrow().len());
             match fault {
                 1..=9 => candidate.append_corrupt_participant_for_test(

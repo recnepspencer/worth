@@ -20,7 +20,7 @@ mod succession;
 mod verified_parents;
 pub use input_preparation::{PlannedOutput, PreparedCoupledInputs};
 pub use source_selection::SelectedCoupledSource;
-pub use qualification::AppendedMember;
+pub(in crate::domain_computation::primary_graph::application_contribution) use qualification::AppendedMember;
 mod validation;
 use crate::domain_computation::primary_graph::{
     application_attempt::coupled_outputs::DeclaredCoupledOutputDemands, WorthQueryAdvancementPhase,

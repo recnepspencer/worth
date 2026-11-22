@@ -16,7 +16,7 @@ pub struct OwnOutputOverlay {
 }
 
 impl OwnOutputOverlay {
-    pub(in crate::domain_computation::primary_graph) fn from_chain(
+    pub fn from_chain(
         chain: &worth_relational::facade::mvcc::RelationalCoupledChainOverlay,
     ) -> Self {
         Self {
@@ -26,14 +26,14 @@ impl OwnOutputOverlay {
     }
 
     /// The chain head's pre-pin: the image before the chain's first round.
-    pub(in crate::domain_computation::primary_graph) fn head(
+    pub fn head(
         &self,
     ) -> &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         &self.head
     }
 
     /// The chain head's pre-pin, for a record the chain wrote exclusively.
-    pub(in crate::domain_computation::primary_graph) fn head_for(
+    pub fn head_for(
         &self,
         entity: EntityId,
     ) -> Option<&RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>> {
@@ -43,7 +43,7 @@ impl OwnOutputOverlay {
             .then_some(&self.head)
     }
 
-    pub(in crate::domain_computation::primary_graph) fn covers(&self, entity: EntityId) -> bool {
+    pub fn covers(&self, entity: EntityId) -> bool {
         self.exclusive.binary_search(&entity).is_ok()
     }
 }

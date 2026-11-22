@@ -1,4 +1,5 @@
 //! Retain actual discovery evidence on its already registered root, never admit from a descriptor.
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::{
     provider::CandidateReadSupport, WorthQueryApplicationAttemptDenial as Denial,
@@ -71,7 +72,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .query_support_root(root)?
             .retain_candidate_read_support(execution, source, position, owner, support)
     }
-    pub(in crate::domain_computation::primary_graph) fn supersede_owned_candidate_support(
+    pub fn supersede_owned_candidate_support(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: &WorthQueryProviderSessionTerminalBinding,
@@ -84,7 +85,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .query_support_root(root)?
             .supersede_owned_candidate_support(execution, owner, invalidator)
     }
-    pub(in crate::domain_computation::primary_graph) fn supersede_retained_parent(
+    pub fn supersede_retained_parent(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: &WorthQueryProviderSessionTerminalBinding,
@@ -122,7 +123,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
     /// Requalify the verified parent the root retained as `read` (PR C R2):
     /// compare it exactly at `current` against the edit's C basis.
     #[allow(clippy::too_many_arguments)]
-    pub(in crate::domain_computation::primary_graph) fn requalify_retained_parent(
+    pub fn requalify_retained_parent(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: &WorthQueryProviderSessionTerminalBinding,
@@ -132,7 +133,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
         invalidator: usize,
-        settles: impl Fn(&crate::domain_computation::primary_graph::application_contribution::producer::VerifiedAppliedParent) -> bool,
+        settles: impl Fn(&dyn crate::ports::CandidateReadSupportPort) -> bool,
     ) -> Result<
         crate::domain_computation::primary_graph::provider::RetainedReadRequalification,
         Denial,
