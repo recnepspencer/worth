@@ -1,8 +1,8 @@
 //! Primary Graph application contracts.
 pub use crate::domain_computation::primary_graph::query_obligations::{
-    QueryConditionalDecision, QueryConditionalPosture, QueryManagedExecutionRelease,
-    QueryManagedRunObligation, QueryManagedRunPosture, QueryManagedRunRecovery,
-    QueryManagedRunResources,
+    QueryColdReleaseTerminal, QueryConditionalDecision, QueryConditionalOriginal,
+    QueryConditionalPosture, QueryManagedExecutionRelease, QueryManagedRunObligation,
+    QueryManagedRunPosture, QueryManagedRunRecovery, QueryManagedRunResources,
 };
 pub use crate::domain_computation::primary_graph::WorthQueryOriginalOperationDenial;
 mod correction;
@@ -172,7 +172,7 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryConditionalClockObservationReceipt, WorthQueryConditionalDefinitionPublicationDenial,
     WorthQueryConditionalDefinitionPublicationOutcome, WorthQueryConditionalExecutionCause,
     WorthQueryConditionalExecutionProvenance, WorthQueryConditionalExecutionTerminal,
-    WorthQueryConditionalReentryFailure, WorthQueryConditionalRuntimeInspection,
+    WorthQueryConditionalOriginalResolution, WorthQueryConditionalReentryFailure, WorthQueryConditionalRuntimeInspection,
     WorthQueryConditionalRuntimeInstallationDenial,
     WorthQueryConditionalRuntimeInstallationDenialKind, WorthQueryConditionalRuntimeLifecycleProbe,
     WorthQueryConditionalRuntimeReinstallationReceipt, WorthQueryConditionalSignalDecision,

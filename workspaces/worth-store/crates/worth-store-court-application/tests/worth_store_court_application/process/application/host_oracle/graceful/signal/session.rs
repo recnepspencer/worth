@@ -10,9 +10,19 @@ pub(super) struct Session {
 }
 impl Session {
     pub(super) fn start(home: &Path, channel: &Path, build: &str) -> (Self, Response) {
+        Self::start_child(home, channel, build, CHILD)
+    }
+    /// Start another Signal Home child test in this binary; its first answer
+    /// follows its Home open.
+    pub(super) fn start_child<R: serde::de::DeserializeOwned>(
+        home: &Path,
+        channel: &Path,
+        build: &str,
+        child: &str,
+    ) -> (Self, R) {
         std::fs::create_dir_all(channel).unwrap();
         let child = Command::new(std::env::current_exe().unwrap())
-            .args(["--exact", CHILD, "--nocapture"])
+            .args(["--exact", child, "--nocapture"])
             .env("WORTH_SIGNAL_HOME_CHANNEL", channel)
             .env("WORTH_SIGNAL_HOME_PATH", home)
             .env("WORTH_SIGNAL_HOME_BUILD", build)
@@ -32,13 +42,19 @@ impl Session {
         (session, response)
     }
     pub(super) fn send(&mut self, request: Request) -> Response {
+        self.exchange(&request)
+    }
+    pub(super) fn exchange<Q: serde::Serialize, R: serde::de::DeserializeOwned>(
+        &mut self,
+        request: &Q,
+    ) -> R {
         crate::killed_child::announce(
             &self.channel.join("request"),
-            &serde_json::to_vec(&request).unwrap(),
+            &serde_json::to_vec(request).unwrap(),
         );
         self.receive()
     }
-    fn receive(&mut self) -> Response {
+    fn receive<R: serde::de::DeserializeOwned>(&mut self) -> R {
         let deadline = Instant::now() + Duration::from_secs(240);
         let path = self.channel.join("response");
         loop {

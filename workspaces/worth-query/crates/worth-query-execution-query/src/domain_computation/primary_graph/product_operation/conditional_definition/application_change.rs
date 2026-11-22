@@ -3,13 +3,10 @@ use worth_query_execution_attempt::facade::ports::AdmittedApplicationConditional
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
-use worth_runtime_bridge::facade::{
-    BridgeInstalledConditionalLowering, BridgeOwnedConditionalInstallationRequest,
-};
-
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::product_operation::conditional_definition::application_change::{
-    WorthQueryAdmittedApplicationConditionalDefinition,
+    AdmittedSuccessor, WorthQueryAdmittedApplicationConditionalDefinition,
     WorthQueryApplicationConditionalDefinitionParts,
+    WorthQueryCheckedApplicationConditionalDefinition,
 };
 
 pub trait WorthQueryAdmittedApplicationConditionalDefinitionRuntimeExt {
@@ -17,8 +14,7 @@ pub trait WorthQueryAdmittedApplicationConditionalDefinitionRuntimeExt {
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         product: &crate::basis::WorthQueryProductBranchLease,
         identity: [u8; 32],
-        predecessor: Arc<BridgeInstalledConditionalLowering>,
-        request: BridgeOwnedConditionalInstallationRequest,
+        successor: AdmittedSuccessor,
     ) -> Self;
 }
 
@@ -29,16 +25,14 @@ impl WorthQueryAdmittedApplicationConditionalDefinitionRuntimeExt
         application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         product: &crate::basis::WorthQueryProductBranchLease,
         identity: [u8; 32],
-        predecessor: Arc<BridgeInstalledConditionalLowering>,
-        request: BridgeOwnedConditionalInstallationRequest,
+        successor: AdmittedSuccessor,
     ) -> Self {
         Self::from_admitted_parts(
             application.runtime.authority_identity(),
             application.installed_schema().binding_identity(),
             product.observation().clone(),
             identity,
-            predecessor,
-            request,
+            successor,
             application.runtime.bridge.conditional_operations(),
             Arc::clone(&application.runtime.product_runtime.activations_ref()),
         )

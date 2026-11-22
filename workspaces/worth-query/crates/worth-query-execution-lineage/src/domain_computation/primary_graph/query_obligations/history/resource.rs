@@ -56,6 +56,7 @@ impl QueryObligationHistory {
                 identity,
                 original,
                 handoff: QueryResourceHandoff::default(),
+                cold_release: None,
             }))?;
             identity
         };
@@ -156,7 +157,7 @@ impl QueryObligationHistory {
         if let Some(row) = state.journal.as_ref().and_then(|journal| {
             ledger_inspect::resources(&journal.ledger)
                 .values()
-                .find(|row| row.handoff.release.is_none())
+                .find(|row| !row.released())
         }) {
             return Err(QueryObligationDenial::OwnedAsyncPending {
                 identity: row.identity,

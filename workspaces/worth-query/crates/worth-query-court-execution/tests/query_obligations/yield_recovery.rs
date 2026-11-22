@@ -59,6 +59,7 @@ fn yielded_owner_data_preserves_terminal_cause_and_refuses_unrecorded_release() 
                 posture: QueryManagedRunPosture::Active,
                 original: None,
                 recovery: None,
+                cold_release: None,
             }),
         );
         let cause = QueryManagedRunRecovery::Yield { cause, state };

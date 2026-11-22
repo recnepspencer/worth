@@ -1,9 +1,9 @@
 //! Durable recovery claim and dispatch-journal denial vocabulary.
 
 use worth_foundational::facade::{
-    CanonicalDigestId, CorrectionMaterialPinIdentity, DispatchAttemptIdentity,
-    DurableCompositeCommitIdentity, DurableCompositePublicationAttemptIdentity,
-    DurableRecoveryClaimIdentity, RecoveryClaimDisposition,
+    CorrectionMaterialPinIdentity, DurableCompositeCommitIdentity,
+    DurableCompositePublicationAttemptIdentity, DurableRecoveryClaimIdentity,
+    RecoveryClaimDisposition,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -45,12 +45,6 @@ pub enum QueryDispatchJournalDenial {
     EffectAlreadyCompleted,
     UnknownAttempt,
     AttemptAlreadyObserved,
-    /// The recorded history ends inside an external contact with `effect`.
-    /// Graceful reopen never guesses that fate; crash recovery owns it.
-    UnobservedAttempt {
-        attempt: DispatchAttemptIdentity,
-        effect: CanonicalDigestId,
-    },
     /// This runtime has no durable Home journal; its custody is process-local.
     JournalUnavailable,
     OwnerUnavailable,

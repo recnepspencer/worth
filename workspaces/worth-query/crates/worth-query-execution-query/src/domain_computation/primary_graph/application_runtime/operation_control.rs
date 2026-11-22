@@ -11,9 +11,46 @@ pub mod coupled_participant;
 pub use attempt_registration::WorthQueryApplicationAttemptOperationControl;
 pub use attempt_registration::WorthQueryApplicationAttemptRegistrationPauseForTest;
 pub use attempt_registration::WorthQueryApplicationCandidatePreparationPauseForTest;
+pub use attempt_registration::WorthQueryBranchAdoptionPreparationObserverForTest;
+pub use attempt_registration::WorthQueryBranchAdoptionStageForTest;
+pub use attempt_registration::WorthQueryBranchAdoptionStagePauseForTest;
 pub use attempt_registration::WorthQueryManagedSourceRevalidationPauseForTest;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Passively observes the next durable prepared-correction pin transfer
+    /// (after Transfer is acknowledged in `query.corrections` and before Capture).
+    #[doc(hidden)]
+    pub fn observe_next_correction_pin_transfer_for_test(
+        &self,
+        observer: Box<dyn FnOnce() + Send>,
+    ) {
+        self.runtime
+            .primary_provider
+            .observe_next_correction_pin_transfer(observer);
+    }
+
+    /// Parks one single-branch adoption at an exact durable owner-record boundary.
+    #[doc(hidden)]
+    pub fn pause_branch_adoption_stage_for_test(
+        &self,
+        stage: WorthQueryBranchAdoptionStageForTest,
+    ) -> WorthQueryBranchAdoptionStagePauseForTest {
+        self.runtime
+            .primary_provider
+            .application_attempt_operation_control_ref()
+            .pause_branch_adoption_stage(stage)
+    }
+
+    /// Passively observes branch selectors that enter single-branch adoption preparation.
+    #[doc(hidden)]
+    pub fn observe_branch_adoption_preparations_for_test(
+        &self,
+    ) -> WorthQueryBranchAdoptionPreparationObserverForTest {
+        self.runtime
+            .primary_provider
+            .application_attempt_operation_control_ref()
+            .observe_branch_adoption_preparations()
+    }
     /// Parks a successfully revalidated managed target before its atomic Native pin.
     #[doc(hidden)]
     pub fn pause_after_managed_source_revalidation_for_test(
@@ -32,6 +69,16 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         &self,
     ) -> Option<worth_relational::facade::identity::EntityId> {
         self.installed_program_support()?.activation().published()
+    }
+
+    /// Observes the cold-readmitted adoption state recorded before service.
+    #[doc(hidden)]
+    pub fn cold_adoption_readmission_summary_for_test(
+        &self,
+    ) -> super::super::query_obligations::history::QueryColdAdoptionReadmissionSummary {
+        self.installed_program_support()
+            .map(|support| support.lifecycle().cold_adoption_summary())
+            .unwrap_or_default()
     }
 
     /// Records actual contention on this runtime's existing branch commit lane.

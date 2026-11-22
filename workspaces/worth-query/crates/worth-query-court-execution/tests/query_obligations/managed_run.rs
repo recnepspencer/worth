@@ -24,6 +24,7 @@ fn managed_run_history_preserves_failed_terminal_and_refuses_unrecorded_release(
                 posture: QueryManagedRunPosture::Active,
                 original: None,
                 recovery: None,
+                cold_release: None,
             }),
             &mut generations,
         )
@@ -196,6 +197,7 @@ fn managed_run_discharge_requires_each_recorded_provider_release() {
                     posture: QueryManagedRunPosture::Active,
                     original: None,
                     recovery: None,
+                    cold_release: None,
                 }),
                 &mut generations,
             )
@@ -258,6 +260,7 @@ fn workflow_owner_data_retains_pending_artifacts_after_native_resource_release()
                     posture: QueryManagedRunPosture::Active,
                     original: None,
                     recovery: None,
+                    cold_release: None,
                 }),
                 &mut generations,
             )

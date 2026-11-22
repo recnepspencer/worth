@@ -33,6 +33,17 @@ impl WorldRecoveredUnpublishedEffects {
                 custody: self,
             };
         }
+        if let Some(cause) = self
+            .record
+            .planned_signal
+            .as_ref()
+            .and_then(|leg| leg.release_refusal())
+        {
+            return WorldRecoveredReleaseOutcome::AdmissionRefused {
+                cause,
+                custody: self,
+            };
+        }
         let preparing = self
             .record
             .continuation

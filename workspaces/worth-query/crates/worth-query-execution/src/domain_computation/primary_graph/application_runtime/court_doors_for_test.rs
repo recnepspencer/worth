@@ -96,6 +96,51 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn runtime_mut_for_test(&mut self) -> &mut WorthQueryApplicationRuntimeCore {
         &mut self.inner.runtime
     }
+
+    #[doc(hidden)]
+    pub fn observe_next_correction_pin_transfer_for_test(
+        &self,
+        observer: Box<dyn FnOnce() + Send>,
+    ) {
+        self.inner
+            .observe_next_correction_pin_transfer_for_test(observer);
+    }
+
+    #[doc(hidden)]
+    pub fn pause_branch_adoption_stage_for_test(
+        &self,
+        stage: worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryBranchAdoptionStageForTest,
+    ) -> worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryBranchAdoptionStagePauseForTest {
+        self.inner.pause_branch_adoption_stage_for_test(stage)
+    }
+
+    #[doc(hidden)]
+    pub fn observe_branch_adoption_preparations_for_test(
+        &self,
+    ) -> worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryBranchAdoptionPreparationObserverForTest {
+        self.inner.observe_branch_adoption_preparations_for_test()
+    }
+
+    #[doc(hidden)]
+    pub fn cold_adoption_readmission_summary_for_test(
+        &self,
+    ) -> super::super::query_obligations::history::QueryColdAdoptionReadmissionSummary {
+        self.inner.cold_adoption_readmission_summary_for_test()
+    }
+}
+
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[doc(hidden)]
+    pub fn lose_next_commit_answer_for_test(&self) {
+        self.inner.lose_next_commit_answer_for_test();
+    }
+
+    #[doc(hidden)]
+    pub fn pause_after_commit_before_answer_for_test(
+        &self,
+    ) -> worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::WorthQueryCommitAnswerPauseForTest {
+        self.inner.pause_after_commit_before_answer_for_test()
+    }
 }
 
 mod basis_and_workflow_cache;

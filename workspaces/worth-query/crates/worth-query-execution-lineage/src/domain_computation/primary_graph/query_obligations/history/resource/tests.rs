@@ -35,6 +35,7 @@ fn resource_disposal_resume_consumes_only_its_acknowledged_original_discharge() 
             identity,
             original,
             handoff: QueryResourceHandoff::default(),
+            cold_release: None,
         }),
         QueryResourceRecord::Handoff {
             identity,

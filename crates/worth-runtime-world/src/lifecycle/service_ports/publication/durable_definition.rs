@@ -72,9 +72,6 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
                 custody:prepared.cancel(),
             };
         }
-        let original = AuthoredConditionalDefinitionAttemptCustody::new(definition);
-        let custody = prepared.prepared.reserve_conditional_definition_custody();
-        custody.retain_authored(Arc::clone(&original));
         let owner = match self.service() {
             Ok(owner) if owner.owner_identity() == prepared.expected_head().owner_identity() => {
                 owner
@@ -83,6 +80,43 @@ impl RuntimeWorldPublicationPort<(), (), (), (), ()> {
                 return WorldDurablePublicationOutcome::ProductUnpublished(prepared.cancel())
             }
         };
+        // The Signal leg is durable DATA before Native may take its effect.
+        // A Signal-only original has no state between two owner effects.
+        let open = match prepared.prepared.durable_open() {
+            Some(open) => open,
+            None => {
+                return WorldDurablePublicationOutcome::RecoveryRequired {
+                    cause: crate::publication::WorldDurablePublicationDenial::PlannedSignalLeg(
+                        crate::durability::WorldDurableMediumDenial::Unavailable,
+                    ),
+                    custody: prepared.cancel(),
+                }
+            }
+        };
+        if open.plans_signal_after_native() {
+            let leg = match definition.planned_leg(&execution) {
+                Ok(leg) => leg,
+                Err(cause) => {
+                    return WorldDurablePublicationOutcome::RecoveryRequired {
+                        cause: crate::publication::WorldDurablePublicationDenial::BridgeDefinitionPreparation(Box::new(cause)),
+                        custody: prepared.cancel(),
+                    }
+                }
+            };
+            if let Err(cause) =
+                open.publish_planned_signal_leg(&leg, &execution, &|| cancellation.is_cancelled())
+            {
+                return WorldDurablePublicationOutcome::RecoveryRequired {
+                    cause: crate::publication::WorldDurablePublicationDenial::PlannedSignalLeg(
+                        cause,
+                    ),
+                    custody: prepared.cancel(),
+                };
+            }
+        }
+        let original = AuthoredConditionalDefinitionAttemptCustody::new(definition);
+        let custody = prepared.prepared.reserve_conditional_definition_custody();
+        custody.retain_authored(Arc::clone(&original));
         let outcome = owner.execute_authored_conditional_definition_with_signal(
             execution,
             prepared.prepared,

@@ -253,8 +253,7 @@ pub trait AdmittedApplicationConditionalDefinitionInternalPort: Sized {
         application_binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         expected_product: worth_runtime_world::facade::ProductBranchObservation,
         identity: [u8; 32],
-        predecessor: Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
-        request: worth_runtime_bridge::facade::BridgeOwnedConditionalInstallationRequest,
+        successor: crate::domain_computation::primary_graph::product_operation::conditional_definition::AdmittedSuccessor,
         bridge: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
         activations: Arc<
             crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationRegistry,
@@ -263,9 +262,12 @@ pub trait AdmittedApplicationConditionalDefinitionInternalPort: Sized {
 
     fn identity(&self) -> &[u8; 32];
 
-    fn into_parts(
+    fn check(
         self,
-    ) -> crate::domain_computation::primary_graph::product_operation::conditional_definition::WorthQueryApplicationConditionalDefinitionParts;
+    ) -> Result<
+        crate::domain_computation::primary_graph::product_operation::WorthQueryCheckedApplicationConditionalDefinition,
+        worth_runtime_bridge::facade::BridgeConditionalDenial,
+    >;
 }
 
 impl AdmittedApplicationConditionalDefinitionInternalPort
@@ -276,8 +278,7 @@ impl AdmittedApplicationConditionalDefinitionInternalPort
         application_binding: worth_query_installation::facade::ApplicationSchemaBindingIdentity,
         expected_product: worth_runtime_world::facade::ProductBranchObservation,
         identity: [u8; 32],
-        predecessor: Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
-        request: worth_runtime_bridge::facade::BridgeOwnedConditionalInstallationRequest,
+        successor: crate::domain_computation::primary_graph::product_operation::conditional_definition::AdmittedSuccessor,
         bridge: crate::domain_computation::primary_graph::managed_bridge::conditional_owner::ConditionalOwner,
         activations: Arc<
             crate::domain_computation::execution_runtime::product_world::activation::WorthQueryProductActivationRegistry,
@@ -288,8 +289,7 @@ impl AdmittedApplicationConditionalDefinitionInternalPort
             application_binding,
             expected_product,
             identity,
-            predecessor,
-            request,
+            successor,
             bridge,
             activations,
         )
@@ -299,11 +299,13 @@ impl AdmittedApplicationConditionalDefinitionInternalPort
         Self::identity(self)
     }
 
-    fn into_parts(
+    fn check(
         self,
-    ) -> crate::domain_computation::primary_graph::product_operation::conditional_definition::WorthQueryApplicationConditionalDefinitionParts
-{
-        Self::into_parts(self)
+    ) -> Result<
+        crate::domain_computation::primary_graph::product_operation::WorthQueryCheckedApplicationConditionalDefinition,
+        worth_runtime_bridge::facade::BridgeConditionalDenial,
+    > {
+        Self::check(self)
     }
 }
 

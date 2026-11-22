@@ -27,6 +27,18 @@ terminal routes below execute the existing owner transition at the graceful
 handoff and retain its real disposition. They do not infer that it happened
 after process death. Pending or refused release stays a durable obligation.
 
+**Cold release after process death (C3.2, coordinator ruling 2026-11-13).**
+Disappearance of memory is not a release, and a fresh empty receiver is not
+evidence of one. The one cold proof is the Home incarnation fence (D7): a row
+read by the cold fold before service was retained by an earlier incarnation
+that ended (its process died, or its Home was dropped without close) and that
+D7 has fenced out, so the process-local resources that row names
+(provider memory and executions, checkpoints, queue capacity, Native admission,
+Bridge finalization) no longer exist. The cold release records that
+process-ended cause with the row's original, recovery cause and recorded
+posture, and a terminal that is never `Completed`. Resources an owner holds
+durably are not covered and keep their pending obligation.
+
 ## R7: per-kind routes
 
 Paths in the source column are relative to Query execution's
@@ -48,8 +60,8 @@ new durable contracts is implemented merely by selecting its route here.
 | Workflow yield recovery, `managed_run/workflow_yield_recovery.rs` | Terminal through the exact recorded state | `Running` uses paused abandonment; `Terminalized` uses `release_terminalized`. Retain the real frozen-artifact release result, including `Pending`, without recreating an artifact authority from its diagnostics. |
 | Direct/workflow readmission recovery, `managed_run/readmission/recovery/` and `readmission/direct_lane/preflight/preparation/progression/recovery/` | Terminal via the existing state-specific cleanup/terminal recovery owner | Finish or retain checkpoint release, restored-execution release, artifact rollback and terminal resources individually. A reassembled live yield remains subject to the yielded route. Cold admission cannot call a live checkpoint's restore method. |
 | Provider restore recovery, `managed_run/provider_restore/recovery.rs` | Terminal via existing restore cleanup | Preserve `Retained`, `RetainedAfterRestoredRelease` and `Released` facts. Checkpoint release and restored-execution release are separate; a release panic never becomes success at reopen. |
-| Direct terminal cleanup, `managed_run/direct_terminal/` | Data for outstanding terminal obligations | Record run identity and exact `ProviderMemoryRetained`, `QueueRelease` or `BridgeFinalization` failure. Cold discharge uses the owning fresh resource receiver and records its actual outcome; losing an old port cannot discharge it. |
-| Workflow terminal cleanup, `managed_run/workflow/terminal/` | Data for outstanding terminal obligations | Preserve `Complete`, `Pending` and `RecoveryRequired`, exact terminal kind and artifact obligations. Query and Bridge reacquire their own live resources; installed artifact registries are not serialized. |
+| Direct terminal cleanup, `managed_run/direct_terminal/` | Data for outstanding terminal obligations | Record run identity and exact `ProviderMemoryRetained`, `QueueRelease` or `BridgeFinalization` failure. A live discharge uses the owning resource receiver and records its actual outcome; losing an old port cannot discharge it. After process death the cold release above applies. |
+| Workflow terminal cleanup, `managed_run/workflow/terminal/` | Data for outstanding terminal obligations | Preserve `Complete`, `Pending` and `RecoveryRequired`, exact terminal kind and artifact obligations. Query and Bridge reacquire their own live resources; installed artifact registries are not serialized. After process death the cold release above applies to process-local artifacts and resources. |
 | Failed mutation cleanup, `primary_graph/application_attempt/compare_and_commit/cleanup_required/managed.rs` | Data in `query.obligations` | Preserve actual run identity, failure kind and original business evidence. `Native`, `AffinityInconsistent` and `CompletionInconsistent` remain distinct. Fresh authority must not repair inconsistent evidence by declaring release. |
 | Conditional retained decisions, `primary_graph/conditional_operation/signal_decision_reentry/retained_decision.rs` | Data only for the obligation and retained-terminal classes below | Readmit original work and its exact operation/intent association. Recreate process-local eligibility with fresh host time and authority; never persist a clock lease or a provider session. |
 | Mandatory owned-async request, Bridge `conditional_execution/owned_async/managed_request.rs` and Signal's owned-async request/queue owner | Data and owner readmission | Retain exact request identity, payload contract and contents, request generation, lineage, completion/retry posture and queue obligation under their existing owners. A dropped admission does not cancel or retire a request. Fresh runtime ports consume readmitted data. |

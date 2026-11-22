@@ -41,6 +41,7 @@ pub use cleanup::{
     WorthQueryApplicationProductBranchCleanupFailure,
 };
 pub use close::WorthQueryApplicationProductBranchCloseDenial;
+pub(in crate::domain_computation::primary_graph) use conditional_definition::WorthQueryCheckedApplicationConditionalDefinition;
 pub use conditional_definition::{
     WorthQueryAdmittedApplicationConditionalDefinition,
     WorthQueryApplicationConditionalDefinitionAdmissionDenial,

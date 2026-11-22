@@ -24,6 +24,10 @@ pub(super) fn encode(
     bytes.extend_from_slice(&predecessor);
     bytes.extend_from_slice(&generation.get().to_le_bytes());
     match &record {
+        QueryObligationRecord::ColdRelease(release) => {
+            bytes.push(21);
+            cold_release::codec::encode(&mut bytes, release);
+        }
         QueryObligationRecord::OriginalOperation(record) => {
             bytes.push(20);
             original_operation::codec::encode(&mut bytes, record);
@@ -172,6 +176,7 @@ pub(super) fn decode(bytes: &[u8]) -> Result<QueryObligationFrame, QueryObligati
     let generation =
         NonZeroU64::new(u64::from_le_bytes(reader.take()?)).ok_or(Denial::MalformedFrame)?;
     let record = match reader.take::<1>()?[0] {
+        21 => QueryObligationRecord::ColdRelease(cold_release::codec::decode(&mut reader, home)?),
         20 => QueryObligationRecord::OriginalOperation(original_operation::codec::decode(
             &mut reader,
             home,

@@ -23,7 +23,11 @@ use worth_query_testkit_host::facade::host::{
 
 mod admission_interleaving;
 mod affinity;
-mod child_reexecution;
+pub(crate) mod child_reexecution;
+mod cold_release;
+mod conditional_indeterminate;
+mod temporal_home;
+mod temporal_reexecution;
 mod fate_reopening;
 mod receipt_fields;
 mod request_stops;

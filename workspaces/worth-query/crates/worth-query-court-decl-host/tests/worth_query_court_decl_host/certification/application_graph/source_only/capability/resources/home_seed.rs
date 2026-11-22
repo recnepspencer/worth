@@ -306,3 +306,5 @@ fn directory_resource_handoff_preserves_original_custody_and_actual_release() {
 
 #[path = "home_seed/handoff_publication_refusal.rs"]
 mod handoff_publication_refusal;
+#[path = "home_seed/process_kill.rs"]
+mod process_kill;

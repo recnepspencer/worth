@@ -7,6 +7,7 @@ mod portable_causality;
 mod recovered_correlation;
 mod recovery_admission;
 mod source_controls;
+mod unobserved_recovery;
 use super::*;
 use std::collections::VecDeque;
 use std::sync::{Mutex, OnceLock, Weak};

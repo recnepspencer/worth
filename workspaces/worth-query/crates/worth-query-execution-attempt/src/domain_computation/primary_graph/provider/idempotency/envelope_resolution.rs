@@ -80,37 +80,25 @@ impl WorthQueryPrimaryGraphProvider {
             // Concurrent requests can have admitted the same earlier head.
             // Under the branch lane, locate the key in the SAME live occurrence's
             // current owner selection, then read its immutable original source.
-            let selected = product.observation_port().observe_product_branch_occurrence(
-                product.observation().lifecycle_incarnation(),
-            ).map_err(|_| WorthQueryProviderIdempotencyResolutionDenial::ForeignAffinity)?;
-            let observation = &selected;
-            let basis = observation.basis().relational_basis();
+            let selected = super::observe_selected_idempotency_branch(product)?;
+            let basis = selected.basis().relational_basis();
             if let Some(resolution) = self.resolve_unpublished_envelope_idempotency(
                 &product_affinity,
                 candidates,
             )? {
                 return Ok(resolution);
             }
-            self.graph
-                .carry_primary_index_basis_for_basis(execution, runtime, basis)
-                .map_err(idempotency_index_currency_denial)?;
-            // A carried known-empty selection is not yet a concrete lookup
-            // generation. Admit only this key index through Native's ordinary
-            // field preparation; it never reconstructs a missing population.
-            runtime.index_authority().ensure_field_index_for_basis(
-                layout.key_index_id,
-                basis,
-                crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
+            let resolution = self.read_current_idempotency_at_basis(
                 execution,
-            ).map_err(|denial| match denial.kind {
-                worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Execution(cause) => snapshot_resolution::idempotency_read_stop(cause),
-                _ => WorthQueryProviderIdempotencyResolutionDenial::Unavailable,
-            })?;
-            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis)
-                .map_err(|denial| idempotency_snapshot_denial(denial.into()))?;
-            let resolution = resolve_at_snapshot(execution, self, runtime, &snapshot, &layout, product, candidates);
-            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
-            let resolution = resolution?;
+                runtime,
+                &layout,
+                basis,
+                |snapshot| {
+                    resolve_at_snapshot(
+                        execution, self, runtime, snapshot, &layout, product, candidates,
+                    )
+                },
+            )?;
             if purpose == AuthoredEnvelopeResolutionPurpose::Execute
                 && let WorthQueryProviderIdempotencyResolution::Readmitted(receipt) = &resolution {
                 runtime.repair_pending_publication_settlement(receipt.commit_reference().commit_id)

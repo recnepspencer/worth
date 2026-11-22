@@ -9,12 +9,14 @@ use worth_foundational::facade::{
 pub(crate) enum AuthoredSectionKind {
     Graph,
     Runtime,
+    PlannedDefinition,
 }
 impl AuthoredSectionKind {
     fn magic(&self) -> &'static [u8; 8] {
         match self {
             Self::Graph => b"WSIGAUTH",
             Self::Runtime => b"WSIGCONF",
+            Self::PlannedDefinition => b"WSIGPDEF",
         }
     }
 }

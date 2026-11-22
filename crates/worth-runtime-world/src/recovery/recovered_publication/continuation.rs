@@ -20,6 +20,8 @@ pub enum WorldRecoveredContinuationDenial {
         expected: WorldOpenComponentIntent,
         actual: WorldOpenComponentIntent,
     },
+    /// The planned Signal leg refused before any Signal effect.
+    SignalLeg(crate::lifecycle::WorldSignalLegDenial),
 }
 #[derive(Debug)]
 pub enum WorldRecoveredContinuationOutcome {

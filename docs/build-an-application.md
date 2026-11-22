@@ -2341,10 +2341,12 @@ The owning Home reconstructs the original occurrences and resume positions;
 initializers and business handlers are not replayed. See the executable combined
 Bank journey in `bank-courtroom/examples/h10_graceful_bank_home`.
 
-Failed live cleanup returns an owning close refusal. A pending release after
-process loss belongs to C3: until then, a reopened Home whose prior process died
-while an attempt held a managed run refuses graceful close with
-`ManagedCleanup(ManagedRunPending { .. })`. After a kill, reopen continues a
+Failed live cleanup returns an owning close refusal. After process loss, Home
+preparation cold-releases the managed runs, managed cleanup obligations and
+application-resource requests the dead process still held: each keeps its
+original and reports `cold_release` (never a completion), close succeeds, and
+the ordinary discharge doors remove the rows
+([After a crash](application-home.md#after-a-crash-or-unclean-close)). After a kill, reopen continues a
 Native effect that World had not yet recorded as recovered `ProductUnpublished`
 custody, releases a no-effect original, and resumes an interrupted program
 transition ([After a crash](application-home.md#after-a-crash-or-unclean-close)).

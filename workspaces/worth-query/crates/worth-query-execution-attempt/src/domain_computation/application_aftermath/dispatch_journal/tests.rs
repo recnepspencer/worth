@@ -95,7 +95,8 @@ fn every_observation_survives_its_frame_and_decides_the_next_attempt() {
         let custody = ledger.custody(&effect(1)).unwrap();
         assert_eq!(custody.attempt(), attempt);
         assert_eq!(custody.observation(), Some(observation));
-        assert_eq!(ledger.first_unobserved(), None);
+        assert!(!ledger.has_unobserved());
+        assert!(ledger.unobserved_attempts().is_empty());
         let again = QueryDispatchRecordIntent::Attempt {
             correlation: effect(1),
         };
@@ -112,13 +113,8 @@ fn every_observation_survives_its_frame_and_decides_the_next_attempt() {
 #[test]
 fn an_attempt_awaits_exactly_one_observation() {
     let (mut ledger, mut generations, attempt) = attempted();
-    assert_eq!(
-        ledger.first_unobserved(),
-        Some(Denial::UnobservedAttempt {
-            attempt,
-            effect: effect(1),
-        })
-    );
+    assert!(ledger.has_unobserved());
+    assert_eq!(ledger.unobserved_attempts(), vec![attempt]);
     let second_attempt = QueryDispatchRecordIntent::Attempt {
         correlation: effect(1),
     };
@@ -132,6 +128,7 @@ fn an_attempt_awaits_exactly_one_observation() {
     };
     let frame = ledger.prepare(observed.clone(), &mut generations).unwrap();
     ledger.readmit(frame).unwrap();
+    assert!(!ledger.has_unobserved());
     assert_eq!(
         ledger.prepare(observed, &mut generations).map(drop),
         Err(Denial::AttemptAlreadyObserved)
@@ -147,6 +144,69 @@ fn an_attempt_awaits_exactly_one_observation() {
         ledger.prepare(never_recorded, &mut generations).map(drop),
         Err(Denial::UnknownAttempt)
     );
+}
+
+#[test]
+fn concurrent_unobserved_attempts_with_later_frames_fold_and_refuse_second_observation() {
+    let mut ledger = QueryDispatchLedger::empty(home(1));
+    let mut generations = QueryDispatchPublicationGenerations::from_journal(&ledger);
+    let mut attempts = Vec::new();
+    for byte in [1u8, 2u8] {
+        let frame = ledger
+            .prepare(
+                QueryDispatchRecordIntent::Attempt {
+                    correlation: effect(byte),
+                },
+                &mut generations,
+            )
+            .unwrap();
+        let QueryDispatchRecord::Attempt(recorded) = *frame.record() else {
+            panic!("attempt record");
+        };
+        attempts.push(recorded.identity);
+        ledger.readmit(frame).unwrap();
+    }
+    // Later frames follow both unobserved attempts.
+    let later_source = ledger
+        .prepare(
+            QueryDispatchRecordIntent::SourceControl {
+                source: effect(9),
+                posture: InboundSourceControl::Retired,
+            },
+            &mut generations,
+        )
+        .unwrap();
+    ledger.readmit(later_source).unwrap();
+    assert_eq!(ledger.unobserved_attempts(), attempts);
+    for attempt in &attempts {
+        let obs = ledger
+            .prepare(
+                QueryDispatchRecordIntent::Observation {
+                    attempt: *attempt,
+                    observation: Observation::Unresolved(
+                        QueryDispatchUnresolvedCause::UnknownProviderOutcome,
+                    ),
+                },
+                &mut generations,
+            )
+            .unwrap();
+        ledger.readmit(obs).unwrap();
+    }
+    assert!(!ledger.has_unobserved());
+    for attempt in &attempts {
+        assert_eq!(
+            ledger
+                .prepare(
+                    QueryDispatchRecordIntent::Observation {
+                        attempt: *attempt,
+                        observation: Observation::Completed,
+                    },
+                    &mut generations,
+                )
+                .map(drop),
+            Err(Denial::AttemptAlreadyObserved)
+        );
+    }
 }
 
 #[test]

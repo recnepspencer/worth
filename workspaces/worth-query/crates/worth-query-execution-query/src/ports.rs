@@ -56,10 +56,13 @@ pub trait ConditionalDefinitionAdmissionPort: Send + Sync {
             crate::domain_computation::primary_graph::conditional_operation::installation::clock_handle::ConditionalClockLease,
         >,
     ) -> Result<
-        (
-            std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
-            bool,
-        ),
+        Result<
+            (
+                std::sync::Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+                bool,
+            ),
+            worth_runtime_bridge::facade::BridgeConditionalDenial,
+        >,
         crate::domain_computation::primary_graph::WorthQueryApplicationConditionalDefinitionAdmissionDenial,
     >;
 }

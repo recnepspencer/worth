@@ -46,6 +46,7 @@ impl CorrectionMaterialOwner {
                 pins,
                 funding: Arc::new(MaterialFunding(Mutex::new(funding))),
             }),
+            post_transfer_observer: PostTransferObserver::default(),
         })
     }
 }

@@ -116,11 +116,23 @@ fn classify_commit(
         WorthQueryApplicationCommitOutcome::NoEffect(no_effect) => {
             WorthQueryTemporalReentryOutcome::NoEffect(no_effect.cause())
         }
-        WorthQueryApplicationCommitOutcome::Committed(_) => {
-            WorthQueryTemporalReentryOutcome::Committed
+        WorthQueryApplicationCommitOutcome::Committed(receipt) => {
+            let commit = receipt.committed_product_publication().composite_commit();
+            let durable = commit.owner_identity().durable().map(|owner| {
+                worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
+                    owner,
+                    commit.ordinal(),
+                )
+            });
+            WorthQueryTemporalReentryOutcome::Committed(durable)
         }
-        WorthQueryApplicationCommitOutcome::RecoveredCommitted(_) => {
-            WorthQueryTemporalReentryOutcome::AlreadyCommitted
+        WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
+            WorthQueryTemporalReentryOutcome::AlreadyCommitted(
+                receipt
+                    .new_product_head()
+                    .durable()
+                    .map(|head| head.selected_commit()),
+            )
         }
         WorthQueryApplicationCommitOutcome::Stale(_) => WorthQueryTemporalReentryOutcome::Obsolete,
         WorthQueryApplicationCommitOutcome::Cancelled => {

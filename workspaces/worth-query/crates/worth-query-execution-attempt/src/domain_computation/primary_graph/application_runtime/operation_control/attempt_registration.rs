@@ -11,6 +11,11 @@ use std::sync::{
 use std::time::Duration;
 
 pub mod caller_pass;
+pub mod branch_adoption;
+pub use branch_adoption::{
+    WorthQueryBranchAdoptionPreparationObserverForTest, WorthQueryBranchAdoptionStageForTest,
+    WorthQueryBranchAdoptionStagePauseForTest,
+};
 pub mod managed_source;
 pub use managed_source::WorthQueryManagedSourceRevalidationPauseForTest;
 pub mod source_publication;
@@ -23,11 +28,13 @@ pub use source_publication::{
 pub struct WorthQueryApplicationAttemptOperationControl {
     pub caller_pass: Arc<caller_pass::CallerPassControl>,
     pub coupled_participant_fault: Arc<std::sync::atomic::AtomicU8>,
-    pub pending_registration: Arc<PendingAttemptPause>,
-    pub pending_candidate: Arc<PendingAttemptPause>,
-    pub pending_source_validation: Arc<PendingAttemptPause>,
-    pub pending_source_comparison: Arc<PendingAttemptPause>,
-    pub pending_managed_revalidation: Arc<PendingAttemptPause>,
+    pub(crate) pending_registration: Arc<PendingAttemptPause>,
+    pub(crate) pending_candidate: Arc<PendingAttemptPause>,
+    pub(crate) pending_source_validation: Arc<PendingAttemptPause>,
+    pub(crate) pending_source_comparison: Arc<PendingAttemptPause>,
+    pub(crate) pending_managed_revalidation: Arc<PendingAttemptPause>,
+    pending_branch_adoption_stage: Arc<branch_adoption::PendingAdoptionStagePause>,
+    branch_adoption_preparation_observer: Arc<branch_adoption::AdoptionPreparationObserverSlot>,
     pub source_validation_observations: Arc<Mutex<Vec<WorthQuerySourcePublicationImageForTest>>>,
 }
 

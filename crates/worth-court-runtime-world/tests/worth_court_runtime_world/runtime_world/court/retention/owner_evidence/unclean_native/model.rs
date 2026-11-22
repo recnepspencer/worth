@@ -5,18 +5,26 @@ use worth_relational::facade::{
     history::RelationalCommitReceipt, mvcc::RelationalTransactionIntent,
 };
 
-/// One original: attempt, reserved commit and custody ordinals, and the
-/// Native receipt its owner made durable, if any.
+/// One original: attempt, reserved commit and custody ordinals, the Native
+/// receipt its owner made durable, if any, and whether Signal's effect is
+/// durable (only a mixed original has one).
 #[derive(Clone, Debug, PartialEq)]
 pub(super) struct Original {
     pub identities: [u64; 3],
     pub receipt: Option<RelationalCommitReceipt>,
+    pub signal: bool,
 }
 
 #[derive(Debug, Default)]
 pub(super) struct Model {
     pub generation: u64,
     pub native_commits: usize,
+    /// Durable Signal advances beyond the bootstrap's.
+    pub signal_commits: usize,
+    /// Signal's durable advance count once the Home is bootstrapped.
+    pub signal_base: usize,
+    /// Identities of mixed conditional-definition originals.
+    pub mixed: Vec<[u64; 3]>,
     /// Recovered originals without a durable decision.
     pub originals: Vec<Original>,
     /// Originals with a durable release, effect-bearing or not.
@@ -30,10 +38,17 @@ pub(super) struct Model {
     pub stale: bool,
     /// Largest attempt, commit and custody ordinal issued so far.
     frontier: Option<[u64; 3]>,
-    writes: u32,
+    pub(super) writes: u32,
 }
 
 impl Model {
+    /// The facts of a freshly bootstrapped Home.
+    pub fn bootstrapped(fixture: &Fixture) -> Self {
+        Self {
+            signal_base: fixture.signal().published_advance_count().unwrap(),
+            ..Self::default()
+        }
+    }
     /// An undecided performed Native effect fences fresh work on its branch:
     /// Native refuses the World head's basis before any new effect. (Keys are
     /// fenced by Query, not World.)
@@ -90,6 +105,9 @@ impl Model {
         kind: Step,
     ) -> bool {
         self.writes += 1;
+        if let Step::Mixed(cut) = kind {
+            return self.attempt_mixed(fixture, request, cut);
+        }
         let head = root(fixture);
         let cancellation = RuntimeWorldCancellationSource::new();
         let port = fixture.world.publication_port();
@@ -129,21 +147,14 @@ impl Model {
             prepared.reserved_commit_identity().ordinal(),
             prepared.unpublished_recovery_handle().identity().ordinal(),
         ];
-        if let Some(frontier) = self.frontier {
-            for (issued, before) in identities.iter().zip(frontier) {
-                assert!(
-                    *issued > before,
-                    "identity {issued} reissued at or below {before}"
-                );
-            }
-        }
-        self.frontier = Some(identities);
+        self.admit_identities(identities);
         if let Step::OpenOnly = kind {
             fixture.recorder.crash();
             drop(prepared);
             self.originals.push(Original {
                 identities,
                 receipt: None,
+                signal: false,
             });
             return true;
         }
@@ -171,11 +182,25 @@ impl Model {
                 self.originals.push(Original {
                     identities,
                     receipt: Some(receipt),
+                    signal: false,
                 });
                 true
             }
             (kind, other) => panic!("{kind:?} reached {other:?}"),
         }
+    }
+
+    /// Each fresh original's identities lie beyond every issued one.
+    pub(super) fn admit_identities(&mut self, identities: [u64; 3]) {
+        if let Some(frontier) = self.frontier {
+            for (issued, before) in identities.iter().zip(frontier) {
+                assert!(
+                    *issued > before,
+                    "identity {issued} reissued at or below {before}"
+                );
+            }
+        }
+        self.frontier = Some(identities);
     }
 
     pub fn reopen(&mut self, fixture: Fixture, request: &ExecutionRequest<'_, '_>) -> Fixture {
@@ -198,6 +223,11 @@ impl Model {
             self.native_commits,
             "no decision repeats or adds an owner effect"
         );
+        assert_eq!(
+            fixture.signal().published_advance_count().unwrap(),
+            self.signal_base + self.signal_commits,
+            "each Signal leg is performed exactly once"
+        );
         let page = inspection.recovery_page(None, maximum()).unwrap();
         let recovery = fixture.world.recovery_port();
         let mut actual = Vec::new();
@@ -210,14 +240,22 @@ impl Model {
                     &head,
                     "the live head stays at its predecessor"
                 );
-                Original {
+                let receipt = effects.native_receipt();
+                let original = Original {
                     identities: [
                         effects.attempt_identity().ordinal(),
                         effects.reserved_commit_identity().ordinal(),
                         effects.identity().ordinal(),
                     ],
-                    receipt: effects.native_receipt(),
-                }
+                    signal: effects.owner_effect_count() > usize::from(receipt.is_some()),
+                    receipt,
+                };
+                assert_eq!(
+                    effects.next_actions(),
+                    self.next_actions(&original),
+                    "the recovered original offers exactly its recorded facts' actions"
+                );
+                original
             };
             let first = observe();
             assert_eq!(
@@ -258,6 +296,30 @@ impl Model {
             sorted_by_custody(expected),
             "a durable release keeps its original and any Native receipt"
         );
+    }
+
+    /// What a reopened original may do, from its recorded facts alone: an
+    /// effect-free original only releases; a durable `Continued` only
+    /// continues; any other owner effect (Native only, with or without its
+    /// planned Signal leg pending, or both) continues or releases.
+    fn next_actions(&self, original: &Original) -> &'static [ProductUnpublishedNextAction] {
+        use ProductUnpublishedNextAction as Action;
+        if self.continued.contains(&original.identities) {
+            &[Action::Inspect, Action::ContinueOriginalPublication]
+        } else if original.receipt.is_none() && !original.signal {
+            &[
+                Action::Inspect,
+                Action::ReleaseObligations,
+                Action::CloseOwner,
+            ]
+        } else {
+            &[
+                Action::Inspect,
+                Action::ContinueOriginalPublication,
+                Action::ReleaseObligations,
+                Action::CloseOwner,
+            ]
+        }
     }
 
     /// Remove and return the model's original with these recovered identities.

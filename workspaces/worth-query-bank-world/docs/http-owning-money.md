@@ -307,22 +307,28 @@ restart or response-loss retry does not establish server process-death durabilit
 
 A supported application using Host `Directory(path)` preserves dispatch attempts,
 their outcomes, inbound acceptance and terminal acknowledgement, and recovery
-claims across graceful close/reopen or a quiescent kill between operations.
-A fresh opener installs fresh transport and verifier owners and obtains fresh
-authenticated authority. An original keyed mutation returns its recorded
-occurrence without handler replay; old live capabilities are fenced.
+claims across graceful close/reopen, quiescent kills between operations, and
+application kills while an external dispatch is in flight. If the application
+process dies after an attempt is durable and before its observation is recorded,
+reopening durably records `Unresolved(UnknownProviderOutcome)` before service
+so reconciliation, safe retry, or an authentic callback resolves the effect
+under the rail's contract with no second rail effect (and if the rail restarts
+with lost state, the application never claims completion). A fresh opener
+installs fresh transport and verifier owners and obtains fresh authenticated
+authority. An original keyed mutation returns its recorded occurrence without
+handler replay; old live capabilities are fenced.
 
 The Bank rail integration courts use the real Bank payload encoder, production
 rail transport, separate rail process and pinned Bank completion verifier with a
-small declared Directory Home. The full Bank server composition still uses its
-process-local installation and includes producers, conditionals and workflows;
-those courts do not certify restarting that server. The rail's own delivery
-queue is also process-local and reports unresolved work at close.
+small declared Directory Home, including real application kills mid-dispatch
+and rail restarts with lost state. The full Bank server composition still uses
+its process-local installation and includes producers, conditionals and
+workflows; those courts do not certify restarting that server. The rail's own
+delivery queue is also process-local and reports unresolved work at close.
 
-Crash recovery during dispatch, owner publication or callback processing is not
-yet certified. Use the owning graceful Home close path, and preserve any typed
-close refusal and its custody. See the
-[Directory Home persistence boundary](public-consumer-contract.md#directory-home-persistence-boundary)
+Full adversarial crash certification (C4/C5) is still separate. Use the owning
+graceful Home close path, and preserve any typed close refusal and its custody.
+See the [Directory Home persistence boundary](public-consumer-contract.md#directory-home-persistence-boundary)
 and [Host installation guide](../../../docs/build-an-application.md#4-install-or-reopen).
 
 ## Related docs

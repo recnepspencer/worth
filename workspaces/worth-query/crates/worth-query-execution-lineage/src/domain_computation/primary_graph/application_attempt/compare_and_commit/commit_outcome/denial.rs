@@ -4,6 +4,7 @@ pub mod advancement;
 pub use advancement::WorthQueryAdvancementDenialCommitExt;
 pub mod authored_retirement;
 pub mod capacity;
+pub mod conditional_definition;
 pub mod coupled_producer;
 pub mod decision_read_set;
 pub mod denial_cause;

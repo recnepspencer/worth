@@ -159,7 +159,10 @@ impl CorrectionMaterialOwner {
                 class: RetentionClass::MandatoryObligation,
             },
             request,
-        )
+        )?;
+        drop(driver);
+        self.notify_post_transfer();
+        Ok(())
     }
     pub fn release_publication(
         &self,

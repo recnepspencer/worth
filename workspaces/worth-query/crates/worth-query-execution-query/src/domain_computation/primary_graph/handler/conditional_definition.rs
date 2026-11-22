@@ -87,7 +87,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 HandlerExecutionDenial::new(AdmissionDenial::ForeignConditionalOperation)
             })?;
         let bridge_root = context.application.runtime.bridge.conditional_operations();
-        let (predecessor, authored) = port
+        let resolved = port
             .resolve_predecessor(
                 &bridge_root,
                 product,
@@ -95,43 +95,45 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
                 handle.lease(),
             )
             .map_err(HandlerExecutionDenial::new)?;
-        let request = if authored {
-            let source =
-                worth_query_installation::facade::WorthQueryAuthoredHostPredicateBinding::from_provider(
-                    provider,
-                );
-            let provider =
-                crate::domain_computation::primary_graph::conditional_operation::authored_predicate::QueryAuthoredPredicateProvider::new(
-                    source,
-                    Arc::from(predecessor.contract().identity()),
-                    Arc::clone(handle.node_authority()),
-                );
-            match predecessor.contract().condition() {
-                worth_runtime_bridge::facade::BridgeConditionalCondition::RuntimePredicate => {
-                    predecessor.successor_with_authored_condition_provider(provider)
+        let successor = resolved.map(|(predecessor, authored)| {
+            let request = if authored {
+                let source =
+                    worth_query_installation::facade::WorthQueryAuthoredHostPredicateBinding::from_provider(
+                        provider,
+                    );
+                let provider =
+                    crate::domain_computation::primary_graph::conditional_operation::authored_predicate::QueryAuthoredPredicateProvider::new(
+                        source,
+                        Arc::from(predecessor.contract().identity()),
+                        Arc::clone(handle.node_authority()),
+                    );
+                match predecessor.contract().condition() {
+                    worth_runtime_bridge::facade::BridgeConditionalCondition::RuntimePredicate => {
+                        predecessor.successor_with_authored_condition_provider(provider)
+                    }
+                    worth_runtime_bridge::facade::BridgeConditionalCondition::Always
+                    | worth_runtime_bridge::facade::BridgeConditionalCondition::AspectFiltered
+                    | worth_runtime_bridge::facade::BridgeConditionalCondition::DeltaThreshold(_)
+                    | worth_runtime_bridge::facade::BridgeConditionalCondition::OnDemand
+                    | worth_runtime_bridge::facade::BridgeConditionalCondition::TemporalWake => {
+                        predecessor.successor_with_authored_wake_provider(provider)
+                    }
                 }
-                worth_runtime_bridge::facade::BridgeConditionalCondition::Always
-                | worth_runtime_bridge::facade::BridgeConditionalCondition::AspectFiltered
-                | worth_runtime_bridge::facade::BridgeConditionalCondition::DeltaThreshold(_)
-                | worth_runtime_bridge::facade::BridgeConditionalCondition::OnDemand
-                | worth_runtime_bridge::facade::BridgeConditionalCondition::TemporalWake => {
-                    predecessor.successor_with_authored_wake_provider(provider)
-                }
-            }
-        } else {
-            predecessor.successor_with_wake_provider(
-                crate::domain_computation::primary_graph::conditional_operation::predicate_observation::QueryTemporalPredicateProvider::<Node, Provider>::new(
-                    provider,
-                    Arc::clone(handle.node_authority()),
-                ),
-            )
-        };
+            } else {
+                predecessor.successor_with_wake_provider(
+                    crate::domain_computation::primary_graph::conditional_operation::predicate_observation::QueryTemporalPredicateProvider::<Node, Provider>::new(
+                        provider,
+                        Arc::clone(handle.node_authority()),
+                    ),
+                )
+            };
+            (predecessor, request)
+        });
         Ok(WorthQueryAdmittedApplicationConditionalDefinition::new(
             context.application,
             product,
             *handle.binding_identity_digest(),
-            predecessor,
-            request,
+            successor,
         ))
     }
 }

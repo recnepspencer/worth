@@ -38,13 +38,12 @@ pub(super) fn admit(
         let commit = match (&material.body, original.fate()) {
             (MaterialBody::Abandoned, WorldOriginalFate::Released) => continue,
             (MaterialBody::Captured(_), WorldOriginalFate::Released) => continue,
+            (MaterialBody::Captured(_), WorldOriginalFate::Open) => continue,
             (MaterialBody::Ready { ready, .. }, WorldOriginalFate::Published) => &ready.commit,
             (MaterialBody::Expired { commit }, WorldOriginalFate::Published) => commit,
             (
                 MaterialBody::Captured(_),
-                WorldOriginalFate::Published
-                | WorldOriginalFate::Open
-                | WorldOriginalFate::Continued,
+                WorldOriginalFate::Published | WorldOriginalFate::Continued,
             )
             | (
                 MaterialBody::Ready { .. } | MaterialBody::Expired { .. },
@@ -75,7 +74,12 @@ pub(super) fn admit(
         let effect = super::native_source::read_subject(request, native, &original, subject)?;
         let mut binding = None;
         for creation in effect.semantic_result().created_entities() {
-            if creation.key.kind != layout.entity_kind {
+            if creation.key.kind != layout.entity_kind
+                || !creation
+                    .key
+                    .client_key
+                    .starts_with(super::super::idempotency::ORIGINAL_CLIENT_KEY_PREFIX)
+            {
                 continue;
             }
             if binding.is_some() {

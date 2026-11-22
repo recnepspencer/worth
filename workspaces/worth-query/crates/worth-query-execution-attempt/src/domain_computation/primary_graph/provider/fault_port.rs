@@ -1,12 +1,18 @@
 //! Injected provider terminal-outcome boundary.
 
 use std::sync::Arc;
+pub mod answer_pause;
 pub mod cancellation;
+pub use answer_pause::WorthQueryCommitAnswerPauseForTest;
+use answer_pause::BoundaryAnswerPause;
 use cancellation::BoundaryCancellation;
 
 #[derive(Clone, Copy)]
 pub enum WorthQueryPrimaryGraphFault {
     LostCommitResponse,
+    /// The application commit's answer is lost before Query classifies it,
+    /// whatever World did: the decision is R9 `OperationIndeterminate`.
+    LostCommitAnswer,
     RejectedSessionPreparation,
     RejectedCommitBeforeTransaction,
     SkippedInvariantOwnerExecution,
@@ -50,6 +56,12 @@ pub trait WorthQueryPrimaryGraphFaultPort: Send + Sync {
     fn schedule_for_test(&self, _fault: WorthQueryPrimaryGraphFault) -> bool {
         false
     }
+
+    fn pause_before_commit_answer(&self) {}
+
+    fn arm_pause_before_commit_answer_for_test(&self) -> Option<WorthQueryCommitAnswerPauseForTest> {
+        None
+    }
 }
 
 pub fn production_fault_port() -> Arc<dyn WorthQueryPrimaryGraphFaultPort> {
@@ -63,6 +75,7 @@ struct WorthQueryScriptedPrimaryGraphFaults {
     scheduled: std::sync::atomic::AtomicU16,
     output_comparison_cancellation: BoundaryCancellation,
     inspection_materialization_cancellation: BoundaryCancellation,
+    commit_answer_pause: BoundaryAnswerPause,
 }
 
 impl WorthQueryPrimaryGraphFaultPort for WorthQueryScriptedPrimaryGraphFaults {
@@ -108,6 +121,14 @@ impl WorthQueryPrimaryGraphFaultPort for WorthQueryScriptedPrimaryGraphFaults {
             .fetch_or(fault_mask(fault), std::sync::atomic::Ordering::AcqRel);
         true
     }
+
+    fn pause_before_commit_answer(&self) {
+        self.commit_answer_pause.pause_if_armed();
+    }
+
+    fn arm_pause_before_commit_answer_for_test(&self) -> Option<WorthQueryCommitAnswerPauseForTest> {
+        Some(self.commit_answer_pause.arm())
+    }
 }
 
 const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
@@ -126,12 +147,35 @@ const fn fault_mask(fault: WorthQueryPrimaryGraphFault) -> u16 {
         WorthQueryPrimaryGraphFault::PanickedPendingApplicationPublication => 1 << 8,
         WorthQueryPrimaryGraphFault::TightIndexMaintenanceBudget => 1 << 13,
         WorthQueryPrimaryGraphFault::DuplicateQueryPreparationSlot => 1 << 14,
+        WorthQueryPrimaryGraphFault::LostCommitAnswer => 1 << 3,
     }
 }
 
 impl super::WorthQueryPrimaryGraphProvider {
     pub(super) fn take_lost_commit_response(&self) -> bool {
         self.take_fault(WorthQueryPrimaryGraphFault::LostCommitResponse)
+    }
+
+    pub fn take_lost_commit_answer(&self) -> bool {
+        self.take_fault(WorthQueryPrimaryGraphFault::LostCommitAnswer)
+    }
+
+    pub fn lose_next_commit_answer_for_test(&self) {
+        assert!(self
+            .fault_port
+            .schedule_for_test(WorthQueryPrimaryGraphFault::LostCommitAnswer));
+    }
+
+    pub fn pause_before_commit_answer(&self) {
+        self.fault_port.pause_before_commit_answer();
+    }
+
+    pub fn pause_after_commit_before_answer_for_test(
+        &self,
+    ) -> WorthQueryCommitAnswerPauseForTest {
+        self.fault_port
+            .arm_pause_before_commit_answer_for_test()
+            .expect("scripted fault port supports commit-answer pause")
     }
 
     pub(super) fn take_rejected_session_prepare(&self) -> bool {

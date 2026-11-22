@@ -45,12 +45,14 @@ pub use decision_facts::PrimaryDecisionReadSetComparison;
 pub mod dispatch_outbox;
 pub mod evidence_window;
 pub mod fault_port;
+pub use fault_port::WorthQueryCommitAnswerPauseForTest;
 pub mod graph_participation;
 pub mod home_retirement;
 pub use home_retirement::PrimaryProviderCustody;
 pub mod correction_material;
 pub mod idempotency;
 pub use idempotency::ReceiptAppendix;
+pub use idempotency::WorthQueryConditionalKeyFate;
 pub mod original_meaning_support;
 pub mod original_publication;
 pub use idempotency::{

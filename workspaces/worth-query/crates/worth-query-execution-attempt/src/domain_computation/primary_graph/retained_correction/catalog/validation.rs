@@ -189,6 +189,22 @@ impl MaterialCatalog {
                     return Err(Denial::PreparationDischarged);
                 }
             }
+            MaterialRecord::AbandonPublicationPin {
+                identity, original, ..
+            } => {
+                self.admit_original(*original)?;
+                let pin = self.pins.get(identity).ok_or(Denial::UnknownPin)?;
+                if pin.owner
+                    != (CorrectionMaterialPinOwner::Publication {
+                        original: *original,
+                    })
+                {
+                    return Err(Denial::PinOwnerMismatch);
+                }
+                if self.material.contains_key(original) {
+                    return Err(Denial::MaterialAlreadyCaptured);
+                }
+            }
             MaterialRecord::Abandon { original } => {
                 // A released unpublished owner may discharge its own publication
                 // pin. It may never release another command's use of its material.

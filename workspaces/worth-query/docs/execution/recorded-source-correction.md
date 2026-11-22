@@ -153,11 +153,17 @@ work evidence remain unchanged.
 ## Directory Homes and graceful reopen
 
 Open the same installed Home in a fresh process, authenticate again and readmit
-the original description/owner through the public request. The real Bank freeze
-journey covers divergent root/child reversals and exact foreign-alternative
-refusal without duplicate publication. No-output reapplication uses the declared
-zero-role contract; an empty cache is not evidence for output-bearing corrections.
-Crash recovery is not yet certified (C4/C5).
+the original description/owner through the public request. Real-kill Directory
+Home courts (C3.6) cover split completion (kill after authored correction is
+durable and before required derived settlement, recovered once via
+`recover_required_outputs`), original-owner advancement held live across an OS
+kill without `handoff_for_reopen` or close (with `StaleIncarnation` and
+`OwnershipMaterialUnavailable` guarded), and divergent root/fork branch
+reversals with cross-branch `ForeignAlternative` refusal and branch-local
+reapplication. The real Bank freeze journey also covers divergent root/child
+reversals without duplicate publication. No-output reapplication uses the
+declared zero-role contract; an empty cache is not evidence for output-bearing
+corrections. Broader crash-recovery certification remains deferred to C4–C5.
 
 A directory Home records the original canonical input, disclosure parameters,
 pre-image and output correspondence in `query.corrections`. Readmission joins

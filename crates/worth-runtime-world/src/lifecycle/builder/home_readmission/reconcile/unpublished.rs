@@ -81,6 +81,13 @@ where
         {
             return Err(Denial::OccurrenceEvidenceMismatch);
         }
+        let planned_signal = outstanding_signal_leg(
+            image,
+            open,
+            custody.publications[index].is_some(),
+            signal.is_some(),
+            disposition.map(|row| row.disposition()),
+        )?;
         let attempt =
             readmit_attempt(owner, open.association.attempt()).ok_or(Denial::ForeignOwner)?;
         let commit = readmit_commit(owner, open.commit).ok_or(Denial::ForeignOwner)?;
@@ -117,7 +124,37 @@ where
                 native_identity,
                 native: custody.publications[index].take(),
                 signal,
+                planned_signal,
             });
     }
     Ok(())
+}
+
+/// A mixed original durably records open, planned Signal leg, Native's effect
+/// and Signal's effect in that order. Open-only and open-with-leg carry no
+/// owner effect; Native-only keeps its leg for continuation; any other mix
+/// contradicts the order and refuses before service.
+fn outstanding_signal_leg(
+    image: &WorldRecoveredJournalState,
+    open: &crate::durability::AdmittedWorldOpenAttempt,
+    native: bool,
+    signal: bool,
+    disposition: Option<&RecoveredCustodyDisposition>,
+) -> Result<Option<crate::durability::AdmittedWorldPlannedSignalLeg>, Denial> {
+    use crate::durability::WorldOpenComponentIntent as Intent;
+    if open.component_intent != Intent::RelationalAndSignal {
+        return Ok(None);
+    }
+    let planned = image.planned_legs.get(&open.association.attempt());
+    match (planned, native, signal) {
+        (_, false, false) | (Some(_), true, true) => Ok(None),
+        (Some(planned), true, false)
+            if !matches!(disposition, Some(RecoveredCustodyDisposition::Continued)) =>
+        {
+            Ok(Some(planned.clone()))
+        }
+        (Some(_), true, false) | (None, true, _) | (_, false, true) => {
+            Err(Denial::OccurrenceEvidenceMismatch)
+        }
+    }
 }

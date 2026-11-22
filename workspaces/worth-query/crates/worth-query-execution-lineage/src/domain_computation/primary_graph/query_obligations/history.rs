@@ -12,7 +12,9 @@ use worth_query_installation::facade::{
 use worth_foundational::facade::ProgramSupportStatus;
 pub mod accepted_output;
 pub mod adoption;
+pub mod cold_release;
 pub mod conditional_decision;
+pub use conditional_decision::QueryConditionalRetryAdmission;
 pub mod interpretation_membership;
 pub mod managed_run;
 pub mod original_operation;
@@ -38,6 +40,21 @@ impl WorthQueryProgramSupportRetirementReceipt {
     }
 }
 
+/// Read-only cold adoption readmission counts observed before Home service.
+/// Grants no adoption, publication or recovery authority.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct QueryColdAdoptionReadmissionSummary {
+    pub pre_open_retained: usize,
+    pub empty_open_released: usize,
+    pub native_recovery_retained: usize,
+    pub published_discharged: usize,
+    pub released_discharged: usize,
+    pub continued_discharged: usize,
+    pub already_completed: usize,
+    pub already_released: usize,
+    pub stopped_sets_retained: usize,
+}
+
 #[derive(Clone, Copy)]
 pub struct SupportEntryState {
     pub status: ProgramSupportStatus,
@@ -50,6 +67,7 @@ pub struct QueryObligationState {
     pending_output_discharges: std::collections::BTreeSet<std::num::NonZeroU64>,
     pub entries: BTreeMap<ApplicationProgramRevision, SupportEntryState>,
     pub journal: Option<QueryObligationJournalState>,
+    pub cold_adoption_summary: QueryColdAdoptionReadmissionSummary,
 }
 
 pub struct QueryObligationHistory {
@@ -80,10 +98,24 @@ impl QueryObligationHistory {
                 pending_output_discharges: Default::default(),
                 entries,
                 journal: None,
+                cold_adoption_summary: QueryColdAdoptionReadmissionSummary::default(),
             })),
             medium: std::sync::OnceLock::new(),
             publication_driver: Mutex::new(()),
         }
+    }
+
+    pub fn record_cold_adoption_original(&self, native_present: bool) {
+        let mut state = self.state();
+        if native_present {
+            state.cold_adoption_summary.native_recovery_retained += 1;
+        } else {
+            state.cold_adoption_summary.empty_open_released += 1;
+        }
+    }
+
+    pub fn cold_adoption_summary(&self) -> QueryColdAdoptionReadmissionSummary {
+        self.state().cold_adoption_summary
     }
 
     pub fn state(&self) -> std::sync::MutexGuard<'_, QueryObligationState> {

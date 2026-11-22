@@ -25,6 +25,7 @@ pub fn configuration() -> (TemporalContributionConfiguration,) {
         contacts,
         install_route: true,
         definition_only: false,
+        multi_intent_targets: false,
     },)
 }
 

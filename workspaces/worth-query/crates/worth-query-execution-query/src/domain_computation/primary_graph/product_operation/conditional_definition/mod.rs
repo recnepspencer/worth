@@ -1,5 +1,8 @@
 pub mod application_change;
-pub use application_change::WorthQueryAdmittedApplicationConditionalDefinition;
+pub use application_change::{
+    WorthQueryAdmittedApplicationConditionalDefinition,
+    WorthQueryCheckedApplicationConditionalDefinition,
+};
 
 /// Why a conditional definition was not admitted for an application change.
 /// Admission is a check, so nothing was published.
@@ -12,8 +15,6 @@ pub enum WorthQueryApplicationConditionalDefinitionAdmissionDenial {
     /// The clock handle's conditional operation is not live in this
     /// application.
     ForeignConditionalOperation,
-    /// The bridge refused the conditional signal basis of the selected product.
-    BridgePreparation(worth_runtime_bridge::facade::BridgeConditionalDenial),
 }
 
 impl std::fmt::Display for WorthQueryApplicationConditionalDefinitionAdmissionDenial {

@@ -30,6 +30,47 @@ where
         super::super::contract::TemporalReadyNode,
     >,
 {
+    commit_definition_on_program_lane(
+        program, clock, invariant, selected, input, provider, ordinal,
+    )
+    .require_committed()
+    .unwrap_or_else(|uncommitted| match uncommitted {
+        primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(original) => {
+            panic!(
+                "the program-lane definition amendment must commit; retained original {:?}, refusal {:?}",
+                original.cause(),
+                original.before_effect_refusal()
+            )
+        }
+        other => panic!("the program-lane definition amendment must commit: {other:?}"),
+    })
+}
+
+/// The same program-lane commit, answered as Query answers its idempotency
+/// key: committed, recovered or retained unpublished.
+pub fn commit_definition_on_program_lane<Provider>(
+    program: &WorthQueryProgramApplicationRuntime<
+        TemporalHostSchema,
+        crate::facade::host::temporal_conditional_operation::contribution_installation::TemporalInstallationProgram,
+    >,
+    clock: &primary_graph::WorthQueryConditionalClockHandle<
+        TemporalHostSchema,
+        super::super::contract::TemporalReadyNode,
+        super::super::adapters::CourtroomClock,
+    >,
+    invariant: &std::sync::Arc<
+        primary_graph::WorthQueryApplicationInvariantProjectionAuthority<TemporalHostSchema>,
+    >,
+    selected: primary_graph::WorthQuerySelectedProductOperation<'_, TemporalHostSchema>,
+    input: &str,
+    provider: std::sync::Arc<Provider>,
+    ordinal: u8,
+) -> primary_graph::WorthQueryApplicationCommitOutcome
+where
+    Provider: worth_query_host::facade::domain::WorthQueryAuthoredHostConditionalPredicateProvider<
+        super::super::contract::TemporalReadyNode,
+    >,
+{
     let application: &primary_graph::WorthQueryPrimaryGraphApplicationRuntime<TemporalHostSchema> =
         program;
     let schema = application.installed_schema();
@@ -188,17 +229,5 @@ where
             &execution,
             program.admit_program_operation::<AmendTemporal>().unwrap(),
         );
-    outcome
-        .expect("the admitted combined change remains on its selected product")
-        .require_committed()
-        .unwrap_or_else(|uncommitted| match uncommitted {
-            primary_graph::WorthQueryApplicationCommitOutcome::ProductUnpublished(original) => {
-                panic!(
-                    "the program-lane definition amendment must commit; retained original {:?}, refusal {:?}",
-                    original.cause(),
-                    original.before_effect_refusal()
-                )
-            }
-            other => panic!("the program-lane definition amendment must commit: {other:?}"),
-        })
+    outcome.expect("the admitted combined change remains on its selected product")
 }

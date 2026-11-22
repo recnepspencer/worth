@@ -29,6 +29,9 @@ pub enum QueryHomeCustodyReadmissionDenial {
     UndecidedBranchCreation,
     OriginalBindingUnavailable,
     ForeignOriginalAffinity,
+    /// An indeterminate conditional row and World disagree on its original:
+    /// another intent holds the key, or the row is joined to another original.
+    ConditionalOriginalMismatch,
     OriginalMemoryAdmission,
     ReleasedSource(worth_runtime_world::facade::WorldDurableMediumDenial),
 }
@@ -237,6 +240,27 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         if let Err(cause) = self.admit_original_custody(execution) {
             return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
         }
+        if let Err(cause) = self.settle_indeterminate_decisions(execution) {
+            return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
+        }
+        let originals = match self
+            .runtime
+            .runtime()
+            .inner
+            .runtime
+            .product_runtime_ref()
+            .owner_ref()
+            .inspection_port()
+            .observe_program_activation_history(execution)
+        {
+            Ok(originals) => originals,
+            Err(cause) => {
+                return Err(QueryHomeCustodyReadmissionRefused {
+                    query: self,
+                    cause: QueryHomeCustodyReadmissionDenial::ProgramHistorySource(cause),
+                })
+            }
+        };
         if let Err(cause) = self
             .runtime
             .runtime()
@@ -288,6 +312,28 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         }
         // Empty-original release and cold custody settlement may acknowledge
         // Query discharges after the first fold, just as dispatch does above.
+        if let Err(cause) = application
+            .inner
+            .runtime
+            .primary_provider_ref()
+            .release_resolved_program_support_interpretations(
+                application
+                    .installed_program_support()
+                    .expect("readmitted support")
+                    .lifecycle(),
+                &originals,
+                execution,
+            )
+        {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: match cause {
+                    crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial::Material(cause) => QueryHomeCustodyReadmissionDenial::CorrectionMaterial(cause),
+                    crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial::ProgramSupport(cause) => QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
+                    crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial::World(cause) => QueryHomeCustodyReadmissionDenial::ProgramHistorySource(cause),
+                },
+            });
+        }
         let admission = match application
             .installed_program_support()
             .expect("readmitted support")
@@ -307,4 +353,5 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     }
 }
 
+mod conditional_indeterminate;
 mod originals;

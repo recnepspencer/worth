@@ -8,6 +8,9 @@ pub(super) enum Request {
         value: u64,
     },
     Close,
+    CheckpointAndDiscard,
+    CloseExpectingDiscarded,
+    InspectCadence,
     Step(usize),
     Observe,
     ObserveReleased {
@@ -49,6 +52,16 @@ pub(super) enum Disposition {
     Continued(MutationProjection),
     Released(usize),
     ContinuedReleaseRefused,
+    Discarded {
+        checkpoint_generation: u64,
+        discard_generation: u64,
+    },
+    Cadence {
+        journals: Vec<(String, u64, u64)>,
+    },
+    ClosedWithCheckpoint {
+        generation: Option<u64>,
+    },
 }
 
 #[derive(Debug, Eq, PartialEq, serde::Serialize, serde::Deserialize)]

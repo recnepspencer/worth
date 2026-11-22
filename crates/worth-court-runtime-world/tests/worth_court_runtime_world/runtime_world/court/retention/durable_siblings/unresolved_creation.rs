@@ -48,7 +48,7 @@ fn frontiers(f: &Fixture, request: &ExecutionRequest<'_, '_>) -> OwnerFrontiers 
             .fork_port()
             .observe_original_frontiers(request)
             .unwrap(),
-        f.signal.published_advance_count().unwrap(),
+        f.signal().published_advance_count().unwrap(),
     )
 }
 

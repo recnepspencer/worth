@@ -106,7 +106,7 @@ impl WorthQueryPrimaryGraphProvider {
         value: AspectValue,
         owner: worth_foundational::facade::WorldOwnerCoordinate,
     ) -> Result<ExactCorrectionFactLookup, WorthQueryAftermathCausalityReadDenial> {
-        self.with_correction_snapshot(execution, basis, |runtime, snapshot, layout| {
+        self.with_correction_snapshot(execution, basis, index, |runtime, snapshot, layout| {
             let request = BoundedEntityFieldLookupRequest::new(
                 snapshot.clone(),
                 index,
@@ -151,7 +151,13 @@ impl WorthQueryPrimaryGraphProvider {
         maximum: usize,
         after: Option<&WorthQueryCorrectionHistoryBoundary>,
     ) -> Result<WorthQueryCorrectionHistoryPage, WorthQueryAftermathCausalityReadDenial> {
-        self.with_correction_snapshot(execution, basis, |runtime, snapshot, layout| {
+        let index = self
+            .graph
+            .layout_ref()
+            .provider_aftermath_causality()
+            .lineage
+            .reversal_root_index;
+        self.with_correction_snapshot(execution, basis, index, |runtime, snapshot, layout| {
             let view = runtime
                 .read_truth()
                 .project_snapshot(snapshot)
@@ -280,6 +286,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
+        index: DerivedIndexId,
         read: impl FnOnce(
             &worth_relational::facade::runtime::RelationalRuntime,
             &worth_relational::facade::snapshots::SnapshotHandle,
@@ -288,7 +295,33 @@ impl WorthQueryPrimaryGraphProvider {
     ) -> Result<T, WorthQueryAftermathCausalityReadDenial> {
         self.graph.with_runtime(execution, |runtime| {
             execution.consult().map_err(|cause| aftermath_read_stop(cause.into()))?;
-            // The ordinary lane requires the existing native generation. Explicit reconstruction owns rebuilding.
+            // Admit an authentic carried/known-empty selection through Native's
+            // ordinary field preparation; discarded populations still refuse.
+            if !crate::domain_computation::primary_graph::index_currency::selected_index_is_current(
+                execution,
+                runtime,
+                basis,
+                index,
+            )
+            .map_err(aftermath_read_stop)?
+            {
+                runtime
+                    .index_authority()
+                    .ensure_field_index_for_basis(
+                        index,
+                        basis,
+                        crate::domain_computation::primary_graph::index_maintenance_budget::ordinary_index_maintenance_budget(),
+                        execution,
+                    )
+                    .map_err(|denial| match denial.kind {
+                        worth_relational::facade::indexes::DerivedIndexMaintenanceDenialKind::Execution(
+                            cause,
+                        ) => aftermath_read_stop(cause),
+                        _ => WorthQueryAftermathCausalityReadDenial::IndexUnavailable {
+                            index_id: index,
+                        },
+                    })?;
+            }
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(runtime, basis).map_err(|denial| aftermath_snapshot_denial(denial.into()))?;
             let result = read(runtime, &snapshot, self.graph.layout_ref().provider_aftermath_causality());
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);

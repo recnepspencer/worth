@@ -92,7 +92,7 @@ pub struct WorthQueryApplicationIdempotencyBinding {
 }
 
 impl WorthQueryApplicationIdempotencyBinding {
-    pub(crate) const fn new(key_identity: [u8; 32], intent_identity: [u8; 32]) -> Self {
+    pub const fn new(key_identity: [u8; 32], intent_identity: [u8; 32]) -> Self {
         Self {
             key_identity,
             intent_identity,

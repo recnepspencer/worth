@@ -60,4 +60,19 @@ impl<Schema, Program> WorthQueryApplicationHome<Schema, Program> {
             .inspect_checkpoint(self.checkpoint_limits, request)
             .map_err(WorthQueryApplicationHomeCheckpointDenial::Directory)
     }
+
+    /// D14 sealed certification door: discards every durable `RetentionClass::Derived`
+    /// artifact held by this Directory Home so reopen reconstructs from authoritative
+    /// journals only. Callers are recorded in `tools/boundary-check/config/control-callers.txt`.
+    #[doc(hidden)]
+    pub fn discard_derived_for_test(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<u64, WorthQueryApplicationHomeCheckpointDenial> {
+        self.directory
+            .as_ref()
+            .ok_or(WorthQueryApplicationHomeCheckpointDenial::MemoryLifecycleRequired)?
+            .discard_derived_for_test(request)
+            .map_err(WorthQueryApplicationHomeCheckpointDenial::Directory)
+    }
 }

@@ -209,6 +209,17 @@ impl MaterialCatalog {
                 self.discharged
                     .insert(key, (pin.original, pin.prepared()?.intent));
             }
+            MaterialRecord::AbandonPublicationPin {
+                identity, original, ..
+            } => {
+                self.pins
+                    .remove(&identity)
+                    .expect("validated publication pin");
+                self.released.insert(
+                    identity,
+                    CorrectionMaterialPinOwner::Publication { original },
+                );
+            }
             MaterialRecord::Abandon { original } => {
                 if let super::pins::MaterialPinChange::Release(identity) = change {
                     let pin = self

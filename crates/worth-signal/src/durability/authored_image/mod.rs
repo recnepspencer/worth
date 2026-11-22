@@ -5,6 +5,8 @@ pub(crate) use codec::RuntimeDefinitionRows;
 pub(crate) use codec::{read_runtime_rows, write_runtime_rows, Write};
 mod framing;
 pub(crate) use framing::admit_work;
+mod planned_definition;
+pub use planned_definition::SignalPlannedConditionalDefinition;
 mod runtime_image;
 pub(crate) use codec::{write_definition, AuthoredGraphRows};
 pub(crate) use codec::{ComputationDefinitionView, KeyedNodeDefinitionView, RuntimeDefinitionView};

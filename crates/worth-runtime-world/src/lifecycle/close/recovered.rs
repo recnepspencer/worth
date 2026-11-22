@@ -84,6 +84,7 @@ impl OriginalRecoveredClose {
             continued: _,
             native_identity: _,
             signal,
+            planned_signal,
             expected,
             binding,
             native,
@@ -135,6 +136,8 @@ impl OriginalRecoveredClose {
         // run here. Retired data must not retain this Serving capability.
         drop(binding);
         drop(control);
+        // A completed planned leg is the same recovered Signal loan.
+        let signal = signal.or_else(|| planned_signal.and_then(|leg| leg.durable_effect()));
         Self {
             _identity: identity,
             _attempt: attempt,

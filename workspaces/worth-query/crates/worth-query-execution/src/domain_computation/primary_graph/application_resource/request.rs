@@ -5,7 +5,9 @@ mod opening;
 mod owned_effect;
 mod progression;
 mod retained;
-pub use retained::{WorthQueryResourceTerminal, WorthQueryRetainedResourceState};
+pub use retained::{
+    WorthQueryResourceColdRelease, WorthQueryResourceTerminal, WorthQueryRetainedResourceState,
+};
 mod start;
 use super::{installation::InstalledResourceBinding, stop::ResourceCause};
 use crate::domain_computation::{
