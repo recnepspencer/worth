@@ -19,28 +19,13 @@ pub(super) fn validate_extent_closure(
     if manifest.logical_bytes() != placement.payload_bytes() {
         return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
     }
-    let chunk_count = admitted
-        .extent_chunks()
-        .iter()
-        .filter(|chunk| {
-            chunk.coordinate.record() == placement.record()
-                && chunk.coordinate.extent_cell() == placement.extent_cell()
-        })
-        .count();
-    if chunk_count != manifest.chunk_count() as usize {
+    let chunks = admitted.extent_chunks_for(placement.record(), placement.extent_cell());
+    if chunks.len() != manifest.chunk_count() as usize {
         return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
     }
     let mut logical_offset = 0_u64;
-    for ordinal in 1_u32..=manifest.chunk_count() {
-        let mut matching = admitted.extent_chunks().iter().filter(|chunk| {
-            chunk.coordinate.record() == placement.record()
-                && chunk.coordinate.extent_cell() == placement.extent_cell()
-                && chunk.coordinate.ordinal() == ordinal
-        });
-        let Some(chunk) = matching.next() else {
-            return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
-        };
-        if matching.next().is_some()
+    for (ordinal, chunk) in (1_u32..).zip(chunks) {
+        if chunk.coordinate.ordinal() != ordinal
             || chunk.coordinate.logical_offset() != logical_offset
             || chunk.coordinate.logical_bytes() != manifest.logical_bytes()
             || admitted.frame_bytes(chunk.frame_index).len()
@@ -82,27 +67,10 @@ pub(super) fn matches_projected_record_bytes(
             Ok(&admitted.frame_bytes(frame_index)[range.clone()] == expected)
         }
         CurrentPhysicalRecordPlacement::Extent(value) => {
-            let chunk_count = admitted
-                .extent_chunks()
-                .iter()
-                .filter(|chunk| {
-                    chunk.coordinate.record() == identity
-                        && chunk.coordinate.extent_cell() == value.extent_cell()
-                })
-                .count();
-            let chunk_count = u32::try_from(chunk_count)
-                .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
+            let chunks = admitted.extent_chunks_for(identity, value.extent_cell());
             let mut offset = 0_usize;
-            for expected_ordinal in 1_u32..=chunk_count {
-                let mut matching = admitted.extent_chunks().iter().filter(|chunk| {
-                    chunk.coordinate.record() == identity
-                        && chunk.coordinate.extent_cell() == value.extent_cell()
-                        && chunk.coordinate.ordinal() == expected_ordinal
-                });
-                let Some(chunk) = matching.next() else {
-                    return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
-                };
-                if matching.next().is_some()
+            for (expected_ordinal, chunk) in (1_u32..).zip(chunks) {
+                if chunk.coordinate.ordinal() != expected_ordinal
                     || chunk.coordinate.logical_offset() != offset as u64
                     || chunk.coordinate.logical_bytes() != value.payload_bytes()
                 {

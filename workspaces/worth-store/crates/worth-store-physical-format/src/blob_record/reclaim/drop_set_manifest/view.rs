@@ -12,7 +12,7 @@ use super::{DROPPED_DIGEST_DOMAIN, FIXED_PAYLOAD_BYTES, MAXIMUM_DROP_SET_RECORDS
 /// Borrowed drop-set payload shared by the owned representation and current
 /// failed-ingest manifest. This internal value admits no standalone wire kind.
 #[derive(Debug, Clone, Copy)]
-pub(in crate::blob_record::reclaim) struct DropSetManifestV1View<'a> {
+pub(in crate::blob_record) struct DropSetManifestV1View<'a> {
     store: [u8; 16],
     reclaim_attempt: [u8; 16],
     source_basis: FailedIngestReclaimBasisV1,
@@ -22,7 +22,7 @@ pub(in crate::blob_record::reclaim) struct DropSetManifestV1View<'a> {
 }
 
 impl<'a> DropSetManifestV1View<'a> {
-    pub(in crate::blob_record::reclaim) fn decode_payload(
+    pub(in crate::blob_record) fn decode_payload(
         payload: &'a [u8],
     ) -> Result<Self, BlobRecordDenial> {
         if payload.len() < FIXED_PAYLOAD_BYTES {

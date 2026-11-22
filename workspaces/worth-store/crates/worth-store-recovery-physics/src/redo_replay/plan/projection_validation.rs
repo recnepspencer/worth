@@ -33,7 +33,7 @@ pub(super) fn validate_projection_semantics(
         {
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
         }
-        if worth_store_physical_format::decode_blob_record(record.bytes()).is_ok()
+        if worth_store_physical_format::validate_blob_record_header(record.bytes()).is_ok()
             && !matches!(*placement, CurrentPhysicalRecordPlacement::Extent(_))
         {
             return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);

@@ -1,6 +1,6 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::{
-    decode_blob_record, BlobRecordKind, BlobRecordV1, DerivedFamilyRootDirectoryV1,
+    validate_blob_record_header, BlobRecordKind, DerivedFamilyRootDirectoryV1,
     PersistedPhysicalRecoveryOperation, PersistedPhysicalRecoveryProjection,
     PersistedRecordIdentity,
 };
@@ -13,27 +13,9 @@ pub(super) fn validate_blob_semantic(
     store: [u8; 16],
     projection: &PersistedPhysicalRecoveryProjection,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
-    let payload_kind = decode_blob_record(bytes).ok().map(|value| {
-        let embedded_store = match &value {
-            BlobRecordV1::SessionDeclared(frame) => frame.store(),
-            BlobRecordV1::Chunk(frame) => frame.occurrence().store(),
-            BlobRecordV1::TreeNode(frame) => frame.occurrence().store(),
-            BlobRecordV1::GenerationPublished(frame) => frame.store(),
-            BlobRecordV1::SessionFrontier(frame) => frame.store(),
-            BlobRecordV1::SessionAbandoned(frame) => frame.store(),
-            BlobRecordV1::DropSetManifest(frame) => frame.store(),
-            BlobRecordV1::DropSetManifestV2(frame) => frame.store(),
-            BlobRecordV1::DropSetManifestV3(frame) => frame.store(),
-            BlobRecordV1::OriginalDropReserved(frame) => frame.store(),
-            BlobRecordV1::ReclaimDescriptor(frame) => frame.store(),
-            BlobRecordV1::ReclaimDescriptorV2(frame) => frame.store(),
-            BlobRecordV1::ReclaimDescriptorV3(frame) => frame.base().store(),
-            BlobRecordV1::ChunkReuseClaim(frame) => frame.store(),
-            BlobRecordV1::ChunkReuseClaimV2(frame) => frame.claim().store(),
-            BlobRecordV1::DedupeQuarantine(frame) => frame.store(),
-        };
-        (value.kind(), embedded_store)
-    });
+    let payload_kind = validate_blob_record_header(bytes)
+        .ok()
+        .map(|header| (header.kind(), header.store()));
     if payload_kind.is_some_and(|(_, embedded_store)| embedded_store != store) {
         return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
     }
@@ -123,7 +105,7 @@ pub(super) fn validate_blob_semantic(
                     if payload_kind.is_some() {
                         return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
                     }
-                    let decoded = DerivedFamilyRootDirectoryV1::decode(bytes)
+                    let decoded = DerivedFamilyRootDirectoryV1::validate_header(bytes)
                         .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
                     if decoded.indexed_through_blob_publication().is_some()
                         || next.indexed_through_quarantine().is_some_and(|expected| {
@@ -153,7 +135,7 @@ pub(super) fn validate_blob_semantic(
             if payload_kind.is_some() {
                 return Err(PhysicalRedoPlanningDenial::InvalidRecoveryProjection);
             }
-            let decoded = DerivedFamilyRootDirectoryV1::decode(bytes)
+            let decoded = DerivedFamilyRootDirectoryV1::validate_header(bytes)
                 .map_err(|_| PhysicalRedoPlanningDenial::InvalidRecoveryProjection)?;
             if decoded.indexed_through_blob_publication() != directory.indexed_through()
                 || directory

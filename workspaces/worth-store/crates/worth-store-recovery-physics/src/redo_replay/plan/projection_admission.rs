@@ -129,6 +129,14 @@ pub(super) fn admit_projection<'projection>(
             }
         }
     }
+    admitted.extent_chunks.sort_unstable_by_key(|chunk| {
+        (
+            chunk.coordinate.record(),
+            chunk.coordinate.extent_cell().extent_id().get(),
+            chunk.coordinate.extent_cell().generation().get(),
+            chunk.coordinate.ordinal(),
+        )
+    });
     Ok(admitted)
 }
 
@@ -236,6 +244,28 @@ impl IntegrityAdmittedRecoveryProjection<'_> {
     }
     pub fn extent_chunks(&self) -> &[AdmittedExtentChunk] {
         &self.extent_chunks
+    }
+    pub fn extent_chunks_for(
+        &self,
+        record: worth_store_physical_format::PersistedRecordIdentity,
+        extent_cell: worth_store_physical_format::RecordExtentGenerationCell,
+    ) -> &[AdmittedExtentChunk] {
+        let target = (
+            record,
+            extent_cell.extent_id().get(),
+            extent_cell.generation().get(),
+        );
+        let key = |chunk: &AdmittedExtentChunk| {
+            (
+                chunk.coordinate.record(),
+                chunk.coordinate.extent_cell().extent_id().get(),
+                chunk.coordinate.extent_cell().generation().get(),
+            )
+        };
+        let start = self.extent_chunks.partition_point(|chunk| key(chunk) < target);
+        let end = start
+            + self.extent_chunks[start..].partition_point(|chunk| key(chunk) == target);
+        &self.extent_chunks[start..end]
     }
     pub fn extent_manifests(&self) -> &[AdmittedExtentManifest] {
         &self.extent_manifests

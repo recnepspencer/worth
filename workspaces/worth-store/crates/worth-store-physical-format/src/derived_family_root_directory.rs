@@ -42,6 +42,27 @@ pub struct DerivedFamilyRootDirectoryV1 {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ValidatedDerivedFamilyRootDirectoryHeader {
+    indexed_through_blob_publication: Option<IndexedThroughBlobPublication>,
+    indexed_through_quarantine: Option<PersistedRecordIdentity>,
+    entry_count: usize,
+}
+
+impl ValidatedDerivedFamilyRootDirectoryHeader {
+    pub const fn indexed_through_blob_publication(self) -> Option<IndexedThroughBlobPublication> {
+        self.indexed_through_blob_publication
+    }
+
+    pub const fn indexed_through_quarantine(self) -> Option<PersistedRecordIdentity> {
+        self.indexed_through_quarantine
+    }
+
+    pub const fn entry_count(self) -> usize {
+        self.entry_count
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DerivedFamilyDirectoryDenial {
     WrongMagic,
     UnsupportedVersion,
@@ -126,62 +147,35 @@ impl DerivedFamilyRootDirectoryV1 {
         bytes
     }
 
-    pub fn decode(bytes: &[u8]) -> Result<Self, DerivedFamilyDirectoryDenial> {
-        if bytes.len() < MAGIC.len() + 1 || &bytes[..8] != MAGIC {
-            return Err(DerivedFamilyDirectoryDenial::WrongMagic);
-        }
-        if bytes.get(8) != Some(&VERSION_V2) {
-            return Err(DerivedFamilyDirectoryDenial::UnsupportedVersion);
-        }
-        if bytes.len() < PREFIX_V2_BYTES {
-            return Err(DerivedFamilyDirectoryDenial::InvalidLength);
-        }
-        if bytes[11] != 0 || bytes[10] > 1 {
-            return Err(DerivedFamilyDirectoryDenial::ReservedFieldNonZero);
-        }
-        let publication = if bytes[10] == 0 {
-            if bytes[12..76] != [0; 64] {
-                return Err(DerivedFamilyDirectoryDenial::ReservedFieldNonZero);
-            }
-            None
-        } else {
-            let record = PersistedRecordIdentity::new(
-                bytes[12..28].try_into().unwrap(),
-                u64::from_le_bytes(bytes[28..36].try_into().unwrap()),
+    /// Validates the full canonical v2 directory frame in place without
+    /// allocating, returning its authenticated header metadata.
+    pub fn validate_header(
+        bytes: &[u8],
+    ) -> Result<ValidatedDerivedFamilyRootDirectoryHeader, DerivedFamilyDirectoryDenial> {
+        let (publication, quarantine, count) = decode_prefix(bytes)?;
+        let mut previous = 0;
+        for frame in bytes[PREFIX_V2_BYTES..].as_chunks::<ENTRY_BYTES>().0.iter() {
+            let tag = u16::from_le_bytes(frame[..2].try_into().unwrap());
+            let _ = family_from_tag(tag).ok_or(DerivedFamilyDirectoryDenial::UnknownFamily)?;
+            let _ = PersistedRecordIdentity::new(
+                frame[2..18].try_into().unwrap(),
+                u64::from_le_bytes(frame[18..26].try_into().unwrap()),
             )
             .ok_or(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)?;
-            Some(
-                IndexedThroughBlobPublication::new(
-                    u64::from_le_bytes(bytes[36..44].try_into().unwrap()),
-                    record,
-                    bytes[44..76].try_into().unwrap(),
-                )
-                .ok_or(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)?,
-            )
-        };
-        let count = bytes[9] as usize;
-        if count > MAX_DERIVED_FAMILY_ROOTS {
-            return Err(DerivedFamilyDirectoryDenial::EntryLimit);
-        }
-        if bytes.len() != PREFIX_V2_BYTES + count * ENTRY_BYTES {
-            return Err(DerivedFamilyDirectoryDenial::InvalidLength);
-        }
-        let quarantine = if bytes[76] > 1 {
-            return Err(DerivedFamilyDirectoryDenial::ReservedFieldNonZero);
-        } else if bytes[76] == 0 {
-            if bytes[77..101] != [0; 24] {
-                return Err(DerivedFamilyDirectoryDenial::ReservedFieldNonZero);
+            if tag <= previous {
+                return Err(DerivedFamilyDirectoryDenial::NonCanonicalOrder);
             }
-            None
-        } else {
-            Some(
-                PersistedRecordIdentity::new(
-                    bytes[77..93].try_into().unwrap(),
-                    u64::from_le_bytes(bytes[93..101].try_into().unwrap()),
-                )
-                .ok_or(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)?,
-            )
-        };
+            previous = tag;
+        }
+        Ok(ValidatedDerivedFamilyRootDirectoryHeader {
+            indexed_through_blob_publication: publication,
+            indexed_through_quarantine: quarantine,
+            entry_count: count,
+        })
+    }
+
+    pub fn decode(bytes: &[u8]) -> Result<Self, DerivedFamilyDirectoryDenial> {
+        let (publication, quarantine, count) = decode_prefix(bytes)?;
         let mut entries = Vec::with_capacity(count);
         for frame in bytes[PREFIX_V2_BYTES..].as_chunks::<ENTRY_BYTES>().0.iter() {
             let tag = u16::from_le_bytes(frame[..2].try_into().unwrap());
@@ -201,6 +195,74 @@ impl DerivedFamilyRootDirectoryV1 {
         directory.indexed_through_quarantine = quarantine;
         Ok(directory)
     }
+}
+
+fn decode_prefix(
+    bytes: &[u8],
+) -> Result<
+    (
+        Option<IndexedThroughBlobPublication>,
+        Option<PersistedRecordIdentity>,
+        usize,
+    ),
+    DerivedFamilyDirectoryDenial,
+> {
+    if bytes.len() < MAGIC.len() + 1 || &bytes[..8] != MAGIC {
+        return Err(DerivedFamilyDirectoryDenial::WrongMagic);
+    }
+    if bytes.get(8) != Some(&VERSION_V2) {
+        return Err(DerivedFamilyDirectoryDenial::UnsupportedVersion);
+    }
+    if bytes.len() < PREFIX_V2_BYTES {
+        return Err(DerivedFamilyDirectoryDenial::InvalidLength);
+    }
+    if bytes[11] != 0 || bytes[10] > 1 {
+        return Err(DerivedFamilyDirectoryDenial::ReservedFieldNonZero);
+    }
+    let publication = if bytes[10] == 0 {
+        if bytes[12..76] != [0; 64] {
+            return Err(DerivedFamilyDirectoryDenial::ReservedFieldNonZero);
+        }
+        None
+    } else {
+        let record = PersistedRecordIdentity::new(
+            bytes[12..28].try_into().unwrap(),
+            u64::from_le_bytes(bytes[28..36].try_into().unwrap()),
+        )
+        .ok_or(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)?;
+        Some(
+            IndexedThroughBlobPublication::new(
+                u64::from_le_bytes(bytes[36..44].try_into().unwrap()),
+                record,
+                bytes[44..76].try_into().unwrap(),
+            )
+            .ok_or(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)?,
+        )
+    };
+    let count = bytes[9] as usize;
+    if count > MAX_DERIVED_FAMILY_ROOTS {
+        return Err(DerivedFamilyDirectoryDenial::EntryLimit);
+    }
+    if bytes.len() != PREFIX_V2_BYTES + count * ENTRY_BYTES {
+        return Err(DerivedFamilyDirectoryDenial::InvalidLength);
+    }
+    let quarantine = if bytes[76] > 1 {
+        return Err(DerivedFamilyDirectoryDenial::ReservedFieldNonZero);
+    } else if bytes[76] == 0 {
+        if bytes[77..101] != [0; 24] {
+            return Err(DerivedFamilyDirectoryDenial::ReservedFieldNonZero);
+        }
+        None
+    } else {
+        Some(
+            PersistedRecordIdentity::new(
+                bytes[77..93].try_into().unwrap(),
+                u64::from_le_bytes(bytes[93..101].try_into().unwrap()),
+            )
+            .ok_or(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)?,
+        )
+    };
+    Ok((publication, quarantine, count))
 }
 
 fn validate_entries(
