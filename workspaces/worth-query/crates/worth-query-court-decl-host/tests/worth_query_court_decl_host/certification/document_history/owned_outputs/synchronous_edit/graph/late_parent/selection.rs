@@ -185,7 +185,7 @@ fn a_reopened_parent_that_drops_its_selection_refuses() {
 }
 
 /// The edit refused in the wave because a reopened derivation dropped a
-/// selection it had derived (typed `SupersededSelectionDropped` in C4).
+/// selection it had derived: `SupersededSelectionDropped`.
 pub(super) fn require_dropped(outcome: Outcome) {
     let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome else {
         panic!("a dropped selection must not commit: {outcome:?}")
@@ -194,7 +194,10 @@ pub(super) fn require_dropped(outcome: Outcome) {
         .coupled_producer_denial()
         .unwrap_or_else(|| panic!("the wave refuses the dropped selection: {cause:?}"));
     assert!(
-        format!("{denial:?}").contains("dropped a selection it derived"),
+        matches!(
+            denial.kind(),
+            WorthQueryOutputDemandDenialKind::SupersededSelectionDropped { .. }
+        ),
         "{denial:?}"
     );
 }

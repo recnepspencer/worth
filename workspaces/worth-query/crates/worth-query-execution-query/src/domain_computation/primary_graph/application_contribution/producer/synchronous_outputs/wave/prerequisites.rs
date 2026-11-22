@@ -60,7 +60,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             let mut incoming = Self::new();
             // Its suppliers are owed by the demand that owes this task.
             context.owner.owe(&self.tasks[i].owed);
-            context.owner.discover_for(Some(i));
+            context.owner.discover_incoming_for(i);
             let closed = self.tasks[i].tree.prerequisites(
                 context,
                 candidate,

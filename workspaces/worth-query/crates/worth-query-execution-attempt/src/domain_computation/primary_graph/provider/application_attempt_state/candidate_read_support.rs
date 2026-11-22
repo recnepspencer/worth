@@ -23,6 +23,8 @@ pub struct RetainedCandidateRead {
     pub position: usize,
     /// The wave task whose discovery retained it, if a task owns it.
     pub owner: Option<usize>,
+    /// Its owner's incoming prerequisite selection, not its children's.
+    pub incoming: bool,
     pub support: CandidateReadSupport,
     pub window_end: Option<usize>,
 }

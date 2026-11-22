@@ -5,6 +5,10 @@
 //! the later of its own demand and the invalidator (R1).
 use super::ledger::{Derivation, LedgerStop};
 use super::*;
+mod selection;
+mod work;
+pub(in crate::domain_computation::primary_graph::application_contribution) use selection::ReopenTarget;
+use work::{charge, ledger_stop};
 use crate::domain_computation::primary_graph::application_attempt::fact::touch_key;
 use crate::domain_computation::primary_graph::provider::{ParentRead, RetainedReadRequalification};
 
@@ -24,47 +28,15 @@ pub(in crate::domain_computation::primary_graph::application_contribution) enum 
     Stage { physical: usize, position: usize },
 }
 
-/// A retained parent output whose derivation must run again.
+/// A derivation qualified use reopens: a retained parent output, or a
+/// selection (#238).
 pub(in crate::domain_computation::primary_graph::application_contribution) struct Reopen {
-    pub(in crate::domain_computation::primary_graph::application_contribution) read: ParentRead,
+    pub(in crate::domain_computation::primary_graph::application_contribution) target: ReopenTarget,
     /// The applied position and owed position of the append whose exact
     /// comparison invalidated it.
     pub(in crate::domain_computation::primary_graph::application_contribution) invalidator: usize,
     pub(in crate::domain_computation::primary_graph::application_contribution) invalidator_owed:
         usize,
-}
-
-fn ledger_stop(subject: &'static str, LedgerStop(cause): LedgerStop) -> CoupledSourceReadStop {
-    use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Attempt;
-    use worth_execution::ExecutionOrderedMapDenial as Map;
-    CoupledSourceReadStop::capture(match cause {
-        Map::Allocation(cause) => Attempt::allocation_denied(subject, cause),
-        Map::Request(cause) => Attempt::relational_read_stopped(cause.into(), subject),
-        Map::CapacityOverflow => Attempt::new(
-            crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded,
-            subject,
-        ),
-    })
-}
-
-/// Charge qualification work; it is the wave's scheduling share, observed so.
-fn charge(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    subject: &'static str,
-    work: u64,
-) -> Result<(), CoupledSourceReadStop> {
-    use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial as Attempt;
-    synchronous_outputs::observe_scheduling_work(work);
-    let denied = |cause: worth_execution::WorkCeilingDenial| {
-        CoupledSourceReadStop::capture(Attempt::relational_read_stopped(cause.into(), subject))
-    };
-    execution
-        .run_native_with_checkpoint(|context| {
-            crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)
-        })
-        .map_err(denied)?
-        .0
-        .map_err(|cause| denied(worth_execution::WorkCeilingDenial::Stopped(cause)))
 }
 
 impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
@@ -80,7 +52,14 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         &self,
         task: Option<usize>,
     ) {
-        self.discovering.set(task);
+        self.discovering.set(task.map(|task| (task, false)));
+    }
+    /// The wave task whose incoming prerequisite selection retains next.
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn discover_incoming_for(
+        &self,
+        task: usize,
+    ) {
+        self.discovering.set(Some((task, true)));
     }
     /// A reopened task's discovery evidence retained before `invalidator`
     /// ends there, once its re-discovery proved it dropped nothing.
@@ -257,6 +236,11 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         member: AppendedMember,
     ) -> Result<(), CoupledSourceReadStop> {
         let subject = "append touch marking";
+        let (at, at_owed) = match &member {
+            AppendedMember::Part { position, owed, .. } => (*position, *owed),
+            AppendedMember::Stage { position, .. } => (*position, *position),
+        };
+        self.mark_selections(execution, candidate, at, at_owed)?;
         if self.ledger.borrow().is_empty() {
             return Ok(());
         }
@@ -352,7 +336,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
             if changed {
                 self.ledger.borrow_mut().supersede(id);
                 self.reopens.borrow_mut().push(Reopen {
-                    read,
+                    target: ReopenTarget::Retention(read),
                     invalidator,
                     invalidator_owed,
                 });
@@ -384,7 +368,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         if answer == RetainedReadRequalification::Superseded {
             self.ledger.borrow_mut().supersede(id);
             self.reopens.borrow_mut().push(Reopen {
-                read,
+                target: ReopenTarget::Retention(read),
                 invalidator,
                 invalidator_owed,
             });

@@ -2,6 +2,9 @@
 //! successor replaces its chain's writer in place, but the image its earlier
 //! round produced stays where it applied: a retained read that round changed
 //! before the read's recorded invalidator changed inside the read's window.
+//! Since C4 a selection's support is compared at every append, the superseded
+//! round's own included, so such a change ends the window there and the
+//! selection runs again (#238); the window check stays the backstop.
 use super::super::super::interleaved::component_carriage::parent as owner;
 use super::*;
 use family::{decision_input, decision_write, ordinary_input};
@@ -203,21 +206,98 @@ impl ApplicationProgramDefinition<Schema> for Program {
     }
 }
 
+/// The same graph without the watch, which selects nothing in every state:
+/// committing the stage through it builds the world the edit must equal.
+pub type BareTree =
+    ApplicationOutputGraph<program::Connection, ApplicationOutputOccurrences<Watched>>;
+pub struct BareDelivery;
+impl ApplicationActionDelivery<Schema, edit::Binding> for BareDelivery {
+    type Mode = ApplicationFixedDeliveryMode<BareTree, ApplicationNoProjection>;
+    const IDENTITY: &'static str = "owned-outputs.late-parent.superseded-window-bare-delivery";
+}
+impl ApplicationFixedActionDelivery<Schema, edit::Binding> for BareDelivery {
+    type Root = BareTree;
+    type Projection = ApplicationNoProjection;
+}
+pub struct BareProgram;
+impl ApplicationProgramDefinition<Schema> for BareProgram {
+    type Contributions = (Contribution,);
+    type Outputs = ApplicationProgramOutputs<BareTree>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("owned-outputs.late-parent.superseded-window-bare-program");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        let mut specs = super::super::hierarchy::Program::feature_specs();
+        specs[0] = super::super::super::super::program::entry_spec::<BareDelivery>();
+        specs
+    }
+}
+
 use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
+
+/// first:a and second:a as committed.
+fn committed(request: &family::Request<'_, '_, '_>) -> (u64, u64) {
+    let first = request
+        .query(query::first_output::Read("first:a".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .value;
+    let second = request
+        .query(query::second_output::Read("second:a".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .value;
+    (first, second)
+}
+
+/// The stage `b = 8` committed through the graph without the watch.
+fn sequential() -> (u64, u64) {
+    let host = world::install_program_with_other_model::<BareProgram>(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        2,
+        Some(7),
+    );
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let mut edit = request
+        .edit_envelope()
+        .idempotency("late-parent-superseded-window-bare".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    edit.push_stage::<BareTree, _>(edit::Intent {
+        key: "b".into(),
+        value: 8,
+    })
+    .unwrap();
+    let outcome = edit
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
+    committed(&request)
+}
 
 /// One stage (`b = 8`) enters `decision-input(a)` (first:a = 2 + 5 at 1).
 /// At 1 its occurrence component discovers `second(a)`, its prerequisite
 /// consumer, and `decision-write(b)`; its static watch discovers nothing
 /// through the join (no `second:a`: 0) and keeps that query read. `second(a)`
-/// derives at 2 and creates `second:a` (2 + 1000), changing the watch's read;
-/// it is the parent's own consumer and does not reopen it. The writer
-/// appends at 3 and writes m = 9, reopening the parent (window of the watch
-/// read: 1 to 3); `second(a)` reopens with it, and its successor replaces the
-/// round at 2 by one at 5. The round at 2 changed the watch read before its
-/// invalidator, so the edit refuses (R4). A window that saw only the chain's
-/// final round, after the invalidator, would commit first:a = 11.
+/// derives at 2 and creates `second:a` (2 + 1000), changing the watch's read.
+/// Qualified use compares that selection support at the append at 2 (#238,
+/// PR C C4): it changed, so its window ends at 2, authenticated by that exact
+/// comparison, and the parent selects its children again (nothing, through a
+/// join that now sums 1002). The writer appends at 3 and writes m = 9,
+/// reopening the parent, which derives first:a = 2 + 9 = 11 and selects
+/// again; `second(a)` reopens with it and derives 1002 again. Every read is
+/// checked over its window, so the edit commits the single-stage fixed point:
+/// first:a = 11, second:a = 1002, the world the same stage commits through
+/// the graph without the watch. (Before C4 this refused at final support:
+/// the window over the superseded round at 2 saw the change, and discovery
+/// support had no owner to select again.)
 #[test]
-fn a_superseded_round_changing_a_windowed_discovery_read_refuses() {
+fn a_superseded_round_changing_a_watched_selection_selects_again() {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_program_with_other_model::<Program>(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
@@ -241,22 +321,14 @@ fn a_superseded_round_changing_a_windowed_discovery_read_refuses() {
     let outcome = edit
         .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(denial)) = outcome else {
-        panic!("the superseded round's change inside the window must refuse: {outcome:?}")
-    };
-    let failure = denial
-        .invariant_execution_failure()
-        .expect("final candidate support refuses");
-    assert_eq!(
-        failure.kind(),
-        WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged,
-        "{failure:?}"
-    );
+    let events = _execution.wave_events_for_test();
+    assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}; {events:#?}");
     assert!(
-        failure
-            .detail()
-            .contains("superseded discovery support changed before its recorded invalidator"),
-        "{failure:?}"
+        events.iter().any(|event| event.starts_with("reselect children task=0")),
+        "the changed watch selects again: {events:#?}"
     );
-    assert!(failure.detail().contains("joined"), "{failure:?}");
+    // The watch selects nothing in every state, so the world equals the
+    // stage committed without it: first:a = 2 + 9, second:a = 2 + 1000.
+    assert_eq!(committed(&request), (11, 1002));
+    assert_eq!(sequential(), (11, 1002));
 }

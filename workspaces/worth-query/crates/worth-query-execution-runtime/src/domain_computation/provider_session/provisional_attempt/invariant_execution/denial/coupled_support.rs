@@ -47,7 +47,8 @@ impl WorthQueryInvariantExecutionFailure {
         failure
     }
     /// Members of one coupled group consume each other's outputs in a cycle,
-    /// attributed to every member no consumption order can place.
+    /// attributed to each source entity of a member no consumption order can
+    /// place, once.
     pub fn coupled_consumption_cycle(
         sources: impl IntoIterator<Item = worth_relational::facade::identity::EntityId>,
     ) -> Self {
@@ -55,12 +56,14 @@ impl WorthQueryInvariantExecutionFailure {
             WorthQueryInvariantExecutionDenialKind::CoupledConsumptionCycle,
             "coupled consumed-output settlement formed a cycle",
         );
-        failure.affected_records = Some(
-            sources
-                .into_iter()
-                .map(worth_relational::facade::transactions::RecordRef::Entity)
-                .collect(),
-        );
+        let mut records = Vec::<worth_relational::facade::transactions::RecordRef>::new();
+        for source in sources {
+            let record = worth_relational::facade::transactions::RecordRef::Entity(source);
+            if !records.contains(&record) {
+                records.push(record);
+            }
+        }
+        failure.affected_records = Some(records.into());
         failure
     }
     pub fn missing_coupled_settlement(
