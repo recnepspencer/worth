@@ -34,10 +34,14 @@ impl RelationalBranchSharingObservation {
     /// [`Self::unique_physical_authoritative_bytes`] exactly, which is what
     /// makes that total independently checkable.
     ///
-    /// That agreement is arithmetic, not a physical measurement of nested
-    /// persistent aspect backing. A payload carrier's row includes its checked
-    /// declared upper bound for that backing, and distinct carriers sharing it
-    /// each include it. No row identifies a shared aspect node or value.
+    /// As of inspection version 8, each payload carrier row records only the
+    /// carrier's own layout, and nested persistent aspect backing (map nodes,
+    /// admitted cells, struct field trees, keys, and scalar/string/byte
+    /// buffers) appears as distinct physical allocation rows deduplicated by
+    /// live allocation identity across all selected roots and arenas. Schema
+    /// contracts remain accounted under `RootSchemaAuthority`, and optional
+    /// canonical commit envelope records retain their declared canonical
+    /// footprint convention.
     pub fn authoritative_allocations(&self) -> &[RelationalAuthoritativeAllocationObservation] {
         &self.authoritative_allocations
     }

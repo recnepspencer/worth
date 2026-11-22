@@ -29,7 +29,7 @@ impl AuthoritativeRecordAspectPatch {
         let mut copied = 0usize;
         for contract in &self.whole_aspect_clears {
             if let Some(value) = current.and_then(|state| state.get(contract.key())) {
-                payload = payload.checked_sub(entry_bytes(value)?)?;
+                payload = payload.checked_sub(entry_bytes(value))?;
                 count = count.checked_sub(1)?;
             }
         }
@@ -41,12 +41,11 @@ impl AuthoritativeRecordAspectPatch {
                 .is_ok();
             if !was_cleared && let Some(previous) = current.and_then(|state| state.get(value.key()))
             {
-                payload = payload.checked_sub(entry_bytes(previous)?)?;
+                payload = payload.checked_sub(entry_bytes(previous))?;
                 count = count.checked_sub(1)?;
             }
             count = count.checked_add(1)?;
-            payload = payload.checked_add(entry_bytes(value)?)?;
-            copied = copied.checked_add(value.key().as_str().len())?;
+            payload = payload.checked_add(entry_bytes(value))?;
             new_key_width = new_key_width.max(value.key().as_str().len());
         }
         let mut denial_key = 0usize;
@@ -80,14 +79,11 @@ impl AuthoritativeRecordAspectPatch {
             let retained_value =
                 Value::struct_retained_storage_bytes(patch.contract(), retained_fields)?;
             payload = payload
-                .checked_sub(entry_bytes(previous)?)?
-                .checked_add(std::mem::size_of::<(crate::aspects::AspectKey, Value)>() as u128)?
-                .checked_add(patch.key().as_str().len() as u128)?
+                .checked_sub(entry_bytes(previous))?
                 .checked_add(retained_value as u128)?;
             copied = copied
                 .checked_add(field_scratch)?
-                .checked_add(Value::admission_storage_bytes(patch.contract())?)?
-                .checked_add(patch.key().as_str().len())?;
+                .checked_add(Value::admission_storage_bytes(patch.contract())?)?;
         }
         if current.is_none() && self.whole_aspect_sets.is_empty() {
             return Some(AspectPatchStorageBounds {
@@ -98,31 +94,17 @@ impl AuthoritativeRecordAspectPatch {
         let operations = self
             .whole_aspect_clears
             .len()
-            .checked_add(self.whole_aspect_sets.len().checked_mul(2)?)?
-            .checked_add(self.field_patches.len().checked_mul(2)?)?;
+            .checked_add(self.whole_aspect_sets.len())?
+            .checked_add(self.field_patches.len())?;
+        let final_nodes = Map::construction_storage_bytes(count)?;
+        let retained_bytes = usize::try_from(payload).ok()?.checked_add(final_nodes)?;
         let path_bytes = match map {
             Some(map) => {
                 map.edit_storage_bytes(operations, self.whole_aspect_sets.len(), new_key_width)?
             }
-            None if self.whole_aspect_sets.len() <= 64 => {
-                // The actual application constructor consumes a unique stream;
-                // both roots stay unique leaves. Key copies are in `copied`.
-                Map::construction_storage_bytes(0)?
-            }
-            // A larger unique stream still copies nothing on write; one
-            // remove-then-insert path bounds its construction scratch.
-            None => Map::empty_edit_storage_bytes(2, self.whole_aspect_sets.len(), new_key_width)?,
+            // Sorted birth constructs the balanced AVL tree directly with zero path-copy scratch.
+            None => final_nodes,
         };
-        // Full node capacity already includes the occupied inline key/value
-        // cells counted in the cached payload extent. Only nested heaps remain.
-        let inline = std::mem::size_of::<(crate::aspects::AspectKey, Value)>() as u128;
-        let payload = payload.checked_sub(inline.checked_mul(count as u128)?)?;
-        let retained_bytes = usize::try_from(payload)
-            .ok()?
-            .checked_add(Map::construction_storage_bytes(count)?)?;
-        // The construction bound includes final nodes and every newly copied
-        // key/field/value. Retention pays those final nodes once, so scratch is
-        // only construction's excess above the independent successor bill.
         let construction = path_bytes.checked_add(copied)?.checked_add(denial_key)?;
         Some(AspectPatchStorageBounds {
             retained_bytes,
@@ -131,10 +113,6 @@ impl AuthoritativeRecordAspectPatch {
     }
 }
 
-fn entry_bytes(value: &Value) -> Option<u128> {
-    Some(
-        std::mem::size_of::<(crate::aspects::AspectKey, Value)>() as u128
-            + value.key().owned_allocation_capacity_bytes() as u128
-            + value.owned_allocation_capacity_bytes() as u128,
-    )
+fn entry_bytes(value: &Value) -> u128 {
+    value.owned_allocation_capacity_bytes() as u128
 }

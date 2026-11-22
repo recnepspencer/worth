@@ -72,8 +72,8 @@ fn read_exact(
         ContractValidatedAspectValueView::Scalar(value) => value,
         ContractValidatedAspectValueView::Struct(value) => value.get(&field_key("name")).unwrap(),
     };
-    let AspectValue::String(text) = value else {
-        panic!("the admitted field must contain text")
+    let AspectValue::String(InternedString::Symbol(symbol)) = value else {
+        panic!("managed text must remain a symbol, never Raw")
     };
     let snapshot = super::checkpoint_recovery_observation::snapshot_for_branch(
         runtime,
@@ -84,14 +84,13 @@ fn read_exact(
         .pin_read_capability(&snapshot, &[], execution)
         .unwrap();
     let symbols = pinned.symbols();
-    let actual = match text {
-        InternedString::Raw(text) => Some(text.as_str()),
-        InternedString::Stored(text) => Some(text.as_str()),
-        InternedString::Symbol(symbol) => {
-            symbols.resolve(worth_relational::facade::symbols::Symbol(symbol.0))
-        }
-    };
-    assert_eq!(actual, Some(JSON));
+    let symbol = worth_relational::facade::symbols::Symbol(symbol.0);
+    assert_eq!(symbols.resolve(symbol), Some(JSON));
+    assert!(symbols
+        .retained_text(symbol)
+        .unwrap()
+        .charged_payload_bytes()
+        .is_some());
     runtime.snapshots().release_snapshot(&snapshot).unwrap();
     pinned
 }
@@ -168,6 +167,15 @@ fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_own
     let pinned = read_exact(execution, &restored, entity, version);
     let key = pinned.symbols().symbol("native-managed-text").unwrap();
     assert_eq!(pinned.symbols().resolve(key), Some("native-managed-text"));
+    assert_eq!(
+        pinned
+            .symbols()
+            .retained_text(key)
+            .unwrap()
+            .charged_payload_bytes(),
+        None,
+        "ordinary client-key custody stays System"
+    );
     create_entity(execution, &restored, "after-restored-managed-text");
     assert_eq!(pinned.symbols().resolve(key), Some("native-managed-text"));
     drop(restored);

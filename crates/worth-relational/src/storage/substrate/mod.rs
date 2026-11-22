@@ -12,8 +12,9 @@ pub(in crate::storage) use stored_value::sealed::Sealed as StoredValueSealed;
 pub(crate) use stored_value::{StoredValue, StoredValueObservation};
 
 pub(crate) use allocation_visitor::{
-    visit_inline_value, visit_new_inline_value, StorageAllocationExtent,
-    StorageAllocationObservation, StorageAllocationVisitor,
+    visit_foundational_value_backing, visit_inline_value, visit_new_foundational_value_backing,
+    visit_new_inline_value, StorageAllocationExtent, StorageAllocationObservation,
+    StorageAllocationOverflow, StorageAllocationVisitor,
 };
 pub(crate) use record_arena::*;
 pub use shared_column::observe_history_prefix_traversal;

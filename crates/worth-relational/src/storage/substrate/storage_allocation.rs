@@ -70,6 +70,9 @@ impl<T> StorageAllocation<T> {
     pub(crate) fn is_unique(&self) -> bool {
         Arc::strong_count(&self.0) == 1
     }
+    pub(crate) fn strong_count(&self) -> usize {
+        Arc::strong_count(&self.0)
+    }
     /// The owner payload and reference-count header, including alignment but
     /// excluding allocator-private bookkeeping and T's separately owned storage.
     pub(crate) fn layout_bytes() -> u64 {

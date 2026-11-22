@@ -129,7 +129,11 @@ fn definition_extent(key: &AspectKey, shape: &AspectShape) -> (usize, usize) {
             AspectShape::Struct(shape) => shape.owned_allocation_capacity_bytes(),
             _ => 0,
         })
-        .saturating_add(std::mem::size_of::<super::AspectContractDefinition>())
-        .saturating_add(2 * std::mem::size_of::<usize>());
+        .saturating_add(
+            crate::aspects::allocation_visitor::arc_allocation_bytes::<
+                super::AspectContractDefinition,
+            >()
+            .expect("aspect contract definition layout fits"),
+        );
     (semantic, allocated)
 }

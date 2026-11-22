@@ -273,6 +273,8 @@ fn program_action_from_another_runtime_cannot_commit_this_product() {
         .expect("the second conditional runtime closes");
 }
 
+pub(crate) mod execution_memory;
+
 pub(crate) mod mutation_attempt_report;
 
 pub(crate) mod temporal_integrity_lease;

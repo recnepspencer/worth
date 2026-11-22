@@ -156,20 +156,29 @@ impl RelationalRetentionAtomicCounters {
     }
 }
 
-pub(super) fn record_reclamation(
+pub(super) fn try_record_reclamation(
     counters: &mut RelationalRetentionCostCounters,
     examined: u64,
     reclaimed: u64,
     unique_bytes: u64,
-) {
-    counters.reclamation_roots_examined =
-        counters.reclamation_roots_examined.saturating_add(examined);
-    counters.reclamation_roots_reclaimed = counters
+) -> Result<(), crate::storage::substrate::StorageAllocationOverflow> {
+    use crate::storage::substrate::StorageAllocationOverflow;
+    let next_examined = counters
+        .reclamation_roots_examined
+        .checked_add(examined)
+        .ok_or(StorageAllocationOverflow)?;
+    let next_reclaimed = counters
         .reclamation_roots_reclaimed
-        .saturating_add(reclaimed);
-    counters.reclamation_unique_authoritative_bytes = counters
+        .checked_add(reclaimed)
+        .ok_or(StorageAllocationOverflow)?;
+    let next_unique_bytes = counters
         .reclamation_unique_authoritative_bytes
-        .saturating_add(unique_bytes);
+        .checked_add(unique_bytes)
+        .ok_or(StorageAllocationOverflow)?;
+    counters.reclamation_roots_examined = next_examined;
+    counters.reclamation_roots_reclaimed = next_reclaimed;
+    counters.reclamation_unique_authoritative_bytes = next_unique_bytes;
+    Ok(())
 }
 
 pub(super) fn record_acquire(

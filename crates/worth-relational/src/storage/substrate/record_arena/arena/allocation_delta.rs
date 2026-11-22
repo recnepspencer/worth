@@ -21,7 +21,17 @@ impl<K: RecordKind> RecordArena<K> {
         );
     }
 
+    #[cfg(test)]
     pub(crate) fn visit_new_authoritative_allocations(
+        &self,
+        previous: &Self,
+        visitor: &mut dyn StorageAllocationVisitor,
+    ) {
+        self.visit_new_non_extra_authoritative_allocations(previous, visitor);
+        self.visit_new_extra_allocations(previous, visitor);
+    }
+
+    pub(crate) fn visit_new_non_extra_authoritative_allocations(
         &self,
         previous: &Self,
         visitor: &mut dyn StorageAllocationVisitor,
@@ -90,7 +100,6 @@ impl<K: RecordKind> RecordArena<K> {
         );
         self.extra
             .visit_new_allocations(&previous.extra, visitor, &mut |_, _, _, _| {});
-        self.visit_new_extra_allocations(previous, visitor);
         self.aspect_versions.visit_new_allocations(
             &previous.aspect_versions,
             visitor,

@@ -1,5 +1,5 @@
 //! Owner-allocation union without per-root logical or excluded-lane inventories.
-//! Nested persistent aspect backing is each payload carrier's declared bound.
+//! Nested persistent aspect backing is visited at physical node/value granularity.
 use super::*;
 use crate::branch::{
     RelationalRootAllocationVisitor, RelationalRootAuthoritativeAllocationObservation,
@@ -71,10 +71,14 @@ impl RelationalRootAllocationVisitor for CensusRootWalk<'_> {
 
     fn region(
         &mut self,
-        region: crate::branch::RelationalRootRegionObservation,
+        region: Result<
+            crate::branch::RelationalRootRegionObservation,
+            crate::storage::substrate::StorageAllocationOverflow,
+        >,
         partition: Result<&PartitionState, RelationalStorageUnavailable>,
     ) -> Result<(), Denial> {
         let start = std::time::Instant::now();
+        let region = region.map_err(|_| Denial::AuthoritativeByteBoundOverflow)?;
         let partition = partition.map_err(Denial::StorageUnavailable)?;
         self.accounting.census_work.as_mut().unwrap().region_entries += 1;
         for allocation in

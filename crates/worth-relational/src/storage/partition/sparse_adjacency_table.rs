@@ -121,6 +121,7 @@ impl SparseAdjacencyTable {
         self.entries.into_iter()
     }
 
+    #[cfg(test)]
     pub(crate) fn allocation_bytes(&self) -> u64 {
         self.entries.allocation_bytes()
     }

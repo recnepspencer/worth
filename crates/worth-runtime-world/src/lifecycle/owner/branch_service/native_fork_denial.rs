@@ -28,7 +28,8 @@ pub(super) fn admission_denial(cause: &Native) -> World {
         | Native::DurablePublicationRefused(_)
         | Native::TransitionSequenceExhausted
         | Native::TransitionStorageExhausted
-        | Native::TransitionOriginalPrefixMismatch => World::OwnerUnavailable,
+        | Native::TransitionOriginalPrefixMismatch
+        | Native::AllocationAccountingOverflow => World::OwnerUnavailable,
     }
 }
 

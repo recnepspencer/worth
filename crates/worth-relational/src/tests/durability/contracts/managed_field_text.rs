@@ -82,6 +82,66 @@ fn read_exact(
     pinned
 }
 
+// Fixture adaptation (C2.5): restores df2420390e's checkpoint-plus-tail managed
+// field-text recovery over the Memory runtime (no retired test medium).
+#[test]
+fn native_field_text_checkpoint_then_tail_recovers_exact_json_after_original_owners_drop() {
+    let original = test_execution_lease();
+    let execution = &ExecutionRequest::leased(&original);
+    let source = runtime_with_test_schema();
+    let baseline = create_entity_outcome(execution, &source, "checkpoint-before-managed-text");
+    release_test_commit_snapshot(&source, &baseline);
+    let recovery_config = source.config(); // no managed text exists here
+    source.durability_authority().checkpoint(execution).unwrap();
+    let committed = commit_text(execution, &source).unwrap();
+    let entity = changed_entities(&committed)[0];
+    let version = committed.version_id;
+    release_test_commit_snapshot(&source, &committed);
+    let plan = source
+        .durability()
+        .recovery_plan(
+            execution,
+            crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    drop((committed, baseline, source, original));
+
+    let recovery_lease = test_execution_lease();
+    let execution = &ExecutionRequest::leased(&recovery_lease);
+    let mut restored = crate::runtime::RelationalRuntime::new(recovery_config)
+        .expect("valid native runtime configuration");
+    assert_eq!(plan.checkpoint.as_ref().unwrap().envelopes.len(), 1);
+    assert_eq!(plan.tail_log.len(), 1);
+    let outcome = restored
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
+    assert_eq!(outcome.coverage.replayed_tail_commits, 1);
+    let pinned = read_exact(execution, &restored, entity, version);
+    let key = pinned.symbols().symbol("native-managed-text").unwrap();
+    assert_eq!(pinned.symbols().resolve(key), Some("native-managed-text"));
+    assert_eq!(
+        pinned
+            .symbols()
+            .retained_text(key)
+            .unwrap()
+            .charged_payload_bytes(),
+        None,
+        "ordinary client-key custody stays System"
+    );
+    create_entity(execution, &restored, "after-restored-managed-text");
+    restored
+        .services
+        .symbols
+        .with_read(|symbols| assert_eq!(symbols.resolve(key), Some("native-managed-text")));
+    drop(restored);
+    let symbols = pinned.symbols();
+    assert_eq!(
+        symbols.symbol(JSON).and_then(|symbol| symbols.resolve(symbol)),
+        Some(JSON)
+    );
+}
+
 // Fixture adaptation (C2.4): restores f9f15bf8c8's readmission denial budget
 // invoice on the Memory runtime (Embedded native checkpoint has no medium
 // dependency).

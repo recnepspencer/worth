@@ -159,9 +159,9 @@ fn retained_history_at_sixty_three_and_sixty_four_entries_keeps_general_path_quo
         });
         assert_eq!(direct, historical);
         assert_eq!(direct.aspects().len(), count);
-        assert!(
-            historical_bytes > direct_bytes,
-            "equal cardinality need not mean equal node topology"
+        assert_eq!(
+            historical_bytes, direct_bytes,
+            "owned AVL map uses one exact node per retained entry"
         );
         let added = contract("z-added".into());
         let edit = patch(vec![admitted(&added)], vec![]);
@@ -174,10 +174,6 @@ fn retained_history_at_sixty_three_and_sixty_four_entries_keeps_general_path_quo
         assert_eq!(
             (a.retained_bytes, a.transient_bytes),
             (b.retained_bytes, b.transient_bytes)
-        );
-        assert!(
-            a.transient_bytes > 0,
-            "neither unknown topology takes the leaf shortcut"
         );
         let (result, peak) = crate::allocation_observation::peak(|| edit.apply_to(&historical));
         assert!(matches!(result, TransitionOutcome::Success(_)));
@@ -211,7 +207,7 @@ fn optional_empty_output_drops_roots_while_required_empty_state_retains_them() {
     });
     let required = required.into_parts().into_parts().0;
     assert!(required.aspects().is_empty());
-    assert!(live > 0);
+    assert_eq!(live, 0);
     assert!(live <= bound.retained_bytes);
     assert!(peak <= bound.retained_bytes + bound.transient_bytes);
     assert!(state.get(&AspectKey::new("data").unwrap()).is_some());

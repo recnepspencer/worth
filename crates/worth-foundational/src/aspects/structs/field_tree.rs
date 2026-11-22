@@ -6,13 +6,43 @@ use serde::{ser::SerializeMap, Serialize, Serializer};
 use std::sync::Arc;
 
 type Link = Option<Arc<Node>>;
-struct Node {
+#[derive(Clone)]
+struct FieldEntry {
     key: Arc<FieldKey>,
+    key_birth_seq: Option<u64>,
     value: Arc<AspectValue>,
+    value_birth_seq: Option<u64>,
+}
+impl FieldEntry {
+    fn fresh(key: FieldKey, value: AspectValue) -> Self {
+        Self {
+            key: Arc::new(key),
+            key_birth_seq: crate::aspects::allocation_visitor::next_allocation_birth_seq(),
+            value: Arc::new(value),
+            value_birth_seq: crate::aspects::allocation_visitor::next_allocation_birth_seq(),
+        }
+    }
+    #[cfg(test)]
+    fn with_arc_value(
+        key: FieldKey,
+        value: Arc<AspectValue>,
+        value_birth_seq: Option<u64>,
+    ) -> Self {
+        Self {
+            key: Arc::new(key),
+            key_birth_seq: crate::aspects::allocation_visitor::next_allocation_birth_seq(),
+            value,
+            value_birth_seq,
+        }
+    }
+}
+struct Node {
+    entry: FieldEntry,
     left: Link,
     right: Link,
     height: usize,
     len: usize,
+    birth_seq: Option<u64>,
 }
 #[derive(Clone, Default)]
 pub(super) struct StructFields {
@@ -48,16 +78,23 @@ impl StructFields {
     pub(super) fn get_key_value(&self, key: &FieldKey) -> Option<(&FieldKey, &Arc<AspectValue>)> {
         let mut current = self.root.as_deref();
         while let Some(node) = current {
-            match key.cmp(&node.key) {
+            match key.cmp(&node.entry.key) {
                 std::cmp::Ordering::Less => current = node.left.as_deref(),
-                std::cmp::Ordering::Equal => return Some((&node.key, &node.value)),
+                std::cmp::Ordering::Equal => return Some((&node.entry.key, &node.entry.value)),
                 std::cmp::Ordering::Greater => current = node.right.as_deref(),
             }
         }
         None
     }
+    pub(super) fn insert_fresh(&mut self, key: FieldKey, value: AspectValue) {
+        self.root = Some(insert(&self.root, FieldEntry::fresh(key, value)));
+    }
+    #[cfg(test)]
     pub(super) fn insert(&mut self, key: FieldKey, value: Arc<AspectValue>) {
-        self.root = Some(insert(&self.root, Arc::new(key), value));
+        self.root = Some(insert(
+            &self.root,
+            FieldEntry::with_arc_value(key, value, None),
+        ));
     }
     pub(super) fn remove(&mut self, key: &FieldKey) {
         if self.contains_key(key) {
@@ -120,7 +157,7 @@ fn sorted_node(fields: &mut std::vec::IntoIter<(FieldKey, AspectValue)>, count: 
         .next()
         .expect("the admitted stream has its declared field count");
     let right = sorted_node(fields, count - left_count - 1);
-    Some(node(Arc::new(key), Arc::new(value), left, right))
+    Some(node(FieldEntry::fresh(key, value), left, right))
 }
 
 fn height(link: &Link) -> usize {
@@ -129,25 +166,24 @@ fn height(link: &Link) -> usize {
 fn length(link: &Link) -> usize {
     link.as_ref().map_or(0, |node| node.len)
 }
-fn node(key: Arc<FieldKey>, value: Arc<AspectValue>, left: Link, right: Link) -> Arc<Node> {
+fn node(entry: FieldEntry, left: Link, right: Link) -> Arc<Node> {
     Arc::new(Node {
-        key,
-        value,
+        entry,
         height: 1 + height(&left).max(height(&right)),
         len: 1 + length(&left) + length(&right),
         left,
         right,
+        birth_seq: crate::aspects::allocation_visitor::next_allocation_birth_seq(),
     })
 }
-fn balanced(key: Arc<FieldKey>, value: Arc<AspectValue>, left: Link, right: Link) -> Arc<Node> {
+fn balanced(entry: FieldEntry, left: Link, right: Link) -> Arc<Node> {
     if height(&left) > height(&right) + 1 {
         let root = left.as_ref().expect("left-heavy AVL node has a left child");
         if height(&root.left) >= height(&root.right) {
             return node(
-                root.key.clone(),
-                root.value.clone(),
+                root.entry.clone(),
                 root.left.clone(),
-                Some(node(key, value, root.right.clone(), right)),
+                Some(node(entry, root.right.clone(), right)),
             );
         }
         let pivot = root
@@ -155,15 +191,13 @@ fn balanced(key: Arc<FieldKey>, value: Arc<AspectValue>, left: Link, right: Link
             .as_ref()
             .expect("left-right AVL rotation has its pivot");
         return node(
-            pivot.key.clone(),
-            pivot.value.clone(),
+            pivot.entry.clone(),
             Some(node(
-                root.key.clone(),
-                root.value.clone(),
+                root.entry.clone(),
                 root.left.clone(),
                 pivot.left.clone(),
             )),
-            Some(node(key, value, pivot.right.clone(), right)),
+            Some(node(entry, pivot.right.clone(), right)),
         );
     }
     if height(&right) > height(&left) + 1 {
@@ -172,9 +206,8 @@ fn balanced(key: Arc<FieldKey>, value: Arc<AspectValue>, left: Link, right: Link
             .expect("right-heavy AVL node has a right child");
         if height(&root.right) >= height(&root.left) {
             return node(
-                root.key.clone(),
-                root.value.clone(),
-                Some(node(key, value, left, root.left.clone())),
+                root.entry.clone(),
+                Some(node(entry, left, root.left.clone())),
                 root.right.clone(),
             );
         }
@@ -183,56 +216,54 @@ fn balanced(key: Arc<FieldKey>, value: Arc<AspectValue>, left: Link, right: Link
             .as_ref()
             .expect("right-left AVL rotation has its pivot");
         return node(
-            pivot.key.clone(),
-            pivot.value.clone(),
-            Some(node(key, value, left, pivot.left.clone())),
+            pivot.entry.clone(),
+            Some(node(entry, left, pivot.left.clone())),
             Some(node(
-                root.key.clone(),
-                root.value.clone(),
+                root.entry.clone(),
                 pivot.right.clone(),
                 root.right.clone(),
             )),
         );
     }
-    node(key, value, left, right)
+    node(entry, left, right)
 }
-fn insert(root: &Link, key: Arc<FieldKey>, value: Arc<AspectValue>) -> Arc<Node> {
+fn insert(root: &Link, entry: FieldEntry) -> Arc<Node> {
     let Some(root) = root else {
-        return node(key, value, None, None);
+        return node(entry, None, None);
     };
-    match key.cmp(&root.key) {
+    match entry.key.cmp(&root.entry.key) {
         std::cmp::Ordering::Less => balanced(
-            root.key.clone(),
-            root.value.clone(),
-            Some(insert(&root.left, key, value)),
+            root.entry.clone(),
+            Some(insert(&root.left, entry)),
             root.right.clone(),
         ),
         std::cmp::Ordering::Equal => node(
-            root.key.clone(),
-            value,
+            FieldEntry {
+                key: root.entry.key.clone(),
+                key_birth_seq: root.entry.key_birth_seq,
+                value: entry.value,
+                value_birth_seq: entry.value_birth_seq,
+            },
             root.left.clone(),
             root.right.clone(),
         ),
         std::cmp::Ordering::Greater => balanced(
-            root.key.clone(),
-            root.value.clone(),
+            root.entry.clone(),
             root.left.clone(),
-            Some(insert(&root.right, key, value)),
+            Some(insert(&root.right, entry)),
         ),
     }
 }
 fn remove(root: &Link, key: &FieldKey) -> Link {
     let root = root.as_ref()?;
-    Some(match key.cmp(&root.key) {
+    Some(match key.cmp(&root.entry.key) {
         std::cmp::Ordering::Less => balanced(
-            root.key.clone(),
-            root.value.clone(),
+            root.entry.clone(),
             remove(&root.left, key),
             root.right.clone(),
         ),
         std::cmp::Ordering::Greater => balanced(
-            root.key.clone(),
-            root.value.clone(),
+            root.entry.clone(),
             root.left.clone(),
             remove(&root.right, key),
         ),
@@ -241,12 +272,7 @@ fn remove(root: &Link, key: &FieldKey) -> Link {
             (_, None) => return root.left.clone(),
             (_, Some(right)) => {
                 let (next, right) = remove_min(right);
-                balanced(
-                    next.key.clone(),
-                    next.value.clone(),
-                    root.left.clone(),
-                    right,
-                )
+                balanced(next.entry.clone(), root.left.clone(), right)
             }
         },
     })
@@ -258,12 +284,7 @@ fn remove_min(root: &Arc<Node>) -> (&Node, Link) {
             let (minimum, left) = remove_min(left);
             (
                 minimum,
-                Some(balanced(
-                    root.key.clone(),
-                    root.value.clone(),
-                    left,
-                    root.right.clone(),
-                )),
+                Some(balanced(root.entry.clone(), left, root.right.clone())),
             )
         }
     }
@@ -294,7 +315,7 @@ impl<'a> Iterator for Fields<'a> {
             .expect("pending AVL traversal node");
         self.descend(node.right.as_deref());
         self.remaining -= 1;
-        Some((&node.key, &node.value))
+        Some((&node.entry.key, &node.entry.value))
     }
     fn size_hint(&self) -> (usize, Option<usize>) {
         (self.remaining, Some(self.remaining))
@@ -321,6 +342,8 @@ impl Serialize for StructFields {
         map.end()
     }
 }
+
+mod allocation;
 
 #[cfg(test)]
 mod tests;

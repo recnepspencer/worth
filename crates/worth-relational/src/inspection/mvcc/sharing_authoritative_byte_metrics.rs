@@ -5,19 +5,16 @@ use super::observation::RelationalBranchSharingObservation;
 ///
 /// Each category is reported twice. The `logical_branch_*` total sums the
 /// category once per selected branch, as if no storage were shared; the
-/// matching `unique_physical_*` total sums each distinct owner allocation
-/// exactly once, keyed by
+/// matching `unique_physical_*` total sums each distinct allocation exactly
+/// once, keyed by
 /// [`RelationalAuthoritativeAllocationLocator`](super::allocation_inventory::RelationalAuthoritativeAllocationLocator).
-/// The gap between the two pairs is the structural sharing between roots.
+/// The gap between the two pairs is the structural sharing.
 ///
-/// One component of the partition-payload figures is a declared upper bound
-/// rather than an exact count: the persistent aspect backing nested in an
-/// entity or relation payload carrier. Each distinct carrier contributes the
-/// checked bound of the bytes reachable from it, so backing shared between
-/// distinct carriers is counted once per carrier and these totals may exceed
-/// the physical bytes. They never undercount that backing. Exact deduplicated
-/// accounting of it is not provided. An unrepresentable bound or total refuses
-/// the inspection with `AuthoritativeByteBoundOverflow`; nothing is saturated.
+/// Physical allocation traversal sees through shared persistent aspect nodes
+/// and admitted values across distinct entity and relation payload carriers so
+/// every distinct backing allocation is counted once. Unrepresentable totals
+/// refuse the inspection with `AuthoritativeByteBoundOverflow`; nothing is
+/// saturated.
 ///
 /// Every total in this lane is governed by [`Self::byte_metric_scope`]. None
 /// of them is a recorded counter, and none of them measures resident memory:
@@ -34,13 +31,9 @@ impl RelationalBranchSharingObservation {
     /// Partition payload bytes summed once per distinct native allocation.
     ///
     /// Truth source: each region's storage owners, deduplicated by allocation
-    /// locator. Reused native nodes and payload carriers are counted once even
-    /// across different regions.
-    ///
-    /// Byte scope: a payload carrier's row includes its declared upper bound
-    /// for nested persistent aspect backing. Distinct carriers sharing that
-    /// backing each include it, so this total is an upper bound, not an exact
-    /// physical count, wherever such sharing exists.
+    /// locator. Reused nodes, payload carriers, and nested persistent aspect
+    /// nodes and admitted values are counted once even across distinct carriers
+    /// and different regions.
     pub const fn unique_physical_partition_payload_bytes(&self) -> u64 {
         self.unique_physical_partition_payload_bytes
     }
@@ -119,10 +112,10 @@ impl RelationalBranchSharingObservation {
     /// the single total governed end to end by [`Self::byte_metric_scope`],
     /// and the one against which the excluded categories below are defined.
     ///
-    /// Byte scope: exact for every owner allocation at its own extent, and a
-    /// declared upper bound for the nested persistent aspect backing included
-    /// in [`Self::unique_physical_partition_payload_bytes`]. The total is
-    /// checked: it is reported only when it fits, never saturated.
+    /// Byte scope: exact deduplicated physical allocation extents across every
+    /// authoritative owner, including nested persistent aspect nodes and
+    /// admitted values. The total is checked: it is reported only when it fits,
+    /// never saturated.
     pub const fn unique_physical_authoritative_bytes(&self) -> u64 {
         self.unique_physical_authoritative_bytes
     }

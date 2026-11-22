@@ -25,10 +25,11 @@ pub enum RelationalBranchSharingInspectionDenial {
     /// Duplicates are refused rather than silently deduplicated, so that the
     /// selection-lane metrics keep reporting the caller's own selection size.
     DuplicateBranch,
-    /// A checked authoritative byte bound, or the checked total over the
-    /// selected allocations, does not fit the reported `u64`. Nested persistent
-    /// aspect backing is a declared upper bound counted once per payload
-    /// carrier, so its total can exceed the physical bytes; it is refused here
+    /// A checked authoritative byte extent, recorded authoritative byte total,
+    /// or checked sum over the selected allocations does not fit the reported
+    /// `u64`. Nested persistent aspect backing is reported as exact
+    /// deduplicated physical allocation rows, while logical/recorded totals
+    /// sum across the selection; any unrepresentable total is refused here
     /// before an observation escapes rather than saturated or truncated.
     AuthoritativeByteBoundOverflow,
 }
