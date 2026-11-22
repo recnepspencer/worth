@@ -52,7 +52,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         root: &WorthQueryProviderSessionTerminalBinding,
         source: EntityId,
         position: usize,
-        owner: Option<usize>,
+        owner: Option<(usize, bool)>,
         support: CandidateReadSupport,
     ) -> Result<(), Denial> {
         if self
@@ -122,6 +122,47 @@ impl super::super::WorthQueryPrimaryGraphProvider {
     /// Requalify the verified parent the root retained as `read` (PR C R2):
     /// compare it exactly at `current` against the edit's C basis.
     #[allow(clippy::too_many_arguments)]
+    pub(in crate::domain_computation::primary_graph) fn has_live_selection_support(
+        &self,
+        root: &WorthQueryProviderSessionTerminalBinding,
+    ) -> Result<bool, Denial> {
+        Ok(self
+            .attempts
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .query_support_root(root)?
+            .has_live_selection_support())
+    }
+    /// The wave tasks whose selector's support the append at `invalidator`
+    /// changed (#238), compared from each support's own image to `current`.
+    pub(in crate::domain_computation::primary_graph) fn changed_selection_owners(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        before: &crate::basis::WorthQueryProductBranchLease,
+        current: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        invalidator: usize,
+    ) -> Result<Vec<(usize, bool)>, Denial> {
+        self.graph.with_runtime(execution, |runtime| {
+            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
+                runtime,
+                before.relational_basis(),
+            )
+            .map_err(|_| Denial::new(Kind::StorageUnavailable, "coupled selection qualification basis"))?;
+            let answer = self
+                .attempts
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .query_support_root(root)
+                .and_then(|attempt| {
+                    attempt.changed_selection_owners(execution, runtime, &snapshot, current, invalidator)
+                });
+            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+            answer
+        })
+    }
     pub(in crate::domain_computation::primary_graph) fn requalify_retained_parent(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

@@ -23,6 +23,8 @@ pub(in crate::domain_computation::primary_graph) struct RetainedCandidateRead {
     pub(in crate::domain_computation::primary_graph) position: usize,
     /// The wave task whose discovery retained it, if a task owns it.
     pub(in crate::domain_computation::primary_graph) owner: Option<usize>,
+    /// Its owner's incoming prerequisite selection, not its children's.
+    pub(in crate::domain_computation::primary_graph) incoming: bool,
     pub(in crate::domain_computation::primary_graph) support: CandidateReadSupport,
     pub(in crate::domain_computation::primary_graph) window_end: Option<usize>,
 }

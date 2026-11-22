@@ -7,7 +7,8 @@
 //! end at the invalidator (R4). A dropped selection refuses in the wave
 //! itself (`verify_rediscovered`).
 use super::*;
-use state::{map_remove, TaskState};
+use crate::domain_computation::primary_graph::application_contribution::coupled_publication::ReopenTarget;
+use state::{map_insert, map_remove, TaskState};
 
 /// What a reopened row selected before, and the append that reopened it.
 /// Children are compared by route: a child no occurrence component
@@ -39,7 +40,15 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 subject,
                 self.by_read.len().max(1).ilog2() as u64 + 1,
             )?;
-            let Some(&i) = self.by_read.get(&reopen.read.0) else {
+            let read = match reopen.target {
+                ReopenTarget::Retention(read) => read,
+                ReopenTarget::Selection { task, incoming } => {
+                    let (invalidator, owed) = (reopen.invalidator, reopen.invalidator_owed);
+                    self.reselect(context, candidate, task, incoming, invalidator, owed)?;
+                    continue;
+                }
+            };
+            let Some(&i) = self.by_read.get(&read.0) else {
                 unreachable!("only a retention a task claimed is superseded")
             };
             let owed = self.tasks[i].owed.position().max(reopen.invalidator_owed);
@@ -55,6 +64,62 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             self.reopen_task(context, candidate, i, owed, reopen.invalidator)?;
         }
         Ok(reopened)
+    }
+
+    /// A task whose selector's support changed selects again (#238). A done
+    /// task whose own prerequisite selection changed derives again; one whose
+    /// children's selection changed selects them again now, both verified on
+    /// re-discovery. A closed task closes again; a reopened one owes this
+    /// invalidation too.
+    fn reselect(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+        row: usize,
+        incoming: bool,
+        invalidator: usize,
+        invalidator_owed: usize,
+    ) -> Result<(), SynchronousOutputFailure> {
+        let i = self.canonical(row);
+        checkpoint(context.execution, self.tasks[i].subject, 1)?;
+        let owed = self.tasks[i].owed.position().max(invalidator_owed);
+        if self.tasks[row].reopen_check.is_some() {
+            // Its re-discovery is pending and verified against what it
+            // selected before: that replaces this support too.
+            observation::record(|| format!("reselect task={row} owed={owed} (rediscovering)"));
+            self.raise_owed(i, owed);
+            return Ok(());
+        }
+        if !incoming {
+            if row != i {
+                observation::record(|| format!("reselect alias={row}"));
+                return self.rediscover_alias(context, candidate, row, invalidator);
+            }
+            if matches!(self.tasks[i].state, TaskState::Done { parent: Some(_) }) {
+                observation::record(|| format!("reselect children task={i} owed={owed}"));
+                self.raise_owed(i, owed);
+                let prior_children = {
+                    let children = std::mem::take(&mut self.tasks[i].children);
+                    self.routes(context, candidate, children)?
+                };
+                self.tasks[i].reopen_check = Some(ReopenCheck {
+                    invalidator,
+                    prior_children,
+                    prior_prerequisites: self.canonical_set(i),
+                });
+                return self.discover_completed(context, candidate, vec![i], 1);
+            }
+        }
+        if self.tasks[i].is_done() {
+            observation::record(|| format!("reselect task={i} owed={owed}"));
+            return self.reopen_task(context, candidate, i, owed, invalidator);
+        }
+        observation::record(|| format!("reselect task={i} owed={owed} (not done)"));
+        if matches!(self.tasks[i].state, TaskState::Closed { .. }) {
+            self.clear_input_capture(context, i)?;
+        }
+        self.raise_owed(i, owed);
+        Ok(())
     }
 
     pub(super) fn reopen_task(
@@ -157,6 +222,39 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         }
         self.tasks[i].alias_rows = aliases;
         Ok(())
+    }
+
+    /// An alias whose static selection's support changed selects again,
+    /// verified like its canonical's re-discovery (#238).
+    fn rediscover_alias(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+        alias: usize,
+        invalidator: usize,
+    ) -> Result<(), SynchronousOutputFailure> {
+        if !self.tasks[alias].tree.has_static_continuation() {
+            return Ok(());
+        }
+        let prior_children = {
+            let children = std::mem::take(&mut self.tasks[alias].children);
+            self.routes(context, candidate, children)?
+        };
+        let row = &mut self.tasks[alias];
+        row.reopen_check = Some(ReopenCheck {
+            invalidator,
+            prior_children,
+            prior_prerequisites: Vec::new(),
+        });
+        row.continuation_done = false;
+        let subject = row.subject;
+        map_insert(
+            &mut self.ready_alias_continuations,
+            &alias,
+            &(),
+            context.execution,
+            subject,
+        )
     }
 
     /// The routes of `rows`: an occurrence's key, otherwise its route read.

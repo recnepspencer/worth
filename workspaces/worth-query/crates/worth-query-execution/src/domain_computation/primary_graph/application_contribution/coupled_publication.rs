@@ -12,6 +12,7 @@ mod input_preparation;
 mod ledger;
 mod preparation;
 mod qualification;
+pub(in crate::domain_computation::primary_graph::application_contribution) use qualification::ReopenTarget;
 mod settlement;
 mod source_selection;
 mod succession;
@@ -66,7 +67,7 @@ pub(in crate::domain_computation::primary_graph) struct CoupledApplicationAssemb
     /// The route now being read derives again: no prepared or verified reuse.
     superseding: std::cell::Cell<bool>,
     /// The wave task whose discovery is now retaining support (its owner).
-    discovering: std::cell::Cell<Option<usize>>,
+    discovering: std::cell::Cell<Option<(usize, bool)>>,
     /// Parent outputs some derivation consumed (R3): (parent read, consumer read).
     consumed: RefCell<worth_execution::ExecutionOrderedMap<(usize, usize), ()>>,
     /// Retentions superseded at their authenticated invalidator, to reopen.

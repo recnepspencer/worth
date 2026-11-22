@@ -22,9 +22,10 @@ impl CandidateReadSupports {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: EntityId,
         position: usize,
-        owner: Option<usize>,
+        owner: Option<(usize, bool)>,
         support: CandidateReadSupport,
     ) -> Result<(), Denial> {
+        let (owner, incoming) = (owner.map(|(task, _)| task), owner.is_some_and(|(_, incoming)| incoming));
         let subject = support.subject();
         execution
             .run_native_with_checkpoint(|context| {
@@ -85,6 +86,7 @@ impl CandidateReadSupports {
             source,
             position,
             owner,
+            incoming,
             support,
             window_end: None,
         });
@@ -145,7 +147,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         source: EntityId,
         position: usize,
-        owner: Option<usize>,
+        owner: Option<(usize, bool)>,
         support: CandidateReadSupport,
     ) -> Result<(), Denial> {
         self.candidate_read_support
@@ -248,6 +250,54 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             }
         }
         Ok(())
+    }
+    /// Whether any selector's query support is live: an append must compare it.
+    pub(in crate::domain_computation::primary_graph) fn has_live_selection_support(&self) -> bool {
+        self.candidate_read_support.values.iter().any(|entry| {
+            entry.window_end.is_none() && matches!(entry.support, CandidateReadSupport::Query(_))
+        })
+    }
+    /// The wave tasks whose selector's query support `current` changed, each
+    /// once with whether its incoming prerequisite selection changed (#238). Query support has no proof keys, so every append compares
+    /// every live entry retained before it (conservative, charged per entry).
+    /// A changed task-owned entry ends at `invalidator`, whose comparison is
+    /// its authenticated invalidation; its task selects again. A root
+    /// selector's support (no owner) stays live and strict.
+    pub(in crate::domain_computation::primary_graph) fn changed_selection_owners(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &worth_relational::facade::runtime::RelationalRuntime,
+        before: &worth_relational::facade::snapshots::SnapshotHandle,
+        current: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        invalidator: usize,
+    ) -> Result<Vec<(usize, bool)>, Denial> {
+        let mut owners: Vec<(usize, bool)> = Vec::new();
+        for entry in &mut self.candidate_read_support.values {
+            let (Some(owner), None, CandidateReadSupport::Query(_)) =
+                (entry.owner, entry.window_end, &entry.support)
+            else {
+                continue;
+            };
+            if entry.position >= invalidator {
+                continue;
+            }
+            charge_scan(execution, "selection support qualification", 1)?;
+            crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::visited_retained_reads(1);
+            if entry
+                .support
+                .changed_fact(execution, runtime, before, entry.support.pin(), current)?
+                .is_some()
+            {
+                entry.window_end = Some(invalidator);
+                match owners.iter_mut().find(|(task, _)| *task == owner) {
+                    Some((_, incoming)) => *incoming |= entry.incoming,
+                    None => owners.push((owner, entry.incoming)),
+                }
+            }
+        }
+        Ok(owners)
     }
     /// Compare the verified parent retained as `read` from its own image to
     /// `current`. A change base does not settle supersedes it at `invalidator`.

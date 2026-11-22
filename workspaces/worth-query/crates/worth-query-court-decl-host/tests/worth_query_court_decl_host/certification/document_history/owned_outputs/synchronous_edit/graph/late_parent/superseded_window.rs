@@ -2,6 +2,9 @@
 //! successor replaces its chain's writer in place, but the image its earlier
 //! round produced stays where it applied: a retained read that round changed
 //! before the read's recorded invalidator changed inside the read's window.
+//! Since C4 a selection's support is compared at every append, the superseded
+//! round's own included, so such a change ends the window there and the
+//! selection runs again (#238); the window check stays the backstop.
 use super::super::super::interleaved::component_carriage::parent as owner;
 use super::*;
 use family::{decision_input, decision_write, ordinary_input};
@@ -209,15 +212,19 @@ use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome a
 /// At 1 its occurrence component discovers `second(a)`, its prerequisite
 /// consumer, and `decision-write(b)`; its static watch discovers nothing
 /// through the join (no `second:a`: 0) and keeps that query read. `second(a)`
-/// derives at 2 and creates `second:a` (2 + 1000), changing the watch's read;
-/// it is the parent's own consumer and does not reopen it. The writer
-/// appends at 3 and writes m = 9, reopening the parent (window of the watch
-/// read: 1 to 3); `second(a)` reopens with it, and its successor replaces the
-/// round at 2 by one at 5. The round at 2 changed the watch read before its
-/// invalidator, so the edit refuses (R4). A window that saw only the chain's
-/// final round, after the invalidator, would commit first:a = 11.
+/// derives at 2 and creates `second:a` (2 + 1000), changing the watch's read.
+/// Qualified use compares that selection support at the append at 2 (#238,
+/// PR C C4): it changed, so its window ends at 2, authenticated by that exact
+/// comparison, and the parent selects its children again (nothing, through a
+/// join that now sums 1002). The writer appends at 3 and writes m = 9,
+/// reopening the parent, which derives first:a = 2 + 9 = 11 and selects
+/// again; `second(a)` reopens with it and derives 1002 again. Every read is
+/// checked over its window, so the edit commits the single-stage fixed point:
+/// first:a = 11, second:a = 1002. (Before C4 this refused at final support:
+/// the window over the superseded round at 2 saw the change, and discovery
+/// support had no owner to select again.)
 #[test]
-fn a_superseded_round_changing_a_windowed_discovery_read_refuses() {
+fn a_superseded_round_changing_a_watched_selection_selects_again() {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_program_with_other_model::<Program>(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
@@ -241,22 +248,37 @@ fn a_superseded_round_changing_a_windowed_discovery_read_refuses() {
     let outcome = edit
         .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
         .unwrap();
-    let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(denial)) = outcome else {
-        panic!("the superseded round's change inside the window must refuse: {outcome:?}")
-    };
-    let failure = denial
-        .invariant_execution_failure()
-        .expect("final candidate support refuses");
-    assert_eq!(
-        failure.kind(),
-        WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged,
-        "{failure:?}"
-    );
+    let events = _execution.wave_events_for_test();
+    assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}; {events:#?}");
     assert!(
-        failure
-            .detail()
-            .contains("superseded discovery support changed before its recorded invalidator"),
-        "{failure:?}"
+        events.iter().any(|event| event.starts_with("reselect children task=0")),
+        "the changed watch selects again: {events:#?}"
     );
-    assert!(failure.detail().contains("joined"), "{failure:?}");
+    let value = |rows: Vec<u64>| rows[0];
+    assert_eq!(
+        value(
+            request
+                .query(query::first_output::Read("first:a".into()))
+                .execute()
+                .unwrap()
+                .rows()
+                .iter()
+                .map(|row| row.value)
+                .collect()
+        ),
+        11
+    );
+    assert_eq!(
+        value(
+            request
+                .query(query::second_output::Read("second:a".into()))
+                .execute()
+                .unwrap()
+                .rows()
+                .iter()
+                .map(|row| row.value)
+                .collect()
+        ),
+        1002
+    );
 }
