@@ -13,6 +13,7 @@ pub(in crate::domain_computation::primary_graph) use observation::{
 mod occurrences;
 mod outgoing;
 mod prerequisites;
+mod refusal;
 mod reopen;
 mod roots;
 mod settlement;
@@ -277,6 +278,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             return Ok(true);
         }
         if self.needed_undone_count > 0 {
+            // Still pending where it is needed: its original refusal.
+            if let Some(failure) = self.take_pending_refusal() {
+                return Err(failure);
+            }
             observation::record(|| "blocked".to_owned());
             return Err(self.blocked_frontier());
         }
@@ -315,6 +320,17 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             context.owner.supersede(false);
             context.owner.consume(Vec::new());
             observation::record_prepare(i, &self.tasks[i], &prepared);
+            let prepared = match prepared {
+                // A domain refusal waits while a later authored stage remains.
+                Err(failure) if allowed.is_some() => match self.defer_refusal(context, i, failure)? {
+                    None => {
+                        observation::record(|| format!("break pending refusal at={i}"));
+                        break;
+                    }
+                    Some(failure) => Err(failure),
+                },
+                prepared => prepared,
+            };
             match prepared? {
                 PlannedOutput::Prepared(parent) => {
                     self.complete_task(context, i, parent)?;

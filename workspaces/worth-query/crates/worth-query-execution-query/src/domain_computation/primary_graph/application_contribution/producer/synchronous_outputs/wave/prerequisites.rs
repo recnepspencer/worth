@@ -246,7 +246,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 TaskState::Done { parent: None } => {
                     waiting += 1;
                 }
-                TaskState::Identified | TaskState::Closed { .. } => {
+                // A pending refusal is retried before its dependents read it.
+                TaskState::Identified | TaskState::Closed { .. } | TaskState::Refused { .. } => {
                     waiting += 1;
                     if parent != i {
                         let parent_task = &mut self.tasks[parent];
