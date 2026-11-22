@@ -99,6 +99,9 @@ macro_rules! producer_decision_dependency {
     (@self_relation $reader:ident, $source:ident) => {{
         let m = producer_decision_dependency!(@member_read $reader);
         for link in $reader.relations_to(FirstOf::reference(), &$source).map_err(HandlerExecutionDenial::new)? {
+            if super::super::self_relation::TRAVERSE_ONLY.load(std::sync::atomic::Ordering::Relaxed) {
+                continue;
+            }
             if $reader.field(link.from(), FirstValue::at("FirstValue"))?.is_none() {
                 // A reached output without its value: a required record is missing.
                 $reader.resolve_entity(FirstKey::at("FirstKey"), "self-relation:missing".to_owned())?;

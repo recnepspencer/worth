@@ -12,6 +12,9 @@ fn source_value() -> SourceValue {
     SourceValue::at("ModelValue")
 }
 const PROFILE: &str = "self-relation";
+/// Only traverse to the model's outputs, never read their values (per
+/// court; each court runs in its own process).
+pub static TRAVERSE_ONLY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 pub fn output_key(row: &query::Row) -> String {
     format!("first:{}", row.key)
 }

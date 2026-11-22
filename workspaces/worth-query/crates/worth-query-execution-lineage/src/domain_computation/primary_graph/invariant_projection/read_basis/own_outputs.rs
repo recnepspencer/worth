@@ -69,4 +69,28 @@ impl OwnOutputOverlay {
     pub fn incoherent(&self) -> Option<EntityId> {
         self.incoherent.get().copied()
     }
+
+    /// Whether `entity` is a record the chain created: covered, and not
+    /// live at the head pre-pin. One charged point read, only when covered.
+    pub fn created_by_chain(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        if !self.covers(entity) {
+            return Ok(false);
+        }
+        self.head
+            .project_candidate()
+            .entity_record_with_projection_scope(
+                execution,
+                entity,
+                worth_relational::facade::runtime::ProjectionAspectScope::empty(),
+                |record| {
+                    (record.lifecycle() == worth_relational::facade::storage::RecordLifecycleState::Live)
+                        .then_some(())
+                },
+            )
+            .map(|present| present.is_none())
+    }
 }
