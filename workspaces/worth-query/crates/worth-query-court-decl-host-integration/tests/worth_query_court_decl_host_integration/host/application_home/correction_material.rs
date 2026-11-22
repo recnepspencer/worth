@@ -2,6 +2,7 @@
 mod expiry;
 mod kill_divergent_branch;
 mod kill_original_owner;
+mod kill_pin_transfer;
 mod kill_split_completion;
 mod numeric_home;
 mod original_operation;

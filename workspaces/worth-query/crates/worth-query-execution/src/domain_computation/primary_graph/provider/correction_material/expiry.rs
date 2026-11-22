@@ -25,6 +25,15 @@ impl WorthQueryPrimaryGraphProvider {
         let material = self.material_retention(request)?;
         support.readmit_journal(medium, originals, &material, request)
     }
+    pub(in crate::domain_computation::primary_graph) fn release_resolved_program_support_interpretations(
+        &self,
+        support: &QueryObligationHistory,
+        originals: &WorldProgramActivationHistory,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Failure> {
+        let material = self.material_retention(request)?;
+        support.release_resolved_original_interpretations(originals, &material, request)
+    }
     pub(in crate::domain_computation::primary_graph) fn expire_optional_correction_material(
         &self,
         originals: &WorldProgramActivationHistory,

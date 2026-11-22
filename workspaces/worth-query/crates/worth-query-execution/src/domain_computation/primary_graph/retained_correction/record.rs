@@ -144,6 +144,11 @@ pub(in crate::domain_computation::primary_graph) enum MaterialRecord {
         key: [u8; 32],
         class: RetentionClass,
     },
+    AbandonPublicationPin {
+        identity: CorrectionMaterialPinIdentity,
+        original: DurableCompositePublicationAttemptIdentity,
+        class: RetentionClass,
+    },
     Abandon {
         original: DurableCompositePublicationAttemptIdentity,
     },
@@ -194,6 +199,7 @@ impl MaterialRecord {
             Self::Transfer { .. }
             | Self::Release { .. }
             | Self::DischargePreparation { .. }
+            | Self::AbandonPublicationPin { .. }
             | Self::Abandon { .. }
             | Self::Expire { .. } => RetentionClass::Authoritative,
         }

@@ -13,6 +13,18 @@ pub use attempt_registration::WorthQueryBranchAdoptionStagePauseForTest;
 pub use attempt_registration::WorthQueryManagedSourceRevalidationPauseForTest;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Passively observes the next durable prepared-correction pin transfer
+    /// (after Transfer is acknowledged in `query.corrections` and before Capture).
+    #[doc(hidden)]
+    pub fn observe_next_correction_pin_transfer_for_test(
+        &self,
+        observer: Box<dyn FnOnce() + Send>,
+    ) {
+        self.runtime
+            .primary_provider
+            .observe_next_correction_pin_transfer(observer);
+    }
+
     /// Parks one single-branch adoption at an exact durable owner-record boundary.
     #[doc(hidden)]
     pub fn pause_branch_adoption_stage_for_test(

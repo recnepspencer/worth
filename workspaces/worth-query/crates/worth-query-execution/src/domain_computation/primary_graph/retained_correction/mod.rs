@@ -20,11 +20,20 @@ use record::MaterialRecord;
 use std::sync::{Arc, Mutex, MutexGuard};
 use worth_execution::ExecutionRequest;
 
+#[derive(Default)]
+struct PostTransferObserver(Mutex<Option<Box<dyn FnOnce() + Send>>>);
+impl std::fmt::Debug for PostTransferObserver {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("PostTransferObserver")
+    }
+}
+
 #[derive(Debug)]
 pub(in crate::domain_computation::primary_graph) struct CorrectionMaterialOwner {
     medium: Mutex<Option<Arc<dyn QueryCorrectionsMedium>>>,
     publication: Mutex<()>,
     state: Mutex<MaterialState>,
+    post_transfer_observer: PostTransferObserver,
 }
 pub(in crate::domain_computation::primary_graph) struct MaterialPublication<'a> {
     owner: &'a CorrectionMaterialOwner,
@@ -49,6 +58,27 @@ impl MaterialFunding {
     }
 }
 impl CorrectionMaterialOwner {
+    pub(in crate::domain_computation::primary_graph) fn install_post_transfer_observer(
+        &self,
+        observer: Box<dyn FnOnce() + Send>,
+    ) {
+        *self
+            .post_transfer_observer
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(observer);
+    }
+    fn notify_post_transfer(&self) {
+        let observer = self
+            .post_transfer_observer
+            .0
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .take();
+        if let Some(observer) = observer {
+            observer();
+        }
+    }
     fn publish(
         &self,
         record: MaterialRecord,

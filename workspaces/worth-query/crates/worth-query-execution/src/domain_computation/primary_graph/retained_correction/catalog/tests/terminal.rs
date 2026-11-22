@@ -104,6 +104,11 @@ fn terminal_command_dispositions_are_authoritative_while_ready_material_is_optio
             after: CorrectionMaterialPinOwner::Publication { original },
             class: RetentionClass::MandatoryObligation,
         },
+        MaterialRecord::AbandonPublicationPin {
+            identity,
+            original,
+            class: RetentionClass::OptionalRetainedMaterial,
+        },
         MaterialRecord::Abandon { original },
         MaterialRecord::Expire { original },
     ] {
@@ -209,6 +214,68 @@ fn a_recovery_material_pin_refuses_optional_expiry_until_its_original_use_is_rel
     append(&mut ledger, MaterialRecord::Expire { original });
     assert_eq!(
         ledger.material[&original].available().unwrap_err(),
+        Denial::RetainedMaterialExpired
+    );
+}
+
+#[test]
+fn abandon_publication_pin_discharges_never_captured_pin_and_keeps_source_usable_and_release_strict() {
+    let mut ledger = available();
+    let record = pin(&ledger);
+    append(&mut ledger, record);
+    let (&identity, row) = ledger.pins.first_key_value().unwrap();
+    let before = row.owner;
+    let source = original(ledger.home, 1);
+    let never_captured = original(ledger.home, 2);
+    append(
+        &mut ledger,
+        MaterialRecord::Transfer {
+            identity,
+            before,
+            after: CorrectionMaterialPinOwner::Publication {
+                original: never_captured,
+            },
+            class: RetentionClass::MandatoryObligation,
+        },
+    );
+    assert_eq!(ledger.pin_count(source), 1);
+    assert_eq!(ledger.pin_count(never_captured), 1);
+    // Successful-publication Release remains strict and refuses never-captured originals.
+    assert_eq!(
+        ledger.frame(
+            NonZeroU64::new(ledger.generation + 1).unwrap(),
+            &MaterialRecord::Release {
+                identity,
+                owner: CorrectionMaterialPinOwner::Publication {
+                    original: never_captured,
+                },
+                class: RetentionClass::OptionalRetainedMaterial,
+            },
+        ),
+        Err(Denial::MaterialNotReady)
+    );
+    // AbandonPublicationPin discharges only the exact transferred pin, leaving source available.
+    let frame = append(
+        &mut ledger,
+        MaterialRecord::AbandonPublicationPin {
+            identity,
+            original: never_captured,
+            class: RetentionClass::OptionalRetainedMaterial,
+        },
+    );
+    assert_eq!(frame.body_retention_class(), RetentionClass::Authoritative);
+    assert_eq!(ledger.pin_count(source), 0);
+    assert_eq!(ledger.pin_count(never_captured), 0);
+    assert!(ledger.material[&source].available().is_ok());
+    assert_eq!(
+        ledger.released[&identity],
+        CorrectionMaterialPinOwner::Publication {
+            original: never_captured,
+        }
+    );
+    append(&mut ledger, MaterialRecord::Expire { original: source });
+    assert_eq!(
+        ledger.material[&source].available().unwrap_err(),
         Denial::RetainedMaterialExpired
     );
 }

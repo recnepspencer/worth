@@ -176,7 +176,8 @@ pub(super) fn validate(record: &MaterialRecord) -> Result<(), Denial> {
             }
         }
         MaterialRecord::Release { class, .. }
-        | MaterialRecord::DischargePreparation { class, .. } => {
+        | MaterialRecord::DischargePreparation { class, .. }
+        | MaterialRecord::AbandonPublicationPin { class, .. } => {
             if *class != RetentionClass::OptionalRetainedMaterial {
                 return Err(Denial::RetentionClassMismatch);
             }

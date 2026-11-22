@@ -206,6 +206,45 @@ impl QueryObligationHistory {
             ledger.payload_digest(),
         ))
     }
+    /// Release original-meaning interpretations whose World opens were released
+    /// during cold custody readmission, without overwriting adoption summary.
+    pub(in crate::domain_computation::primary_graph) fn release_resolved_original_interpretations(
+        &self,
+        originals: &WorldProgramActivationHistory,
+        material: &MaterialPublication<'_>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), WorthQueryCorrectionRetentionDenial> {
+        let medium = self
+            .medium
+            .get()
+            .ok_or(QueryObligationDenial::SupportUnavailable)?;
+        material.admit_obligation_scope(medium.as_ref())?;
+        let driver = self.lock_publication()?;
+        driver.finish_pending(medium.as_ref(), request)?;
+        let released = {
+            let state = self.state();
+            let ledger = &state
+                .journal
+                .as_ref()
+                .ok_or(QueryObligationDenial::SupportUnavailable)?
+                .ledger;
+            Self::join_original_interpretations_with_roster(
+                ledger,
+                &state.entries,
+                originals,
+                material,
+            )?
+        };
+        for identity in released {
+            driver.publish(
+                medium.as_ref(),
+                QueryProgramSupportRecord::Release { identity },
+                request,
+            )?;
+        }
+        Ok(())
+    }
+
     /// Finish cold cleanup's acknowledged records before the Home service
     /// witness escapes. This is the same publisher and admitted ledger.
     pub(in crate::domain_computation::primary_graph) fn admit_current_prefix(

@@ -303,6 +303,27 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         }
         // Empty-original release and cold custody settlement may acknowledge
         // Query discharges after the first fold, just as dispatch does above.
+        if let Err(cause) = application
+            .runtime
+            .primary_provider
+            .release_resolved_program_support_interpretations(
+                application
+                    .installed_program_support()
+                    .expect("readmitted support")
+                    .lifecycle(),
+                &originals,
+                execution,
+            )
+        {
+            return Err(QueryHomeCustodyReadmissionRefused {
+                query: self,
+                cause: match cause {
+                    crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial::Material(cause) => QueryHomeCustodyReadmissionDenial::CorrectionMaterial(cause),
+                    crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial::ProgramSupport(cause) => QueryHomeCustodyReadmissionDenial::ProgramSupport(cause),
+                    crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial::World(cause) => QueryHomeCustodyReadmissionDenial::ProgramHistorySource(cause),
+                },
+            });
+        }
         let admission = match application
             .installed_program_support()
             .expect("readmitted support")

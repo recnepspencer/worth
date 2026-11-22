@@ -156,7 +156,10 @@ impl CorrectionMaterialOwner {
                 class: RetentionClass::MandatoryObligation,
             },
             request,
-        )
+        )?;
+        drop(driver);
+        self.notify_post_transfer();
+        Ok(())
     }
     pub(in crate::domain_computation::primary_graph) fn release_publication(
         &self,
