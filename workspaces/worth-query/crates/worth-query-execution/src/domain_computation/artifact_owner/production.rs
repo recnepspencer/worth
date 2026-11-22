@@ -12,6 +12,10 @@ use super::{
 
 static NEXT_ARTIFACT_OCCURRENCE: AtomicU64 = AtomicU64::new(1);
 
+pub(crate) fn prime_artifact_occurrence_plateau_for_test() {
+    let _ = NEXT_ARTIFACT_OCCURRENCE.fetch_max(100_000, Ordering::Relaxed);
+}
+
 impl WorthQueryMoveOnlyArtifactHandle {
     pub(super) fn register(
         admission: WorthQueryArtifactProductionAdmission,

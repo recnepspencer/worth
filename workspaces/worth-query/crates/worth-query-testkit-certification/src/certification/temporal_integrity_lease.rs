@@ -38,6 +38,7 @@ impl Drop for Restore {
 pub struct Case {
     pub outcome: Result<Outcome<AmendTemporalDenial, AmendTemporalResult>, RequestDenial>,
     pub work: Vec<u64>,
+    pub native_head_unchanged: bool,
     _application: ExampleApplication,
 }
 pub fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
@@ -49,6 +50,13 @@ pub fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
         Some(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system().now() + Duration::from_secs(120)),
         cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
     let actor = principal(&app, &scope);
+    let core = app.runtime.runtime().runtime_for_test();
+    let before_native = core
+        .product_runtime_for_test()
+        .source_for_test()
+        .observe_branch_basis(core.relational_branch_identity_for_test())
+        .unwrap()
+        .0;
     reports();
     place(if leased {
         Placement::Leased(NonZeroUsize::MIN)
@@ -78,10 +86,17 @@ pub fn run(leased: bool, ceiling: Option<u64>, cancel: bool) -> Case {
         .collect();
     bound(None);
     place(Placement::Serial);
+    let after_native = core
+        .product_runtime_for_test()
+        .source_for_test()
+        .observe_branch_basis(core.relational_branch_identity_for_test())
+        .unwrap()
+        .0;
     app.runtime.close_conditional_runtime().unwrap();
     Case {
         outcome,
         work,
+        native_head_unchanged: after_native == before_native,
         _application: app,
     }
 }

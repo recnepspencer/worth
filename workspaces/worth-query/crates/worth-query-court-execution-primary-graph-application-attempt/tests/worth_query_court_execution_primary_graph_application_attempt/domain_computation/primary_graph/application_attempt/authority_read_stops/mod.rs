@@ -59,12 +59,6 @@ fn commit_at(ceiling: u64) -> (bool, Option<Evidence>, Vec<u64>) {
             let charges = worth_query_execution::test_read_stops::charged_prefixes_for_test(&observer).into_iter().filter_map(|(at, required)| selected.borrow().contains(&at).then_some(required)).collect();
             match outcome {
                 Outcome::Committed(_) => (true, None, charges),
-                Outcome::ProductUnpublished(effects) => {
-                    assert_eq!(effects.cause(), worth_runtime_world::facade::ProductUnpublishedCause::OriginalObservationStopped(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkExhausted));
-                    assert_eq!(effects.owner_effect_count(), 1);
-                    assert_eq!(world.application.runtime_for_test().primary_provider_for_test().published_application_commit_count_for_test(), 0);
-                    (false, None, charges)
-                }
                 Outcome::Denied(denial) => (false, Some((denial.stage(), denial.execution_denial_cause(), denial.authorization_denial_kind())), charges),
                 other => panic!("the real commit door preserves the exact stopped fate: {other:?}"),
             }

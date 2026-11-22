@@ -121,6 +121,22 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
     fn lifecycle_resources(
         &self,
     ) -> super::super::lifecycle_inventory::WorthQueryConditionalOperationLiveness;
+
+    #[doc(hidden)]
+    fn reset_retained_wakes_for_replay_for_test(&mut self) {
+        unreachable!("replay reset is only defined for installed temporal operations")
+    }
+
+    #[doc(hidden)]
+    fn reenter_retained_wakes_continuation_for_test(
+        &mut self,
+        _phase: &WorthQueryAdvancementPhase<'_>,
+        _bridge: &BridgeConditionalExecutionView<'_>,
+        _runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        _truth: &WorthQueryConditionalTruthBasis,
+    ) -> ErasedClockObservationOutcome {
+        unreachable!("continuation replay is only defined for installed temporal operations")
+    }
 }
 
 #[derive(Clone, Copy, Default)]

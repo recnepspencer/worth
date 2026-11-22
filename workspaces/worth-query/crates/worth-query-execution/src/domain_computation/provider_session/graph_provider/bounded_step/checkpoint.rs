@@ -12,6 +12,10 @@ use crate::execution_digest::hash_parts;
 
 static NEXT_PROVIDER_CHECKPOINT: AtomicU64 = AtomicU64::new(1);
 
+pub(crate) fn prime_provider_checkpoint_plateau_for_test() {
+    let _ = NEXT_PROVIDER_CHECKPOINT.fetch_max(100_000, Ordering::Relaxed);
+}
+
 pub trait WorthQueryGraphProviderCheckpoint: Send + 'static {
     fn retained_bytes(&self) -> u64;
 

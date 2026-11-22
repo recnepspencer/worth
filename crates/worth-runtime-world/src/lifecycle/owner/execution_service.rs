@@ -15,6 +15,8 @@ mod admission;
 #[path = "execution_service/conditional_recovery.rs"]
 mod conditional_recovery;
 mod durable_signal;
+#[path = "execution_service/original_admission.rs"]
+mod original_admission;
 #[path = "execution_service/relational.rs"]
 mod relational;
 #[path = "execution_service/signal.rs"]
@@ -238,6 +240,12 @@ where
         if let Err(cause) = self.admit_owner_execution(&attempt, cancellation) {
             return self.no_effect(attempt, cause);
         }
+        if let Err(cause) = self.admit_memory_original(&execution, &attempt) {
+            return self.no_effect(attempt, cause);
+        }
+        if let Err(cause) = self.recheck_pre_effect_cutoff(&attempt, cancellation) {
+            return self.no_effect(attempt, cause);
+        }
 
         let retained_signal = attempt
             .plan()
@@ -245,7 +253,8 @@ where
             .settled_adoption()
             .map(SignalAttemptProgress::retained_image)
             .unwrap_or_else(SignalAttemptProgress::untouched);
-        let relational = match self.execute_relational(execution, &mut attempt, cutover) {
+        let relational = match self.execute_relational(execution, &mut attempt, cancellation, cutover)
+        {
             Ok(progress) => progress,
             Err(RelationalExecutionFailure {
                 cause,

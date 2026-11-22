@@ -84,6 +84,26 @@ where
     fn handoff_to_home(&mut self, request: &worth_execution::ExecutionRequest<'_, '_>, runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
         self.handoff_to_home(request, runtime)
     }
+
+    fn reset_retained_wakes_for_replay_for_test(&mut self) {
+        due_wake_retention::reset_retained_wakes_for_replay_for_test(&mut self.retained_wakes, &mut self.operation_totals);
+    }
+
+    fn reenter_retained_wakes_continuation_for_test(
+        &mut self, phase: &WorthQueryAdvancementPhase<'_>, bridge: &BridgeConditionalExecutionView<'_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>, truth: &WorthQueryConditionalTruthBasis,
+    ) -> ErasedClockObservationOutcome {
+        let execution = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => return ErasedClockObservationOutcome::Failed { kind: super::WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(cause.into()), detail: "foreign conditional advancement phase".to_string() },
+        };
+        let managed_clock = self.managed_clock.as_ref().expect("selected conditional operation retains a managed clock");
+        let operation = self.definition.binding.clocked_node().provider().node().operation().application_operation();
+        match super::super::application_operation_reentry::reenter_retained_wakes(&execution, phase, runtime, truth.product(), bridge, managed_clock, operation, &self.definition.reconstruction, &self.definition.execution, &mut self.reconstructed_intents, &mut self.retained_wakes, &self.runtime_canonical_identity) {
+            Ok(counts) => ErasedClockObservationOutcome::Accepted(due_wake_retention::complete_continuation_receipt_for_test(counts, &mut self.retained_wakes, &mut self.operation_totals)),
+            Err(cause) => ErasedClockObservationOutcome::Failed { detail: format!("conditional continuation publication refused: {cause:?}"), kind: super::WorthQueryConditionalClockObservationFailureKind::Obligation(cause) },
+        }
+    }
     fn binding_identity(&self) -> &str {
         self.definition.binding_identity.support_identity()
     }

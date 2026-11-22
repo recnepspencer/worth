@@ -166,6 +166,24 @@ impl PreparedRelationalCommitCandidate {
             .map(|payload| payload.expected_basis.clone())
     }
 
+    /// Basis, successor parent count, and fixed-size root/commit identities.
+    pub(crate) fn with_successor_shape<R>(
+        &self,
+        read: impl FnOnce(&crate::branch::RelationalBranchBasisDescriptor, usize, u64, crate::history::data::CommitId) -> R,
+    ) -> Option<R> {
+        let payload = self
+            ._payload
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let payload = payload.as_ref()?;
+        Some(read(
+            &payload.expected_basis,
+            payload.execution.successor_parent_count(),
+            payload.execution.prepared_root().id(),
+            payload.execution.canonical_envelope().commit.commit_id,
+        ))
+    }
+
     pub(crate) fn belongs_to_publication_owner(
         &self,
         binding: &crate::runtime::RelationalRuntimePublicationBinding,

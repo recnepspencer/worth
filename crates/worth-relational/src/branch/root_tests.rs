@@ -31,6 +31,33 @@ fn committed_root_and_envelope(
     (runtime, root, envelope)
 }
 
+fn prepare_main_candidate(
+    runtime: &crate::runtime::RelationalRuntime,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    key: &str,
+) -> crate::facade::mvcc::PreparedRelationalCommitCandidate {
+    let services = runtime.owner_component_services();
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    let mut txn = services
+        .transaction_admission_port()
+        .begin_branch_transaction(
+            &basis,
+            crate::facade::mvcc::RelationalTransactionIntent::ordinary(),
+        )
+        .unwrap();
+    txn.push_batch(
+        crate::tests::support::batch_create(key),
+        worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    )
+    .unwrap();
+    services
+        .preparation_port()
+        .prepare_branch_transaction(execution, txn)
+        .unwrap()
+}
+
 #[test]
 fn relink_rejects_schema_authority_mutation() {
     let host_request = crate::test_execution_policy::serial_request();

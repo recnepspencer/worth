@@ -285,6 +285,75 @@ where
             .take_released_managed_cleanup()
     }
 
+    #[doc(hidden)]
+    pub fn reset_retained_wakes_for_replay_for_test(&mut self) {
+        self.operation
+            .lock_operation()
+            .reset_retained_wakes_for_replay_for_test();
+        self.runtime
+            .runtime
+            .primary_provider
+            .attempts_for_test()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .reset_idle_replay_ordinals_for_test();
+    }
+
+    #[doc(hidden)]
+    pub fn prime_replay_plateau_for_test(&mut self) {
+        super::lifecycle::prime_global_plateaus_for_test();
+        let product = &self.runtime.runtime.product_runtime;
+        let expected = product
+            .owner
+            .observation_port()
+            .observe_product_branch(product.default_branch())
+            .unwrap();
+        let pub_port = product.owner.publication_port();
+        let token = worth_runtime_world::facade::RuntimeWorldCancellationSource::new().token();
+        for _ in 0..1_000 {
+            let _ = self.runtime.issue_application_mutation_partition();
+        }
+        for _ in 0..1_000 {
+            let prepared = pub_port
+                .prepare_with_signal(
+                    expected.clone(),
+                    worth_runtime_world::facade::CompositePublicationIntent::with_signal(None),
+                    &token,
+                    None,
+                )
+                .ok()
+                .expect("prime_replay_plateau_for_test: prepare_with_signal");
+            drop(prepared);
+        }
+    }
+
+    #[doc(hidden)]
+    pub fn reenter_retained_wakes_continuation_for_test(
+        &mut self,
+        _execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> WorthQueryConditionalClockObservationOutcome<Clock> {
+        self.runtime
+            .with_host_advancement(|active_phase| {
+                let granular_invalidation_installation =
+                    self.runtime.granular_invalidation_installation();
+                let granular_source_read_basis = self.truth.granular_source_read_basis();
+                let bridge_root = self.runtime.runtime.bridge.conditional_operations();
+                let bridge = bridge_root.read().unwrap_or_else(std::sync::PoisonError::into_inner);
+                let outcome = match bridge.with_view(self.truth.signal_basis(), |view| {
+                    self.operation.reenter_retained_wakes_continuation_for_test(&active_phase, &view, self.runtime, &self.truth)
+                }) {
+                    Ok(outcome) => outcome,
+                    Err(cause) => return WorthQueryConditionalClockObservationOutcome::Failed(WorthQueryConditionalClockObservationFailure {
+                        kind: WorthQueryConditionalClockObservationFailureKind::ReconstructionDenied(super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(Box::new(cause.kind()))), detail: cause.detail().to_owned(),
+                    }),
+                };
+                outcome.typed(granular_invalidation_installation, Some(granular_source_read_basis))
+            })
+            .unwrap_or_else(|cause| WorthQueryConditionalClockObservationOutcome::Failed(WorthQueryConditionalClockObservationFailure {
+                kind: WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(cause), detail: String::new(),
+            }))
+    }
+
     pub fn observe(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

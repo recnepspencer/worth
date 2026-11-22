@@ -11,7 +11,8 @@ impl PreparedBranchPublicationPreflight {
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         deadline: Option<std::time::Instant>,
-    ) -> RelationalPublicationOutcome {
+        mut allow_effect: Option<&mut dyn FnMut() -> bool>,
+    ) -> Option<RelationalPublicationOutcome> {
         let _publication_lifecycle = self
             .movement
             .canonical_publication_route
@@ -21,10 +22,10 @@ impl PreparedBranchPublicationPreflight {
                 execution,
                 crate::authority::commit::pipeline::CommitStage::PublicationCutover,
             ) {
-                return RelationalPublicationOutcome::RequestStopped(stop);
+                return Some(RelationalPublicationOutcome::RequestStopped(stop));
             }
             if std::time::Instant::now() >= deadline {
-                return cutover_deadline_elapsed();
+                return Some(cutover_deadline_elapsed());
             }
         }
         match self
@@ -39,14 +40,14 @@ impl PreparedBranchPublicationPreflight {
                     .inner
                     .retention_binding
                     .record_interruption(event);
-                return RelationalPublicationOutcome::interrupted(event);
+                return Some(RelationalPublicationOutcome::interrupted(event));
             }
             Some(event) => {
                 self.next_basis
                     .inner
                     .retention_binding
                     .record_interruption(event);
-                return RelationalPublicationOutcome::interrupted(event);
+                return Some(RelationalPublicationOutcome::interrupted(event));
             }
             None => {}
         }
@@ -63,46 +64,53 @@ impl PreparedBranchPublicationPreflight {
                 .inner
                 .retention_binding
                 .record_interruption(event);
-            return RelationalPublicationOutcome::interrupted(event);
+            return Some(RelationalPublicationOutcome::interrupted(event));
         }
         self.control.pause_inside_critical_section_for_test();
         let (mut publication_state, read_state) = match _critical_section.enter_states() {
             Ok(states) => states,
             Err(denial) => {
-                return RelationalPublicationOutcome::denied(
+                return Some(RelationalPublicationOutcome::denied(
                     RelationalPublicationDenial::CurrentReadDependency(denial),
-                )
+                ))
             }
         };
         match publication_state.lifecycle_posture() {
             crate::branch::RelationalBranchLifecyclePosture::Live => {}
             crate::branch::RelationalBranchLifecyclePosture::Archived => {
-                return RelationalPublicationOutcome::denied(RelationalPublicationDenial::Archived);
+                return Some(RelationalPublicationOutcome::denied(
+                    RelationalPublicationDenial::Archived,
+                ));
             }
             crate::branch::RelationalBranchLifecyclePosture::Deleting => {
-                return RelationalPublicationOutcome::denied(RelationalPublicationDenial::Deleting);
+                return Some(RelationalPublicationOutcome::denied(
+                    RelationalPublicationDenial::Deleting,
+                ));
             }
         }
         let observed_cell = publication_state.snapshot_cell();
         let Some(observed_root) = observed_cell.root() else {
-            return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
-                RelationalPublicationFailureKind::SelectedRootUnavailable,
-                "selected branch root is unavailable before publication movement",
+            return Some(RelationalPublicationOutcome::failed(
+                RelationalPublicationFailure::new(
+                    RelationalPublicationFailureKind::SelectedRootUnavailable,
+                    "selected branch root is unavailable before publication movement",
+                ),
             ));
         };
         let observed = match crate::branch::descriptor_for_cell(&observed_cell, &observed_root) {
             Ok(descriptor) => descriptor,
             Err(denial) => {
-                return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
-                    RelationalPublicationFailureKind::BranchObservation(denial.clone()),
-                    format!("branch observation failed before movement: {denial:?}"),
+                return Some(RelationalPublicationOutcome::failed(
+                    RelationalPublicationFailure::new(
+                        RelationalPublicationFailureKind::BranchObservation(denial.clone()),
+                        format!("branch observation failed before movement: {denial:?}"),
+                    ),
                 ));
             }
         };
         if observed != self.expected {
-            return RelationalPublicationOutcome::stale(StaleRelationalBranchObservation::new(
-                self.expected.clone(),
-                observed,
+            return Some(RelationalPublicationOutcome::stale(
+                StaleRelationalBranchObservation::new(self.expected.clone(), observed),
             ));
         }
 
@@ -117,9 +125,13 @@ impl PreparedBranchPublicationPreflight {
         {
             Ok(reservation) => reservation,
             Err(denial) => {
-                return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
-                    RelationalPublicationFailureKind::RetentionOwner,
-                    format!("selected head retention binding refused before movement: {denial:?}"),
+                return Some(RelationalPublicationOutcome::failed(
+                    RelationalPublicationFailure::new(
+                        RelationalPublicationFailureKind::RetentionOwner,
+                        format!(
+                            "selected head retention binding refused before movement: {denial:?}"
+                        ),
+                    ),
                 ))
             }
         };
@@ -127,17 +139,17 @@ impl PreparedBranchPublicationPreflight {
         if let (Some(effect), Some(binding)) = (&self.companion, &self.companion_binding)
             && let Err(stop) = effect.matches(binding)
         {
-            return RelationalPublicationOutcome::deferred(
+            return Some(RelationalPublicationOutcome::deferred(
                 RelationalPublicationDeferred::CompanionPreflight(stop),
-            );
+            ));
         }
         let mut companion_cutover = match self.companion.as_mut() {
             Some(effect) => match effect.enter_cutover() {
                 Ok(cutover) => Some(cutover),
                 Err(stop) => {
-                    return RelationalPublicationOutcome::deferred(
+                    return Some(RelationalPublicationOutcome::deferred(
                         RelationalPublicationDeferred::CompanionPreflight(stop),
-                    )
+                    ))
                 }
             },
             None => None,
@@ -149,7 +161,10 @@ impl PreparedBranchPublicationPreflight {
             execution,
             crate::authority::commit::pipeline::CommitStage::PublicationCutover,
         ) {
-            return RelationalPublicationOutcome::RequestStopped(stop);
+            return Some(RelationalPublicationOutcome::RequestStopped(stop));
+        }
+        if allow_effect.as_mut().is_some_and(|allow| !allow()) {
+            return None;
         }
 
         let next_root = &self.movement.root;
@@ -171,6 +186,7 @@ impl PreparedBranchPublicationPreflight {
                 self.publication_cell.clone(),
                 admission,
                 deadline,
+                allow_effect,
                 medium.as_deref(),
                 execution,
                 |position| {
@@ -196,28 +212,33 @@ impl PreparedBranchPublicationPreflight {
                 },
             ) {
             Ok(positioned) => positioned,
+            Err(crate::runtime::CanonicalPublicationRecordError::CallerCutoffStopped) => {
+                return None;
+            }
             Err(crate::runtime::CanonicalPublicationRecordError::ReservationContended) => {
-                return RelationalPublicationOutcome::deferred(
+                return Some(RelationalPublicationOutcome::deferred(
                     RelationalPublicationDeferred::PatchPositionReservationContended,
-                );
-            }
-            Err(crate::runtime::CanonicalPublicationRecordError::ReservationWaitStopped(stop)) => {
-                return RelationalPublicationOutcome::RequestStopped(stop);
-            }
-            Err(crate::runtime::CanonicalPublicationRecordError::CutoverDeadlineElapsed) => {
-                return cutover_deadline_elapsed();
-            }
-            Err(crate::runtime::CanonicalPublicationRecordError::PositionCapacityExhausted) => {
-                return RelationalPublicationOutcome::failed(RelationalPublicationFailure::new(
-                    RelationalPublicationFailureKind::PatchPositionCapacityExhausted,
-                    "performed publication stream position capacity exhausted",
                 ));
             }
-            Err(crate::runtime::CanonicalPublicationRecordError::MemoryFrame(cause))=>{
-                return memory_frame_stop_outcome(execution, cause);
+            Err(crate::runtime::CanonicalPublicationRecordError::ReservationWaitStopped(stop)) => {
+                return Some(RelationalPublicationOutcome::RequestStopped(stop));
+            }
+            Err(crate::runtime::CanonicalPublicationRecordError::CutoverDeadlineElapsed) => {
+                return Some(cutover_deadline_elapsed());
+            }
+            Err(crate::runtime::CanonicalPublicationRecordError::PositionCapacityExhausted) => {
+                return Some(RelationalPublicationOutcome::failed(
+                    RelationalPublicationFailure::new(
+                        RelationalPublicationFailureKind::PatchPositionCapacityExhausted,
+                        "performed publication stream position capacity exhausted",
+                    ),
+                ));
+            }
+            Err(crate::runtime::CanonicalPublicationRecordError::MemoryFrame(cause)) => {
+                return Some(memory_frame_stop_outcome(execution, cause));
             }
             Err(crate::runtime::CanonicalPublicationRecordError::Durable(stop)) => {
-                return durable_stop_outcome(stop);
+                return Some(durable_stop_outcome(stop));
             }
         };
         // Actual movement succeeded. Install only prepaid Native metadata;
@@ -264,11 +285,13 @@ impl PreparedBranchPublicationPreflight {
                 settlement_retention,
                 late_interruption,
             );
-        RelationalPublicationOutcome::performed(PerformedRelationalCommit::record(
-            positioned_commit,
-            self.next_basis.clone(),
-            record,
-            late_interruption,
+        Some(RelationalPublicationOutcome::performed(
+            PerformedRelationalCommit::record(
+                positioned_commit,
+                self.next_basis.clone(),
+                record,
+                late_interruption,
+            ),
         ))
     }
 }

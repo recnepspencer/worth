@@ -52,7 +52,7 @@ pub use record_advance::{
     RelationalRecordAdvanceObservation,
 };
 pub use recorded_basis::{
-    ObservedRelationalMemoryComponent, RecordedRelationalCanonicalComponent,
+    AdmittedRelationalMemoryComponent, ObservedRelationalMemoryComponent, RecordedRelationalCanonicalComponent,
     RecordedRelationalComponentReference, RecordedRelationalComponentTarget,
     RelationalRecordedComponentRefusal,
 };

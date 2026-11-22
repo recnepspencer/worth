@@ -66,6 +66,19 @@ impl ActiveAttemptCustody {
             .as_ref()
             .expect("ordinary attempt reserves original publication")
     }
+    /// The original publication envelope, when this attempt reserved one.
+    pub(crate) fn original_publication_envelope(
+        &self,
+    ) -> Option<&Arc<crate::history::CanonicalPublicationEnvelope>> {
+        self.record.publication.as_ref()
+    }
+    /// Release any unsealed pre-effect memory-original admission owned by this
+    /// attempt's envelope. Any already sealed original stays under its own custody.
+    pub(crate) fn discard_admitted_memory_original(&self) {
+        if let Some(envelope) = self.record.publication.as_ref() {
+            envelope.discard_admitted_memory_original();
+        }
+    }
     pub(crate) fn reserved_commit_identity(&self) -> crate::identity::CompositeCommitIdentity {
         self.record
             .state()
@@ -179,6 +192,7 @@ impl ActiveAttemptCustody {
     }
 
     pub(crate) fn retain_open(mut self) -> crate::recovery::ProductUnpublishedOwnerEffects {
+        self.discard_admitted_memory_original();
         self.record.state().cause = crate::recovery::ProductUnpublishedCause::OpenAttemptRetained;
         self.slot
             .take()
@@ -213,6 +227,7 @@ impl ActiveAttemptCustody {
 
 impl Drop for ActiveAttemptCustody {
     fn drop(&mut self) {
+        self.discard_admitted_memory_original();
         let Some(slot) = self.slot.take() else { return };
         if (self.record.product_moved() && !self.retains_durable_creation())
             || (self.record.progress().owner_effect_count() == 0 && !self.retains_durable_attempt())

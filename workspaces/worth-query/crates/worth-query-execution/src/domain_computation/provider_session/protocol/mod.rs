@@ -35,6 +35,7 @@ pub use execution_plan::*;
 pub use plan_contract::*;
 pub(crate) use product_affinity::WorthQueryProviderProductAffinity;
 pub(in crate::domain_computation) use product_affinity::WorthQueryProviderTerminalProductAffinity;
+pub(crate) use provider_port::prime_protocol_session_plateau_for_test;
 pub use provider_port::*;
 pub use readmission::{
     WorthQueryPreparedProviderSession, WorthQueryProviderSessionGrant,
