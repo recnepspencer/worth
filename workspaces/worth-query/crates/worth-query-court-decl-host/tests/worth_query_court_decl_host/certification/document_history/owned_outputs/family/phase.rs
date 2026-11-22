@@ -63,6 +63,8 @@ macro_rules! producer_operation {
     (CycleParentPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CycleParentPreserve, $entity, $key, $value, $of); };
     (CycleConsumerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CycleConsumerInitial, $entity, $key, $value, $of); };
     (CycleConsumerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CycleConsumerPreserve, $entity, $key, $value, $of); };
+    (GuardedInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedInputInitial, $entity, $key, $value, $of); };
+    (GuardedInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedInputPreserve, $entity, $key, $value, $of); };
     (@member_write $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
         worth_query_operation!(pub $operation for Schema, input InputBinding; access {
             read_entities: [SourceEntity, $entity, Member]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
@@ -159,6 +161,12 @@ macro_rules! producer_decision_dependency {
     (ParityInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (SaturatedInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader).min(5) };
     (SaturatedInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader).min(5) };
+    (GuardedInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@model_b $reader) };
+    (GuardedInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@model_b $reader) };
+    (@model_b $reader:ident) => {{
+        let b = $reader.resolve_entity(ModelKey::at("ModelKey"), "b".to_owned())?;
+        $reader.field(&b, ModelValue::at("ModelValue"))?.expect("model b has its value")
+    }};
     (@member_read $reader:ident) => {{
         let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
         $reader.field(&member, MemberValue::at("MemberValue"))?.expect("seeded decision member has its required value")
@@ -319,6 +327,7 @@ macro_rules! phase {
                         reader.field(&source, source_value())?;
                         predecessor_hook!($operation, reader, source);
                         let member_value = producer_decision_dependency!($operation, reader, source, input);
+                        if let Some(denial) = producer_decision_refusal!($operation, member_value) { return Ok(Err(denial)); }
                         let member_target = producer_member_target!($operation, reader, input);
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
                             else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };

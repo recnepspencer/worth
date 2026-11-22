@@ -1,4 +1,13 @@
 //! Member targets and effects of the member-writing fixture producers.
+// A decision that refuses in its domain on what it read (PR C §1.7).
+macro_rules! producer_decision_refusal {
+    (GuardedInputInitial, $value:ident) => { producer_decision_refusal!(@guarded $value) };
+    (GuardedInputPreserve, $value:ident) => { producer_decision_refusal!(@guarded $value) };
+    (@guarded $value:ident) => {
+        if $value >= 100 { Some(Denial::PreserveMissingOutput) } else if $value % 2 == 1 { Some(Denial::DerivedValueOutOfRange) } else { None }
+    };
+    ($operation:ident, $value:ident) => { None::<Denial> };
+}
 macro_rules! producer_member_target {
     (CrossConvergeInitial, $reader:ident, $input:ident) => { producer_member_target!(@cross $reader, $input) };
     (CrossConvergePreserve, $reader:ident, $input:ident) => { producer_member_target!(@cross $reader, $input) };

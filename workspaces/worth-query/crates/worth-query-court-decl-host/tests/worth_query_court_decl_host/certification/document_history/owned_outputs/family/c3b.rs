@@ -9,6 +9,7 @@ pub mod capped_consumer;
 pub mod capped_reader;
 pub mod cycle_consumer;
 pub mod cycle_parent;
+pub mod guarded_input;
 pub mod saturated_consumer;
 pub mod saturated_input;
 pub mod self_write;
@@ -25,7 +26,8 @@ pub fn contracts(
     capped_reader::contracts(contracts)?;
     capped_consumer::contracts(contracts)?;
     cycle_parent::contracts(contracts)?;
-    cycle_consumer::contracts(contracts)
+    cycle_consumer::contracts(contracts)?;
+    guarded_input::contracts(contracts)
 }
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
@@ -39,5 +41,6 @@ pub fn install(
     capped_reader::install(setup)?;
     capped_consumer::install(setup)?;
     cycle_parent::install(setup)?;
-    cycle_consumer::install(setup)
+    cycle_consumer::install(setup)?;
+    guarded_input::install(setup)
 }
