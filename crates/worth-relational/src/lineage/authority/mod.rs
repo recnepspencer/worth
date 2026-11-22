@@ -1,4 +1,5 @@
 mod commit_finalization;
+mod discriminator_scan;
 mod event_emission;
 mod name_minting;
 

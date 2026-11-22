@@ -96,8 +96,9 @@ fn phase_six_semantic_families_share_the_foundational_digest_slot() {
     let preconditions = include_str!(
         "../../../../worth-query-execution/src/domain_computation/primary_graph/application_attempt/precondition_binding/canonical_identity.rs"
     );
-    let evidence_slot =
-        include_str!("../../../../worth-query-execution/src/domain_computation/evidence_identity/foundational.rs");
+    let evidence_slot = include_str!(
+        "../../../../worth-query-execution-diagnostics/src/evidence_identity/foundational.rs"
+    );
 
     assert!(declared_query.contains("prepare_canonical_basis_sequence"));
     assert!(!declared_query.contains("CanonicalDigestAlgorithmId::sha256()"));

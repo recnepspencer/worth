@@ -3,7 +3,10 @@ use std::marker::PhantomData;
 
 use crate::application_schema::{ApplicationEntityMarkerIdentity, ApplicationRelationRef};
 
-use super::denial::{validate_role_name, validate_scheme_identifier, validate_subject_name};
+use super::denial::{
+    validate_discriminator_identity, validate_role_name, validate_scheme_identifier,
+    validate_subject_name,
+};
 use super::{ApplicationNameDiscriminator, ApplicationNameSchemeDenial};
 
 /// Subject family governed by an [`ApplicationNameScheme`].
@@ -300,6 +303,9 @@ impl<S, K> ApplicationNameSchemeBuilder<S, K> {
             validate_role_name(&self.scheme_id, dependency.role())?;
             validate_role_name(&self.scheme_id, dependency.depends_on())?;
         }
+        if let Some(disc_id) = &self.split_discriminator_identity {
+            validate_discriminator_identity(&self.scheme_id, disc_id)?;
+        }
         Ok(ApplicationNameScheme {
             erased: ErasedApplicationNameScheme {
                 scheme_id: self.scheme_id,
@@ -332,6 +338,9 @@ pub(crate) fn validate_erased_scheme_identifiers(
             }
             for role in definition.discriminator_referenced_roles() {
                 validate_role_name(definition.scheme_id(), role)?;
+            }
+            if let Some(disc_id) = definition.split_discriminator_identity() {
+                validate_discriminator_identity(definition.scheme_id(), disc_id)?;
             }
             Ok(())
         })

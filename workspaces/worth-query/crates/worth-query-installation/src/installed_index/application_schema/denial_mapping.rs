@@ -149,6 +149,7 @@ pub(super) fn map_compilation_denial(
                 | NamingDenial::InvalidSubjectName { scheme_id, .. }
                 | NamingDenial::EmptyRoleOrder { scheme_id }
                 | NamingDenial::InvalidRoleName { scheme_id, .. }
+                | NamingDenial::InvalidDiscriminatorIdentity { scheme_id, .. }
                 | NamingDenial::UndeclaredRoleDependency { scheme_id, .. }
                 | NamingDenial::MissingSubjectTarget { scheme_id, .. } => (
                     WorthQueryInstalledApplicationSchemaDenialKind::NamingSchemeInvalid,

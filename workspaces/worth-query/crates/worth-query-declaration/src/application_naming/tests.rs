@@ -106,13 +106,15 @@ fn discriminator_encoding_is_domain_tagged_and_disambiguates_variants_and_option
     let trim = FaceSplitDiscriminator::TrimCap { index: 1 };
 
     let bytes_without = without_edge.canonical_bytes();
-    let bytes_with = with_edge.canonical_bytes();
-    let bytes_trim = trim.canonical_bytes();
+    let (bytes_with, refs_with) = with_edge.canonical_bytes_with_references();
+    let (bytes_trim, refs_trim) = trim.canonical_bytes_with_references();
 
     assert!(bytes_without.starts_with(NAME_DISCRIMINATOR_DOMAIN_TAG));
     assert_eq!(bytes_without, without_edge.canonical_bytes());
     assert_ne!(bytes_without, bytes_with);
     assert_ne!(bytes_without, bytes_trim);
+    assert_eq!(refs_with, vec![[0xaa; 32], [0xbb; 32]]);
+    assert!(refs_trim.is_empty());
     // Adding an Option<WorthQueryName<Edge>> grows the encoding by exactly the
     // 32-byte identity + 1-byte TAG_NAME_REF (33 bytes).
     assert_eq!(bytes_with.len() - bytes_without.len(), 33);

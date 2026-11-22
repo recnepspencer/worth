@@ -16,6 +16,7 @@ mod sealed {
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct ApplicationNameDiscriminatorEncoder {
     bytes: Vec<u8>,
+    referenced_name_digests: Vec<[u8; 32]>,
 }
 
 impl ApplicationNameDiscriminatorEncoder {
@@ -24,6 +25,7 @@ impl ApplicationNameDiscriminatorEncoder {
     pub fn new(discriminator_identity: &str) -> Self {
         let mut encoder = Self {
             bytes: Vec::with_capacity(NAME_DISCRIMINATOR_DOMAIN_TAG.len() + 64),
+            referenced_name_digests: Vec::new(),
         };
         encoder
             .bytes
@@ -58,9 +60,26 @@ impl ApplicationNameDiscriminatorEncoder {
         self
     }
 
+    /// Returns every 32-byte [`WorthQueryName`] digest written into this
+    /// encoder stream in exact encoding order.
+    pub fn referenced_name_digests(&self) -> &[[u8; 32]] {
+        &self.referenced_name_digests
+    }
+
     /// Finishes encoding and returns the canonical byte vector.
     pub fn finish(self) -> Vec<u8> {
         self.bytes
+    }
+
+    /// Finishes encoding and returns both the canonical byte vector and every
+    /// 32-byte [`WorthQueryName`] digest embedded in it so declaration and
+    /// Relational verification cannot disagree.
+    pub fn finish_with_references(self) -> (Vec<u8>, Vec<[u8; 32]>) {
+        (self.bytes, self.referenced_name_digests)
+    }
+
+    fn record_name_ref(&mut self, digest: [u8; 32]) {
+        self.referenced_name_digests.push(digest);
     }
 
     fn write_len_prefixed_str(&mut self, text: &str) {
@@ -204,6 +223,7 @@ impl<K> ApplicationNameDiscriminatorValue for WorthQueryName<K> {
         // so discriminator and birth-event size stays O(1) at arbitrary depth.
         encoder.write_tag(TAG_NAME_REF);
         encoder.write_raw(self.as_bytes());
+        encoder.record_name_ref(*self.as_bytes());
     }
 }
 
@@ -258,6 +278,14 @@ pub trait ApplicationNameDiscriminator: Sized + 'static {
         let mut encoder = ApplicationNameDiscriminatorEncoder::new(Self::DISCRIMINATOR_IDENTITY);
         self.encode_canonical(&mut encoder);
         encoder.finish()
+    }
+
+    /// Produces both the canonical byte representation and the exact 32-byte
+    /// [`WorthQueryName`] digests embedded inside it.
+    fn canonical_bytes_with_references(&self) -> (Vec<u8>, Vec<[u8; 32]>) {
+        let mut encoder = ApplicationNameDiscriminatorEncoder::new(Self::DISCRIMINATOR_IDENTITY);
+        self.encode_canonical(&mut encoder);
+        encoder.finish_with_references()
     }
 }
 

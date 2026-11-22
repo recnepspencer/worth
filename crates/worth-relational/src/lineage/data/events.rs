@@ -39,7 +39,7 @@ pub struct LineageEventRecord {
     pub(crate) kind: LineageEventKind,
     pub(crate) sources: Vec<LineageId>,
     pub(crate) targets: Vec<LineageId>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(skip)]
     pub(crate) name_birth: Option<PersistentNameBirthRecord>,
 }
 

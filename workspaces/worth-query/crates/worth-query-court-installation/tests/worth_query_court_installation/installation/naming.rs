@@ -203,6 +203,7 @@ fn valid_entity_relation_and_group_schemes_install_and_lower_deterministically()
         face.split_discriminator_identity(),
         Some("worth.cad.face.split.v1")
     );
+    assert_eq!(face.discriminator_referenced_roles(), &["cut_piece"]);
     assert!(face.require_authored_occurrence());
     assert_ne!(face.layout_digest(), &[0u8; 32]);
 

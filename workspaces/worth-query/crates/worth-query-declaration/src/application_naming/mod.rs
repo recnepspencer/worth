@@ -14,7 +14,10 @@ mod scheme;
 #[cfg(test)]
 mod tests;
 
-pub use denial::{validate_role_name, validate_scheme_identifier, ApplicationNameSchemeDenial};
+pub use denial::{
+    validate_discriminator_identity, validate_role_name, validate_scheme_identifier,
+    ApplicationNameSchemeDenial,
+};
 pub use discriminator::{
     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder,
     ApplicationNameDiscriminatorValue, NestedDiscriminator, NAME_DISCRIMINATOR_DOMAIN_TAG,

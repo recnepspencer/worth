@@ -15,9 +15,22 @@ pub struct PublicationError {
     invariant_violation: Option<Box<crate::validation::data::InvariantViolation>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     index_maintenance_denial: Option<Box<crate::indexes::data::DerivedIndexMaintenanceDenial>>,
+    #[serde(skip)]
+    lineage_name_denial: Option<Box<crate::lineage::data::LineageNameDenial>>,
 }
 
 impl PublicationError {
+    /// Typed persistent-naming denial raised during commit finalization.
+    pub fn lineage_name_denial(&self) -> Option<&crate::lineage::data::LineageNameDenial> {
+        self.lineage_name_denial.as_deref()
+    }
+
+    pub(crate) fn from_lineage_name_denial(cause: crate::lineage::data::LineageNameDenial) -> Self {
+        let mut error = Self::new(PublicationStage::BundleAssembly, cause.to_string());
+        error.lineage_name_denial = Some(Box::new(cause));
+        error
+    }
+
     /// Original index preparation stop, including work performed before refusal.
     pub fn index_maintenance_denial(
         &self,
@@ -104,6 +117,7 @@ impl PublicationError {
             detail: detail.into(),
             invariant_violation: None,
             index_maintenance_denial: None,
+            lineage_name_denial: None,
             authored_retirement_refusal: None,
             context: ErrorContext::new(RelationalSubsystem::Publication, ErrorOperation::Publish)
                 .with_fix(SuggestedFix::InspectDiagnostics),

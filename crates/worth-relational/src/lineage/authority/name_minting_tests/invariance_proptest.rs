@@ -78,7 +78,7 @@ fn execute_dag(
             occurrence_key: spec.occurrence_key.clone(),
             role_path: ROLES[spec.role_index].to_owned(),
             parent_identities: parents,
-            referenced_same_occurrence_roles: Vec::new(),
+            referenced_names: Vec::new(),
             canonical_discriminator: spec.disc.clone(),
             holder: holder.clone(),
         };

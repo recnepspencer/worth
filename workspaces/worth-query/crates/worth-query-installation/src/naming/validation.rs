@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use sha2::{Digest, Sha256};
 use worth_query_declaration::facade::application_naming::{
-    validate_role_name, validate_scheme_identifier, ApplicationNameSchemeDenial,
-    ErasedApplicationNameScheme,
+    validate_discriminator_identity, validate_role_name, validate_scheme_identifier,
+    ApplicationNameSchemeDenial, ErasedApplicationNameScheme,
 };
 
 use super::{InstalledNameRoleLayout, InstalledNameSchemeLayout};
@@ -33,6 +33,9 @@ pub(super) fn validate_and_lower_scheme(
         return Err(ApplicationNameSchemeDenial::MissingSplitDiscriminator {
             scheme_id: scheme_id.to_owned(),
         });
+    }
+    if let Some(disc_id) = scheme.split_discriminator_identity() {
+        validate_discriminator_identity(scheme_id, disc_id)?;
     }
 
     // 1. Validate role names and reject duplicate role entries as an explicit cycle.
@@ -115,7 +118,15 @@ pub(super) fn validate_and_lower_scheme(
         });
     }
 
-    let layout_digest = compute_layout_digest(scheme, &roles);
+    let mut discriminator_referenced_roles: Vec<String> = scheme
+        .discriminator_referenced_roles()
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    discriminator_referenced_roles.sort();
+    let layout_digest = compute_layout_digest(scheme, &roles, &discriminator_referenced_roles);
     Ok(InstalledNameSchemeLayout {
         scheme_id: scheme.scheme_id().to_owned(),
         subject_kind: scheme.subject_kind(),
@@ -124,6 +135,7 @@ pub(super) fn validate_and_lower_scheme(
         role_ranks,
         split_capable: scheme.split_capable(),
         split_discriminator_identity: scheme.split_discriminator_identity().map(str::to_owned),
+        discriminator_referenced_roles,
         require_authored_occurrence: scheme.require_authored_occurrence(),
         layout_digest,
     })
@@ -243,6 +255,7 @@ fn dfs_cycle<'a>(
 fn compute_layout_digest(
     scheme: &ErasedApplicationNameScheme,
     roles: &[InstalledNameRoleLayout],
+    discriminator_referenced_roles: &[String],
 ) -> [u8; 32] {
     let mut hasher = Sha256::new();
     hasher.update(INSTALLED_NAME_SCHEME_DOMAIN);
@@ -256,6 +269,10 @@ fn compute_layout_digest(
             write_str(&mut hasher, id);
         }
         None => hasher.update([0]),
+    }
+    hasher.update((discriminator_referenced_roles.len() as u64).to_be_bytes());
+    for role in discriminator_referenced_roles {
+        write_str(&mut hasher, role);
     }
     hasher.update([u8::from(scheme.require_authored_occurrence())]);
     hasher.update((roles.len() as u64).to_be_bytes());

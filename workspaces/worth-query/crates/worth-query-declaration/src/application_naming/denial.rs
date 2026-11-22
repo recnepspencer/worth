@@ -30,6 +30,11 @@ pub enum ApplicationNameSchemeDenial {
     },
     /// A split-capable scheme lacks a declared split discriminator type.
     MissingSplitDiscriminator { scheme_id: String },
+    /// A declared split discriminator identity string is empty or malformed.
+    InvalidDiscriminatorIdentity {
+        scheme_id: String,
+        discriminator_identity: String,
+    },
     /// Two schemes share a scheme identifier or govern the same subject.
     DuplicateScheme { scheme_id: String, subject: String },
     /// The scheme targets an entity or relation not declared in the schema.
@@ -78,6 +83,13 @@ impl fmt::Display for ApplicationNameSchemeDenial {
             Self::MissingSplitDiscriminator { scheme_id } => write!(
                 formatter,
                 "split-capable name scheme `{scheme_id}` is missing a split discriminator"
+            ),
+            Self::InvalidDiscriminatorIdentity {
+                scheme_id,
+                discriminator_identity,
+            } => write!(
+                formatter,
+                "invalid split discriminator identity `{discriminator_identity}` in name scheme `{scheme_id}`"
             ),
             Self::DuplicateScheme { scheme_id, subject } => write!(
                 formatter,
@@ -144,6 +156,28 @@ pub fn validate_role_name(scheme_id: &str, role: &str) -> Result<(), Application
         return Err(ApplicationNameSchemeDenial::InvalidRoleName {
             scheme_id: scheme_id.to_owned(),
             role: role.to_owned(),
+        });
+    }
+    Ok(())
+}
+
+/// Validates a declared split discriminator identity string.
+pub fn validate_discriminator_identity(
+    scheme_id: &str,
+    discriminator_identity: &str,
+) -> Result<(), ApplicationNameSchemeDenial> {
+    let invalid = discriminator_identity.is_empty()
+        || discriminator_identity.trim() != discriminator_identity
+        || discriminator_identity.starts_with('.')
+        || discriminator_identity.ends_with('.')
+        || discriminator_identity.contains("..")
+        || discriminator_identity
+            .chars()
+            .any(|ch| ch.is_whitespace() || ch.is_control());
+    if invalid {
+        return Err(ApplicationNameSchemeDenial::InvalidDiscriminatorIdentity {
+            scheme_id: scheme_id.to_owned(),
+            discriminator_identity: discriminator_identity.to_owned(),
         });
     }
     Ok(())

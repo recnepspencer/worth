@@ -89,6 +89,6 @@ fn decode_bool(input: &mut BinaryInput<'_>) -> Result<bool, Denial> {
     match input.u8()? {
         0 => Ok(false),
         1 => Ok(true),
-        _ => Err(Denial::new(Kind::InvalidRecordShape)),
+        _ => Err(Denial::new(Kind::InvalidBooleanEncoding)),
     }
 }

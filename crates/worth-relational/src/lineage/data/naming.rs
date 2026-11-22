@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::identity::data::{EntityId, LineageId, RelationId};
 
@@ -9,9 +9,10 @@ use crate::identity::data::{EntityId, LineageId, RelationId};
 /// Relational's naming authority.
 ///
 /// Never carries allocation, partition, slot, generation, or commit-position
-/// coordinates. Callers outside `worth-relational` have no raw-bytes
-/// constructor.
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+/// coordinates. Intentionally does NOT implement `Deserialize` so untrusted
+/// wire bytes cannot forge an identity outside Relational's verified birth and
+/// readmission doors.
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub struct PersistentNameIdentity([u8; Self::BYTE_LEN]);
 
 impl PersistentNameIdentity {
@@ -48,7 +49,7 @@ impl fmt::Debug for PersistentNameIdentity {
 }
 
 /// Subject class governed by a persistent name scheme in Relational.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub enum PersistentNameSubjectKind {
     Entity,
     Relation,
@@ -60,7 +61,7 @@ pub enum PersistentNameSubjectKind {
 /// Parent names enter strictly as fixed 32-byte [`PersistentNameIdentity`]
 /// digests in sorted order so birth-record size stays O(1) at arbitrary split
 /// depth.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PersistentNameBirthParts {
     scheme_id: String,
     occurrence_key: String,
@@ -117,7 +118,7 @@ impl PersistentNameBirthParts {
 }
 
 /// Authoritative birth record carried on a canonical `Create` lineage event.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PersistentNameBirthRecord {
     identity: PersistentNameIdentity,
     subject_kind: PersistentNameSubjectKind,
@@ -150,8 +151,8 @@ impl PersistentNameBirthRecord {
     }
 }
 
-/// Identifies a live or pending holder involved in a persistent-name collision.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+/// Identifies a live or pending holder involved in a persistent-name refusal.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 pub enum PersistentNameHolder {
     Entity(EntityId),
     Relation(RelationId),
@@ -163,102 +164,23 @@ pub enum PersistentNameHolder {
     },
 }
 
-/// Typed commit-boundary refusal returned when birth minting violates naming
-/// laws or collides with an existing live or same-commit holder.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum LineageNameDenial {
-    /// Two live or same-commit births minted the exact same identity.
-    DuplicateBirth {
-        identity: PersistentNameIdentity,
-        first: PersistentNameHolder,
-        second: PersistentNameHolder,
-    },
-    /// A discriminator referenced a same-occurrence role that is not strictly
-    /// earlier in the scheme's acyclic role order.
-    InvalidDiscriminatorBasis {
-        scheme_id: String,
-        role_path: String,
-        referenced_role: String,
-    },
-    /// Referenced scheme is not installed in Relational's naming registry.
-    UnknownScheme { scheme_id: String },
-    /// Referenced role path is not declared in the installed scheme.
-    UndeclaredRole {
-        scheme_id: String,
-        role_path: String,
-    },
-    /// Scheme requires an authored occurrence key, but none was supplied.
-    MissingAuthoredOccurrenceKey { scheme_id: String },
-    /// Split-capable birth with parent identities supplied an empty discriminator.
-    MissingSplitDiscriminator {
-        scheme_id: String,
-        role_path: String,
-    },
-    /// Parent identity list contained duplicate identities.
-    DuplicateParentIdentity {
-        scheme_id: String,
-        role_path: String,
-        parent: PersistentNameIdentity,
-    },
+/// Where a persistent name referenced by a birth's discriminator must exist.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
+pub enum PersistentNameReferenceBasis {
+    /// Must exist as an active live holder at the commit's basis (not absent
+    /// and not retired in this commit).
+    Basis,
+    /// Must be minted earlier in the same commit batch under the exact same
+    /// `occurrence_key` with a strictly lower role rank in the scheme DAG.
+    SameOccurrence { role: String },
 }
 
-impl fmt::Display for LineageNameDenial {
-    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::DuplicateBirth {
-                identity,
-                first,
-                second,
-            } => write!(
-                formatter,
-                "duplicate persistent name birth `{}` between {:?} and {:?}",
-                identity.render_hex(),
-                first,
-                second
-            ),
-            Self::InvalidDiscriminatorBasis {
-                scheme_id,
-                role_path,
-                referenced_role,
-            } => write!(
-                formatter,
-                "invalid discriminator basis in scheme `{scheme_id}`: role `{role_path}` cannot reference `{referenced_role}`"
-            ),
-            Self::UnknownScheme { scheme_id } => {
-                write!(formatter, "unknown installed name scheme `{scheme_id}`")
-            }
-            Self::UndeclaredRole {
-                scheme_id,
-                role_path,
-            } => write!(
-                formatter,
-                "undeclared role `{role_path}` in name scheme `{scheme_id}`"
-            ),
-            Self::MissingAuthoredOccurrenceKey { scheme_id } => write!(
-                formatter,
-                "missing authored occurrence key for name scheme `{scheme_id}`"
-            ),
-            Self::MissingSplitDiscriminator {
-                scheme_id,
-                role_path,
-            } => write!(
-                formatter,
-                "missing split discriminator for role `{role_path}` in split-capable scheme `{scheme_id}`"
-            ),
-            Self::DuplicateParentIdentity {
-                scheme_id,
-                role_path,
-                parent,
-            } => write!(
-                formatter,
-                "duplicate parent identity `{}` for role `{role_path}` in scheme `{scheme_id}`",
-                parent.render_hex()
-            ),
-        }
-    }
+/// One typed persistent-name reference carried inside a birth's discriminator.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
+pub struct PersistentNameDiscriminatorReference {
+    pub identity: PersistentNameIdentity,
+    pub basis: PersistentNameReferenceBasis,
 }
-
-impl std::error::Error for LineageNameDenial {}
 
 /// Immutable installed name scheme contract lowered into Relational for commit
 /// finalization minting.
@@ -355,7 +277,7 @@ pub struct PersistentNameBirthRequest {
     pub occurrence_key: String,
     pub role_path: String,
     pub parent_identities: Vec<PersistentNameIdentity>,
-    pub referenced_same_occurrence_roles: Vec<String>,
+    pub referenced_names: Vec<PersistentNameDiscriminatorReference>,
     pub canonical_discriminator: Vec<u8>,
     pub holder: PersistentNameHolder,
 }

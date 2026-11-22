@@ -4,6 +4,7 @@ mod graph;
 mod invariants;
 mod metrics;
 mod naming;
+mod naming_denial;
 mod resolution;
 
 pub use artifacts::{
@@ -21,10 +22,12 @@ pub use graph::{
 pub use invariants::LineageInvariant;
 pub use metrics::LineageFinalizationCounters;
 pub use naming::{
-    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry, LineageNameDenial,
-    PersistentNameBirthParts, PersistentNameBirthRecord, PersistentNameBirthRequest,
-    PersistentNameHolder, PersistentNameIdentity, PersistentNameSubjectKind,
+    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry, PersistentNameBirthParts,
+    PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameDiscriminatorReference,
+    PersistentNameHolder, PersistentNameIdentity, PersistentNameReferenceBasis,
+    PersistentNameSubjectKind,
 };
+pub use naming_denial::{DiscriminatorBasisDenialReason, LineageNameDenial};
 pub use resolution::{
     HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,
     HistoricalLineageResolutionMetrics, HistoricalResolutionBoundednessBasis,

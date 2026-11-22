@@ -50,6 +50,7 @@ pub struct InstalledNameSchemeLayout {
     pub(super) role_ranks: BTreeMap<String, u32>,
     pub(super) split_capable: bool,
     pub(super) split_discriminator_identity: Option<String>,
+    pub(super) discriminator_referenced_roles: Vec<String>,
     pub(super) require_authored_occurrence: bool,
     pub(super) layout_digest: [u8; 32],
 }
@@ -85,6 +86,10 @@ impl InstalledNameSchemeLayout {
 
     pub fn split_discriminator_identity(&self) -> Option<&str> {
         self.split_discriminator_identity.as_deref()
+    }
+
+    pub fn discriminator_referenced_roles(&self) -> &[String] {
+        &self.discriminator_referenced_roles
     }
 
     pub const fn require_authored_occurrence(&self) -> bool {
