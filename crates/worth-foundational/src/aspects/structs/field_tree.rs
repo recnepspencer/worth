@@ -13,6 +13,7 @@ struct Node {
     right: Link,
     height: usize,
     len: usize,
+    birth_seq: Option<u64>,
 }
 #[derive(Clone, Default)]
 pub(super) struct StructFields {
@@ -137,6 +138,7 @@ fn node(key: Arc<FieldKey>, value: Arc<AspectValue>, left: Link, right: Link) ->
         len: 1 + length(&left) + length(&right),
         left,
         right,
+        birth_seq: crate::aspects::allocation_visitor::next_allocation_birth_seq(),
     })
 }
 fn balanced(key: Arc<FieldKey>, value: Arc<AspectValue>, left: Link, right: Link) -> Arc<Node> {

@@ -7,6 +7,8 @@ use crate::storage::substrate::{
 };
 #[path = "tests/kind_oracle.rs"]
 mod kind_oracle;
+#[path = "tests/locality_helpers.rs"]
+mod locality_helpers;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
 fn partition() -> (PartitionState, StringInterner) {
@@ -239,105 +241,55 @@ fn controlled_full_commitment_clone_retains_only_its_actual_node_backing() {
 #[test]
 fn ordinary_one_slot_incremental_publication_does_not_scan_prior_partition_with_live_overlay() {
     use crate::storage::substrate::extra_delta_resolve_scans_on_current_thread;
-    use worth_foundational::facade::*;
-    use worth_proof::TransitionOutcome;
-
-    let contract = AspectContract::scalar(
-        AspectKey::new("label").unwrap(),
-        AspectIdentity(91),
-        AspectContractRevision(1),
-        ScalarAspectType::String,
-    );
-    let make_extra = |text: &str| {
-        let TransitionOutcome::Success(val) = validate_aspect_value(
-            &contract,
-            ContractValidationInput::Scalar(AspectValue::String(InternedString::Raw(text.into()))),
-        ) else {
-            panic!("admitted scalar")
-        };
-        let TransitionOutcome::Success(admitted) = admit_authoritative_record_aspect_state([val])
-        else {
-            panic!("admitted state")
-        };
-        EntityExtra::from_unbudgeted_parts(None, None, Some(admitted.into_parts().into_parts().0))
+    use locality_helpers::{
+        assert_directed_ids, make_stored_extra, seed_stored_partition, stored_label_contract,
     };
+    use worth_foundational::facade::StoredValueText;
 
-    for (population, history_depth) in [(8_usize, 2_u64), (128_usize, 16_u64)] {
-        let mut base = PartitionState {
-            partition_id: crate::identity::data::PartitionId(1),
-            adjacency_policy: crate::config::data::AdjacencyPolicy {
-                backend: crate::config::data::AdjacencyBackend::InlineSmallDegreeAdjacency,
-                small_degree_inline_capacity: 4,
-            },
-            relation_overlay_is_sparse: false,
-            entity_arena: EntityArena::with_capacity(population),
-            relation_arena: RelationArena::with_capacity(0),
-            adjacency: Default::default(),
-            reverse_adjacency: Default::default(),
-        };
-        for slot in 0..population {
-            base.entity_arena
-                .write_reserved_slot(
-                    SlotInit {
-                        partition_id: base.partition_id,
-                        kind_id: KindId(1),
-                        version_id: VersionId(1),
-                        extra: make_extra(&format!("seed-{slot}-0")),
-                    },
-                    slot,
-                    1,
-                )
-                .unwrap();
-            for step in 1..history_depth {
-                base.entity_arena
-                    .apply_extra_update(
-                        slot,
-                        make_extra(&format!("seed-{slot}-{step}")),
-                        VersionId(1 + step),
-                    )
-                    .unwrap();
-            }
-        }
+    let contract = stored_label_contract();
+    let registry = crate::schema::data::RelationalSchemaRegistry::default();
+    let schema = crate::branch::RelationalBranchRootSchemaAuthority::capture(
+        1,
+        &registry,
+        &registry.authority_snapshot(),
+        crate::schema::data::DescriptorSemanticsVersion::default(),
+        None,
+    )
+    .unwrap();
+    let runtime_symbols = RuntimeSymbolTable::default();
+
+    // Independently scale untouched population (8 -> 128) and prior history depth (2 -> 24).
+    for (population, history_depth) in [(8_usize, 2_u64), (128_usize, 2_u64), (8_usize, 24_u64)] {
+        let (base, existing_slot1_stored) =
+            seed_stored_partition(&contract, population, history_depth);
         let budget = SerialMemoryBudget::new(Some(32 * 1024 * 1024));
         let host = SerialRequest::from_memory(budget, CancellationSource::new().token(), None);
         let execution = ExecutionRequest::serial(&host);
-        let symbols = StringInterner::default();
         let initial = PreparedResidentRegion::initial(
             &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             &execution,
             base,
-            &symbols,
+            &StringInterner::default(),
         )
         .unwrap();
+        let initial_region = initial.retention.capture_region().unwrap().unwrap();
 
-        let mut overlay = initial
-            .retention
-            .capture_region()
-            .unwrap()
-            .unwrap()
-            .partition
-            .clone();
+        // 1. Fresh StoredValueText with an external live clone retaining its seal Arc
+        //    (plus the borrowed overlay retained live): must incur ZERO prior-partition scans.
+        let fresh_stored = StoredValueText::new(format!("fresh-{population}-{history_depth}"));
+        let external_seal_holder = fresh_stored.clone();
+        let mut overlay = initial_region.partition.clone();
         overlay
             .entity_arena
             .apply_extra_update(
                 0,
-                make_extra(&format!("updated-{population}-{history_depth}")),
+                make_stored_extra(&contract, fresh_stored),
                 VersionId(history_depth + 10),
             )
             .unwrap();
         let mut journal = PartitionMutationJournal::default();
         journal.entity_slots.insert(0);
 
-        let registry = crate::schema::data::RelationalSchemaRegistry::default();
-        let schema = crate::branch::RelationalBranchRootSchemaAuthority::capture(
-            1,
-            &registry,
-            &registry.authority_snapshot(),
-            crate::schema::data::DescriptorSemanticsVersion::default(),
-            None,
-        )
-        .unwrap();
-        let runtime_symbols = RuntimeSymbolTable::default();
         let scans_before = extra_delta_resolve_scans_on_current_thread();
         let updated = PreparedResidentRegion::incremental(
             &execution,
@@ -350,42 +302,69 @@ fn ordinary_one_slot_incremental_publication_does_not_scan_prior_partition_with_
             },
             &overlay,
             &journal,
-            schema,
+            schema.clone(),
             &runtime_symbols,
             None,
         )
         .unwrap();
         let scans_after = extra_delta_resolve_scans_on_current_thread();
-        // Keep `overlay` live past `incremental` to prove the live borrowed overlay
-        // does not trigger a fallback full-partition membership scan.
         assert_eq!(overlay.entity_arena.slot_count(), population);
-        drop(overlay);
-
+        assert!(!external_seal_holder.is_empty());
         assert_eq!(
             scans_after - scans_before,
             0,
-            "ordinary 1-slot incremental publication (pop={population}, hist={history_depth}) must never scan prior partition"
+            "fresh externally-cloned StoredValueText (pop={population}, hist={history_depth}) must never scan prior partition"
         );
-        let actual_partition = &updated
-            .retention
-            .capture_region()
-            .unwrap()
-            .unwrap()
-            .partition;
-        assert_eq!(
-            updated.inventory,
-            actual_partition.allocation_inventory().unwrap()
+        let actual = &updated.retention.capture_region().unwrap().unwrap().partition;
+        let exp_new = assert_directed_ids(
+            &initial_region.partition,
+            actual,
+            initial_region.sealed_watermarks,
         );
-        let expected_new = actual_partition
-            .new_authoritative_allocation_bytes_since(
-                &initial
-                    .retention
-                    .capture_region()
-                    .unwrap()
-                    .unwrap()
-                    .partition,
+        assert_eq!(updated.new_payload_bytes, exp_new);
+        assert_eq!(updated.inventory, actual.allocation_inventory().unwrap());
+        drop((overlay, external_seal_holder));
+
+        // 2. Separate existing-alias case: slot 0 adopts a clone of slot 1's pre-existing
+        //    StoredValueText (seal born BEFORE initial was sealed). Exact directed IDs must
+        //    omit the already-present seal from `introduced` and from `updated.inventory`.
+        if population == 8 && history_depth == 2 {
+            let mut alias_overlay = initial_region.partition.clone();
+            alias_overlay
+                .entity_arena
+                .apply_extra_update(
+                    0,
+                    make_stored_extra(&contract, existing_slot1_stored),
+                    VersionId(history_depth + 11),
+                )
+                .unwrap();
+            let aliased = PreparedResidentRegion::incremental(
+                &execution,
+                RegionCaptureBasis {
+                    retention: &initial.retention,
+                    directory: &initial.directory,
+                    inventory: initial.inventory,
+                    unavailable_records: initial.unavailable_records,
+                    kind_commitment: initial.kind_commitment,
+                },
+                &alias_overlay,
+                &journal,
+                schema.clone(),
+                &runtime_symbols,
+                None,
             )
             .unwrap();
-        assert_eq!(updated.new_payload_bytes, expected_new);
+            let alias_actual = &aliased.retention.capture_region().unwrap().unwrap().partition;
+            let alias_new = assert_directed_ids(
+                &initial_region.partition,
+                alias_actual,
+                initial_region.sealed_watermarks,
+            );
+            assert_eq!(aliased.new_payload_bytes, alias_new);
+            assert_eq!(
+                aliased.inventory,
+                alias_actual.allocation_inventory().unwrap()
+            );
+        }
     }
 }

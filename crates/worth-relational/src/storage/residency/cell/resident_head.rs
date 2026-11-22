@@ -47,7 +47,7 @@ impl RelationalRegionResidency {
             symbol_requirements: OnceLock::new(),
             history_presence,
             partition,
-            sealed_extra_watermark: crate::storage::substrate::current_extra_birth_watermark(),
+            sealed_watermarks: crate::storage::substrate::SealedAllocationWatermarks::capture(),
             commitment,
             _history_custody: None,
             _memory: None,

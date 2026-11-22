@@ -50,6 +50,7 @@ fn visit_link(
         bytes: AspectEntryTree::node_allocation_bytes() as u64,
         unique,
         strong_count,
+        birth_seq: node.birth_seq,
         kind: FoundationalAllocationKind::ValueBacking,
     };
     if !visitor.visit(observation) {
@@ -78,6 +79,7 @@ fn visit_new_link(
         bytes: AspectEntryTree::node_allocation_bytes() as u64,
         unique,
         strong_count,
+        birth_seq: node.birth_seq,
         kind: FoundationalAllocationKind::ValueBacking,
     };
     if !visitor.visit(observation) {

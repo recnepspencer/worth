@@ -130,15 +130,17 @@ impl InternedString {
     pub(crate) fn visit_allocations(
         &self,
         ancestor_unique: bool,
+        owner_birth_seq: Option<u64>,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
         match self {
             Self::Raw(value) => crate::aspects::allocation_visitor::visit_string_buffer(
                 value,
                 ancestor_unique,
+                owner_birth_seq,
                 visitor,
             ),
-            Self::Stored(value) => value.visit_allocations(ancestor_unique, visitor),
+            Self::Stored(value) => value.visit_allocations(ancestor_unique, owner_birth_seq, visitor),
             Self::Symbol(_) => {}
         }
     }
@@ -147,13 +149,14 @@ impl InternedString {
         &self,
         previous: Option<&Self>,
         ancestor_unique: bool,
+        owner_birth_seq: Option<u64>,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
         match (self, previous) {
             (Self::Stored(current), Some(Self::Stored(prior))) => {
-                current.visit_new_allocations(Some(prior), ancestor_unique, visitor);
+                current.visit_new_allocations(Some(prior), ancestor_unique, owner_birth_seq, visitor);
             }
-            _ => self.visit_allocations(ancestor_unique, visitor),
+            _ => self.visit_allocations(ancestor_unique, owner_birth_seq, visitor),
         }
     }
 

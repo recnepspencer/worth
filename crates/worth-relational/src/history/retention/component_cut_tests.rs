@@ -307,8 +307,12 @@ fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boun
     }
     assert_eq!(runtime.retired_branch_root_count(), 2);
 
-    // Measure the independent oracle: sum of both roots' reclaimable bytes if
-    // reclaimed sequentially (or equivalently: root A alone + shared region once).
+    // Independent live-inspection allocation-union oracle before either drop:
+    // `reclaimable_only_authoritative_bytes` is A(reclaimable) \ A(current U held).
+    let oracle = runtime.observe_retained_storage().unwrap();
+    assert_eq!(oracle.reclaimable_roots, 2);
+    let expected_union_bytes = oracle.reclaimable_only_authoritative_bytes;
+    assert!(expected_union_bytes > 0);
     let (r1_alone, r2_alone) = {
         let roots = owner.read_retired_roots();
         let vals: Vec<_> = roots.values().map(|e| Arc::clone(&e.root)).collect();
@@ -317,6 +321,10 @@ fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boun
             vals[1].reclaimable_unique_authoritative_bytes().unwrap(),
         )
     };
+    assert!(
+        expected_union_bytes > r1_alone + r2_alone,
+        "shared partition-1 region is excluded from each root alone but present in the pair union"
+    );
     let baseline_bytes = runtime
         .retention_cost_counters()
         .reclamation_unique_authoritative_bytes;
@@ -324,6 +332,8 @@ fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boun
     // Pause Pass A right after removing root 1 and BEFORE `drop(root 1)`.
     let (entered_tx, entered_rx) = sync_channel(0);
     let (resume_tx, resume_rx) = sync_channel(0);
+    let (pass_b_started_tx, pass_b_started_rx) = sync_channel(0);
+    let pass_b_done = Arc::new(std::sync::atomic::AtomicBool::new(false));
     *owner.reclamation_drop_pause.lock().unwrap() = Some(Arc::new(CapturePause {
         entered: entered_tx,
         resume: Mutex::new(resume_rx),
@@ -335,9 +345,21 @@ fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boun
             owner.reclamation_gate.try_lock().is_err(),
             "Pass A holds reclamation_gate across drop(root) so Pass B cannot measure prematurely"
         );
-        let pass_b = scope.spawn(|| runtime.history.try_reclaim_retired_branch_roots(1).unwrap());
-        // Yield briefly while Pass A is paused; Pass B must wait for Pass A's drop.
-        std::thread::yield_now();
+        let done_flag = Arc::clone(&pass_b_done);
+        let runtime_ref = &runtime;
+        let pass_b = scope.spawn(move || {
+            pass_b_started_tx.send(()).unwrap();
+            let out = runtime_ref.history.try_reclaim_retired_branch_roots(1).unwrap();
+            done_flag.store(true, std::sync::atomic::Ordering::Release);
+            out
+        });
+        pass_b_started_rx.recv().unwrap();
+        // Give Pass B time to arrive at reclamation_gate and confirm it cannot finish before drop.
+        std::thread::sleep(std::time::Duration::from_millis(15));
+        assert!(
+            !pass_b_done.load(std::sync::atomic::Ordering::Acquire),
+            "Pass B must remain blocked on reclamation_gate until Pass A drops root 1"
+        );
         resume_tx.send(()).unwrap();
         (pass_a.join().unwrap(), pass_b.join().unwrap())
     });
@@ -347,20 +369,15 @@ fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boun
     assert_eq!(runtime.retired_branch_root_count(), 0);
     let combined = out_a.unique_authoritative_bytes_reclaimed()
         + out_b.unique_authoritative_bytes_reclaimed();
-    // Without reclamation_gate serialization across drop(root), both passes would
-    // see strong_count == 2 on the shared partition-1 region and omit it, yielding
-    // only `r1_alone + r2_alone`. With exact release, Pass B observes the dropped
-    // shared region at strong_count == 1 and accounts strictly MORE than the pair
-    // of pre-drop exclusive counts.
-    assert!(
-        combined > r1_alone + r2_alone,
-        "serialized concurrent passes must account the shared partition-1 region released by the second drop ({combined} vs {r1_alone} + {r2_alone})"
+    assert_eq!(
+        combined, expected_union_bytes,
+        "concurrent passes must exactly equal the independent live-inspection reclaimable allocation union"
     );
     assert_eq!(
         runtime
             .retention_cost_counters()
             .reclamation_unique_authoritative_bytes
             - baseline_bytes,
-        combined,
+        expected_union_bytes,
     );
 }

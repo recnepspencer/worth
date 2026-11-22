@@ -27,16 +27,43 @@ impl StorageAllocationVisitor for AllocationUnion<'_> {
     }
 }
 
+/// Exclusive birth-sequence watermarks captured when an immutable region is
+/// sealed. Any carrier or foundational descendant with `birth_seq >= watermark`
+/// was constructed strictly after the predecessor became immutable and therefore
+/// cannot be reachable from that predecessor.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(crate) struct SealedAllocationWatermarks {
+    pub(crate) extra: Option<u64>,
+    pub(crate) foundational: Option<u64>,
+}
+
+impl SealedAllocationWatermarks {
+    pub(crate) fn capture() -> Self {
+        Self {
+            extra: crate::storage::substrate::current_extra_birth_watermark(),
+            foundational: worth_foundational::facade::current_foundational_allocation_watermark(),
+        }
+    }
+}
+
 /// Exact set-difference collector for Extra carriers and nested persistent
 /// aspect allocations across one or both arenas of a partition.
 #[derive(Default)]
 pub(crate) struct ExtraDeltaCollector {
+    foundational_watermark: Option<u64>,
     candidates: BTreeMap<u64, StorageAllocationObservation>,
     unresolved: BTreeSet<u64>,
     in_previous: BTreeSet<u64>,
 }
 
 impl ExtraDeltaCollector {
+    pub(crate) fn with_watermarks(watermarks: SealedAllocationWatermarks) -> Self {
+        Self {
+            foundational_watermark: watermarks.foundational,
+            ..Self::default()
+        }
+    }
+
     pub(crate) fn has_unresolved(&self) -> bool {
         !self.unresolved.is_empty()
     }
@@ -57,7 +84,12 @@ impl ExtraDeltaCollector {
             }
             std::collections::btree_map::Entry::Occupied(_) => false,
         };
-        if is_new && !allocation.unique {
+        let proven_new = allocation.unique
+            || match (allocation.birth_seq, self.foundational_watermark) {
+                (Some(seq), Some(watermark)) => seq >= watermark,
+                _ => false,
+            };
+        if is_new && !proven_new {
             self.unresolved.insert(allocation.id);
         }
         is_new
@@ -212,8 +244,11 @@ impl<K: RecordKind> RecordArena<K> {
             // An Extra born strictly after `previous` was sealed cannot exist
             // anywhere in `previous`, even while a borrowed transaction overlay
             // or mutation log retains additional outer handles to it.
-            let born_after_previous = previous_watermark
-                .is_some_and(|watermark| K::extra_birth_seq(&carrier.extra) >= watermark);
+            let born_after_previous = match (K::extra_birth_seq(&carrier.extra), previous_watermark)
+            {
+                (Some(seq), Some(watermark)) => seq >= watermark,
+                _ => false,
+            };
             let all_in_self =
                 born_after_previous || carrier.extra.strong_count() == carrier.changed_refs + 1;
             let mut carrier_obs = carrier.extra.observation(all_in_self);

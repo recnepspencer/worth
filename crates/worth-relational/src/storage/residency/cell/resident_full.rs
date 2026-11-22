@@ -43,7 +43,7 @@ impl RelationalRegionResidency {
             history_presence: super::super::history_presence::HistoryPresence::complete(),
             kind_indexes: Some(kind_indexes),
             partition,
-            sealed_extra_watermark: crate::storage::substrate::current_extra_birth_watermark(),
+            sealed_watermarks: crate::storage::substrate::SealedAllocationWatermarks::capture(),
             commitment: Some(commitment),
             _history_custody: None,
             _memory: memory,

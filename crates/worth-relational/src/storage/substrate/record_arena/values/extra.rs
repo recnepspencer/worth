@@ -9,15 +9,28 @@ use worth_foundational::facade::{
 
 static NEXT_EXTRA_BIRTH_SEQ: AtomicU64 = AtomicU64::new(1);
 
-fn next_extra_birth_seq() -> u64 {
-    NEXT_EXTRA_BIRTH_SEQ.fetch_add(1, Ordering::AcqRel)
+fn next_extra_birth_seq() -> Option<u64> {
+    let mut current = NEXT_EXTRA_BIRTH_SEQ.load(Ordering::Relaxed);
+    loop {
+        let next = current.checked_add(1)?;
+        match NEXT_EXTRA_BIRTH_SEQ.compare_exchange_weak(
+            current,
+            next,
+            Ordering::AcqRel,
+            Ordering::Relaxed,
+        ) {
+            Ok(seq) => return Some(seq),
+            Err(observed) => current = observed,
+        }
+    }
 }
 
 /// Exclusive upper bound on the `birth_seq` of every `EntityExtra`/`RelationExtra`
-/// already constructed before this call. Any carrier with `birth_seq >= watermark`
-/// was constructed strictly after this watermark was captured.
-pub(crate) fn current_extra_birth_watermark() -> u64 {
-    NEXT_EXTRA_BIRTH_SEQ.load(Ordering::Acquire)
+/// already constructed before this call. Returns `None` if exhausted so callers
+/// fall back to exact refcount/membership resolution without rollover hazard.
+pub(crate) fn current_extra_birth_watermark() -> Option<u64> {
+    let next = NEXT_EXTRA_BIRTH_SEQ.load(Ordering::Acquire);
+    (next < u64::MAX).then_some(next)
 }
 
 #[derive(serde::Serialize)]
@@ -26,7 +39,7 @@ pub(crate) struct EntityExtra {
     pub(crate) lineage_id: Option<LineageId>,
     authoritative_aspect_state: Option<State>,
     #[serde(skip)]
-    birth_seq: u64,
+    birth_seq: Option<u64>,
     // Last; moving the whole extra conservatively retains its fixed backing bill.
     #[serde(skip)]
     _funding: Option<ExecutionMemoryReservation>,
@@ -36,7 +49,7 @@ pub(crate) struct RelationExtra {
     pub(crate) endpoints: Option<RelationEndpoints>,
     authoritative_aspect_state: Option<State>,
     #[serde(skip)]
-    birth_seq: u64,
+    birth_seq: Option<u64>,
     #[serde(skip)]
     _funding: Option<ExecutionMemoryReservation>,
 }
@@ -51,7 +64,7 @@ impl Default for RelationExtra {
     }
 }
 impl EntityExtra {
-    pub(crate) const fn birth_seq(&self) -> u64 {
+    pub(crate) const fn birth_seq(&self) -> Option<u64> {
         self.birth_seq
     }
 
@@ -129,7 +142,7 @@ impl EntityExtra {
     }
 }
 impl RelationExtra {
-    pub(crate) const fn birth_seq(&self) -> u64 {
+    pub(crate) const fn birth_seq(&self) -> Option<u64> {
         self.birth_seq
     }
 

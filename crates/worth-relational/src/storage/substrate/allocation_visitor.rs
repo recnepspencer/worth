@@ -37,6 +37,7 @@ pub(crate) struct StorageAllocationObservation {
     pub(crate) bytes: u64,
     pub(crate) unique: bool,
     pub(crate) strong_count: usize,
+    pub(crate) birth_seq: Option<u64>,
     pub(crate) extent: StorageAllocationExtent,
 }
 
@@ -77,6 +78,7 @@ impl FoundationalAllocationVisitor for FoundationalValueBackingAdapter<'_> {
             bytes: allocation.bytes,
             unique: allocation.unique,
             strong_count: allocation.strong_count,
+            birth_seq: allocation.birth_seq,
             extent: StorageAllocationExtent::Checked,
         })
     }
@@ -126,6 +128,7 @@ impl<T> super::StorageAllocation<T> {
             bytes: Self::layout_bytes(),
             unique: ancestor_unique && strong_count == 1,
             strong_count,
+            birth_seq: None,
             extent: StorageAllocationExtent::Checked,
         }
     }

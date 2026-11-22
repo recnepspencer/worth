@@ -29,9 +29,15 @@ impl FieldKey {
     pub(crate) fn visit_allocations(
         &self,
         unique: bool,
+        owner_birth_seq: Option<u64>,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
-        crate::aspects::allocation_visitor::visit_string_buffer(&self.0, unique, visitor);
+        crate::aspects::allocation_visitor::visit_string_buffer(
+            &self.0,
+            unique,
+            owner_birth_seq,
+            visitor,
+        );
     }
 }
 

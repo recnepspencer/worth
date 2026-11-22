@@ -93,6 +93,7 @@ impl AspectContract {
             bytes: self.definition.allocation_bytes as u64,
             unique: ancestor_unique && strong_count == 1,
             strong_count,
+            birth_seq: None,
             kind: crate::aspects::FoundationalAllocationKind::SchemaContract,
         });
     }

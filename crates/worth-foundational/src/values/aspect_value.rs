@@ -218,21 +218,32 @@ impl AspectValue {
     pub(crate) fn visit_allocations(
         &self,
         ancestor_unique: bool,
+        owner_birth_seq: Option<u64>,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
         use crate::aspects::allocation_visitor::{visit_bytes_buffer, visit_string_buffer};
         match self {
-            Self::Decimal(value) => visit_string_buffer(&value.0, ancestor_unique, visitor),
-            Self::BigInt(value) => visit_string_buffer(&value.0, ancestor_unique, visitor),
-            Self::Rational(value) => {
-                visit_string_buffer(&value.numerator.0, ancestor_unique, visitor);
-                visit_string_buffer(&value.denominator.0, ancestor_unique, visitor);
+            Self::Decimal(value) => {
+                visit_string_buffer(&value.0, ancestor_unique, owner_birth_seq, visitor)
             }
-            Self::String(value) => value.visit_allocations(ancestor_unique, visitor),
+            Self::BigInt(value) => {
+                visit_string_buffer(&value.0, ancestor_unique, owner_birth_seq, visitor)
+            }
+            Self::Rational(value) => {
+                visit_string_buffer(&value.numerator.0, ancestor_unique, owner_birth_seq, visitor);
+                visit_string_buffer(
+                    &value.denominator.0,
+                    ancestor_unique,
+                    owner_birth_seq,
+                    visitor,
+                );
+            }
+            Self::String(value) => value.visit_allocations(ancestor_unique, owner_birth_seq, visitor),
             Self::InlineBytes(value) => visit_bytes_buffer(
                 value.as_bytes(),
                 value.owned_allocation_capacity_bytes(),
                 ancestor_unique,
+                owner_birth_seq,
                 visitor,
             ),
             _ => {}
@@ -243,13 +254,14 @@ impl AspectValue {
         &self,
         previous: Option<&Self>,
         ancestor_unique: bool,
+        owner_birth_seq: Option<u64>,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
         match (self, previous) {
             (Self::String(current), Some(Self::String(prior))) => {
-                current.visit_new_allocations(Some(prior), ancestor_unique, visitor);
+                current.visit_new_allocations(Some(prior), ancestor_unique, owner_birth_seq, visitor);
             }
-            _ => self.visit_allocations(ancestor_unique, visitor),
+            _ => self.visit_allocations(ancestor_unique, owner_birth_seq, visitor),
         }
     }
 }

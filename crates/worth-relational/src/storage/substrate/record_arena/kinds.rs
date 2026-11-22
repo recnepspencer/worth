@@ -35,7 +35,7 @@ pub(crate) trait RecordKind: Clone + Debug + 'static {
     fn metadata_extra(
         metadata: &Self::Meta,
     ) -> &crate::storage::substrate::StorageAllocation<Self::Extra>;
-    fn extra_birth_seq(extra: &Self::Extra) -> u64;
+    fn extra_birth_seq(extra: &Self::Extra) -> Option<u64>;
     /// Visit every physical persistent-aspect value-backing allocation
     /// reachable from this extra carrier, at node and value granularity.
     fn visit_extra_allocations(
@@ -122,7 +122,7 @@ impl RecordKind for EntityRecordKind {
         &metadata.extra
     }
 
-    fn extra_birth_seq(extra: &Self::Extra) -> u64 {
+    fn extra_birth_seq(extra: &Self::Extra) -> Option<u64> {
         extra.birth_seq()
     }
 
@@ -236,7 +236,7 @@ impl RecordKind for RelationRecordKind {
         &metadata.extra
     }
 
-    fn extra_birth_seq(extra: &Self::Extra) -> u64 {
+    fn extra_birth_seq(extra: &Self::Extra) -> Option<u64> {
         extra.birth_seq()
     }
 

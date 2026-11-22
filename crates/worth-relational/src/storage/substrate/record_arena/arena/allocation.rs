@@ -124,6 +124,7 @@ mod tests {
             bytes: 1,
             unique: false,
             strong_count: 1,
+            birth_seq: None,
             extent: StorageAllocationExtent::Checked,
         }));
         assert_eq!(bytes.0, None);
@@ -134,6 +135,7 @@ mod tests {
             bytes: u64::MAX,
             unique: false,
             strong_count: 1,
+            birth_seq: None,
             extent: StorageAllocationExtent::Overflow,
         }));
         assert_eq!(overflowed.0, None);

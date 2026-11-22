@@ -10,6 +10,7 @@ fn carrier(bytes: u64) -> StorageAllocationObservation {
         bytes,
         unique: false,
         strong_count: 1,
+        birth_seq: None,
         extent: StorageAllocationExtent::Checked,
     }
 }

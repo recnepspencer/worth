@@ -14,7 +14,8 @@ mod validation;
 mod value_posture;
 
 pub use allocation_visitor::{
-    FoundationalAllocationKind, FoundationalAllocationObservation, FoundationalAllocationVisitor,
+    current_foundational_allocation_watermark, FoundationalAllocationKind,
+    FoundationalAllocationObservation, FoundationalAllocationVisitor,
 };
 pub use binding::{AspectBinding, AuthoritativeAspectChangeKind, TruthPartitionRole};
 pub use contracts::{

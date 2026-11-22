@@ -10,7 +10,13 @@ pub struct StoredValueText(Box<StoredText>);
 #[derive(Debug, Clone)]
 struct StoredText {
     text: String,
-    seal: Arc<OnceLock<CodecSeal>>,
+    seal: Arc<StoredSeal>,
+}
+
+#[derive(Debug)]
+struct StoredSeal {
+    birth_seq: Option<u64>,
+    seal: OnceLock<CodecSeal>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -24,7 +30,10 @@ impl StoredValueText {
     pub fn new(text: String) -> Self {
         Self(Box::new(StoredText {
             text,
-            seal: Arc::new(OnceLock::new()),
+            seal: Arc::new(StoredSeal {
+                birth_seq: crate::aspects::allocation_visitor::next_allocation_birth_seq(),
+                seal: OnceLock::new(),
+            }),
         }))
     }
 
@@ -47,15 +56,17 @@ impl StoredValueText {
     pub(crate) fn visit_allocations(
         &self,
         ancestor_unique: bool,
+        owner_birth_seq: Option<u64>,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
-        self.visit_box_and_text(ancestor_unique, visitor);
+        self.visit_box_and_text(ancestor_unique, owner_birth_seq, visitor);
         let seal_strong_count = Arc::strong_count(&self.0.seal);
         visitor.visit(crate::aspects::FoundationalAllocationObservation {
             id: crate::aspects::allocation_visitor::arc_id(&self.0.seal),
             bytes: Self::proof_capacity_bytes() as u64,
             unique: ancestor_unique && seal_strong_count == 1,
             strong_count: seal_strong_count,
+            birth_seq: self.0.seal.birth_seq,
             kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
         });
     }
@@ -64,9 +75,10 @@ impl StoredValueText {
         &self,
         previous: Option<&Self>,
         ancestor_unique: bool,
+        owner_birth_seq: Option<u64>,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
-        self.visit_box_and_text(ancestor_unique, visitor);
+        self.visit_box_and_text(ancestor_unique, owner_birth_seq, visitor);
         if previous.is_some_and(|prior| Arc::ptr_eq(&self.0.seal, &prior.0.seal)) {
             return;
         }
@@ -76,6 +88,7 @@ impl StoredValueText {
             bytes: Self::proof_capacity_bytes() as u64,
             unique: ancestor_unique && seal_strong_count == 1,
             strong_count: seal_strong_count,
+            birth_seq: self.0.seal.birth_seq,
             kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
         });
     }
@@ -83,6 +96,7 @@ impl StoredValueText {
     fn visit_box_and_text(
         &self,
         unique: bool,
+        owner_birth_seq: Option<u64>,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
         let box_bytes = std::mem::size_of::<StoredText>() as u64;
@@ -92,13 +106,19 @@ impl StoredValueText {
                 bytes: box_bytes,
                 unique,
                 strong_count: 1,
+                birth_seq: owner_birth_seq,
                 kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
             };
             if !visitor.visit(box_obs) {
                 return;
             }
         }
-        crate::aspects::allocation_visitor::visit_string_buffer(&self.0.text, unique, visitor);
+        crate::aspects::allocation_visitor::visit_string_buffer(
+            &self.0.text,
+            unique,
+            owner_birth_seq,
+            visitor,
+        );
     }
 
     /// A copy allocates its box and length-sized text. Its proof cell is shared,
@@ -124,7 +144,7 @@ impl StoredValueText {
 
     fn checked_proof_capacity_bytes() -> Option<usize> {
         let (layout, _) = std::alloc::Layout::new::<[usize; 2]>()
-            .extend(std::alloc::Layout::new::<OnceLock<CodecSeal>>())
+            .extend(std::alloc::Layout::new::<StoredSeal>())
             .ok()?;
         Some(layout.pad_to_align().size())
     }
@@ -138,7 +158,7 @@ impl StoredValueText {
         &self,
         bounds: ValueDecodeBounds,
     ) -> bool {
-        self.0.seal.get()
+        self.0.seal.seal.get()
             == Some(&CodecSeal {
                 delegate: TypeId::of::<Delegate>(),
                 bounds,
@@ -151,7 +171,7 @@ impl StoredValueText {
     ) {
         // A different codec/policy always receives the full check. Never replace
         // evidence or infer validity for a different grammar from equal text.
-        let _ = self.0.seal.set(CodecSeal {
+        let _ = self.0.seal.seal.set(CodecSeal {
             delegate: TypeId::of::<Delegate>(),
             bounds,
         });

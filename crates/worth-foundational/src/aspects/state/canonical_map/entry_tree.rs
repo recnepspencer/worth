@@ -15,6 +15,7 @@ struct EntryNode {
     right: Link,
     height: usize,
     len: usize,
+    birth_seq: Option<u64>,
 }
 
 #[derive(Clone, Default)]
@@ -137,6 +138,7 @@ fn node(value: ContractValidatedAspectValue, left: Link, right: Link) -> Arc<Ent
         len: 1 + length(&left) + length(&right),
         left,
         right,
+        birth_seq: crate::aspects::allocation_visitor::next_allocation_birth_seq(),
     })
 }
 

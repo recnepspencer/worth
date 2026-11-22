@@ -9,8 +9,12 @@ impl PartitionState {
         previous: &Self,
         prior: RelationalPartitionAllocationInventory,
     ) -> Result<RelationalPartitionAllocationInventory, super::PartitionContentDigestError> {
-        self.allocation_inventory_and_introduced_since(previous, prior, None)
-            .map(|(inventory, _)| inventory)
+        self.allocation_inventory_and_introduced_since(
+            previous,
+            prior,
+            crate::storage::substrate::SealedAllocationWatermarks::default(),
+        )
+        .map(|(inventory, _)| inventory)
     }
 
     /// Update `prior` to `self`'s exact inventory in one forward + reverse pass,
@@ -20,11 +24,14 @@ impl PartitionState {
         &self,
         previous: &Self,
         prior: RelationalPartitionAllocationInventory,
-        previous_watermark: Option<u64>,
+        previous_watermarks: crate::storage::substrate::SealedAllocationWatermarks,
     ) -> Result<(RelationalPartitionAllocationInventory, u64), super::PartitionContentDigestError>
     {
-        let introduced = self.new_allocation_inventory_since(previous, previous_watermark)?;
-        let removed = previous.new_allocation_inventory_since(self, None)?;
+        let introduced = self.new_allocation_inventory_since(previous, previous_watermarks)?;
+        let removed = previous.new_allocation_inventory_since(
+            self,
+            crate::storage::substrate::SealedAllocationWatermarks::default(),
+        )?;
         let inventory = RelationalPartitionAllocationInventory {
             authoritative_bytes: update(
                 prior.authoritative_bytes,
@@ -51,7 +58,7 @@ impl PartitionState {
     fn new_allocation_inventory_since(
         &self,
         previous: &Self,
-        previous_watermark: Option<u64>,
+        previous_watermarks: crate::storage::substrate::SealedAllocationWatermarks,
     ) -> Result<RelationalPartitionAllocationInventory, super::PartitionContentDigestError> {
         let mut diagnostic = CheckedBytes::new();
         self.entity_arena
@@ -65,9 +72,9 @@ impl PartitionState {
             .visit_new_cache_allocations(&previous.reverse_adjacency, &mut cache);
         Ok(RelationalPartitionAllocationInventory {
             authoritative_bytes: self
-                .new_authoritative_allocation_bytes_since_with_watermark(
+                .new_authoritative_allocation_bytes_since_with_watermarks(
                     previous,
-                    previous_watermark,
+                    previous_watermarks,
                 )?,
             diagnostic_bytes: diagnostic
                 .finish()

@@ -58,9 +58,9 @@ pub(crate) struct ResidentRegion {
         OnceLock<Arc<super::required_symbols::CapturedSymbolRequirements>>,
     pub(super) history_presence: super::history_presence::HistoryPresence,
     pub(super) partition: PartitionState,
-    /// Exclusive upper bound on `birth_seq` of every `Extra` carrier reachable
-    /// from this immutable `partition` (captured at region sealing).
-    pub(super) sealed_extra_watermark: u64,
+    /// Exclusive upper bounds on carrier and foundational `birth_seq` values
+    /// reachable from this immutable `partition` (captured at region sealing).
+    pub(super) sealed_watermarks: crate::storage::substrate::SealedAllocationWatermarks,
     pub(super) _history_custody: Option<Arc<crate::storage::substrate::RecordHistoryCustody>>,
     pub(super) commitment: Option<PartitionContentCommitment>,
     pub(super) _memory: Option<worth_execution::ExecutionMemoryReservation>,
@@ -194,7 +194,7 @@ impl RelationalRegionResidency {
                 .unwrap_or_default(),
             history_presence: super::history_presence::HistoryPresence::complete(),
             partition,
-            sealed_extra_watermark: crate::storage::substrate::current_extra_birth_watermark(),
+            sealed_watermarks: crate::storage::substrate::SealedAllocationWatermarks::capture(),
             commitment,
             _history_custody: None,
             _memory: None,

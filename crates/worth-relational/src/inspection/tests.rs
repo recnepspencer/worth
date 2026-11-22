@@ -203,10 +203,22 @@ fn cumulative_fork_and_publication_byte_overflow_refuses_inspection_without_satu
         runtime.observe_mvcc_counters(&pub_scope),
         Err(Denial::AuthoritativeByteBoundOverflow)
     );
-    // Checked envelope-residency overflow (`None`) also refuses inspection.
+    // Checked envelope-residency overflow (`None`) preserves all recorded byte
+    // totals unchanged and refuses both sharing and MVCC counter inspections.
+    let main_before = runtime.history.sharing_costs_for_branch(main_id.branch_id());
     runtime
         .history
         .record_root_publication(main_id.branch_id(), &main_root, None);
+    let main_after = runtime.history.sharing_costs_for_branch(main_id.branch_id());
+    assert_eq!(main_after.copied_truth_bytes, main_before.copied_truth_bytes);
+    assert_eq!(
+        main_after.publication_new_authoritative_bytes,
+        main_before.publication_new_authoritative_bytes
+    );
+    assert_eq!(
+        main_after.publication_new_root_authoritative_bytes,
+        main_before.publication_new_root_authoritative_bytes
+    );
     assert_eq!(
         runtime.observe_branch_sharing(execution, &[main_id]),
         Err(Denial::AuthoritativeByteBoundOverflow)

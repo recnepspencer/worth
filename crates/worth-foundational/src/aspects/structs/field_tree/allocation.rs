@@ -75,6 +75,7 @@ fn visit_link(
         bytes: node_bytes(),
         unique: node_unique,
         strong_count: node_strong_count,
+        birth_seq: node.birth_seq,
         kind: FoundationalAllocationKind::ValueBacking,
     };
     if !visitor.visit(node_obs) {
@@ -87,9 +88,10 @@ fn visit_link(
         bytes: key_arc_bytes(),
         unique: key_unique,
         strong_count: key_strong_count,
+        birth_seq: None,
         kind: FoundationalAllocationKind::ValueBacking,
     }) {
-        node.key.visit_allocations(key_unique, visitor);
+        node.key.visit_allocations(key_unique, None, visitor);
     }
     let value_strong_count = Arc::strong_count(&node.value);
     let value_unique = node_unique && value_strong_count == 1;
@@ -98,9 +100,10 @@ fn visit_link(
         bytes: value_arc_bytes(),
         unique: value_unique,
         strong_count: value_strong_count,
+        birth_seq: None,
         kind: FoundationalAllocationKind::ValueBacking,
     }) {
-        node.value.visit_allocations(value_unique, visitor);
+        node.value.visit_allocations(value_unique, None, visitor);
     }
     visit_link(&node.left, node_unique, visitor);
     visit_link(&node.right, node_unique, visitor);
@@ -124,6 +127,7 @@ fn visit_new_link(
         bytes: node_bytes(),
         unique: node_unique,
         strong_count: node_strong_count,
+        birth_seq: node.birth_seq,
         kind: FoundationalAllocationKind::ValueBacking,
     };
     if !visitor.visit(node_obs) {
@@ -137,9 +141,10 @@ fn visit_new_link(
             bytes: key_arc_bytes(),
             unique: key_unique,
             strong_count: key_strong_count,
+            birth_seq: None,
             kind: FoundationalAllocationKind::ValueBacking,
         }) {
-            node.key.visit_allocations(key_unique, visitor);
+            node.key.visit_allocations(key_unique, None, visitor);
         }
     }
     if !previous.is_some_and(|prior| Arc::ptr_eq(&node.value, &prior.value)) {
@@ -150,11 +155,13 @@ fn visit_new_link(
             bytes: value_arc_bytes(),
             unique: value_unique,
             strong_count: value_strong_count,
+            birth_seq: None,
             kind: FoundationalAllocationKind::ValueBacking,
         }) {
             node.value.visit_new_allocations(
                 previous.map(|prior| prior.value.as_ref()),
                 value_unique,
+                None,
                 visitor,
             );
         }

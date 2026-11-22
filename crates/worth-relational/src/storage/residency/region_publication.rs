@@ -124,7 +124,7 @@ impl PreparedResidentRegion {
             .allocation_inventory_and_introduced_since(
                 &previous.partition,
                 basis.inventory,
-                Some(previous.sealed_extra_watermark),
+                previous.sealed_watermarks,
             )
             .map_err(RegionContentFailure::Content)?;
         let delta = unavailable_delta(

@@ -1,7 +1,7 @@
 use super::PartitionState;
 use crate::storage::substrate::{
-    ExtraDeltaCollector, StorageAllocationExtent, StorageAllocationOverflow,
-    StorageAllocationVisitor,
+    ExtraDeltaCollector, SealedAllocationWatermarks, StorageAllocationExtent,
+    StorageAllocationOverflow, StorageAllocationVisitor,
 };
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -15,31 +15,31 @@ impl PartitionState {
         &self,
         previous: &Self,
     ) -> Result<u64, super::PartitionContentDigestError> {
-        self.new_authoritative_allocation_bytes_since_with_watermark(previous, None)
+        self.new_authoritative_allocation_bytes_since_with_watermarks(
+            previous,
+            SealedAllocationWatermarks::default(),
+        )
     }
 
-    pub(crate) fn new_authoritative_allocation_bytes_since_with_watermark(
+    pub(crate) fn visit_new_authoritative_allocations_since_with_watermarks(
         &self,
         previous: &Self,
-        previous_watermark: Option<u64>,
-    ) -> Result<u64, super::PartitionContentDigestError> {
-        let mut new = NewAllocations {
-            bytes: Some(0),
-            seen: BTreeSet::new(),
-        };
+        previous_watermarks: SealedAllocationWatermarks,
+        visitor: &mut dyn StorageAllocationVisitor,
+    ) {
         self.entity_arena
-            .visit_new_non_extra_authoritative_allocations(&previous.entity_arena, &mut new);
+            .visit_new_non_extra_authoritative_allocations(&previous.entity_arena, visitor);
         self.relation_arena
-            .visit_new_non_extra_authoritative_allocations(&previous.relation_arena, &mut new);
-        let mut extras = ExtraDeltaCollector::default();
+            .visit_new_non_extra_authoritative_allocations(&previous.relation_arena, visitor);
+        let mut extras = ExtraDeltaCollector::with_watermarks(previous_watermarks);
         self.entity_arena.collect_changed_extra_allocations(
             &previous.entity_arena,
-            previous_watermark,
+            previous_watermarks.extra,
             &mut extras,
         );
         self.relation_arena.collect_changed_extra_allocations(
             &previous.relation_arena,
-            previous_watermark,
+            previous_watermarks.extra,
             &mut extras,
         );
         if extras.has_unresolved() {
@@ -51,11 +51,27 @@ impl PartitionState {
                 .relation_arena
                 .resolve_extra_allocations(&mut seen, &mut extras);
         }
-        extras.emit(&mut new);
+        extras.emit(visitor);
         self.adjacency
-            .visit_new_authoritative_allocations(&previous.adjacency, &mut new);
+            .visit_new_authoritative_allocations(&previous.adjacency, visitor);
         self.reverse_adjacency
-            .visit_new_authoritative_allocations(&previous.reverse_adjacency, &mut new);
+            .visit_new_authoritative_allocations(&previous.reverse_adjacency, visitor);
+    }
+
+    pub(crate) fn new_authoritative_allocation_bytes_since_with_watermarks(
+        &self,
+        previous: &Self,
+        previous_watermarks: SealedAllocationWatermarks,
+    ) -> Result<u64, super::PartitionContentDigestError> {
+        let mut new = NewAllocations {
+            bytes: Some(0),
+            seen: BTreeSet::new(),
+        };
+        self.visit_new_authoritative_allocations_since_with_watermarks(
+            previous,
+            previous_watermarks,
+            &mut new,
+        );
         new.bytes
             .ok_or(super::PartitionContentDigestError::AllocationAccountingOverflow)
     }
@@ -217,6 +233,7 @@ mod tests {
             bytes: 64,
             unique: false,
             strong_count: 1,
+            birth_seq: None,
             extent: StorageAllocationExtent::Checked,
         };
         let mut new = NewAllocations {

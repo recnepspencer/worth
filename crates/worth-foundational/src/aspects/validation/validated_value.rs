@@ -18,7 +18,7 @@ pub struct ContractValidatedAspectValue {
     value: std::sync::Arc<ValidatedAspect>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Eq, Serialize)]
 struct ValidatedAspect {
     key: AspectKey,
     #[serde(skip)]
@@ -26,6 +26,18 @@ struct ValidatedAspect {
     contract_identity: AspectIdentity,
     contract_revision: AspectContractRevision,
     kind: ContractValidatedAspectValueKind,
+    #[serde(skip)]
+    birth_seq: Option<u64>,
+}
+
+impl PartialEq for ValidatedAspect {
+    fn eq(&self, other: &Self) -> bool {
+        self.key == other.key
+            && self.contract == other.contract
+            && self.contract_identity == other.contract_identity
+            && self.contract_revision == other.contract_revision
+            && self.kind == other.kind
+    }
 }
 
 impl Clone for ContractValidatedAspectValue {
@@ -74,6 +86,7 @@ impl ContractValidatedAspectValue {
                 contract_revision: contract.revision(),
                 contract,
                 kind: ContractValidatedAspectValueKind::Scalar(value),
+                birth_seq: crate::aspects::allocation_visitor::next_allocation_birth_seq(),
             }),
         }
     }
@@ -86,6 +99,7 @@ impl ContractValidatedAspectValue {
                 contract_revision: contract.revision(),
                 contract,
                 kind: ContractValidatedAspectValueKind::Struct(value),
+                birth_seq: crate::aspects::allocation_visitor::next_allocation_birth_seq(),
             }),
         }
     }
@@ -173,16 +187,19 @@ impl ContractValidatedAspectValue {
             bytes: Self::admission_cell_bytes(),
             unique,
             strong_count,
+            birth_seq: self.value.birth_seq,
             kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
         };
         if !visitor.visit(observation) {
             return;
         }
-        self.value.key.visit_allocations(unique, visitor);
+        self.value
+            .key
+            .visit_allocations(unique, self.value.birth_seq, visitor);
         self.value.contract.visit_allocations(unique, visitor);
         match &self.value.kind {
             ContractValidatedAspectValueKind::Scalar(value) => {
-                value.visit_allocations(unique, visitor);
+                value.visit_allocations(unique, self.value.birth_seq, visitor);
             }
             ContractValidatedAspectValueKind::Struct(value) => {
                 value.visit_allocations(unique, visitor);
@@ -210,12 +227,15 @@ impl ContractValidatedAspectValue {
             bytes: Self::admission_cell_bytes(),
             unique,
             strong_count,
+            birth_seq: self.value.birth_seq,
             kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
         };
         if !visitor.visit(observation) {
             return;
         }
-        self.value.key.visit_allocations(unique, visitor);
+        self.value
+            .key
+            .visit_allocations(unique, self.value.birth_seq, visitor);
         if !self.value.contract.shares_definition(&previous.value.contract) {
             self.value.contract.visit_allocations(unique, visitor);
         }
@@ -230,9 +250,9 @@ impl ContractValidatedAspectValue {
             (
                 ContractValidatedAspectValueKind::Scalar(current),
                 ContractValidatedAspectValueKind::Scalar(prior),
-            ) => current.visit_new_allocations(Some(prior), unique, visitor),
+            ) => current.visit_new_allocations(Some(prior), unique, self.value.birth_seq, visitor),
             (ContractValidatedAspectValueKind::Scalar(current), _) => {
-                current.visit_allocations(unique, visitor);
+                current.visit_allocations(unique, self.value.birth_seq, visitor);
             }
         }
     }
