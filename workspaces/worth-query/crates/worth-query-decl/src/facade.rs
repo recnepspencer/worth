@@ -18,7 +18,8 @@
 //! ```
 
 pub use worth_query_declaration::facade::{
-    application_aftermath, application_capability, application_history, application_naming,
+    application_aftermath, application_capability, application_history, application_identity,
+    application_naming,
     application_operation, application_program, application_query, application_resource,
     application_schema, authentication, authoring, binding, branch, canonicalization, collection,
     diagnostics, identity, identity_authority, portable_identity, schema_view, typed, validation,
@@ -28,7 +29,8 @@ pub use worth_query_declaration::{
     worth_query_ability, worth_query_application_query, worth_query_capability,
     worth_query_capability_context, worth_query_capability_context_entity_slot,
     worth_query_capability_provenance, worth_query_effect, worth_query_feature_spec,
-    worth_query_mutation_binding, worth_query_name_discriminator, worth_query_operation,
+    worth_query_identity, worth_query_identity_namespace, worth_query_mutation_binding,
+    worth_query_name_discriminator, worth_query_native_scalar_bindings, worth_query_operation,
     worth_query_operation_creates, worth_query_operation_deletes, worth_query_operation_emits,
     worth_query_operation_expects_fact, worth_query_operation_expects_version,
     worth_query_operation_links, worth_query_operation_reads,

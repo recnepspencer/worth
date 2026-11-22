@@ -11,6 +11,7 @@ mod application_resource_authoring;
 mod authoring_context;
 mod authorization_path_components;
 mod authorization_policy;
+mod binding_context;
 mod binding_identity;
 mod canonical_authorization_identity;
 mod canonical_basis;
@@ -274,6 +275,7 @@ pub use principal_binding_authoring::{
     ApplicationPrincipalMappingIdentityRequirement, ApplicationPrincipalMappingStatusRequirement,
     ApplicationPrincipalTargetRequirement,
 };
+pub use binding_context::ApplicationBindingContext;
 pub use principal_binding_reference::ApplicationPrincipalBindingRef;
 pub use read_authoring::{
     TypedEqualityPredicate, TypedProjection, TypedReadDeclaration, TypedReadDeclarationBuilder,

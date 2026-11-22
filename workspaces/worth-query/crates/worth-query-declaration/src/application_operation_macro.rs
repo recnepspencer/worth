@@ -1,4 +1,7 @@
 mod access;
+mod capabilities;
+#[cfg(test)]
+mod inline_capability_tests;
 /// Declares a typed operation marker in an application schema, with the
 /// structured value binding of its input.
 ///
@@ -15,6 +18,15 @@ mod access;
 /// completed operation definition with explicit effect/aftermath policy.
 /// Schema-generic operations use the same access categories. An inherited
 /// projection may append access owned by an existing sealed capability family.
+///
+/// Compile-time capabilities may follow the input or its `access` block
+/// inline: `input InputBinding; access { .. }; reads [Member, ..];
+/// creates [Entity, ..]; links [Relation, ..];`. Each clause expands to its
+/// standalone macro
+/// (`worth_query_operation_reads!` and so on; also `writes`, `deletes`,
+/// `unlinks`, `emits`, `expects_version`, `expects_fact`), which remain
+/// available. Like them, inline clauses are descriptive; installed operation
+/// access is still declared on the schema.
 #[macro_export]
 macro_rules! worth_query_operation {
     ($vis:vis $Operation:ident for $Schema:ident: $Binding:path,
@@ -36,6 +48,32 @@ macro_rules! worth_query_operation {
         $crate::__worth_query_operation_access!(
             $Operation for $Schema, input $InputBinding; { $($access)* }
         );
+    };
+    ($vis:vis $Operation:ident for $Schema:ident: $Binding:path, input $InputBinding:path;
+        access { $($access:tt)* }; $($kind:ident [$($Member:ty),* $(,)?]);+ $(;)?
+    ) => {
+        $crate::worth_query_operation!(
+            $vis $Operation for $Schema: $Binding, input $InputBinding; access { $($access)* }
+        );
+        $($crate::__worth_query_operation_inline_capability!($kind $Operation [$($Member),*]);)+
+    };
+    ($vis:vis $Operation:ident for $Schema:ty, input $InputBinding:path;
+        access { $($access:tt)* }; $($kind:ident [$($Member:ty),* $(,)?]);+ $(;)?
+    ) => {
+        $crate::worth_query_operation!($vis $Operation for $Schema, input $InputBinding; access { $($access)* });
+        $($crate::__worth_query_operation_inline_capability!($kind $Operation [$($Member),*]);)+
+    };
+    ($vis:vis $Operation:ident for $Schema:ident: $Binding:path, input $InputBinding:path;
+        $($kind:ident [$($Member:ty),* $(,)?]);+ $(;)?
+    ) => {
+        $crate::worth_query_operation!($vis $Operation for $Schema: $Binding, input $InputBinding);
+        $($crate::__worth_query_operation_inline_capability!($kind $Operation [$($Member),*]);)+
+    };
+    ($vis:vis $Operation:ident for $Schema:ty, input $InputBinding:path;
+        $($kind:ident [$($Member:ty),* $(,)?]);+ $(;)?
+    ) => {
+        $crate::worth_query_operation!($vis $Operation for $Schema, input $InputBinding);
+        $($crate::__worth_query_operation_inline_capability!($kind $Operation [$($Member),*]);)+
     };
     (
         $vis:vis $Operation:ident for $Schema:ty,
@@ -269,132 +307,5 @@ macro_rules! worth_query_effect {
                 $crate::facade::application_schema::ApplicationEffectRef::from_declaration()
             }
         }
-    };
-}
-
-/// Declares, at compile time, that an operation may write the listed fields.
-///
-/// Input: `Operation => [Field, ..]`. It implements
-/// `OperationWrites<Operation>` for each listed marker. This is descriptive;
-/// installed operation authority is still required.
-#[macro_export]
-macro_rules! worth_query_operation_writes {
-    ($Operation:ty => [$($Field:ty),+ $(,)?]) => {
-        $(
-            impl $crate::facade::application_schema::OperationWrites<$Operation> for $Field {}
-        )+
-    };
-}
-
-/// Declares, at compile time, that an operation may read the listed schema
-/// members.
-///
-/// Input: `Operation => [Member, ..]`. It implements
-/// `OperationReads<Operation>` for each listed marker.
-#[macro_export]
-macro_rules! worth_query_operation_reads {
-    ($Operation:ty => [$($Member:ty),+ $(,)?]) => {
-        $(
-            impl $crate::facade::application_schema::OperationReads<$Operation> for $Member {}
-        )+
-    };
-}
-
-/// Declares, at compile time, that an operation may carry an expected-version
-/// precondition on the listed fields.
-///
-/// Input: `Operation => [Field, ..]`. It implements
-/// `OperationExpectsVersion<Operation>` for each listed marker.
-#[macro_export]
-macro_rules! worth_query_operation_expects_version {
-    ($Operation:ty => [$($Field:ty),+ $(,)?]) => {
-        $(
-            impl $crate::facade::application_schema::OperationExpectsVersion<$Operation>
-                for $Field
-            {}
-        )+
-    };
-}
-
-/// Declares, at compile time, that an operation may carry an expected-fact
-/// precondition on the listed fields.
-///
-/// Input: `Operation => [Field, ..]`. It implements
-/// `OperationExpectsFact<Operation>` for each listed marker.
-#[macro_export]
-macro_rules! worth_query_operation_expects_fact {
-    ($Operation:ty => [$($Field:ty),+ $(,)?]) => {
-        $(
-            impl $crate::facade::application_schema::OperationExpectsFact<$Operation>
-                for $Field
-            {}
-        )+
-    };
-}
-
-/// Declares, at compile time, that an operation may create the listed entities.
-///
-/// Input: `Operation => [Entity, ..]`. It implements
-/// `OperationCreates<Operation>` for each listed marker.
-#[macro_export]
-macro_rules! worth_query_operation_creates {
-    ($Operation:ty => [$($Entity:ty),+ $(,)?]) => {
-        $(
-            impl $crate::facade::application_schema::OperationCreates<$Operation> for $Entity {}
-        )+
-    };
-}
-
-/// Declares, at compile time, that an operation may delete the listed entities.
-///
-/// Input: `Operation => [Entity, ..]`. It implements
-/// `OperationDeletes<Operation>` for each listed marker.
-#[macro_export]
-macro_rules! worth_query_operation_deletes {
-    ($Operation:ty => [$($Entity:ty),+ $(,)?]) => {
-        $(
-            impl $crate::facade::application_schema::OperationDeletes<$Operation> for $Entity {}
-        )+
-    };
-}
-
-/// Declares, at compile time, that an operation may link the listed relations.
-///
-/// Input: `Operation => [Relation, ..]`. It implements
-/// `OperationLinks<Operation>` for each listed marker.
-#[macro_export]
-macro_rules! worth_query_operation_links {
-    ($Operation:ty => [$($Relation:ty),+ $(,)?]) => {
-        $(
-            impl $crate::facade::application_schema::OperationLinks<$Operation> for $Relation {}
-        )+
-    };
-}
-
-/// Declares, at compile time, that an operation may unlink the listed
-/// relations.
-///
-/// Input: `Operation => [Relation, ..]`. It implements
-/// `OperationUnlinks<Operation>` for each listed marker.
-#[macro_export]
-macro_rules! worth_query_operation_unlinks {
-    ($Operation:ty => [$($Relation:ty),+ $(,)?]) => {
-        $(
-            impl $crate::facade::application_schema::OperationUnlinks<$Operation> for $Relation {}
-        )+
-    };
-}
-
-/// Declares, at compile time, that an operation may emit the listed external
-/// effects.
-///
-/// Input: `Operation => [Effect, ..]`. It implements
-/// `OperationEmits<Operation>` for each listed marker.
-#[macro_export]
-macro_rules! worth_query_operation_emits {
-    ($Operation:ty => [$($Effect:ty),+ $(,)?]) => {
-        $(
-            impl $crate::facade::application_schema::OperationEmits<$Operation> for $Effect {}
-        )+
     };
 }

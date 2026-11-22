@@ -866,6 +866,58 @@ Each role remains `WorthQueryFeatureRoleRuntime::new(handler, provider,
 readiness_configuration)` inside `WorthQueryFeatureRuntime::new(initial, preserve)`.
 Readiness predicates and `bind_output_readiness` remain with their existing owners.
 
+#### Declare each fact once
+
+Use `body_action(Binding, Delivery) { operation: definition(); ... };` when the
+operation definition carries an authored body. The feature declares the
+operation and binding, derives the action's delivery root and installs the
+body through the contribution's existing `operation_body` owner; the runtime
+constructor takes no handler for it. Installation still refuses a body action
+configured by a contribution that does not own it (`ContributionMemberMismatch`)
+or whose operation has no body (`OperationBodyUnavailable`), and a binding
+declared twice is a `DuplicateMember`. A feature for one concrete schema is
+`pub feature Definition<MySchema> for Feature => Runtime { ... }`. Further type
+parameters and a `where` clause apply to the definition, its runtime and every
+generated impl, so one declaration covers a family:
+
+<!-- illustrative -->
+```rust,ignore
+worth_query_application_contribution! {
+    pub feature FlagFamily<S: ApplicationSchema, O: Send> for FlagFeature<O> => FlagRuntime
+    where O: FlagOperation<S>,
+    {
+        schema: |schema| { schema };
+        body_action(O::Binding, O::Delivery) { operation: O::definition(); };
+    }
+}
+```
+
+Bindings that share a principal mapping, idempotency key and denial name one
+`decl::application_schema::ApplicationBindingContext` and write `context
+Context,` after the schema in `worth_query_mutation_binding!` or
+`worth_query_query_binding!`. Omitted principal, `idempotency` and `denial`
+clauses resolve to the context; a clause written on the binding wins. Both
+spellings install the same canonical schema.
+
+`decl::application_identity::ApplicationIdentityNamespace` derives one root's
+identities (`root.input`, `root.binding`, `root.request`, `root.result`,
+`root.slot.<field>` and the other `ApplicationIdentityRole`s) and refuses
+malformed, overlong or colliding identities with
+`ApplicationIdentityNamespaceDenial`. An explicit override keeps a role's
+existing wire identity. In declarations, `const ADD: ApplicationIdentityNamespace
+= worth_query_identity_namespace!("app.tasks.add.v1", Binding => "app.add.binding.v1");`
+and `identity worth_query_identity!(ADD, binding)` evaluate at compile time,
+where a refusal is a compile error.
+
+`worth_query_operation!` accepts the standalone capability macros' clauses
+inline, after the input or its `access` block: `reads [Inbox]; creates [Task];
+links [InboxTasks];`. A fragment whose fields are native scalars uses
+`fragment::NativeScalars` as its `Bindings`, or
+`worth_query_native_scalar_bindings!(pub Codecs);` when it also needs explicit
+`Scalar<T>` impls such as principal identity, content, unit-bearing or
+structured codecs. The [single-source court](../workspaces/worth-query/crates/worth-query-court-decl-host-single-source/tests/worth_query_court_decl_host_single_source/single_source/mod.rs)
+installs and runs each form.
+
 Declare operation access once with `worth_query_operation!(... for Schema:
 SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
 access come from those categories. Where a sealed capability family already owns

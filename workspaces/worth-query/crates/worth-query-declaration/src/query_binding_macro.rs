@@ -1,15 +1,25 @@
 /// Associates an application-owned request value with one installed query binding.
+///
+/// The principal group may be written out, or `context Context,` after the
+/// schema supplies it from one `ApplicationBindingContext`; see
+/// `__worth_query_contextual_query_binding`. The binding identity accepts any
+/// `&'static str` constant expression, including `worth_query_identity!`.
 #[macro_export]
 macro_rules! worth_query_query_binding {
+    ($vis:vis $Binding:ident for $Input:ty, schema $Schema:ty, context $($rest:tt)*) => {
+        $crate::__worth_query_contextual_query_binding!(
+            $vis $Binding for $Input, schema $Schema, context $($rest)*
+        );
+    };
     (
         $vis:vis $Binding:ident for $Input:ty, schema $Schema:ty,
-        identity $identity:literal,
+        identity $identity:expr,
         input $InputBinding:path,
         query $Query:path,
         parameters $ParameterBinding:path => $parameters:expr,
         result $ResultBinding:path,
-        principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
-            principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
+        principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
+            principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,
         scope $Selected:ty,
         field $scope_field:expr,
         value $scope_value:path,
@@ -46,13 +56,13 @@ macro_rules! worth_query_query_binding {
     };
     (
         $vis:vis $Binding:ident for $Input:ty, schema $Schema:ty,
-        identity $identity:literal,
+        identity $identity:expr,
         input $InputBinding:path,
         query $Query:path,
         parameters $ParameterBinding:path => $parameters:expr,
         result $ResultBinding:path,
-        principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
-            principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
+        principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
+            principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,
         scope $Selected:ty,
         principal_field $scope_field:expr,
         limits results $maximum_results:expr
@@ -85,14 +95,15 @@ macro_rules! worth_query_query_binding {
     };
     (@binding
         $vis:vis $Binding:ident for $Input:ty, schema $Schema:ty,
-        identity $identity:literal, input $InputBinding:path, query $Query:path,
+        identity $identity:expr, input $InputBinding:path, query $Query:path,
         parameters $ParameterBinding:path, result $ResultBinding:path,
-        principal $PrincipalBinding:path, mapping $Mapping:ty, principal_entity $Principal:ty,
-        principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:path,
+        principal $PrincipalBinding:ty, mapping $Mapping:ty, principal_entity $Principal:ty,
+        principal_identity $PrincipalIdentity:ty, identity_binding $PrincipalIdentityBinding:ty,
         scope_binding $ScopeBinding:ty,
         scope_field_type $Selected:ty,
         scope_field $scope_field:expr,
         limits results $maximum_results:expr
+        $(, principal_reference $principal_reference:expr)?
     ) => {
         $vis struct $Binding;
 
@@ -121,10 +132,14 @@ macro_rules! worth_query_query_binding {
                 $Schema, Self::PrincipalBinding, Self::Mapping, Self::Principal,
                 Self::PrincipalIdentity, Self::PrincipalIdentityBinding,
             > {
-                <$PrincipalBinding>::reference()
+                $crate::worth_query_query_binding!(
+                    @principal_reference [$($principal_reference)?] $PrincipalBinding
+                )
             }
         }
     };
+    (@principal_reference [$reference:expr] $PrincipalBinding:ty) => { $reference };
+    (@principal_reference [] $PrincipalBinding:ty) => { <$PrincipalBinding>::reference() };
     (@limits $results:expr) => {
         $crate::facade::application_query::ApplicationQueryBindingLimits::results($results)
     };
