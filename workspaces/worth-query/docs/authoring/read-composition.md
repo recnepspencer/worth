@@ -221,9 +221,16 @@ evaluation runs in bounded slices whose work is charged to the request, and
 cancellation or deadline between slices refuses with a typed denial. Every
 examined candidate's filter fields join the result's set evidence, including
 rows the filter excluded and fields the result never projects, so editing a
-filter-only field stales sources observed earlier. Filters apply to exact-root
-and root-path selections; orbit, component, managed-index and continuation
-shapes refuse. Unfiltered definitions keep their exact canonical identity and
+filter-only field stales sources observed earlier. Governed queries must grant
+each filter field the membership influences their lanes expose, exactly as for
+`where_equal`.
+
+Current bounds: filters apply to exact-root and root-path selections; orbit,
+component, managed-index (including managed Sources) and continuation shapes
+refuse. Operands are the root entity's own fields, not traversed entities.
+Decimal operands wait for a schema Decimal field binding, and unit-bearing
+Quantity operands wait for a schema-unit to expression-dimension contract;
+until then unit-bearing operands refuse with `UnitBearingOperand`. Unfiltered definitions keep their exact canonical identity and
 archive bytes. The public journeys are in the
 [where-filter court](../../crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/where_filter/mod.rs).
 

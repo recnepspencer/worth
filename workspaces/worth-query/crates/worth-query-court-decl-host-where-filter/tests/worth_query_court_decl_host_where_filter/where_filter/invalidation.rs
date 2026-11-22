@@ -78,11 +78,27 @@ fn editing_an_excluded_rows_filter_only_field_updates_results_and_stales_the_sou
     observe(&host, &source, "unrelated").expect("another project's edit leaves it current");
     edit_notes(&host, 1, 4, "awaiting spare bracket", 2);
     assert_eq!(bracket_search(&host).0, [4, 5]);
+    assert_stale(observe(&host, &source, "stale"));
+}
+
+#[test]
+fn an_absent_filter_only_field_becoming_present_stales_the_source() {
+    let host = install(&board());
+    // Task 2 has no notes at all; its absence is part of the read.
+    let (rows, source) = bracket_search(&host);
+    assert_eq!(rows, [5]);
+    edit_notes(&host, 1, 2, "bracket plate", 1);
+    assert_eq!(bracket_search(&host).0, [2, 5]);
+    assert_stale(observe(&host, &source, "absent-stale"));
+}
+
+#[track_caller]
+fn assert_stale(result: Result<(), WorthQueryApplicationRequestMutationDenial>) {
     let Err(WorthQueryApplicationRequestMutationDenial::Handler(
         MutationHandlerExecutionDenial::Attempt(cause),
-    )) = observe(&host, &source, "stale")
+    )) = result
     else {
-        panic!("the excluded row's filter-only edit must stale the original source");
+        panic!("an excluded row filter-only edit must stale the observed source: {result:?}");
     };
     assert_eq!(
         cause.kind(),

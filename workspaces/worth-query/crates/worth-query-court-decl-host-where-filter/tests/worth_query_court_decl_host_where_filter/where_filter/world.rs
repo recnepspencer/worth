@@ -64,7 +64,7 @@ pub type Seed = (
     u64,
     u64,
     &'static str,
-    String,
+    Option<String>,
     &'static str,
     i64,
     u64,
@@ -72,12 +72,13 @@ pub type Seed = (
 );
 
 pub fn board() -> Vec<Seed> {
+    let notes = |text: &str| Some(text.to_owned());
     vec![
         (
             1,
             1,
             "Mill housing",
-            "check FLANGE tolerance".into(),
+            notes("check FLANGE tolerance"),
             "open",
             5,
             12_500_000,
@@ -87,7 +88,7 @@ pub fn board() -> Vec<Seed> {
             2,
             1,
             "Drill flange holes",
-            String::new(),
+            None,
             "open",
             9,
             40_000_000,
@@ -97,7 +98,7 @@ pub fn board() -> Vec<Seed> {
             3,
             1,
             "Paint",
-            "matte black".into(),
+            notes("matte black"),
             "done",
             7,
             3_000_000,
@@ -107,7 +108,7 @@ pub fn board() -> Vec<Seed> {
             4,
             1,
             "Inspect",
-            "awaiting parts".into(),
+            notes("awaiting parts"),
             "open",
             2,
             80_000_000,
@@ -117,7 +118,7 @@ pub fn board() -> Vec<Seed> {
             5,
             1,
             "Weld bracket",
-            "flange-adjacent".into(),
+            notes("flange-adjacent"),
             "open",
             9,
             25_000_000,
@@ -127,7 +128,7 @@ pub fn board() -> Vec<Seed> {
             6,
             2,
             "Flange spare",
-            "flange".into(),
+            notes("flange"),
             "open",
             9,
             1_000_000,
@@ -172,10 +173,12 @@ pub fn install(tasks: &[Seed]) -> Host {
                 let mut seed = WorthQueryApplicationEntitySeed::new(Task::reference(), entity_key!("task", *key))
                     .field(TaskKey::at("TaskKey"), *key)
                     .field(Title::at("Title"), (*title).to_owned())
-                    .field(Notes::at("Notes"), notes.clone())
                     .field(Status::at("Status"), (*status).to_owned())
                     .field(Rank::at("Rank"), *rank)
                     .field(Length::at("Length"), length(*micros));
+                if let Some(notes) = notes {
+                    seed = seed.field(Notes::at("Notes"), notes.clone());
+                }
                 if let Some(days) = due {
                     seed = seed.field(Due::at("Due"), date(*days));
                 }

@@ -2,7 +2,8 @@
 //! governed equality reader, observing every examined candidate's field.
 use super::{NarrowingRead, RootPathSourceBuilder, RootSelectionWork};
 use crate::domain_computation::primary_graph::application_query::read_execution::{
-    root_selection::path_union, WorthQueryApplicationReadExecutionDenial,
+    read_execution_denial, root_selection::path_union, WorthQueryApplicationReadExecutionDenial,
+    WorthQueryApplicationReadExecutionDenialKind,
 };
 use std::collections::BTreeSet;
 use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
@@ -28,13 +29,13 @@ pub fn narrow<ReadIdentity>(
                 predicate.field_key(),
                 ApplicationQueryObservableInfluence::RowPresence,
             )
-            .ok_or_else(|| plan.predicate_unavailable_denial())?;
+            .ok_or_else(|| projection_unavailable(field))?;
         let layout = read
             .graph
             .equality_field(entity, aspect, field)
             .ok_or_else(|| plan.predicate_unavailable_denial())?;
         if !admitted.admits_locator(&layout.locator) {
-            return Err(plan.predicate_unavailable_denial());
+            return Err(projection_unavailable(field));
         }
         let expected = plan
             .parameters
@@ -75,4 +76,12 @@ pub fn narrow<ReadIdentity>(
         frontier = lookup.into_matching_entity_ids().into_iter().collect();
     }
     Ok(frontier.into_iter().collect())
+}
+
+/// Governance refusal is projection unavailability, as for the exact-root guard.
+fn projection_unavailable(field: &str) -> WorthQueryApplicationReadExecutionDenial {
+    read_execution_denial(
+        WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+        field,
+    )
 }

@@ -110,6 +110,8 @@ fn projection_profile(
         || parent.orbit().is_some()
         || !parent.root_paths().is_empty()
         || !source.predicates().is_empty()
+        || source.where_filter().is_some()
+        || parent.where_filter().is_some()
         || source
             .relations()
             .iter()

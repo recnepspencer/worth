@@ -111,7 +111,8 @@ pub fn search(
         .and_then(|operands| operands.parameter("q", q))
         .and_then(|operands| {
             operands.parse(
-                "contains_ignore_ascii_case(title, q) || contains_ignore_ascii_case(notes, q)",
+                "contains_ignore_ascii_case(title, q) \
+                 || (is_some(notes) && contains_ignore_ascii_case(unwrap(notes), q))",
             )
         })
         .expect("the text search admits statically");

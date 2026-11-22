@@ -13,7 +13,7 @@ impl Aspect for TaskFacts {
 pub struct TaskFactsValue {
     pub key: u64,
     pub title: String,
-    pub notes: String,
+    pub notes: Option<String>,
     pub status: String,
     pub rank: i64,
     pub length: CanonicalF64,

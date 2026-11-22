@@ -19,7 +19,7 @@ fn quiet_board(width: usize) -> Vec<Seed> {
                 key,
                 1,
                 "task",
-                "n".repeat(width),
+                Some("n".repeat(width)),
                 "open",
                 1,
                 1_000_000,
