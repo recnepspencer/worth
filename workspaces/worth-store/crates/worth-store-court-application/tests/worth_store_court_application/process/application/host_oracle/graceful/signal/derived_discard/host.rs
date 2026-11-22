@@ -7,6 +7,7 @@ use std::sync::{
     Arc,
 };
 use std::time::Duration;
+use worth_foundational::facade::RecordedProductBranchReference;
 use worth_query_host::facade::{
     primary_graph::WorthQueryApplicationCommitOutcome, WorthQueryApplicationHomeCheckpointDenial,
     WorthQueryApplicationHomeCloseOutcome, WorthQueryApplicationHomeLocation,
@@ -18,6 +19,13 @@ use worth_store_application::ApplicationHomeCheckpointDenial;
 
 const CHILD: &str =
     "process::application::host_oracle::graceful::signal::derived_discard::host::derived_discard_host_child";
+const EXPECTED_CADENCE_KEYS: [&str; 5] = [
+    "relational.branch-transitions",
+    "relational.canonical-commits",
+    "world.branches",
+    "world.custody",
+    "world.occurrences",
+];
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 struct ReceiptSnapshot {
@@ -28,6 +36,13 @@ struct ReceiptSnapshot {
     outcome_identity: Option<u64>,
     changed_record_count: usize,
     emitted_effect_count: usize,
+    idempotency_key: [u8; 32],
+    product_incarnation: u64,
+    product_generation: u64,
+    composite_commit: u64,
+    attempt_ordinal: u64,
+    native_journal_position: u64,
+    world_journal_position: Option<u64>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -117,7 +132,8 @@ fn run_host_discard(kill: bool, reopen_build: &str) {
         Session::start_child(&path, &directory.path().join("second"), reopen_build, CHILD);
     assert_eq!(recovered.initialized, 0, "reopen never initializes again");
     assert_eq!(recovered.contacts, (0, 0, 0, 0), "no eager provider calls");
-    assert_eq!(recovered.cadence.len(), 5);
+    let cadence_keys: Vec<&str> = recovered.cadence.keys().map(String::as_str).collect();
+    assert_eq!(cadence_keys, EXPECTED_CADENCE_KEYS);
     assert!(
         recovered.cadence.values().all(|&(covered, _)| covered == 0),
         "reopen after discard reports zero checkpoint coverage across all 5 cadence journals: {:?}",
@@ -133,7 +149,7 @@ fn run_host_discard(kill: bool, reopen_build: &str) {
     let replayed: Reply = session.exchange(&Command::ReplayCommitted);
     assert_eq!(
         replayed.replayed_receipts, discarded.original_receipts,
-        "replaying committed mixed keys must return the exact original receipts"
+        "replaying committed mixed keys must return exact original receipts & publication locations"
     );
     assert_eq!(
         replayed.contacts,
@@ -183,6 +199,19 @@ fn inspect_cadence(
         .into_iter()
         .map(|j| (j.name.to_owned(), (j.covered, j.head)))
         .collect()
+}
+
+fn recorded_head_coords(head: &RecordedProductBranchReference) -> (u64, u64, u64) {
+    match head {
+        RecordedProductBranchReference::Home(h) => (
+            h.incarnation().ordinal(),
+            h.generation().get(),
+            h.selected_commit().ordinal(),
+        ),
+        RecordedProductBranchReference::Memory(h) => {
+            (h.incarnation(), h.generation(), h.selected_commit())
+        }
+    }
 }
 
 #[test]
@@ -247,6 +276,8 @@ fn derived_discard_host_child() {
                         .require_committed()
                         .unwrap_or_else(|o| panic!("mixed commit {ordinal} must land: {o:?}"));
                     assert_eq!(receipt.product_branch(), branch);
+                    let after_commit = inspect_cadence(home, &execution);
+                    let pub_ref = receipt.committed_product_publication();
                     original_receipts.push(ReceiptSnapshot {
                         ordinal,
                         commit_id: receipt.commit_reference().commit_id.0,
@@ -255,6 +286,13 @@ fn derived_discard_host_child() {
                         outcome_identity: receipt.outcome_identity().map(|id| id.get()),
                         changed_record_count: receipt.changed_record_count(),
                         emitted_effect_count: receipt.emitted_effect_count(),
+                        idempotency_key: *receipt.idempotency_binding().key_identity(),
+                        product_incarnation: pub_ref.product_incarnation().ordinal(),
+                        product_generation: pub_ref.product_generation().get(),
+                        composite_commit: pub_ref.composite_commit().ordinal(),
+                        attempt_ordinal: pub_ref.publication_attempt().ordinal(),
+                        native_journal_position: after_commit["relational.canonical-commits"].1,
+                        world_journal_position: Some(after_commit["world.occurrences"].1),
                     });
                 }
                 let checkpoint = home.checkpoint(&execution).unwrap();
@@ -274,8 +312,12 @@ fn derived_discard_host_child() {
                 for (branch, ordinal) in [(branches[0], 1_u8), (branches[2], 2_u8)] {
                     match operations::commit_mixed(home, branch, ordinal) {
                         WorthQueryApplicationCommitOutcome::RecoveredCommitted(receipt) => {
-                            assert!(receipt.world_journal_position().is_some());
-                            assert!(receipt.native_journal_position().0 > 0);
+                            let (inc, generation, commit) =
+                                recorded_head_coords(receipt.new_product_head());
+                            assert_ne!(receipt.native_artifact_digest(), &[0_u8; 32]);
+                            assert!(receipt
+                                .world_artifact_digest()
+                                .is_some_and(|d| d != &[0_u8; 32]));
                             replayed_receipts.push(ReceiptSnapshot {
                                 ordinal,
                                 commit_id: receipt.commit_reference().commit_id.0,
@@ -284,6 +326,13 @@ fn derived_discard_host_child() {
                                 outcome_identity: Some(receipt.outcome_identity().get()),
                                 changed_record_count: receipt.changed_record_count(),
                                 emitted_effect_count: receipt.emitted_effect_count(),
+                                idempotency_key: *receipt.idempotency_key_identity(),
+                                product_incarnation: inc,
+                                product_generation: generation,
+                                composite_commit: commit,
+                                attempt_ordinal: receipt.attempt_identity().ordinal(),
+                                native_journal_position: receipt.native_journal_position().0,
+                                world_journal_position: receipt.world_journal_position(),
                             });
                         }
                         other => panic!(

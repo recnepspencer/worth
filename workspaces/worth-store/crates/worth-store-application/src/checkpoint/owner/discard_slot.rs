@@ -1,5 +1,7 @@
 //! Exclusive ownership of the Home checkpoint slot during D14 derived discard.
 use super::{CheckpointSlot, HomeCheckpointOwner};
+use std::sync::{Arc, Mutex};
+use worth_store::physical_runtime::AnchoredRecordPublicationFailureCustody;
 
 /// Prevents any concurrent checkpoint installation, acknowledgement, or second
 /// discard from interleaving with an in-flight derived-state discard.
@@ -29,6 +31,21 @@ impl<'a> DiscardSlotGuard<'a> {
         if matches!(state.slot, CheckpointSlot::Discarding) {
             state.slot = CheckpointSlot::Idle;
         }
+        self.finished = true;
+    }
+
+    pub(in crate::checkpoint) fn finish_unresolved(
+        mut self,
+        failure: AnchoredRecordPublicationFailureCustody,
+    ) {
+        let mut state = self
+            .owner
+            .state
+            .lock()
+            .unwrap_or_else(|error| error.into_inner());
+        state.slot = CheckpointSlot::DiscardUnresolved {
+            _custody: Arc::new(Mutex::new(failure)),
+        };
         self.finished = true;
     }
 }

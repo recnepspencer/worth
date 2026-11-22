@@ -50,6 +50,9 @@ pub enum ApplicationHomeCheckpointDenial {
     DerivedStateDiscarded,
     /// Another D14 discard operation is currently serialized on this Home's checkpoint slot.
     DiscardInProgress,
+    /// A D14 discard failed with an unknown physical selection outcome;
+    /// the Home retains the failure custody instead of assuming no effect.
+    DiscardUnresolved,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

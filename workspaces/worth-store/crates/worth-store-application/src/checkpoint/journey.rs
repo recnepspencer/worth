@@ -28,6 +28,9 @@ pub(crate) fn checkpoint(
     if let Some(attempt) = owner.pending() {
         return Err(Denial::RecoveryRequired(attempt.observation()));
     }
+    if owner.is_discard_unresolved() {
+        return Err(Denial::DiscardUnresolved);
+    }
     if owner.is_discarding() {
         return Err(Denial::DiscardInProgress);
     }

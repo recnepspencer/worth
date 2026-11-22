@@ -16,19 +16,19 @@ static DISCARD_ATTEMPT_NONCE: AtomicU64 = AtomicU64::new(1);
 struct DiscardStepProtection;
 impl AnchoredRecordSelectionProtection for DiscardStepProtection {}
 
-struct DiscardStepPort<'a> {
+struct DiscardStepPort {
     registration: Arc<Mutex<Option<AnchoredRecordStepRegistration>>>,
     #[cfg(test)]
-    after_step_retained: Option<&'a (dyn Fn() + Send + Sync)>,
-    #[cfg(not(test))]
-    _marker: std::marker::PhantomData<&'a ()>,
+    fail_terminal_delivery: bool,
 }
 
 struct DiscardTerminalDestination {
     registration: Arc<Mutex<Option<AnchoredRecordStepRegistration>>>,
+    #[cfg(test)]
+    fail_terminal_delivery: bool,
 }
 
-impl AnchoredRecordStepCustodyPort for DiscardStepPort<'_> {
+impl AnchoredRecordStepCustodyPort for DiscardStepPort {
     fn retain_step(
         &self,
         registration: AnchoredRecordStepRegistration,
@@ -37,14 +37,12 @@ impl AnchoredRecordStepCustodyPort for DiscardStepPort<'_> {
             .registration
             .lock()
             .unwrap_or_else(|error| error.into_inner()) = Some(registration);
-        #[cfg(test)]
-        if let Some(observer) = self.after_step_retained {
-            observer();
-        }
         Ok(AnchoredRecordStepRetention::new(
             Box::new(DiscardStepProtection),
             Arc::new(DiscardTerminalDestination {
                 registration: Arc::clone(&self.registration),
+                #[cfg(test)]
+                fail_terminal_delivery: self.fail_terminal_delivery,
             }),
         ))
     }
@@ -55,6 +53,10 @@ impl AnchoredRecordStepTerminalDestination for DiscardTerminalDestination {
         &self,
         terminal: &AnchoredRecordStepTerminal,
     ) -> Result<(), AnchoredRecordStepDeliveryFailure> {
+        #[cfg(test)]
+        if self.fail_terminal_delivery {
+            return Err(AnchoredRecordStepDeliveryFailure::ReceiptRefused);
+        }
         let guard = self
             .registration
             .lock()
@@ -79,25 +81,24 @@ pub(crate) fn discard(
         owner,
         execution,
         #[cfg(test)]
-        None,
+        false,
     )
 }
 
 #[cfg(test)]
-pub(crate) fn discard_with_step_observer_for_test(
+pub(crate) fn discard_with_terminal_delivery_failure_for_test(
     serving: &ServingPhysicalRuntime,
     owner: &HomeCheckpointOwner,
     execution: &ExecutionRequest<'_, '_>,
-    observer: &(dyn Fn() + Send + Sync),
 ) -> Result<u64, Denial> {
-    discard_impl(serving, owner, execution, Some(observer))
+    discard_impl(serving, owner, execution, true)
 }
 
 fn discard_impl(
     serving: &ServingPhysicalRuntime,
     owner: &HomeCheckpointOwner,
     execution: &ExecutionRequest<'_, '_>,
-    #[cfg(test)] after_step_retained: Option<&(dyn Fn() + Send + Sync)>,
+    #[cfg(test)] fail_terminal_delivery: bool,
 ) -> Result<u64, Denial> {
     // Serialize against checkpoint installation, acknowledgement, and another discard.
     let guard = owner.begin_discard()?;
@@ -116,7 +117,7 @@ fn discard_impl(
                     context,
                     lease,
                     #[cfg(test)]
-                    after_step_retained,
+                    fail_terminal_delivery,
                 ));
             })
             .map(|_| ())
@@ -141,7 +142,7 @@ fn publish_discard_marker(
     previous_generation: u64,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    #[cfg(test)] after_step_retained: Option<&(dyn Fn() + Send + Sync)>,
+    #[cfg(test)] fail_terminal_delivery: bool,
 ) -> Result<u64, Denial> {
     let view = context
         .retain_interruption_view(lease)
@@ -173,14 +174,12 @@ fn publish_discard_marker(
     let port = DiscardStepPort {
         registration: Arc::new(Mutex::new(None)),
         #[cfg(test)]
-        after_step_retained,
-        #[cfg(not(test))]
-        _marker: std::marker::PhantomData,
+        fail_terminal_delivery,
     };
     loop {
         if let Err(stop) = context.poll() {
             let mut stopped = operation.stop();
-            let mut selected = false;
+            stopped.request_cancellation();
             loop {
                 match stopped.settle(&records) {
                     AnchoredRecordStoppedPoll::Pending(next) => {
@@ -188,14 +187,14 @@ fn publish_discard_marker(
                         std::thread::sleep(std::time::Duration::from_millis(1));
                     }
                     AnchoredRecordStoppedPoll::Settled(observation) => {
-                        selected = observation.terminal().is_some();
-                        break;
+                        guard.finish(observation.terminal().is_some());
+                        return Err(Denial::Execution(WorkCeilingDenial::Stopped(stop)));
                     }
-                    AnchoredRecordStoppedPoll::Failed(_) => break,
+                    AnchoredRecordStoppedPoll::Failed(failure) => {
+                        return Err(reconcile_failure(guard, failure));
+                    }
                 }
             }
-            guard.finish(selected);
-            return Err(Denial::Execution(WorkCeilingDenial::Stopped(stop)));
         }
         match operation.step(&records, &port) {
             AnchoredRecordPublicationStep::Pending(next)
@@ -209,12 +208,40 @@ fn publish_discard_marker(
                 return Ok(generation);
             }
             AnchoredRecordPublicationStep::Failed(failure) => {
-                return Err(Denial::Publication(
-                    AnchoredRecordPublicationFailure::OwnedPublication(Box::new(failure)),
-                ));
+                return Err(reconcile_failure(guard, failure));
             }
         }
     }
+}
+
+fn reconcile_failure(
+    guard: DiscardSlotGuard<'_>,
+    failure: AnchoredRecordPublicationFailureCustody,
+) -> Denial {
+    let observation = failure.observe();
+    if observation.terminal().is_some() {
+        // Zero-member discard marker is already durably selected on home.checkpoint
+        // even though terminal settlement failed afterwards. Atomically update live
+        // owner state while preserving the typed failure for the caller.
+        guard.finish(true);
+        return Denial::Publication(AnchoredRecordPublicationFailure::OwnedPublication(Box::new(
+            failure,
+        )));
+    }
+    let proven_no_effect = observation.step_terminal().is_some_and(|terminal| {
+        terminal.settlement_failure().is_none()
+            && matches!(terminal.outcome(), PhysicalMutationOutcome::ProvenNoEffect(_))
+    });
+    if proven_no_effect {
+        guard.finish(false);
+        return Denial::Publication(AnchoredRecordPublicationFailure::OwnedPublication(Box::new(
+            failure,
+        )));
+    }
+    // Selection is unknown: retain failure custody on the checkpoint slot instead
+    // of releasing it as Idle and assuming no effect.
+    guard.finish_unresolved(failure);
+    Denial::DiscardUnresolved
 }
 
 fn published_generation(receipt: AnchoredRecordPublished) -> u64 {

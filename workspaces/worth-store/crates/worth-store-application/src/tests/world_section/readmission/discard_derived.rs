@@ -1,6 +1,11 @@
-//! Focused owner tests for D14 discard serialization, cancellation, and same-open re-checkpoint.
+//! Focused owner tests for D14 discard serialization, cancellation, and settlement failure.
 use super::*;
 use crate::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseOutcome};
+use std::sync::Arc;
+use worth_store::physical_runtime::production::PhysicalMutationCheckpoint;
+use worth_store::physical_runtime::{
+    AnchoredRecordOperationFailure, AnchoredRecordPublicationFailure,
+};
 
 fn open_composed_home(
     location: &std::path::Path,
@@ -40,6 +45,45 @@ fn serial_with_token(token: worth_execution::CancellationToken) -> worth_executi
     )
 }
 
+fn assert_live_discarded_and_close(
+    home: WorldReadmittedApplicationHome<(), (), (), (), ()>,
+    expected_gen: u64,
+    execution: &ExecutionRequest<'_, '_>,
+) {
+    let (selected, raw_gen) =
+        crate::checkpoint::read_with_anchor_generation(&home.home.context.serving, execution)
+            .unwrap();
+    assert!(selected.is_none(), "discard marker must yield no selected manifest");
+    assert_eq!(raw_gen, expected_gen);
+    assert!(home.home.context.checkpoint.is_derived_discarded());
+    assert_eq!(home.home.context.checkpoint.acknowledged_native(), [0, 0]);
+    assert!(matches!(
+        home.checkpoint(execution),
+        Err(ApplicationHomeCheckpointDenial::DerivedStateDiscarded)
+    ));
+    let op = home.checkpoint_operation(Default::default()).unwrap();
+    assert!(matches!(
+        op.after_advancement(execution),
+        Err(ApplicationHomeCheckpointDenial::DerivedStateDiscarded)
+    ));
+    drop(op);
+    let closed = home
+        .close(execution)
+        .unwrap_or_else(|cause| panic!("close after discard: {:?}", cause.reason()));
+    match closed {
+        ApplicationHomeCloseOutcome::Closed {
+            checkpoint: Err(ApplicationHomeCheckpointDenial::DerivedStateDiscarded),
+            ..
+        } => {}
+        ApplicationHomeCloseOutcome::Closed { checkpoint, .. } => {
+            panic!("expected Closed(DerivedStateDiscarded), got Closed({checkpoint:?})")
+        }
+        ApplicationHomeCloseOutcome::CloseRefused { reason, .. } => {
+            panic!("expected Closed(DerivedStateDiscarded), got CloseRefused({reason:?})")
+        }
+    }
+}
+
 #[test]
 fn discard_serializes_with_pending_checkpoint_and_defers_fresh_checkpoint_to_reopen() {
     let directory = tempfile::tempdir().unwrap();
@@ -50,7 +94,6 @@ fn discard_serializes_with_pending_checkpoint_and_defers_fresh_checkpoint_to_reo
     let first = home.checkpoint(&execution).unwrap();
     assert!(first.covered().0 > 0);
 
-    // 1. Holding the discard slot excludes both checkpoint() and a second discard.
     let guard = home.home.context.checkpoint.begin_discard().unwrap();
     assert!(matches!(
         home.checkpoint(&execution),
@@ -63,11 +106,9 @@ fn discard_serializes_with_pending_checkpoint_and_defers_fresh_checkpoint_to_reo
     drop(guard);
     assert!(!home.home.context.checkpoint.is_derived_discarded());
 
-    // 2. Pending checkpoint attempt refuses discard_derived_for_test with RecoveryRequired.
     crate::tests::native_schema::commit(home.relational().runtime(), &execution, "pending-cp");
     let cancel = worth_execution::CancellationSource::new();
-    let cancel_token = cancel.token();
-    let cancel_policy = serial_with_token(cancel_token);
+    let cancel_policy = serial_with_token(cancel.token());
     let cancel_execution = ExecutionRequest::serial(&cancel_policy);
     let op = home.checkpoint_operation(Default::default()).unwrap();
     let refused = op
@@ -77,49 +118,20 @@ fn discard_serializes_with_pending_checkpoint_and_defers_fresh_checkpoint_to_reo
         )
         .unwrap_err();
     drop(op);
-    assert!(
-        matches!(refused, ApplicationHomeCheckpointDenial::RecoveryRequired(_)),
-        "expected pending checkpoint attempt, got {refused:?}"
-    );
+    assert!(matches!(
+        refused,
+        ApplicationHomeCheckpointDenial::RecoveryRequired(_)
+    ));
     assert!(matches!(
         home.discard_derived_for_test(&execution),
         Err(ApplicationHomeCheckpointDenial::RecoveryRequired(_))
     ));
-    assert!(!home.home.context.checkpoint.is_derived_discarded());
     let recovered_cp = home.recover_checkpoint(&execution).unwrap();
     assert_eq!(recovered_cp.generation(), first.generation() + 1);
 
-    // 3. Discard clears live coverage, refuses same-open checkpoint/maintenance
-    // with DerivedStateDiscarded (never MissingCarriedMember or overwriting the
-    // discard marker), and graceful close preserves the discard so reopen can
-    // resume fresh checkpointing cleanly at discard_gen + 1.
     let discard_gen = home.discard_derived_for_test(&execution).unwrap();
     assert_eq!(discard_gen, recovered_cp.generation() + 1);
-    assert!(home.home.context.checkpoint.is_derived_discarded());
-    assert_eq!(home.home.context.checkpoint.acknowledged_native(), [0, 0]);
-
-    assert!(matches!(
-        home.checkpoint(&execution),
-        Err(ApplicationHomeCheckpointDenial::DerivedStateDiscarded)
-    ));
-    let op_after = home.checkpoint_operation(Default::default()).unwrap();
-    assert!(matches!(
-        op_after.after_advancement(&execution),
-        Err(ApplicationHomeCheckpointDenial::DerivedStateDiscarded)
-    ));
-    drop(op_after);
-    assert!(home.home.context.checkpoint.is_derived_discarded());
-
-    let closed = home
-        .close(&execution)
-        .unwrap_or_else(|cause| panic!("close after discard: {:?}", cause.reason()));
-    assert!(matches!(
-        closed,
-        ApplicationHomeCloseOutcome::Closed {
-            checkpoint: Err(ApplicationHomeCheckpointDenial::DerivedStateDiscarded),
-            ..
-        }
-    ));
+    assert_live_discarded_and_close(home, discard_gen, &execution);
 
     let reopened = open_composed_home(directory.path(), &execution);
     assert!(!reopened.home.context.checkpoint.is_derived_discarded());
@@ -127,10 +139,10 @@ fn discard_serializes_with_pending_checkpoint_and_defers_fresh_checkpoint_to_reo
     let resumed_cp = reopened.checkpoint(&execution).unwrap();
     assert_eq!(resumed_cp.generation(), discard_gen + 1);
     assert!(reopened.home.context.checkpoint.acknowledged_native()[0] > 0);
-    let closed_reopened = reopened
+    let closed = reopened
         .close(&execution)
-        .unwrap_or_else(|cause| panic!("close after reopen checkpoint: {:?}", cause.reason()));
-    match closed_reopened {
+        .unwrap_or_else(|cause| panic!("close after reopen: {:?}", cause.reason()));
+    match closed {
         ApplicationHomeCloseOutcome::Closed {
             checkpoint: Ok(cp), ..
         } => assert_eq!(cp.generation(), resumed_cp.generation() + 1),
@@ -139,87 +151,179 @@ fn discard_serializes_with_pending_checkpoint_and_defers_fresh_checkpoint_to_reo
 }
 
 #[test]
-fn discard_cancellation_reconciles_before_and_after_anchor_selection() {
+fn discard_accepted_pre_cutover_cancellation_allows_same_generation_retry() {
     let directory = tempfile::tempdir().unwrap();
     let policy = serial_with_token(worth_execution::CancellationToken::new());
     let execution = ExecutionRequest::serial(&policy);
     let home = open_composed_home(directory.path(), &execution);
-    crate::tests::native_schema::commit(home.relational().runtime(), &execution, "cancel-discard");
+    crate::tests::native_schema::commit(home.relational().runtime(), &execution, "pre-cutover");
     let first = home.checkpoint(&execution).unwrap();
     let coverage_before = home.home.context.checkpoint.acknowledged_native();
     assert!(coverage_before[0] > 0);
 
-    // Pre-selection cancellation leaves derived_discarded false, coverage intact, and slot Idle.
-    let pre_cancel = worth_execution::CancellationSource::new();
-    pre_cancel.cancel();
-    let pre_policy = serial_with_token(pre_cancel.token());
-    let pre_exec = ExecutionRequest::serial(&pre_policy);
-    assert!(matches!(
-        home.discard_derived_for_test(&pre_exec),
-        Err(ApplicationHomeCheckpointDenial::Execution(_))
-    ));
+    let gate = home
+        .home
+        .context
+        .serving
+        .pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeEffectCutover);
+    let cancel = worth_execution::CancellationSource::new();
+    let cancel_token = cancel.token();
+    let serving = Arc::clone(&home.home.context.serving);
+    let owner = Arc::clone(&home.home.context.checkpoint);
+    let worker = std::thread::spawn(move || {
+        let cancel_policy = serial_with_token(cancel_token);
+        let cancel_exec = ExecutionRequest::serial(&cancel_policy);
+        match crate::checkpoint::discard_for_test::discard(&serving, &owner, &cancel_exec) {
+            Err(ApplicationHomeCheckpointDenial::Publication(
+                AnchoredRecordPublicationFailure::OwnedPublication(custody),
+            )) => {
+                assert!(custody.observe().terminal().is_none());
+                assert!(custody.observe().step_terminal().is_some_and(|t| {
+                    t.settlement_failure().is_none()
+                        && matches!(
+                            t.outcome(),
+                            worth_store::physical_runtime::PhysicalMutationOutcome::ProvenNoEffect(
+                                _
+                            )
+                        )
+                }));
+            }
+            other => panic!("expected pre-cutover ProvenNoEffect failure, got {other:?}"),
+        }
+    });
+    assert!(gate.await_arrival(), "discard must reach BeforeEffectCutover");
+    cancel.cancel();
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    gate.release();
+    worker.join().unwrap();
+
+    let (selected, raw_gen) =
+        crate::checkpoint::read_with_anchor_generation(&home.home.context.serving, &execution)
+            .unwrap();
+    assert!(selected.is_some(), "pre-cutover cancel must keep prior checkpoint");
+    drop(selected);
+    assert_eq!(raw_gen, first.generation());
     assert!(!home.home.context.checkpoint.is_derived_discarded());
     assert_eq!(
         home.home.context.checkpoint.acknowledged_native(),
         coverage_before
     );
 
-    // Cancellation inside the step observer (racing with publication): settle reconciles
-    // the exact physical outcome so live owner state matches the durable anchor.
-    let post_cancel = worth_execution::CancellationSource::new();
-    let post_policy = serial_with_token(post_cancel.token());
-    let post_exec = ExecutionRequest::serial(&post_policy);
-    let outcome = crate::checkpoint::discard_for_test::discard_with_step_observer_for_test(
-        &home.home.context.serving,
-        &home.home.context.checkpoint,
-        &post_exec,
-        &move || post_cancel.cancel(),
-    );
-    let (_, raw_gen) = crate::checkpoint::read_with_anchor_generation(
-        &home.home.context.serving,
-        &execution,
-    )
-    .unwrap();
-    match outcome {
-        Ok(discarded_gen) => {
-            assert_eq!(discarded_gen, first.generation() + 1);
-            assert_eq!(raw_gen, discarded_gen);
-            assert!(home.home.context.checkpoint.is_derived_discarded());
-            assert_eq!(home.home.context.checkpoint.acknowledged_native(), [0, 0]);
-        }
-        Err(ApplicationHomeCheckpointDenial::Execution(_)) => {
-            if raw_gen == first.generation() + 1 {
-                assert!(
-                    home.home.context.checkpoint.is_derived_discarded(),
-                    "settled selection on cancellation must mark derived_discarded"
-                );
-                assert_eq!(home.home.context.checkpoint.acknowledged_native(), [0, 0]);
-            } else {
-                assert_eq!(raw_gen, first.generation());
-                assert!(
-                    !home.home.context.checkpoint.is_derived_discarded(),
-                    "unselected cancellation must leave derived_discarded false"
-                );
-                assert_eq!(
-                    home.home.context.checkpoint.acknowledged_native(),
-                    coverage_before
-                );
-                // Slot was released cleanly; a fresh discard now succeeds.
-                let fresh = home.discard_derived_for_test(&execution).unwrap();
-                assert_eq!(fresh, first.generation() + 1);
-            }
-        }
-        other => panic!("unexpected cancellation discard outcome: {other:?}"),
-    }
+    // Same-generation retry with a fresh monotonic nonce must succeed cleanly.
+    let retried_gen = home.discard_derived_for_test(&execution).unwrap();
+    assert_eq!(retried_gen, first.generation() + 1);
+    assert_live_discarded_and_close(home, retried_gen, &execution);
+}
 
-    let closed = home
-        .close(&execution)
-        .unwrap_or_else(|cause| panic!("close after reconciled discard: {:?}", cause.reason()));
-    assert!(matches!(
-        closed,
-        ApplicationHomeCloseOutcome::Closed {
-            checkpoint: Err(ApplicationHomeCheckpointDenial::DerivedStateDiscarded),
-            ..
+#[test]
+fn discard_selected_before_owner_settlement_cancellation_marks_owner_discarded() {
+    let directory = tempfile::tempdir().unwrap();
+    let policy = serial_with_token(worth_execution::CancellationToken::new());
+    let execution = ExecutionRequest::serial(&policy);
+    let home = open_composed_home(directory.path(), &execution);
+    crate::tests::native_schema::commit(home.relational().runtime(), &execution, "post-cutover");
+    let first = home.checkpoint(&execution).unwrap();
+
+    let gate = home
+        .home
+        .context
+        .serving
+        .pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeTerminalFinalization);
+    let cancel = worth_execution::CancellationSource::new();
+    let cancel_token = cancel.token();
+    let serving = Arc::clone(&home.home.context.serving);
+    let owner = Arc::clone(&home.home.context.checkpoint);
+    let worker = std::thread::spawn(move || {
+        let cancel_policy = serial_with_token(cancel_token);
+        let cancel_exec = ExecutionRequest::serial(&cancel_policy);
+        let outcome = crate::checkpoint::discard_for_test::discard(&serving, &owner, &cancel_exec);
+        assert!(
+            matches!(outcome, Err(ApplicationHomeCheckpointDenial::Execution(_))),
+            "expected cancelled execution stop after selection, got {outcome:?}"
+        );
+    });
+    assert!(
+        gate.await_arrival(),
+        "discard must reach BeforeTerminalFinalization"
+    );
+    cancel.cancel();
+    std::thread::sleep(std::time::Duration::from_millis(20));
+    gate.release();
+    worker.join().unwrap();
+    assert_live_discarded_and_close(home, first.generation() + 1, &execution);
+}
+
+#[test]
+fn discard_selected_with_settlement_failure_reconciles_step_and_stopped_paths() {
+    for stopped_path in [false, true] {
+        let directory = tempfile::tempdir().unwrap();
+        let policy = serial_with_token(worth_execution::CancellationToken::new());
+        let execution = ExecutionRequest::serial(&policy);
+        let home = open_composed_home(directory.path(), &execution);
+        crate::tests::native_schema::commit(
+            home.relational().runtime(),
+            &execution,
+            "settlement-fail",
+        );
+        let first = home.checkpoint(&execution).unwrap();
+
+        let assert_settlement_failure =
+            move |outcome: Result<u64, ApplicationHomeCheckpointDenial>| {
+            match outcome {
+                Err(ApplicationHomeCheckpointDenial::Publication(
+                    AnchoredRecordPublicationFailure::OwnedPublication(custody),
+                )) => {
+                    assert!(
+                        matches!(custody.cause(), AnchoredRecordOperationFailure::StepSettlement(_)),
+                        "expected typed StepSettlement failure, got {:?}",
+                        custody.cause()
+                    );
+                    assert!(
+                        custody.observe().terminal().is_some(),
+                        "selected receipt must be retained on settlement failure"
+                    );
+                }
+                other => panic!(
+                    "expected OwnedPublication(StepSettlement) on stopped_path={stopped_path}, got {other:?}"
+                ),
+            }
+        };
+
+        if stopped_path {
+            let gate = home
+                .home
+                .context
+                .serving
+                .pause_physical_mutation_at(PhysicalMutationCheckpoint::BeforeTerminalFinalization);
+            let cancel = worth_execution::CancellationSource::new();
+            let cancel_token = cancel.token();
+            let serving = Arc::clone(&home.home.context.serving);
+            let owner = Arc::clone(&home.home.context.checkpoint);
+            let worker = std::thread::spawn(move || {
+                let cancel_policy = serial_with_token(cancel_token);
+                let cancel_exec = ExecutionRequest::serial(&cancel_policy);
+                let outcome =
+                    crate::checkpoint::discard_for_test::discard_with_terminal_delivery_failure_for_test(
+                        &serving,
+                        &owner,
+                        &cancel_exec,
+                    );
+                assert_settlement_failure(outcome);
+            });
+            assert!(gate.await_arrival());
+            cancel.cancel();
+            std::thread::sleep(std::time::Duration::from_millis(20));
+            gate.release();
+            worker.join().unwrap();
+        } else {
+            let outcome =
+                crate::checkpoint::discard_for_test::discard_with_terminal_delivery_failure_for_test(
+                    &home.home.context.serving,
+                    &home.home.context.checkpoint,
+                    &execution,
+                );
+            assert_settlement_failure(outcome);
         }
-    ));
+        assert_live_discarded_and_close(home, first.generation() + 1, &execution);
+    }
 }

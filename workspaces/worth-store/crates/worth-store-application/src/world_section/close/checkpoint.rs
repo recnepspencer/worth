@@ -28,6 +28,9 @@ where
         )
         .map_err(crate::close::checkpoint_settlement_denial)?;
         let result = prior.unwrap_or_else(|| {
+            if home.home.context.checkpoint.is_discard_unresolved() {
+                return Err(crate::ApplicationHomeCheckpointDenial::DiscardUnresolved);
+            }
             if home.home.context.checkpoint.is_derived_discarded() {
                 return Err(crate::ApplicationHomeCheckpointDenial::DerivedStateDiscarded);
             }

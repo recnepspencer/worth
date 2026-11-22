@@ -32,7 +32,9 @@ impl RelationalCheckpointSelectionSource for HomeCheckpointSelectionSource {
         ))?;
         let attempt = match &owner.state.try_lock().map_err(|_| Refusal::Busy)?.slot {
             CheckpointSlot::Checkpoint(attempt) => attempt.clone(),
-            CheckpointSlot::Idle | CheckpointSlot::Discarding => return Ok(None),
+            CheckpointSlot::Idle
+            | CheckpointSlot::Discarding
+            | CheckpointSlot::DiscardUnresolved { .. } => return Ok(None),
         };
         if !attempt
             .subject

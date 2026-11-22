@@ -8,7 +8,9 @@ use worth_relational::facade::durability::OpaqueCapturedCheckpointSubject;
 use worth_runtime_world::facade::{
     PreparedWorldCheckpoint, WorldCheckpointSubject, WorldDurableMediumDenial,
 };
-use worth_store::physical_runtime::AnchoredRecordMembership;
+use worth_store::physical_runtime::{
+    AnchoredRecordMembership, AnchoredRecordPublicationFailureCustody,
+};
 use worth_store_relational::{
     PreparedCompleteRelationalSection, RelationalCheckpointSelectionSource,
 };
@@ -19,6 +21,9 @@ pub(super) enum CheckpointSlot {
     Idle,
     Checkpoint(Arc<HomeCheckpointAttempt>),
     Discarding,
+    DiscardUnresolved {
+        _custody: Arc<Mutex<AnchoredRecordPublicationFailureCustody>>,
+    },
 }
 
 #[derive(Default)]
@@ -121,29 +126,30 @@ impl HomeCheckpointOwner {
                 state.slot = CheckpointSlot::Discarding;
                 Ok(DiscardSlotGuard::new(self))
             }
-            CheckpointSlot::Checkpoint(attempt) => {
-                Err(super::ApplicationHomeCheckpointDenial::RecoveryRequired(
-                    attempt.observation(),
-                ))
-            }
+            CheckpointSlot::Checkpoint(attempt) => Err(
+                super::ApplicationHomeCheckpointDenial::RecoveryRequired(attempt.observation()),
+            ),
             CheckpointSlot::Discarding => {
                 Err(super::ApplicationHomeCheckpointDenial::DiscardInProgress)
+            }
+            CheckpointSlot::DiscardUnresolved { .. } => {
+                Err(super::ApplicationHomeCheckpointDenial::DiscardUnresolved)
             }
         }
     }
     pub(crate) fn is_derived_discarded(&self) -> bool {
-        self.state
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .derived_discarded
+        self.state.lock().unwrap_or_else(|e| e.into_inner()).derived_discarded
+    }
+    pub(crate) fn is_discard_unresolved(&self) -> bool {
+        matches!(
+            self.state.lock().unwrap_or_else(|e| e.into_inner()).slot,
+            CheckpointSlot::DiscardUnresolved { .. }
+        )
     }
     pub(super) fn is_discarding(&self) -> bool {
         matches!(
-            self.state
-                .lock()
-                .unwrap_or_else(|error| error.into_inner())
-                .slot,
-            CheckpointSlot::Discarding
+            self.state.lock().unwrap_or_else(|e| e.into_inner()).slot,
+            CheckpointSlot::Discarding | CheckpointSlot::DiscardUnresolved { .. }
         )
     }
     #[cfg(feature = "certification-test-authority")]
@@ -156,14 +162,11 @@ impl HomeCheckpointOwner {
             .bytes()
     }
     pub(super) fn pending(&self) -> Option<Arc<HomeCheckpointAttempt>> {
-        match &self
-            .state
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .slot
-        {
+        match &self.state.lock().unwrap_or_else(|e| e.into_inner()).slot {
             CheckpointSlot::Checkpoint(attempt) => Some(attempt.clone()),
-            CheckpointSlot::Idle | CheckpointSlot::Discarding => None,
+            CheckpointSlot::Idle
+            | CheckpointSlot::Discarding
+            | CheckpointSlot::DiscardUnresolved { .. } => None,
         }
     }
     pub(super) fn install(
@@ -198,6 +201,9 @@ impl HomeCheckpointOwner {
             }
             CheckpointSlot::Discarding => {
                 return Err(super::ApplicationHomeCheckpointDenial::DiscardInProgress);
+            }
+            CheckpointSlot::DiscardUnresolved { .. } => {
+                return Err(super::ApplicationHomeCheckpointDenial::DiscardUnresolved);
             }
             CheckpointSlot::Idle => {}
         }
