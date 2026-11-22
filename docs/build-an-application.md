@@ -926,6 +926,10 @@ Four derives, re-exported by `worth_query_decl::facade` and
 Each expands only into the public traits and macros above, so derived and
 hand-written members mix in one schema, and a derived declaration with the
 same names and identities installs a byte-identical canonical schema.
+Expansions name `::worth_query_decl`, and `WorthQueryProjection` also names
+`::worth_query_host`: a crate deriving `WorthQuerySchema`, `WorthQueryRecord`
+or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
+`WorthQueryProjection` depends on both.
 
 - `WorthQuerySchema` on a unit struct declares its role: `schema` (a root:
   `Fragment`, `ApplicationSchema`, `ApplicationSchemaComposition`),

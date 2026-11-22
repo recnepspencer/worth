@@ -14,8 +14,8 @@
 //! (`column = ".."` when the column is named otherwise) or the struct key
 //! `principal_scope = Selection`.
 //!
-//! The input binding retains its canonical input (`capture_input`), which
-//! authored-body input selectors require. It expands to
+//! With `body`, the input binding retains its canonical input
+//! (`capture_input`), which authored-body input selectors require. It expands to
 //! `worth_query_structured_value_binding!`,
 //! `worth_query_operation!`, the contextual `worth_query_mutation_binding!`
 //! and, with `delivery`, an `ApplicationActionDelivery` impl. Each identity is

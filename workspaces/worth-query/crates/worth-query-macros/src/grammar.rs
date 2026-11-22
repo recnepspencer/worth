@@ -173,9 +173,18 @@ fn not_a_struct(span: Span, derive: &str) -> syn::Error {
     syn::Error::new(span, format!("#[derive({derive})] applies only to structs"))
 }
 
+/// The type inside invisible `macro_rules!` `$t:ty` groups and parentheses.
+pub(crate) fn peeled(ty: &Type) -> &Type {
+    match ty {
+        Type::Group(group) => peeled(&group.elem),
+        Type::Paren(paren) => peeled(&paren.elem),
+        other => other,
+    }
+}
+
 /// `T` when `ty` is spelled `Option<T>` (any path ending in `Option`).
 pub(crate) fn option_inner(ty: &Type) -> Option<&Type> {
-    let Type::Path(path) = ty else {
+    let Type::Path(path) = peeled(ty) else {
         return None;
     };
     let last = path.path.segments.last()?;
@@ -198,7 +207,7 @@ pub(crate) fn selection_column(
     column: Option<LitStr>,
     missing: Span,
 ) -> syn::Result<LitStr> {
-    let alias = match selection {
+    let alias = match peeled(selection) {
         Type::Path(path) if path.qself.is_none() => path.path.segments.last(),
         _ => None,
     };
@@ -215,4 +224,24 @@ pub(crate) fn selection_column(
 /// The field's identifier without a raw prefix.
 pub(crate) fn member_name(member: &Ident) -> String {
     member.unraw().to_string()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proc_macro2::{Delimiter, Group, TokenStream, TokenTree};
+
+    /// A `$t:ty` forwarded by a consumer `macro_rules!` arrives in an
+    /// invisible group; it still names an optional column and its alias.
+    #[test]
+    fn types_forwarded_through_macro_rules_groups_are_peeled() {
+        let grouped = |source: &str| -> Type {
+            let inner: TokenStream = source.parse().unwrap();
+            let group = TokenTree::Group(Group::new(Delimiter::None, inner));
+            syn::parse2(TokenStream::from(group)).unwrap()
+        };
+        assert!(option_inner(&grouped("Option<u64>")).is_some());
+        let column = selection_column(&grouped("Title"), None, Span::call_site()).unwrap();
+        assert_eq!(column.value(), "Title");
+    }
 }

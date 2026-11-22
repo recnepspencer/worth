@@ -14,10 +14,11 @@ pub(super) fn action(input: &DeriveInput, action: &ActionDeclaration) -> TokenSt
     let binding = mutation_binding(input, action);
     let scope_value = scope_value(input, action);
     let delivery = delivery(input, action);
+    // An authored body reads input members; other handlers keep the default.
+    let capture = action.body.then(|| quote!(, capture_input: true));
     quote! {
         #decl::worth_query_structured_value_binding!(#vis #input_binding for #intent {
-            identity: #input_identity,
-            capture_input: true
+            identity: #input_identity #capture
         });
         #operation
         #binding

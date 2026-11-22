@@ -1,6 +1,8 @@
 //! A derived projection expands into slot markers, their portable
 //! identities, query-bound selectors, a result shape and
 //! `WorthQueryApplicationProjection`, so it keeps every fence of a written one.
+//! Its expansion names `::worth_query_decl` and `::worth_query_host`; a crate
+//! deriving it depends on both.
 //!
 //! One row projected by every query whose result binding carries it, with a
 //! kept wire identity on one slot:
