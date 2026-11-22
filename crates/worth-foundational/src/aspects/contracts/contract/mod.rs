@@ -87,10 +87,12 @@ impl AspectContract {
         ancestor_unique: bool,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
+        let strong_count = std::sync::Arc::strong_count(&self.definition);
         visitor.visit(crate::aspects::FoundationalAllocationObservation {
             id: crate::aspects::allocation_visitor::arc_id(&self.definition),
             bytes: self.definition.allocation_bytes as u64,
-            unique: ancestor_unique && std::sync::Arc::strong_count(&self.definition) == 1,
+            unique: ancestor_unique && strong_count == 1,
+            strong_count,
             kind: crate::aspects::FoundationalAllocationKind::SchemaContract,
         });
     }

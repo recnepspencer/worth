@@ -50,10 +50,12 @@ impl StoredValueText {
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
         self.visit_box_and_text(ancestor_unique, visitor);
+        let seal_strong_count = Arc::strong_count(&self.0.seal);
         visitor.visit(crate::aspects::FoundationalAllocationObservation {
             id: crate::aspects::allocation_visitor::arc_id(&self.0.seal),
             bytes: Self::proof_capacity_bytes() as u64,
-            unique: ancestor_unique && Arc::strong_count(&self.0.seal) == 1,
+            unique: ancestor_unique && seal_strong_count == 1,
+            strong_count: seal_strong_count,
             kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
         });
     }
@@ -68,10 +70,12 @@ impl StoredValueText {
         if previous.is_some_and(|prior| Arc::ptr_eq(&self.0.seal, &prior.0.seal)) {
             return;
         }
+        let seal_strong_count = Arc::strong_count(&self.0.seal);
         visitor.visit(crate::aspects::FoundationalAllocationObservation {
             id: crate::aspects::allocation_visitor::arc_id(&self.0.seal),
             bytes: Self::proof_capacity_bytes() as u64,
-            unique: ancestor_unique && Arc::strong_count(&self.0.seal) == 1,
+            unique: ancestor_unique && seal_strong_count == 1,
+            strong_count: seal_strong_count,
             kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
         });
     }
@@ -87,6 +91,7 @@ impl StoredValueText {
                 id: crate::aspects::allocation_visitor::ptr_id(&*self.0),
                 bytes: box_bytes,
                 unique,
+                strong_count: 1,
                 kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
             };
             if !visitor.visit(box_obs) {

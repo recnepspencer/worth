@@ -109,3 +109,110 @@ fn historical_neighbors_follow_scoped_relation_endpoints_after_rewire() {
     assert_eq!(historical_neighbors.outgoing_relation_ids, vec![relation]);
     assert_eq!(snapshot_neighbors.outgoing_relation_ids, vec![relation]);
 }
+
+#[test]
+fn cumulative_fork_and_publication_byte_overflow_refuses_inspection_without_saturating() {
+    use crate::facade::inspection::{
+        RelationalBranchSharingInspectionDenial as Denial, RelationalMvccCostScope,
+    };
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = runtime_with_test_schema();
+    create_entity(execution, &runtime, "fork-byte-overflow-seed");
+    let main_id = runtime.main_branch_identity();
+    let fork_branch = create_branch_from_main(&runtime, "fork-byte-overflow-target");
+    let fork_id = runtime.branch_identity(&fork_branch).unwrap();
+    let scope = RelationalMvccCostScope::capture(&runtime, vec![main_id.clone(), fork_id.clone()]);
+
+    // Each branch's individual fork byte counter fits u64, but their sum overflows.
+    runtime
+        .history
+        .branch_cell(main_id.branch_id())
+        .unwrap()
+        .publication_cell()
+        .record_sharing_cost(|costs| {
+            costs.fork_materialized_authoritative_bytes = u64::MAX - 32;
+        });
+    runtime
+        .history
+        .branch_cell(&fork_branch)
+        .unwrap()
+        .publication_cell()
+        .record_sharing_cost(|costs| {
+            costs.fork_materialized_authoritative_bytes = 64;
+        });
+    assert_eq!(
+        runtime.observe_branch_sharing(execution, &[main_id.clone(), fork_id.clone()]),
+        Err(Denial::AuthoritativeByteBoundOverflow)
+    );
+    assert_eq!(
+        runtime.observe_mvcc_counters(&scope),
+        Err(Denial::AuthoritativeByteBoundOverflow)
+    );
+
+    // Single-branch cumulative overflow via checked fork recording refuses instead of saturating.
+    runtime
+        .history
+        .branch_cell(&fork_branch)
+        .unwrap()
+        .publication_cell()
+        .record_sharing_cost_checked(|costs| {
+            costs.fork_materialized_authoritative_bytes = costs
+                .fork_materialized_authoritative_bytes
+                .checked_add(u64::MAX)?;
+            Some(())
+        });
+    assert_eq!(
+        runtime.observe_branch_sharing(execution, &[fork_id]),
+        Err(Denial::AuthoritativeByteBoundOverflow)
+    );
+
+    // Owner publication recorder (`record_root_publication`) refuses overflow
+    // without advancing or saturating any of the recorded byte totals.
+    let main_root = runtime
+        .history
+        .branch_cell(main_id.branch_id())
+        .and_then(|cell| cell.root())
+        .unwrap();
+    let main_scope = RelationalMvccCostScope::capture(&runtime, vec![main_id.clone()]);
+    let pub_branch = create_branch_from_main(&runtime, "pub-byte-overflow-target");
+    let pub_id = runtime.branch_identity(&pub_branch).unwrap();
+    let pub_scope = RelationalMvccCostScope::capture(&runtime, vec![pub_id.clone()]);
+    runtime
+        .history
+        .branch_cell(&pub_branch)
+        .unwrap()
+        .publication_cell()
+        .record_sharing_cost(|costs| {
+            costs.copied_truth_bytes = 123;
+            costs.publication_new_authoritative_bytes = u64::MAX - 4;
+            costs.publication_new_root_authoritative_bytes = 456;
+        });
+    runtime
+        .history
+        .record_root_publication(&pub_branch, &main_root, Some(10));
+    let snapshot_after = runtime.history.sharing_costs_for_branch(&pub_branch);
+    assert_eq!(snapshot_after.copied_truth_bytes, 123);
+    assert_eq!(snapshot_after.publication_new_authoritative_bytes, u64::MAX - 4);
+    assert_eq!(snapshot_after.publication_new_root_authoritative_bytes, 456);
+    assert_eq!(
+        runtime.observe_branch_sharing(execution, &[pub_id]),
+        Err(Denial::AuthoritativeByteBoundOverflow)
+    );
+    assert_eq!(
+        runtime.observe_mvcc_counters(&pub_scope),
+        Err(Denial::AuthoritativeByteBoundOverflow)
+    );
+    // Checked envelope-residency overflow (`None`) also refuses inspection.
+    runtime
+        .history
+        .record_root_publication(main_id.branch_id(), &main_root, None);
+    assert_eq!(
+        runtime.observe_branch_sharing(execution, &[main_id]),
+        Err(Denial::AuthoritativeByteBoundOverflow)
+    );
+    assert_eq!(
+        runtime.observe_mvcc_counters(&main_scope),
+        Err(Denial::AuthoritativeByteBoundOverflow)
+    );
+}

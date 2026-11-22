@@ -176,8 +176,9 @@ impl RelationalRootRegion {
         })
     }
 
-    pub(super) fn reclaimable_unique_authoritative_bytes(
+    pub(super) fn observe_reclaimable_unique_authoritative_bytes(
         &self,
+        reclaimable: &mut crate::storage::overlay::ReclaimableAllocations,
     ) -> Result<u64, crate::storage::substrate::StorageAllocationOverflow> {
         use crate::storage::substrate::StorageAllocationOverflow;
         let mut bytes = std::mem::size_of::<Self>() as u64;
@@ -185,13 +186,9 @@ impl RelationalRootRegion {
             bytes = bytes
                 .checked_add(self.partition.cell().residency_allocation_bytes())
                 .ok_or(StorageAllocationOverflow)?;
-            bytes = bytes
-                .checked_add(
-                    self.partition
-                        .cell()
-                        .reclaimable_unique_resident_payload_bytes()?,
-                )
-                .ok_or(StorageAllocationOverflow)?;
+            self.partition
+                .cell()
+                .observe_reclaimable_resident_payload(reclaimable);
         }
         Ok(bytes)
     }

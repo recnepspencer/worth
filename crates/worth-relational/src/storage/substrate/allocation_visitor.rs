@@ -36,6 +36,7 @@ pub(crate) struct StorageAllocationObservation {
     pub(crate) id: u64,
     pub(crate) bytes: u64,
     pub(crate) unique: bool,
+    pub(crate) strong_count: usize,
     pub(crate) extent: StorageAllocationExtent,
 }
 
@@ -75,6 +76,7 @@ impl FoundationalAllocationVisitor for FoundationalValueBackingAdapter<'_> {
             id: allocation.id,
             bytes: allocation.bytes,
             unique: allocation.unique,
+            strong_count: allocation.strong_count,
             extent: StorageAllocationExtent::Checked,
         })
     }
@@ -118,10 +120,12 @@ pub(crate) fn visit_new_inline_value<T>(
 
 impl<T> super::StorageAllocation<T> {
     pub(crate) fn observation(&self, ancestor_unique: bool) -> StorageAllocationObservation {
+        let strong_count = self.strong_count();
         StorageAllocationObservation {
             id: self.id(),
             bytes: Self::layout_bytes(),
-            unique: ancestor_unique && self.is_unique(),
+            unique: ancestor_unique && strong_count == 1,
+            strong_count,
             extent: StorageAllocationExtent::Checked,
         }
     }

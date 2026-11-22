@@ -3,14 +3,29 @@ use super::{PartitionState, RelationalPartitionAllocationInventory};
 use crate::storage::substrate::{StorageAllocationObservation, StorageAllocationVisitor};
 
 impl PartitionState {
+    #[cfg(test)]
     pub(crate) fn allocation_inventory_since(
         &self,
         previous: &Self,
         prior: RelationalPartitionAllocationInventory,
     ) -> Result<RelationalPartitionAllocationInventory, super::PartitionContentDigestError> {
-        let introduced = self.new_allocation_inventory_since(previous)?;
-        let removed = previous.new_allocation_inventory_since(self)?;
-        Ok(RelationalPartitionAllocationInventory {
+        self.allocation_inventory_and_introduced_since(previous, prior, None)
+            .map(|(inventory, _)| inventory)
+    }
+
+    /// Update `prior` to `self`'s exact inventory in one forward + reverse pass,
+    /// returning both the updated inventory and the forward introduced
+    /// authoritative bytes so publication never computes the forward delta twice.
+    pub(crate) fn allocation_inventory_and_introduced_since(
+        &self,
+        previous: &Self,
+        prior: RelationalPartitionAllocationInventory,
+        previous_watermark: Option<u64>,
+    ) -> Result<(RelationalPartitionAllocationInventory, u64), super::PartitionContentDigestError>
+    {
+        let introduced = self.new_allocation_inventory_since(previous, previous_watermark)?;
+        let removed = previous.new_allocation_inventory_since(self, None)?;
+        let inventory = RelationalPartitionAllocationInventory {
             authoritative_bytes: update(
                 prior.authoritative_bytes,
                 removed.authoritative_bytes,
@@ -29,12 +44,14 @@ impl PartitionState {
             // Both operands are immutable regions with cleared live-owner pins.
             retention_metadata_bytes: 0,
             allocator_bookkeeping_bytes: 0,
-        })
+        };
+        Ok((inventory, introduced.authoritative_bytes))
     }
 
     fn new_allocation_inventory_since(
         &self,
         previous: &Self,
+        previous_watermark: Option<u64>,
     ) -> Result<RelationalPartitionAllocationInventory, super::PartitionContentDigestError> {
         let mut diagnostic = CheckedBytes::new();
         self.entity_arena
@@ -47,7 +64,11 @@ impl PartitionState {
         self.reverse_adjacency
             .visit_new_cache_allocations(&previous.reverse_adjacency, &mut cache);
         Ok(RelationalPartitionAllocationInventory {
-            authoritative_bytes: self.new_authoritative_allocation_bytes_since(previous)?,
+            authoritative_bytes: self
+                .new_authoritative_allocation_bytes_since_with_watermark(
+                    previous,
+                    previous_watermark,
+                )?,
             diagnostic_bytes: diagnostic
                 .finish()
                 .ok_or(super::PartitionContentDigestError::AllocationAccountingOverflow)?,

@@ -1,6 +1,8 @@
 mod allocation;
 #[cfg(test)]
 pub(crate) use allocation::RecordArenaAllocationInventory;
+#[cfg(test)]
+pub(crate) use extra_allocations::extra_delta_resolve_scans_on_current_thread;
 pub(crate) use extra_allocations::ExtraDeltaCollector;
 mod entity_lineage;
 mod extra_allocations;

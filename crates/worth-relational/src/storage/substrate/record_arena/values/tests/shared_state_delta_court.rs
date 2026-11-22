@@ -107,6 +107,20 @@ fn value_backing_bytes(state: &AuthoritativeRecordAspectState) -> u64 {
     seen.0.values().sum()
 }
 
+fn authoritative_observation_map(partition: &PartitionState) -> BTreeMap<u64, u64> {
+    #[derive(Default)]
+    struct Collect(BTreeMap<u64, u64>);
+    impl StorageAllocationVisitor for Collect {
+        fn visit(&mut self, obs: StorageAllocationObservation) -> bool {
+            assert_eq!(obs.extent, StorageAllocationExtent::Checked);
+            self.0.insert(obs.id, obs.bytes).is_none()
+        }
+    }
+    let mut collect = Collect::default();
+    partition.visit_authoritative_allocations(false, &mut collect);
+    collect.0
+}
+
 fn assert_partition_delta_exact(before: &PartitionState, after: &PartitionState) {
     let before_inv = before.allocation_inventory().unwrap();
     let after_inv = after.allocation_inventory().unwrap();
@@ -115,13 +129,23 @@ fn assert_partition_delta_exact(before: &PartitionState, after: &PartitionState)
         updated, after_inv,
         "incremental partition inventory delta must match full partition inventory exactly"
     );
+    let before_map = authoritative_observation_map(before);
+    let after_map = authoritative_observation_map(after);
+    let expected_introduced: u64 = after_map
+        .iter()
+        .filter(|(id, _)| !before_map.contains_key(id))
+        .map(|(_, bytes)| *bytes)
+        .sum();
+    let expected_removed: u64 = before_map
+        .iter()
+        .filter(|(id, _)| !after_map.contains_key(id))
+        .map(|(_, bytes)| *bytes)
+        .sum();
     let introduced = after.new_authoritative_allocation_bytes_since(before).unwrap();
     let removed = before.new_authoritative_allocation_bytes_since(after).unwrap();
-    assert_eq!(
-        before_inv.authoritative_bytes - removed + introduced,
-        after_inv.authoritative_bytes,
-        "exact authoritative set-difference identity must hold across the partition"
-    );
+    assert_eq!(introduced, expected_introduced, "forward delta == A(after) \\ A(before)");
+    assert_eq!(removed, expected_removed, "reverse delta == A(before) \\ A(after)");
+    assert_eq!(before_inv.authoritative_bytes - removed + introduced, after_inv.authoritative_bytes);
 }
 
 fn write_entity(
@@ -315,18 +339,7 @@ fn older_metadata_history_and_cloned_stored_text_seal_are_deduplicated_in_deltas
     );
 
     let mut p1 = empty_partition();
-    p1.entity_arena
-        .write_reserved_slot(
-            SlotInit {
-                partition_id: PartitionId::main(),
-                kind_id: KindId(1),
-                version_id: VersionId(1),
-                extra: EntityExtra::from_unbudgeted_parts(None, None, Some(state_v1.clone())),
-            },
-            0,
-            1,
-        )
-        .unwrap();
+    write_entity(&mut p1, 0, 1, state_v1.clone());
 
     // p2 supersedes current extra[0] with state_v2; state_v1 + original_stored.seal remain
     // ONLY in older metadata_history[0].
@@ -346,7 +359,7 @@ fn older_metadata_history_and_cloned_stored_text_seal_are_deduplicated_in_deltas
         .entity_arena
         .apply_extra_update(
             0,
-            EntityExtra::from_unbudgeted_parts(None, None, Some(state_v1.clone())),
+            EntityExtra::from_unbudgeted_parts(None, None, Some(state_v1)),
             VersionId(3),
         )
         .unwrap();

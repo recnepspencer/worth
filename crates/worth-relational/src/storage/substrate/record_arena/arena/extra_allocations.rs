@@ -135,10 +135,21 @@ struct ChangedCarrier<K: RecordKind> {
     changed_refs: usize,
 }
 
+#[cfg(test)]
+thread_local! {
+    static EXTRA_DELTA_RESOLVE_SCANS: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+pub(crate) fn extra_delta_resolve_scans_on_current_thread() -> u64 {
+    EXTRA_DELTA_RESOLVE_SCANS.with(std::cell::Cell::get)
+}
+
 impl<K: RecordKind> RecordArena<K> {
     pub(crate) fn collect_changed_extra_allocations(
         &self,
         previous: &Self,
+        previous_watermark: Option<u64>,
         collector: &mut ExtraDeltaCollector,
     ) {
         let mut carriers: BTreeMap<u64, ChangedCarrier<K>> = BTreeMap::new();
@@ -198,12 +209,17 @@ impl<K: RecordKind> RecordArena<K> {
             },
         );
         for carrier in carriers.into_values() {
-            // If every strong handle to this Extra carrier lives in changed slots
-            // of `self` (plus this local handle), neither `previous` nor any
-            // external holder can own it.
-            let all_in_self = carrier.extra.strong_count() == carrier.changed_refs + 1;
+            // An Extra born strictly after `previous` was sealed cannot exist
+            // anywhere in `previous`, even while a borrowed transaction overlay
+            // or mutation log retains additional outer handles to it.
+            let born_after_previous = previous_watermark
+                .is_some_and(|watermark| K::extra_birth_seq(&carrier.extra) >= watermark);
+            let all_in_self =
+                born_after_previous || carrier.extra.strong_count() == carrier.changed_refs + 1;
+            let mut carrier_obs = carrier.extra.observation(all_in_self);
+            carrier_obs.unique = all_in_self;
             let mut candidate_visitor = CandidateVisitor(collector);
-            if candidate_visitor.visit(carrier.extra.observation(all_in_self)) {
+            if candidate_visitor.visit(carrier_obs) {
                 K::visit_new_extra_allocations(
                     &carrier.extra,
                     carrier.prior_hint.as_deref(),
@@ -222,6 +238,8 @@ impl<K: RecordKind> RecordArena<K> {
         if !collector.has_unresolved() {
             return;
         }
+        #[cfg(test)]
+        EXTRA_DELTA_RESOLVE_SCANS.with(|count| count.set(count.get() + 1));
         let mut resolver = MembershipResolver { seen, collector };
         self.extra.visit_allocations(
             false,
@@ -265,7 +283,7 @@ impl<K: RecordKind> RecordArena<K> {
         visitor: &mut dyn StorageAllocationVisitor,
     ) {
         let mut collector = ExtraDeltaCollector::default();
-        self.collect_changed_extra_allocations(previous, &mut collector);
+        self.collect_changed_extra_allocations(previous, None, &mut collector);
         if collector.has_unresolved() {
             let mut seen = BTreeSet::new();
             previous.resolve_extra_allocations(&mut seen, &mut collector);

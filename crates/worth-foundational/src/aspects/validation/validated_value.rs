@@ -166,11 +166,13 @@ impl ContractValidatedAspectValue {
         ancestor_unique: bool,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
-        let unique = ancestor_unique && std::sync::Arc::strong_count(&self.value) == 1;
+        let strong_count = std::sync::Arc::strong_count(&self.value);
+        let unique = ancestor_unique && strong_count == 1;
         let observation = crate::aspects::FoundationalAllocationObservation {
             id: crate::aspects::allocation_visitor::arc_id(&self.value),
             bytes: Self::admission_cell_bytes(),
             unique,
+            strong_count,
             kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
         };
         if !visitor.visit(observation) {
@@ -201,11 +203,13 @@ impl ContractValidatedAspectValue {
         if self.shares_allocation(previous) {
             return;
         }
-        let unique = ancestor_unique && std::sync::Arc::strong_count(&self.value) == 1;
+        let strong_count = std::sync::Arc::strong_count(&self.value);
+        let unique = ancestor_unique && strong_count == 1;
         let observation = crate::aspects::FoundationalAllocationObservation {
             id: crate::aspects::allocation_visitor::arc_id(&self.value),
             bytes: Self::admission_cell_bytes(),
             unique,
+            strong_count,
             kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
         };
         if !visitor.visit(observation) {

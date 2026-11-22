@@ -2,6 +2,7 @@
 use super::*;
 mod historical_selection_funding;
 mod optional_output_funding;
+mod reclamation_closure_court;
 mod shared_state_bound;
 mod shared_state_delta_court;
 mod wire;

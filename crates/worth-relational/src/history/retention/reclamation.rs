@@ -53,6 +53,15 @@ impl super::RelationalBranchRetentionOwner {
             let Some((root_key, generation)) = self.inner.retired_root_order.pop() else {
                 break;
             };
+            // Serialize measurement + removal through actual `drop(root)` so no
+            // concurrent pass can observe an already-removed root as an external
+            // holder of shared regions/backing, without holding `retired_roots`
+            // or `maintenance_counters` across the drop itself.
+            let _reclaim_guard = self
+                .inner
+                .reclamation_gate
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
             enum StepOutcome {
                 Reclaimed {
                     retired: super::owner::RelationalRetiredBranchRoot,
@@ -141,6 +150,18 @@ impl super::RelationalBranchRetentionOwner {
                     examined = next_examined;
                     reclaimed = next_reclaimed;
                     unique_bytes = next_unique_bytes;
+                    #[cfg(test)]
+                    {
+                        let pause = self
+                            .inner
+                            .reclamation_drop_pause
+                            .lock()
+                            .unwrap_or_else(|poisoned| poisoned.into_inner())
+                            .take();
+                        if let Some(pause) = pause {
+                            pause.wait();
+                        }
+                    }
                     drop(root);
                 }
                 StepOutcome::Retained { next_examined } => {

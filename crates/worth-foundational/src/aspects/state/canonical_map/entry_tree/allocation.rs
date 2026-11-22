@@ -43,11 +43,13 @@ fn visit_link(
     visitor: &mut dyn FoundationalAllocationVisitor,
 ) {
     let Some(node) = link else { return };
-    let unique = ancestor_unique && Arc::strong_count(node) == 1;
+    let strong_count = Arc::strong_count(node);
+    let unique = ancestor_unique && strong_count == 1;
     let observation = FoundationalAllocationObservation {
         id: arc_id(node),
         bytes: AspectEntryTree::node_allocation_bytes() as u64,
         unique,
+        strong_count,
         kind: FoundationalAllocationKind::ValueBacking,
     };
     if !visitor.visit(observation) {
@@ -69,11 +71,13 @@ fn visit_new_link(
     if previous.is_some_and(|prior| Arc::ptr_eq(node, prior)) {
         return;
     }
-    let unique = ancestor_unique && Arc::strong_count(node) == 1;
+    let strong_count = Arc::strong_count(node);
+    let unique = ancestor_unique && strong_count == 1;
     let observation = FoundationalAllocationObservation {
         id: arc_id(node),
         bytes: AspectEntryTree::node_allocation_bytes() as u64,
         unique,
+        strong_count,
         kind: FoundationalAllocationKind::ValueBacking,
     };
     if !visitor.visit(observation) {

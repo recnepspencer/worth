@@ -28,6 +28,7 @@ pub struct FoundationalAllocationObservation {
     pub id: u64,
     pub bytes: u64,
     pub unique: bool,
+    pub strong_count: usize,
     pub kind: FoundationalAllocationKind,
 }
 
@@ -64,6 +65,7 @@ pub(crate) fn visit_string_buffer(
         id: ptr_id(text.as_ptr()),
         bytes: text.capacity() as u64,
         unique,
+        strong_count: 1,
         kind: FoundationalAllocationKind::ValueBacking,
     });
 }
@@ -81,6 +83,7 @@ pub(crate) fn visit_bytes_buffer(
         id: ptr_id(bytes.as_ptr()),
         bytes: capacity as u64,
         unique,
+        strong_count: 1,
         kind: FoundationalAllocationKind::ValueBacking,
     });
 }

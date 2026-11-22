@@ -178,6 +178,7 @@ impl ResidentHistoryReadmission {
                     lane, execution, &partition,
                 )?),
                 partition,
+                sealed_extra_watermark: crate::storage::substrate::current_extra_birth_watermark(),
                 commitment: Some(commitment),
                 _history_custody: None,
                 _memory: memory.into_memory(),

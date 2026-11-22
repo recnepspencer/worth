@@ -89,11 +89,13 @@ impl PartitionState {
                 total.checked_add(set.optional_cache_allocation_bytes())
             })
             .ok_or(StorageAllocationOverflow)?;
-        let mut entity_inv = self.entity_arena.allocation_inventory()?;
-        let mut relation_inv = self.relation_arena.allocation_inventory()?;
-        entity_inv.authoritative_bytes = 0;
-        relation_inv.authoritative_bytes = 0;
-        let arenas = entity_inv.checked_add(relation_inv)?;
+        let arenas = self
+            .entity_arena
+            .non_authoritative_allocation_inventory()?
+            .checked_add(
+                self.relation_arena
+                    .non_authoritative_allocation_inventory()?,
+            )?;
         Ok(RelationalPartitionAllocationInventory {
             authoritative_bytes,
             diagnostic_bytes: arenas.diagnostic_bytes,

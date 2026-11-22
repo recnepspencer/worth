@@ -13,14 +13,18 @@ impl RelationalPersistentRegionSet {
             return Ok(0);
         }
         let mut bytes = std::mem::size_of::<Self>() as u64;
-        observe_reclaimable_node_bytes(regions.index_root.as_ref(), &mut bytes)?;
-        Ok(bytes)
+        let mut payload = crate::storage::overlay::ReclaimableAllocations::new();
+        observe_reclaimable_node_bytes(regions.index_root.as_ref(), &mut bytes, &mut payload)?;
+        bytes
+            .checked_add(payload.finish()?)
+            .ok_or(StorageAllocationOverflow)
     }
 }
 
 fn observe_reclaimable_node_bytes(
     current: Option<&Arc<RelationalPersistentRegionNode>>,
     bytes: &mut u64,
+    payload: &mut crate::storage::overlay::ReclaimableAllocations,
 ) -> Result<(), StorageAllocationOverflow> {
     let Some(node) = current else { return Ok(()) };
     if Arc::strong_count(node) != 1 {
@@ -35,7 +39,11 @@ fn observe_reclaimable_node_bytes(
                 let storage = std::mem::size_of_val(region.as_ref()) as u64;
                 if Arc::strong_count(&region.region) == 1 {
                     storage
-                        .checked_add(region.region.reclaimable_unique_authoritative_bytes()?)
+                        .checked_add(
+                            region
+                                .region
+                                .observe_reclaimable_unique_authoritative_bytes(payload)?,
+                        )
                         .ok_or(StorageAllocationOverflow)?
                 } else {
                     storage
@@ -49,6 +57,6 @@ fn observe_reclaimable_node_bytes(
             .checked_add(leaf_bytes)
             .ok_or(StorageAllocationOverflow)?;
     }
-    observe_reclaimable_node_bytes(node.zero.as_ref(), bytes)?;
-    observe_reclaimable_node_bytes(node.one.as_ref(), bytes)
+    observe_reclaimable_node_bytes(node.zero.as_ref(), bytes, payload)?;
+    observe_reclaimable_node_bytes(node.one.as_ref(), bytes, payload)
 }

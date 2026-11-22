@@ -1,8 +1,9 @@
 use super::payload_allocation::diagnostic_enrichment_bytes;
 use super::{RecordArena, RecordKind};
+use crate::storage::substrate::StorageAllocationOverflow;
+#[cfg(test)]
 use crate::storage::substrate::{
-    StorageAllocationExtent, StorageAllocationObservation, StorageAllocationOverflow,
-    StorageAllocationVisitor,
+    StorageAllocationExtent, StorageAllocationObservation, StorageAllocationVisitor,
 };
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -36,8 +37,10 @@ impl RecordArenaAllocationInventory {
     }
 }
 
+#[cfg(test)]
 struct CheckedBytes(Option<u64>);
 
+#[cfg(test)]
 impl StorageAllocationVisitor for CheckedBytes {
     fn visit(&mut self, allocation: StorageAllocationObservation) -> bool {
         self.0 = match allocation.extent {
@@ -51,12 +54,21 @@ impl StorageAllocationVisitor for CheckedBytes {
 }
 
 impl<K: RecordKind> RecordArena<K> {
+    #[cfg(test)]
     pub(crate) fn allocation_inventory(
         &self,
     ) -> Result<RecordArenaAllocationInventory, StorageAllocationOverflow> {
         let mut observed = CheckedBytes(Some(0));
         self.visit_authoritative_allocations(false, &mut observed);
         let authoritative_bytes = observed.0.ok_or(StorageAllocationOverflow)?;
+        let mut inventory = self.non_authoritative_allocation_inventory()?;
+        inventory.authoritative_bytes = authoritative_bytes;
+        Ok(inventory)
+    }
+
+    pub(crate) fn non_authoritative_allocation_inventory(
+        &self,
+    ) -> Result<RecordArenaAllocationInventory, StorageAllocationOverflow> {
         let diagnostic_entries = self
             .diagnostics_enrichment
             .iter()
@@ -78,7 +90,7 @@ impl<K: RecordKind> RecordArena<K> {
         .try_fold(0_u64, u64::checked_add)
         .ok_or(StorageAllocationOverflow)?;
         Ok(RecordArenaAllocationInventory {
-            authoritative_bytes,
+            authoritative_bytes: 0,
             diagnostic_bytes,
             retention_metadata_bytes,
             allocator_bookkeeping_bytes: 0,
@@ -111,6 +123,7 @@ mod tests {
             id: 1,
             bytes: 1,
             unique: false,
+            strong_count: 1,
             extent: StorageAllocationExtent::Checked,
         }));
         assert_eq!(bytes.0, None);
@@ -120,6 +133,7 @@ mod tests {
             id: 2,
             bytes: u64::MAX,
             unique: false,
+            strong_count: 1,
             extent: StorageAllocationExtent::Overflow,
         }));
         assert_eq!(overflowed.0, None);

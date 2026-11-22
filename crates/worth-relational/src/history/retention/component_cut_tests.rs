@@ -270,59 +270,97 @@ fn owner_reclamation_overflow_preserves_prior_removals_and_requeues_overflowing_
 }
 
 #[test]
-fn cumulative_fork_and_publication_byte_overflow_refuses_inspection_without_saturating() {
-    use crate::facade::inspection::{
-        RelationalBranchSharingInspectionDenial as Denial, RelationalMvccCostScope,
-    };
+fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boundary() {
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
-    let runtime = runtime_with_test_schema();
-    create_entity(execution, &runtime, "fork-byte-overflow-seed");
-    let main_id = runtime.main_branch_identity();
-    let fork_branch = create_branch_from_main(&runtime, "fork-byte-overflow-target");
-    let fork_id = runtime.branch_identity(&fork_branch).unwrap();
-    let scope = RelationalMvccCostScope::capture(&runtime, vec![main_id.clone(), fork_id.clone()]);
+    let mut config = runtime_with_test_schema().config();
+    config.storage.retention.reclaim_batch_size = 0;
+    let runtime = crate::runtime::RelationalRuntime::new(config).unwrap();
 
-    // Each branch's individual fork byte counter fits u64, but their sum overflows.
-    runtime
-        .history
-        .branch_cell(main_id.branch_id())
-        .unwrap()
-        .publication_cell()
-        .record_sharing_cost(|costs| {
-            costs.fork_materialized_authoritative_bytes = u64::MAX - 32;
-        });
-    runtime
-        .history
-        .branch_cell(&fork_branch)
-        .unwrap()
-        .publication_cell()
-        .record_sharing_cost(|costs| {
-            costs.fork_materialized_authoritative_bytes = 64;
-        });
-    assert_eq!(
-        runtime.observe_branch_sharing(execution, &[main_id.clone(), fork_id.clone()]),
-        Err(Denial::AuthoritativeByteBoundOverflow)
+    // Commit 1 establishes root_a; fork sibling shares root_a's region.
+    create_entity(execution, &runtime, "shared-reclaim-p1-v1");
+    let sibling = create_branch_from_main(&runtime, "shared-reclaim-sibling");
+    // Advance sibling on a second partition so sibling's root_b shares main's
+    // partition-1 region with root_a while having its own distinct root object.
+    create_entity_in_partition_on_branch(
+        execution,
+        &runtime,
+        "shared-reclaim-p2-v1",
+        crate::identity::data::PartitionId(2),
+        sibling.clone(),
     );
-    assert_eq!(
-        runtime.observe_mvcc_counters(&scope),
-        Err(Denial::AuthoritativeByteBoundOverflow)
+    // Advance both main and sibling on partition 1 so ONLY the retired roots
+    // still hold partition 1 v1 (strong_count == 2 across the retired pair).
+    create_entity(execution, &runtime, "shared-reclaim-p1-v2");
+    create_entity_in_partition_on_branch(
+        execution,
+        &runtime,
+        "shared-reclaim-p1-v3",
+        crate::identity::data::PartitionId::main(),
+        sibling,
     );
 
-    // Single-branch cumulative overflow via checked recording also refuses instead of saturating.
-    runtime
-        .history
-        .branch_cell(&fork_branch)
-        .unwrap()
-        .publication_cell()
-        .record_sharing_cost_checked(|costs| {
-            costs.fork_materialized_authoritative_bytes = costs
-                .fork_materialized_authoritative_bytes
-                .checked_add(u64::MAX)?;
-            Some(())
-        });
+    let owner = runtime.history.retention_binding().owner.upgrade().unwrap();
+    // Reclaim any initial empty root first so only the two shared-region roots remain.
+    while runtime.retired_branch_root_count() > 2 {
+        runtime.history.try_reclaim_retired_branch_roots(1).unwrap();
+    }
+    assert_eq!(runtime.retired_branch_root_count(), 2);
+
+    // Measure the independent oracle: sum of both roots' reclaimable bytes if
+    // reclaimed sequentially (or equivalently: root A alone + shared region once).
+    let (r1_alone, r2_alone) = {
+        let roots = owner.read_retired_roots();
+        let vals: Vec<_> = roots.values().map(|e| Arc::clone(&e.root)).collect();
+        (
+            vals[0].reclaimable_unique_authoritative_bytes().unwrap(),
+            vals[1].reclaimable_unique_authoritative_bytes().unwrap(),
+        )
+    };
+    let baseline_bytes = runtime
+        .retention_cost_counters()
+        .reclamation_unique_authoritative_bytes;
+
+    // Pause Pass A right after removing root 1 and BEFORE `drop(root 1)`.
+    let (entered_tx, entered_rx) = sync_channel(0);
+    let (resume_tx, resume_rx) = sync_channel(0);
+    *owner.reclamation_drop_pause.lock().unwrap() = Some(Arc::new(CapturePause {
+        entered: entered_tx,
+        resume: Mutex::new(resume_rx),
+    }));
+    let (out_a, out_b) = std::thread::scope(|scope| {
+        let pass_a = scope.spawn(|| runtime.history.try_reclaim_retired_branch_roots(1).unwrap());
+        entered_rx.recv().unwrap();
+        assert!(
+            owner.reclamation_gate.try_lock().is_err(),
+            "Pass A holds reclamation_gate across drop(root) so Pass B cannot measure prematurely"
+        );
+        let pass_b = scope.spawn(|| runtime.history.try_reclaim_retired_branch_roots(1).unwrap());
+        // Yield briefly while Pass A is paused; Pass B must wait for Pass A's drop.
+        std::thread::yield_now();
+        resume_tx.send(()).unwrap();
+        (pass_a.join().unwrap(), pass_b.join().unwrap())
+    });
+
+    assert_eq!(out_a.roots_reclaimed(), 1);
+    assert_eq!(out_b.roots_reclaimed(), 1);
+    assert_eq!(runtime.retired_branch_root_count(), 0);
+    let combined = out_a.unique_authoritative_bytes_reclaimed()
+        + out_b.unique_authoritative_bytes_reclaimed();
+    // Without reclamation_gate serialization across drop(root), both passes would
+    // see strong_count == 2 on the shared partition-1 region and omit it, yielding
+    // only `r1_alone + r2_alone`. With exact release, Pass B observes the dropped
+    // shared region at strong_count == 1 and accounts strictly MORE than the pair
+    // of pre-drop exclusive counts.
+    assert!(
+        combined > r1_alone + r2_alone,
+        "serialized concurrent passes must account the shared partition-1 region released by the second drop ({combined} vs {r1_alone} + {r2_alone})"
+    );
     assert_eq!(
-        runtime.observe_branch_sharing(execution, &[fork_id]),
-        Err(Denial::AuthoritativeByteBoundOverflow)
+        runtime
+            .retention_cost_counters()
+            .reclamation_unique_authoritative_bytes
+            - baseline_bytes,
+        combined,
     );
 }
