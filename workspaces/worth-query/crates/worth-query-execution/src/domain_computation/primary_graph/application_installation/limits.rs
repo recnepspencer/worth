@@ -6,6 +6,9 @@ use worth_signal::facade::runtime::SignalConditionalEvaluationBudget;
 
 use super::WorthQueryApplicationProfile;
 
+mod serial_presets;
+pub use serial_presets::WorthQueryBoundedApplicationLimits;
+
 /// Explicit finite resources and clock for one in-memory application.
 #[derive(Clone)]
 pub struct WorthQueryApplicationLimits {
@@ -41,6 +44,24 @@ impl WorthQueryApplicationLimits {
             profile: WorthQueryApplicationProfile::GeneralPurpose,
             maximum_publication_records: None,
         }
+    }
+
+    /// Replaces the native graph-work admission profile.
+    pub const fn with_query_profile(
+        mut self,
+        queries: WorthQueryApplicationQueryResourceProfile,
+    ) -> Self {
+        self.queries = queries;
+        self
+    }
+
+    /// Replaces the conditional-evaluation quotas.
+    pub const fn with_signal_budget(
+        mut self,
+        conditionals: SignalConditionalEvaluationBudget,
+    ) -> Self {
+        self.conditionals = conditionals;
+        self
     }
 
     pub const fn with_output_demand_resources(

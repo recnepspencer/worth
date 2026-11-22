@@ -89,7 +89,7 @@ impl Registration<HomeIdentitySchema> for IdentityBinding {
         Ok(builder.principal_binding(Self::reference()))
     }
 }
-pub(super) fn seed(
+pub fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<HomeIdentitySchema>,
     schema: &WorthQueryInstalledApplicationSchema<HomeIdentitySchema>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {

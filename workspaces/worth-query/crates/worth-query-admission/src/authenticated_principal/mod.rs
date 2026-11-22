@@ -3,6 +3,7 @@ mod adapter_identity;
 mod admission;
 mod candidate;
 mod denial;
+mod local_process;
 mod proof;
 mod request_scope;
 mod vocabulary;
@@ -21,6 +22,7 @@ pub use denial::{
     WorthQueryAuthenticationAdapterFailure, WorthQueryAuthenticationAdapterFailureKind,
     WorthQueryAuthenticationDenial, WorthQueryAuthenticationDenialKind,
 };
+pub use local_process::WorthQueryLocalProcessPrincipal;
 pub use proof::WorthQueryAuthenticatedExternalPrincipal;
 pub use request_scope::{
     WorthQueryCancellationSource, WorthQueryCancellationToken, WorthQueryRequestInterruption,

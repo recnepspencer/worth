@@ -19,7 +19,7 @@ pub use super::bootstrap::checkpoint_transition::{
     WorthQueryCheckpointTransitionRecovery, WorthQueryCheckpointTransitionResources,
 };
 pub use denial::WorthQueryApplicationPreparationDenial;
-pub use limits::WorthQueryApplicationLimits;
+pub use limits::{WorthQueryApplicationLimits, WorthQueryBoundedApplicationLimits};
 pub use profile::WorthQueryApplicationProfile;
 pub use program::{
     in_memory_program, in_memory_program_with_authorization_time_source,
