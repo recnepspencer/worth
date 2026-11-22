@@ -8,9 +8,12 @@
 
 mod denial;
 mod discriminator;
+mod group;
 mod name;
 mod scheme;
 
+#[cfg(test)]
+mod group_tests;
 #[cfg(test)]
 mod tests;
 
@@ -21,6 +24,11 @@ pub use denial::{
 pub use discriminator::{
     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder,
     ApplicationNameDiscriminatorValue, NestedDiscriminator, NAME_DISCRIMINATOR_DOMAIN_TAG,
+};
+pub use group::{
+    ApplicationGroupContinuityRule, ApplicationGroupMemberRole, ApplicationGroupNameScheme,
+    ApplicationGroupNameSchemeBuilder, ApplicationGroupSchemeDenial,
+    ErasedApplicationGroupNameScheme,
 };
 pub use name::WorthQueryName;
 pub(crate) use scheme::validate_erased_scheme_identifiers;
