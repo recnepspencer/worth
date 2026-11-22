@@ -28,11 +28,13 @@ enum HistoryOp {
     Split {
         pick: usize,
         pieces: u8,
+        replay_retired: bool,
     },
     Merge {
         first: usize,
         second: usize,
         keep: u8,
+        replay_retired: bool,
     },
     Regenerate {
         pick: usize,
@@ -50,9 +52,21 @@ fn arb_history_op() -> impl Strategy<Value = HistoryOp> {
     prop_oneof![
         3 => (any::<bool>(), any::<bool>())
             .prop_map(|(relation, identical_label)| HistoryOp::Create { relation, identical_label }),
-        3 => (any::<usize>(), 2u8..=3).prop_map(|(pick, pieces)| HistoryOp::Split { pick, pieces }),
-        3 => (any::<usize>(), any::<usize>(), 0u8..3)
-            .prop_map(|(first, second, keep)| HistoryOp::Merge { first, second, keep }),
+        3 => (any::<usize>(), 2u8..=3, any::<bool>()).prop_map(|(pick, pieces, replay_retired)| {
+            HistoryOp::Split {
+                pick,
+                pieces,
+                replay_retired,
+            }
+        }),
+        3 => (any::<usize>(), any::<usize>(), 0u8..3, any::<bool>()).prop_map(
+            |(first, second, keep, replay_retired)| HistoryOp::Merge {
+                first,
+                second,
+                keep,
+                replay_retired,
+            },
+        ),
         3 => any::<usize>().prop_map(|pick| HistoryOp::Regenerate { pick }),
         3 => any::<usize>().prop_map(|pick| HistoryOp::Retire { pick }),
         4 => (any::<usize>(), any::<bool>())
@@ -135,13 +149,32 @@ fn stage(
             };
             world.create(subject, label);
         }
-        HistoryOp::Split { pick: at, pieces } => {
+        HistoryOp::Split {
+            pick: at,
+            pieces,
+            replay_retired,
+        } => {
             let Some((parent, _)) = pick(at, &free_live) else {
                 return;
             };
             used_live.insert(parent);
-            let labels = ["p0", "p1", "p2"];
-            let children = world.split(parent, &labels[..usize::from(pieces)]);
+            let replayable: Vec<Name> = if replay_retired {
+                world
+                    .retired_children_of(parent)
+                    .into_iter()
+                    .filter(|c| !used_retired.contains(c))
+                    .take(usize::from(pieces))
+                    .collect()
+            } else {
+                Vec::new()
+            };
+            let children = if replayable.len() >= 2 {
+                used_retired.extend(replayable.iter().copied());
+                world.resplit_replaying_retired(parent, &replayable)
+            } else {
+                let labels = ["p0", "p1", "p2"];
+                world.split(parent, &labels[..usize::from(pieces)])
+            };
             let [a, b, c] = carrier_pool();
             let carriers: [&[Name]; 3] = [&[a, b], &[b], &[c]];
             for (child, carriers) in children.iter().zip(carriers) {
@@ -152,6 +185,7 @@ fn stage(
             first,
             second,
             keep,
+            replay_retired,
         } => {
             let Some((one, holder)) = pick(first, &free_live) else {
                 return;
@@ -166,7 +200,17 @@ fn stage(
             };
             used_live.extend([one, two]);
             let keep = [Keep::InPlace, Keep::Recreated, Keep::MintNew][usize::from(keep)];
-            world.merge(&[one, two], keep);
+            if keep == Keep::MintNew
+                && replay_retired
+                && let Some(retired_merged) = world
+                    .retired_merge_of(&[one, two])
+                    .filter(|m| !used_retired.contains(m))
+            {
+                used_retired.insert(retired_merged);
+                world.remerge_mint_new_replaying_retired(&[one, two], retired_merged);
+            } else {
+                world.merge(&[one, two], keep);
+            }
         }
         HistoryOp::Regenerate { pick: at } => {
             let Some((name, _)) = pick(at, &free_live) else {
