@@ -57,19 +57,34 @@ where
             .current_read_scope(current)
             .map_err(NoEffectCause::CurrentReadDependency)?;
         let expected_head = attempt.expected_head();
-        let deadline = attempt.deadline();
+        let cutoff = crate::publication::ProductMovementCutoff::new(
+            cancellation,
+            &self.state.clock,
+            attempt.deadline(),
+        );
+        let pre_lock_stop = || -> Result<(), NoEffectCause> {
+            if cancellation
+                .check(crate::publication::RuntimeWorldCancellationBoundary::BeforeFirstOwnerEffect)
+                .is_err()
+            {
+                return Err(NoEffectCause::CancelledBeforeEffect);
+            }
+            if !self.current_product_head_is(expected_head) {
+                return Err(NoEffectCause::StaleExpectedProductHead);
+            }
+            Ok(())
+        };
         // The scope owns an operation, but holds no cell guard during Native
         // companion preparation or owning cleanup. No Signal/World effect runs
-        // inside the purpose-specific cutover receiver.
+        // inside the purpose-specific cutover receiver; the final cutoff runs
+        // under the guarded scope immediately before Native publication.
         let scoped = match port.with_prepared_memory_cutover(execution, candidate, |cutover| {
             let Some(handoff) = handoff else {
-                if let Err(cause) =
-                    self.check_pre_effect_cutoff(expected_head, deadline, cancellation)
-                {
+                if let Err(cause) = pre_lock_stop() {
                     return (None, Some(cause), None);
                 }
                 return (
-                    Some(scope.perform_memory_publication(cutover, None)),
+                    Some(scope.perform_memory_publication(cutover, None, &cutoff)),
                     None,
                     None,
                 );
@@ -78,9 +93,7 @@ where
             let mut guarded = None;
             let mut cutoff_stop = None;
             let mut perform = |native, native_deadline| {
-                if let Err(cause) =
-                    self.check_pre_effect_cutoff(expected_head, deadline, cancellation)
-                {
+                if let Err(cause) = pre_lock_stop() {
                     cutoff_stop = Some(cause);
                     return;
                 }
@@ -88,7 +101,7 @@ where
                     scope
                         .take()
                         .expect("one World token consumes one scope")
-                        .perform_memory_publication(native, native_deadline),
+                        .perform_memory_publication(native, native_deadline, &cutoff),
                 );
             };
             let unwind = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
@@ -119,16 +132,11 @@ where
         match publication {
             // An actual Native fact wins over the caller's callback result.
             Some(outcome) => Ok(outcome),
-            None => {
-                if let Some(cause) = cutoff_stop {
-                    return Err(cause);
-                }
-                Err(NoEffectCause::CurrentReadDependency(
-                    guarded
-                        .and_then(Result::err)
-                        .unwrap_or(Denial::CutoverNotPerformed),
-                ))
-            }
+            None => Err(cutoff_stop
+                .or_else(|| guarded.and_then(Result::err))
+                .unwrap_or(NoEffectCause::CurrentReadDependency(
+                    Denial::CutoverNotPerformed,
+                ))),
         }
     }
 

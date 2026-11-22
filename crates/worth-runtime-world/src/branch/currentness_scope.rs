@@ -126,14 +126,30 @@ impl<'selected> ProductBranchCurrentnessScope<'selected> {
         self,
         cutover: worth_relational::facade::mvcc::PreparedMemoryRelationalCutover<'_, '_, '_>,
         deadline: Option<std::time::Instant>,
-    ) -> Result<(), crate::publication::CurrentProductReadDependencyDenial> {
-        self.while_locked(cutover, |cutover| match deadline {
-            Some(deadline) => cutover.perform_before(deadline),
-            None => cutover.perform(),
-        })
-        .map_err(|_failure| {
-            crate::publication::CurrentProductReadDependencyDenial::WorldHeadUnavailable
-        })
+        cutoff: &crate::publication::ProductMovementCutoff,
+    ) -> Result<(), crate::publication::NoEffectCause> {
+        match self.while_locked(cutover, |cutover| {
+            if let Err(denial) = cutoff.check() {
+                return Err(match denial {
+                    crate::publication::ProductMovementCutoffDenial::Cancelled => {
+                        crate::publication::NoEffectCause::CancelledBeforeEffect
+                    }
+                    crate::publication::ProductMovementCutoffDenial::Deadline => {
+                        crate::publication::NoEffectCause::DeadlineBeforeEffect
+                    }
+                });
+            }
+            match deadline {
+                Some(deadline) => cutover.perform_before(deadline),
+                None => cutover.perform(),
+            }
+            Ok(())
+        }) {
+            Ok(result) => result,
+            Err(_failure) => Err(crate::publication::NoEffectCause::CurrentReadDependency(
+                crate::publication::CurrentProductReadDependencyDenial::WorldHeadUnavailable,
+            )),
+        }
     }
 
     fn while_locked<Argument, Output>(

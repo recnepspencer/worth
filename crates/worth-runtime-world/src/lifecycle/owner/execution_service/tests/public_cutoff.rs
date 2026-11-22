@@ -238,4 +238,71 @@ fn cutover_callback_world_cancellation_and_deadline_stop_before_native_effect() 
     assert_eq!(native_head(&fixture), before_native);
     assert!(owner.recovery_handles().is_empty());
     assert_eq!(mem.charged_memory_bytes(), 0);
+
+    // 3. Arm a clock in the callback so cutoff's own clock.now() cancels the
+    // World token while returning an in-budget tick (0 < 10); guarded cutoff
+    // must still stop before Native moves.
+    struct ArmedCancellingClock {
+        armed: Arc<std::sync::atomic::AtomicBool>,
+        fired: Arc<std::sync::atomic::AtomicBool>,
+        cancel: Arc<RuntimeWorldCancellationSource>,
+    }
+    impl RuntimeWorldClockSource for ArmedCancellingClock {
+        fn now(&self) -> RuntimeWorldInstant {
+            if self.armed.load(Ordering::Acquire) {
+                self.cancel.cancel();
+                self.fired.store(true, Ordering::Release);
+            }
+            RuntimeWorldInstant::from_ticks(0)
+        }
+    }
+    let armed = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let fired = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let cancel = Arc::new(RuntimeWorldCancellationSource::new());
+    let (fixture, owner, expected) = seed_with_clock(RuntimeWorldClock::from_source(
+        ArmedCancellingClock {
+            armed: Arc::clone(&armed),
+            fired: Arc::clone(&fired),
+            cancel: Arc::clone(&cancel),
+        },
+    ));
+    let before_native = native_head(&fixture);
+    let mut intent =
+        CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
+            .with_prepared_relational_candidate(
+                fixture.prepare_relational_owner_candidate(&setup_exec, "cutover-clock-cancel"),
+            );
+    intent.require_current_read(expected.clone()).unwrap();
+    let prepared = RuntimeWorldPreparationService::prepare_publication(
+        owner.as_ref(),
+        expected,
+        intent,
+        &cancel.token(),
+        Some(RuntimeWorldInstant::from_ticks(10)),
+    )
+    .unwrap();
+    let mem = SerialMemoryBudget::from_policy(&owner.state.execution.request_policy());
+    let req = SerialRequest::from_memory(mem.clone(), CancellationToken::new(), None);
+    let mut callback_ran = false;
+    let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal_with_cutover(
+        owner.as_ref(),
+        ExecutionRequest::serial(&req),
+        prepared,
+        &cancel.token(),
+        Some(&mut |cutover| {
+            callback_ran = true;
+            armed.store(true, Ordering::Release);
+            cutover.perform();
+        }),
+    );
+    assert!(callback_ran);
+    assert!(fired.load(Ordering::Acquire));
+    assert!(matches!(
+        outcome,
+        OwnerExecutionOutcome::NoEffect(refused)
+            if refused.cause() == NoEffectCause::CancelledBeforeEffect
+    ));
+    assert_eq!(native_head(&fixture), before_native);
+    assert!(owner.recovery_handles().is_empty());
+    assert_eq!(mem.charged_memory_bytes(), 0);
 }

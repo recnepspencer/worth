@@ -75,24 +75,32 @@ where
     }
 
     /// Pre-effect World stop gate consulted immediately before crossing into
-    /// Native publication, including after any public cutover callback work.
+    /// Native publication. Samples cancellation after reversible clock and
+    /// currentness checks so a stop raised during cutoff never slips through.
     pub(in super::super) fn check_pre_effect_cutoff(
         &self,
         expected_head: &ProductBranchObservation,
         deadline: Option<RuntimeWorldInstant>,
         cancellation: &RuntimeWorldCancellationToken,
     ) -> Result<(), NoEffectCause> {
+        let expired = self.deadline_expired(deadline);
         if cancellation
             .check(RuntimeWorldCancellationBoundary::BeforeFirstOwnerEffect)
             .is_err()
         {
             return Err(NoEffectCause::CancelledBeforeEffect);
         }
-        if self.deadline_expired(deadline) {
+        if expired {
             return Err(NoEffectCause::DeadlineBeforeEffect);
         }
         if !self.current_product_head_is(expected_head) {
             return Err(NoEffectCause::StaleExpectedProductHead);
+        }
+        if cancellation
+            .check(RuntimeWorldCancellationBoundary::BeforeFirstOwnerEffect)
+            .is_err()
+        {
+            return Err(NoEffectCause::CancelledBeforeEffect);
         }
         Ok(())
     }
