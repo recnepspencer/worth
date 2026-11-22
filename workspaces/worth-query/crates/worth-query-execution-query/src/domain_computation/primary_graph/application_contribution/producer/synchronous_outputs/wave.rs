@@ -321,8 +321,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             context.owner.consume(Vec::new());
             observation::record_prepare(i, &self.tasks[i], &prepared);
             let prepared = match prepared {
-                // A domain refusal waits while a later authored stage remains.
-                Err(failure) if allowed.is_some() => match self.defer_refusal(context, i, failure)? {
+                // A domain refusal waits on its proofs: a later append (in this
+                // drive, or a later stage) may retry it before it is reported.
+                Err(failure) => match self.defer_refusal(context, i, failure)? {
                     None => {
                         observation::record(|| format!("break pending refusal at={i}"));
                         break;

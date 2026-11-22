@@ -3,6 +3,8 @@
 macro_rules! producer_decision_refusal {
     (GuardedInputInitial, $value:ident) => { producer_decision_refusal!(@guarded $value) };
     (GuardedInputPreserve, $value:ident) => { producer_decision_refusal!(@guarded $value) };
+    (GuardedMemberInitial, $value:ident) => { producer_decision_refusal!(@guarded $value) };
+    (GuardedMemberPreserve, $value:ident) => { producer_decision_refusal!(@guarded $value) };
     (@guarded $value:ident) => {
         if $value >= 100 { Some(Denial::PreserveMissingOutput) } else if $value % 2 == 1 { Some(Denial::DerivedValueOutOfRange) } else { None }
     };
