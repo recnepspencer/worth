@@ -1,7 +1,9 @@
 //! Named PR B base-order shapes from #256 r3:
-//! 1. Late outgoing edge (r3 item 1): base refuses `CoupledReadSupportChanged` (hold None).
+//! 1. Late outgoing edge (r3 item 1): base refuses `CoupledReadSupportChanged`; PR C
+//!    qualified use reopens the stale reader and the edit commits (golden).
 //! 2. Reverse-rank consumer across batches (r3 item 2a): base runs W before higher-rank C.
-//! 3. Batch-prefix split at `Recapture` (r3 item 2b): `[P, U, X, R]` cuts at X before R.
+//! 3. Batch-prefix split at `Recapture` (r3 item 2b): `[P, U, X, Z]` cuts at X before Z
+//!    (`capture:x` recaptures; its trailing sibling is `capture:z`).
 use super::super::super::super::hierarchy::program as hierarchy;
 use super::super::super::super::synchronous_edit::envelope_fixture as fixture;
 use super::super::*;

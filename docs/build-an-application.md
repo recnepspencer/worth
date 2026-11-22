@@ -4618,8 +4618,11 @@ binds that mode and the complete original sequence into the whole intent under
 the same key. Mode changes and reordered requests therefore drift before
 handlers. Each position consumes its original nominal C admission once and
 reads the genuine pre-stage D image as data; an earlier-created reference is
-not a Current grant. Later invalidation of an earlier read still refuses at
-final support validation. Native same-record writer conflicts are unchanged.
+not a Current grant. A later change to an earlier read is qualified as
+described under [Ordinary coupled source edits](#later-changes-inside-one-edit-qualified-use):
+the derivation re-runs where one commit per stage would, and what still differs
+refuses at final support validation. Native same-record writer conflicts are
+unchanged.
 
 Only roots returned by positions already applied enter the shared wave. A
 later position that reads those outputs waits at the actual producer barrier;
@@ -4920,13 +4923,54 @@ either limit refuses typed before contacting a handler and rolls back the whole
 edit. A retry of an already committed key resolves the original receipt before
 producer starts. The limits carry no permission and do not change intent identity.
 
-A route publishes one producing run per synchronous edit. Native refuses a
-further in-edit run of the same route that would change anything, with
-`CoupledContinuationProvenancePostponed { issue: 119 }`, before publication;
-a run that applies nothing leaves the edit exactly as it was. No application
-entry requests such a run yet: a route whose output depends on its own effect
-is completed by ordinary delivery after the commit. An explicit retirement,
-restoration or selection writer runs exactly once
+#### Later changes inside one edit (qualified use)
+
+A later append in the same edit can change what an earlier derivation read.
+Query retains every derivation with its proofs: decision reads, verified
+parent and discovery support, and the outputs it consumed. It **qualifies**
+each one before use. Each append's Native-certified touch keys mark the
+derivations whose proofs they intersect. Before a wave task, a pending value
+demand, an authored stage or final support consumes a marked derivation,
+Query compares it exactly against the current candidate. A read with no
+narrower key (query support, source selections) is compared at every append.
+An equal derivation stays usable. A changed one is **reopened**, owed at the
+later of its own demand and the invalidating member, and re-runs before
+anything consumes it:
+
+- A retained verified parent re-derives as a fresh part. Its source is
+  recaptured through ordinary Source admission, with ordinary failure; it
+  never reuses its earlier verification. A verified parent whose support is
+  equal stays verified, and is never recaptured.
+- A producer that already published re-runs as a successor round of the same
+  route. Its own output records read as they were before its first round. Any
+  other read of a key its chain wrote stops before append, with
+  `CoupledContinuationProvenancePostponed { issue: 119, reason: PriorEffectRead }`.
+  Native folds the round in place, so the route keeps one part and one writer.
+  A relation the chain linked is outside the own-output view (public #277).
+- A consumer of a re-derived output settles when the replacement is equal in
+  payload, role, generation, custody, readiness and demand key. Otherwise the
+  consumer re-runs.
+- A task's discovery whose support changed selects again. A child it already
+  derived and no longer selects refuses `SupersededSelectionDropped`. A root
+  selection holds only within its own stage: a change made after the next
+  authored stage, in owed order, does not re-run it, just as one commit per
+  stage evaluates each root once.
+- A producer whose decision refuses in its domain while one of its proofs can
+  still change waits. An append that changes one of those proofs retries it.
+  If the refusal is still pending where its output is needed, or at the end of
+  the edit, its original refusal is reported. A refusal without proofs is
+  reported at once.
+
+Reopens consume producer starts and are bounded by the round limits below. A
+change that no declared edge orders before its reader is not reordered: an
+authored stage's read accepts only a change by a member that one commit per
+stage runs after it, and any other change refuses plainly. Final support then
+checks every retained read against the final candidate. A reopened read is
+checked only up to the append that invalidated it, and its replacement is
+checked on its own; every other read is checked in full. What still differs
+refuses the whole edit with `CoupledReadSupportChanged`, naming the reader and
+the later writer. No such refusal is held for an open issue. An explicit
+retirement, restoration or selection writer runs exactly once
 (`CoupledContinuationRequiresEditSource`).
 
 A wide edit is also bounded by host budgets. Each producer an edit starts holds

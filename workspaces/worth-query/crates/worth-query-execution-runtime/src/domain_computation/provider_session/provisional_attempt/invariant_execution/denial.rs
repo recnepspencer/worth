@@ -3,7 +3,6 @@ mod coupled_support;
 mod native_denial;
 pub mod refusal_decode;
 mod relation_law;
-pub use coupled_support::WorthQueryCoupledSupportHold;
 use native_denial::NativeDenial;
 pub use refusal_decode::{
     canonical_wire_maximum, decode_refusal_payload, WorthQueryInvariantRefusalDecodeDenial,
@@ -154,7 +153,6 @@ pub struct WorthQueryInvariantExecutionFailure {
     custom_invariant: Option<WorthQueryCustomInvariantDenial>,
     native: Option<NativeDenial>,
     affected_records: Option<Arc<[worth_relational::facade::transactions::RecordRef]>>,
-    hold: Option<WorthQueryCoupledSupportHold>,
 }
 
 impl WorthQueryInvariantExecutionFailure {
@@ -220,7 +218,6 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: None,
             affected_records: None,
-            hold: None,
         }
     }
 
@@ -235,7 +232,6 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: None,
             affected_records: None,
-            hold: None,
         }
     }
 
@@ -250,7 +246,6 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: Some(custom_invariant),
             native: None,
             affected_records: None,
-            hold: None,
         }
     }
 
@@ -335,7 +330,6 @@ impl WorthQueryInvariantExecutionFailure {
             custom_invariant: None,
             native: Some(native),
             affected_records: None,
-            hold: None,
         }
     }
     /// Exact physical owner cause, including its original checked quote.
