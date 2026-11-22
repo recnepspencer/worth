@@ -4,18 +4,30 @@ use crate::model::{
 };
 use crate::schema::{AccountKind, AccountStatus};
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+/// One account a principal may see: the row of every account-discovery query.
+#[derive(
+    Clone,
+    Copy,
+    Debug,
+    Eq,
+    PartialEq,
+    Ord,
+    PartialOrd,
+    worth_query_decl::facade::WorthQueryProjection,
+)]
+#[worth_query(schema = crate::schema::BankSchema, root = crate::schema::Account)]
 pub struct VisibleAccount {
-    id: AccountId,
+    #[worth_query(field = crate::schema::AccountIdentity, slot = "AccountIdentitySlot")]
+    account: AccountId,
 }
 
 impl VisibleAccount {
-    pub const fn new(id: AccountId) -> Self {
-        Self { id }
+    pub const fn new(account: AccountId) -> Self {
+        Self { account }
     }
 
     pub const fn id(self) -> AccountId {
-        self.id
+        self.account
     }
 }
 

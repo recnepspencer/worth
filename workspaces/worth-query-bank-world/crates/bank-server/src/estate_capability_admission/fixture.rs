@@ -14,10 +14,7 @@ mod identity_catalog;
 mod world;
 
 pub(crate) use authentication::request_scope;
-use authentication::{
-    authentication_configuration, block_on, external_identity, TestAuthenticationAdapter,
-    TestCredential,
-};
+use authentication::{authentication_configuration, external_identity, local_principal};
 pub(crate) use authorization_time::AuthorizationTimeController;
 use bank_domain::{estate::EstateWorkflowStage, model::BankPrincipalId};
 pub(crate) use capability_fixture::CapabilityFixture;
@@ -340,14 +337,9 @@ fn capability_world_from_spec_with_authorization_time(
 }
 
 fn capability_fixture(installed: world::InstalledFixtureWorld) -> CapabilityFixture {
-    let runtime = installed.runtime;
-    let authentication = runtime
-        .admit_authentication_adapter(authentication_configuration(), TestAuthenticationAdapter)
-        .expect("the causal test adapter should install");
     CapabilityFixture {
-        runtime,
+        runtime: installed.runtime,
         estate_world: installed.estate_world,
-        authentication,
         specialist_identity: installed.identities[1].clone(),
         executor_identity: installed.identities[2].clone(),
         approver_identity: installed.identities[3].clone(),

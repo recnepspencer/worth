@@ -20,9 +20,7 @@ pub use bank_server::{
 pub use crate::facade::authorization_time::{
     runtime_with_authorization_time, AuthorizationTimeController,
 };
-pub use crate::facade::support::{
-    block_on, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld,
-};
+pub use crate::facade::support::{runtime, DynamicIdentity, TestIdentityWorld};
 
 pub struct NotificationFixture {
     pub world: TestIdentityWorld,
@@ -41,22 +39,16 @@ pub struct NotificationFixture {
 impl NotificationFixture {
     pub fn authenticate_specialist(&self) -> BankAuthenticatedPrincipal {
         let request = crate::facade::support::request_scope();
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(&self.identities[1]),
-            &request,
-        ))
-        .expect("the causally mapped estate specialist should authenticate")
+        self.world
+            .authenticate(&self.identities[1], &request)
+            .expect("the causally mapped estate specialist should authenticate")
     }
 
     pub fn authenticate_deceased(&self) -> BankAuthenticatedPrincipal {
         let request = crate::facade::support::request_scope();
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(&self.identities[0]),
-            &request,
-        ))
-        .expect("the causally mapped deceased principal should authenticate")
+        self.world
+            .authenticate(&self.identities[0], &request)
+            .expect("the causally mapped deceased principal should authenticate")
     }
 
     pub const fn action(&self, notice: DeathNoticeId, subject: BankPrincipalId) -> EstateAction {

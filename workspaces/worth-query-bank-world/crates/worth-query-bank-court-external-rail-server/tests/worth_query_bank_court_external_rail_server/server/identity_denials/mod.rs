@@ -11,11 +11,7 @@ fn unknown_dynamic_identity_is_denied() {
     )]);
 
     assert_resolution_denial(
-        block_on(world.runtime.authenticate_with(
-            &world.authentication,
-            CausalCredential::for_identity(&unknown),
-            &request_scope(),
-        )),
+        world.authenticate(&unknown, &request_scope()),
         WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::UnknownPrincipal),
     );
 }
@@ -30,11 +26,7 @@ fn disabled_dynamic_identity_is_denied() {
     )]);
 
     assert_resolution_denial(
-        block_on(world.runtime.authenticate_with(
-            &world.authentication,
-            CausalCredential::for_identity(&disabled),
-            &request_scope(),
-        )),
+        world.authenticate(&disabled, &request_scope()),
         WorthQueryPrincipalResolutionDenialKind::Refused(PrincipalRefusal::DisabledPrincipal),
     );
 }

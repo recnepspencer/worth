@@ -60,18 +60,12 @@ fn public_transfer_posts_thirty_once_from_one_hundred_to_zero() {
                 recipient_identity.external(),
             )),
     );
-    let owner = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(&owner_identity),
-        &request_scope(),
-    ))
-    .unwrap();
-    let recipient = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(&recipient_identity),
-        &request_scope(),
-    ))
-    .unwrap();
+    let owner = world
+        .authenticate(&owner_identity, &request_scope())
+        .unwrap();
+    let recipient = world
+        .authenticate(&recipient_identity, &request_scope())
+        .unwrap();
     let balance = |account, principal: &bank_server::BankAuthenticatedPrincipal| {
         world
             .runtime

@@ -22,18 +22,8 @@ fn program_entry_denies_unauthorized_account_mutations() {
             )),
     );
     let request = request_scope();
-    let owner_actor = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(&owner),
-        &request,
-    ))
-    .unwrap();
-    let other_actor = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(&other),
-        &request,
-    ))
-    .unwrap();
+    let owner_actor = world.authenticate(&owner, &request).unwrap();
+    let other_actor = world.authenticate(&other, &request).unwrap();
     let source = snapshot
         .primary_account(id(BankPrincipalId::new, 1))
         .unwrap();

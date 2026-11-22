@@ -1,6 +1,6 @@
 //! The same seeded requests and initial funding feed the model and real world.
 pub use super::journal_model::Transfer;
-pub use crate::facade::support::{self, CausalCredential, DynamicIdentity, TestIdentityWorld};
+pub use crate::facade::support::{self, DynamicIdentity, TestIdentityWorld};
 pub use bank_domain::{model::*, proposals::*, schema::*};
 pub use bank_server::{
     BankAuthenticatedPrincipal, BankEmployeeAssignmentSeed, BankPrincipalSeed, BankWorldSeed,
@@ -95,12 +95,12 @@ impl World {
         }
     }
     pub fn authenticate(&self, actor: u64) -> BankAuthenticatedPrincipal {
-        support::block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(&self.identities[actor as usize - 1]),
-            &support::request_scope(),
-        ))
-        .unwrap()
+        self.world
+            .authenticate(
+                &self.identities[actor as usize - 1],
+                &support::request_scope(),
+            )
+            .unwrap()
     }
     pub fn requests(&self, seed: u64) -> Vec<Transfer> {
         let amount = 1 + i64::try_from((seed >> 16) % 512).unwrap();

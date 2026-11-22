@@ -1,6 +1,4 @@
-use worth_query_decl::facade::{
-    worth_query_operation, worth_query_operation_reads, worth_query_structured_value_binding,
-};
+use worth_query_decl::facade::{worth_query_operation, worth_query_structured_value_binding};
 
 use worth_query_host::facade::declaration::{
     application_operation::{
@@ -42,9 +40,10 @@ pub enum RejectedPaymentAssessmentDenial {
 worth_query_structured_value_binding!(pub RejectedPaymentAssessmentInputBinding for RejectedPaymentAssessmentInput { identity: "worth.bank.rejected-payment-assessment.input.v1" });
 worth_query_structured_value_binding!(pub RejectedPaymentAssessmentPublishedBinding for RejectedPaymentAssessmentPublished { identity: "worth.bank.rejected-payment-assessment.published.v1" });
 worth_query_structured_value_binding!(pub RejectedPaymentAssessmentDenialBinding for RejectedPaymentAssessmentDenial { identity: "worth.bank.rejected-payment-assessment.denial.v1" });
-worth_query_operation!(pub PublishRejectedPaymentAssessment for BankSchema, input RejectedPaymentAssessmentInputBinding);
-worth_query_operation_reads!(PublishRejectedPaymentAssessment => [PaymentIntent]);
 
+worth_query_operation!(pub PublishRejectedPaymentAssessment for BankSchema, input RejectedPaymentAssessmentInputBinding;
+    reads [PaymentIntent];
+);
 pub struct RejectedPaymentAssessmentOutputs;
 
 /// The approved payment an assessment preserves.

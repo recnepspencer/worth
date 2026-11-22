@@ -1,7 +1,7 @@
 //! A real known business without an account, with lawful owner and teller.
 use super::super::fixture::{
-    block_on, runtime, BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankPrincipalSeed,
-    BankSnapshotBuilder, BankWorldSeed, CausalCredential, DynamicIdentity, TestIdentityWorld,
+    runtime, BankBusinessOwnerSeed, BankEmployeeAssignmentSeed, BankPrincipalSeed,
+    BankSnapshotBuilder, BankWorldSeed, DynamicIdentity, TestIdentityWorld,
 };
 use super::*;
 pub struct BusinessCreationFixture {
@@ -13,12 +13,7 @@ pub struct BusinessCreationFixture {
 }
 impl BusinessCreationFixture {
     fn authenticate(&self, identity: &DynamicIdentity) -> BankAuthenticatedPrincipal {
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(identity),
-            &request_scope(),
-        ))
-        .unwrap()
+        self.world.authenticate(identity, &request_scope()).unwrap()
     }
     pub fn owner(&self) -> BankAuthenticatedPrincipal {
         self.authenticate(&self.owner)
