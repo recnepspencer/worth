@@ -90,3 +90,13 @@ impl CandidateReadSupport {
         }
     }
 }
+
+/// Whether a mid-envelope comparison's failure must stop the edit: a
+/// physical stop or an allocation refusal. Any other failure (a comparison
+/// unavailable at an intermediate candidate image) is a possible change:
+/// qualified use reopens the derivation and final support still decides.
+pub fn is_hard_comparison_stop(
+    cause: &crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+) -> bool {
+    cause.relational_execution_cause().is_some() || cause.allocation_denial().is_some()
+}
