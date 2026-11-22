@@ -169,7 +169,14 @@ Important discovery points include:
 - `worth_foundational::boundary_evidence_api`
 - `worth_foundational::performance_api`
 - `worth_foundational::expression_api`: the shared typed expression language,
-  starting from `expressions().parse(source)?.admit(...)`
+  starting from `expressions().parse(source)?.admit(...)`. Language V2 adds the
+  `Date` type (from `ScalarAspectType::Date`; ordered with `==`, `!=`, `<`,
+  `<=`, `>`, `>=`, `min`, `max` and `clamp`, no arithmetic) and the String-only
+  `contains_ignore_ascii_case`, `starts_with_ignore_ascii_case` and
+  `ends_with_ignore_ascii_case`, which fold only `A`-`Z` and cost what their
+  exact counterparts cost. A draft encodes, and an identity records, the
+  oldest version its vocabulary needs, so V1-only drafts and digests are
+  unchanged and a misstated draft header is refused
 - `worth_foundational::foundational_transition_milestone5_readiness_report()`
 - the facade exports re-exported from `worth_foundational::*`
 

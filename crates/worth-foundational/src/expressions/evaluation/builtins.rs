@@ -6,6 +6,7 @@
 use crate::expressions::denial::{ExpressionDenial, ExpressionDenialDetail, ExpressionResult};
 use crate::expressions::functions::Builtin;
 use crate::expressions::operators::decimal::{self, Rounding};
+use crate::expressions::operators::text::ByteComparison;
 use crate::expressions::operators::{float, quantity};
 use crate::expressions::types::ExpressionType;
 
@@ -104,12 +105,22 @@ impl Machine {
                 if matches!(types[0], ExpressionType::List(_)) {
                     Fold::member(&collection, probe)
                 } else {
-                    TextJob::contains(collection, probe, meter)?
+                    TextJob::contains(collection, probe, ByteComparison::Exact, meter)?
                 }
+            }
+            Builtin::ContainsIgnoreAsciiCase => {
+                let [text, needle] = take_values(values);
+                TextJob::contains(text, needle, ByteComparison::IgnoreAsciiCase, meter)?
             }
             Builtin::StartsWith | Builtin::EndsWith => {
                 let [text, affix] = take_values(values);
-                TextJob::affix(text, affix, builtin == Builtin::EndsWith)
+                let suffix = builtin == Builtin::EndsWith;
+                TextJob::affix(text, affix, suffix, ByteComparison::Exact)
+            }
+            Builtin::StartsWithIgnoreAsciiCase | Builtin::EndsWithIgnoreAsciiCase => {
+                let [text, affix] = take_values(values);
+                let suffix = builtin == Builtin::EndsWithIgnoreAsciiCase;
+                TextJob::affix(text, affix, suffix, ByteComparison::IgnoreAsciiCase)
             }
             Builtin::Substring => {
                 let [text, low, high] = take_values(values);

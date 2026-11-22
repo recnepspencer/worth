@@ -14,7 +14,9 @@ use crate::expressions::syntax::ast::{
 use crate::expressions::syntax::literal::DecimalText;
 use crate::expressions::types::is_identifier;
 
-use super::{tag, BINARY_OPS, COMPREHENSIONS, LANGUAGE_VERSION, MAGIC, UNARY_OPS, WIRE_VERSION};
+use super::language::draft_language;
+use super::{tag, BINARY_OPS, COMPREHENSIONS, MAGIC, UNARY_OPS, WIRE_VERSION};
+use crate::expressions::language_version::LanguageVersion;
 
 /// The smallest encodings: a node is a tag and one payload byte, a child a
 /// `u32`, a name segment a length.
@@ -45,10 +47,10 @@ pub(crate) fn decode_draft(
     if wire != WIRE_VERSION {
         return Err(unsupported("expression draft encoding", wire));
     }
-    let language = reader.u16()?;
-    if language != LANGUAGE_VERSION {
-        return Err(unsupported("expression language", language));
-    }
+    let code = reader.u16()?;
+    let Some(language) = LanguageVersion::from_wire_code(code) else {
+        return Err(unsupported("expression language", code));
+    };
     let count = reader.u32()? as usize;
     check_limit(profile, ExpressionResource::SyntaxNodes, count as u64)?;
     if count == 0 {
@@ -84,6 +86,12 @@ pub(crate) fn decode_draft(
     }
     if roots.len() != 1 {
         return Err(invalid("only the last node may be the root"));
+    }
+    // A draft has one encoding: the version its vocabulary requires.
+    if draft_language(&tree) != language {
+        return Err(invalid(
+            "the declared language version is not the one the draft's vocabulary requires",
+        ));
     }
     Ok(tree)
 }

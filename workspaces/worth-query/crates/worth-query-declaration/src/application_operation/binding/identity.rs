@@ -62,7 +62,8 @@ mod request;
 mod work;
 
 pub use captured_input::{
-    ApplicationCanonicalInput, ApplicationCanonicalInputDenial, ApplicationCanonicalInputScalar,
+    ApplicationCanonicalInput, ApplicationCanonicalInputBytes, ApplicationCanonicalInputDenial,
+    ApplicationCanonicalInputScalar,
 };
 pub use encoder::CanonicalEncodingCharge;
 pub use input::ApplicationEncodedInput;

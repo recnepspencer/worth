@@ -1,11 +1,14 @@
 //! String and Bytes builtins as resumable jobs: scalar counts, scalar
-//! slices, containment, and affixes each charge one work unit per 8-byte
-//! word they inspect, and a copied slice pays for its words before the copy.
+//! slices, containment, and affixes, exact or ASCII case-insensitive, each
+//! charge one work unit per 8-byte word they inspect, and a copied slice pays
+//! for its words before the copy.
 
 use std::task::Poll;
 
 use crate::expressions::denial::ExpressionResult;
-use crate::expressions::operators::text::{Matcher, ScalarCount, ScalarRange, WORD};
+use crate::expressions::operators::text::{
+    ByteComparison, Matcher, ScalarCount, ScalarRange, WORD,
+};
 
 use super::cost::words;
 use super::jobs::{ready, Job};
@@ -45,11 +48,12 @@ pub(super) enum TextJob {
         needle: ExpressionValue,
         matcher: Matcher,
     },
-    /// `starts_with` or `ends_with`, one word of the affix per step.
+    /// A prefix or suffix test, one word of the affix per step.
     Affix {
         text: ExpressionValue,
         affix: ExpressionValue,
         suffix: bool,
+        comparison: ByteComparison,
         offset: usize,
     },
 }
@@ -82,10 +86,11 @@ impl TextJob {
     pub(super) fn contains(
         haystack: ExpressionValue,
         needle: ExpressionValue,
+        comparison: ByteComparison,
         meter: &mut EvaluationMeter,
     ) -> ExpressionResult<Job> {
         meter.allocate(Matcher::table_bytes(bytes(&needle)))?;
-        let matcher = Matcher::new(bytes(&needle));
+        let matcher = Matcher::new(bytes(&needle), comparison);
         Ok(Job::Text(Box::new(Self::Contains {
             haystack,
             needle,
@@ -93,11 +98,17 @@ impl TextJob {
         })))
     }
 
-    pub(super) fn affix(text: ExpressionValue, affix: ExpressionValue, suffix: bool) -> Job {
+    pub(super) fn affix(
+        text: ExpressionValue,
+        affix: ExpressionValue,
+        suffix: bool,
+        comparison: ByteComparison,
+    ) -> Job {
         Job::Text(Box::new(Self::Affix {
             text,
             affix,
             suffix,
+            comparison,
             offset: 0,
         }))
     }
@@ -147,6 +158,7 @@ impl TextJob {
                     text,
                     affix,
                     suffix,
+                    comparison,
                     offset,
                 } => {
                     let (text, affix) = (bytes(text), bytes(affix));
@@ -155,7 +167,9 @@ impl TextJob {
                     }
                     let base = if *suffix { text.len() - affix.len() } else { 0 };
                     let end = (*offset + WORD).min(affix.len());
-                    if text[base + *offset..base + end] != affix[*offset..end] {
+                    if !comparison
+                        .chunks_match(&text[base + *offset..base + end], &affix[*offset..end])
+                    {
                         return Ok(Poll::Ready(ExpressionValue::bool(false)));
                     }
                     *offset = end;

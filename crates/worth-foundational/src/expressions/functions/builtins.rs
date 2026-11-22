@@ -1,6 +1,8 @@
-//! The closed V1 builtin vocabulary. Signatures live in admission; semantics
-//! live in the evaluator. Adding a builtin is a new language version.
+//! The closed builtin vocabulary. Signatures live in admission; semantics
+//! live in the evaluator. Adding a builtin is a new language version, which
+//! each builtin and reserved callable name records.
 
+use crate::expressions::language_version::LanguageVersion;
 use crate::expressions::types::units::UnitScale;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -31,6 +33,12 @@ pub(crate) enum Builtin {
     Entries,
     StartsWith,
     EndsWith,
+    /// `contains_ignore_ascii_case(text, needle)`: V2.
+    ContainsIgnoreAsciiCase,
+    /// `starts_with_ignore_ascii_case(text, prefix)`: V2.
+    StartsWithIgnoreAsciiCase,
+    /// `ends_with_ignore_ascii_case(text, suffix)`: V2.
+    EndsWithIgnoreAsciiCase,
     /// `slice(string, low, high)`: scalar offsets, `None` for invalid bounds.
     Substring,
     ExactCast,
@@ -60,7 +68,7 @@ pub(crate) enum Builtin {
 /// Every single-segment callable name, including literal constructors.
 ///
 /// Let binders and installed functions cannot use these names.
-pub(crate) const RESERVED_CALLABLES: [&str; 52] = [
+pub(crate) const RESERVED_CALLABLES: [&str; 55] = [
     "min",
     "max",
     "abs",
@@ -81,6 +89,9 @@ pub(crate) const RESERVED_CALLABLES: [&str; 52] = [
     "entries",
     "starts_with",
     "ends_with",
+    "contains_ignore_ascii_case",
+    "starts_with_ignore_ascii_case",
+    "ends_with_ignore_ascii_case",
     "slice",
     "exact_cast",
     "rounded_cast",
@@ -115,11 +126,38 @@ pub(crate) const RESERVED_CALLABLES: [&str; 52] = [
     "logic4",
 ];
 
+/// The reserved callables language V2 introduced; every other one is V1.
+const V2_CALLABLES: [&str; 3] = [
+    "contains_ignore_ascii_case",
+    "starts_with_ignore_ascii_case",
+    "ends_with_ignore_ascii_case",
+];
+
 pub(crate) fn is_reserved_callable(name: &str) -> bool {
     RESERVED_CALLABLES.contains(&name)
 }
 
+/// The language version a single-segment callable name requires. Installed
+/// functions cannot take reserved names, so only builtins raise it.
+pub(crate) fn callable_language(name: &str) -> LanguageVersion {
+    if V2_CALLABLES.contains(&name) {
+        LanguageVersion::V2
+    } else {
+        LanguageVersion::V1
+    }
+}
+
 impl Builtin {
+    /// The language version that introduced this builtin.
+    pub(crate) const fn language(self) -> LanguageVersion {
+        match self {
+            Self::ContainsIgnoreAsciiCase
+            | Self::StartsWithIgnoreAsciiCase
+            | Self::EndsWithIgnoreAsciiCase => LanguageVersion::V2,
+            _ => LanguageVersion::V1,
+        }
+    }
+
     /// The stable identity tag of this builtin, including static parameters.
     pub(crate) fn tag(self) -> String {
         let name = match self {
@@ -145,6 +183,9 @@ impl Builtin {
             Self::Entries => "entries",
             Self::StartsWith => "starts_with",
             Self::EndsWith => "ends_with",
+            Self::ContainsIgnoreAsciiCase => "contains_ignore_ascii_case",
+            Self::StartsWithIgnoreAsciiCase => "starts_with_ignore_ascii_case",
+            Self::EndsWithIgnoreAsciiCase => "ends_with_ignore_ascii_case",
             Self::Substring => "substring",
             Self::ExactCast => "exact_cast",
             Self::RoundedCast => "rounded_cast",
