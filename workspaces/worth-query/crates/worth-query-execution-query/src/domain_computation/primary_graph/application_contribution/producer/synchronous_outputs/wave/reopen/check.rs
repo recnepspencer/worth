@@ -75,6 +75,27 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         Ok(routes)
     }
 
+    /// Whether task `t` derived in this edit: done, or done before and
+    /// reopened since (its earlier part is still in the candidate).
+    pub(in super::super) fn has_derived(&self, t: usize) -> bool {
+        self.tasks[t].is_done() || self.tasks[t].reopened
+    }
+
+    /// The canonical prerequisites of `i` a re-closure must select again:
+    /// each that derived in this edit, even if reopened since (plan §1.6:
+    /// only a selection dropped after it derived refuses). A derived task
+    /// orphaned any other way is the quiescence backstop's
+    /// (`require_no_orphans`).
+    pub(in super::super) fn derived_selections(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        i: usize,
+    ) -> Result<Vec<usize>, SynchronousOutputFailure> {
+        let set = self.canonical_set(i);
+        checkpoint(context.execution, self.tasks[i].subject, set.len() as u64 + 1)?;
+        Ok(set.into_iter().filter(|&parent| self.has_derived(parent)).collect())
+    }
+
     /// The canonical prerequisites of `i`, sorted.
     pub(in super::super) fn canonical_set(&self, i: usize) -> Vec<usize> {
         let mut set = self.tasks[i]

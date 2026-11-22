@@ -40,6 +40,8 @@ mod input_preparation;
 mod occurrences;
 pub mod source;
 mod wave;
+#[doc(hidden)]
+pub mod court_doors_for_test;
 pub use input_preparation::PrerequisiteInputs;
 pub use rounds::default_producer_round_bounds;
 pub use wave::SynchronousOutputWave;

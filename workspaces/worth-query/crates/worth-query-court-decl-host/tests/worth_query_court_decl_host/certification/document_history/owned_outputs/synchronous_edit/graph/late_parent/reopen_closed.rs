@@ -7,7 +7,7 @@ use family::decision_write;
 use std::sync::atomic::{AtomicBool, Ordering};
 /// Whether `decision-write-n` reads model `a` (n = 3) instead of `b` (n = 8):
 /// per court, and each court runs in its own process.
-static SECOND_WRITER_A: AtomicBool = AtomicBool::new(false);
+pub(super) static SECOND_WRITER_A: AtomicBool = AtomicBool::new(false);
 use super::super::super::interleaved::valued_members;
 use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
 
@@ -16,9 +16,9 @@ pub struct Root;
 impl ApplicationConnectionIdentity for Root {
     const IDENTITY: &'static str = "owned-outputs.late-parent.second-root";
 }
-type Entry = super::super::super::super::program::Entry;
+pub(super) type Entry = super::super::super::super::program::Entry;
 impl ApplicationOccurrenceConnectionBinding<Schema, Entry, hierarchy::Parent> for Root {}
-type RootConnection = ApplicationConnectionRef<
+pub(super) type RootConnection = ApplicationConnectionRef<
     Schema,
     Entry,
     super::super::super::super::program::EntryOutput,
@@ -49,7 +49,7 @@ impl ApplicationConnectionIdentity for Guard {
     const IDENTITY: &'static str = "owned-outputs.late-parent.second-guard";
 }
 impl ApplicationOccurrenceConnectionBinding<Schema, hierarchy::Parent, guarded_first::Feature> for Guard {}
-type GuardConnection = ApplicationConnectionRef<
+pub(super) type GuardConnection = ApplicationConnectionRef<
     Schema,
     hierarchy::Parent,
     hierarchy::Output,
@@ -97,7 +97,7 @@ impl ApplicationConnectionIdentity for WriteEdge {
     const IDENTITY: &'static str = "owned-outputs.late-parent.second-writer";
 }
 impl ApplicationOccurrenceConnectionBinding<Schema, hierarchy::Parent, decision_write::Feature> for WriteEdge {}
-type WriteEdgeConnection = ApplicationConnectionRef<
+pub(super) type WriteEdgeConnection = ApplicationConnectionRef<
     Schema,
     hierarchy::Parent,
     hierarchy::Output,
@@ -159,7 +159,7 @@ impl ApplicationOccurrenceConnectionBinding<Schema, decision_write::Feature, dec
     for SecondEdge
 {
 }
-type SecondEdgeConnection = ApplicationConnectionRef<
+pub(super) type SecondEdgeConnection = ApplicationConnectionRef<
     Schema,
     decision_write::Feature,
     decision_write::OutputPort,

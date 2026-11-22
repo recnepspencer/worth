@@ -14,3 +14,5 @@ pub mod registry;
 #[path = "scheduling/mod.rs"]
 pub mod scheduling;
 pub use crate::domain_computation::primary_graph::application_contribution::producer::WorthQueryProducerCommitAuthority;
+/// The orphan backstop's walk (PR C C4 r5).
+pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::court_doors_for_test::first_orphan_for_test;

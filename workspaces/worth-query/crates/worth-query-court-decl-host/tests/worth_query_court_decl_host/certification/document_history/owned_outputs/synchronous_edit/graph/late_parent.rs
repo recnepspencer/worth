@@ -15,6 +15,8 @@ mod pending_retry;
 mod prior_effect;
 mod refused_reselect;
 mod reopen_closed;
+mod dropped_parent;
+mod reopened_drop;
 mod selection;
 mod selection_merge;
 mod selection_swap;
