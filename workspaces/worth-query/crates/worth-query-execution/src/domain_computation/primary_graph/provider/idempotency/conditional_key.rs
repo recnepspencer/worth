@@ -28,25 +28,32 @@ pub(in crate::domain_computation::primary_graph) enum WorthQueryConditionalKeyFa
 }
 
 impl WorthQueryPrimaryGraphProvider {
-    /// Whether this live process still holds unpublished or pending publication
-    /// custody for `key` on `product`. Checked before concluding `Absent` in a
-    /// live process so an in-flight/unreleased original is never erased.
-    pub(in crate::domain_computation::primary_graph) fn has_live_unpublished_or_pending_conditional_key(
+    /// Classify live unpublished, live effect-bearing released, or in-flight
+    /// pending publication custody for `binding` on `product`. Checked before
+    /// falling back to the selected World snapshot so neither live custody nor
+    /// an effect-bearing live release can ever be misclassified as `Absent`.
+    pub(in crate::domain_computation::primary_graph) fn live_conditional_key_fate(
         &self,
         product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
-        key: [u8; 32],
-    ) -> bool {
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<Option<WorthQueryConditionalKeyFate>, Denial> {
         let affinity =
             WorthQueryProductIdempotencyAffinity::from_observation(product.observation());
-        if self.has_live_unpublished_key(&affinity, key) {
-            return true;
+        if let Some(fate) = self.live_key_fate(&affinity, binding)? {
+            return Ok(Some(fate));
         }
-        matches!(
-            self.inspect_pending_application_idempotency(affinity.incarnation()),
-            Some(Some(recorded)) if *recorded.key_identity() == key
-        ) || matches!(
-            self.inspect_pending_application_idempotency(affinity.incarnation()),
-            Some(None)
+        Ok(
+            match self.inspect_pending_application_idempotency(affinity.incarnation()) {
+                Some(Some(recorded)) if recorded.key_identity() == binding.key_identity() => {
+                    Some(if recorded.intent_identity() == binding.intent_identity() {
+                        WorthQueryConditionalKeyFate::LiveUnpublishedOrPending
+                    } else {
+                        WorthQueryConditionalKeyFate::OtherIntent
+                    })
+                }
+                Some(None) => Some(WorthQueryConditionalKeyFate::LiveUnpublishedOrPending),
+                Some(Some(_)) | None => None,
+            },
         )
     }
 
@@ -63,8 +70,8 @@ impl WorthQueryPrimaryGraphProvider {
         if let Some(fate) = self.recovered_key_fate(&affinity, binding)? {
             return Ok(fate);
         }
-        if self.has_live_unpublished_or_pending_conditional_key(product, key) {
-            return Ok(WorthQueryConditionalKeyFate::LiveUnpublishedOrPending);
+        if let Some(fate) = self.live_conditional_key_fate(product, binding)? {
+            return Ok(fate);
         }
         let layout = self.graph.layout.provider_idempotency().clone();
         self.graph.with_runtime(execution, |runtime| {

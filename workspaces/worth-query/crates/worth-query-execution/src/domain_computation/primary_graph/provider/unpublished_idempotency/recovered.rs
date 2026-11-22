@@ -192,26 +192,40 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             }
         }))
     }
-    /// Whether a live unpublished entry exists for `(product, key)` whose
-    /// custody has not been released with an original effect.
-    pub(in crate::domain_computation::primary_graph::provider) fn has_live_unpublished_key(
+    /// Classify any live unpublished or effect-bearing released entry for
+    /// `(product, key)` against `binding`'s root intent.
+    pub(in crate::domain_computation::primary_graph::provider) fn live_key_fate(
         &self,
         product: &WorthQueryProductIdempotencyAffinity,
-        key: [u8; 32],
-    ) -> bool {
+        binding: WorthQueryApplicationIdempotencyBinding,
+    ) -> Result<Option<super::super::WorthQueryConditionalKeyFate>, Denial> {
+        use super::super::WorthQueryConditionalKeyFate as Fate;
         let store = self
             .unpublished_idempotency
             .lock()
             .unwrap_or_else(|e| e.into_inner());
-        let binding = WorthQueryApplicationIdempotencyBinding::new(key, [0; 32]);
         let lookup = WorthQueryUnpublishedIdempotencyKey::for_binding(product, &binding);
-        store.by_key.get(&lookup).is_some_and(|entry| {
-            entry
-                .lock()
-                .unwrap_or_else(|e| e.into_inner())
-                .released
-                .is_none()
-        })
+        let Some(entry) = store.by_key.get(&lookup) else {
+            return Ok(None);
+        };
+        let entry = entry.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(released) = &entry.released {
+            let root = super::super::idempotency::conditional_key::recorded_root(
+                released.recorded_intent(),
+            )?;
+            return Ok(Some(if root == *binding.intent_identity() {
+                Fate::Released
+            } else {
+                Fate::OtherIntent
+            }));
+        }
+        Ok(Some(
+            if entry.binding.intent_identity() == binding.intent_identity() {
+                Fate::LiveUnpublishedOrPending
+            } else {
+                Fate::OtherIntent
+            },
+        ))
     }
     /// The recovered unpublished original a conditional retry must continue.
     /// An in-memory lookup: originals recovered at Home preparation only.

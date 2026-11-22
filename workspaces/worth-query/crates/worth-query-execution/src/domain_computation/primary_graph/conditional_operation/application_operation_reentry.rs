@@ -275,19 +275,30 @@ where
             admission_canonical_work,
         });
     }
-    if runtime
+    match runtime
         .runtime
         .primary_provider
-        .has_live_unpublished_or_pending_conditional_key(
-            &product.publication_binding(),
-            *idempotency.binding().key_identity(),
-        )
+        .live_conditional_key_fate(&product.publication_binding(), idempotency.binding())
     {
-        return Ok(WorthQueryTemporalReentryAttempt {
-            outcome: recovered_original::live_unpublished_unresolved(),
-            continuation_identity,
-            admission_canonical_work,
-        });
+        Ok(Some(
+            crate::domain_computation::primary_graph::provider::WorthQueryConditionalKeyFate::LiveUnpublishedOrPending,
+        )) => {
+            return Ok(WorthQueryTemporalReentryAttempt {
+                outcome: recovered_original::live_unpublished_unresolved(),
+                continuation_identity,
+                admission_canonical_work,
+            });
+        }
+        Ok(Some(
+            crate::domain_computation::primary_graph::provider::WorthQueryConditionalKeyFate::Released,
+        )) => {
+            return Ok(WorthQueryTemporalReentryAttempt {
+                outcome: WorthQueryTemporalReentryOutcome::AlreadyCommitted(None),
+                continuation_identity,
+                admission_canonical_work,
+            });
+        }
+        Ok(Some(_)) | Ok(None) | Err(_) => {}
     }
     let result = attempt_progression::try_reentry(
         request_execution,

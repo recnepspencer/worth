@@ -51,7 +51,7 @@ pub(super) fn complete_wake<Clock, Input>(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub(super) fn retire_obsolete<Clock, Input>(
+pub(super) fn retire_wake_with_decision<Clock, Input>(
     bridge: &BridgeConditionalExecutionView<'_>,
     clock: &BridgeManagedClockBinding,
     candidates: &mut BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
@@ -59,36 +59,12 @@ pub(super) fn retire_obsolete<Clock, Input>(
     identity: String,
     evidence: BridgeConditionalDecisionEvidence,
     counts: &mut WorthQueryTemporalReentryCounts,
+    decision: impl FnOnce(BridgeConditionalDecisionEvidence) -> WorthQueryRetainedConditionalDecision,
 ) {
     match retire_committed_wake(bridge, clock, wake) {
         Ok(()) => {
             candidates.remove(&identity);
-            wake.decision =
-                WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence, None);
-        }
-        Err(detail) => {
-            wake.decision =
-                WorthQueryRetainedConditionalDecision::OperationRetryable(evidence, detail);
-            counts.failed += 1;
-        }
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-pub(super) fn retire_no_effect<Clock, Input>(
-    bridge: &BridgeConditionalExecutionView<'_>,
-    clock: &BridgeManagedClockBinding,
-    candidates: &mut BTreeMap<String, WorthQueryReconstructedTemporalIntent<Clock, Input>>,
-    wake: &mut WorthQueryRetainedConditionalWake,
-    identity: String,
-    evidence: BridgeConditionalDecisionEvidence,
-    counts: &mut WorthQueryTemporalReentryCounts,
-) {
-    match retire_committed_wake(bridge, clock, wake) {
-        Ok(()) => {
-            candidates.remove(&identity);
-            wake.decision =
-                WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(evidence);
+            wake.decision = decision(evidence);
         }
         Err(detail) => {
             wake.decision =

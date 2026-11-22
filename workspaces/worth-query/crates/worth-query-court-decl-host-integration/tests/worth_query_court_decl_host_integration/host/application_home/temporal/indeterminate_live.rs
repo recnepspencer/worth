@@ -279,6 +279,72 @@ fn indeterminate_decision_resolves_through_world_on_unpublished_and_candidate_re
         .reclaim();
 }
 
+#[test]
+fn released_post_native_original_on_memory_reports_released_and_never_no_effect() {
+    let lease = checkpoint_capture::lease(128 << 20);
+    let execution = worth_execution::ExecutionRequest::leased(&lease);
+    let home = with_bootstrap_advancement_from_request(execution, |phase| {
+        temporal::directory::memory_request().open_in_advancement(&phase)
+    })
+    .unwrap()
+    .unwrap_or_else(|refused| panic!("memory temporal Home open: {refused:?}"));
+    {
+        let app = home.runtime();
+        let installed = app.conditional::<TemporalConditional>().unwrap();
+        let clock_handle = &installed.as_ref().as_ref().unwrap().clock;
+        let selected = app
+            .with_host_advancement(|phase| {
+                app.on_branch(app.current_world()).select(&phase).unwrap()
+            })
+            .unwrap();
+        let mut clock = selected.conditional_clock(&execution, clock_handle).unwrap();
+        app.runtime()
+            .world_operation_control_for_test()
+            .panic_before_product_compare_once_for_test();
+        app.runtime().lose_next_commit_answer_for_test();
+        let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(first) =
+            clock.observe(&execution)
+        else {
+            panic!("initial due intent observes");
+        };
+        assert_eq!(first.indeterminate_operation_count(), 1);
+        drop(first);
+        let page = app
+            .runtime()
+            .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+            .unwrap();
+        assert_eq!(page.rows().len(), 1);
+        let recovery = app
+            .runtime()
+            .readmit_product_publication_recovery(page.rows()[0].handle())
+            .unwrap();
+        drop(page);
+        app.runtime()
+            .release_product_publication_recovery(recovery, 0)
+            .unwrap();
+        assert!(matches!(
+            retry_original_intent_on_branch(&home, app.current_world(), &execution),
+            primary_graph::WorthQueryConditionalOriginalResolution::Released
+        ));
+        let primary_graph::WorthQueryConditionalClockObservationOutcome::Accepted(retired) =
+            clock.observe(&execution)
+        else {
+            panic!("released-original live re-observation observes");
+        };
+        assert_eq!(retired.committed_operation_count(), 0);
+        assert_eq!(retired.already_committed_operation_count(), 1);
+        assert_eq!(retired.execution_provenance().len(), 1);
+        assert_eq!(
+            retired.execution_provenance()[0].terminal(),
+            primary_graph::WorthQueryConditionalExecutionTerminal::AlreadyCommitted,
+            "effect-bearing live release must never report NoEffect on retirement"
+        );
+        assert!(retired.execution_provenance()[0].published_commit().is_none());
+        assert_eq!(installed.as_ref().as_ref().unwrap().contacts.snapshot().3, 1);
+    }
+    drop(home);
+}
+
 fn cancel_intent_independently(
     home: &Home,
     request_execution: &worth_execution::ExecutionRequest<'_, '_>,

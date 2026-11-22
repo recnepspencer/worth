@@ -1,5 +1,5 @@
 use super::{
-    wake_retirement::{complete_wake, retire_no_effect, retire_obsolete},
+    wake_retirement::{complete_wake, retire_wake_with_decision},
     WorthQueryTemporalReentryCounts, WorthQueryTemporalReentryOutcome,
 };
 use crate::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::{
@@ -84,12 +84,28 @@ pub(super) fn apply_reentry_outcome<Clock, Input>(
             counts,
             Err(commit),
         ),
-        WorthQueryTemporalReentryOutcome::Obsolete => {
-            retire_obsolete(bridge, clock, candidates, wake, identity, evidence, counts)
-        }
-        WorthQueryTemporalReentryOutcome::RetiredNoEffect => {
-            retire_no_effect(bridge, clock, candidates, wake, identity, evidence, counts)
-        }
+        WorthQueryTemporalReentryOutcome::Obsolete => retire_wake_with_decision(
+            bridge,
+            clock,
+            candidates,
+            wake,
+            identity,
+            evidence,
+            counts,
+            |evidence| {
+                WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(evidence, None)
+            },
+        ),
+        WorthQueryTemporalReentryOutcome::RetiredNoEffect => retire_wake_with_decision(
+            bridge,
+            clock,
+            candidates,
+            wake,
+            identity,
+            evidence,
+            counts,
+            WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect,
+        ),
         WorthQueryTemporalReentryOutcome::RetryableCommitFailure(kind) => {
             wake.decision =
                 WorthQueryRetainedConditionalDecision::OperationCommitRetryable(evidence, kind);

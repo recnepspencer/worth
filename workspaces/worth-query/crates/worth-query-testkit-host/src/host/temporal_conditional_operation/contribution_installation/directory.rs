@@ -7,8 +7,19 @@ use worth_query_host::facade::{
 pub fn request(
     location: std::path::PathBuf,
 ) -> WorthQueryApplicationHomeRequest<'static, TemporalHostSchema, TemporalInstallationProgram> {
+    request_at(WorthQueryApplicationHomeLocation::Directory(location))
+}
+
+pub fn memory_request(
+) -> WorthQueryApplicationHomeRequest<'static, TemporalHostSchema, TemporalInstallationProgram> {
+    request_at(WorthQueryApplicationHomeLocation::MemoryOnly)
+}
+
+fn request_at(
+    location: WorthQueryApplicationHomeLocation,
+) -> WorthQueryApplicationHomeRequest<'static, TemporalHostSchema, TemporalInstallationProgram> {
     WorthQueryApplicationHomeRequest::new(
-        WorthQueryApplicationHomeLocation::Directory(location),
+        location,
         validated_program(),
         application_installation::WorthQueryApplicationProgramRoster::new(),
         TemporalHostSchema::declaration().unwrap(),
