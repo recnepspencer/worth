@@ -114,6 +114,7 @@ impl CorrectionMaterialOwner {
     }
     pub(in crate::domain_computation::primary_graph) fn discharge_unperformed(
         &self,
+        originals: Option<&worth_runtime_world::facade::WorldProgramActivationHistory>,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
         let driver = self.publication()?;
@@ -135,8 +136,17 @@ impl CorrectionMaterialOwner {
                 worth_foundational::facade::CorrectionMaterialPinOwner::PreparedCommand {
                     ..
                 } => {}
-                worth_foundational::facade::CorrectionMaterialPinOwner::Publication { .. } => {
-                    return Err(Denial::PublicationPending)
+                worth_foundational::facade::CorrectionMaterialPinOwner::Publication {
+                    original,
+                } => {
+                    if originals.is_some_and(|history| {
+                        history.original_state(original).is_some_and(|state| {
+                            state.fate() == worth_foundational::facade::WorldOriginalFate::Open
+                        })
+                    }) {
+                        continue;
+                    }
+                    return Err(Denial::PublicationPending);
                 }
             }
             let worth_foundational::facade::CorrectionMaterialPinOwner::PreparedCommand { key } =
@@ -159,7 +169,7 @@ impl CorrectionMaterialOwner {
         &mut self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
-        self.discharge_unperformed(request)?;
+        self.discharge_unperformed(None, request)?;
         self.medium
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)

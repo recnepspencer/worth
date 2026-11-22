@@ -1,5 +1,9 @@
 //! Public directory originals and corrections use the shared installed handler.
 mod expiry;
+mod kill_divergent_branch;
+mod kill_original_owner;
+mod kill_split_completion;
+mod numeric_home;
 mod original_operation;
 mod prepared_reopen;
 mod program;

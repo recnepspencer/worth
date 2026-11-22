@@ -268,6 +268,19 @@ fixed owner order before the Home serves anything.
   with lost state, the Home never claims completion: the effect remains
   unresolved and the owner's reconciliation inquiry reports the restarted rail's
   contract (`NoRecord`).
+- **A correction killed between authored completion and required derived settlement,
+  a divergent-branch correction killed without close, or a live original owner
+  held across a kill:** reopen preserves the exact split (authored correction
+  complete, required derived settlement pending); replaying the correction key
+  returns `RecoveredCommitted` and `recover_required_outputs` settles the
+  derived output once matching the uninterrupted reference. A correction on a
+  divergent branch keeps its branch-local lineage and refuses cross-branch
+  alternatives (`ForeignAlternative`). A live original owner held across a kill
+  without `handoff_for_reopen` or close readmits under fresh authenticated
+  authority (`WorthQueryOriginalOperation::readmit_native`), survives a
+  dependency edit, and advances/closes with continuous aggregate identities,
+  while stale handles refuse `StaleIncarnation` and discharged originals refuse
+  `OwnershipMaterialUnavailable`.
 - **A kill while graceful close was publishing its checkpoint:** reopen recovers
   the state committed before that close.
 - **Still refused (D18):** a Signal effect with no recorded open, and a Native

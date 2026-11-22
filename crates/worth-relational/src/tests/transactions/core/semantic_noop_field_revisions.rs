@@ -80,6 +80,26 @@ fn mixed_struct_patch_revises_only_the_field_with_a_new_value() {
             .expect("read request remains live"),
         Some(status_before)
     );
+    let record_patch = updated
+        .patch()
+        .iter()
+        .find(|record| record.target == crate::transactions::data::RecordRef::Entity(entity))
+        .expect("updated entity record patch");
+    assert!(matches!(
+        record_patch.authoritative_patch.full_grammar_operations(),
+        [crate::publication::patch::data::PublishedAuthoritativePatchOperation::FieldLevelPatch {
+            field_sets,
+            field_clears,
+            ..
+        }] if field_sets.len() == 1
+            && field_sets[0].field == field_key("status")
+            && field_clears.is_empty()
+    ));
+    assert_eq!(record_patch.semantic_changes.len(), 1);
+    assert_eq!(
+        record_patch.semantic_changes[0].field_path(),
+        Some(&CanonicalFieldPath::single(field_key("status")))
+    );
     runtime.snapshots().release_snapshot(&before).unwrap();
     release_test_commit_snapshot(&runtime, &updated);
 }

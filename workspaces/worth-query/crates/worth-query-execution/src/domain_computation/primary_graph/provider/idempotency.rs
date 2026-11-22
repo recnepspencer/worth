@@ -14,6 +14,7 @@ pub(in crate::domain_computation::primary_graph) use product_affinity::WorthQuer
 pub(super) mod recorded_origin;
 mod registration;
 pub(super) mod released_original;
+pub(super) use registration::ORIGINAL_CLIENT_KEY_PREFIX;
 pub use registration::idempotency_create_intent;
 pub use released_original::WorthQueryReleasedApplicationEffect;
 pub(crate) mod snapshot_resolution;

@@ -12,7 +12,7 @@ use worth_relational::facade::transactions::{
 
 // Native scopes appended participants' local keys; this issued root key remains
 // the creation correspondence for the original application operation.
-pub(super) const ORIGINAL_CLIENT_KEY_PREFIX: &str = "worth-query-idempotency:";
+pub(in crate::domain_computation::primary_graph::provider) const ORIGINAL_CLIENT_KEY_PREFIX: &str = "worth-query-idempotency:";
 
 pub fn idempotency_create_intent(
     layout: &WorthQueryProviderIdempotencyLayout,

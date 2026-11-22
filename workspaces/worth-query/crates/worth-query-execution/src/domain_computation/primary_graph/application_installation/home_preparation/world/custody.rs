@@ -237,6 +237,23 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         if let Err(cause) = self.settle_indeterminate_decisions(execution) {
             return Err(QueryHomeCustodyReadmissionRefused { query: self, cause });
         }
+        let originals = match self
+            .runtime
+            .runtime()
+            .runtime
+            .product_runtime
+            .owner
+            .inspection_port()
+            .observe_program_activation_history(execution)
+        {
+            Ok(originals) => originals,
+            Err(cause) => {
+                return Err(QueryHomeCustodyReadmissionRefused {
+                    query: self,
+                    cause: QueryHomeCustodyReadmissionDenial::ProgramHistorySource(cause),
+                })
+            }
+        };
         if let Err(cause) = self
             .runtime
             .runtime()

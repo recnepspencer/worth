@@ -40,7 +40,12 @@ pub(super) fn admit(
                 .readmit_associated_effect(request, &subject)
                 .map_err(super::native_source::denial)?;
             for creation in effect.semantic_result().created_entities() {
-                if creation.key.kind != layout.entity_kind {
+                if creation.key.kind != layout.entity_kind
+                    || !creation
+                        .key
+                        .client_key
+                        .starts_with(super::super::idempotency::ORIGINAL_CLIENT_KEY_PREFIX)
+                {
                     continue;
                 }
                 let row = effect
