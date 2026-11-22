@@ -19,11 +19,10 @@
 
 pub use worth_query_declaration::facade::{
     application_aftermath, application_capability, application_history, application_identity,
-    application_naming,
-    application_operation, application_program, application_query, application_resource,
-    application_schema, authentication, authoring, binding, branch, canonicalization, collection,
-    diagnostics, identity, identity_authority, portable_identity, schema_view, typed, validation,
-    view_declaration,
+    application_naming, application_operation, application_program, application_query,
+    application_resource, application_schema, authentication, authoring, binding, branch,
+    canonicalization, collection, diagnostics, identity, identity_authority, portable_identity,
+    schema_view, typed, validation, view_declaration,
 };
 pub use worth_query_declaration::{
     worth_query_ability, worth_query_application_query, worth_query_capability,
@@ -38,6 +37,11 @@ pub use worth_query_declaration::{
     worth_query_operation_unlinks, worth_query_operation_writes, worth_query_policy,
     worth_query_portable_type, worth_query_query_binding, worth_query_structured_value_binding,
     worth_query_unit, worth_query_value_binding, worth_query_workflow,
+};
+/// Derive syntax over these declaration traits and macros; see
+/// [Build an Application](https://github.com/recnepspencer/worth/blob/master/docs/build-an-application.md).
+pub use worth_query_macros::{
+    WorthQueryAction, WorthQueryProjection, WorthQueryRecord, WorthQuerySchema,
 };
 
 /// Canonical proof-carrying query artifact for declaration consumers.

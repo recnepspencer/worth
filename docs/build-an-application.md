@@ -919,6 +919,77 @@ structured codecs. The [single-source court](../workspaces/worth-query/crates/wo
 installs and runs body actions, a generic family, binding contexts, identity
 namespaces, a `worth_query_native_scalar_bindings!` set and inline `reads`.
 
+#### Derive declarations
+
+Four derives, re-exported by `worth_query_decl::facade` and
+`worth_query_host::facade`, write the same declarations from one Rust item.
+Each expands only into the public traits and macros above, so derived and
+hand-written members mix in one schema, and a derived declaration with the
+same names and identities installs a byte-identical canonical schema.
+
+- `WorthQuerySchema` on a unit struct declares its role: `schema` (a root:
+  `Fragment`, `ApplicationSchema`, `ApplicationSchemaComposition`),
+  `fragment`, `entity` or `relation`. `reference(Schema, Fragment)` adds the
+  usual `reference()`; `name = ".."` keeps a persisted name.
+- `WorthQueryRecord` on a row declares its `aspect = Marker` and its `Record`
+  for `bindings = Codecs`. With `fragment = F, entity = E` it also declares one
+  `FieldSelection` alias per column, named after the column. Columns default
+  to the field name in PascalCase; `column = ".."`, `equality`, `read_only`
+  and `unique` are per field, and `Option<T>` is an optional column.
+- `WorthQueryProjection` on a result row declares a `<row>_slots` module of
+  slot markers, their portable identities (`namespace = NS` gives
+  `NS.slot.<name>`; `slot = ".."` keeps an existing one), a selector per
+  field, `result_shape::<Query>()` and `WorthQueryApplicationProjection` for
+  every query whose result binding carries the row. Each field names its
+  selection with `field = Alias`; a field whose type differs from the column's
+  does not compile.
+- `WorthQueryAction` on an input declares its input binding, operation (with
+  forwarded `access(..)` and inline capabilities such as `reads(Task)`),
+  contextual mutation binding and optional source-completion `delivery`, with
+  identities from `namespace`. Exactly one field carries `scope = Alias`, or
+  the struct declares `principal_scope = Alias`.
+
+<!-- illustrative -->
+```rust,ignore
+#[derive(WorthQueryRecord)]
+#[worth_query(bindings = Codecs, aspect = TaskFacts, fragment = Board, entity = Task)]
+pub struct TaskFactsValue {
+    #[worth_query(column = "TaskKey", equality, read_only)]
+    pub key: u64,
+    pub title: String,
+    pub due: Option<CanonicalDate>,
+}
+#[derive(Clone, Debug, WorthQueryProjection)]
+#[worth_query(schema = Schema, root = Task, namespace = ROWS)]
+pub struct TaskRow {
+    #[worth_query(field = TaskKey)]
+    pub key: u64,
+    #[worth_query(field = Title, slot = "board.row.title.v1")]
+    pub title: String,
+    #[worth_query(field = Due)]
+    pub due: Option<CanonicalDate>,
+}
+#[derive(Clone, Debug, WorthValue, WorthQueryAction)]
+#[worth_query(schema = Schema, context = BoardContext, namespace = RENAME,
+    input = RenameInput, operation = RenameTask, binding = RenameBinding, delivery = Renamed,
+    result = BodyResultBinding, decision = WorthQueryOperationBodyDecision<Schema, Task>,
+    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task))]
+pub struct Rename {
+    #[worth_query(scope = TaskKey)]
+    pub task: u64,
+    pub title: String,
+}
+```
+
+The [macros court](../workspaces/worth-query/crates/worth-query-court-decl-host-macros/tests/worth_query_court_decl_host_macros/macros/mod.rs)
+installs a derived board beside hand-written members under
+`bounded_serial` limits, authenticates a `WorthQueryLocalProcessPrincipal`,
+searches with a case-insensitive `where_filter`, filters an
+`Option<CanonicalDate>` column and commits derived and written actions through
+`WorthQuerySourceCustody`; its parity courts compare derived and hand-written
+declarations, wire-identity overrides included. A `CanonicalDate` input
+member is captured through `serde::Serialize`; it is not a `WorthValue`.
+
 Declare operation access once with `worth_query_operation!(... for Schema:
 SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
 access come from those categories. Where a sealed capability family already owns
