@@ -220,13 +220,19 @@ fn cold_checkpoint_mutable_index_snapshot_demand_and_install_preserves_carried_s
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let (producer, entity, changed, _stable, current, carried) = carried_index_producer(execution);
-    let (runtime, _source) = reopen_cold_index_members(execution, &producer);
+    let (runtime, source) = reopen_cold_index_members(execution, &producer);
     let branch = BranchId("main".into());
     assert_eq!(runtime.observe_branch_region_residency(&branch, entity.partition_id).unwrap().full, Probe::Cold);
+    assert!(runtime.observe_carried_index_checkpoint_image().is_some(), "carried index image must be pending before mutable snapshot demand");
+    let reads_before = source.1.load(std::sync::atomic::Ordering::Relaxed);
     let (_, basis) = runtime.observe_branch(&runtime.main_branch_identity()).unwrap();
     let mut snapshot = runtime.indexes.snapshot();
     snapshot.demand_checkpoint_image(execution).unwrap();
+    let reads_after_demand = source.1.load(std::sync::atomic::Ordering::Relaxed);
+    assert!(reads_after_demand > reads_before, "mutable snapshot demand must read the carried index image");
+    assert!(runtime.observe_carried_index_checkpoint_image().is_some(), "carried image stays pending until the demanded snapshot is installed");
     runtime.indexes.install(snapshot);
+    assert!(runtime.observe_carried_index_checkpoint_image().is_none(), "installing the demanded snapshot must clear the pending image before any ordinary read");
     let access = runtime.index_access();
     for expected in [&current, &carried] {
         assert_eq!(
@@ -234,6 +240,7 @@ fn cold_checkpoint_mutable_index_snapshot_demand_and_install_preserves_carried_s
             Some(expected.as_ref())
         );
     }
+    assert_eq!(source.1.load(std::sync::atomic::Ordering::Relaxed), reads_after_demand, "ordinary generation reads must reuse the installed snapshot without fallback reads");
     let view = runtime.read_truth().project_observation(&basis.observation()).unwrap();
     let lookup = access
         .prepare_entity_field_lookup(&view, changed, KindId(1), &aspect_field_locator(aspect_key("name"), field_key("name")), execution)
