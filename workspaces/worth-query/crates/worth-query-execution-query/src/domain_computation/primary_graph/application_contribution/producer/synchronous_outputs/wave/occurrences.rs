@@ -133,7 +133,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 Ok(false)
             }
             TaskState::Closed { .. } => Ok(true),
-            TaskState::Pending | TaskState::Alias { .. } | TaskState::Done { .. } => Ok(false),
+            TaskState::Pending
+            | TaskState::Alias { .. }
+            | TaskState::Done { .. }
+            | TaskState::Refused { .. } => Ok(false),
         }
     }
 

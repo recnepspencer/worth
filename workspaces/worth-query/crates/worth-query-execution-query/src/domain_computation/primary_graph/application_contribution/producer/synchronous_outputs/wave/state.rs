@@ -17,6 +17,11 @@ pub(super) enum TaskState {
     Done {
         parent: Option<AppliedOutputParent>,
     },
+    /// Refused in its domain while a later authored stage remains (PR C
+    /// §1.7): retried when R2 marks its proofs, reported if still pending.
+    Refused {
+        failure: Box<SynchronousOutputFailure>,
+    },
 }
 
 pub(super) struct Scheduled<S: ApplicationSchema> {

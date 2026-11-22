@@ -18,6 +18,8 @@ pub(super) struct Derivation {
     /// A wave task owns it and can derive it again.
     pub(super) claimed: bool,
     pub(super) superseded: bool,
+    /// A pending domain refusal (PR C §1.7): any marked proof retries it.
+    pub(super) refusal: bool,
     /// The last member that marked it, so one append compares it once.
     marked_by: Option<usize>,
 }
@@ -27,6 +29,15 @@ impl Derivation {
         Self::part(read, position, None)
     }
 
+    /// A pending refusal's proofs, owned by its wave task.
+    pub(super) fn refusal(read: ParentRead, position: usize) -> Self {
+        Self {
+            claimed: true,
+            refusal: true,
+            ..Self::part(read, position, None)
+        }
+    }
+
     pub(super) fn part(read: ParentRead, position: usize, writer: Option<usize>) -> Self {
         Self {
             read,
@@ -34,6 +45,7 @@ impl Derivation {
             position,
             claimed: false,
             superseded: false,
+            refusal: false,
             marked_by: None,
         }
     }

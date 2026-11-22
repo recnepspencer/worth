@@ -52,7 +52,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 unreachable!("only a retention a task claimed is superseded")
             };
             let owed = self.tasks[i].owed.position().max(reopen.invalidator_owed);
-            if !self.tasks[i].is_done() {
+            if !self.tasks[i].is_done() && !self.is_refused(i) {
                 // An earlier reopen of this batch already reopened it with
                 // its parent (R3): it, and every consumer it deferred, also
                 // owes this append's invalidation.

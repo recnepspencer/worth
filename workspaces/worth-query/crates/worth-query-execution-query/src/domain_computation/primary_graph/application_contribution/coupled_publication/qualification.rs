@@ -5,6 +5,7 @@
 //! the later of its own demand and the invalidator (R1).
 use super::ledger::{Derivation, LedgerStop};
 use super::*;
+mod refusal;
 mod selection;
 mod work;
 pub(in crate::domain_computation::primary_graph::application_contribution) use selection::ReopenTarget;
@@ -311,11 +312,21 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         route: Option<&worth_relational::facade::mvcc::RequiredOutputPublicationMeaning>,
         appending: Option<ParentRead>,
     ) -> Result<(), CoupledSourceReadStop> {
-        let (read, position, claimed, writer) = {
+        let (read, position, claimed, writer, refusal) = {
             let ledger = self.ledger.borrow();
             let entry = ledger.entry(id);
-            (entry.read, entry.position, entry.claimed, entry.writer)
+            (entry.read, entry.position, entry.claimed, entry.writer, entry.refusal)
         };
+        if refusal {
+            // A pending refusal retries once one of its proofs may change.
+            self.ledger.borrow_mut().supersede(id);
+            self.reopens.borrow_mut().push(Reopen {
+                target: ReopenTarget::Retention(read),
+                invalidator,
+                invalidator_owed,
+            });
+            return Ok(());
+        }
         if !claimed || !self.consumers_reopenable(execution, read, appending)? {
             return Ok(());
         }
