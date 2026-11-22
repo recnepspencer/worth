@@ -178,6 +178,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         task.reopened |= was_done;
         task.owed = crate::domain_computation::primary_graph::application_contribution::coupled_publication::OwedDemand::at(owed);
         self.reopen_aliases(context, candidate, i, invalidator)?;
+        self.raise_readers_owed(context, i, owed)?;
         // Readers that have not run yet close again and wait on it; readers
         // that already consumed it wait for its new derivation, then settle
         // to it or reopen with it at the same invalidator (R3).

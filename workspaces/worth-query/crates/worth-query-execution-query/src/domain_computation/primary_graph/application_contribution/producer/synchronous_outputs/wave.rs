@@ -13,6 +13,7 @@ pub(in crate::domain_computation::primary_graph) use observation::{
 mod occurrences;
 mod outgoing;
 mod prerequisites;
+mod owed_order;
 mod refusal;
 mod reopen;
 mod roots;
@@ -49,6 +50,8 @@ pub struct SynchronousOutputWave<S: ApplicationSchema> {
     rediscovered: Vec<usize>,
     /// Roots seeded so far: each owns its selector's support (#238).
     roots: usize,
+    /// Ready reopened tasks held until every earlier-owed task has run.
+    held: ExecutionOrderedMap<usize, ()>,
     needed_undone_count: usize,
     needed_dirty: bool,
     last_allowed: Option<Option<Vec<String>>>,
@@ -69,6 +72,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             by_read: ExecutionOrderedMap::default(),
             rediscovered: Vec::new(),
             roots: 0,
+            held: ExecutionOrderedMap::default(),
             needed_undone_count: 0,
             needed_dirty: true,
             last_allowed: None,
@@ -223,6 +227,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             if self.discover_alias_continuations(context, candidate)? {
                 continue;
             }
+            // A reopened task derives only after every earlier-owed task.
+            self.hold_reopened(context)?;
             let Some((rank, ready, _ready_memory)) = self.collect_rank_batch(context)? else {
                 if self.handle_quiescence(context, candidate, allowed)? {
                     continue;
@@ -239,33 +245,6 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         Ok(())
     }
 
-    fn collect_rank_batch(
-        &self,
-        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
-    ) -> Result<
-        Option<(usize, Vec<usize>, Option<ExecutionMemoryReservation>)>,
-        SynchronousOutputFailure,
-    > {
-        let subject = "required occurrence frontier";
-        checkpoint(
-            context.execution,
-            subject,
-            self.ready_queue.len().max(1).ilog2() as u64 + 1,
-        )?;
-        let Some((&(rank, _), ())) = self.ready_queue.entry_at(0) else {
-            return Ok(None);
-        };
-        let mut ready = Vec::new();
-        let mut memory = None;
-        for (&(r, i), ()) in self.ready_queue.iter() {
-            if r != rank {
-                break;
-            }
-            push_funded(&mut ready, &mut memory, i, context.execution, subject)?;
-        }
-        Ok(Some((rank, ready, memory)))
-    }
-
     fn handle_quiescence(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -275,6 +254,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         observation::record(|| "quiescence".to_owned());
         self.refresh_outgoing(context, candidate, allowed)?;
         if !self.ready_queue.is_empty() {
+            return Ok(true);
+        }
+        // A held task whose earlier-owed blocker cannot run in this drive.
+        if self.release_held(context)? {
             return Ok(true);
         }
         if self.needed_undone_count > 0 {
