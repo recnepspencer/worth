@@ -307,9 +307,14 @@ fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boun
     );
 
     let owner = runtime.history.retention_binding().owner.upgrade().unwrap();
-    // Reclaim any initial empty root first so only the two shared-region roots remain.
-    while runtime.retired_branch_root_count() > 2 {
-        runtime.history.try_reclaim_retired_branch_roots(1).unwrap();
+    // Reclaim any initial empty root(s) in one bounded pass so only the two shared-region roots remain.
+    let extra = runtime.retired_branch_root_count().saturating_sub(2);
+    if extra > 0 {
+        let drained = runtime
+            .history
+            .try_reclaim_retired_branch_roots(extra)
+            .unwrap();
+        assert_eq!(drained.roots_reclaimed(), extra as u64);
     }
     assert_eq!(runtime.retired_branch_root_count(), 2);
 
