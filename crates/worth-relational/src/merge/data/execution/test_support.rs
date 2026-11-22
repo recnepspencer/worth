@@ -1,6 +1,12 @@
-use super::PreparedMergeExecution;
+use super::{ExecutionReadyLoweredMergePlan, PreparedMergeExecution};
 
 impl PreparedMergeExecution {
+    pub(crate) fn execution_ready_plan_mut_for_test(
+        &mut self,
+    ) -> &mut ExecutionReadyLoweredMergePlan {
+        &mut self.compiled.execution_ready_plan
+    }
+
     pub(crate) fn bind_mutation_plan_for_test(
         &self,
         transaction_id: crate::transactions::data::TransactionId,
