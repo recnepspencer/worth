@@ -2,7 +2,7 @@
 use std::sync::Arc;
 use worth_query_execution_runtime::facade::ports::{
     DecisionReadSetReceiptInternalPort as _, FreshDecisionReadSetInternalPort as _,
-    PrimaryReadCustody,
+    PrimaryReadCustody, SessionReadAuthorityDecisionComparisonInternalPort as _,
 };
 use worth_query_execution_runtime::facade::provider_session::{
     WorthQueryCompleteDecisionReadSetReceipt, WorthQueryDecisionReadSetDenialKind,

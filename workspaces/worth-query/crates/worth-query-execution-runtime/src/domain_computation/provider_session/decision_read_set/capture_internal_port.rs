@@ -84,3 +84,73 @@ impl FreshDecisionReadSetInternalPort for WorthQueryFreshDecisionReadSet {
         self.receipt
     }
 }
+
+pub trait SessionReadAuthorityDecisionComparisonInternalPort {
+    fn compare_decision_read_set_with(
+        &self,
+        receipt: WorthQueryCompleteDecisionReadSetReceipt,
+        compare: impl FnMut(
+            super::WorthQueryDecisionFactEvidenceView<'_>,
+            super::WorthQueryDecisionFactComparisonAdmission,
+        ) -> Result<
+            super::WorthQueryDecisionFactComparisonEvidence,
+            super::WorthQueryDecisionReadSetFailure,
+        >,
+    ) -> Result<
+        super::WorthQueryDecisionReadSetFreshnessOutcome,
+        super::WorthQueryDecisionReadSetFailure,
+    >;
+
+    fn recompare_fresh_decision_read_set_with(
+        &self,
+        fresh: WorthQueryFreshDecisionReadSet,
+        compare: impl FnMut(
+            super::WorthQueryDecisionFactEvidenceView<'_>,
+            super::WorthQueryDecisionFactComparisonAdmission,
+        ) -> Result<
+            super::WorthQueryDecisionFactComparisonEvidence,
+            super::WorthQueryDecisionReadSetFailure,
+        >,
+    ) -> Result<
+        super::WorthQueryDecisionReadSetFreshnessOutcome,
+        super::WorthQueryDecisionReadSetFailure,
+    >;
+}
+
+impl SessionReadAuthorityDecisionComparisonInternalPort
+    for super::super::WorthQuerySessionReadAuthority<'_>
+{
+    fn compare_decision_read_set_with(
+        &self,
+        receipt: WorthQueryCompleteDecisionReadSetReceipt,
+        compare: impl FnMut(
+            super::WorthQueryDecisionFactEvidenceView<'_>,
+            super::WorthQueryDecisionFactComparisonAdmission,
+        ) -> Result<
+            super::WorthQueryDecisionFactComparisonEvidence,
+            super::WorthQueryDecisionReadSetFailure,
+        >,
+    ) -> Result<
+        super::WorthQueryDecisionReadSetFreshnessOutcome,
+        super::WorthQueryDecisionReadSetFailure,
+    > {
+        Self::compare_decision_read_set_with(self, receipt, compare)
+    }
+
+    fn recompare_fresh_decision_read_set_with(
+        &self,
+        fresh: WorthQueryFreshDecisionReadSet,
+        compare: impl FnMut(
+            super::WorthQueryDecisionFactEvidenceView<'_>,
+            super::WorthQueryDecisionFactComparisonAdmission,
+        ) -> Result<
+            super::WorthQueryDecisionFactComparisonEvidence,
+            super::WorthQueryDecisionReadSetFailure,
+        >,
+    ) -> Result<
+        super::WorthQueryDecisionReadSetFreshnessOutcome,
+        super::WorthQueryDecisionReadSetFailure,
+    > {
+        Self::recompare_fresh_decision_read_set_with(self, fresh, compare)
+    }
+}

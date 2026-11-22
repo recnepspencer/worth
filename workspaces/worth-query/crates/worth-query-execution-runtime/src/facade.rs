@@ -34,6 +34,7 @@ pub mod ports {
     pub use crate::domain_computation::operation_binding::authority::application_binding::ApplicationOperationBindingInternalPort;
     pub use crate::domain_computation::provider_session::decision_read_set::capture_internal_port::{
         DecisionReadSetReceiptInternalPort, FreshDecisionReadSetInternalPort,
+        SessionReadAuthorityDecisionComparisonInternalPort,
     };
     pub use crate::domain_computation::provider_session::graph_provider::bounded_step::provider_anchor::GraphProviderAnchorInternalPort;
     pub use crate::domain_computation::provider_session::protocol::readmission::prepared::staged::prepare_outcome::{

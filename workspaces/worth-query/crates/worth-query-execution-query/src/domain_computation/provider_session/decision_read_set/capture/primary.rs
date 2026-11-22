@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     PrimaryDecisionReadSetComparison, RegisteredPrimaryRead, StorageControl,
 };
+use worth_query_execution_runtime::facade::ports::SessionReadAuthorityDecisionComparisonInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryDecisionFactKind, APPLICATION_DECISION_FACT_FAMILY,
 };

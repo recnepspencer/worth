@@ -192,7 +192,7 @@ impl WorthQuerySessionReadAuthority<'_> {
         })
     }
 
-    pub fn compare_decision_read_set_with(
+    pub(crate) fn compare_decision_read_set_with(
         &self,
         receipt: WorthQueryCompleteDecisionReadSetReceipt,
         mut compare: impl FnMut(
@@ -267,7 +267,7 @@ impl WorthQuerySessionReadAuthority<'_> {
         self.validate_decision_read_set_receipt(&fresh.receipt)
     }
 
-    pub fn recompare_fresh_decision_read_set_with(
+    pub(crate) fn recompare_fresh_decision_read_set_with(
         &self,
         fresh: WorthQueryFreshDecisionReadSet,
         compare: impl FnMut(

@@ -156,3 +156,29 @@
 //! ```compile_fail,E0432
 //! use worth_query_host::facade::installed::domain_computation::WorthQueryApplicationOperationBindingInput;
 //! ```
+//!
+//! Host callers cannot supply a custom decision-read freshness callback:
+//!
+//! ```compile_fail,E0599
+//! use worth_query_host::facade::installed::provider_session::{
+//!     WorthQueryCompleteDecisionReadSetReceipt, WorthQuerySessionReadAuthority,
+//! };
+//! fn no_custom_decision_compare(
+//!     authority: &WorthQuerySessionReadAuthority<'_>,
+//!     receipt: WorthQueryCompleteDecisionReadSetReceipt,
+//! ) {
+//!     let _ = authority.compare_decision_read_set_with(receipt, |_, _| todo!());
+//! }
+//! ```
+//!
+//! ```compile_fail,E0599
+//! use worth_query_host::facade::installed::provider_session::{
+//!     WorthQueryFreshDecisionReadSet, WorthQuerySessionReadAuthority,
+//! };
+//! fn no_custom_decision_recompare(
+//!     authority: &WorthQuerySessionReadAuthority<'_>,
+//!     fresh: WorthQueryFreshDecisionReadSet,
+//! ) {
+//!     let _ = authority.recompare_fresh_decision_read_set_with(fresh, |_, _| todo!());
+//! }
+//! ```
