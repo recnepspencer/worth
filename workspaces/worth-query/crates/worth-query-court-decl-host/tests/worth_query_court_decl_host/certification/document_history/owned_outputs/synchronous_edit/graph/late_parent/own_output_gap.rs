@@ -149,3 +149,49 @@ fn a_successor_reaching_its_own_created_record_by_relation_refuses_typed() {
     );
     assert_eq!(courts::native_head(&host), head);
 }
+
+/// The same edit with a traversal only (PR C C4 r7): the successor's
+/// `FirstOf` read reaches `first:a` and never reads its value. The endpoint
+/// is a record its own chain created, absent at the chain head's pre-pin, so
+/// the traversal denies (`NativeRead::endpoint`) and the round stops typed
+/// (`PriorEffectRead`). With a foreign linker, a relation another writer
+/// made to the chain's record, nothing else would catch it (no field read,
+/// and the chain's touch on the record does not intersect the anchor's
+/// adjacency); no public fixture links to another producer's output, so
+/// this court uses the chain's own link, which successor independence
+/// would also catch after preparation.
+#[test]
+fn a_successor_traversing_to_its_own_created_record_refuses_typed() {
+    family::c3b::self_relation::TRAVERSE_ONLY.store(true, std::sync::atomic::Ordering::Relaxed);
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install_program_with_other_model::<Program>(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        2,
+        Some(7),
+    );
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let head = courts::native_head(&host);
+    let mut edit = request
+        .edit_envelope()
+        .idempotency("own-output-traverse".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    edit.push_stage::<Tree, _>(edit::Intent {
+        key: "b".into(),
+        value: 8,
+    })
+    .unwrap();
+    let outcome = edit
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    let events = _execution.wave_events_for_test();
+    let detail = format!("{outcome:?}");
+    assert!(
+        detail.contains("CoupledContinuationProvenancePostponed { issue: 119, reason: PriorEffectRead }"),
+        "{detail}; {events:#?}"
+    );
+    assert_eq!(courts::native_head(&host), head);
+}

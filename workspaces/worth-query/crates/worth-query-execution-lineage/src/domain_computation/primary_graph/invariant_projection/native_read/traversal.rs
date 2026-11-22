@@ -102,6 +102,7 @@ impl NativeRead<'_, '_> {
         if !available {
             return Err(endpoint_unavailable(entity));
         }
+        self.require_coherent_endpoint(execution, entity_id, expected_kind, entity)?;
         Ok(WorthQueryInvariantEntityIdentity {
             entity_id,
             kind: expected_kind,
@@ -113,6 +114,58 @@ impl NativeRead<'_, '_> {
                 .map(|id| id.qualification()),
             _marker: PhantomData,
         })
+    }
+    /// A successor round's own-output view is entity-only (#277): an
+    /// endpoint the current image holds may be a record the round's own
+    /// chain created, absent at the chain head's pre-pin. Traversing to it
+    /// reads a key the chain wrote outside the view (plan §1.5), so the
+    /// view is marked incoherent and the traversal denies; the round's
+    /// untyped failure then stops typed (`PriorEffectRead`). A covered
+    /// endpoint that exists at the head (a record the chain changed) is
+    /// unchanged. One charged record read, only for a covered endpoint.
+    fn require_coherent_endpoint(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity_id: EntityId,
+        expected_kind: KindId,
+        entity: &str,
+    ) -> Result<(), WorthQueryInvariantProjectionTraversalDenial> {
+        let Some(own) = self.native.own_outputs().filter(|own| own.covers(entity_id)).cloned()
+        else {
+            return Ok(());
+        };
+        if !self.budget.consume(1) {
+            return Err(work_budget_exceeded(entity));
+        }
+        self.work.record_endpoint();
+        let head = own.head().project_candidate();
+        let present = head
+            .entity_record_with_projection_scope_admitted(
+                execution,
+                entity_id,
+                ProjectionAspectScope::empty(),
+                |_| Ok::<_, std::convert::Infallible>(()),
+                |record| {
+                    (record.kind_id() == expected_kind
+                        && record.lifecycle() == RecordLifecycleState::Live)
+                        .then_some(())
+                },
+            )
+            .map(|result| result.unwrap_or_else(|never| match never {}))
+            .map_err(|cause| {
+                WorthQueryInvariantProjectionTraversalDenial::new(
+                    WorthQueryInvariantProjectionTraversalDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    entity,
+                )
+            })?
+            .is_some();
+        if present {
+            return Ok(());
+        }
+        own.mark_incoherent(entity_id);
+        Err(endpoint_unavailable(entity))
     }
     pub fn branch_view(
         &self,

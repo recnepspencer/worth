@@ -115,45 +115,6 @@ impl WorthQueryApplicationSnapshotLease {
     ) {
         self.own_outputs = own_outputs.cloned();
     }
-    /// Observe `key` at the applied image, when the lease has one. Only a
-    /// field read is served by a successor's own-output view; a covered
-    /// record absent there was created by the chain, and the view is
-    /// incoherent (#277).
-    pub fn observe_applied(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        key: &super::WorthQueryApplicationFactKey,
-    ) -> Option<Result<super::WorthQueryApplicationObservedFact, super::WorthQueryApplicationAttemptDenial>>
-    {
-        let entity = match key {
-            super::WorthQueryApplicationFactKey::Field { entity_id, .. } => Some(*entity_id),
-            _ => None,
-        };
-        let pin = self.applied_projection_of(entity)?;
-        let observed =
-            super::read_set::fact_observation::observe_applied_fact(execution, &self.layout, key, pin);
-        // Incoherent only when the entity itself is absent at the head pre-pin,
-        // never for an absent aspect or field of an entity that exists there.
-        if let (Err(denial), Some(entity), Some(own)) = (&observed, entity, &self.own_outputs)
-            && denial.kind() == super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact
-            && own.covers(entity)
-            && let super::WorthQueryApplicationFactKey::Field { entity: name, .. } = key
-        {
-            let presence = super::WorthQueryApplicationFactKey::Entity {
-                entity: name.clone(),
-                entity_id: entity,
-            };
-            if super::read_set::fact_observation::observe_applied_fact(execution, &self.layout, &presence, pin)
-                .is_err_and(|denial| {
-                    denial.kind() == super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact
-                        && denial.relational_execution_cause().is_none()
-                })
-            {
-                own.mark_incoherent(entity);
-            }
-        }
-        Some(observed)
-    }
     /// The applied image a single-record fact of `entity` is observed at.
     pub fn applied_projection_of(
         &self,
@@ -390,3 +351,5 @@ fn release_custody(custody: SnapshotCustody) -> WorthQueryApplicationSnapshotRel
 }
 
 mod court_doors_for_test;
+
+mod applied_read;
