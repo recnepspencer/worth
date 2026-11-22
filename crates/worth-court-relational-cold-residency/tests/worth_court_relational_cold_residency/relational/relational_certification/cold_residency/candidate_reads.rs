@@ -86,7 +86,7 @@ fn candidate_invariant_discovery_refuses_stickily_without_publication() {
         let medium = fixture.medium;
         let before = runtime.observe_complexity_counters();
         let dictionary = runtime.observe_resident_symbol_dictionary();
-        let diagnostics = runtime.publication().diagnostics_snapshot().diagnostics;
+        let diagnostics = runtime.publication().diagnostics_snapshot();
         let frontier = runtime.history().latest_patch_stream_position();
         let offered = medium.offered().len();
         source.damaged.store(true, Ordering::Relaxed);
@@ -124,10 +124,7 @@ fn candidate_invariant_discovery_refuses_stickily_without_publication() {
             before.invariant_entity_slot_scans
         );
         assert_eq!(runtime.observe_resident_symbol_dictionary(), dictionary);
-        assert_eq!(
-            runtime.publication().diagnostics_snapshot().diagnostics,
-            diagnostics
-        );
+        assert_eq!(runtime.publication().diagnostics_snapshot(), diagnostics);
         assert_eq!(runtime.history().latest_patch_stream_position(), frontier);
         assert_eq!(medium.offered().len(), offered);
     }

@@ -13,7 +13,6 @@ use crate::identity::data::{EntityId, LineageId, PartitionId, VersionId};
 use crate::indexes::data::{DerivedIndexGenerationId, DerivedIndexId};
 use crate::performance::data::RuntimeComplexityCounters;
 use crate::runtime::RelationalRuntime;
-use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess};
 use crate::storage::residency::history_capture_bound::{
     HISTORY_CAPTURE_INPUT_TARGET, HISTORY_CAPTURE_MAX_LAYERS,
 };
@@ -71,13 +70,6 @@ impl RelationalResidentSymbolDictionary {
     pub fn resolve(&self, symbol: Symbol) -> Option<&str> {
         self.entries.iter().find(|(id, _)| *id == symbol).map(|(_, value)| value.as_str())
     }
-}
-/// Read-only census of the runtime's retained latest checkpoint image.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct RelationalRetainedCheckpointCensus {
-    pub envelope_count: usize,
-    pub partition_image_count: usize,
-    pub partition_images_ptr: usize,
 }
 /// Read-only history-capture fold bounds of one checkpoint directory.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -164,19 +156,18 @@ impl RelationalRuntime {
         }
     }
     pub fn entity_replay_pin_count(&self, entity: EntityId) -> Option<u32> {
-        let edition = self.acquire_partition_edition();
-        let partition = edition.try_full_partition(entity.partition_id).ok()??;
+        let edition = self.peek_partition_edition();
+        let partition = edition.peek_accepted_full_partition(entity.partition_id)?;
         partition.entity_arena.replay_pin_count(entity.slot_index())
     }
     pub fn observe_mirror_region_residency(
         &self,
         partition: PartitionId,
     ) -> RelationalRegionResidencyObservation {
-        let edition = self.acquire_partition_edition();
-        let source = edition.with_symbol_admission(&self.services.symbols);
+        let edition = self.peek_partition_edition();
         RelationalRegionResidencyObservation {
-            head: head_status(CurrentPartitionAccess::probe_head_partition(&source, partition)),
-            full: full_status(PartitionAccess::probe_full_partition(&source, partition)),
+            head: head_status(edition.peek_head_region_with_symbols(partition, &self.services.symbols)),
+            full: full_status(edition.peek_full_region_with_symbols(partition, &self.services.symbols)),
         }
     }
     pub fn observe_branch_region_residency(
@@ -186,16 +177,16 @@ impl RelationalRuntime {
     ) -> Option<RelationalRegionResidencyObservation> {
         let root = self.history.branch_cell(branch)?.root()?;
         Some(RelationalRegionResidencyObservation {
-            head: head_status(root.probe_head_region_with_symbols(partition, &self.services.symbols)),
-            full: full_status(root.probe_full_region_with_symbols(partition, &self.services.symbols)),
+            head: head_status(root.peek_head_region_with_symbols(partition, &self.services.symbols)),
+            full: full_status(root.peek_full_region_with_symbols(partition, &self.services.symbols)),
         })
     }
     pub fn observe_partition_slot_census(
         &self,
         partition: PartitionId,
     ) -> Option<RelationalPartitionSlotCensus> {
-        let edition = self.acquire_partition_edition();
-        Some(partition_slot_census(edition.try_full_partition(partition).ok()??))
+        let edition = self.peek_partition_edition();
+        Some(partition_slot_census(edition.peek_accepted_full_partition(partition)?))
     }
     pub fn observe_branch_partition_slot_census(
         &self,
@@ -204,12 +195,12 @@ impl RelationalRuntime {
     ) -> Option<RelationalPartitionSlotCensus> {
         let root = self.history.branch_cell(branch)?.root()?;
         if let PartitionProbe::Resident(state) =
-            root.probe_full_region_with_symbols(partition, &self.services.symbols)
+            root.peek_full_region_with_symbols(partition, &self.services.symbols)
         {
             return Some(partition_slot_census(state));
         }
         let PartitionHeadProbe::Resident(head) =
-            root.probe_head_region_with_symbols(partition, &self.services.symbols)
+            root.peek_head_region_with_symbols(partition, &self.services.symbols)
         else {
             return None;
         };
@@ -245,7 +236,7 @@ impl RelationalRuntime {
     ) -> Option<usize> {
         let root = self.history.branch_cell(branch)?.root()?;
         let PartitionProbe::Resident(state) =
-            root.probe_full_region_with_symbols(entity.partition_id, &self.services.symbols)
+            root.peek_full_region_with_symbols(entity.partition_id, &self.services.symbols)
         else {
             return None;
         };
@@ -262,14 +253,6 @@ impl RelationalRuntime {
     }
     pub fn observe_carried_index_checkpoint_image(&self) -> Option<RelationalDurableMemberLocator> {
         self.indexes.carried_checkpoint_image()
-    }
-    pub fn observe_retained_checkpoint_census(&self) -> Option<RelationalRetainedCheckpointCensus> {
-        let retained = self.durability.latest_checkpoint()?;
-        Some(RelationalRetainedCheckpointCensus {
-            envelope_count: retained.envelopes.len(),
-            partition_image_count: retained.partition_images.len(),
-            partition_images_ptr: retained.partition_images.as_ptr() as usize,
-        })
     }
 }
 

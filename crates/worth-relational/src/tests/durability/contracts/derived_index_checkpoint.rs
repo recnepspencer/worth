@@ -10,131 +10,85 @@ use crate::indexes::data::{
 };
 
 fn name_index(runtime: &crate::runtime::RelationalRuntime) -> DerivedIndexDefinition {
-    runtime
-        .index_authority()
-        .register(DerivedIndexDefinition {
-            index_id: DerivedIndexId(0),
-            name: "checkpoint-index-tail".into(),
-            kind: DerivedIndexKind::EntityField {
-                field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-            },
-            branch_scoped: false,
-        })
-        .expect("index fixture has identity capacity")
+    runtime.index_authority().register(DerivedIndexDefinition {
+        index_id: DerivedIndexId(0),
+        name: "checkpoint-index-tail".into(),
+        kind: DerivedIndexKind::EntityField {
+            field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
+        },
+        branch_scoped: false,
+    }).expect("index fixture has identity capacity")
 }
-
 fn build(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalRuntime,
     index: DerivedIndexId,
     outcome: &crate::transactions::data::CommitResult,
 ) -> crate::indexes::data::DerivedIndexGenerationId {
-    build_on_branch(execution, runtime, index, outcome, BranchId("main".into()))
-}
-
-fn build_on_branch(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &crate::runtime::RelationalRuntime,
-    index: DerivedIndexId,
-    outcome: &crate::transactions::data::CommitResult,
-    branch_id: BranchId,
-) -> crate::indexes::data::DerivedIndexGenerationId {
     let built = runtime.index_authority().build_for_commit(
         execution,
         DerivedIndexBuildRequest {
             source_commit_id: outcome.commit.commit_id,
-            branch_id,
+            branch_id: BranchId("main".into()),
             index_ids: vec![index],
         },
     );
     assert!(built.failed_indexes.is_empty());
     built.generations[0].generation_id
 }
-
 #[test]
 fn repeated_edits_checkpoint_only_the_live_index_payload() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let runtime = runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "checkpoint-size-0");
     let index = name_index(&runtime);
     build(execution, &runtime, index.index_id, &first);
     release_test_commit_snapshot(&runtime, &first);
     for ordinal in 1..24 {
-        let outcome =
-            create_entity_outcome(execution, &runtime, &format!("checkpoint-size-{ordinal}"));
+        let outcome = create_entity_outcome(execution, &runtime, &format!("checkpoint-size-{ordinal}"));
         build(execution, &runtime, index.index_id, &outcome);
         release_test_commit_snapshot(&runtime, &outcome);
     }
-    let legacy_all = crate::indexes::data::DerivedIndexArtifacts::new(
-        runtime.index_access().generations_snapshot(),
-    );
+    let legacy_all = crate::indexes::data::DerivedIndexArtifacts::new(runtime.index_access().generations_snapshot());
     let legacy_bytes = rmp_serde::to_vec_named(&legacy_all).unwrap().len();
-    let checkpoint = runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
-    let retained_bytes =
-        rmp_serde::to_vec_named(checkpoint.derived_index_checkpoint.as_ref().unwrap())
-            .unwrap()
-            .len();
-    eprintln!(
-        "index checkpoint sections: legacy_all={legacy_bytes} retained_delta={retained_bytes}"
-    );
+    let checkpoint = runtime.durability_authority().checkpoint(execution).unwrap();
+    let retained_bytes = rmp_serde::to_vec_named(checkpoint.derived_index_checkpoint.as_ref().unwrap()).unwrap().len();
     assert!(retained_bytes * 4 < legacy_bytes);
     assert!(runtime.index_access().generations_snapshot().len() < 24);
 }
-
-// Fixture adaptation (C2.4): restores the 622f101e99 private checkpoint format
-// and empty legacy-artifact assertions on the Memory runtime (Embedded
-// checkpoint plus post-checkpoint tail recovery plan).
 #[test]
 fn checkpoint_index_artifact_survives_tail_replay_without_envelope_caches() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let runtime = runtime_with_test_schema();
     let first = create_entity_outcome(execution, &runtime, "checkpoint-index-first");
     let index = name_index(&runtime);
     let first_generation = build(execution, &runtime, index.index_id, &first);
-    let checkpoint = runtime
-        .durability_authority()
-        .checkpoint(execution)
-        .unwrap();
+    let checkpoint = runtime.durability_authority().checkpoint(execution).unwrap();
     assert!(checkpoint.derived_index_artifacts.is_empty());
-    assert_eq!(
-        checkpoint.derived_index_checkpoint_format,
-        crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::FORMAT_VERSION
-    );
+    assert_eq!(checkpoint.derived_index_checkpoint_format, crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts::FORMAT_VERSION);
     let second = create_entity_outcome(execution, &runtime, "checkpoint-index-tail");
     let unjournaled_cache = build(execution, &runtime, index.index_id, &second);
-    let plan = runtime
-        .durability()
-        .recovery_plan(
-            execution,
-            RecoveryVerificationMode::NormalRecoveryVerification,
-        )
-        .unwrap();
+    let plan = runtime.durability().recovery_plan(execution, RecoveryVerificationMode::NormalRecoveryVerification).unwrap();
     let mut recovered = runtime_with_test_schema();
-    recovered
-        .durability_recovery()
-        .recover(execution, plan)
-        .unwrap();
+    recovered.durability_recovery().recover(execution, plan).unwrap();
     assert!(recovered.indexes.generation(first_generation).is_some());
     assert!(recovered.indexes.generation(unjournaled_cache).is_none());
     let rebuilt = build(execution, &recovered, index.index_id, &second);
     assert!(recovered.indexes.generation(rebuilt).is_some());
 }
 
-// Fixture adaptation (C2.4): restores the 8283728aff private Complete codec
-// checks (format version, empty legacy artifacts, roots beside bases, exact
-// bindings, and `readmit`) on the Memory runtime.
-#[test]
-fn complete_checkpoint_saves_the_selection_carried_to_its_current_root() {
-    use crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts;
-    let host = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host);
+fn carried_index_producer(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+) -> (
+    crate::runtime::RelationalRuntime,
+    crate::identity::data::EntityId,
+    DerivedIndexId,
+    DerivedIndexId,
+    std::sync::Arc<crate::indexes::data::DerivedIndexGeneration>,
+    std::sync::Arc<crate::indexes::data::DerivedIndexGeneration>,
+) {
     let producer = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let register = |name: &str, aspect: &str| {
         producer
@@ -164,17 +118,26 @@ fn complete_checkpoint_saves_the_selection_carried_to_its_current_root() {
     );
     assert!(built.failed_indexes.is_empty());
     let latest = |index| {
-        producer
-            .index_access()
-            .read_latest_generation(execution, index, &branch)
-            .unwrap()
-            .unwrap()
+        producer.index_access().read_latest_generation(execution, index, &branch).unwrap().unwrap()
     };
     let carried = latest(stable);
     update_entity_and_release_snapshot(execution, &producer, entity, "complete-index-updated");
     let current = latest(changed);
     assert_eq!(latest(stable), carried);
     assert!(carried.applicability.version_id < current.applicability.version_id);
+    (producer, entity, changed, stable, current, carried)
+}
+
+// Fixture adaptation (C2.4): restores the 8283728aff private Complete codec
+// checks (format version, empty legacy artifacts, roots beside bases, exact
+// bindings, and `readmit`) on the Memory runtime.
+#[test]
+fn complete_checkpoint_saves_the_selection_carried_to_its_current_root() {
+    use crate::durability::derived_index_artifacts::DerivedIndexCheckpointArtifacts;
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let (producer, _entity, changed, stable, current, carried) = carried_index_producer(execution);
+    let branch = BranchId("main".into());
     let head = producer.history().branch_head(&branch).unwrap();
     let complete = producer
         .durability_authority()
@@ -204,6 +167,82 @@ fn complete_checkpoint_saves_the_selection_carried_to_its_current_root() {
     for expected in [&carried, &current] {
         assert!(restored.iter().any(|g| g == expected.as_ref()));
     }
+}
+
+fn reopen_cold_index_members(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    producer: &crate::runtime::RelationalRuntime,
+) -> (crate::runtime::RelationalRuntime, std::sync::Arc<IndexColdSource>) {
+    use crate::durability::data::{RelationalCheckpointArtifactPolicy, RelationalCheckpointMember};
+    use crate::durability::medium::{RelationalDurableCheckpointSource, RelationalDurableRecoverySource};
+    let native = producer
+        .durability_authority()
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+        )
+        .unwrap();
+    let members = native
+        .members()
+        .iter()
+        .map(|m| match m {
+            RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+            RelationalCheckpointMember::Carried { .. } => unreachable!(),
+        })
+        .collect();
+    let source = std::sync::Arc::new(IndexColdSource(members, Default::default()));
+    let recovery = RelationalDurableRecoverySource::new(
+        Some(RelationalDurableCheckpointSource::new(
+            native.covered_position().unwrap(),
+            native.covered_branch_transitions().unwrap(),
+            native,
+        )),
+        Vec::new(),
+        Vec::new(),
+        source.clone(),
+    );
+    let mut runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+    let plan = runtime
+        .durability()
+        .recovery_plan_from_source(execution, recovery, RecoveryVerificationMode::NormalRecoveryVerification)
+        .unwrap();
+    runtime.durability_recovery().recover(execution, plan).unwrap();
+    (runtime, source)
+}
+
+// Fixture adaptation (C2.4): restores the mutable index snapshot demand/install
+// branch of 8283728aff:cold_index_selections.rs over ExternalMembers recovery.
+#[test]
+fn cold_checkpoint_mutable_index_snapshot_demand_and_install_preserves_carried_selection_and_postings() {
+    use crate::durability::RelationalRegionProbeStatus as Probe;
+    use crate::indexes::data::BoundedIndexParityMode;
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let (producer, entity, changed, _stable, current, carried) = carried_index_producer(execution);
+    let (runtime, _source) = reopen_cold_index_members(execution, &producer);
+    let branch = BranchId("main".into());
+    assert_eq!(runtime.observe_branch_region_residency(&branch, entity.partition_id).unwrap().full, Probe::Cold);
+    let (_, basis) = runtime.observe_branch(&runtime.main_branch_identity()).unwrap();
+    let mut snapshot = runtime.indexes.snapshot();
+    snapshot.demand_checkpoint_image(execution).unwrap();
+    runtime.indexes.install(snapshot);
+    let access = runtime.index_access();
+    for expected in [&current, &carried] {
+        assert_eq!(
+            access.read_published_generation_for_observation(execution, expected.index_id, &basis.observation()).unwrap().as_deref(),
+            Some(expected.as_ref())
+        );
+    }
+    let view = runtime.read_truth().project_observation(&basis.observation()).unwrap();
+    let lookup = access
+        .prepare_entity_field_lookup(&view, changed, KindId(1), &aspect_field_locator(aspect_key("name"), field_key("name")), execution)
+        .unwrap();
+    let outcome = lookup
+        .execute_prepared_entity_field_lookup(&string_aspect_value("complete-index-updated"), 2, BoundedIndexParityMode::Production, execution, || Ok::<_, ()>(()))
+        .unwrap();
+    assert_eq!(outcome.candidate_entity_ids(), &[entity]);
+    assert_eq!(runtime.observe_branch_region_residency(&branch, entity.partition_id).unwrap().full, Probe::Cold);
 }
 
 #[derive(Debug)]
@@ -274,61 +313,16 @@ impl crate::durability::medium::RelationalDurableColdSource for IndexColdSource 
 // external-members capture recovered into a Memory runtime (no medium adapter).
 #[test]
 fn residency_cold_index_frontier_prevents_reissue_before_any_image_demand() {
-    use crate::durability::data::{RelationalCheckpointArtifactPolicy, RelationalCheckpointMember};
-    use crate::durability::medium::{
-        RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
-    };
     use std::sync::{atomic::Ordering, Arc};
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     for (bulk, admitted) in [(false, false), (true, false), (false, true), (true, true)] {
-        let producer =
-            runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+        let producer = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
         let index = name_index(&producer).index_id;
         let committed = create_entity_outcome(execution, &producer, "frontier-index-value");
         let generation_id = build(execution, &producer, index, &committed);
         let generation = producer.indexes.generation(generation_id).unwrap();
-        let native = producer
-            .durability_authority()
-            .native_checkpoint_with_policy(
-                execution,
-                execution.allocation_policy(),
-                RelationalCheckpointArtifactPolicy::ExternalMembers {
-                    current_members: &[],
-                    source: None,
-                },
-            )
-            .unwrap();
-        let members = native
-            .members()
-            .iter()
-            .map(|m| match m {
-                RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
-                RelationalCheckpointMember::Carried { .. } => unreachable!(),
-            })
-            .collect();
-        let source = Arc::new(IndexColdSource(members, Default::default()));
-        let recovery = RelationalDurableRecoverySource::new(
-            Some(RelationalDurableCheckpointSource::new(
-                native.covered_position().unwrap(),
-                native.covered_branch_transitions().unwrap(),
-                native,
-            )),
-            Vec::new(),
-            Vec::new(),
-            source.clone(),
-        );
-        let mut runtime =
-            runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
-        let plan = runtime
-            .durability()
-            .recovery_plan_from_source(
-                execution,
-                recovery,
-                RecoveryVerificationMode::NormalRecoveryVerification,
-            )
-            .unwrap();
-        runtime.durability_recovery().recover(execution, plan).unwrap();
+        let (runtime, source) = reopen_cold_index_members(execution, &producer);
         let owner = &runtime.indexes;
         let reserved = if bulk {
             owner.reserve_generation_ids(1).unwrap()[0]

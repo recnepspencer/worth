@@ -69,7 +69,7 @@ pub use crate::durability::{
     RelationalLineageResidencyObservation, RelationalPartitionSlotCensus,
     RelationalRegionProbeStatus, RelationalRegionResidencyObservation,
     RelationalReplayRetentionObservation, RelationalResidentSymbolDictionary,
-    RelationalRetainedCheckpointCensus, RelationalSelectedCheckpointObservation,
+    RelationalSelectedCheckpointObservation,
 };
 pub use crate::durability::{
     RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,

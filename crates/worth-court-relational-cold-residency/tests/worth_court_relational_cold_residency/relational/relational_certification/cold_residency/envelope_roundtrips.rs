@@ -201,6 +201,7 @@ fn recovered_nonhead_tail_envelopes_keep_their_original_receipt_and_source_read_
         .canonical_commit_envelope(request, receipt.commit_id)
         .unwrap()
         .unwrap();
+    assert_eq!(body.commit, receipt);
     drop(body);
     assert!(
         !fixture

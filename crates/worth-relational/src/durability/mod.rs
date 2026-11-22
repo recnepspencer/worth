@@ -23,7 +23,7 @@ pub use cold_residency_census::{
     RelationalHistoryFoldBounds, RelationalLineageResidencyObservation,
     RelationalPartitionSlotCensus, RelationalRegionProbeStatus,
     RelationalRegionResidencyObservation, RelationalReplayRetentionObservation,
-    RelationalResidentSymbolDictionary, RelationalRetainedCheckpointCensus,
+    RelationalResidentSymbolDictionary,
 };
 pub(crate) mod checkpoint_admission;
 pub(crate) mod checkpoint_history;

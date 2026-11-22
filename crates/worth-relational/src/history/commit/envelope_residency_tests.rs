@@ -355,3 +355,38 @@ fn journal_publication_keeps_journal_placement_without_memory_frame() {
     ));
     release_test_commit_snapshot(&runtime, &result);
 }
+
+#[test]
+fn recovered_nonhead_tail_envelopes_release_demanded_journal_body_on_drop() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = worth_execution::ExecutionRequest::serial(&host);
+    let commits = Arc::new(std::sync::Mutex::new(std::collections::BTreeMap::new()));
+    let cold: Arc<dyn RelationalDurableColdSource> = Arc::new(JournalRecordingSource { commits: commits.clone() });
+    let make = || {
+        crate::facade::runtime::RelationalRuntimeApi::builder()
+            .profile(crate::config::data::RelationalRuntimeProfile::CertificationCore)
+            .schema_registry(test_schema_registry())
+            .build_durable(Box::new(JournalRecordingMedium { commits: commits.clone(), source: cold.clone() }))
+            .expect("valid native runtime")
+    };
+    let runtime = make();
+    let entity = create_entity(&execution, &runtime, "tail-body-0");
+    for n in 1..4 {
+        update_entity_and_release_snapshot(&execution, &runtime, entity, &format!("tail-body-{n}"));
+    }
+    let tail: Vec<_> = commits.lock().unwrap().values()
+        .map(|bytes| RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap())
+        .collect();
+    let position = *commits.lock().unwrap().keys().nth(1).unwrap();
+    let mut recovered = make();
+    let recovery = crate::durability::medium::RelationalDurableRecoverySource::new(None, tail, Vec::new(), cold.clone());
+    let plan = recovered.durability().recovery_plan_from_source(&execution, recovery, crate::durability::data::RecoveryVerificationMode::NormalRecoveryVerification).unwrap();
+    recovered.durability_recovery().recover(&execution, plan).unwrap();
+    recovered.history.reclaim_retired_branch_roots(1024);
+    let receipt = recovered.history().immutable_commit_receipt_at_patch_stream_position(position).unwrap();
+    let body = recovered.history().demand_commit_envelope(&execution, receipt.commit_id).unwrap().unwrap();
+    let weak = Arc::downgrade(&body);
+    drop(body);
+    assert!(weak.upgrade().is_none(), "replay must not retain a recovered nonhead journal-backed body after drop");
+    assert_eq!(recovered.history().demand_commit_envelope(&execution, receipt.commit_id).unwrap().unwrap().commit, receipt);
+}

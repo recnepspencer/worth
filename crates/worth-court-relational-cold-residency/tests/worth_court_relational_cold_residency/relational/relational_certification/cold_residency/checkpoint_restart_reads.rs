@@ -37,10 +37,17 @@ fn checkpoint_restart_cycles_preserve_full_reads_and_retention() {
     let original = source_with_history(execution, 3, false);
     let entity = original.entity;
     let (mut recovery, mut archive) = copy_input(&original);
+    let initial_bounds = recovery
+        .checkpoint()
+        .unwrap()
+        .checkpoint()
+        .inspect_history_fold_bounds(execution, Some(archive.clone()))
+        .unwrap()
+        .expect("external-member checkpoint carries a directory");
+    let cycles = initial_bounds.max_layers_limit * 4;
     let mut consolidations = 0usize;
     let mut previous_depth = 0usize;
-    // Original loop cardinality is eight policy layers times four, without a cost claim.
-    for _ in 0..32 {
+    for _ in 0..cycles {
         let runtime = recover(execution, copy_transport(&recovery, archive.clone()));
         let mut reader = begin_main_transaction(&runtime);
         let expected = reader
@@ -49,6 +56,38 @@ fn checkpoint_restart_cycles_preserve_full_reads_and_retention() {
             .effective()
             .cloned()
             .unwrap();
+        // Mirror Head is a separate carrier; warming it via public lineage
+        // record-history resolution must admit mirror Head without admitting
+        // branch or mirror Full history.
+        let main_branch = worth_relational::facade::history::BranchId("main".into());
+        let _ = runtime
+            .inspect_what_happened()
+            .resolve_lineage_record_history(execution, &main_branch, entity)
+            .unwrap();
+        let branch_residency = runtime
+            .observe_branch_region_residency(&main_branch, entity.partition_id)
+            .unwrap();
+        assert_eq!(
+            branch_residency.head,
+            RelationalRegionProbeStatus::Resident,
+            "branch Head must be resident before capturing with prior Heads excluded"
+        );
+        assert_eq!(
+            branch_residency.full,
+            RelationalRegionProbeStatus::Cold,
+            "warming branch and mirror Heads must not demand branch history"
+        );
+        let mirror_residency = runtime.observe_mirror_region_residency(entity.partition_id);
+        assert_eq!(
+            mirror_residency.head,
+            RelationalRegionProbeStatus::Resident,
+            "mirror Head must be resident before capturing with prior Heads excluded"
+        );
+        assert_eq!(
+            mirror_residency.full,
+            RelationalRegionProbeStatus::Cold,
+            "warming mirror Head must not demand mirror history"
+        );
         let directory = selected_directory::read(&recovery);
         let heads = directory
             .roots

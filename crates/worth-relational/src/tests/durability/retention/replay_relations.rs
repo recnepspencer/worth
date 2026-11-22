@@ -314,6 +314,21 @@ fn resident_pin_custody_and_cache_clear_preserve_owned_mirror_residency() {
     use std::sync::atomic::Ordering;
     let host = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
+    #[derive(Debug)]
+    struct OfferedSpy(std::sync::Arc<std::sync::Mutex<Vec<crate::publication::patch::data::PatchStreamPosition>>>, std::sync::Arc<ColdPinSource>);
+    impl crate::durability::medium::RelationalDurableMedium for OfferedSpy {
+        fn publish(&self, a: &crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact) -> crate::durability::medium::DurablePublicationFate<String> {
+            self.0.lock().unwrap().push(a.position());
+            crate::durability::medium::DurablePublicationFate::Committed
+        }
+        fn cold_source(&self) -> std::sync::Arc<dyn crate::durability::medium::RelationalDurableColdSource> { self.1.clone() }
+        fn read_transition(&self, seq: crate::branch::RelationalBranchTransitionSequence) -> Result<crate::facade::durability::RelationalBranchTransitionArtifact, crate::durability::medium::RelationalDurableTransitionReadFailure> {
+            Err(crate::durability::medium::RelationalDurableTransitionReadFailure::Missing(seq))
+        }
+        fn publish_transition(&self, _: &crate::facade::durability::RelationalBranchTransitionArtifact) -> crate::durability::medium::DurablePublicationFate<String> {
+            crate::durability::medium::DurablePublicationFate::Committed
+        }
+    }
     let reopened = || {
         let producer = runtime_with_test_schema();
         let entity = create_entity(execution, &producer, "pin-before");
@@ -322,45 +337,32 @@ fn resident_pin_custody_and_cache_clear_preserve_owned_mirror_residency() {
         let (_, fork_basis) = producer.observe_fork_source(&BranchId("main".into())).unwrap();
         producer.fork_branch(execution, fork_branch.clone(), fork_basis).unwrap();
         update_entity_and_release_snapshot(execution, &producer, entity, "pin-after");
-        let native = producer
-            .durability_authority()
-            .native_checkpoint_with_policy(
-                execution,
-                execution.allocation_policy(),
-                RelationalCheckpointArtifactPolicy::ExternalMembers {
-                    current_members: &[],
-                    source: None,
-                },
-            )
-            .unwrap();
+        let native = producer.durability_authority().native_checkpoint_with_policy(
+            execution, execution.allocation_policy(),
+            RelationalCheckpointArtifactPolicy::ExternalMembers { current_members: &[], source: None },
+        ).unwrap();
         let (recovery, source) = cold_pin_recovery(native);
-        let mut runtime = runtime_with_test_schema();
-        let plan = runtime
-            .durability()
-            .recovery_plan_from_source(
-                execution,
-                recovery,
-                RecoveryVerificationMode::NormalRecoveryVerification,
-            )
+        let offered = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let mut runtime = RelationalRuntimeApi::builder()
+            .schema_registry(test_schema_registry())
+            .build_durable(Box::new(OfferedSpy(offered.clone(), source.clone())))
             .unwrap();
+        let plan = runtime.durability().recovery_plan_from_source(
+            execution, recovery, RecoveryVerificationMode::NormalRecoveryVerification,
+        ).unwrap();
         runtime.durability_recovery().recover(execution, plan).unwrap();
         let basis = crate::visibility::snapshot_states::VisibilitySnapshotBasis::capture_current(
-            &runtime,
-            &fork_branch,
-            historical_version,
-        )
-        .unwrap()
-        .expect("the recovered fork retains the exact old root");
+            &runtime, &fork_branch, historical_version,
+        ).unwrap().expect("the recovered fork retains the exact old root");
         basis.root().demand_all_full(execution, &runtime.services.symbols).unwrap();
         let source_state = crate::visibility::snapshot_states::build_visibility_state(
-            &runtime,
-            basis,
-            crate::snapshots::data::SnapshotId(0),
+            &runtime, basis, crate::snapshots::data::SnapshotId(0),
             crate::snapshots::data::SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
         );
-        (runtime, source, historical_version, entity, source_state)
+        (runtime, source, offered, historical_version, entity, source_state)
     };
-    let (runtime, source, _version, entity, source_state) = reopened();
+    let (runtime, source, offered, _version, entity, source_state) = reopened();
+    let frontier = runtime.history().latest_patch_stream_position();
     let before = source.reads.load(Ordering::Relaxed);
     source.damaged.store(true, Ordering::Relaxed);
     let expected = RelationalExecutionDenialCause::StorageUnavailable(RelationalStorageUnavailable {
@@ -374,7 +376,9 @@ fn resident_pin_custody_and_cache_clear_preserve_owned_mirror_residency() {
     assert_eq!(runtime.visibility_pins().demand_replay_pins(execution, source_state).map(|_| ()), Err(expected));
     assert_eq!(source.reads.load(Ordering::Relaxed), reads);
     assert!(runtime.visibility.replay_retention_versions().is_empty());
-    let (runtime, source, version, entity, _) = reopened();
+    assert_eq!(runtime.history().latest_patch_stream_position(), frontier);
+    assert!(offered.lock().unwrap().is_empty(), "refused replay pinning must offer no durable artifacts");
+    let (runtime, source, _offered, version, entity, _) = reopened();
     assert_eq!(runtime.history_authority().retain_version_for_replay(execution, version), Ok(true));
     assert_eq!(runtime.entity_replay_pin_count(entity), Some(1));
     assert_eq!(runtime.history_authority().retain_version_for_replay(execution, version), Ok(true));

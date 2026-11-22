@@ -209,6 +209,29 @@ impl RelationalRegionRetention {
         self.full.get().map(|lease| lease.full_view().partition())
     }
 
+    /// Pure read-only peek of an already-accepted Full lease whose symbols are
+    /// admitted in `symbols`. Never queries the shared cell or installs a lease.
+    pub(crate) fn peek_full_partition_with_symbols(
+        &self,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> Option<&PartitionState> {
+        let lease = self.full.get()?;
+        symbols
+            .region_symbols_admitted(lease.symbol_admission_identity())
+            .then(|| lease.full_view().partition())
+    }
+
+    /// Pure read-only peek of an already-accepted Head (or Full) lease whose
+    /// head symbols are admitted in `symbols`. Never queries the shared cell or
+    /// installs a lease.
+    pub(crate) fn peek_head_view_with_symbols(
+        &self,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> Option<super::RelationalRegionHeadView<'_>> {
+        let view = self.accepted_head_view()?;
+        self.head_symbols_admitted(symbols).then_some(view)
+    }
+
     /// Clone custody already accepted by this immutable root, without a fresh
     /// admission decision. A cold cell alone supplies no witness here.
     pub(crate) fn accepted_head_lease(&self) -> Option<RelationalResidencyLease<super::Head>> {

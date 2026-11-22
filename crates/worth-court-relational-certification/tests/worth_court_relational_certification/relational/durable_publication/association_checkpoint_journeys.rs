@@ -60,6 +60,8 @@ fn checkpoint_associated_subject_readmits_its_original_semantic_result() {
     release_test_commit_snapshot(&source, &unrelated);
     create_entity(request, &source, "checkpoint-head");
     let recovered = recover_external(request, &source, &medium);
+    medium.drop_artifact(unrelated.patch_position());
+    assert!(medium.artifact_bytes(unrelated.patch_position()).is_none());
     let resident_of = |commit_id| {
         recovered
             .observe_commit_envelope_custody()
@@ -70,11 +72,17 @@ fn checkpoint_associated_subject_readmits_its_original_semantic_result() {
     };
     assert!(!resident_of(selected_id));
     assert!(!resident_of(unrelated_id));
+    let before_reads = medium.canonical_member_reads() + medium.canonical_journal_reads();
     let owner = recovered.durability_authority();
     let subjects = owner
         .discover_associated_effects(request, &association)
         .unwrap();
     assert_eq!(subjects.len(), 1);
+    assert_eq!(
+        medium.canonical_member_reads() + medium.canonical_journal_reads(),
+        before_reads,
+        "discovery reads only metadata without opening any commit body"
+    );
     assert!(
         !resident_of(selected_id),
         "discovery reads only metadata without materializing the body"
@@ -82,6 +90,11 @@ fn checkpoint_associated_subject_readmits_its_original_semantic_result() {
     let effect = owner
         .readmit_associated_effect(request, &subjects[0])
         .unwrap();
+    assert_eq!(
+        medium.canonical_member_reads() + medium.canonical_journal_reads(),
+        before_reads + 1,
+        "selected readmission reads only the selected subject body and never touches unrelated history"
+    );
     assert_eq!(effect.settlement(), Settlement::CheckpointReadmitted);
     assert_eq!(effect.semantic_result(), semantic);
     assert!(

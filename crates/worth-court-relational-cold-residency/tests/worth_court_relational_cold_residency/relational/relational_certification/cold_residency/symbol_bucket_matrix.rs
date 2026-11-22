@@ -24,11 +24,7 @@ fn residency_failure_matrix_symbol_buckets_cover_every_preparation_door_and_clas
             let frontier = fixture.runtime.history().latest_patch_stream_position();
             let offered = fixture.medium.offered().len();
             let symbols = fixture.runtime.observe_resident_symbol_dictionary();
-            let diagnostics = fixture
-                .runtime
-                .publication()
-                .diagnostics_snapshot()
-                .diagnostics;
+            let diagnostics = fixture.runtime.publication().diagnostics_snapshot();
             fixture
                 .source
                 .failures
@@ -49,11 +45,7 @@ fn residency_failure_matrix_symbol_buckets_cover_every_preparation_door_and_clas
             );
             assert_eq!(fixture.medium.offered().len(), offered);
             assert_eq!(
-                fixture
-                    .runtime
-                    .publication()
-                    .diagnostics_snapshot()
-                    .diagnostics,
+                fixture.runtime.publication().diagnostics_snapshot(),
                 diagnostics
             );
             assert_eq!(
@@ -72,11 +64,7 @@ fn residency_failure_matrix_symbol_buckets_cover_every_preparation_door_and_clas
                 );
                 assert_eq!(fixture.medium.offered().len(), offered);
                 assert_eq!(
-                    fixture
-                        .runtime
-                        .publication()
-                        .diagnostics_snapshot()
-                        .diagnostics,
+                    fixture.runtime.publication().diagnostics_snapshot(),
                     diagnostics
                 );
                 assert_eq!(

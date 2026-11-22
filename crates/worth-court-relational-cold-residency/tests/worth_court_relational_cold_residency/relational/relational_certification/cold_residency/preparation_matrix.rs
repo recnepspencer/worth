@@ -46,7 +46,7 @@ fn residency_failure_matrix_remote_invariant_heads_cover_every_preparation_door_
             assert!(!placements.heads.is_empty());
             let frontier = runtime.history().latest_patch_stream_position();
             let offered = medium.offered().len();
-            let diagnostics = runtime.publication().diagnostics_snapshot().diagnostics;
+            let diagnostics = runtime.publication().diagnostics_snapshot();
             let symbols = runtime.observe_resident_symbol_dictionary();
             let before = runtime.observe_complexity_counters();
             source.failures.lock().unwrap().extend(
@@ -66,10 +66,7 @@ fn residency_failure_matrix_remote_invariant_heads_cover_every_preparation_door_
             );
             assert_eq!(runtime.history().latest_patch_stream_position(), frontier);
             assert_eq!(medium.offered().len(), offered);
-            assert_eq!(
-                runtime.publication().diagnostics_snapshot().diagnostics,
-                diagnostics
-            );
+            assert_eq!(runtime.publication().diagnostics_snapshot(), diagnostics);
             assert_eq!(runtime.observe_resident_symbol_dictionary(), symbols);
             let after = runtime.observe_complexity_counters();
             assert_eq!(
@@ -87,10 +84,7 @@ fn residency_failure_matrix_remote_invariant_heads_cover_every_preparation_door_
                 assert_eq!(source.reads.load(Ordering::Relaxed), reads);
                 assert_eq!(runtime.history().latest_patch_stream_position(), frontier);
                 assert_eq!(medium.offered().len(), offered);
-                assert_eq!(
-                    runtime.publication().diagnostics_snapshot().diagnostics,
-                    diagnostics
-                );
+                assert_eq!(runtime.publication().diagnostics_snapshot(), diagnostics);
                 assert_eq!(runtime.observe_resident_symbol_dictionary(), symbols);
             } else {
                 door.run(execution, &runtime)
