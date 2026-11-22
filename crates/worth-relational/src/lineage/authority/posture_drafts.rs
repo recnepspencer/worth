@@ -14,6 +14,7 @@ use crate::transactions::data::{
     EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent,
 };
 
+use super::posture_allocation_drafts::ordered_allocation_drafts;
 use super::posture_validation::{ValidatedMergeTarget, ValidatedPosture, ValidatedPostureBatch};
 use super::staged_effects::{
     created_entity_lineage_slot, entity_lineage, find_claimed_replace_target_entity,
@@ -122,35 +123,10 @@ pub(super) fn build_posture_drafts(
         }
     }
 
-    for (target, kept_name) in create_targets {
-        let existing_lineage_id = match target {
-            LineageRecordTarget::Entity(entity_id) => {
-                created_entity_lineage_slot(staged, entity_id, commit.version_id).flatten()
-            }
-            LineageRecordTarget::Relation(_) => None,
-        };
-        required_lineage_ids += usize::from(existing_lineage_id.is_none());
-        drafts.push(PostureEventDraft::Create {
-            target,
-            existing_lineage_id,
-            kept_name,
-        });
-    }
-    for (target, (source_lineage, name)) in restore_targets {
-        let existing_lineage_id = match target {
-            LineageRecordTarget::Entity(entity_id) => {
-                created_entity_lineage_slot(staged, entity_id, commit.version_id).flatten()
-            }
-            LineageRecordTarget::Relation(_) => None,
-        };
-        required_lineage_ids += usize::from(existing_lineage_id.is_none());
-        drafts.push(PostureEventDraft::Restore {
-            target,
-            source_lineage,
-            name,
-            existing_lineage_id,
-        });
-    }
+    let (allocation_drafts, allocation_width) =
+        ordered_allocation_drafts(staged, commit, create_targets, restore_targets)?;
+    drafts.extend(allocation_drafts);
+    required_lineage_ids += allocation_width;
 
     // 2. Emit validated posture transitions (Retire, Regenerate->Replace, Split, Merge).
     for posture in &validated.postures {

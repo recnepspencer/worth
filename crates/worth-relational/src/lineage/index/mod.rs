@@ -12,6 +12,7 @@ mod entry;
 mod ingest_group;
 mod ingest_lineage;
 mod journal;
+mod recorded_name;
 
 use std::collections::HashMap;
 
