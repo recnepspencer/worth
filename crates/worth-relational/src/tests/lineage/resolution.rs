@@ -313,7 +313,7 @@ fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects(
     let phantom = EntityId::new(PartitionId::main(), 99, 1);
     let missing_births = BTreeMap::from([(
         phantom,
-        face_birth_request("occ.phantom", "authored", &[], phantom),
+        face_birth_request("occ.phantom", "authored", "", phantom),
     )]);
     let missing_err = authority
         .ensure_lineage_for_commit_with_births(
@@ -340,8 +340,8 @@ fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects(
     // 2. DuplicateBirth collision refuses typed with both holders and zero effects.
     let (mut staged_dup, d0, d1) = stage_two_entities();
     let dup_births = BTreeMap::from([
-        (d0, face_birth_request("occ.dup", "cut_piece", b"same", d0)),
-        (d1, face_birth_request("occ.dup", "cut_piece", b"same", d1)),
+        (d0, face_birth_request("occ.dup", "cut_piece", "same", d0)),
+        (d1, face_birth_request("occ.dup", "cut_piece", "same", d1)),
     ]);
     let dup_err = authority
         .ensure_lineage_for_commit_with_births(
@@ -369,7 +369,7 @@ fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects(
 
     // 3. Valid staged birth attaches the exact pure-minted birth record to the Create event.
     let (mut staged_ok, ok0, _) = stage_two_entities();
-    let ok_req = face_birth_request("occ.face.1", "authored", &[], ok0);
+    let ok_req = face_birth_request("occ.face.1", "authored", "", ok0);
     let expected = PersistentNameMintingAuthority::mint_commit_births(
         &registry,
         &empty_holders,

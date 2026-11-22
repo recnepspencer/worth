@@ -6,7 +6,7 @@ use crate::lineage::data::{
     PersistentNameDiscriminatorReference, PersistentNameIdentity, PersistentNameReferenceBasis,
 };
 
-use super::{entity_holder, face_registry};
+use super::{canonical_label_discriminator, entity_holder, face_registry};
 
 /// Builds a domain-tagged canonical discriminator payload embedding one
 /// `TAG_NAME_REF` (0x20) 32-byte digest matching `ApplicationNameDiscriminatorEncoder`.
@@ -97,7 +97,7 @@ fn discriminator_basis_refuses_absent_basis_name_unborn_parent_and_smuggled_ref(
             role_path: "cut_piece".to_owned(),
             parent_identities: vec![unborn],
             referenced_names: Vec::new(),
-            canonical_discriminator: b"left".to_vec(),
+            canonical_discriminator: canonical_label_discriminator("left"),
             holder: entity_holder(3, 1),
         }],
     )

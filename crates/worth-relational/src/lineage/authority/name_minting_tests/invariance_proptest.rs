@@ -7,7 +7,7 @@ use crate::lineage::data::{
     InstalledPersistentNameSchemeRegistry, PersistentNameBirthRequest, PersistentNameIdentity,
 };
 
-use super::{entity_holder, face_registry};
+use super::{canonical_label_discriminator, entity_holder, face_registry};
 
 #[derive(Clone, Debug)]
 struct DagNodeSpec {
@@ -28,19 +28,14 @@ fn arb_birth_dag() -> impl Strategy<Value = Vec<DagNodeSpec>> {
                     .prop_map(|set| set.into_iter().collect::<Vec<_>>())
                     .boxed()
             };
-            strategies.push(
-                (
-                    parent_strat,
-                    0usize..3,
-                    prop::collection::vec(any::<u8>(), 1..=8),
-                )
-                    .prop_map(move |(parents, role_index, disc)| DagNodeSpec {
-                        occurrence_key: format!("occ.node.{index}"),
-                        role_index,
-                        parents,
-                        disc,
-                    }),
-            );
+            strategies.push((parent_strat, 0usize..3, any::<u64>()).prop_map(
+                move |(parents, role_index, disc_seed)| DagNodeSpec {
+                    occurrence_key: format!("occ.node.{index}"),
+                    role_index,
+                    parents,
+                    disc: canonical_label_discriminator(&format!("d-{disc_seed:016x}")),
+                },
+            ));
         }
         strategies
     })

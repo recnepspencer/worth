@@ -51,16 +51,29 @@ pub(super) fn stage_two_entities() -> (WorkingState, EntityId, EntityId) {
 pub(super) fn face_birth_request(
     occurrence_key: &str,
     role_path: &str,
-    discriminator: &[u8],
+    discriminator_label: &str,
     entity: EntityId,
 ) -> PersistentNameBirthRequest {
+    let canonical_discriminator = if discriminator_label.is_empty() {
+        Vec::new()
+    } else {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"worth.query.name-discriminator.v1\0");
+        let disc_id = b"worth.test.label.v1";
+        bytes.extend_from_slice(&(disc_id.len() as u64).to_be_bytes());
+        bytes.extend_from_slice(disc_id);
+        bytes.push(0x19); // TAG_TEXT
+        bytes.extend_from_slice(&(discriminator_label.len() as u64).to_be_bytes());
+        bytes.extend_from_slice(discriminator_label.as_bytes());
+        bytes
+    };
     PersistentNameBirthRequest {
         scheme_id: "worth.cad.face.v1".to_owned(),
         occurrence_key: occurrence_key.to_owned(),
         role_path: role_path.to_owned(),
         parent_identities: Vec::new(),
         referenced_names: Vec::new(),
-        canonical_discriminator: discriminator.to_vec(),
+        canonical_discriminator,
         holder: PersistentNameHolder::Entity(entity),
     }
 }

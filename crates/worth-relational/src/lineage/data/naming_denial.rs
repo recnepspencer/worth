@@ -18,6 +18,9 @@ pub enum DiscriminatorBasisDenialReason {
     /// Canonical discriminator bytes contain an encoded `TAG_NAME_REF` digest
     /// that is not present in the verified `referenced_names` table.
     UndeclaredEncodedNameReference { raw_digest: [u8; 32] },
+    /// Non-empty discriminator bytes failed canonical v1 domain-header or
+    /// structural encoding validation.
+    MalformedDiscriminator,
 }
 
 /// Typed commit-boundary refusal returned when birth minting violates naming

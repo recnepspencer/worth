@@ -181,9 +181,7 @@ fn verify_discriminator_references(
         LineageNameDenial::InvalidDiscriminatorBasis {
             scheme_id: request.scheme_id.clone(),
             role_path: request.role_path.clone(),
-            reason: DiscriminatorBasisDenialReason::UndeclaredEncodedNameReference {
-                raw_digest: [0u8; 32],
-            },
+            reason: DiscriminatorBasisDenialReason::MalformedDiscriminator,
         }
     })?;
     let declared_digests: BTreeSet<[u8; 32]> = request

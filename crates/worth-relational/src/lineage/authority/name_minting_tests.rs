@@ -1,4 +1,5 @@
 mod basis_tests;
+mod discriminator_scan_tests;
 mod invariance_proptest;
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -32,6 +33,20 @@ pub(super) fn entity_holder(slot: u32, generation: u32) -> PersistentNameHolder 
         u64::from(slot),
         generation,
     ))
+}
+
+/// Encodes a canonical `worth.query.name-discriminator.v1\0` payload carrying
+/// one `TAG_TEXT` label so Relational tests exercise the strict canonical wire.
+pub(super) fn canonical_label_discriminator(label: &str) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    bytes.extend_from_slice(b"worth.query.name-discriminator.v1\0");
+    let disc_id = b"worth.test.label.v1";
+    bytes.extend_from_slice(&(disc_id.len() as u64).to_be_bytes());
+    bytes.extend_from_slice(disc_id);
+    bytes.push(0x19); // TAG_TEXT
+    bytes.extend_from_slice(&(label.len() as u64).to_be_bytes());
+    bytes.extend_from_slice(label.as_bytes());
+    bytes
 }
 
 #[test]
@@ -71,7 +86,7 @@ fn bounded_size_holds_across_split_depths_1_16_and_64() {
     for depth in 1..=64u32 {
         let mut retired = BTreeSet::new();
         retired.insert(current);
-        let split_disc = format!("side:{depth:02}").into_bytes();
+        let split_disc = canonical_label_discriminator(&format!("side:{depth:02}"));
         let req = PersistentNameBirthRequest {
             scheme_id: "worth.cad.face.v1".to_owned(),
             occurrence_key: format!("occ.cut.{depth:02}"),
@@ -128,7 +143,7 @@ fn same_commit_and_live_holder_collisions_refuse_duplicate_birth() {
         role_path: "cut_piece".to_owned(),
         parent_identities: Vec::new(),
         referenced_names: Vec::new(),
-        canonical_discriminator: b"same-side".to_vec(),
+        canonical_discriminator: canonical_label_discriminator("same-side"),
         holder: first_holder.clone(),
     };
     let sibling_b = PersistentNameBirthRequest {
@@ -245,7 +260,7 @@ fn independent_reorder_keeps_identical_names_while_parent_change_mints_distinct_
             role_path: "cut_piece".to_owned(),
             parent_identities: vec![order_12[0].identity()],
             referenced_names: Vec::new(),
-            canonical_discriminator: b"left".to_vec(),
+            canonical_discriminator: canonical_label_discriminator("left"),
             holder: entity_holder(3, 1),
         }],
     )
@@ -260,7 +275,7 @@ fn independent_reorder_keeps_identical_names_while_parent_change_mints_distinct_
             role_path: "cut_piece".to_owned(),
             parent_identities: vec![order_12[1].identity()],
             referenced_names: Vec::new(),
-            canonical_discriminator: b"left".to_vec(),
+            canonical_discriminator: canonical_label_discriminator("left"),
             holder: entity_holder(3, 1),
         }],
     )
@@ -281,7 +296,7 @@ fn independent_reorder_keeps_identical_names_while_parent_change_mints_distinct_
             role_path: "seam_patch".to_owned(),
             parent_identities: vec![order_12[0].identity(), order_12[1].identity()],
             referenced_names: Vec::new(),
-            canonical_discriminator: b"union".to_vec(),
+            canonical_discriminator: canonical_label_discriminator("union"),
             holder: entity_holder(4, 1),
         }],
     )
@@ -296,7 +311,7 @@ fn independent_reorder_keeps_identical_names_while_parent_change_mints_distinct_
             role_path: "seam_patch".to_owned(),
             parent_identities: vec![order_12[1].identity(), order_12[0].identity()],
             referenced_names: Vec::new(),
-            canonical_discriminator: b"union".to_vec(),
+            canonical_discriminator: canonical_label_discriminator("union"),
             holder: entity_holder(88, 9),
         }],
     )

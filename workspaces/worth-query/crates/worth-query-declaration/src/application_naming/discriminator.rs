@@ -83,9 +83,13 @@ impl ApplicationNameDiscriminatorEncoder {
     }
 
     fn write_len_prefixed_str(&mut self, text: &str) {
-        let len = u64::try_from(text.len()).expect("discriminator text length fits u64");
+        self.write_len_prefixed_bytes(text.as_bytes());
+    }
+
+    fn write_len_prefixed_bytes(&mut self, bytes: &[u8]) {
+        let len = u64::try_from(bytes.len()).expect("discriminator payload length fits u64");
         self.bytes.extend_from_slice(&len.to_be_bytes());
-        self.bytes.extend_from_slice(text.as_bytes());
+        self.bytes.extend_from_slice(bytes);
     }
 
     fn write_tag(&mut self, tag: u8) {
@@ -298,8 +302,14 @@ pub struct NestedDiscriminator<D>(pub D);
 impl<D: ApplicationNameDiscriminator> sealed::Sealed for NestedDiscriminator<D> {}
 impl<D: ApplicationNameDiscriminator> ApplicationNameDiscriminatorValue for NestedDiscriminator<D> {
     fn encode_discriminator_value(&self, encoder: &mut ApplicationNameDiscriminatorEncoder) {
+        let mut nested = ApplicationNameDiscriminatorEncoder::default();
+        self.0.encode_canonical(&mut nested);
+        let (body_bytes, nested_refs) = nested.finish_with_references();
         encoder.write_tag(TAG_NESTED_DISCRIMINATOR);
         encoder.write_len_prefixed_str(D::DISCRIMINATOR_IDENTITY);
-        self.0.encode_canonical(encoder);
+        encoder.write_len_prefixed_bytes(&body_bytes);
+        for digest in nested_refs {
+            encoder.record_name_ref(digest);
+        }
     }
 }

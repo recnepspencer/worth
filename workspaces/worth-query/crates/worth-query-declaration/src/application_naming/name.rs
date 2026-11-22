@@ -97,11 +97,13 @@ impl<K> WorthQueryName<K> {
     /// Canonical byte length of every persistent name identity.
     pub const BYTE_LEN: usize = 32;
 
-    /// Internal-only admission helper for crate-local verification.
+    /// Crate-internal admission constructor used by the hidden runtime-crossing
+    /// admission authority and crate-local tests.
     ///
-    /// External crates have no constructor from raw bytes; runtime admission
-    /// flows through Relational's proof-bearing birth and readmission doors.
-    #[cfg(test)]
+    /// External declaration consumers (`worth-query-decl` and
+    /// `worth_query_declaration::facade`) have no constructor from raw bytes;
+    /// runtime admission flows through Relational's proof-bearing birth and
+    /// readmission doors.
     pub(crate) const fn from_admitted_digest(bytes: [u8; 32]) -> Self {
         Self {
             bytes,

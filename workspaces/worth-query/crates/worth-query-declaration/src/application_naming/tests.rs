@@ -189,3 +189,23 @@ fn scheme_builder_rejects_empty_identifier_and_empty_role_order() {
         })
     );
 }
+
+#[test]
+fn nested_discriminator_in_pair_length_prefixes_body_and_forwards_references() {
+    use crate::application_naming::NestedDiscriminator;
+
+    let cutter = WorthQueryName::<Face>::from_admitted_digest([0x11; 32]);
+    let edge = WorthQueryName::<Edge>::from_admitted_digest([0x22; 32]);
+    let inner = FaceSplitDiscriminator::SidedCut {
+        cutter,
+        side: 3,
+        boundary_piece: Some(edge),
+    };
+
+    let mut encoder = ApplicationNameDiscriminatorEncoder::new("worth.cad.face.outer.v1");
+    encoder.field("nested_pair", &(NestedDiscriminator(inner), 9_u32));
+    let (bytes, refs) = encoder.finish_with_references();
+
+    assert!(bytes.starts_with(NAME_DISCRIMINATOR_DOMAIN_TAG));
+    assert_eq!(refs, vec![[0x11; 32], [0x22; 32]]);
+}

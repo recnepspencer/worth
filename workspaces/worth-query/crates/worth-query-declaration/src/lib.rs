@@ -83,6 +83,8 @@ mod identity;
 mod identity_authority;
 #[doc(hidden)]
 pub mod lifecycle_effect_derivation_authority;
+#[doc(hidden)]
+pub mod persistent_name_admission_authority;
 mod result_shape;
 #[macro_use]
 mod schema_macro;

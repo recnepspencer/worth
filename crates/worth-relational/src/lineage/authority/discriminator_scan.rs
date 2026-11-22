@@ -1,9 +1,11 @@
 //! Structural parser for domain-tagged canonical discriminator byte streams.
 //!
-//! Extracts every embedded 32-byte `TAG_NAME_REF` digest from a
-//! `worth.query.name-discriminator.v1\0` payload so Relational can verify that
-//! no caller smuggles unverified name references inside opaque discriminator
-//! bytes.
+//! Mirrors `ApplicationNameDiscriminatorEncoder` exactly using an iterative
+//! scope workstack (no recursion, no arbitrary depth limit). Extracts every
+//! embedded 32-byte `TAG_NAME_REF` digest in exact encoding order and fails
+//! closed on any non-empty payload that lacks the canonical v1 domain header,
+//! carries non-canonical boolean/UTF-8 encodings, truncates early, or contains
+//! trailing/unknown bytes.
 
 const NAME_DISCRIMINATOR_DOMAIN_TAG: &[u8] = b"worth.query.name-discriminator.v1\0";
 
@@ -26,74 +28,129 @@ const TAG_OPTION_SOME: u8 = 0x31;
 const TAG_PAIR: u8 = 0x32;
 const TAG_NESTED_DISCRIMINATOR: u8 = 0x33;
 
-/// Scans a canonical discriminator payload carrying the WORTH discriminator
-/// domain header and returns every embedded 32-byte `TAG_NAME_REF` digest.
+struct Scope<'a> {
+    cursor: Cursor<'a>,
+    /// Number of value expressions still required before returning to item
+    /// position in this scope (`0` = item position).
+    pending_values: usize,
+}
+
+/// Scans a canonical discriminator payload and returns every embedded 32-byte
+/// `TAG_NAME_REF` digest in encoding order.
 ///
-/// Non-domain-tagged opaque bytes (e.g. raw unit-test labels) return an empty
-/// vector. Malformed domain-tagged streams return `Err(())`.
+/// Empty slices indicate no discriminator (`Ok(Vec::new())`). Any non-empty
+/// slice MUST begin with `worth.query.name-discriminator.v1\0` and parse
+/// completely to EOF; otherwise returns `Err(())`.
 pub(super) fn extract_embedded_name_refs(bytes: &[u8]) -> Result<Vec<[u8; 32]>, ()> {
-    let Some(rest) = bytes.strip_prefix(NAME_DISCRIMINATOR_DOMAIN_TAG) else {
+    if bytes.is_empty() {
         return Ok(Vec::new());
-    };
-    let mut cursor = Cursor(rest);
-    cursor.skip_len_prefixed()?;
-    let mut refs = Vec::new();
-    while !cursor.is_empty() {
-        scan_item(&mut cursor, &mut refs, 0)?;
     }
+    let rest = bytes
+        .strip_prefix(NAME_DISCRIMINATOR_DOMAIN_TAG)
+        .ok_or(())?;
+    let mut root_cursor = Cursor(rest);
+    root_cursor.read_len_prefixed_utf8()?;
+
+    let mut refs = Vec::new();
+    let mut stack = vec![Scope {
+        cursor: root_cursor,
+        pending_values: 0,
+    }];
+
+    while let Some(scope) = stack.last_mut() {
+        if scope.pending_values == 0 {
+            if scope.cursor.is_empty() {
+                stack.pop();
+                continue;
+            }
+            let tag = scope.cursor.read_u8()?;
+            match tag {
+                TAG_VARIANT => {
+                    scope.cursor.read_len_prefixed_utf8()?;
+                }
+                TAG_FIELD => {
+                    scope.cursor.read_len_prefixed_utf8()?;
+                    scope.pending_values = 1;
+                }
+                other => {
+                    if let Some(nested) = scan_value_tag(other, scope, &mut refs)? {
+                        stack.push(nested);
+                    }
+                }
+            }
+        } else {
+            scope.pending_values -= 1;
+            let tag = scope.cursor.read_u8()?;
+            if let Some(nested) = scan_value_tag(tag, scope, &mut refs)? {
+                stack.push(nested);
+            }
+        }
+    }
+
     Ok(refs)
 }
 
-fn scan_item(cursor: &mut Cursor<'_>, refs: &mut Vec<[u8; 32]>, depth: usize) -> Result<(), ()> {
-    if depth > 64 {
-        return Err(());
-    }
-    let tag = cursor.read_u8()?;
-    match tag {
-        TAG_VARIANT => cursor.skip_len_prefixed(),
-        TAG_FIELD => {
-            cursor.skip_len_prefixed()?;
-            scan_value(cursor, refs, depth + 1)
-        }
-        other => scan_value_with_tag(other, cursor, refs, depth + 1),
-    }
-}
-
-fn scan_value(cursor: &mut Cursor<'_>, refs: &mut Vec<[u8; 32]>, depth: usize) -> Result<(), ()> {
-    if depth > 64 {
-        return Err(());
-    }
-    let tag = cursor.read_u8()?;
-    scan_value_with_tag(tag, cursor, refs, depth)
-}
-
-fn scan_value_with_tag(
+fn scan_value_tag<'a>(
     tag: u8,
-    cursor: &mut Cursor<'_>,
+    scope: &mut Scope<'a>,
     refs: &mut Vec<[u8; 32]>,
-    depth: usize,
-) -> Result<(), ()> {
+) -> Result<Option<Scope<'a>>, ()> {
     match tag {
-        TAG_BOOL | TAG_I8 | TAG_U8 => cursor.skip(1),
-        TAG_I16 | TAG_U16 => cursor.skip(2),
-        TAG_I32 | TAG_U32 => cursor.skip(4),
-        TAG_I64 | TAG_U64 => cursor.skip(8),
-        TAG_TEXT => cursor.skip_len_prefixed(),
-        TAG_UUID => cursor.skip(16),
+        TAG_BOOL => {
+            let value = scope.cursor.read_u8()?;
+            if value > 1 {
+                return Err(());
+            }
+            Ok(None)
+        }
+        TAG_I8 | TAG_U8 => {
+            scope.cursor.skip(1)?;
+            Ok(None)
+        }
+        TAG_I16 | TAG_U16 => {
+            scope.cursor.skip(2)?;
+            Ok(None)
+        }
+        TAG_I32 | TAG_U32 => {
+            scope.cursor.skip(4)?;
+            Ok(None)
+        }
+        TAG_I64 | TAG_U64 => {
+            scope.cursor.skip(8)?;
+            Ok(None)
+        }
+        TAG_TEXT => {
+            scope.cursor.read_len_prefixed_utf8()?;
+            Ok(None)
+        }
+        TAG_UUID => {
+            scope.cursor.skip(16)?;
+            Ok(None)
+        }
         TAG_NAME_REF => {
-            let slice = cursor.read_exact(32)?;
+            let slice = scope.cursor.read_exact(32)?;
             let mut digest = [0u8; 32];
             digest.copy_from_slice(slice);
             refs.push(digest);
-            Ok(())
+            Ok(None)
         }
-        TAG_OPTION_NONE => Ok(()),
-        TAG_OPTION_SOME => scan_value(cursor, refs, depth + 1),
+        TAG_OPTION_NONE => Ok(None),
+        TAG_OPTION_SOME => {
+            scope.pending_values = scope.pending_values.checked_add(1).ok_or(())?;
+            Ok(None)
+        }
         TAG_PAIR => {
-            scan_value(cursor, refs, depth + 1)?;
-            scan_value(cursor, refs, depth + 1)
+            scope.pending_values = scope.pending_values.checked_add(2).ok_or(())?;
+            Ok(None)
         }
-        TAG_NESTED_DISCRIMINATOR => cursor.skip_len_prefixed(),
+        TAG_NESTED_DISCRIMINATOR => {
+            scope.cursor.read_len_prefixed_utf8()?;
+            let nested_body = scope.cursor.read_len_prefixed_bytes()?;
+            Ok(Some(Scope {
+                cursor: Cursor(nested_body),
+                pending_values: 0,
+            }))
+        }
         _ => Err(()),
     }
 }
@@ -124,10 +181,15 @@ impl<'a> Cursor<'a> {
         self.read_exact(len).map(|_| ())
     }
 
-    fn skip_len_prefixed(&mut self) -> Result<(), ()> {
+    fn read_len_prefixed_bytes(&mut self) -> Result<&'a [u8], ()> {
         let len_bytes = self.read_exact(8)?;
         let len = u64::from_be_bytes(len_bytes.try_into().map_err(|_| ())?);
         let len = usize::try_from(len).map_err(|_| ())?;
-        self.skip(len)
+        self.read_exact(len)
+    }
+
+    fn read_len_prefixed_utf8(&mut self) -> Result<&'a str, ()> {
+        let slice = self.read_len_prefixed_bytes()?;
+        std::str::from_utf8(slice).map_err(|_| ())
     }
 }
