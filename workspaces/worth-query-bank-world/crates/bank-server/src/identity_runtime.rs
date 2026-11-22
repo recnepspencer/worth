@@ -32,8 +32,9 @@ use bank_domain::schema::{
     ExternalPrincipalMapping, Principal,
 };
 use worth_query_host::facade::admission::authenticated_principal::{
-    WorthQueryAuthenticationAdapter, WorthQueryAuthenticationAudience,
-    WorthQueryAuthenticationMethod, WorthQueryRequestScope,
+    WorthQueryAuthenticatedExternalPrincipal, WorthQueryAuthenticationAdapter,
+    WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod,
+    WorthQueryLocalProcessPrincipal, WorthQueryRequestScope,
 };
 use worth_query_host::facade::application_entry::{
     WorthQueryApplicationRequest, WorthQueryApplicationRequestExt,
@@ -217,6 +218,21 @@ impl BankIdentityRuntime {
             scope,
         )
         .await
+    }
+
+    /// Authenticates an admitted local process principal on the calling thread
+    /// and resolves it to its installed Bank principal.
+    pub fn authenticate_local(
+        &self,
+        authentication: &BankAuthenticationBoundary<WorthQueryLocalProcessPrincipal>,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<BankAuthenticatedPrincipal, BankPrincipalAdmissionError> {
+        home::authenticate_local(
+            self.application_runtime(),
+            &self.binding,
+            authentication,
+            scope,
+        )
     }
 
     pub fn validate(

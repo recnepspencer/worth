@@ -80,3 +80,22 @@ pub fn authorization(
 
 mod business_creation;
 pub use business_creation::business_creation_world;
+/// Accounts `actor` may see whose display name contains `needle`, ignoring ASCII case.
+pub fn search(
+    fixture: &OrdinaryReadFixture,
+    actor: &BankAuthenticatedPrincipal,
+    needle: &str,
+) -> Vec<AccountId> {
+    fixture
+        .world
+        .runtime
+        .query(queries::account_search(needle))
+        .as_principal(actor)
+        .controls(controls())
+        .execute()
+        .unwrap()
+        .rows()
+        .iter()
+        .map(|row| row.id())
+        .collect()
+}

@@ -3,28 +3,21 @@ use worth_query_decl::facade::{
         ApplicationQueryBasisSupport, ApplicationQueryCardinality,
         ApplicationQueryDefinitionBuilder, ApplicationQueryDisclosureContract,
         ApplicationQueryLaneEligibility, ApplicationQueryOrderingDirection,
-        ApplicationQueryResultFieldRef, ApplicationQueryResultShapeBuilder,
         ApplicationQueryRootPath,
     },
     worth_query_application_query,
-};
-use worth_query_host::facade::primary_graph::{
-    WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
-    WorthQueryApplicationProjectionRow,
 };
 
 use crate::{
     authorization::DiscoverOwnAccounts,
     reads::VisibleAccount,
     schema::{
-        Account, AccountAuthorizedUser, AccountIdentity, AuthorizationAccount, BankSchema,
-        BusinessAccount, BusinessOwner, PersonalOwner, Principal,
+        Account, AccountAuthorizedUser, AuthorizationAccount, BankSchema, BusinessAccount,
+        BusinessOwner, PersonalOwner, Principal,
     },
 };
 
 pub struct AccountDiscoveryQueryParameters;
-pub struct AccountIdentitySlot;
-worth_query_decl::facade::worth_query_portable_type!(AccountIdentitySlot => "AccountIdentitySlot");
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct AccountDiscoveryRequest;
@@ -45,14 +38,12 @@ worth_query_application_query!(
 );
 worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountDiscoveryRequestBinding for AccountDiscoveryRequest { identity: "AccountDiscoveryRequest" });
 worth_query_decl::facade::worth_query_query_binding!(
-    pub AccountDiscoveryQueryBinding for AccountDiscoveryRequest, schema BankSchema,
+    pub AccountDiscoveryQueryBinding for AccountDiscoveryRequest, schema BankSchema, context crate::schema::BankBindingContext,
     identity "worth.bank.account-discovery-query-binding.v1",
     input AccountDiscoveryRequestBinding,
     query AccountDiscoveryQuery,
     parameters AccountDiscoveryQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
     result AccountDiscoveryQueryResultBinding,
-    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
-        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
     scope crate::schema::PrincipalIdentityField,
     principal_field crate::schema::PrincipalIdentityField::at("PrincipalIdentityField"),
     limits results 1_024
@@ -66,45 +57,36 @@ pub fn account_discovery_definition() -> ApplicationQueryDefinitionBuilder<
     VisibleAccount,
     Principal,
 > {
-    let identity = account_identity::<AccountDiscoveryQuery>();
-    let shape = ApplicationQueryResultShapeBuilder::new(Account::reference())
-        .field(identity)
-        .build();
+    let [personal, authorized, business] = discoverable_account_paths();
     ApplicationQueryDefinitionBuilder::declare(AccountDiscoveryQuery::reference())
         .root(Account::reference())
         .scope(Principal::reference())
-        .result_shape(shape)
+        .result_shape(VisibleAccount::result_shape())
         .cardinality(ApplicationQueryCardinality::Many)
         .disclosure(ApplicationQueryDisclosureContract::public())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
         .lanes(ApplicationQueryLaneEligibility::one_shot())
         .requires_ability(DiscoverOwnAccounts::reference())
-        .root_path(
-            ApplicationQueryRootPath::from(Principal::reference())
-                .forward(PersonalOwner::reference()),
+        .root_path(personal)
+        .root_path(authorized)
+        .root_path(business)
+        .order_by(
+            VisibleAccount::account(),
+            ApplicationQueryOrderingDirection::Ascending,
         )
-        .root_path(
-            ApplicationQueryRootPath::from(Principal::reference())
-                .forward(AccountAuthorizedUser::reference())
-                .forward(AuthorizationAccount::reference()),
-        )
-        .root_path(
-            ApplicationQueryRootPath::from(Principal::reference())
-                .reverse(BusinessOwner::reference())
-                .forward(BusinessAccount::reference()),
-        )
-        .order_by(identity, ApplicationQueryOrderingDirection::Ascending)
 }
 
-impl WorthQueryApplicationProjection<BankSchema, AccountDiscoveryQuery> for VisibleAccount {
-    fn project(
-        row: &WorthQueryApplicationProjectionRow<'_, BankSchema, AccountDiscoveryQuery>,
-    ) -> Result<Self, WorthQueryApplicationProjectionDenial> {
-        Ok(Self::new(row.field(account_identity())?))
-    }
-}
-
-pub(super) fn account_identity<Q>(
-) -> ApplicationQueryResultFieldRef<Q, AccountIdentitySlot, BankSchema, AccountIdentity> {
-    ApplicationQueryResultFieldRef::new("account", AccountIdentity::at("AccountIdentity"))
+/// Every account a principal may discover: owned personally, used as an
+/// authorized user, or owned through a business.
+pub(super) fn discoverable_account_paths(
+) -> [ApplicationQueryRootPath<BankSchema, Principal, Account>; 3] {
+    [
+        ApplicationQueryRootPath::from(Principal::reference()).forward(PersonalOwner::reference()),
+        ApplicationQueryRootPath::from(Principal::reference())
+            .forward(AccountAuthorizedUser::reference())
+            .forward(AuthorizationAccount::reference()),
+        ApplicationQueryRootPath::from(Principal::reference())
+            .reverse(BusinessOwner::reference())
+            .forward(BusinessAccount::reference()),
+    ]
 }

@@ -2,6 +2,7 @@ mod account_activity;
 mod account_authorized_users;
 mod account_detail;
 mod account_discovery;
+mod account_search;
 mod account_summary;
 mod account_summary_projection;
 mod current_accounts;
@@ -31,6 +32,10 @@ pub use account_detail::{
 pub use account_discovery::{
     account_discovery_definition, accounts, AccountDiscoveryQuery, AccountDiscoveryQueryBinding,
     AccountDiscoveryQueryParameters, AccountDiscoveryRequest,
+};
+pub use account_search::{
+    account_search, account_search_definition, AccountSearchNeedle, AccountSearchQuery,
+    AccountSearchQueryBinding, AccountSearchRequest,
 };
 pub use account_summary::{
     account_summary, account_summary_definition, AccountSummaryQuery, AccountSummaryQueryBinding,

@@ -34,9 +34,7 @@ pub use bank_server::{
 pub use worth_query_host::facade::publication::application_aftermath::WorthQueryPublishedExternalEffectFailure;
 
 pub use super::external_effect_dispatch::rail_transport::{spawn_rail, BankEstateRailTransport};
-pub use crate::facade::support::{
-    block_on, request_scope, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld,
-};
+pub use crate::facade::support::{request_scope, runtime, DynamicIdentity, TestIdentityWorld};
 
 pub const PATIENT: Duration = Duration::from_secs(5);
 
@@ -165,12 +163,9 @@ impl MutationFreeWorld {
 
     pub fn authenticate_specialist(&self) -> bank_server::BankAuthenticatedPrincipal {
         let request = request_scope();
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(&self.identities[1]),
-            &request,
-        ))
-        .expect("causally mapped estate specialist should authenticate")
+        self.world
+            .authenticate(&self.identities[1], &request)
+            .expect("causally mapped estate specialist should authenticate")
     }
 
     pub fn notice_status(&self) -> DeathNoticeStatus {

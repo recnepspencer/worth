@@ -9,12 +9,9 @@ fn dynamically_provisioned_external_identity_resolves_to_a_sealed_bank_principal
     )]);
     let scope = request_scope();
 
-    let principal = block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(&identity),
-        &scope,
-    ))
-    .expect("enabled dynamic identity should resolve");
+    let principal = world
+        .authenticate(&identity, &scope)
+        .expect("enabled dynamic identity should resolve");
 
     assert_eq!(world.runtime.mapped_principal_count(), 1);
     assert_eq!(

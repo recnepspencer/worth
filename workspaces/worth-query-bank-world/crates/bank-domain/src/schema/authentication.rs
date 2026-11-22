@@ -34,6 +34,34 @@ impl BankPrincipalBinding {
     }
 }
 
+/// The principal, idempotency and default denial every Bank binding macro shares.
+///
+/// The denial default is the money-movement denial; every other mutation
+/// binding states its own `denial`.
+pub struct BankBindingContext;
+impl ApplicationBindingContext<BankSchema> for BankBindingContext {
+    type PrincipalBinding = BankPrincipalBinding;
+    type Mapping = ExternalPrincipalMapping;
+    type Principal = Principal;
+    type PrincipalIdentity = crate::model::BankPrincipalId;
+    type PrincipalIdentityBinding = super::BankPrincipalIdBinding;
+    type IdempotencyKey = crate::proposals::BankIdempotencyKey;
+    type DenialBinding = super::MoneyMovementDenialBinding;
+
+    const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
+
+    fn principal_binding() -> ApplicationPrincipalBindingRef<
+        BankSchema,
+        BankPrincipalBinding,
+        ExternalPrincipalMapping,
+        Principal,
+        crate::model::BankPrincipalId,
+        super::BankPrincipalIdBinding,
+    > {
+        BankPrincipalBinding::reference()
+    }
+}
+
 pub use crate::schema::entities::storage_model::{
     ExternalIdentityKey, ExternalMappingStatus, ExternalPrincipalIdentity, PrincipalIdentity,
     PrincipalIdentityField,

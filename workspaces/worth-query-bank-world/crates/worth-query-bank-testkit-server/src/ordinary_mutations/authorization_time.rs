@@ -13,9 +13,7 @@ pub use worth_query_host::facade::primary_graph::{
     WorthQueryRuntimeTimeSource, WorthQueryRuntimeTimeSourceDenial,
 };
 
-pub use crate::facade::support::{
-    authentication_configuration, CausalBankAuthenticationAdapter, TestIdentityWorld,
-};
+pub use crate::facade::support::{test_world, TestIdentityWorld};
 
 #[derive(Clone)]
 pub struct AuthorizationTimeController {
@@ -71,14 +69,5 @@ pub fn runtime_with_authorization_time(
 ) -> TestIdentityWorld {
     let runtime = BankIdentityRuntime::install_world_with_authorization_time_source(seed, source)
         .expect("bank test runtime should install with authorization time");
-    let authentication = runtime
-        .admit_authentication_adapter(
-            authentication_configuration(),
-            CausalBankAuthenticationAdapter,
-        )
-        .expect("causal authentication adapter should admit");
-    TestIdentityWorld {
-        runtime,
-        authentication,
-    }
+    test_world(runtime)
 }

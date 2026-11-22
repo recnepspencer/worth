@@ -46,7 +46,7 @@ fn revoked_starter_cannot_execute_or_spend_guarded_operation() {
         &actor_input,
     );
     require_completed(
-        support::block_on(actor_workflow.approve(
+        authentication::complete_approval(actor_workflow.approve(
             instance.clone(),
             &approval,
             &proposal,

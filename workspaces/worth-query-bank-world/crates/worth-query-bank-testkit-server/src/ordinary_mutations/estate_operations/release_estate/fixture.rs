@@ -19,9 +19,7 @@ pub use bank_server::{
     BankAuthenticatedPrincipal, BankEmployeeAssignmentSeed, BankPrincipalSeed, BankWorldSeed,
 };
 
-pub use crate::facade::support::{
-    block_on, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld,
-};
+pub use crate::facade::support::{runtime, DynamicIdentity, TestIdentityWorld};
 
 #[derive(Clone, Copy, Debug)]
 pub enum ExecutorPosture {
@@ -79,12 +77,9 @@ pub struct ReleaseFixture {
 impl ReleaseFixture {
     pub fn authenticate_actor(&self) -> BankAuthenticatedPrincipal {
         let request = crate::facade::support::request_scope();
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(&self.identities[1]),
-            &request,
-        ))
-        .expect("the assigned release actor should authenticate")
+        self.world
+            .authenticate(&self.identities[1], &request)
+            .expect("the assigned release actor should authenticate")
     }
 
     pub const fn action(&self) -> EstateAction {

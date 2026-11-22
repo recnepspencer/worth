@@ -81,14 +81,12 @@ worth_query_application_query!(
 );
 worth_query_decl::facade::worth_query_structured_value_binding!(pub EstateCustomerDisclosureRequestBinding for EstateCustomerDisclosureRequest { identity: "EstateCustomerDisclosureRequest" });
 worth_query_decl::facade::worth_query_query_binding!(
-    pub EstateCustomerDisclosureQueryBinding for EstateCustomerDisclosureRequest, schema BankSchema,
+    pub EstateCustomerDisclosureQueryBinding for EstateCustomerDisclosureRequest, schema BankSchema, context crate::schema::BankBindingContext,
     identity "worth.bank.estate-customer-disclosure-query-binding.v1",
     input EstateCustomerDisclosureRequestBinding,
     query EstateCustomerDisclosureQuery,
     parameters EstateCustomerDisclosureQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
     result EstateCustomerDisclosureQueryResultBinding,
-    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
-        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
     scope crate::schema::EstateCaseIdentityField,
     field crate::schema::EstateCaseIdentityField::at("EstateCaseIdentityField"),
     value EstateCustomerDisclosureRequest::estate,

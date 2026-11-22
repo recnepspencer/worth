@@ -9,8 +9,7 @@ pub use worth_query_host::facade::application_entry::{
 };
 
 pub use super::assertions::key;
-pub use super::authentication::{invalid_credential, valid_credential};
-pub use super::support::block_on;
+pub use super::authentication::{complete_approval, invalid_credential, valid_credential};
 
 pub fn require_authenticated_approval_and_replay(
     workflow: &BankApprovedPaymentWorkflow<'_, '_, '_>,
@@ -19,7 +18,7 @@ pub fn require_authenticated_approval_and_replay(
     proposal: &PublishedWorkflowProposalRef,
     authority: &ApprovePayment,
 ) {
-    let denied = block_on(workflow.approve(
+    let denied = complete_approval(workflow.approve(
         instance.clone(),
         required,
         proposal,
@@ -36,7 +35,7 @@ pub fn require_authenticated_approval_and_replay(
         ))
     );
 
-    let original = block_on(workflow.approve(
+    let original = complete_approval(workflow.approve(
         instance.clone(),
         required,
         proposal,
@@ -50,7 +49,7 @@ pub fn require_authenticated_approval_and_replay(
         panic!("the original approval must perform");
     };
     assert_eq!(original.node_path(), "approval");
-    let replay = block_on(workflow.approve(
+    let replay = complete_approval(workflow.approve(
         instance.clone(),
         required,
         proposal,

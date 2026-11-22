@@ -7,4 +7,4 @@ pub use bank_domain::schema::AccountStatus;
 pub use bank_server::{BankPrincipalSeed, BankWorldSeed};
 
 pub use super::*;
-pub use crate::facade::support::{block_on, runtime, CausalCredential, DynamicIdentity};
+pub use crate::facade::support::{runtime, DynamicIdentity};

@@ -52,14 +52,12 @@ worth_query_application_query!(
 );
 worth_query_decl::facade::worth_query_structured_value_binding!(pub InstitutionAuditRequestBinding for InstitutionAuditRequest { identity: "InstitutionAuditRequest" });
 worth_query_decl::facade::worth_query_query_binding!(
-    pub InstitutionAuditQueryBinding for InstitutionAuditRequest, schema BankSchema,
+    pub InstitutionAuditQueryBinding for InstitutionAuditRequest, schema BankSchema, context crate::schema::BankBindingContext,
     identity "worth.bank.institution-audit-query-binding.v1",
     input InstitutionAuditRequestBinding,
     query InstitutionAuditQuery,
     parameters InstitutionAuditQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
     result InstitutionAuditQueryResultBinding,
-    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
-        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
     scope crate::schema::InstitutionIdentityField,
     field crate::schema::InstitutionIdentityField::at("InstitutionIdentityField"),
     value InstitutionAuditRequest::institution,

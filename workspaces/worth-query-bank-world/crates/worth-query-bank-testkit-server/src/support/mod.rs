@@ -1,17 +1,13 @@
-pub use std::future::Future;
-pub use std::pin::pin;
-pub use std::task::{Context, Poll, Waker};
 pub use std::time::{Duration, Instant, SystemTime};
 
 pub use bank_server::{
-    BankApprovalAuthenticationConfiguration, BankAuthenticationBoundary,
-    BankAuthenticationConfiguration, BankIdentityRuntime, BankPrincipalSeed, BankWorldSeed,
+    BankApprovalAuthenticationConfiguration, BankAuthenticatedPrincipal,
+    BankAuthenticationConfiguration, BankIdentityRuntime, BankPrincipalAdmissionError,
+    BankPrincipalSeed, BankWorldSeed,
 };
 pub use worth_query_host::facade::admission::authenticated_principal::{
-    WorthQueryAuthenticationAdapter, WorthQueryAuthenticationAdapterFailure,
-    WorthQueryAuthenticationAdapterFailureKind, WorthQueryAuthenticationAudience,
-    WorthQueryAuthenticationFuture, WorthQueryAuthenticationMethod, WorthQueryCancellationSource,
-    WorthQueryRequestScope, WorthQueryValidatedExternalPrincipal,
+    WorthQueryAuthenticationAudience, WorthQueryAuthenticationMethod, WorthQueryCancellationSource,
+    WorthQueryLocalProcessPrincipal, WorthQueryRequestScope,
 };
 pub use worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity;
 
@@ -56,7 +52,22 @@ impl DynamicIdentity {
 
 pub struct TestIdentityWorld {
     pub runtime: BankIdentityRuntime,
-    pub authentication: BankAuthenticationBoundary<CausalBankAuthenticationAdapter>,
+}
+
+impl TestIdentityWorld {
+    /// Authenticates `identity` as this process's local principal and
+    /// resolves it to its installed Bank principal, on the calling thread.
+    pub fn authenticate(
+        &self,
+        identity: &DynamicIdentity,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<BankAuthenticatedPrincipal, BankPrincipalAdmissionError> {
+        let authentication = self
+            .runtime
+            .admit_authentication_adapter(authentication_configuration(), local_principal(identity))
+            .expect("the local process principal should admit");
+        self.runtime.authenticate_local(&authentication, scope)
+    }
 }
 
 pub trait BankTestRuntimeSeed {
@@ -97,16 +108,7 @@ pub fn runtime_with_approval_authentication(
 }
 
 pub fn test_world(runtime: BankIdentityRuntime) -> TestIdentityWorld {
-    let authentication = runtime
-        .admit_authentication_adapter(
-            authentication_configuration(),
-            CausalBankAuthenticationAdapter,
-        )
-        .expect("causal authentication adapter should admit");
-    TestIdentityWorld {
-        runtime,
-        authentication,
-    }
+    TestIdentityWorld { runtime }
 }
 
 pub fn authentication_configuration() -> BankAuthenticationConfiguration {
@@ -125,60 +127,15 @@ pub fn request_scope() -> WorthQueryRequestScope {
     )
 }
 
-pub struct CausalCredential {
-    pub identity: WorthQueryExternalPrincipalIdentity,
-}
-
-impl CausalCredential {
-    pub fn for_identity(identity: &DynamicIdentity) -> Self {
-        Self {
-            identity: identity.external(),
-        }
-    }
-}
-
-pub struct CausalBankAuthenticationAdapter;
-
-impl WorthQueryAuthenticationAdapter for CausalBankAuthenticationAdapter {
-    type Credential = CausalCredential;
-
-    fn configuration_identity(&self) -> &str {
-        "bank-server-causal-test-adapter-v1"
-    }
-
-    fn validate<'a>(
-        &'a self,
-        credential: Self::Credential,
-        _scope: &'a WorthQueryRequestScope,
-    ) -> WorthQueryAuthenticationFuture<'a> {
-        Box::pin(async move {
-            let now = SystemTime::now();
-            WorthQueryValidatedExternalPrincipal::new(
-                credential.identity,
-                WorthQueryAuthenticationAudience::new(TEST_AUDIENCE)
-                    .expect("test audience should admit"),
-                WorthQueryAuthenticationMethod::new(TEST_METHOD).expect("test method should admit"),
-                now,
-                now + Duration::from_secs(60),
-                Vec::new(),
-            )
-            .map_err(|_| {
-                WorthQueryAuthenticationAdapterFailure::new(
-                    WorthQueryAuthenticationAdapterFailureKind::ProtocolViolation,
-                )
-            })
-        })
-    }
-}
-
-pub fn block_on<F: Future>(future: F) -> F::Output {
-    let mut future = pin!(future);
-    let waker = Waker::noop();
-    let mut context = Context::from_waker(waker);
-    loop {
-        match future.as_mut().poll(&mut context) {
-            Poll::Ready(output) => return output,
-            Poll::Pending => std::thread::yield_now(),
-        }
-    }
+/// The Host's local process principal acting as `identity`, admitted with the
+/// test audience and method.
+pub fn local_principal(identity: &DynamicIdentity) -> WorthQueryLocalProcessPrincipal {
+    WorthQueryLocalProcessPrincipal::new(
+        "bank-server-local-test-principal-v1",
+        identity.external(),
+        WorthQueryAuthenticationAudience::new(TEST_AUDIENCE).expect("test audience should admit"),
+        WorthQueryAuthenticationMethod::new(TEST_METHOD).expect("test method should admit"),
+        Duration::from_secs(60),
+    )
+    .expect("a finite local principal lifetime should admit")
 }

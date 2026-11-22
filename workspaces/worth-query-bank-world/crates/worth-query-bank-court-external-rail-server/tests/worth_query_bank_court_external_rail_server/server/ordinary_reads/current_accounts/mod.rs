@@ -1,6 +1,7 @@
 //! Genuine ordinary Source parity, incremental mutations and current-only custody.
 use worth_query_bank_testkit_server::facade::ordinary_reads::current_accounts::*;
 mod membership;
+mod search;
 mod snapshots;
 
 fn work(runtime: &bank_server::BankIdentityRuntime) -> (usize, usize, usize) {

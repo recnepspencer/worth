@@ -35,23 +35,17 @@ impl DirectoryWorld {
         .unwrap_or_else(|cause| panic!("Bank Home open: {cause:?}"))
     }
     pub fn authenticate(&self, home: &BankHome) -> [bank_server::BankAuthenticatedPrincipal; 3] {
-        use crate::facade::support::{
-            authentication_configuration, CausalBankAuthenticationAdapter,
-        };
+        use crate::facade::support::{authentication_configuration, local_principal};
         let bank = bank_server::BankHomeRuntime::attach(home.runtime()).unwrap();
-        let authentication = bank
-            .admit_authentication_adapter(
-                authentication_configuration(),
-                CausalBankAuthenticationAdapter,
-            )
-            .unwrap();
         std::array::from_fn(|i| {
-            block_on(bank.authenticate_with(
-                &authentication,
-                CausalCredential::for_identity(&self.identities[i]),
-                &request_scope(),
-            ))
-            .unwrap()
+            let authentication = bank
+                .admit_authentication_adapter(
+                    authentication_configuration(),
+                    local_principal(&self.identities[i]),
+                )
+                .unwrap();
+            bank.authenticate_local(&authentication, &request_scope())
+                .unwrap()
         })
     }
     pub fn send(
