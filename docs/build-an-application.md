@@ -5156,7 +5156,11 @@ Query compares it exactly against the current candidate. A read with no
 narrower key (query support, source selections) is compared at every append.
 An equal derivation stays usable. A changed one is **reopened**, owed at the
 later of its own demand and the invalidating member, and re-runs before
-anything consumes it:
+anything consumes it. A comparison that cannot be answered at an intermediate
+image (the read is unavailable there) proves neither: the derivation is kept,
+not reopened, and final support decides it against the final candidate. Any
+other failure of a comparison, such as an execution stop, cancellation, an
+allocation denial, the deadline or a work budget, refuses the edit at once.
 
 - A retained verified parent re-derives as a fresh part. Its source is
   recaptured through ordinary Source admission, with ordinary failure; it
@@ -5166,23 +5170,34 @@ anything consumes it:
   route. Its own output records read as they were before its first round. Any
   other read of a key its chain wrote stops before append, with
   `CoupledContinuationProvenancePostponed { issue: 119, reason: PriorEffectRead }`.
-  Native folds the round in place, so the route keeps one part and one writer.
+  Native folds the round in place, so the route keeps one part and one
+  writer, only when its fold proof holds. Otherwise the edit refuses with the
+  same #119 postponement and reason `UncoveredWrite` (the round does not
+  re-patch a field, or re-create a record, an earlier round of its chain
+  wrote), `FreshDelete` (it deletes a record its chain created),
+  `StructuralEffect` (an effect a fold cannot lower in place: a deletion, a
+  relation change, a new record or content) or `IntervenedOutput` (another
+  writer changed one of the chain's records after its earlier round).
   A relation the chain linked is outside the own-output view (public #277).
 - A consumer of a re-derived output settles when the replacement is equal in
   payload, role, generation, custody, readiness and demand key. Otherwise the
   consumer re-runs.
 - A task's discovery whose support changed selects again. A child it already
   derived and no longer selects refuses `SupersededSelectionDropped`. A root
-  selection holds only within its own stage: a change made after the next
-  authored stage, in owed order, does not re-run it, just as one commit per
-  stage evaluates each root once.
+  selection never selects again; one commit per stage evaluates each root
+  once, in its own stage. Its support holds through that stage: a change by a
+  member that runs before the next authored stage's append, in owed order,
+  refuses the edit at final support (`CoupledReadSupportChanged`). The window
+  ends at that append. A change by the next authored stage itself, a later
+  one, or a producer owed at or after it is outside the window and is
+  accepted, with no re-seed.
 - A producer whose decision refuses in its domain while one of its proofs can
   still change waits. An append that changes one of those proofs retries it.
   If the refusal is still pending where its output is needed, or at the end of
   the edit, its original refusal is reported. A refusal without proofs is
   reported at once.
 
-Reopens consume producer starts and are bounded by the round limits below. A
+Reopens consume producer starts and are bounded by the round limits above. A
 change that no declared edge orders before its reader is not reordered: an
 authored stage's read accepts only a change by a member that one commit per
 stage runs after it, and any other change refuses plainly. Final support then
