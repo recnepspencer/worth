@@ -5,10 +5,39 @@
 //! scanner advances one 8-byte word per call, so the evaluator charges one
 //! work unit per word and can suspend between any two words. Early exits
 //! stop at a word boundary of the scan stream, so the cost never depends on
-//! where a slice ended.
+//! where a slice ended. ASCII case-insensitive matching folds bytes as it
+//! compares them, so it scans the same words at the same cost.
 
 /// Bytes a scanner consumes per step.
 pub(crate) const WORD: usize = 8;
+
+/// How containment and affix scans compare bytes.
+///
+/// ASCII folding changes only `A..=Z`, which never occur inside a multi-byte
+/// UTF-8 scalar, so a folded match still starts and ends on scalar
+/// boundaries and non-ASCII text compares exactly.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ByteComparison {
+    Exact,
+    IgnoreAsciiCase,
+}
+
+impl ByteComparison {
+    fn fold(self, byte: u8) -> u8 {
+        match self {
+            Self::Exact => byte,
+            Self::IgnoreAsciiCase => byte.to_ascii_lowercase(),
+        }
+    }
+
+    /// Whether two equally long chunks match under this comparison.
+    pub(crate) fn chunks_match(self, a: &[u8], b: &[u8]) -> bool {
+        match self {
+            Self::Exact => a == b,
+            Self::IgnoreAsciiCase => a.eq_ignore_ascii_case(b),
+        }
+    }
+}
 
 /// Whether `byte` starts a UTF-8 scalar rather than continuing one.
 fn starts_scalar(byte: u8) -> bool {
@@ -79,9 +108,11 @@ impl ScalarRange {
 }
 
 /// Knuth-Morris-Pratt containment: the needle's failure table, then the
-/// haystack, one word of the combined stream per step.
+/// haystack, one word of the combined stream per step. Folding both sides
+/// per byte is KMP over the folded strings, so the table stays valid.
 #[derive(Debug, Clone)]
 pub(crate) struct Matcher {
+    comparison: ByteComparison,
     table: Vec<usize>,
     /// Needle bytes processed into the table.
     built: usize,
@@ -96,8 +127,9 @@ impl Matcher {
         needle.len() as u64 * 8
     }
 
-    pub(crate) fn new(needle: &[u8]) -> Self {
+    pub(crate) fn new(needle: &[u8], comparison: ByteComparison) -> Self {
         Self {
+            comparison,
             table: vec![0; needle.len()],
             built: 1.min(needle.len()),
             offset: 0,
@@ -110,14 +142,15 @@ impl Matcher {
         if needle.is_empty() {
             return Some(true);
         }
+        let fold = |byte| self.comparison.fold(byte);
         let mut budget = WORD;
         while budget > 0 && self.built < needle.len() {
-            let byte = needle[self.built];
+            let byte = fold(needle[self.built]);
             let mut matched = self.table[self.built - 1];
-            while matched > 0 && byte != needle[matched] {
+            while matched > 0 && byte != fold(needle[matched]) {
                 matched = self.table[matched - 1];
             }
-            if byte == needle[matched] {
+            if byte == fold(needle[matched]) {
                 matched += 1;
             }
             self.table[self.built] = matched;
@@ -125,11 +158,11 @@ impl Matcher {
             budget -= 1;
         }
         while budget > 0 && self.offset < haystack.len() {
-            let byte = haystack[self.offset];
-            while self.matched > 0 && byte != needle[self.matched] {
+            let byte = fold(haystack[self.offset]);
+            while self.matched > 0 && byte != fold(needle[self.matched]) {
                 self.matched = self.table[self.matched - 1];
             }
-            if byte == needle[self.matched] {
+            if byte == fold(needle[self.matched]) {
                 self.matched += 1;
             }
             self.offset += 1;
@@ -145,7 +178,7 @@ impl Matcher {
 
 #[cfg(test)]
 mod tests {
-    use super::{Matcher, ScalarCount, ScalarRange};
+    use super::{ByteComparison, Matcher, ScalarCount, ScalarRange};
 
     fn run<T>(mut step: impl FnMut() -> Option<T>) -> (T, u64) {
         let mut words = 1;
@@ -170,7 +203,11 @@ mod tests {
     }
 
     fn contains(haystack: &str, needle: &str) -> (bool, u64) {
-        let mut matcher = Matcher::new(needle.as_bytes());
+        contains_by(haystack, needle, ByteComparison::Exact)
+    }
+
+    fn contains_by(haystack: &str, needle: &str, comparison: ByteComparison) -> (bool, u64) {
+        let mut matcher = Matcher::new(needle.as_bytes(), comparison);
         run(|| matcher.step(haystack.as_bytes(), needle.as_bytes()))
     }
 
@@ -218,5 +255,26 @@ mod tests {
         assert_eq!(contains(&haystack, "a"), (true, 1));
         let late = format!("{}b", "a".repeat(63));
         assert_eq!(contains(&late, "ab"), (true, 9));
+    }
+
+    #[test]
+    fn folded_containment_is_exact_over_folded_text_at_the_same_word_cost() {
+        let folded = ByteComparison::IgnoreAsciiCase;
+        for (haystack, needle) in [
+            ("Stainless STEEL", "steel"),
+            ("AaAaAB", "aab"),
+            ("ÉTÉ été", "été"),
+            ("ÉTÉ", "été"),
+            ("abc", "ABCD"),
+            ("Steel", ""),
+        ] {
+            let expected = haystack
+                .to_ascii_lowercase()
+                .contains(&needle.to_ascii_lowercase());
+            let exact = contains(&haystack.to_ascii_lowercase(), &needle.to_ascii_lowercase());
+            assert_eq!(contains_by(haystack, needle, folded), (expected, exact.1));
+        }
+        let late = format!("{}B", "A".repeat(63));
+        assert_eq!(contains_by(&late, "ab", folded), (true, 9));
     }
 }

@@ -7,6 +7,7 @@
 
 use std::cmp::Ordering;
 use std::sync::Arc;
+mod date;
 mod logical_size;
 mod retained_size;
 
@@ -61,6 +62,8 @@ pub(crate) enum Repr {
     Record(Arc<Composite>),
     /// `[key, value]`, as `entries(map)` yields.
     Entry(Arc<Composite>),
+    /// Days from the Unix epoch.
+    Date(i32),
 }
 
 /// Shared parts plus their logical size, computed once at construction.

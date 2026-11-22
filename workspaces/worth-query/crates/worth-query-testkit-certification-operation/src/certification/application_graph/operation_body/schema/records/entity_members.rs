@@ -28,7 +28,11 @@ impl Principal {
 pub struct Document;
 impl Entity for Document {
     const NAME: &'static str = "Document";
-    type Aspects = (DocumentFacts, Option<DocumentDraftFacts>);
+    type Aspects = (
+        DocumentFacts,
+        Option<DocumentDraftFacts>,
+        Option<crate::facade::certification::application_graph::operation_body::native_scalars::records::DocumentScheduleFacts>,
+    );
     type Relations = (DocumentMembers, DocumentTenant, OwnedRows);
 }
 impl Document {

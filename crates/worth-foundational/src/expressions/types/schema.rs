@@ -7,17 +7,12 @@ use crate::expressions::denial::{ExpressionDenial, ExpressionDenialDetail, Synta
 use crate::expressions::syntax::GENERIC_INTRINSICS;
 
 use super::name::{check_qualified_name, is_identifier};
+use super::resolve::BUILTIN_TYPE_NAMES;
 use super::{ExpressionType, ExpressionTypeName};
 
 /// Nested type structure is bounded like syntax, so checks never recurse deep.
 const TYPE_DEPTH: u32 = 64;
 const BIT_WIDTH: u32 = 4096;
-
-/// Built-in type names that nominal declarations cannot reuse.
-const BUILTIN_TYPE_NAMES: [&str; 20] = [
-    "Bool", "Int8", "Int16", "Int32", "Int64", "UInt8", "UInt16", "UInt32", "UInt64", "Float32",
-    "Float64", "Decimal", "String", "Bytes", "Option", "List", "Map", "Quantity", "Bits", "Logic4",
-];
 
 pub(crate) const ROUNDING_NAME: &str = "Rounding";
 pub(crate) const ROUNDING_VARIANTS: [&str; 4] = [
