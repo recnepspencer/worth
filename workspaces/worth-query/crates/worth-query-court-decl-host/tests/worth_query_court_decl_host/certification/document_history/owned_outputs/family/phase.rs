@@ -36,6 +36,8 @@ macro_rules! producer_operation {
     (ParityInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputPreserve, $entity, $key, $value, $of); };
     (SaturatedInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedInputInitial, $entity, $key, $value, $of); };
     (SaturatedInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedInputPreserve, $entity, $key, $value, $of); };
+    (DecisionWriteNInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWriteNInitial, $entity, $key, $value, $of); };
+    (DecisionWriteNPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWriteNPreserve, $entity, $key, $value, $of); };
     (DecisionWriteInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWriteInitial, $entity, $key, $value, $of); };
     (DecisionWritePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWritePreserve, $entity, $key, $value, $of); };
     (CrossReaderInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CrossReaderInitial, $entity, $key, $value, $of); };

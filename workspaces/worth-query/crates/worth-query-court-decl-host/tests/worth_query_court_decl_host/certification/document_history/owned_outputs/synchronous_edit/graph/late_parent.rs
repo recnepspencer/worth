@@ -14,6 +14,7 @@ mod pending_refusal;
 mod pending_retry;
 mod prior_effect;
 mod refused_reselect;
+mod reopen_closed;
 mod selection;
 mod selection_merge;
 mod selection_swap;
