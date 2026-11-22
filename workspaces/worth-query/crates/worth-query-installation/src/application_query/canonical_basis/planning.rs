@@ -37,6 +37,11 @@ pub(in crate::application_query) fn prepare_planning_basis(
         },
     ));
     append_predicates(&mut entries, graph);
+    crate::application_query::WorthQueryInstalledWhereFilter::append_canonical(
+        graph.where_filter(),
+        &mut entries,
+        |locus, value| text(locus, value),
+    );
     append_guards(&mut entries, graph);
     append_ordering(&mut entries, graph);
     entries.push(unsigned(

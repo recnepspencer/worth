@@ -78,6 +78,7 @@ pub(super) fn application_query() -> ErasedApplicationQueryDefinition {
                 text("expected"),
                 ScalarAspectType::UInt64,
             )],
+            where_filter: None,
             ordering: vec![ApplicationQueryOrderingTerm::from_untrusted_parts(
                 WorthQueryPortableApplicationQueryOrderingParts {
                     query_type: query_type.clone(),

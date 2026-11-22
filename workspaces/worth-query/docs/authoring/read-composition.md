@@ -29,6 +29,8 @@ an invariant callback or construct an admitted plan.
 - `ApplicationQueryResultShapeBuilder`
 - `ApplicationQueryResultShapeBuilder::relation_where_equal(...)` when one
   related child must be selected by a typed child field and query parameter
+- `ApplicationQueryWhereFilterOperands` and `.where_filter(...)` to narrow
+  selected root rows by a parameterized Foundation expression
 - `ApplicationQueryResultFieldRef` for required fields
 - `ApplicationQueryOptionalResultFieldRef` for optional fields
 - `row.field(...)` and `row.optional_field(...)` during domain projection
@@ -182,6 +184,48 @@ retains every examined sibling and the predicate aspect revision, including
 siblings excluded from the public result. A changed excluded sibling therefore
 invalidates source authority. Filtered relations cannot also be continuation
 targets because that pagination contract is not defined.
+
+### Residual where filters
+
+`where_equal` and root paths select candidates structurally. A where filter
+then narrows those candidate rows with one parameterized Boolean expression,
+admitted statically against the root entity's fields and the query's typed
+parameters:
+
+```rust
+let filter = ApplicationQueryWhereFilterOperands::new()
+    .field("title", Title::at("Title"))?
+    .field("notes", Notes::at("Notes"))?
+    .parameter("q", search_text)?
+    .parse("contains_ignore_ascii_case(title, q) || contains_ignore_ascii_case(notes, q)")?;
+
+ApplicationQueryDefinitionBuilder::declare(TaskSearch::reference())
+    // .root(..).scope(..).result_shape(..) and controls as above
+    .root_path(ApplicationQueryRootPath::from(Project::reference()).forward(Contains::reference()))
+    .parameter(search_text)
+    .where_filter(filter)
+    .order_by(key(), ApplicationQueryOrderingDirection::Ascending);
+```
+
+Foundation owns the language, typing and metered evaluation; there is no
+second predicate language. An optional field is an `Option` operand
+(`is_some(due) && unwrap(due) <= max_due`). Unknown names, non-Bool results,
+type mismatches, unused operands and unit-bearing values refuse when the
+filter is admitted; undeclared parameters, parameter family mismatches and
+fields outside the root entity refuse at schema declaration with
+`ApplicationQueryDefinitionDenial::WhereFilter*`.
+
+At execution the filter runs after index-seeking selection and before
+ordering, cardinality and result limits. Each candidate is a safe point;
+evaluation runs in bounded slices whose work is charged to the request, and
+cancellation or deadline between slices refuses with a typed denial. Every
+examined candidate's filter fields join the result's set evidence, including
+rows the filter excluded and fields the result never projects, so editing a
+filter-only field stales sources observed earlier. Filters apply to exact-root
+and root-path selections; orbit, component, managed-index and continuation
+shapes refuse. Unfiltered definitions keep their exact canonical identity and
+archive bytes. The public journeys are in the
+[where-filter court](../../crates/worth-query-court-decl-host-where-filter/tests/worth_query_court_decl_host_where_filter/where_filter/mod.rs).
 
 When the definition is governed, give the optional slot its own disclosure
 rule and keep policy omission typed in the result:

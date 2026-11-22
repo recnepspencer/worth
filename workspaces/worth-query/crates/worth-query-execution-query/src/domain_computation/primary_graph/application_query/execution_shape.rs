@@ -61,7 +61,8 @@ pub fn prepare_one_shot_shape_admitted<'query, Schema, Query, Parameters, QueryR
 /// and an installed managed selector. The latter still requires its sealed
 /// Parent selection lease at execution; shape admission grants no root authority.
 /// Complete steps use the original Native request; sharing an entity kind with
-/// the scope does not make a declared path an exact root.
+/// the scope does not make a declared path an exact root. Root-entity
+/// `where_equal` predicates and a where filter narrow either root shape.
 pub fn validate_one_shot_shape<Schema, Query, Parameters, QueryResult, Scope>(
     query: &WorthQueryInstalledApplicationQuery<Schema, Query, Parameters, QueryResult, Scope>,
 ) -> Result<(), WorthQueryApplicationQueryAdmissionDenial> {
@@ -73,7 +74,13 @@ pub fn validate_one_shot_shape<Schema, Query, Parameters, QueryResult, Scope>(
         [predicate] => predicate.field().0 == root,
         _ => false,
     };
-    let declared_path_selection = !graph.root_paths().is_empty() && graph.predicates().is_empty();
+    // A path union is the index-seeking bound; root-entity `where_equal`
+    // predicates and the where filter then narrow its candidates.
+    let declared_path_selection = !graph.root_paths().is_empty()
+        && graph
+            .predicates()
+            .iter()
+            .all(|predicate| predicate.field().0 == root);
     let managed_selection = graph.managed_index_selection().is_some()
         && graph.root_paths().is_empty()
         && graph.orbit().is_none()

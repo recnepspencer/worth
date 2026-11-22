@@ -29,6 +29,7 @@ mod canonical_basis_residue;
 mod installed_identity;
 mod selector_identity;
 mod shape_identity;
+mod where_filter;
 
 pub(super) struct ActivityQueryParameters;
 pub(super) struct ActivityQueryResult;
