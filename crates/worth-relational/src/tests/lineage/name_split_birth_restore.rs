@@ -1,4 +1,4 @@
-//! Phase 5B2 court proving birth-classified `Restore` for `Split` children
+//! Phase 5A court proving birth-classified `Restore` for `Split` children
 //! when re-splitting a restored parent with replayed original child births:
 //! exact emitted events (zero duplicate `Create`), exact lineage reservation
 //! width, index rebuild equivalence, and oracle-verified historical resolution.

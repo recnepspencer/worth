@@ -1,4 +1,4 @@
-//! Phase 5B2 court proving birth-classified `Restore` for `Merge(MintNew)`
+//! Phase 5A court proving birth-classified `Restore` for `Merge(MintNew)`
 //! when re-minting a previously retired merged name: exact emitted events
 //! (zero duplicate `Create`), exact lineage reservation width, index rebuild
 //! equivalence, and oracle-verified historical resolution.

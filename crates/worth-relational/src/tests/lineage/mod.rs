@@ -6,6 +6,7 @@ mod name_event_fixtures;
 mod name_group_world;
 mod name_history_continuity;
 mod name_history_proptest;
+mod name_history_proptest_harness;
 mod name_history_traversal;
 mod name_index_fixtures;
 mod name_index_rebuild;
