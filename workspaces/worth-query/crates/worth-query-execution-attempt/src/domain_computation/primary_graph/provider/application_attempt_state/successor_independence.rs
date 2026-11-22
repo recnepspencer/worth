@@ -88,12 +88,19 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                     });
                     // A read that is the same before the chain as now cannot
                     // have observed the chain's effect.
-                    if touched
-                        && !fact.support_equal_after_own_effect(
+                    if touched {
+                        let equal = match fact.support_equal_after_own_effect(
                             execution, runtime, &snapshot, own.head(), current,
-                        )?
-                    {
-                        return Ok(Some(record));
+                        ) {
+                            Ok(equal) => equal,
+                            // Unavailable at this image: independence is not
+                            // proved, so the round stops typed (`PriorEffectRead`).
+                            Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => false,
+                            Err(cause) => return Err(cause),
+                        };
+                        if !equal {
+                            return Ok(Some(record));
+                        }
                     }
                 }
                 Ok(None)

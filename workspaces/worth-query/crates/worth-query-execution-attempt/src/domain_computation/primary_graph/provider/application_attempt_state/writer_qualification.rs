@@ -77,10 +77,14 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                         | Fact::ApplicationObservedSource { fact, .. } => fact,
                         Fact::Principal(_) | Fact::Authorization { .. } => continue,
                     };
-                    if !fact.support_equal_after_own_effect(
+                    match fact.support_equal_after_own_effect(
                         execution, runtime, &snapshot, after_own, current,
-                    )? {
-                        return Ok(true);
+                    ) {
+                        Ok(true) => {}
+                        Ok(false) => return Ok(true),
+                        // Unavailable at this image: a possible change.
+                        Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => return Ok(true),
+                        Err(cause) => return Err(cause),
                     }
                 }
                 Ok(false)

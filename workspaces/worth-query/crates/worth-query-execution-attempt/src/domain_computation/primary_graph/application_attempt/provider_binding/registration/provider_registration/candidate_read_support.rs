@@ -252,11 +252,16 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             }
             charge_scan(execution, "selection support qualification", 1)?;
             crate::domain_computation::execution_observation::record_retained_reads_visited(1);
-            if entry
+            let changed = match entry
                 .support
-                .changed_fact(execution, runtime, before, entry.support.pin(), current)?
-                .is_some()
+                .changed_fact(execution, runtime, before, entry.support.pin(), current)
             {
+                Ok(changed) => changed.is_some(),
+                // Unavailable at this image: a possible change.
+                Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => true,
+                Err(cause) => return Err(cause),
+            };
+            if changed {
                 entry.window_end = Some(invalidator);
                 match owners.iter_mut().find(|(task, _)| *task == owner) {
                     Some((_, incoming)) => *incoming |= entry.incoming,
@@ -319,11 +324,12 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         let CandidateReadSupport::Parent(parent) = &entry.support else {
             unreachable!("matched a verified parent")
         };
-        if parent
-            .changed_fact(execution, runtime, before, parent.pin(), current)?
-            .is_none()
-        {
-            return Ok(RetainedReadRequalification::Equal);
+        match parent.changed_fact(execution, runtime, before, parent.pin(), current) {
+            Ok(None) => return Ok(RetainedReadRequalification::Equal),
+            Ok(Some(_)) => {}
+            // Unavailable at this image: a possible change.
+            Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => {}
+            Err(cause) => return Err(cause),
         }
         if settles(parent.as_ref()) {
             return Ok(RetainedReadRequalification::Settled);
