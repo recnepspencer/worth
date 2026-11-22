@@ -103,6 +103,7 @@ impl WorthQueryOutputDemandDenialKind {
             | Self::RetentionBudgetExceeded
             | Self::PublicationCapacityExceeded
             | Self::CyclicRequiredOutputOccurrences { .. }
+            | Self::SupersededSelectionDropped { .. }
             | Self::RequiredOutputParentUnavailable { .. }
             | Self::ForeignDemand
             | Self::RequiredSuccessorStateUnavailable

@@ -230,13 +230,21 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 .all(|parent| prerequisites.binary_search(parent).is_ok());
             if !(kept_children && kept_parents) {
                 // Final support cannot be the guard: the quiescent outgoing
-                // refresh replaces outgoing evidence. Refuse here (typed
-                // `SupersededSelectionDropped` lands with C4).
+                // refresh replaces outgoing evidence. Refuse here.
                 observation::record(|| format!("dropped selection task={row}"));
-                return Err(super::super::occurrences::refusal(
-                    subject,
-                    "a reopened derivation dropped a selection it derived",
-                ));
+                // A static-edge row has no occurrence key: its route names it.
+                let key = match self.tasks[row].key.clone() {
+                    Some(key) => key,
+                    None => self.tasks[row].tree.route(context, candidate)?,
+                };
+                return Err(SynchronousOutputFailure(CoupledSourceReadStop::from(
+                    crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(
+                        crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::SupersededSelectionDropped {
+                            source: key.scope,
+                        },
+                        format!("{subject}: a reopened derivation dropped a selection it derived"),
+                    ),
+                )));
             }
             context
                 .owner

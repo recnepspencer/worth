@@ -172,12 +172,6 @@ impl PreparedOutputLineageSlot {
     ) {
         assert!(self.coupled_completion.replace(completion).is_none());
     }
-    /// The coupled producer completion this slot records, if any.
-    pub(in crate::domain_computation::primary_graph) fn coupled_completion(
-        &self,
-    ) -> Option<&super::CoupledOutputCompletion> {
-        self.coupled_completion.as_ref()
-    }
     pub(in crate::domain_computation::primary_graph) fn seal_published_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

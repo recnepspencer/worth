@@ -10,6 +10,7 @@ mod outgoing;
 mod prerequisite;
 mod prior_effect;
 mod selection;
+mod selection_swap;
 mod settlement;
 mod shared_read;
 mod superseded_window;
