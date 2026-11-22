@@ -82,8 +82,9 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                     ) {
                         Ok(true) => {}
                         Ok(false) => return Ok(true),
-                        // Unavailable at this image: a possible change.
-                        Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => return Ok(true),
+                        // Unavailable at this image: unknown. The writer is
+                        // kept; final support compares this fact strictly.
+                        Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => {}
                         Err(cause) => return Err(cause),
                     }
                 }
