@@ -765,10 +765,16 @@ or at graceful close; until then the Home is not quiescent. Graceful close
 settles the journal before it retires any graph or Store owner, and refuses
 while a contact is still in flight.
 
-Process death before an observation is recorded is not yet certified. A Home
-whose journal ends in an attempt with no recorded observation refuses to open,
-and `unclean_recovery_unsupported()` names the `Dispatch` owner and that
-effect. Recovery claim readmission still requires fresh original-source admission.
+After a process kill while one or more external dispatches were in flight
+(their attempts durable, their observations not yet recorded), cold Home
+readmission admits every unobserved attempt — including concurrent attempts
+with later frames after them — and durably records each one's observation as
+`Unresolved(UnknownProviderOutcome)` before service, without contacting any
+transport. The recovered custody then reaches the existing recovery handles
+(`reconcile_recovery_handle`, `safe_retry_recovery_handle`,
+`compensate_recovery_handle`, `resolve_recovery_handle`) and authentic inbound
+completion callbacks. Recovery claim readmission still requires fresh
+original-source admission. Full crash certification belongs to C4/C5.
 
 ## Durable inbound custody on a Directory Home
 

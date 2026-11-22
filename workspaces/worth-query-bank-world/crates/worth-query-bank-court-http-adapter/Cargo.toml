@@ -12,7 +12,10 @@ axum = { workspace = true }
 bank-external-rail = { workspace = true }
 bank-http-adapter = { workspace = true }
 ed25519-dalek = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 tokio = { workspace = true }
+worth-execution = { workspace = true }
 worth-query-decl = { workspace = true }
 worth-query-testkit-host = { path = "../../../worth-query/crates/worth-query-testkit-host" }
 bank-domain = { workspace = true }

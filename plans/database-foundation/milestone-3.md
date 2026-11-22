@@ -173,13 +173,14 @@ surface.
 | C3.1 Mixed publication killed between owner effects; Signal refusals at Home open | Done (reviewed). A mixed original's planned Signal leg is recorded before Native's effect. A kill with only Native durable continues to exactly one Signal effect and one occurrence. A retry of the original key answers the original in both cuts, and a fresh key is refused before any effect. At Home open, damaged, foreign, unknown-version and unrecorded-definition Signal inputs refuse before service |
 | C3.2 Cold release of process-local managed custody | Done (reviewed). Before service, the reopened Home's `query.obligations` cold fold mints the ended-incarnation witness and cold-releases every pending managed run, managed cleanup and application-resource row the dead process held (original, recovery cause and posture kept, terminal never `Completed`), so graceful close succeeds and the ordinary doors discharge them; a live row, another fold's release and a mandatory owned-async request refuse the cold route. Hold: no Home publisher of mandatory owned-async requests exists yet, so that real-kill row is covered at the owner court only |
 | C3.3 Mid-step workflow kills, R9 `Indeterminate` and temporal retry | Done (reviewed). `query.obligations` conditional-decision family adds durable `Indeterminate` posture with World original association (`Unclassified` / `Recovered`), classified before service by World's state (published/released: finish; absent: release as proven no-effect; recovered unpublished: join and continue through World's recovery port without re-invocation). Workflow kills after approval between steps and mid-step resume under original keys to the reference terminal; temporal commits killed before product movement or after publication yield one occurrence; workflow-bearing transitions killed in every durable state resume and apply dispositions once |
-| C3.4 Adoption killed at each stage; retirement across a kill | Done (pending review). Real process kills at every exact durable single-branch adoption record boundary (pre-open support custody retained, empty World open released, adoption recovery recorded with Native effect, World publication durable, and completed) plus the World-Released/Query-ReleaseBranch reopen cut, at each branch of a two-branch set's stopped prefix (with direct preparation-entry observation and branch-local durable activation parity), and after completed support retirement all recover cleanly on reopen (`no_pending_owners::adoption_seams`: 8 substantive parent courts + 1 no-environment child entry = 9/9 PASS; Query adoption courts: 9/9 PASS) |
-| C3.5 Crashes after dispatch, R14 and disappearance mid-dispatch | Planned |
+| C3.4 Adoption killed at each stage; retirement across a kill | Done (reviewed). Real process kills at every exact durable single-branch adoption record boundary (pre-open support custody retained, empty World open released, adoption recovery recorded with Native effect, World publication durable, and completed) plus the World-Released/Query-ReleaseBranch reopen cut, at each branch of a two-branch set's stopped prefix (with direct preparation-entry observation and branch-local durable activation parity), and after completed support retirement all recover cleanly on reopen (`no_pending_owners::adoption_seams`: 8 substantive parent courts + 1 no-environment child entry = 9/9 PASS; Query adoption courts: 9/9 PASS) |
+| C3.5 Crashes after dispatch, R14 and disappearance mid-dispatch | Done (pending review). Cold `query.dispatch` readmission admits every unobserved attempt (including concurrent ones with later frames after them) and durably records `Unresolved(UnknownProviderOutcome)` before service; D18's `Dispatch` branch and `UnobservedAttempt` readmission refusal are deleted. Covered by runnable Query `dispatch_custody` courts (including real Directory Home kill with concurrent unobserved attempts + later frames, monotone repeated fold, safe-retry fresh attempt allocation, and frame codec truncation/corruption refusals; unit tests in `dispatch_journal/tests.rs` also updated for concurrent unobserved fold and second-observation/foreign-home/broken-prefix refusals, though `worth-query-execution --lib` has pre-existing master compile debt in `aggregate_identity_layout_tests`) and Bank external-rail real-kill courts (all six dispatch fault cases, kill between dispatch and response recording, inbound duplicate dedupe & callback completion across kill, and R14 rail restart with lost state) |
 | C3.6 Correction split completion and original-owner advancement under a true kill | Planned |
 | C3.7 Discarding derived caches (D14) | Planned |
 
 The Host accessor `unclean_recovery_unsupported()` now reads World's D18
-refusal. After C1, it reports two kinds of cause.
+refusal. After C3.5 deleted the `Dispatch` branch, it reports only the two
+World-wrapped damage causes:
 
 - **World-wrapped causes:** a Signal effect without its recorded open, and a
   Native fork without a creation intent. Neither can come from a kill, because
@@ -187,9 +188,6 @@ refusal. After C1, it reports two kinds of cause.
   is refused earlier by physical recovery. A Host open therefore cannot
   produce them without forged bytes. The World owner court
   `owner_evidence::recovered_owners` covers the refusal.
-- **Dispatch cause:** an external dispatch attempt with no recorded
-  observation. A kill during external contact can produce it. Its recovery is
-  C3 scope (crashes after dispatch).
 
 C5 deletes the accessor along with D18.
 

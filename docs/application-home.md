@@ -252,15 +252,26 @@ fixed owner order before the Home serves anything.
   widened coverage so the completed prefix is never re-prepared. A completed
   `retire_program_support` survives a process kill and keeps refusing
   interpretation and commits under the retired revision.
+- **An interrupted external dispatch (attempt durable, observation not yet recorded):**
+  opening the Home admits every unobserved attempt from the ended incarnation
+  (including concurrent ones with later frames after them) and durably records
+  each one's observation as `Unresolved(UnknownProviderOutcome)` before service,
+  never re-contacting the external rail during readmission. The recovered custody
+  then enters the ordinary recovery handles (`reconcile_recovery_handle`,
+  `safe_retry_recovery_handle`, `compensate_recovery_handle`,
+  `resolve_recovery_handle`, or authentic inbound completion callback), which
+  resolve the fate under the rail's admitted contract without redispatching a
+  completed effect. If the external rail itself restarts with lost state, the
+  Home never claims completion: the effect remains unresolved and reconciliation
+  reports the rail's contract (`NoRecord`).
 - **A kill while graceful close was publishing its checkpoint:** reopen recovers
   the state committed before that close.
-- **Still refused (D18):** an external dispatch attempt with no recorded
-  observation (owner `Dispatch`), a Signal effect with no recorded open, and a
-  Native branch fork with no creation intent. The last two arise only from
-  damaged files, not from a kill. Opening refuses before service with a typed
+- **Still refused (D18):** a Signal effect with no recorded open, and a Native
+  branch fork with no creation intent. Both arise only from damaged files, not
+  from a kill. Opening refuses before service with a typed
   `UncleanRecoveryUnsupported { owner, effect }` (the `DurableOwnerFamily` and
   the effect digest); `refused.unclean_recovery_unsupported()` returns it in
-  every case. Close the refusal as above; a development Home can be discarded.
+  both cases. Close the refusal as above; a development Home can be discarded.
 - **Contended or discard-pending location:** `refused.physical_refusal()` returns
   `Some(&host::ApplicationHomePhysicalRefusal)`; its `kind()` is
   `host::ApplicationHomePhysicalRefusalKind::MutationOwnerContended` (another

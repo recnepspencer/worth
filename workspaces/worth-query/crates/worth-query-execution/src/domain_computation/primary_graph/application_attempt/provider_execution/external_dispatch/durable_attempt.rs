@@ -218,7 +218,6 @@ pub(super) fn attempt_record_denial(
         | Journal::AttemptIdentityMismatch
         | Journal::UnknownAttempt
         | Journal::AttemptAlreadyObserved
-        | Journal::UnobservedAttempt { .. }
         | Journal::JournalUnavailable
         | Journal::OwnerUnavailable
         | Journal::StaleIncarnation

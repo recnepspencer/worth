@@ -75,10 +75,12 @@ effect without its World occurrence as recovered `ProductUnpublished` custody
 that the same key continues without rerunning its handler, durably releases a
 no-effect original before service, reopens an unresolved branch creation as
 recovered custody, and resumes a program transition reopened with the same
-request (a changed plan refuses `TransitionPlanDrift`). Only an unobserved
-dispatch attempt and damage-shaped Signal or fork tails retain the D18
-`UncleanRecoveryUnsupported` refusal (C5); `unclean_recovery_unsupported()`
-reports each of them. Contended and discard-pending opens are matched by
+request (a changed plan refuses `TransitionPlanDrift`), and admits every
+unobserved external dispatch attempt from the ended incarnation by durably
+recording `Unresolved(UnknownProviderOutcome)` before service so recovery
+handles and authentic callbacks resolve it under the rail's contract. Only
+damage-shaped Signal or fork tails retain the D18 `UncleanRecoveryUnsupported`
+refusal (C5); `unclean_recovery_unsupported()` reports both of them. Contended and discard-pending opens are matched by
 `physical_refusal()` and `ApplicationHomePhysicalRefusalKind`. Managed runs,
 managed cleanup and application-resource requests outstanding at process loss
 are cold-released before service (original kept, `cold_release` reported, never

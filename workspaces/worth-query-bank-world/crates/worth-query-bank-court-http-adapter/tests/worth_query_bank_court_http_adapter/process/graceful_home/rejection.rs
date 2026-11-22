@@ -7,6 +7,7 @@ use std::sync::{
     Arc,
 };
 use worth_query_decl::facade::{
+    application_aftermath::*,
     application_operation::*,
     application_schema::{
         fragment::{FieldSelection, Registration},
@@ -52,7 +53,17 @@ impl Registration<RailHomeSchema> for UnservedNotice {
                         UnservedNoticeEffect::reference(),
                         WorthQueryExternalEffectCorrelationFamily::new(FAMILY).unwrap(),
                     )
-                    .no_aftermath()
+                    .aftermath(
+                        DeclaredApplicationAftermathContract::runtime_with_external_owner(
+                            DeclaredCorrectionMechanism::Compensation(DeclaredCompensation::new(
+                                "rail-reconcile",
+                                DeclaredAftermathPostcondition::BusinessPostcondition {
+                                    identity: "rail-reconciled".into(),
+                                },
+                            )),
+                            DeclaredReconciliationProcedure::new("rail-reconcile"),
+                        ),
+                    )
                     .finish(),
             )
             .operation_projection_work_budget(op, 1)

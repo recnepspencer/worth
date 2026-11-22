@@ -510,27 +510,35 @@ that process.
 
 A supported application opened with Host `WorthQueryApplicationHomeRequest` at
 `Directory(path)` preserves acknowledged dispatch and inbound custody across
-graceful close/reopen and a quiescent kill between operations. The original key,
-input and product affinity can resolve to `RecoveredCommitted` without repeating
-the handler. Recovery claims preserve their original status and live deadline;
-fresh request admission reissues capability for the same original claim.
+graceful close/reopen, quiescent kills between operations, and application
+kills while an external dispatch is in flight. If the application dies after an
+attempt is durable and before its observation is recorded, reopening durably
+records `Unresolved(UnknownProviderOutcome)` before service; reconciliation,
+safe retry, or an authentic callback resolves it under the rail's contract with
+no second rail effect, and a rail restart with lost state never claims
+completion. The original key, input and product affinity can resolve to
+`RecoveredCommitted` without repeating the handler. Recovery claims preserve
+their original status and live deadline; fresh request admission reissues
+capability for the same original claim.
 
 Install fresh transport and source verifier owners after each open. Authentic
-callbacks complete the original dispatch, and duplicate messages keep their
-terminal result across repeated reopen. Terminal acknowledgement and exact
-message expiry are distinct from remote completion. New authentication and live
-selectors are required; old capabilities refuse with `StaleIncarnation`.
+callbacks complete the original dispatch (including after an application kill),
+and duplicate messages keep their terminal result across repeated reopen and
+kills. Terminal acknowledgement and exact message expiry are distinct from
+remote completion. New authentication and live selectors are required; old
+capabilities refuse with `StaleIncarnation`.
 
 The Bank rail integration courts exercise this Host contract with the actual
-Bank payload, transport, separate rail process and cryptographic verifier.
+Bank payload, transport, separate rail process and cryptographic verifier,
+including real application kills mid-dispatch and rail restarts with lost state.
 The full Bank server composition still uses the process-local installation and
 includes producers, conditionals and workflow owners. Its response-loss and
 user-node restart controls do not certify Bank-server durability.
 
-Crash recovery during an operation is not yet certified. A typed refused open or
-close retains its stated custody and requires the owning recovery action. Do not
-switch a refused Directory installation to Memory and report it as durable.
-See [install or reopen](../../../docs/build-an-application.md#4-install-or-reopen).
+Full adversarial crash certification (C4/C5) is still separate. A typed refused
+open or close retains its stated custody and requires the owning recovery
+action. Do not switch a refused Directory installation to Memory and report it
+as durable. See [install or reopen](../../../docs/build-an-application.md#4-install-or-reopen).
 
 ## Request and continuation handling
 

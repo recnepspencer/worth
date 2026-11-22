@@ -71,18 +71,13 @@ impl QueryDispatchLedger {
     ) -> Option<InboundSourceControl> {
         self.source_controls.get(source).copied()
     }
-    /// The earliest attempt recorded before contact whose one observation
-    /// is not yet durable, with the effect it contacts.
-    pub(super) fn first_unobserved(&self) -> Option<QueryDispatchJournalDenial> {
-        self.awaiting_observation
-            .iter()
-            .next()
-            .map(
-                |(attempt, effect)| QueryDispatchJournalDenial::UnobservedAttempt {
-                    attempt: *attempt,
-                    effect: *effect,
-                },
-            )
+    /// Every attempt recorded before contact whose observation is not yet
+    /// durable, in deterministic attempt-identity order.
+    pub(super) fn unobserved_attempts(&self) -> Vec<DispatchAttemptIdentity> {
+        self.awaiting_observation.keys().copied().collect()
+    }
+    pub(super) fn has_unobserved(&self) -> bool {
+        !self.awaiting_observation.is_empty()
     }
     pub(super) fn awaits_observation(&self, attempt: &DispatchAttemptIdentity) -> bool {
         self.awaiting_observation.contains_key(attempt)

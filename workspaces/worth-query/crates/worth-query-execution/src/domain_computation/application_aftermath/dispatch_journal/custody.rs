@@ -73,7 +73,9 @@ impl WorthQueryDispatchJournal {
     }
 
     /// Cold admission of the complete recorded history, before Home service.
-    /// It folds DATA only: no attempt is contacted, replayed or re-recorded.
+    /// It folds DATA only: no attempt is contacted or replayed. Every attempt
+    /// from an ended incarnation that still awaits its observation is recorded
+    /// durably as `Unresolved(UnknownProviderOutcome)` before service.
     pub(in crate::domain_computation) fn readmit(
         &self,
         medium: Arc<dyn QueryDispatchMedium>,
@@ -104,9 +106,18 @@ impl WorthQueryDispatchJournal {
                 limits.validate(&frame)?;
                 ledger.readmit(frame)?;
             }
-            if let Some(unobserved) = ledger.first_unobserved() {
-                return Err(unobserved);
-            }
+            let unrecorded = ledger
+                .unobserved_attempts()
+                .into_iter()
+                .map(|attempt| {
+                    (
+                        attempt,
+                        QueryDispatchRecordedObservation::Unresolved(
+                            QueryDispatchUnresolvedCause::UnknownProviderOutcome,
+                        ),
+                    )
+                })
+                .collect();
             let mut state = self.state();
             self.medium
                 .set(Arc::clone(&medium))
@@ -116,7 +127,7 @@ impl WorthQueryDispatchJournal {
                 generations: QueryDispatchPublicationGenerations::from_journal(&ledger),
                 ledger,
                 pending: None,
-                unrecorded: BTreeMap::new(),
+                unrecorded,
             });
             medium
         };
@@ -163,7 +174,8 @@ impl WorthQueryDispatchJournal {
     /// invoking request. A refusal keeps the observation for the next
     /// settlement; it is never dropped, replaced or re-derived. Until it is
     /// durable the Home is not quiescent: graceful close settles it first,
-    /// and a process that dies before then reopens as an unclean dispatch.
+    /// and a process that dies before then records `Unresolved(UnknownProviderOutcome)`
+    /// during cold readmission.
     pub(in crate::domain_computation) fn record_observation(
         &self,
         attempt: DispatchAttemptIdentity,
@@ -219,15 +231,16 @@ impl WorthQueryDispatchJournal {
         driver.settle(medium.as_ref(), request)?;
         let guard = self.state();
         let state = guard.as_ref().expect("admitted dispatch journal");
-        match state.ledger.first_unobserved() {
-            Some(unobserved) => Err(unobserved),
-            None => Ok(QueryDispatchCloseCustody::Durable(
+        if state.ledger.has_unobserved() {
+            Err(QueryDispatchJournalDenial::AttemptAwaitingObservation)
+        } else {
+            Ok(QueryDispatchCloseCustody::Durable(
                 medium.authority().admit_query_dispatch_prefix(
                     state.ledger.position(),
                     state.ledger.digest(),
                     state.ledger.payload_digest(),
                 ),
-            )),
+            ))
         }
     }
 

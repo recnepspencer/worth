@@ -24,19 +24,50 @@ pub type Admission =
 type Encoded = worth_query_decl::facade::application_operation::ApplicationEncodedInput<
     bank_domain::schema::EstateActionInputBinding,
 >;
+pub type RejectAdmission = WorthQueryAdmittedApplicationOperation<
+    RailHomeSchema,
+    super::rejection::UnservedNotice,
+    EstateAction,
+    Account,
+>;
 pub struct Opened {
     pub home: Home,
     pub transport: Arc<BankEstateRailTransport>,
     pub verifier: WorthQueryInboundVerifierHandle,
 }
 pub struct World {
-    location: std::path::PathBuf,
+    pub location: std::path::PathBuf,
     pub handlers: Arc<AtomicUsize>,
     pub rail: RailProcessHandle,
     pub callback: CallbackCapture,
     pub capture_loop: Arc<BankEstateRailTransport>,
 }
 impl World {
+    pub fn restart_rail_with_lost_state(&mut self) {
+        let mut fresh = RailProcessHandle::spawn_awaiting_completion_installation(
+            rail_binary_path(),
+            "127.0.0.1:0",
+        )
+        .unwrap();
+        let config = RailCompletionDeliveryConfiguration::new(
+            format!("http://{}/completion", self.callback.address),
+            "bank-home-court".into(),
+            "rail-primary".into(),
+            1,
+            [7; 32],
+            SigningKey::from_bytes(&[9; 32]).verifying_key().to_bytes(),
+            60,
+            8,
+            1,
+            Duration::from_millis(10),
+            Duration::from_secs(10),
+            None,
+        )
+        .unwrap();
+        fresh.install_completion_delivery(&config).unwrap();
+        let old = std::mem::replace(&mut self.rail, fresh);
+        let _posture = old.close().expect("old rail closes cleanly before restart");
+    }
     pub fn new() -> Self {
         let mut rail = RailProcessHandle::spawn_awaiting_completion_installation(
             rail_binary_path(),
@@ -77,66 +108,14 @@ impl World {
         execution: checkpoint_capture::ExecutionRequest<'_, '_>,
         seed: bool,
     ) -> Opened {
-        let declaration = RailHomeSchema::declaration().unwrap();
-        let request = WorthQueryApplicationHomeRequest::new(
-            WorthQueryApplicationHomeLocation::Directory(self.location.clone()),
-            ApplicationProgramAuthoring::<RailHomeSchema, RailHomeProgram>::begin()
-                .with_schema(&declaration)
-                .validated_program()
-                .unwrap(),
-            WorthQueryApplicationProgramRoster::new(),
-            declaration,
-            (self.handlers.clone(),),
-            ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
-            WorthQueryApplicationLimits::new(
-                identity::world_resources(),
-                WorthQueryApplicationQueryResourceProfile::default(),
-                SignalConditionalEvaluationBudget::development(),
-            ),
-            move |_, graph, installed| {
-                assert!(seed, "a reopened Bank rail Home must never initialize");
-                super::schema::seed(graph, installed)
-            },
-        );
-        let home =
-            checkpoint_capture::with_bootstrap_advancement_from_request(execution, |phase| {
-                request.open_in_advancement(&phase)
-            })
-            .unwrap()
-            .unwrap_or_else(|denial| panic!("actual Directory Home open: {denial:?}"));
-        let transport = Arc::new(BankEstateRailTransport::connected_to(
+        open_at(
+            self.location.clone(),
             self.rail.local_addr(),
             self.rail.test_control_addr(),
-        ));
-        home.runtime()
-            .runtime()
-            .install_external_effect_transport(transport.clone())
-            .unwrap();
-        let installation = BankRailCompletionServerInstallation::new(
-            SigningKey::from_bytes(&[7; 32]).verifying_key().to_bytes(),
-            [9; 32],
-            "bank-home-court".into(),
-            "rail-primary".into(),
-            1,
-            0,
+            self.handlers.clone(),
+            execution,
+            seed,
         )
-        .unwrap();
-        let op = home
-            .runtime()
-            .runtime()
-            .installed_schema()
-            .installed_operation(NotifyRail::reference())
-            .unwrap();
-        let verifier = home
-            .runtime()
-            .runtime()
-            .install_inbound_occurrence_verifier(&op, installation.estate_verifier())
-            .unwrap();
-        Opened {
-            home,
-            transport,
-            verifier,
-        }
     }
     pub fn finish(self) {
         let Self {
@@ -230,6 +209,45 @@ impl Opened {
         })
         .unwrap()
     }
+    pub fn admitted_reject<R>(
+        &self,
+        value: EstateDeathNotificationRequest,
+        key: u64,
+        body: impl for<'step> FnOnce(
+            &WorthQueryAdvancementPhase<'step>,
+            &RejectAdmission,
+            WorthQueryApplicationIdempotencyBinding,
+            &Encoded,
+        ) -> R,
+    ) -> R {
+        let scope = request_scope();
+        let runtime = self.home.runtime();
+        let principal = identity::inspection_authentication::authenticate(
+            runtime.runtime().installed_schema(),
+            &scope,
+        );
+        runtime
+            .request(&principal, &scope)
+            .advanced()
+            .mutate(super::rejection::Reject(action(value)))
+            .without_source()
+            .idempotency(&key)
+            .with_recovery_in_program(runtime, body)
+            .unwrap()
+    }
+    pub fn recover_reject(
+        &self,
+        value: EstateDeathNotificationRequest,
+        key: u64,
+    ) -> WorthQueryRecoveryHandle {
+        self.admitted_reject(value, key, |phase, admission, binding, input| {
+            self.home
+                .runtime()
+                .runtime()
+                .mint_admitted_recovery_handle(phase, admission, binding, input)
+        })
+        .unwrap()
+    }
     pub fn maintain(&self) {
         let report = self
             .home
@@ -248,6 +266,72 @@ impl Opened {
         );
     }
 }
+pub fn open_at(
+    location: std::path::PathBuf,
+    rail_addr: std::net::SocketAddr,
+    control_addr: std::net::SocketAddr,
+    handlers: Arc<AtomicUsize>,
+    execution: checkpoint_capture::ExecutionRequest<'_, '_>,
+    seed: bool,
+) -> Opened {
+    let declaration = RailHomeSchema::declaration().unwrap();
+    let request = WorthQueryApplicationHomeRequest::new(
+        WorthQueryApplicationHomeLocation::Directory(location),
+        ApplicationProgramAuthoring::<RailHomeSchema, RailHomeProgram>::begin()
+            .with_schema(&declaration)
+            .validated_program()
+            .unwrap(),
+        WorthQueryApplicationProgramRoster::new(),
+        declaration,
+        (handlers,),
+        ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap(),
+        WorthQueryApplicationLimits::new(
+            identity::world_resources(),
+            WorthQueryApplicationQueryResourceProfile::default(),
+            SignalConditionalEvaluationBudget::development(),
+        ),
+        move |_, graph, installed| {
+            assert!(seed, "a reopened Bank rail Home must never initialize");
+            super::schema::seed(graph, installed)
+        },
+    );
+    let home = checkpoint_capture::with_bootstrap_advancement_from_request(execution, |phase| {
+        request.open_in_advancement(&phase)
+    })
+    .unwrap()
+    .unwrap_or_else(|denial| panic!("actual Directory Home open: {denial:?}"));
+    let transport = Arc::new(BankEstateRailTransport::connected_to(rail_addr, control_addr));
+    home.runtime()
+        .runtime()
+        .install_external_effect_transport(transport.clone())
+        .unwrap();
+    let installation = BankRailCompletionServerInstallation::new(
+        SigningKey::from_bytes(&[7; 32]).verifying_key().to_bytes(),
+        [9; 32],
+        "bank-home-court".into(),
+        "rail-primary".into(),
+        1,
+        0,
+    )
+    .unwrap();
+    let op = home
+        .runtime()
+        .runtime()
+        .installed_schema()
+        .installed_operation(NotifyRail::reference())
+        .unwrap();
+    let verifier = home
+        .runtime()
+        .runtime()
+        .install_inbound_occurrence_verifier(&op, installation.estate_verifier())
+        .unwrap();
+    Opened {
+        home,
+        transport,
+        verifier,
+    }
+}
+
 pub fn notice(id: u64) -> EstateDeathNotificationRequest {
     EstateDeathNotificationRequest::new(
         EstateCaseId::new(id).unwrap(),
