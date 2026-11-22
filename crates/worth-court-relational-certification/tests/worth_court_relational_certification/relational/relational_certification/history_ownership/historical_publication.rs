@@ -1,7 +1,43 @@
 //! Historical selection reissues custody through both independent Native writers.
 use super::publication_fixture::PublishedModel;
 use super::*;
-use worth_relational::facade::mvcc::*;
+use worth_relational::facade::{
+    durability::{RelationalCanonicalCommitArtifact, RelationalCanonicalCommitArtifactRefusal},
+    history::CommitId,
+    mvcc::*,
+};
+
+/// Unknown origin tags fail payload admission after a valid Native frame.
+fn require_unknown_origin_refusal(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    commit: CommitId,
+) {
+    let artifact = runtime
+        .durability()
+        .canonical_commit_artifacts(execution)
+        .map(Result::unwrap)
+        .find(|artifact| artifact.commit_id() == commit)
+        .unwrap();
+    RelationalCanonicalCommitArtifact::readmit(artifact.as_bytes(), execution).unwrap();
+    // Named MessagePack enum tag, outside the opaque JSON payloads of current facts.
+    let mut tag = vec![0xa0 + b"HistoricalSelection".len() as u8];
+    tag.extend_from_slice(b"HistoricalSelection");
+    let mut bytes = artifact.as_bytes().to_vec();
+    let offset = bytes
+        .windows(tag.len())
+        .position(|window| window == tag)
+        .unwrap();
+    bytes[offset + tag.len() - 1] = b'X';
+    crate::canonical_commit_frame::reseal(&mut bytes);
+    RelationalCanonicalCommitArtifact::from_untrusted_bytes(bytes.clone()).unwrap();
+    let error = RelationalCanonicalCommitArtifact::readmit(&bytes, execution).unwrap_err();
+    assert!(matches!(
+        error,
+        RelationalCanonicalCommitArtifactRefusal::PayloadDecode { detail }
+            if detail.contains("unknown variant")
+    ));
+}
 #[test]
 fn selected_publication_keeps_original_ids_under_fresh_commit_and_cold_current_custody() {
     let host = serial_request();
@@ -85,6 +121,7 @@ fn selected_publication_keeps_original_ids_under_fresh_commit_and_cold_current_c
         .runtime
         .settle_performed_publication(performed)
         .unwrap();
+    require_unknown_origin_refusal(execution, &world.runtime, committed.commit.commit_id);
     let publications: Vec<_> = committed
         .required_output_publications(&world.installed, execution)
         .collect::<Result<_, _>>()
