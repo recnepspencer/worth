@@ -10,9 +10,6 @@ mod producer_aggregate_succession;
 #[path = "worth_query_court_decl_host/certification/mod.rs"]
 mod certification;
 
-#[path = "worth_query_court_decl_host/application_startup/mod.rs"]
-mod application_startup;
-
 #[path = "worth_query_court_decl_host/aspect_patterns/mod.rs"]
 mod aspect_patterns;
 

@@ -3057,7 +3057,7 @@ executor:
 <!-- illustrative -->
 ```rust,ignore
 // Illustrative: not compiled. The compiled court is
-// worth-query-court-decl-host/.../application_startup/local_principal.rs.
+// worth-query-court-decl-host-integration/.../host/application_startup/local_principal.rs.
 let local = WorthQueryLocalProcessPrincipal::new(
     "board.local-owner.v1",                 // configuration identity
     WorthQueryExternalPrincipalIdentity::new("local://board", "owner")?,

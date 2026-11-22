@@ -8,6 +8,8 @@ use super::WorthQueryApplicationProfile;
 
 mod serial_presets;
 pub use serial_presets::WorthQueryBoundedApplicationLimits;
+#[cfg(test)]
+mod tests;
 
 /// Explicit finite resources and clock for one in-memory application.
 #[derive(Clone)]
