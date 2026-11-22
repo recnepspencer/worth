@@ -125,6 +125,9 @@ pub mod history {
     };
 }
 
+#[path = "facade/aggregate_identity.rs"]
+pub mod aggregate_identity;
+
 #[path = "facade/identity.rs"]
 pub mod identity;
 

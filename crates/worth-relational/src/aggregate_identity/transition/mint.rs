@@ -1,8 +1,32 @@
-//! Birth names preserve the physical transcript and distinguish full logical keys.
+//! Aggregate identity minting.
+//!
+//! [`mint`] is the legacy v1 native-member domain still validated for stored
+//! aggregate rows. [`mint_group_name`] is the v2 allocation-independent group
+//! name domain: it hashes only `(scheme, anchor name, continuity rule)` and
+//! never a `CommitId` or native `(partition, local_slot, generation)`.
+use super::group::{AggregateContinuityRule, AggregateGroupSchemeId};
 use crate::graph_member::NativeMemberKey as Member;
 use crate::history::data::CommitId;
+use crate::lineage::data::PersistentNameIdentity;
 use sha2::{Digest, Sha256};
 use worth_foundational::facade::{AggregateDefinitionIdentity, AggregateIdentity};
+
+/// Explicit v2 domain separator: v1 bytes are never reinterpreted as v2 names.
+pub const GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG: &[u8] =
+    b"worth.relational.group-aggregate-identity.v2\0";
+
+pub(in crate::aggregate_identity) fn mint_group_name(
+    scheme: &AggregateGroupSchemeId,
+    anchor: PersistentNameIdentity,
+    rule: AggregateContinuityRule,
+) -> AggregateIdentity {
+    let mut hash = Sha256::new();
+    hash.update(GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG);
+    text(&mut hash, scheme.as_str());
+    hash.update(anchor.as_bytes());
+    hash.update([rule.canonical_tag()]);
+    AggregateIdentity::from_bytes(hash.finalize().into())
+}
 
 pub(in crate::aggregate_identity) fn mint(
     definition: AggregateDefinitionIdentity,

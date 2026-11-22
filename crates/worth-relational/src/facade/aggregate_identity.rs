@@ -1,0 +1,9 @@
+//! Allocation-independent group names and their canonical lineage records.
+pub use crate::aggregate_identity::{
+    AggregateContinuityRule, AggregateGroupAssignment, AggregateGroupClaimant,
+    AggregateGroupLineageEvent, AggregateGroupMember, AggregateGroupMembers, AggregateGroupNaming,
+    AggregateGroupNamingAuthority, AggregateGroupNamingDenial, AggregateGroupOrigin,
+    AggregateGroupScheme, AggregateGroupSchemeId, AggregateGroupTransition, AggregateMemberRole,
+    AggregatePriorGroup, GROUP_AGGREGATE_IDENTITY_DOMAIN_TAG,
+};
+pub use worth_foundational::facade::AggregateIdentity;
