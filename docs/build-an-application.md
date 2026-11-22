@@ -4959,9 +4959,10 @@ allocation denial, the deadline or a work budget, refuses the edit at once.
   writer changed one of the chain's records after its earlier round).
   The own-output view covers records, not relations (public #277): a
   relation read at the current image can reach a record the chain
-  created, whose fields the view then reads as absent. Such a round
-  stops with the same #119 postponement and reason `PriorEffectRead`, and
-  the edit refuses until #277 makes that view coherent.
+  created, which the view holds as absent. Such a round, whether it reads
+  the record's fields or only reaches it as a relation endpoint, stops
+  with the same #119 postponement and reason `PriorEffectRead`, and the
+  edit refuses until #277 makes that view coherent.
 - A consumer of a re-derived output settles when the replacement is equal in
   payload, role, generation, custody, readiness and demand key. Otherwise the
   consumer re-runs.
