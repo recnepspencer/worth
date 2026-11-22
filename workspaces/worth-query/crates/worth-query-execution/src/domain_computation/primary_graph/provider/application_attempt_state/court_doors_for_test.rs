@@ -10,4 +10,15 @@ impl WorthQueryPrimaryGraphApplicationAttemptStore {
     )>{
         Self::shared_observed_facts(self, session)
     }
+
+    pub(in crate::domain_computation::primary_graph) fn reset_idle_replay_ordinals_for_test(
+        &mut self,
+    ) {
+        assert!(
+            self.attempts.is_empty(),
+            "replay reset requires zero live application attempts"
+        );
+        self.next_registration = 0;
+        self.next_overlay = 0;
+    }
 }

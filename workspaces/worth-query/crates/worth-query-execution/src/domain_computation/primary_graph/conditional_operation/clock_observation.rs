@@ -290,6 +290,40 @@ where
         self.operation
             .lock_operation()
             .reset_retained_wakes_for_replay_for_test();
+        self.runtime
+            .runtime
+            .primary_provider
+            .attempts_for_test()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .reset_idle_replay_ordinals_for_test();
+    }
+
+    #[doc(hidden)]
+    pub fn prime_replay_plateau_for_test(&mut self) {
+        let product = &self.runtime.runtime.product_runtime;
+        let expected = product
+            .owner
+            .observation_port()
+            .observe_product_branch(product.default_branch())
+            .unwrap();
+        let pub_port = product.owner.publication_port();
+        let token = worth_runtime_world::facade::RuntimeWorldCancellationSource::new().token();
+        for _ in 0..1_000 {
+            let _ = self.runtime.issue_application_mutation_partition();
+        }
+        for _ in 0..1_000 {
+            let prepared = pub_port
+                .prepare_with_signal(
+                    expected.clone(),
+                    worth_runtime_world::facade::CompositePublicationIntent::with_signal(None),
+                    &token,
+                    None,
+                )
+                .ok()
+                .expect("prime_replay_plateau_for_test: prepare_with_signal");
+            drop(prepared);
+        }
     }
 
     pub fn observe(

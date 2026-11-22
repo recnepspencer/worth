@@ -1,22 +1,14 @@
 //! Every real charged prefix, one unit short, ends in its typed owning cause.
 pub(crate) use worth_query_testkit_host::facade::host::temporal_conditional_operation::counted_read_stops::*;
-use std::sync::{atomic::{AtomicUsize, Ordering}, Arc, Condvar, Mutex};
+use std::sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc, Barrier, OnceLock};
 
-type Cohort = Arc<(Vec<(usize, u64)>, Vec<(usize, u64)>)>;
+type PaidTrace = Arc<(Vec<(usize, u64)>, Vec<(usize, u64)>)>;
 type ConditionalPort<'a> = worth_query_host::facade::primary_graph::WorthQueryConditionalClockObservationPort<
     'a,
     worth_query_testkit_host::facade::host::temporal_conditional_operation::schema::TemporalHostSchema,
     worth_query_testkit_host::facade::host::temporal_conditional_operation::contract::TemporalReadyNode,
     worth_query_testkit_host::facade::host::temporal_conditional_operation::adapters::CourtroomClock,
 >;
-
-struct TracePipeline { traces: Vec<Cohort>, final_len: Option<usize>, final_max: u64, aborted: bool }
-struct PipelineAbortGuard<'a>(&'a (Mutex<TracePipeline>, Condvar), bool);
-impl Drop for PipelineAbortGuard<'_> {
-    fn drop(&mut self) {
-        if !self.1 { self.0.0.lock().unwrap().aborted = true; self.0.1.notify_all(); }
-    }
-}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 struct OwnerState {
@@ -76,6 +68,63 @@ fn observe_port_under_ceiling(port: &mut ConditionalPort<'_>, ceiling: u64) -> O
     }
 }
 
+fn prime_relational_tx_plateau(world: &CourtroomWorld) {
+    let core = world.application.runtime_for_test();
+    let branch = core.relational_branch_identity_for_test();
+    let graph = core.primary_provider_for_test().graph_for_test();
+    let kind_id = graph.layout_for_test().entity_kind_for_test("UnrelatedRecord").unwrap();
+    let source = worth_execution::CancellationSource::new();
+    let host = worth_execution::SerialRequest::from_memory(worth_execution::SerialMemoryBudget::new(None), source.token(), None);
+    let request = worth_execution::ExecutionRequest::serial(&host);
+    graph.with_runtime(&request, |rt| {
+        let (_, basis) = rt.observe_branch(branch).unwrap();
+        let obs = basis.observation();
+        let vis = rt.snapshots();
+        for b in 0..4u32 {
+            let mut batch = worth_relational::facade::mvcc::WorkerIntentBatch::new("prime-lineage");
+            for i in 0..250u32 {
+                batch = batch.push(worth_relational::facade::transactions::MutationIntent::Create(
+                    worth_relational::facade::transactions::CreateIntent::Entity(
+                        worth_relational::facade::transactions::EntitySpec {
+                            partition_id: worth_relational::facade::identity::PartitionId(60_000),
+                            kind_id,
+                            client_key: worth_relational::facade::symbols::ClientKey::raw(format!("prime-lineage-{b}-{i}")),
+                            fields: worth_relational::facade::transactions::AspectFieldPatch::default(),
+                        },
+                    ),
+                ));
+            }
+            let mut tx = rt
+                .begin_branch_transaction(&basis, worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary())
+                .unwrap();
+            tx.push_batch(batch, request.allocation_policy()).unwrap();
+            drop(rt.prepare_branch_transaction(&request, tx).unwrap());
+        }
+        for _ in 0..260 {
+            let tx = rt
+                .begin_branch_transaction(
+                    &basis,
+                    worth_relational::facade::mvcc::RelationalTransactionIntent::ordinary(),
+                )
+                .unwrap();
+            let candidate = rt.prepare_branch_transaction(&request, tx).unwrap();
+            drop(candidate);
+            let snap = vis.snapshot_for_observation(&obs).unwrap();
+            vis.release_snapshot(&snap).unwrap();
+        }
+    });
+}
+
+fn warm_port_under_ceiling(port: &mut ConditionalPort<'_>, ceiling: u64) {
+    let source = worth_execution::CancellationSource::new();
+    let host = worth_execution::SerialRequest::from_memory(worth_execution::SerialMemoryBudget::new(None), source.token(), None);
+    let request = worth_execution::ExecutionRequest::serial(&host);
+    let (answer, _) = request.run(worth_execution::ExecutionWorkCeiling::new(Some(ceiling)), |_| port.observe(&request)).unwrap();
+    let (graph::WorthQueryConditionalClockObservationOutcome::Accepted(receipt)
+    | graph::WorthQueryConditionalClockObservationOutcome::Duplicate(receipt)) = answer else { panic!("clock answer") };
+    assert_eq!(receipt.committed_operation_count(), 0);
+}
+
 fn promote_to_retained_wake(world: &CourtroomWorld, port: &mut ConditionalPort<'_>, cutoff: u64, before: &OwnerState) {
     world.clock_control.push(1, 5);
     let promoted = observe_port_under_ceiling(port, cutoff - 1);
@@ -83,14 +132,6 @@ fn promote_to_retained_wake(world: &CourtroomWorld, port: &mut ConditionalPort<'
     assert!(!matches!(promoted.cause, Some(Cause::BridgeConditional(_))));
     assert_eq!(observe_owner_state(world), *before);
     port.reset_retained_wakes_for_replay_for_test();
-}
-
-fn with_prepared_world<R>(cutoff: u64, f: impl FnOnce(&CourtroomWorld, &OwnerState, &mut ConditionalPort<'_>) -> R) -> R {
-    let world = CourtroomWorld::publish("ready");
-    let initial = observe_owner_state(&world);
-    let mut port = world.conditional_clock();
-    promote_to_retained_wake(&world, &mut port, cutoff, &initial);
-    f(&world, &initial, &mut port)
 }
 
 fn validate_paid_commit(before: &OwnerState, after: &OwnerState, paid: &ObserveAnswer) {
@@ -171,6 +212,13 @@ fn verify_prefix_replay(
 #[test]
 fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
     let _query = install_thread_observation();
+    let t0 = std::time::Instant::now();
+    let phase1_workers = std::thread::available_parallelism().map_or(1, |n| n.get()).min(28);
+    let workers = phase1_workers.min(24);
+
+    // 1. Healthy cold trace: locate the wake-retention boundary, then derive
+    // the authoritative cold worklist and cover 100% of pre-retention
+    // BridgeConditional charges plus the final cold prefix directly against it.
     let cold_baseline = || {
         let world = CourtroomWorld::publish("ready");
         let before = observe_owner_state(&world);
@@ -181,193 +229,150 @@ fn conditional_operation_work_stop_terminal_matches_its_typed_cause() {
         assert!(!unique.is_empty(), "the real door charges work");
         (paid.charges, unique)
     };
-    let (_, cold_unique) = cold_baseline();
-
-    let t0 = std::time::Instant::now();
-    let workers = std::thread::available_parallelism().map_or(1, |n| n.get()).min(16);
-
-    // Binary search for the exact Phase-1 / Phase-2 boundary using pre-built worlds.
-    let probe_count = (usize::BITS - cold_unique.len().leading_zeros()) as usize + 1;
+    let (_, probe_unique) = cold_baseline();
+    let probe_count = (usize::BITS - probe_unique.len().leading_zeros()) as usize + 1;
     let mut probe_worlds: Vec<CourtroomWorld> = std::thread::scope(|s| {
         (0..probe_count).map(|_| s.spawn(|| { let _q = install_thread_observation(); CourtroomWorld::publish("ready") }))
             .collect::<Vec<_>>().into_iter().map(|h| h.join().unwrap()).collect()
     });
-    let (mut lo, mut hi) = (0usize, cold_unique.len());
+    let (mut lo, mut hi) = (0usize, probe_unique.len());
     while lo < hi {
         let mid = lo + (hi - lo) / 2;
         let world = probe_worlds.pop().unwrap();
         world.clock_control.push(1, 5);
-        let probe = observe_under_ceiling(&world, cold_unique[mid].1 - 1);
+        let probe = observe_under_ceiling(&world, probe_unique[mid].1 - 1);
         if probe.retained_due == 1 && !matches!(probe.cause, Some(Cause::BridgeConditional(_))) { hi = mid; } else { lo = mid + 1; }
     }
-    assert!(lo < cold_unique.len(), "cold sweep reaches reenter_retained_wakes");
-    let phase1_len = lo + 1;
-
-    // Capture a fresh post-probe cold baseline (2-digit ID band) and replay the
-    // small framing-sensitive tail (pos >= 200) immediately before the parallel bulk.
-    let (p1_charges, p1_unique) = cold_baseline();
-    let phase1_cutoff = p1_unique[phase1_len - 1].1 + 64;
-    let tail_start = phase1_len.saturating_sub(8);
-    let mut phase1_count = 0usize;
-    for &(pos, required) in &p1_unique[tail_start..phase1_len] {
-        let world = CourtroomWorld::publish("ready");
-        let initial = observe_owner_state(&world);
-        world.clock_control.push(1, 5);
-        let replay = observe_under_ceiling(&world, required - 1);
-        verify_prefix_replay("phase1", &world, &initial, &p1_charges, pos, required, replay);
-        phase1_count += 1;
-    }
-    let next_p1 = AtomicUsize::new(0);
-    let (p1_charges_ref, p1_unique_ref, next_p1_ref) = (&p1_charges, &p1_unique, &next_p1);
-    phase1_count += std::thread::scope(|scope| {
-        (0..workers).map(|_| scope.spawn(move || {
+    assert!(lo < probe_unique.len(), "cold sweep reaches reenter_retained_wakes");
+    let admission_len = lo + 1;
+    let (cold_charges, cold_unique) = cold_baseline();
+    let admission_worklist = &cold_unique[..admission_len];
+    let admission_cutoff = admission_worklist[admission_len - 1].1 + 64;
+    let admission_covered: Vec<AtomicBool> = (0..admission_len).map(|_| AtomicBool::new(false)).collect();
+    let cold_final = *cold_unique.last().expect("cold final prefix");
+    let tail_start = admission_len.saturating_sub(8);
+    let (cold_charges_ref, adm_list_ref, adm_cov_ref) =
+        (&cold_charges, admission_worklist, &admission_covered);
+    // Run cold_final and the post-encoding tail first while instance IDs remain
+    // in the same digit cohort as cold_baseline, then sweep the earlier prefixes.
+    std::thread::scope(|scope| {
+        let final_handle = scope.spawn(move || {
             let _query = install_thread_observation();
-            let mut count = 0usize;
+            let world = CourtroomWorld::publish("ready");
+            let initial = observe_owner_state(&world);
+            world.clock_control.push(1, 5);
+            let replay = observe_under_ceiling(&world, cold_final.1 - 1);
+            verify_prefix_replay("cold_final", &world, &initial, cold_charges_ref, cold_final.0, cold_final.1, replay);
+        });
+        let tail_handles: Vec<_> = (tail_start..admission_len).map(|idx| scope.spawn(move || {
+            let _query = install_thread_observation();
+            let (pos, required) = adm_list_ref[idx];
+            let world = CourtroomWorld::publish("ready");
+            let initial = observe_owner_state(&world);
+            world.clock_control.push(1, 5);
+            let replay = observe_under_ceiling(&world, required - 1);
+            verify_prefix_replay("bridge_admission", &world, &initial, cold_charges_ref, pos, required, replay);
+            assert!(!adm_cov_ref[idx].swap(true, Ordering::AcqRel));
+        })).collect();
+        final_handle.join().unwrap();
+        for h in tail_handles { h.join().unwrap(); }
+    });
+    let next_adm = AtomicUsize::new(0);
+    let next_adm_ref = &next_adm;
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = (0..phase1_workers).map(|_| scope.spawn(move || {
+            let _query = install_thread_observation();
             loop {
-                let idx = next_p1_ref.fetch_add(1, Ordering::Relaxed);
-                if idx >= tail_start { break count; }
-                let (pos, required) = p1_unique_ref[idx];
+                let idx = next_adm_ref.fetch_add(1, Ordering::Relaxed);
+                if idx >= tail_start { break; }
+                let (pos, required) = adm_list_ref[idx];
                 let world = CourtroomWorld::publish("ready");
                 let initial = observe_owner_state(&world);
                 world.clock_control.push(1, 5);
                 let replay = observe_under_ceiling(&world, required - 1);
-                verify_prefix_replay("phase1", &world, &initial, p1_charges_ref, pos, required, replay);
-                count += 1;
+                verify_prefix_replay("bridge_admission", &world, &initial, cold_charges_ref, pos, required, replay);
+                assert!(!adm_cov_ref[idx].swap(true, Ordering::AcqRel));
             }
-        })).collect::<Vec<_>>().into_iter().map(|h| h.join().unwrap()).sum::<usize>()
-    });
-    assert_eq!(phase1_count, phase1_len);
-
-    // Capture step-0 paid baseline, replay Phase 2a, and prime global prepare_commit
-    // counters past 256 (into MessagePack's constant u16 plateau) in parallel.
-    let (step0_cohort, seed_max) = with_prepared_world(phase1_cutoff, |w0, b0, p0| {
-        w0.clock_control.push(1, 5);
-        let paid0 = observe_port_under_ceiling(p0, 64_000_000);
-        validate_paid_commit(b0, &observe_owner_state(w0), &paid0);
-        let u0 = unique_positive_prefixes(&paid0.charges);
-        let max = u0.last().expect("warm charges").1;
-        (Arc::new((paid0.charges, u0)), max)
-    });
-    let pre_commit_split = step0_cohort.1.iter().position(|&(_, n)| n >= 79_200).unwrap_or(670);
-    let next_p2a = AtomicUsize::new(0);
-    let (next_p2a_ref, step0_ref) = (&next_p2a, &step0_cohort);
-    let phase2a_count: usize = std::thread::scope(|scope| {
-        (0..workers).map(|_| scope.spawn(move || {
-            let _query = install_thread_observation();
-            with_prepared_world(phase1_cutoff, |world, initial, port| {
-                let mut count = 0usize;
-                loop {
-                    let index = next_p2a_ref.fetch_add(1, Ordering::Relaxed);
-                    if index >= pre_commit_split { break; }
-                    let (pos, required) = step0_ref.1[index];
-                    world.clock_control.push(1, 5);
-                    let replay = observe_port_under_ceiling(port, required - 1);
-                    verify_prefix_replay("phase2a", world, initial, &step0_ref.0, pos, required, replay);
-                    port.reset_retained_wakes_for_replay_for_test();
-                    count += 1;
-                }
-                for _ in 0..18 {
-                    world.clock_control.push(1, 5);
-                    assert_eq!(observe_port_under_ceiling(port, 85_000).committed, 0);
-                    port.reset_retained_wakes_for_replay_for_test();
-                }
-                assert_eq!(observe_owner_state(world), *initial);
-                count
-            })
-        })).collect::<Vec<_>>().into_iter().map(|h| h.join().unwrap()).sum()
-    });
-    assert_eq!(phase2a_count, pre_commit_split);
-
-    // Pipeline deterministic per-world step traces (steps 0..=256) concurrently with
-    // parallel Phase-2b workers (one prepared courtroom per worker + O(1) wake reset).
-    const PLATEAU_STEP: usize = 256;
-    let pipeline = (
-        Mutex::new(TracePipeline { traces: Vec::with_capacity(PLATEAU_STEP + 1), final_len: None, final_max: 0, aborted: false }),
-        Condvar::new(),
-    );
-    let next_p2b = AtomicUsize::new(pre_commit_split);
-    let (pipeline_ref, next_p2b_ref) = (&pipeline, &next_p2b);
-    let phase2b_count: usize = std::thread::scope(|scope| {
-        let producer = scope.spawn(move || {
-            let _query = install_thread_observation();
-            let mut guard = PipelineAbortGuard(pipeline_ref, false);
-            with_prepared_world(phase1_cutoff, |ref_w, ref_b, ref_p| {
-                let step0_last = step0_ref.1.len() - 1;
-                for step in 0..PLATEAU_STEP {
-                    let cap_idx = (pre_commit_split + (step + 1) * workers + 256).min(step0_last);
-                    let cap = (step0_ref.1[cap_idx].1 + 512).min(seed_max - 1);
-                    ref_w.clock_control.push(1, 5);
-                    let r = observe_port_under_ceiling(ref_p, cap);
-                    assert_eq!(r.committed, 0);
-                    let u = unique_positive_prefixes(&r.charges);
-                    pipeline_ref.0.lock().unwrap().traces.push(Arc::new((r.charges, u)));
-                    pipeline_ref.1.notify_all();
-                    ref_p.reset_retained_wakes_for_replay_for_test();
-                }
-                assert_eq!(observe_owner_state(ref_w), *ref_b);
-                ref_w.clock_control.push(1, 5);
-                let paid_plateau = observe_port_under_ceiling(ref_p, 64_000_000);
-                validate_paid_commit(ref_b, &observe_owner_state(ref_w), &paid_plateau);
-                let u_plateau = unique_positive_prefixes(&paid_plateau.charges);
-                let (plateau_len, plateau_max) = (u_plateau.len(), u_plateau.last().expect("plateau charges").1);
-                let mut st = pipeline_ref.0.lock().unwrap();
-                st.traces.push(Arc::new((paid_plateau.charges, u_plateau)));
-                st.final_len = Some(plateau_len);
-                st.final_max = plateau_max;
-                drop(st);
-                pipeline_ref.1.notify_all();
-                guard.1 = true;
-            });
-        });
-        let handles: Vec<_> = (0..workers).map(|_| scope.spawn(move || {
-            let _query = install_thread_observation();
-            with_prepared_world(phase1_cutoff, |world, initial, port| {
-                let (mut step, mut count) = (0usize, 0usize);
-                loop {
-                    let (mut baseline, mut done_len) = {
-                        let mut st = pipeline_ref.0.lock().unwrap();
-                        while !st.aborted && st.traces.len() <= step && st.final_len.is_none() { st = pipeline_ref.1.wait(st).unwrap(); }
-                        if st.aborted { break count; }
-                        (Arc::clone(&st.traces[step.min(st.traces.len() - 1)]), st.final_len)
-                    };
-                    let index = next_p2b_ref.fetch_add(1, Ordering::Relaxed);
-                    if done_len.is_some_and(|limit| index >= limit) { break count; }
-                    if index >= baseline.1.len() {
-                        baseline = {
-                            let mut st = pipeline_ref.0.lock().unwrap();
-                            while !st.aborted && st.final_len.is_none() { st = pipeline_ref.1.wait(st).unwrap(); }
-                            if st.aborted { break count; }
-                            done_len = st.final_len;
-                            Arc::clone(st.traces.last().unwrap())
-                        };
-                        if index >= done_len.unwrap() { break count; }
-                        while step < PLATEAU_STEP {
-                            world.clock_control.push(1, 5);
-                            assert_eq!(observe_port_under_ceiling(port, 85_000).committed, 0);
-                            port.reset_retained_wakes_for_replay_for_test();
-                            step += 1;
-                        }
-                    }
-                    let (pos, required) = baseline.1[index];
-                    world.clock_control.push(1, 5);
-                    let replay = observe_port_under_ceiling(port, required - 1);
-                    verify_prefix_replay("phase2b", world, initial, &baseline.0, pos, required, replay);
-                    port.reset_retained_wakes_for_replay_for_test();
-                    step += 1;
-                    count += 1;
-                }
-            })
         })).collect();
-        producer.join().unwrap();
-        handles.into_iter().map(|h| h.join().unwrap()).sum()
+        for h in handles { h.join().unwrap(); }
     });
-    let (warm_paid_len, warm_max) = { let st = pipeline.0.lock().unwrap(); (st.final_len.unwrap(), st.final_max) };
-    let phase2_count = phase2a_count + phase2b_count;
-    assert_eq!(phase2_count, warm_paid_len);
-    let total_executed = phase1_count + phase2_count;
-    assert!(total_executed >= cold_unique.len(), "executed {total_executed} < cold {}", cold_unique.len());
+    assert!(admission_covered.iter().all(|c| c.load(Ordering::Acquire)));
+
+    // 2. Healthy paid prepared-wake operation: stabilize process-global world
+    // IDs (256..999), per-world transaction IDs (1000..9999), per-world
+    // observation/diagnostic retention buffers (past 256 via low-ceiling
+    // calls), and global provider-session generations (1000..9999) with zero
+    // owner movement. Thread 0 executes ONE healthy paid commit to derive the
+    // exact worklist, and all workers replay every single worklist entry
+    // directly against that one healthy paid trace.
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = (0..40)
+            .map(|_| scope.spawn(|| { let _q = install_thread_observation(); CourtroomWorld::publish("ready") }))
+            .collect();
+        for h in handles { drop(h.join().unwrap()); }
+    });
+    const HIGH_WARM: usize = 42;
+    let total_threads = workers + 1;
+    let primed_barrier = Barrier::new(total_threads);
+    let baseline_ready = Barrier::new(total_threads);
+    let paid_trace: OnceLock<PaidTrace> = OnceLock::new();
+    let covered_cell: OnceLock<Vec<AtomicBool>> = OnceLock::new();
+    let next_op = AtomicUsize::new(0);
+    let (pb_ref, br_ref, trace_ref, cov_ref, next_op_ref) =
+        (&primed_barrier, &baseline_ready, &paid_trace, &covered_cell, &next_op);
+
+    std::thread::scope(|scope| {
+        let handles: Vec<_> = (0..total_threads).map(|tid| scope.spawn(move || {
+            let _query = install_thread_observation();
+            let world = CourtroomWorld::publish("ready");
+            let initial = observe_owner_state(&world);
+            prime_relational_tx_plateau(&world);
+            let mut port = world.conditional_clock();
+            port.prime_replay_plateau_for_test();
+            promote_to_retained_wake(&world, &mut port, admission_cutoff, &initial);
+            for _ in 0..HIGH_WARM {
+                world.clock_control.push(1, 5);
+                warm_port_under_ceiling(&mut port, 81_500);
+                port.reset_retained_wakes_for_replay_for_test();
+            }
+            assert_eq!(observe_owner_state(&world), initial);
+            pb_ref.wait();
+
+            if tid == 0 {
+                world.clock_control.push(1, 5);
+                let paid = observe_port_under_ceiling(&mut port, 64_000_000);
+                validate_paid_commit(&initial, &observe_owner_state(&world), &paid);
+                let worklist = unique_positive_prefixes(&paid.charges);
+                assert!(!worklist.is_empty(), "healthy paid operation charges work");
+                let _ = cov_ref.set((0..worklist.len()).map(|_| AtomicBool::new(false)).collect());
+                let _ = trace_ref.set(Arc::new((paid.charges, worklist)));
+                br_ref.wait();
+                return;
+            }
+            br_ref.wait();
+            let paid = trace_ref.get().expect("healthy paid baseline ready");
+            let covered = cov_ref.get().expect("worklist coverage bitmap ready");
+            loop {
+                let idx = next_op_ref.fetch_add(1, Ordering::Relaxed);
+                let Some(&(pos, required)) = paid.1.get(idx) else { break; };
+                world.clock_control.push(1, 5);
+                let replay = observe_port_under_ceiling(&mut port, required - 1);
+                verify_prefix_replay("operation", &world, &initial, &paid.0, pos, required, replay);
+                port.reset_retained_wakes_for_replay_for_test();
+                assert!(!covered[idx].swap(true, Ordering::AcqRel));
+            }
+        })).collect();
+        for h in handles { h.join().unwrap(); }
+    });
+
+    let paid = paid_trace.get().expect("healthy paid baseline");
+    let covered = covered_cell.get().expect("coverage bitmap");
+    assert_eq!(covered.len(), paid.1.len());
+    assert!(covered.iter().all(|c| c.load(Ordering::Acquire)), "every paid prefix must be covered");
+    let op_max = paid.1.last().expect("paid worklist").1;
+    let total_executed = admission_len + 1 + paid.1.len();
     println!(
-        "work_prefix_sweep: executed_prefixes={total_executed} (phase1={phase1_count}, phase2={phase2_count}) cold_unique={} cold_max={} warm_max={warm_max} t_total={:.2?}",
-        cold_unique.len(), cold_unique.last().map_or(0, |&(_, n)| n), t0.elapsed(),
+        "work_prefix_sweep: operation_prefixes={}/{} (max_required={op_max}) bridge_admission_prefixes={admission_len}/{admission_len} cold_final={} total_executed={total_executed} t_total={:.2?}",
+        paid.1.len(), paid.1.len(), cold_final.1, t0.elapsed(),
     );
 }

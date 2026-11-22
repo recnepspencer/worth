@@ -39,6 +39,22 @@ impl CompositeSupplyChainCourt {
     pub(crate) fn compile() -> Self {
         Self::compile_with_steel(true)
     }
+    pub(crate) fn compile_with_clock(clock: RuntimeWorldClock) -> Self {
+        let records = crate::court::ordinary_context::relational::CargoRecords::install(true);
+        let mut graph = worth_signal::facade::SignalGraph::new();
+        let nodes = crate::court::ordinary_context::routing::RouteGraph::install(&mut graph);
+        let (bridge, installed, _) =
+            crate::court::ordinary_context::correspondence::install(&records, &mut graph, nodes);
+        Self::from_installed_graph_with_clock(
+            records,
+            graph,
+            nodes,
+            bridge,
+            installed,
+            crate::court::ordinary_context::budgets::court(),
+            clock,
+        )
+    }
     pub(crate) fn compile_with_steel(include_steel: bool) -> Self {
         Self::compile_config(
             include_steel,
@@ -61,6 +77,25 @@ impl CompositeSupplyChainCourt {
         bridge: RuntimeBridge,
         installed: BridgeInstalledSemanticCorrespondence,
         limits: RuntimeWorldBudgets,
+    ) -> Self {
+        Self::from_installed_graph_with_clock(
+            records,
+            graph,
+            nodes,
+            bridge,
+            installed,
+            limits,
+            RuntimeWorldClock::from_source(crate::court::ordinary_context::budgets::CourtClock),
+        )
+    }
+    pub(crate) fn from_installed_graph_with_clock(
+        records: CargoRecords,
+        graph: SignalGraph,
+        nodes: RouteGraph,
+        bridge: RuntimeBridge,
+        installed: BridgeInstalledSemanticCorrespondence,
+        limits: RuntimeWorldBudgets,
+        clock: RuntimeWorldClock,
     ) -> Self {
         let mut signal = worth_signal::facade::SignalRuntime::builder(graph)
             .with_domains::<RouteDefinition>()
@@ -117,9 +152,7 @@ impl CompositeSupplyChainCourt {
             .with_signal_services(services)
             .with_signal_definition_publication(signal_definition_publication)
             .with_budgets(limits)
-            .with_clock(RuntimeWorldClock::from_source(
-                crate::court::ordinary_context::budgets::CourtClock,
-            ))
+            .with_clock(clock)
             .build()
             .expect("court declaration: World owner");
         Self {
