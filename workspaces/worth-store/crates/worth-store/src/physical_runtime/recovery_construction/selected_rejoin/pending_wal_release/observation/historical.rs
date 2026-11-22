@@ -32,32 +32,56 @@ pub(super) fn verify_and_finalize(
         final_inventory,
     } = final_obs;
     let (media, historical_fingerprint) = if claim.ordered_history().is_some() {
+        if !claim.historical_batches().is_empty() {
+            return Err(Denial::CertificateRoster);
+        }
+        let retained = resident_budget::retained_with_heads(
+            &final_selected,
+            &final_controls,
+            claim,
+            &projection,
+            &sample,
+            checkpoint,
+            &final_heads,
+        )?;
+        let mut read_allocation =
+            crate::physical_runtime::PhysicalRecoveryReadAllocation::for_coordination(coordination)
+                .map_err(Denial::WalReadOwnership)?;
         verify_ordered_history(
-            coordination,
             media,
+            &mut read_allocation,
             reopen,
             claim,
             effective,
-            checkpoint,
-            &final_selected,
             &final_controls,
-            &final_heads,
             &final_inventory,
             &sample,
-            &projection,
+            retained,
         )?
     } else {
-        verify_historical_batches(
-            media,
-            reopen,
-            claim,
-            checkpoint,
-            &final_selected,
-            &final_controls,
-            &final_inventory,
-            &sample,
-            &projection,
-        )?
+        match claim.historical_batches() {
+            [] => (media, None),
+            [batch] => {
+                let retained = delta::retained_memory(
+                    &final_selected,
+                    &final_controls,
+                    claim,
+                    &projection,
+                    &sample,
+                    checkpoint,
+                )?;
+                verify_historical_batch(
+                    media,
+                    reopen,
+                    claim,
+                    batch,
+                    &final_inventory,
+                    &sample,
+                    retained,
+                )?
+            }
+            _ => return Err(Denial::CertificateRoster),
+        }
     };
     let wal_fingerprint = final_inventory.into_fingerprint();
     let media = delta::verify(
@@ -82,18 +106,15 @@ pub(super) fn verify_and_finalize(
 #[allow(clippy::too_many_arguments)]
 #[inline(never)]
 fn verify_ordered_history(
-    coordination: &PhysicalRecoveryCoordination,
     media: AdmittedRecoveryFilesystemMedia,
+    read_allocation: &mut crate::physical_runtime::PhysicalRecoveryReadAllocation<'_>,
     reopen: &CompletedPhysicalRecoveryFreshReopen,
     claim: &VerifiedPendingWalReleaseCustody,
     effective: &VerifiedEffectiveReleaseHeadRosterV14,
-    checkpoint: &SharedRecoveryCheckpoint,
-    final_selected: &selection::Selection,
     final_controls: &controls::Controls,
-    final_heads: &head_v14::ObservedHeadV14<'_>,
     final_inventory: &wal_inventory::AdmittedWalInventory,
     sample: &crate::physical_runtime::StoreRecoveryBindingFreshnessSample,
-    projection: &worth_store_physical_format::PersistedPhysicalRecoveryProjection,
+    retained: u64,
 ) -> Result<
     (
         AdmittedRecoveryFilesystemMedia,
@@ -101,24 +122,9 @@ fn verify_ordered_history(
     ),
     Denial,
 > {
-    if !claim.historical_batches().is_empty() {
-        return Err(Denial::CertificateRoster);
-    }
-    let retained = resident_budget::retained_with_heads(
-        final_selected,
-        final_controls,
-        claim,
-        projection,
-        sample,
-        checkpoint,
-        final_heads,
-    )?;
     let (media, fingerprint) = ordered_walk::verify(
         media,
-        &mut crate::physical_runtime::PhysicalRecoveryReadAllocation::for_coordination(
-            coordination,
-        )
-        .map_err(Denial::WalReadOwnership)?,
+        read_allocation,
         claim,
         effective,
         final_controls,
@@ -132,16 +138,14 @@ fn verify_ordered_history(
 
 #[allow(clippy::too_many_arguments)]
 #[inline(never)]
-fn verify_historical_batches(
+fn verify_historical_batch(
     media: AdmittedRecoveryFilesystemMedia,
     reopen: &CompletedPhysicalRecoveryFreshReopen,
     claim: &VerifiedPendingWalReleaseCustody,
-    checkpoint: &SharedRecoveryCheckpoint,
-    final_selected: &selection::Selection,
-    final_controls: &controls::Controls,
+    batch: &worth_store_recovery_physics::VerifiedHistoricalPendingWalBatch,
     final_inventory: &wal_inventory::AdmittedWalInventory,
     sample: &crate::physical_runtime::StoreRecoveryBindingFreshnessSample,
-    projection: &worth_store_physical_format::PersistedPhysicalRecoveryProjection,
+    retained: u64,
 ) -> Result<
     (
         AdmittedRecoveryFilesystemMedia,
@@ -149,56 +153,42 @@ fn verify_historical_batches(
     ),
     Denial,
 > {
-    match claim.historical_batches() {
-        [] => Ok((media, None)),
-        [batch] => {
-            let retained = delta::retained_memory(
-                final_selected,
-                final_controls,
-                claim,
-                projection,
-                sample,
-                checkpoint,
-            )?;
-            let (media, mut history_fingerprint) = historical_chain::verify_ordinary_parts(
-                media,
-                batch.chain(),
-                claim.checkpoint().source().root().generation(),
-                claim.source_root().generation(),
-                claim.source_root_sha256(),
-                sample,
-                final_inventory.frames(),
-                claim
-                    .checkpoint()
-                    .compaction_cutover()
-                    .wal_cutoff_lsn_exclusive(),
-                claim.descriptor().custody().request().idempotency(),
-                claim.wal_fate().lsn_start(),
-                reopen.format(),
-                claim.source_root().node_capacity(),
-                retained,
-            )?;
-            let (media, fingerprint) = historical_first::verify(
-                media,
-                batch,
-                sample,
-                final_inventory.frames(),
-                claim
-                    .checkpoint()
-                    .compaction_cutover()
-                    .wal_cutoff_lsn_exclusive(),
-                reopen.format(),
-                claim.source_root().node_capacity(),
-                retained,
-            )?;
-            history_fingerprint.try_extend_bounded(
-                fingerprint,
-                delta::MAX_TRANSITION_MEMORY
-                    .checked_sub(retained)
-                    .ok_or(Denial::BoundExceeded)?,
-            )?;
-            Ok((media, Some((history_fingerprint, retained))))
-        }
-        _ => Err(Denial::CertificateRoster),
-    }
+    let (media, mut history_fingerprint) = historical_chain::verify_ordinary_parts(
+        media,
+        batch.chain(),
+        claim.checkpoint().source().root().generation(),
+        claim.source_root().generation(),
+        claim.source_root_sha256(),
+        sample,
+        final_inventory.frames(),
+        claim
+            .checkpoint()
+            .compaction_cutover()
+            .wal_cutoff_lsn_exclusive(),
+        claim.descriptor().custody().request().idempotency(),
+        claim.wal_fate().lsn_start(),
+        reopen.format(),
+        claim.source_root().node_capacity(),
+        retained,
+    )?;
+    let (media, fingerprint) = historical_first::verify(
+        media,
+        batch,
+        sample,
+        final_inventory.frames(),
+        claim
+            .checkpoint()
+            .compaction_cutover()
+            .wal_cutoff_lsn_exclusive(),
+        reopen.format(),
+        claim.source_root().node_capacity(),
+        retained,
+    )?;
+    history_fingerprint.try_extend_bounded(
+        fingerprint,
+        delta::MAX_TRANSITION_MEMORY
+            .checked_sub(retained)
+            .ok_or(Denial::BoundExceeded)?,
+    )?;
+    Ok((media, Some((history_fingerprint, retained))))
 }

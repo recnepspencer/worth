@@ -35,24 +35,6 @@ pub struct PhysicalRecoveryConstructionPort {
 }
 
 impl PhysicalRecoveryConstructionPort {
-    /// Post-publication construction requires caller-prepaid core backing via
-    /// `construct_with_backing`; direct un-backed calls deny without allocating.
-    pub fn construct(
-        coordination: PhysicalRecoveryCoordination,
-        _media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        let _ = coordination.shutdown_is_quiescent();
-        if cleanup.live_media_handle_delta() != 0 {
-            return Err(RecoveredPhysicalRuntimeConstructionDenial::CleanupMediaNotQuiescent);
-        }
-        Err(
-            RecoveredPhysicalRuntimeConstructionDenial::RejoinResident(
-                crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::MissingResidentAdmission,
-            ),
-        )
-    }
-
     pub(super) fn construct_direct(
         backing: PreparedRecoveredRuntimeCoreBacking,
         coordination: PhysicalRecoveryCoordination,

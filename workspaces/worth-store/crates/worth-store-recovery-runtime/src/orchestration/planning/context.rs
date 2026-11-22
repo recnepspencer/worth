@@ -37,7 +37,7 @@ pub(super) struct PlanningContextBody {
 impl PlanningContextBody {
     pub(super) fn from_selected(
         selected: SelectedPhysicalRecovery,
-    ) -> Result<PlanningContext, PhysicalRecoveryOutcome> {
+    ) -> Result<(PlanningContext, PlanningResidentAllowance), PhysicalRecoveryOutcome> {
         let (
             authority,
             coordination,
@@ -61,61 +61,68 @@ impl PlanningContextBody {
         let admitted = live_before.and_then(|live| {
             let mut allowance =
                 PlanningResidentAllowance::new(live, limits.recovery_memory_bytes)?;
-            allowance.retain(slot_bytes?)
+            allowance.retain(slot_bytes?)?;
+            Ok(allowance)
         });
-        if let Err(PlanningMemoryDenial::RecoveryMemoryBytes { observed }) = admitted {
-            let limit = RecoveryAllowance::declared(
-                &limits,
-                PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
-            )
-            .past(observed);
-            return Err(cost_denial_block(
+        let allowance = match admitted {
+            Ok(allowance) => allowance,
+            Err(PlanningMemoryDenial::RecoveryMemoryBytes { observed }) => {
+                let limit = RecoveryAllowance::declared(
+                    &limits,
+                    PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
+                )
+                .past(observed);
+                return Err(cost_denial_block(
+                    authority,
+                    coordination,
+                    counters,
+                    RecoveryPlanningCounters::default().with_peak_recovery_bytes(observed),
+                    Default::default(),
+                    RecoveryPlanCostDenial::RecoveryMemoryBytes,
+                    limit,
+                    root_protocol_denials,
+                )
+                .with_integrity_trace(integrity_trace)
+                .with_block_integrity_observations(integrity.into_observations()));
+            }
+            Err(PlanningMemoryDenial::Allocation {
+                requested_bytes,
+                cause,
+            }) => {
+                return Err(block_with_planning_attempt_denial(
+                    authority,
+                    coordination,
+                    PhysicalRecoveryBlockKind::RedoPlanning,
+                    counters,
+                    RecoveryPlanningCounters::default(),
+                    Default::default(),
+                    "planning-context-allocation",
+                    None,
+                    PhysicalRecoveryPlanningDenial::ResolvedStateAllocation {
+                        requested_bytes,
+                        cause,
+                    },
+                    root_protocol_denials,
+                )
+                .with_integrity_trace(integrity_trace)
+                .with_block_integrity_observations(integrity.into_observations()));
+            }
+        };
+        Ok((
+            Box::new(Self {
                 authority,
                 coordination,
+                selection,
+                integrity,
                 counters,
-                RecoveryPlanningCounters::default().with_peak_recovery_bytes(observed),
-                Default::default(),
-                RecoveryPlanCostDenial::RecoveryMemoryBytes,
-                limit,
                 root_protocol_denials,
-            )
-            .with_integrity_trace(integrity_trace)
-            .with_block_integrity_observations(integrity.into_observations()));
-        } else if let Err(PlanningMemoryDenial::Allocation {
-            requested_bytes,
-            cause,
-        }) = admitted
-        {
-            return Err(block_with_planning_attempt_denial(
-                authority,
-                coordination,
-                PhysicalRecoveryBlockKind::RedoPlanning,
-                counters,
-                RecoveryPlanningCounters::default(),
-                Default::default(),
-                "planning-context-allocation",
-                None,
-                PhysicalRecoveryPlanningDenial::ResolvedStateAllocation {
-                    requested_bytes,
-                    cause,
-                },
-                root_protocol_denials,
-            )
-            .with_integrity_trace(integrity_trace)
-            .with_block_integrity_observations(integrity.into_observations()));
-        }
-        Ok(Box::new(Self {
-            authority,
-            coordination,
-            selection,
-            integrity,
-            counters,
-            root_protocol_denials,
-            root_protocol_counters: Default::default(),
-            limits,
-            effects_before,
-            integrity_trace,
-        }))
+                root_protocol_counters: Default::default(),
+                limits,
+                effects_before,
+                integrity_trace,
+            }),
+            allowance,
+        ))
     }
 
     #[inline(never)]

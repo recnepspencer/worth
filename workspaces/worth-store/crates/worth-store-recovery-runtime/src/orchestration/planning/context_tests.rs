@@ -3,7 +3,7 @@ use std::path::Path;
 use worth_proof::TransitionOutcome;
 use worth_store::physical_runtime::{
     PhysicalCheckpointDeadline, PhysicalCheckpointIdempotencyKey, PhysicalCheckpointOutcome,
-    PhysicalCheckpointRequest,
+    PhysicalCheckpointRequest, StoreRecoveryBindingSampleAllocationDenial,
 };
 use worth_store_test_support::harness::physical_residency::{
     canonical_durable_wal_attempt_without_execution, canonical_physical_mutation_acknowledgment,
@@ -158,32 +158,98 @@ fn plan_admits_context_backing_before_allocation_and_debits_early_sampling() {
         let (selected, live_exact) =
             with_memory_limit(select_real(retained.path()), live_before + slot_bytes);
         assert_eq!(live_exact, live_before);
-        let ctx =
+        let (ctx, allowance) =
             PlanningContextBody::from_selected(selected).expect("exact boundary admits context");
         assert_eq!(
             super::super::resident_memory::context_live_bytes(&ctx),
             Some(live_before + slot_bytes)
         );
+        assert_eq!(allowance.remaining(), 0);
         let body = *ctx;
         assert!(body.coordination.shutdown_is_quiescent());
         drop(body.authority.media);
         body.authority.session.refuse();
     }
 
-    // 3. Real `plan()` at exact context boundary debits context from early window (remaining = 0).
+    // 3. Exact context boundary (0 remaining): `plan()` must deny in binding sampling
+    //    before reserving native backing, reporting the exact census requirement.
     let (selected, _) = with_memory_limit(select_real(retained.path()), live_before + slot_bytes);
     let Err(PhysicalRecoveryOutcome::Blocked(blocked)) = selected.plan() else {
-        panic!("exact context boundary leaves zero early sampling/redo allowance");
+        panic!("zero remaining sampling allowance must deny before reserving");
     };
     assert_eq!(blocked.recovery_effects(), 0);
-    match &blocked.evidence().planning_denial {
-        Some(PhysicalRecoveryPlanningDenial::Redo(
-            PhysicalRedoPlanningDenial::RecoveryMemoryLimit { admitted, .. },
-        )) => assert_eq!(*admitted, 0),
-        other => panic!("expected debited early redo memory denial (admitted = 0), got {other:?}"),
-    }
+    let sample_requested = match &blocked.evidence().planning_denial {
+        Some(PhysicalRecoveryPlanningDenial::BindingSamplingAllocation(
+            StoreRecoveryBindingSampleAllocationDenial::LocalLimit { required, admitted },
+        )) => {
+            assert_eq!(*admitted, 0);
+            assert!(*required > 0);
+            *required
+        }
+        other => panic!("expected sampling LocalLimit denial, got {other:?}"),
+    };
+    let limit = blocked.cause().limit().expect("sampling limit failure");
+    assert_eq!(
+        limit.dimension(),
+        PhysicalRecoveryLimitDimension::RecoveryMemoryBytes
+    );
+    assert_eq!(limit.observed(), live_before + slot_bytes + sample_requested);
+    assert_eq!(limit.admitted(), live_before + slot_bytes);
 
-    // 4. Healthy budget plans cleanly.
+    // 4. One byte short of nonempty sampling boundary: still refuses in sampling before reserve.
+    let (selected, _) = with_memory_limit(
+        select_real(retained.path()),
+        live_before + slot_bytes + sample_requested - 1,
+    );
+    let Err(PhysicalRecoveryOutcome::Blocked(blocked)) = selected.plan() else {
+        panic!("one byte short of nonempty sampling census must deny before reserving");
+    };
+    assert_eq!(blocked.recovery_effects(), 0);
+    assert_eq!(
+        blocked.evidence().planning_denial,
+        Some(PhysicalRecoveryPlanningDenial::BindingSamplingAllocation(
+            StoreRecoveryBindingSampleAllocationDenial::LocalLimit {
+                required: sample_requested,
+                admitted: sample_requested - 1,
+            },
+        ))
+    );
+    let limit = blocked.cause().limit().expect("sampling boundary limit");
+    assert_eq!(limit.observed(), live_before + slot_bytes + sample_requested);
+    assert_eq!(
+        limit.admitted(),
+        live_before + slot_bytes + sample_requested - 1
+    );
+
+    // 5. Exact nonempty sampling boundary: sampling admits, then carried co-live debit
+    //    gates downstream reconciliation/redo before allocation.
+    let (selected, _) = with_memory_limit(
+        select_real(retained.path()),
+        live_before + slot_bytes + sample_requested,
+    );
+    let Err(PhysicalRecoveryOutcome::Blocked(blocked)) = selected.plan() else {
+        panic!("exact sampling boundary leaves insufficient co-live budget for downstream redo");
+    };
+    assert_eq!(blocked.recovery_effects(), 0);
+    assert!(
+        !matches!(
+            &blocked.evidence().planning_denial,
+            Some(PhysicalRecoveryPlanningDenial::BindingSamplingAllocation(_))
+        ),
+        "sampling must admit at its exact boundary; got {:?}",
+        blocked.evidence().planning_denial
+    );
+    assert!(matches!(
+        &blocked.evidence().planning_denial,
+        Some(
+            PhysicalRecoveryPlanningDenial::Cost(RecoveryPlanCostDenial::RecoveryMemoryBytes)
+                | PhysicalRecoveryPlanningDenial::Redo(
+                    PhysicalRedoPlanningDenial::RecoveryMemoryLimit { .. }
+                )
+        )
+    ));
+
+    // 6. Healthy budget plans cleanly.
     let planned = select_real(retained.path())
         .plan()
         .expect("healthy budget plans cleanly");

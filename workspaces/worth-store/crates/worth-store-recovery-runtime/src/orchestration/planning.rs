@@ -25,9 +25,9 @@ pub(crate) use completion::blob_reclaim::ValidatedManifestResidueCleanup;
 pub(crate) fn plan_recovery(
     selected: SelectedPhysicalRecovery,
 ) -> Result<PlannedPhysicalRecovery, PhysicalRecoveryOutcome> {
-    let mut context = context::PlanningContextBody::from_selected(selected)?;
+    let (mut context, allowance) = context::PlanningContextBody::from_selected(selected)?;
     let admitted;
-    (context, admitted) = admitted_basis::admit(context)?;
+    (context, admitted) = admitted_basis::admit(context, allowance)?;
     let mut resolved;
     (context, resolved) = resolved_basis::resolve(context, admitted)?;
     context = completion::verify_inputs(context, resolved.state_mut())?;
