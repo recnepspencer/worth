@@ -73,10 +73,7 @@ pub(super) fn rounds(members: &[CoupledApplicationMember]) -> Vec<Round<'_>> {
 /// `compare` names the fact that differs between two adjacent images, so each
 /// refusal names the fact its own writer changed. An authored reader accepts
 /// changes made by members that sequentially run after it; any other change
-/// refuses, attributed to its writer. `held` names the writers whose refused
-/// change is held for an open issue (#229, #238, #239). Such a refusal is only
-/// provisional: the scan continues, any plain refusal wins, and the hold is
-/// recorded in `hold` for the caller to report after everything else validates.
+/// refuses, attributed to its writer.
 pub(super) fn changed(
     reader: &WorthQueryPrimaryGraphApplicationAttempt,
     source: worth_relational::facade::identity::EntityId,
@@ -84,7 +81,6 @@ pub(super) fn changed(
     members: &[CoupledApplicationMember],
     observed: &Candidate,
     settles: impl Fn(&Round<'_>) -> bool,
-    held: impl Fn(&Round<'_>) -> Option<Hold>,
     compare: impl Fn(
         &Candidate,
         &Candidate,
@@ -94,9 +90,8 @@ pub(super) fn changed(
     >,
     final_locator: String,
     detail: impl Fn(&str) -> String,
-    hold: &mut Option<Failure>,
 ) -> Result<(), CoupledSupportPreparationDenial> {
-    let (mut settled, mut provisional) = (false, None);
+    let mut settled = false;
     let mut earlier = observed;
     for round in rounds(members)
         .into_iter()
@@ -128,16 +123,9 @@ pub(super) fn changed(
                     format!("{reader}; later writer {later}: {}", detail(&locator)),
                 )
                 .with_coupled_writer(writer.source());
-                let Some(held) = held(&round) else {
-                    return Err(CoupledSupportPreparationDenial::Changed(failure));
-                };
-                provisional.get_or_insert(failure.held(held));
+                return Err(CoupledSupportPreparationDenial::Changed(failure));
             }
         }
-    }
-    if let Some(failure) = provisional {
-        hold.get_or_insert(failure);
-        return Ok(());
     }
     if settled {
         return Ok(());

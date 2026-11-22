@@ -8,20 +8,17 @@
 //! The stage's discovery support never settles; a verified output it read
 //! settles only when such a producer re-derived that same route.
 //! Producer readers stay strict. A retained read qualified use reopened is
-//! checked only over its window (`window`). The remaining holds name open
-//! issues (#244): #229, a later authored stage changed a producer's decision
-//! read or a verified output no later derivation replaces; #238, discovery
-//! support changed by a later stage; #239, a verified parent changed by its
-//! own consumer. Every other refusal carries no hold.
+//! checked only over its window (`window`); a root selection's stage window
+//! by owed order. Whatever still differs refuses plainly (PR C Q4): no change
+//! is held for an open issue.
 use super::*;
 mod changed;
 pub mod court_doors_for_test;
 mod window;
 use crate::domain_computation::primary_graph::provider::{
-    CandidateReadSupport, CoupledApplicationMember, CoupledApplicationMemberKind, ParentRead,
+    CandidateReadSupport, CoupledApplicationMember, CoupledApplicationMemberKind,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationDecisionFact as Fact;
-use crate::domain_computation::WorthQueryCoupledSupportHold as Hold;
 use crate::domain_computation::WorthQueryInvariantExecutionFailure as Failure;
 use changed::{changed, Round};
 use window::superseded_window;
@@ -46,9 +43,6 @@ pub(super) fn require(
     >,
     position: usize,
     members: &[CoupledApplicationMember],
-    producer_reader: bool,
-    produces: Option<ParentRead>,
-    hold: &mut Option<Failure>,
 ) -> Result<(), CoupledSupportPreparationDenial> {
     for consumed in attempt.consumed_outputs() {
         if let Some(link) = consumed.applied()
@@ -97,18 +91,6 @@ pub(super) fn require(
                 |writer| {
                     attempt.coupled_authored_subject().is_some() && writer.settles_after(position)
                 },
-                |writer| {
-                    if producer_reader && is_stage(writer.member) {
-                        Some(Hold::ProducerSupersession)
-                    } else if produces
-                        .is_some_and(|output| writer.member.consumes.contains(&output))
-                    {
-                        // The reader's own consumer changed its decision read (#246).
-                        Some(Hold::ConsumerSupersession)
-                    } else {
-                        None
-                    }
-                },
                 |earlier, image| {
                     compare(earlier, image).map(|same| (!same).then(|| fact.locator_identity()))
                 },
@@ -116,7 +98,6 @@ pub(super) fn require(
                 |locator| {
                     format!("a later coupled contribution changed decision support: {locator}")
                 },
-                hold,
             )?;
             continue;
         }
@@ -136,7 +117,6 @@ pub(super) fn require_read_support(
     before: &SnapshotHandle,
     complete: &Candidate,
     members: &[CoupledApplicationMember],
-    hold: &mut Option<Failure>,
 ) -> Result<(), CoupledSupportPreparationDenial> {
     // Each retained read is attributed from its own observed image, so an
     // ordinary root without a coupled post-own pin validates the same way.
@@ -167,7 +147,6 @@ pub(super) fn require_read_support(
                     Some(stage) => writer.runs_from_stage(stage),
                     None => settles_read_support(attempt, support, *position, members, writer),
                 },
-                |writer| read_support_hold(attempt, support, members, writer),
                 |earlier, image| {
                     compare(earlier, image).map(|fact| fact.map(|fact| fact.locator_identity()))
                 },
@@ -179,7 +158,6 @@ pub(super) fn require_read_support(
                         support.description(),
                     )
                 },
-                hold,
             )?,
             Err(cause) => require_answer(Err(cause), *source, || support.subject().to_owned())?,
         }
@@ -231,59 +209,6 @@ fn is_stage(writer: &CoupledApplicationMember) -> bool {
         writer.kind,
         CoupledApplicationMemberKind::AuthoredStage { .. }
     )
-}
-
-/// A verified output is a derivation that read its support: one prepared in
-/// this envelope or the committed one the reader adopted. An authored stage
-/// changing that support supersedes it (#229) unless the same route is derived
-/// again after the stage, which settles instead; one commit per stage would
-/// derive it again in the stage's own commit. Discovery support cannot name a
-/// superseded derivation, so it never carries the hold.
-fn superseded_parent(
-    support: &CandidateReadSupport,
-    members: &[CoupledApplicationMember],
-    writer: &Round<'_>,
-) -> bool {
-    let CandidateReadSupport::Parent(parent) = support else {
-        return false;
-    };
-    is_stage(writer.member)
-        && !members.iter().any(|member| {
-            member.position > writer.position && derives_parent(member, parent.as_ref())
-        })
-}
-
-/// The open issue a refused change to an authored stage's read support is
-/// held for, where the member kinds already name it (#244). `None` for every
-/// other change, so no defect is reported as a hold.
-fn read_support_hold(
-    reader: &WorthQueryPrimaryGraphApplicationAttempt,
-    support: &CandidateReadSupport,
-    members: &[CoupledApplicationMember],
-    writer: &Round<'_>,
-) -> Option<Hold> {
-    if superseded_parent(support, members, writer) {
-        return Some(Hold::ProducerSupersession);
-    }
-    reader.coupled_authored_subject()?;
-    match support {
-        // A later authored stage's own commit would discover again (#238).
-        CandidateReadSupport::Query(_) | CandidateReadSupport::Outgoing(_)
-            if is_stage(writer.member) =>
-        {
-            Some(Hold::DiscoverySupportChanged)
-        }
-        // The parent's own consumer changed what the parent read (#239): the
-        // exact read the assembly retained, not a position the writer is owed.
-        CandidateReadSupport::Parent(parent)
-            if parent
-                .read()
-                .is_some_and(|read| writer.member.consumes.contains(&read)) =>
-        {
-            Some(Hold::ReaderProducerSupersession)
-        }
-        _ => None,
-    }
 }
 
 fn require_answer(

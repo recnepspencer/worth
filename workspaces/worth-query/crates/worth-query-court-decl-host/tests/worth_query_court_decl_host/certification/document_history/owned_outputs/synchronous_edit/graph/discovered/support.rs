@@ -84,7 +84,7 @@ fn worker_only_a_discovered_producer_cannot_invalidate_its_own_root_discovery() 
 /// The same root as the envelope's only (prefix) stage (#224): its producer is
 /// owed at the prefix's own position and changes the member that selected
 /// route `a`. No position settles a selection, so the envelope refuses
-/// atomically, attributed to that producer, with no #229 hold.
+/// atomically and plainly, attributed to that producer.
 #[test]
 fn an_ordered_prefix_producer_cannot_invalidate_its_own_root_selection() {
     use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
@@ -129,7 +129,6 @@ fn an_ordered_prefix_producer_cannot_invalidate_its_own_root_selection() {
             && refusal.detail().contains("later writer producer"),
         "{refusal:?}"
     );
-    assert_eq!(refusal.coupled_support_hold(), None);
     super::super::super::failure::assert_model_unchanged(&host, &before);
     assert!(request
         .query(query::second_output::Read("second:a".into()))
@@ -159,8 +158,7 @@ impl ApplicationProgramDefinition<Schema> for TwoRootProgram {
 /// physically after stage 1. Stage 1 (b = 9) roots the fixed tree, whose
 /// root `first(b)` holds no selection over `m` (its own read of `m` is a
 /// decision, reopened by qualified use). Decision-write(a) is still owed by
-/// stage 0, so
-/// it lies inside root 0's window: one commit per stage refuses commit 0, and
+/// stage 0, so it lies inside root 0's window: one commit per stage refuses commit 0, and
 /// so does the envelope, attributed to decision-write. Red with root windows
 /// judged physically (15112101ce): root 0's window then holds no round and
 /// nothing else read `m`, so the edit committed.
@@ -210,6 +208,5 @@ fn a_root_selections_own_producer_owed_by_its_stage_stays_inside_its_window() {
         refusal.detail().contains("later writer producer owned-outputs.decision-write"),
         "{refusal:?}"
     );
-    assert_eq!(refusal.coupled_support_hold(), None);
     super::super::super::failure::assert_model_unchanged(&host, &before);
 }

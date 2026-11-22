@@ -3,7 +3,7 @@
 //!
 //! Base order is a recorded golden: every scenario's wave events (each ranked
 //! batch with id, each prepare with occurrence identity and outcome, each break
-//! and quiescent reclosure), the edit outcome (with typed hold), and the outputs
+//! and quiescent reclosure), the edit outcome, and the outputs
 //! it reads. Goldens are recorded at base with `WORTH_RECORD_WAVE_ORDER=1`.
 use super::super::super::synchronous_edit::envelope_fixture as fixture;
 use super::*;
@@ -42,6 +42,7 @@ macro_rules! edit_stage {
     }};
 }
 
+mod pr_c_cost;
 mod proptest_diff;
 mod r3_shapes;
 mod sibling_reopen;
@@ -76,11 +77,7 @@ pub(super) fn summarize_outcome(
         Outcome::Committed(_) => "committed".to_owned(),
         Outcome::Uncommitted(Uncommitted::Denied(cause)) => {
             if let Some(failure) = cause.invariant_execution_failure() {
-                format!(
-                    "refused {:?} hold={:?}",
-                    failure.kind(),
-                    failure.coupled_support_hold()
-                )
+                format!("refused {:?}", failure.kind())
             } else if let Some(denial) = cause.coupled_producer_denial() {
                 format!("refused {:?}", denial.kind())
             } else {
