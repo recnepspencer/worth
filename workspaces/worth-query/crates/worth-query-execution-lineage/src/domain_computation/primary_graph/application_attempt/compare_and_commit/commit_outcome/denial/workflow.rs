@@ -1,0 +1,41 @@
+use super::{
+    WorthQueryApplicationCommitDenial, WorthQueryApplicationCommitDenialKind,
+    WorthQueryApplicationCommitDenialStage,
+};
+use crate::domain_computation::primary_graph::application_attempt::{
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+};
+
+impl WorthQueryApplicationCommitDenial {
+    pub const fn workflow_authority_required() -> Self {
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::WorkflowAuthorityRequired,
+            stage: WorthQueryApplicationCommitDenialStage::ProposalBinding,
+            detail: None,
+            cause: None,
+        }
+    }
+
+    pub fn workflow_settlement_denied(denial: &WorthQueryApplicationAttemptDenial) -> Self {
+        let stage = match denial.kind() {
+            WorthQueryApplicationAttemptDenialKind::CandidateCapacityExceeded
+            | WorthQueryApplicationAttemptDenialKind::WorkflowInstanceCapacityUnavailable
+            | WorthQueryApplicationAttemptDenialKind::WorkflowLineageCapacityUnavailable => {
+                WorthQueryApplicationCommitDenialStage::ResourceAdmission
+            }
+            WorthQueryApplicationAttemptDenialKind::WorkflowDefinitionSuperseded
+            | WorthQueryApplicationAttemptDenialKind::WorkflowDefinitionRetired => {
+                WorthQueryApplicationCommitDenialStage::DecisionReadSet
+            }
+            _ => WorthQueryApplicationCommitDenialStage::ProposalBinding,
+        };
+        Self {
+            kind: WorthQueryApplicationCommitDenialKind::WorkflowSettlementDenied {
+                kind: denial.kind(),
+            },
+            stage,
+            detail: Some(denial.to_string().into()),
+            cause: None,
+        }
+    }
+}

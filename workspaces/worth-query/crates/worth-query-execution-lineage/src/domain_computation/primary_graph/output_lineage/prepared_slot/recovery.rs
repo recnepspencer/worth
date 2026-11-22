@@ -1,0 +1,90 @@
+use crate::domain_computation::primary_graph::application_contribution::SealedComputationRetention;
+use crate::equality_type_id::EqualityTypeId as TypeId;
+
+use worth_runtime_world::facade::PlannedProductReferenceSuccessor;
+
+use super::PreparedOutputLineageSlot;
+use crate::domain_computation::authorization::WorthQueryOperationScopeBinding;
+
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+
+/// Completed read proofs and the sealed computation move across a World recovery plan. The cancelled address
+/// and its retained capacity stay with the original slot's Drop path.
+pub struct PreparedLineageRecoveryMetadata {
+    original_ready_key: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey>>,
+    coupled_completion: Option<super::super::CoupledOutputCompletion>,
+    native_prior_checkpoint:
+        Option<super::super::native_prior_checkpoint::NativePriorCheckpointLocator>,
+    computation: SealedComputationRetention,
+    prior_computation:
+        Option<crate::domain_computation::primary_graph::output_lineage::PriorComputationRecord>,
+    handler: Option<
+        crate::domain_computation::primary_graph::application_attempt::CompletedHandlerFactBoundary,
+    >,
+    decision_reuse: Option<
+        crate::domain_computation::primary_graph::application_attempt::CompletedDecisionReuseProof,
+    >,
+    reuse: Option<crate::domain_computation::primary_graph::output_lineage::PreparedInputReuseKey>,
+}
+
+impl PreparedOutputLineageSlot {
+    /// Reuse is allowed only for this attempt's exact still-vacant address.
+    pub fn matches_planned_successor(
+        &self,
+        scope: &WorthQueryOperationScopeBinding,
+        output_binding: TypeId,
+        partition: Option<[u8; 32]>,
+        planned: &PlannedProductReferenceSuccessor,
+    ) -> Result<bool, WorthQueryOutputDemandDenial> {
+        Ok(!self.filled
+            && self.record_cell.get().is_none()
+            && self.partition_cell.get().is_none()
+            && self.source.runtime_authority == scope.runtime_authority()
+            && &self.source.schema == scope.binding_identity()
+            && self.source.scope == scope.scope()
+            && self.output_binding_type == output_binding
+            && self.coordinate.occurrence == planned.occurrence()
+            && self.coordinate.generation == planned.generation().get()
+            && self.partition == partition
+            && self.identity.source() == &self.source
+            && self.identity.address()
+                == (
+                    self.coordinate.occurrence,
+                    self.coordinate.generation,
+                    self.identity.slot(),
+                ))
+    }
+
+    pub fn into_recovery_metadata(mut self) -> PreparedLineageRecoveryMetadata {
+        let metadata = PreparedLineageRecoveryMetadata {
+            original_ready_key: self.original_ready_key.take(),
+            coupled_completion: self.coupled_completion.take(),
+            native_prior_checkpoint: self.native_prior_checkpoint.take(),
+            computation: self.computation.take(),
+            prior_computation: self.prior_computation.take(),
+            handler: self.completed_handler_facts.take(),
+            decision_reuse: self.completed_decision_reuse.take(),
+            reuse: self.prepared_input_reuse_key.take(),
+        };
+        drop(self);
+        metadata
+    }
+
+    pub fn retain_recovery_metadata(&mut self, mut metadata: PreparedLineageRecoveryMetadata) {
+        assert!(self.completed_handler_facts.is_none());
+        assert!(self.completed_decision_reuse.is_none());
+        assert!(self.prepared_input_reuse_key.is_none());
+
+        self.original_ready_key = metadata.original_ready_key.take();
+        self.coupled_completion = metadata.coupled_completion.take();
+        assert!(self.native_prior_checkpoint.is_none());
+        self.native_prior_checkpoint = metadata.native_prior_checkpoint.take();
+        self.computation.assign(metadata.computation);
+        self.prior_computation = metadata.prior_computation.take();
+        self.completed_handler_facts = metadata.handler.take();
+        self.completed_decision_reuse = metadata.decision_reuse.take();
+        self.prepared_input_reuse_key = metadata.reuse.take();
+    }
+}
+
+mod court_doors_for_test;

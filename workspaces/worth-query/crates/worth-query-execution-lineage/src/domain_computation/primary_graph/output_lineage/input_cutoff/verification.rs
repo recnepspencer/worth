@@ -1,0 +1,353 @@
+//! Exact prior-output checks before a producer may omit its handler.
+
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff as observation;
+use crate::domain_computation::primary_graph::fact_verification_observation::input_cutoff::Gate;
+pub mod owned;
+pub mod refusal;
+pub use owned::OwnedInputCutoffDecision;
+pub use refusal::InputCutoffVerificationStop;
+
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
+
+use super::super::invalidation::FullVerificationReason;
+use super::super::invalidation::SourceSettlementCurrentness;
+use super::super::PreparedInputReuseKey;
+use super::PreparedInputCutoffBasis;
+use super::RetainedInputCutoffCandidate;
+use crate::domain_computation::primary_graph::application_attempt::Movement;
+use crate::domain_computation::primary_graph::application_attempt::PreparedDecisionReuseContext;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact;
+use crate::domain_computation::primary_graph::application_attempt::WorthQuerySourceCurrentnessFailure;
+use crate::domain_computation::primary_graph::application_contribution::MatchedRequiredPredecessors;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerification;
+use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputVerificationStop;
+use crate::domain_computation::primary_graph::SourceInvalidationOwner;
+
+/// What the cutoff does not verify: a row still in its checkpoint posture,
+/// and a settlement no mark row answers for under the selected source.
+/// Selection asks this before it calls a live output exact, so the two
+/// cannot disagree about one row.
+pub fn cutoff_declines(
+    requirement: Option<FullVerificationReason>,
+    settlement: Option<&SourceSettlementCurrentness>,
+) -> bool {
+    requirement == Some(FullVerificationReason::CheckpointRestore)
+        || settlement.is_some_and(SourceSettlementCurrentness::no_row_answers)
+}
+
+/// A prior performed record and the exact native read basis checked for reuse.
+/// Only the output-lineage owner can consume this at publication.
+pub struct VerifiedInputCutoff<'selected> {
+    _computation: super::super::CurrentComputation,
+    pub candidate: RetainedInputCutoffCandidate,
+    pub selected: &'selected PositionedRelationalSnapshot,
+    pub fresh_key: Option<PreparedInputReuseKey>,
+    /// The same alias-local facts whose completed prefix passed verification.
+    pub verified_facts: super::super::ComparableSourceFacts,
+    pub verified_consumed: Option<std::sync::Arc<[ConsumedOutputEvidence]>>,
+}
+
+pub enum InputCutoffDecision<'selected> {
+    Fresh {
+        key: PreparedInputReuseKey,
+        context: PreparedDecisionReuseContext,
+    },
+    Reuse(VerifiedInputCutoff<'selected>),
+}
+
+pub struct VerifiedDependencies {
+    facts: super::super::ComparableSourceFacts,
+    consumed: Option<std::sync::Arc<[ConsumedOutputEvidence]>>,
+}
+
+impl RetainedInputCutoffCandidate {
+    /// A fresh selected input replaces the obsolete source-query suffix. The
+    /// performed handler prefix and actually consumed upstream outputs still
+    /// require proof at this exact native root. The candidate's own dirty marks remain intact.
+    pub fn verify_for_reuse<'selected>(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        fresh_key: PreparedInputReuseKey,
+        fresh_context: PreparedDecisionReuseContext,
+        matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
+        runtime: &RelationalRuntime,
+        basis: &'selected PreparedInputCutoffBasis<'_>,
+        owner: &SourceInvalidationOwner,
+    ) -> Result<InputCutoffDecision<'selected>, InputCutoffVerificationStop> {
+        let (snapshot, selected) = basis.in_runtime(runtime)?;
+        let verified = self.eligible_for_reuse(
+            execution,
+            &fresh_key,
+            &fresh_context,
+            matched_predecessors,
+            runtime,
+            snapshot,
+            selected,
+            owner,
+        )?;
+        Ok(
+            if let Some(VerifiedDependencies {
+                facts: verified_facts,
+                consumed: verified_consumed,
+            }) = verified
+            {
+                let computation = verified_facts.computation();
+                InputCutoffDecision::Reuse(VerifiedInputCutoff {
+                    _computation: computation,
+                    candidate: self,
+                    selected,
+                    fresh_key: Some(fresh_key),
+                    verified_facts,
+                    verified_consumed,
+                })
+            } else {
+                InputCutoffDecision::Fresh {
+                    key: fresh_key,
+                    context: fresh_context,
+                }
+            },
+        )
+    }
+
+    fn eligible_for_reuse(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        fresh_key: &PreparedInputReuseKey,
+        fresh_context: &PreparedDecisionReuseContext,
+        matched_predecessors: Option<MatchedRequiredPredecessors<'_>>,
+        runtime: &RelationalRuntime,
+        snapshot: &SnapshotHandle,
+        selected: &PositionedRelationalSnapshot,
+        owner: &SourceInvalidationOwner,
+    ) -> Result<Option<VerifiedDependencies>, InputCutoffVerificationStop> {
+        observation::reach(Gate::PriorKey);
+
+        let Some(prior_key) = self.prepared_input_key() else {
+            return Ok(None);
+        };
+        observation::reach(Gate::CompletedContext);
+        let Some(prior_context) = self.completed_decision_reuse() else {
+            return Ok(None);
+        };
+        observation::reach(Gate::OutputWitness);
+        let Some(witness) = self.native_output_witness() else {
+            return Ok(None);
+        };
+        if !prior_key
+            .same_prepared_input_as(fresh_key, &mut |work| {
+                crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation::work(
+                    execution, work,
+                )
+            })
+            .map_err(InputCutoffVerificationStop::Execution)?
+        {
+            return Ok(None);
+        }
+        observation::reach(Gate::DecisionContext);
+        if !fresh_context.matches_completed(prior_context) {
+            return Ok(None);
+        }
+        observation::reach(Gate::RestoreFence);
+        let requirement = self.verification_requirement()?;
+        if cutoff_declines(requirement, None) {
+            return Ok(None);
+        }
+        observation::reach(Gate::ComparableFacts);
+        let Some(facts) = self.observed_source_facts()? else {
+            return Ok(None);
+        };
+        observation::reach(Gate::HandlerPrefixBoundary);
+        let count = self.completed_handler_fact_count().unwrap_or(facts.len());
+        if count > facts.len() {
+            return Ok(None);
+        }
+        observation::reach(Gate::SettlementCurrentness);
+        let settlement = owner.currentness(selected, self.settlement_identity())?;
+        if cutoff_declines(requirement, Some(&settlement)) {
+            observation::settlement_decline(&settlement, selected, || {
+                let identity = self.settlement_identity();
+                let source = identity.source();
+                let (product_incarnation, publication_generation, _) = identity.address();
+                observation::WorthQueryInputCutoffCandidateForTest {
+                    runtime_authority: source.runtime_authority,
+                    scope: source.scope,
+                    product_incarnation,
+                    publication_generation,
+                }
+            });
+            return Ok(None);
+        }
+        let verified_consumed = if let Some(matched) = &matched_predecessors {
+            observation::reach(Gate::MatchedConsumer);
+            if !matched.matches_consumer(self.settlement_identity())? {
+                return Ok(None);
+            }
+            observation::reach(Gate::MatchedRoots);
+            let Some(rebound) = matched_roots::rebound(self.consumed_outputs(), matched, selected)?
+            else {
+                return Ok(None);
+            };
+            Some(rebound)
+        } else {
+            None
+        };
+        let mut verify_full_prefix = requirement.is_some();
+        let mut dirty_prefix = None;
+        match settlement {
+            SourceSettlementCurrentness::Clean => {}
+            SourceSettlementCurrentness::Dirty(ordinals) => dirty_prefix = Some(ordinals),
+            SourceSettlementCurrentness::PendingUpstream(edges) => {
+                // Input equality replaces the source-query suffix. Changed
+                // handler facts still require disclosure before old edges.
+                // Source input equality does not prove handler facts equal.
+                // A changed own decision may remove the old consumed edges.
+                observation::reach(Gate::OwnEvidence);
+                match ConsumedOutputEvidence::own_evidence_is_current(
+                    execution,
+                    &facts.slice(0..count),
+                    self.consumed_outputs(),
+                    witness,
+                    runtime,
+                    snapshot,
+                ) {
+                    Ok(false) => return Ok(None),
+                    Ok(true) | Err(ConsumedOutputVerificationStop::Unavailable) => {}
+                    Err(ConsumedOutputVerificationStop::CapacityExhausted(_)) => {
+                        return Err(InputCutoffVerificationStop::CapacityExhausted);
+                    }
+                    Err(
+                        stop @ (ConsumedOutputVerificationStop::SourceQueryAuthorization(_)
+                        | ConsumedOutputVerificationStop::ManagedIndex(_)),
+                    ) => return Err(InputCutoffVerificationStop::OutputObservation(stop)),
+                    Err(ConsumedOutputVerificationStop::Execution(cause)) => {
+                        return Err(InputCutoffVerificationStop::Execution(cause))
+                    }
+                    Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
+                        return Err(InputCutoffVerificationStop::Admission(
+                            CompanionPreflightStop::Interrupted(event),
+                        ));
+                    }
+                    Err(ConsumedOutputVerificationStop::WorkExhausted) => {
+                        return Err(InputCutoffVerificationStop::WorkExhausted)
+                    }
+                    Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
+                        return Err(InputCutoffVerificationStop::CurrentnessRaced)
+                    }
+                    Err(ConsumedOutputVerificationStop::PendingUpstream) => {
+                        return Err(InputCutoffVerificationStop::PendingUpstream)
+                    }
+                }
+                observation::reach(Gate::PendingRoots);
+                let resolved_here = match &matched_predecessors {
+                    Some(matched) => matched_roots::names_every_edge(&edges, matched)?,
+                    None => false,
+                };
+                if !resolved_here {
+                    match pending_upstream::resolve(&edges, selected, owner)? {
+                        pending_upstream::Resolution::Resolved(_) => {}
+                        pending_upstream::Resolution::Awaiting(identity) => {
+                            return Err(InputCutoffVerificationStop::PendingOutput(
+                                std::sync::Arc::clone(identity),
+                            ));
+                        }
+                    }
+                }
+                // A resolved pending mark identifies no subset of the handler
+                // prefix. Equality still needs every handler and native proof.
+                verify_full_prefix = true;
+            }
+            SourceSettlementCurrentness::FullVerificationRequired(_) => verify_full_prefix = true,
+            // `cutoff_declines` declined it above.
+            SourceSettlementCurrentness::Foreign => return Ok(None),
+        }
+        observation::reach(Gate::HandlerPrefix);
+        let current = if verify_full_prefix {
+            marked_facts_permit_reuse(execution, facts.iter().take(count), runtime, snapshot)?
+        } else if let Some(ordinals) = dirty_prefix {
+            marked_facts_permit_reuse(
+                execution,
+                ordinals
+                    .iter()
+                    .take_while(|ordinal| **ordinal < count)
+                    .map(|ordinal| &facts[*ordinal]),
+                runtime,
+                snapshot,
+            )?
+        } else {
+            true
+        };
+        if !current {
+            return Ok(None);
+        }
+        observation::reach(Gate::ConsumedOutputs);
+        match ConsumedOutputEvidence::verify_many_with_admission(
+            execution,
+            verified_consumed
+                .as_deref()
+                .unwrap_or_else(|| self.consumed_outputs()),
+            owner,
+            runtime,
+            snapshot,
+            selected,
+        ) {
+            Ok(ConsumedOutputVerification::Current) => {}
+            Err(
+                stop @ (ConsumedOutputVerificationStop::SourceQueryAuthorization(_)
+                | ConsumedOutputVerificationStop::ManagedIndex(_)),
+            ) => return Err(InputCutoffVerificationStop::OutputObservation(stop)),
+            Ok(
+                ConsumedOutputVerification::PendingUpstream
+                | ConsumedOutputVerification::ChangedOutput
+                | ConsumedOutputVerification::Unaligned,
+            ) => return Ok(None),
+            Ok(
+                ConsumedOutputVerification::ChangedDirectFact(_)
+                | ConsumedOutputVerification::ChangedUpstream,
+            )
+            | Err(ConsumedOutputVerificationStop::Unavailable) => {
+                return Ok(None);
+            }
+            Err(ConsumedOutputVerificationStop::CapacityExhausted(_)) => {
+                return Err(InputCutoffVerificationStop::CapacityExhausted);
+            }
+            Err(ConsumedOutputVerificationStop::PendingUpstream) => {
+                return Err(InputCutoffVerificationStop::PendingUpstream);
+            }
+            Err(ConsumedOutputVerificationStop::RetryCurrentness(_)) => {
+                return Err(InputCutoffVerificationStop::CurrentnessRaced);
+            }
+            Err(ConsumedOutputVerificationStop::WorkExhausted) => {
+                return Err(InputCutoffVerificationStop::WorkExhausted);
+            }
+            Err(ConsumedOutputVerificationStop::Execution(cause)) => {
+                return Err(InputCutoffVerificationStop::Execution(cause))
+            }
+            Err(ConsumedOutputVerificationStop::Interrupted(event)) => {
+                return Err(InputCutoffVerificationStop::Admission(
+                    CompanionPreflightStop::Interrupted(event),
+                ));
+            }
+        }
+        observation::reach(Gate::OutputCurrentness);
+        if !witness.unchanged_in(runtime, snapshot, execution)? {
+            return Ok(None);
+        }
+        Ok(Some(VerifiedDependencies {
+            facts,
+            consumed: verified_consumed,
+        }))
+    }
+}
+
+pub mod matched_roots;
+pub mod pending_upstream;
+
+pub mod source_facts;
+use source_facts::facts_are_current;
+use source_facts::marked_facts_permit_reuse;
+
+mod court_doors_for_test;

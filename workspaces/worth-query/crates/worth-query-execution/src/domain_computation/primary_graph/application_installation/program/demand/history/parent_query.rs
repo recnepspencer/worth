@@ -1,6 +1,8 @@
 //! Actual parent queries share C admission while retaining distinct parent custody.
 use super::dependent::{DiscoveryBinding, QueryRows};
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 mod verification;
 use crate::domain_computation::primary_graph::application_query::output_source_observation::SourceQueryRequest;
 use crate::domain_computation::primary_graph::{
@@ -232,7 +234,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ProductAdmission(cause)))?
             .prepare_shared_query_basis().map_err(|(_, cause)| Denial::Resource(cause))?;
         let reader = SourceQueryReaderAccess::new(
-            runtime,
+            runtime.inner(),
             &selected,
             Some(&current),
             Some(authority.producer_invocation().for_family(meaning.family)),

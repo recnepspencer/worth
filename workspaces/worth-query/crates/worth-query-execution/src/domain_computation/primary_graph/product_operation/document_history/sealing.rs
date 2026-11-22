@@ -1,7 +1,7 @@
 //! Exact receipt capture and head adoption complete already allocated journal slots.
-use super::source_evidence::WorthQueryHistorySourceEvidence;
 use super::{
-    journal::RecordedNode, WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
+    journal::RecordedNode, source_evidence::WorthQueryHistorySourceEvidence,
+    WorthQueryDocumentHistory, WorthQueryDocumentHistoryDenial as Denial,
     WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryReservation,
     WorthQueryHistoryStep,
 };
@@ -19,37 +19,16 @@ use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, NoApplicationMutationSource},
     application_schema::ApplicationSchema,
 };
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::CompletedRequiredOutputsInternalPort as _;
+use worth_query_execution_runtime::facade::ports::{
+    ProductBranchInternalPort as _, ProductBranchLeaseInternalPort as _,
+};
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
-#[must_use = "retain the original reservation and actual candidate after refusal"]
-pub struct WorthQueryDocumentHistoryAdoptionFailure<'runtime, S> {
-    reservation: WorthQueryDocumentHistoryReservation,
-    candidate: WorthQueryExpectedProductBranch<'runtime, S>,
-    denial: Denial,
-}
-
-impl<'runtime, S> WorthQueryDocumentHistoryAdoptionFailure<'runtime, S> {
-    pub fn into_parts(
-        self,
-    ) -> (
-        WorthQueryDocumentHistoryReservation,
-        WorthQueryExpectedProductBranch<'runtime, S>,
-        Denial,
-    ) {
-        (self.reservation, self.candidate, self.denial)
-    }
-    pub fn denial(&self) -> &Denial {
-        &self.denial
-    }
-}
-
-impl<S> std::fmt::Debug for WorthQueryDocumentHistoryAdoptionFailure<'_, S> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("WorthQueryDocumentHistoryAdoptionFailure")
-            .field("denial", &self.denial)
-            .finish_non_exhaustive()
-    }
-}
+mod adoption_failure;
+pub use adoption_failure::WorthQueryDocumentHistoryAdoptionFailure;
 
 pub(super) struct PreparedBinding {
     pub(super) discovery_recipes:
@@ -77,7 +56,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         _access: &WorthQueryProgramPublicationAccess,
     ) -> Result<(), Denial> {
         let execution = phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         execution.check_live().map_err(|stop| {
             Denial::Stopped(
@@ -381,19 +360,18 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .prepared_step(&reserved.record, endpoint.clone());
         let discovery_recipes = match &completion {
             RecordingCompletion::Forest { completed, .. } => {
-                Some(std::sync::Arc::clone(&completed.discovery_recipes))
+                Some(completed.discovery_recipes.clone())
             }
             _ => None,
         };
         let node = RecordedNode { step, root_posture };
-        let returned = node.step.clone();
         Ok(PreparedBinding {
             discovery_recipes,
+            returned: node.step.clone(),
             node,
             source: retained.unwrap_or_else(|| selected.retain_application_read()),
             endpoint,
             exact,
-            returned,
         })
     }
 }

@@ -1,0 +1,354 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_relational::facade::identity::{EntityId, KindId, PartitionId, VersionId};
+
+use super::{denial, observed_text, observed_u64};
+pub mod aspect_presence;
+pub mod traversal;
+use crate::domain_computation::primary_graph::application_attempt::{
+    observation::{observe_field, WorthQueryApplicationFieldObservation},
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationObservedFact,
+};
+use crate::domain_computation::primary_graph::workflow::evidence_dependency::{
+    decode_direction, WorkflowEvidenceDependencyKind,
+};
+use crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout;
+
+pub fn observe_evidence_dependencies(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    evidence: EntityId,
+    observation_request: &WorthQueryRequestScope,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<Vec<WorthQueryApplicationObservedFact>, WorthQueryApplicationAttemptDenial> {
+    check_request_live(observation_request, "workflow evidence dependency relation")?;
+    let (dependencies, adjacency) = traversal::observe(
+        execution,
+        runtime,
+        snapshot,
+        layout,
+        evidence,
+        observation_request,
+    )?;
+    facts.push(adjacency);
+    let mut observed = Vec::new();
+    for dependency in dependencies {
+        check_request_live(observation_request, "workflow evidence dependency")?;
+        observed.push(observe_dependency(
+            execution, runtime, snapshot, layout, dependency, facts,
+        )?);
+        check_request_live(observation_request, "workflow evidence dependency")?;
+    }
+    Ok(observed)
+}
+
+pub fn observe_dependency(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryWorkflowLayout,
+    dependency: EntityId,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<WorthQueryApplicationObservedFact, WorthQueryApplicationAttemptDenial> {
+    let kind = layout.evidence_dependency.entity_kind;
+    facts.push(WorthQueryApplicationObservedFact::Entity {
+        entity_id: dependency,
+        kind,
+    });
+    let fact_kind = observed_text(
+        execution,
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.fact_kind,
+        facts,
+    )?;
+    let entity = EntityId::new(
+        PartitionId::new(narrow_u32(observed_u64(
+            execution,
+            runtime,
+            snapshot,
+            dependency,
+            kind,
+            &layout.evidence_dependency.entity_partition,
+            facts,
+        )?)?),
+        observed_u64(
+            execution,
+            runtime,
+            snapshot,
+            dependency,
+            kind,
+            &layout.evidence_dependency.entity_slot,
+            facts,
+        )?,
+        narrow_u32(observed_u64(
+            execution,
+            runtime,
+            snapshot,
+            dependency,
+            kind,
+            &layout.evidence_dependency.entity_generation,
+            facts,
+        )?)?,
+    );
+    let aspect = optional_text(
+        execution,
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.aspect,
+        facts,
+    )?;
+    let native_entity_kind = optional_u64(
+        execution,
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.native_entity_kind,
+        facts,
+    )?;
+    let field = optional_text(
+        execution,
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.field,
+        facts,
+    )?;
+    let field_presence = optional_text(
+        execution,
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.field_presence,
+        facts,
+    )?;
+    let relation_kind = optional_u64(
+        execution,
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.relation_kind,
+        facts,
+    )?;
+    let direction = optional_text(
+        execution,
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.direction,
+        facts,
+    )?;
+    let native_revision = optional_u64(
+        execution,
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.native_revision,
+        facts,
+    )?;
+    let comparison_work_limit = optional_u64(
+        execution,
+        runtime,
+        snapshot,
+        dependency,
+        kind,
+        &layout.evidence_dependency.comparison_work_limit,
+        facts,
+    )?;
+    match WorkflowEvidenceDependencyKind::decode(&fact_kind) {
+        Some(WorkflowEvidenceDependencyKind::Entity)
+            if native_entity_kind.is_none()
+                && aspect.is_none()
+                && field.is_none()
+                && field_presence.is_none()
+                && relation_kind.is_none()
+                && direction.is_none()
+                && native_revision.is_none()
+                && comparison_work_limit.is_none() =>
+        {
+            Ok(WorthQueryApplicationObservedFact::SourceEntity { entity_id: entity })
+        }
+        Some(WorkflowEvidenceDependencyKind::EntityKind)
+            if aspect.is_none()
+                && field.is_none()
+                && field_presence.is_none()
+                && relation_kind.is_none()
+                && direction.is_none()
+                && native_revision.is_none()
+                && comparison_work_limit.is_none() =>
+        {
+            let kind = native_entity_kind
+                .and_then(|value| u32::try_from(value).ok())
+                .map(KindId::new)
+                .ok_or_else(|| denial("workflow evidence dependency native kind is invalid"))?;
+            Ok(WorthQueryApplicationObservedFact::Entity {
+                entity_id: entity,
+                kind,
+            })
+        }
+        Some(
+            presence @ (WorkflowEvidenceDependencyKind::AspectPresent
+            | WorkflowEvidenceDependencyKind::AspectAbsent),
+        ) if field.is_none()
+            && field_presence.is_none()
+            && relation_kind.is_none()
+            && direction.is_none()
+            && native_revision.is_none()
+            && comparison_work_limit.is_none() =>
+        {
+            aspect_presence::decode(
+                entity,
+                aspect,
+                native_entity_kind,
+                matches!(presence, WorkflowEvidenceDependencyKind::AspectPresent),
+            )
+        }
+        Some(WorkflowEvidenceDependencyKind::AspectRevision)
+            if native_entity_kind.is_none()
+                && field.is_none()
+                && field_presence.is_none()
+                && relation_kind.is_none()
+                && direction.is_none()
+                && comparison_work_limit.is_none() =>
+        {
+            let aspect = aspect
+                .and_then(AspectKey::new)
+                .ok_or_else(|| denial("workflow evidence dependency aspect is invalid"))?;
+            Ok(WorthQueryApplicationObservedFact::SourceAspectRevision {
+                entity_id: entity,
+                aspect,
+                native_revision,
+            })
+        }
+        Some(WorkflowEvidenceDependencyKind::FieldRevision)
+            if native_entity_kind.is_none()
+                && relation_kind.is_none()
+                && direction.is_none()
+                && comparison_work_limit.is_none() =>
+        {
+            decode_field_revision_fact(entity, aspect, field, native_revision, field_presence)
+        }
+        Some(WorkflowEvidenceDependencyKind::AdjacencyRevision)
+            if native_entity_kind.is_none()
+                && aspect.is_none()
+                && field.is_none()
+                && field_presence.is_none() =>
+        {
+            let relation_kind = relation_kind
+                .and_then(|value| u32::try_from(value).ok())
+                .map(KindId::new)
+                .ok_or_else(|| denial("workflow evidence dependency relation kind is invalid"))?;
+            let direction = direction
+                .as_deref()
+                .and_then(decode_direction)
+                .ok_or_else(|| denial("workflow evidence dependency direction is invalid"))?;
+            let comparison_work_limit = comparison_work_limit
+                .and_then(|value| usize::try_from(value).ok())
+                .ok_or_else(|| denial("workflow evidence dependency work limit is invalid"))?;
+            Ok(WorthQueryApplicationObservedFact::SourceAdjacencyRevision {
+                relation_kind,
+                anchor: entity,
+                direction,
+                native_revision: native_revision.map(VersionId),
+                comparison_work_limit,
+                endpoints: crate::domain_computation::primary_graph::WorthQueryApplicationSourceAdjacencyEndpoints::empty(),
+            })
+        }
+        _ => Err(denial("workflow evidence dependency shape is invalid")),
+    }
+}
+
+pub mod field_revision;
+pub use field_revision::decode_field_revision_fact;
+
+fn optional_text(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    entity: EntityId,
+    kind: KindId,
+    locator: &worth_foundational::facade::AspectFieldLocator,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<Option<String>, WorthQueryApplicationAttemptDenial> {
+    match optional_value(execution, runtime, snapshot, entity, kind, locator, facts)? {
+        Some(value) => value
+            .raw_text()
+            .map(|text| Some(text.to_owned()))
+            .ok_or_else(|| denial("workflow evidence dependency field has the wrong type")),
+        None => Ok(None),
+    }
+}
+
+fn optional_u64(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    entity: EntityId,
+    kind: KindId,
+    locator: &worth_foundational::facade::AspectFieldLocator,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<Option<u64>, WorthQueryApplicationAttemptDenial> {
+    match optional_value(execution, runtime, snapshot, entity, kind, locator, facts)? {
+        Some(AspectValue::UInt64(value)) => Ok(Some(value)),
+        Some(_) => Err(denial(
+            "workflow evidence dependency field has the wrong type",
+        )),
+        None => Ok(None),
+    }
+}
+
+fn optional_value(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    entity: EntityId,
+    kind: KindId,
+    locator: &worth_foundational::facade::AspectFieldLocator,
+    facts: &mut Vec<WorthQueryApplicationObservedFact>,
+) -> Result<Option<AspectValue>, WorthQueryApplicationAttemptDenial> {
+    match observe_field(runtime, execution, snapshot, entity, kind, locator)?
+        .ok_or_else(|| denial("workflow evidence dependency field is unavailable"))?
+    {
+        WorthQueryApplicationFieldObservation::Present(value) => {
+            facts.push(WorthQueryApplicationObservedFact::Field {
+                entity_id: entity,
+                kind,
+                locator: locator.clone(),
+                value: value.clone(),
+            });
+            Ok(Some(value))
+        }
+        WorthQueryApplicationFieldObservation::UnsupportedAspectShape => Err(denial(
+            "workflow evidence dependency aspect has the wrong shape",
+        )),
+        WorthQueryApplicationFieldObservation::AspectAbsent => {
+            Err(denial("workflow evidence dependency aspect is absent"))
+        }
+        WorthQueryApplicationFieldObservation::Absent => {
+            facts.push(WorthQueryApplicationObservedFact::AbsentField {
+                entity_id: entity,
+                kind,
+                locator: locator.clone(),
+            });
+            Ok(None)
+        }
+    }
+}
+
+fn narrow_u32(value: u64) -> Result<u32, WorthQueryApplicationAttemptDenial> {
+    u32::try_from(value)
+        .map_err(|_| denial("workflow evidence dependency entity coordinate is invalid"))
+}

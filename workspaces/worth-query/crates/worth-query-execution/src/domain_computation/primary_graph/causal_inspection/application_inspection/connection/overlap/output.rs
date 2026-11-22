@@ -1,5 +1,6 @@
 //! Classify only admitted output candidates while preserving the exact join.
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 use worth_relational::facade::{
     publication::PublishedAuthoritativeFieldEffect as FieldEffect, runtime::RelationalFieldPresence,
 };
@@ -21,7 +22,7 @@ impl ObservationConnection<'_, '_> {
             if posture == WorthQueryApplicationOutputPosture::Retire {
                 continue;
             }
-            for row in self.original.source.original_row_footprints() {
+            for row in self.original.source().original_row_footprints() {
                 for field in &row.aspects {
                     checkpoint(context, 1).map_err(MapKernelFailure::Stop)?;
                     // Never describe a field outside the freshly admitted diagnostic mask.

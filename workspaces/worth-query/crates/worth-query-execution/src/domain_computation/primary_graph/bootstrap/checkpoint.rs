@@ -15,56 +15,54 @@ use super::super::{
 use super::super::{WorthQueryApplicationInvariantFactories, WorthQueryPrimaryGraphBootstrap};
 use super::WorthQueryPrimaryGraphPublication;
 
-impl DecodedApplicationCheckpoint {
-    pub(super) fn recover_publication(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        graph: &super::prepared_native::PreparedNativeGraph,
-    ) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryPrimaryGraphInstallationDenial> {
-        let envelope = graph.with_runtime(execution, |runtime| {
-            runtime
-                .replay()
-                .canonical_commit_envelope(execution, self.bootstrap_commit_id)
-        });
-        let envelope = envelope
-            .map_err(super::request_read_denial::read)?
-            .ok_or_else(|| checkpoint_denial("checkpoint omitted its claimed bootstrap commit"))?;
-        if envelope.branch_context != super::super::primary_relational_branch_id()
-            || envelope.authority_kind() != CanonicalCommitAuthorityKind::VersionedTransaction
-        {
-            return Err(checkpoint_denial(
-                "checkpoint bootstrap commit has incompatible authority",
-            ));
-        }
-        let (principal_binding_count, policy_entity_count, policy_relation_count) =
-            publication_row_counts(graph, &envelope.merged_plan.merged_intents)?;
-        let principal_index_ids = graph
-            .layout
-            .principal_bindings()
-            .map(|(_, binding)| binding.index_id)
-            .collect::<std::collections::BTreeSet<_>>();
-        let equality_index_ids = graph
-            .layout
-            .equality_index_ids()
-            .collect::<std::collections::BTreeSet<_>>();
-        verify_bootstrap_indexes(
-            execution,
-            graph,
-            principal_index_ids
-                .iter()
-                .chain(equality_index_ids.iter())
-                .copied(),
-        )?;
-        Ok(WorthQueryPrimaryGraphPublication {
-            binding_identity: graph.binding_identity().clone(),
-            principal_binding_count,
-            identity_index_count: principal_index_ids.len(),
-            application_equality_index_count: equality_index_ids.len(),
-            policy_entity_count,
-            policy_relation_count,
-            bootstrap_commit_id: self.bootstrap_commit_id,
-        })
+pub(super) fn recover_publication(
+    checkpoint: &DecodedApplicationCheckpoint,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &super::prepared_native::PreparedNativeGraph,
+) -> Result<WorthQueryPrimaryGraphPublication, WorthQueryPrimaryGraphInstallationDenial> {
+    let envelope = graph.with_runtime(execution, |runtime| {
+        runtime
+            .replay()
+            .canonical_commit_envelope(execution, checkpoint.bootstrap_commit_id)
+    });
+    let envelope = envelope
+        .map_err(super::request_read_denial::read)?
+        .ok_or_else(|| checkpoint_denial("checkpoint omitted its claimed bootstrap commit"))?;
+    if envelope.branch_context != super::super::primary_relational_branch_id()
+        || envelope.authority_kind() != CanonicalCommitAuthorityKind::VersionedTransaction
+    {
+        return Err(checkpoint_denial(
+            "checkpoint bootstrap commit has incompatible authority",
+        ));
     }
+    let (principal_binding_count, policy_entity_count, policy_relation_count) =
+        publication_row_counts(graph, &envelope.merged_plan.merged_intents)?;
+    let principal_index_ids = graph
+        .layout
+        .principal_bindings()
+        .map(|(_, binding)| binding.index_id)
+        .collect::<std::collections::BTreeSet<_>>();
+    let equality_index_ids = graph
+        .layout
+        .equality_index_ids()
+        .collect::<std::collections::BTreeSet<_>>();
+    verify_bootstrap_indexes(
+        execution,
+        graph,
+        principal_index_ids
+            .iter()
+            .chain(equality_index_ids.iter())
+            .copied(),
+    )?;
+    Ok(<WorthQueryPrimaryGraphPublication as worth_query_execution_lineage::facade::ports::PrimaryGraphPublicationInternalPort>::from_parts(
+        graph.binding_identity().clone(),
+        principal_binding_count,
+        principal_index_ids.len(),
+        equality_index_ids.len(),
+        policy_entity_count,
+        policy_relation_count,
+        checkpoint.bootstrap_commit_id,
+    ))
 }
 
 fn publication_row_counts(

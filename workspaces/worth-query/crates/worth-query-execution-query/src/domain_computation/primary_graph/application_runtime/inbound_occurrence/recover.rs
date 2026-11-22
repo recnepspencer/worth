@@ -1,0 +1,340 @@
+//! Owner-only continuation of accepted completion and exact World recovery.
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
+use crate::domain_computation::execution_runtime::product_world::ProductPublicationBindingPrimaryExt;
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use std::sync::{Arc, Mutex};
+
+use worth_foundational::facade::CanonicalDigestId;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_installation::facade::ApplicationSchema;
+
+use super::super::{
+    WorthQueryPerformedInboundCompletion, WorthQueryPrimaryGraphApplicationRuntime,
+};
+use super::receive::{
+    WorthQueryInboundAdmissionDenial as Denial, WorthQueryInboundReceiptPosture as Posture,
+};
+use crate::domain_computation::application_aftermath::{
+    ExternalEffectCorrelationIdentity, WorthQueryAcceptedInboundOccurrence,
+    WorthQueryInboundCustody, WorthQueryInboundPublicationClaim,
+    WorthQueryInboundRecoveryState as State, WorthQueryInboundTerminalOwnerResult,
+};
+use crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt;
+use crate::domain_computation::WorthQueryProductUnpublishedApplication;
+
+mod custody_cleanup;
+mod progression;
+
+struct RecoveryGuard<'a> {
+    custody: &'a Mutex<WorthQueryInboundCustody>,
+    accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
+    state: Option<State>,
+}
+
+impl RecoveryGuard<'_> {
+    fn finish_recorded(self, completion: worth_runtime_world::facade::CompositeCommitIdentity) {
+        assert!(self.state.is_none());
+        self.custody
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .finish_recorded_completion_recovery(&self.accepted, completion);
+    }
+    fn retain(&mut self, state: State) {
+        self.state = Some(state);
+    }
+
+    fn finish(self, terminal: Option<Arc<WorthQueryInboundTerminalOwnerResult>>) {
+        assert!(self.state.is_none());
+        self.custody
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .finish_unpublished_recovery(&self.accepted, terminal);
+    }
+}
+
+impl Drop for RecoveryGuard<'_> {
+    fn drop(&mut self) {
+        if let Some(state) = self.state.take() {
+            self.custody
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner())
+                .restore_unpublished_recovery(&self.accepted, state);
+        }
+    }
+}
+
+enum RecoveryStep {
+    RecordedTerminal(worth_runtime_world::facade::CompositeCommitIdentity),
+    Retain(State, Result<Posture, Denial>),
+    Terminal(Arc<WorthQueryInboundTerminalOwnerResult>),
+    StaleReleased,
+}
+
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Revisit only evidence already admitted by this owner. Raw correlation
+    /// selection stays inside the custodian; source retries enter through the
+    /// installed verifier with the exact signed envelope.
+    pub fn progress_retained_inbound_occurrence(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
+        correlation_token: [u8; 32],
+        request: &WorthQueryRequestScope,
+    ) -> Result<Posture, Denial> {
+        let correlation = ExternalEffectCorrelationIdentity::from_digest(CanonicalDigestId::new(
+            correlation_token,
+        ));
+        let accepted = self
+            .runtime
+            .inbound_custody
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .accepted_by_correlation(&correlation)
+            .ok_or(Denial::UnknownCorrelation)?;
+        let claim = self
+            .runtime
+            .inbound_custody
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .claim_retryable_publication(&accepted);
+        match claim {
+            WorthQueryInboundPublicationClaim::Claimed => {
+                self.progress_accepted_inbound_occurrence(execution, phase, accepted, request)
+            }
+            WorthQueryInboundPublicationClaim::AtCapacity => Err(Denial::CapacityExhausted),
+            WorthQueryInboundPublicationClaim::Publishing => Err(Denial::PublicationInProgress),
+            WorthQueryInboundPublicationClaim::Gone => Err(Denial::RecoveryUnavailable),
+            WorthQueryInboundPublicationClaim::Terminal => {
+                self.release_retained_inbound_terminal(execution, &accepted)?;
+                Ok(Posture::Performed)
+            }
+            WorthQueryInboundPublicationClaim::Unpublished => {
+                self.progress_unpublished_inbound_occurrence(phase, accepted, request)
+            }
+        }
+    }
+
+    pub fn progress_unpublished_inbound_occurrence(
+        &self,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
+        accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
+        request: &WorthQueryRequestScope,
+    ) -> Result<Posture, Denial> {
+        let mut retirements = OwnerCleanupRetirements::default();
+        let execution = phase
+            .execution_request_for(&self.runtime.product_runtime)
+            .map_err(|cause| Denial::ExecutionDenied(cause.into()))?;
+        let state = self
+            .runtime
+            .inbound_custody
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .claim_unpublished_recovery(&accepted)
+            .map_err(|claim| match claim {
+                WorthQueryInboundPublicationClaim::AtCapacity => Denial::CapacityExhausted,
+                _ => Denial::PublicationInProgress,
+            })?;
+        let mut guard = RecoveryGuard {
+            custody: &self.runtime.inbound_custody,
+            accepted: Arc::clone(&accepted),
+            state: Some(state),
+        };
+        let incarnation = accepted
+            .owner()
+            .committed_product_publication()
+            .product_incarnation();
+        let lane = self
+            .runtime
+            .primary_provider
+            .application_branch_commit_lane_for_occurrence(incarnation);
+        let _coordination = lane.enter();
+        let state = guard
+            .state
+            .as_ref()
+            .expect("claimed recovery is retained")
+            .clone();
+        match self.continue_inbound_recovery_state(
+            &execution,
+            &accepted,
+            state,
+            request,
+            &mut retirements,
+        ) {
+            RecoveryStep::RecordedTerminal(completion) => {
+                guard.state.take();
+                guard.finish_recorded(completion);
+                Ok(Posture::AlreadyCompleted)
+            }
+            RecoveryStep::Retain(state, result) => {
+                guard.retain(state);
+                result
+            }
+            RecoveryStep::Terminal(terminal) => {
+                guard.state.take();
+                guard.finish(Some(terminal));
+                self.release_retained_inbound_terminal(&execution, &accepted)?;
+                Ok(Posture::Performed)
+            }
+            RecoveryStep::StaleReleased => {
+                guard.state.take();
+                self.runtime
+                    .primary_provider
+                    .clear_inbound_completion_publication_pending(
+                        accepted.owner().record().correlation(),
+                    );
+                guard.finish(None);
+                Err(Denial::RecoveryStaleProduct)
+            }
+        }
+    }
+
+    fn continue_active_inbound_recovery(
+        &self,
+        publication_execution: &worth_execution::ExecutionRequest<'_, '_>,
+
+        accepted: &Arc<WorthQueryAcceptedInboundOccurrence>,
+        recovery: crate::domain_computation::WorthQueryProductUnpublishedRecovery,
+        request: &WorthQueryRequestScope,
+        retirements: &mut OwnerCleanupRetirements,
+    ) -> RecoveryStep {
+        let publication_execution = *publication_execution;
+        // One load fences new adoption. A concurrent revoke may follow this
+        // admission point while this exact World attempt is already in flight.
+        if let Some(denial) = self.inbound_source_consumption_denial(accepted.operation()) {
+            return RecoveryStep::Retain(State::Active(recovery), Err(denial));
+        }
+        let needs_settlement = match recovery.inspect() {
+            Ok(unpublished) => unpublished.relational_requires_settlement(),
+            Err(_) => {
+                return RecoveryStep::Retain(
+                    State::Active(recovery),
+                    Err(Denial::RecoveryUnavailable),
+                )
+            }
+        };
+        if needs_settlement && recovery.continue_owner_settlement().is_err() {
+            return RecoveryStep::Retain(State::Active(recovery), Err(Denial::RecoveryUnavailable));
+        }
+        let unpublished = match recovery.inspect() {
+            Ok(unpublished) => unpublished,
+            Err(_) => {
+                return RecoveryStep::Retain(
+                    State::Active(recovery),
+                    Err(Denial::RecoveryUnavailable),
+                )
+            }
+        };
+        let incarnation = accepted
+            .owner()
+            .committed_product_publication()
+            .product_incarnation();
+        let lease = match self
+            .runtime
+            .product_runtime
+            .admit_product_occurrence(incarnation)
+        {
+            Ok(lease) => lease,
+            Err(_) => {
+                return RecoveryStep::Retain(
+                    State::Active(recovery),
+                    Err(Denial::RecoveryUnavailable),
+                )
+            }
+        };
+        let binding = lease.publication_binding();
+        if unpublished.expected_product() != binding.observation() {
+            drop(unpublished);
+            drop(lease);
+            drop(binding);
+            return self.finish_inbound_stale(&publication_execution, recovery, retirements);
+        }
+        let prepared = match binding.prepare_settled_relational_adoption(&unpublished, request) {
+            Ok(prepared) => prepared,
+            Err(PublicationDenial::ClockMismatch) => {
+                return RecoveryStep::Retain(
+                    State::Active(recovery),
+                    Err(Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
+                )
+            },
+Err(PublicationDenial::Stopped(stop)) => {
+                return RecoveryStep::Retain(
+                    State::Active(recovery),
+                    Err(Denial::ExecutionDenied(advancement_denial(stop))),
+                )
+            }
+            Err(PublicationDenial::Refused(_)) => {
+                return RecoveryStep::Retain(
+                    State::Active(recovery),
+                    Err(Denial::RecoveryUnavailable),
+                )
+            }
+        };
+        drop(unpublished);
+        let receipt = WorthQueryReservedProductPublicationReceipt::new(
+            binding.root_identity(),
+            prepared.unpublished_recovery_handle(),
+            false,
+            false,
+            false,
+        );
+        let outcome = prepared.execute(publication_execution);
+        let world_recovery = binding.recovery();
+        drop(lease);
+        drop(binding);
+        match outcome {
+            Ok(PublicationOutcome::Performed(publication)) => {
+                let performed = WorthQueryPerformedInboundCompletion::new(
+                    Arc::clone(accepted),
+                    incarnation,
+                    receipt.fill(publication.consume(), None),
+                );
+                let terminal = Arc::new(WorthQueryInboundTerminalOwnerResult::from_performed(
+                    performed,
+                ));
+                self.finish_inbound_published(
+                    &publication_execution,
+                    recovery,
+                    terminal,
+                    retirements,
+                )
+            }
+            Err(PublicationDenial::ClockMismatch) => RecoveryStep::Retain(
+                State::Active(recovery),
+                Err(Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock))),
+            ),
+Err(PublicationDenial::Stopped(stop)) => RecoveryStep::Retain(
+                State::Active(recovery),
+                Err(Denial::ExecutionDenied(advancement_denial(stop))),
+            ),
+            Err(PublicationDenial::Refused(_)) => {
+                RecoveryStep::Retain(State::Active(recovery), Err(Denial::RecoveryUnavailable))
+            }
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
+                let next = WorthQueryProductUnpublishedApplication::from_effects(
+                    effects,
+                    world_recovery,
+                    self.runtime
+                        .primary_provider
+                        .unpublished_idempotency_disposition(),
+                )
+                .into_recovery();
+                self.finish_inbound_handoff(&publication_execution, recovery, next, retirements)
+            }
+        }
+    }
+}
+
+mod court_doors_for_test;

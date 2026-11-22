@@ -1,0 +1,341 @@
+//! Named preflight checks for capability admission preparation.
+
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_declaration::facade::application_capability::{
+    ApplicationCapabilityRequest, ApplicationCapabilityRequestProjection,
+};
+use worth_query_declaration::facade::application_operation::ApplicationEncodedInput;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationOperationMarkerIdentity, ApplicationStructuredValueBinding,
+};
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_installation::facade::{
+    ApplicationSchema, WorthQueryInstalledApplicationCapability,
+    WorthQueryInstalledApplicationOperationGraphAuthority,
+};
+
+use super::{denial, CapabilityAdmissionInput};
+use crate::domain_computation::authorization::capability_elevation_projection::validate_elevation_projection;
+use crate::domain_computation::authorization::capability_registry::WorthQueryInstalledCapabilityPlan;
+use crate::domain_computation::authorization::graph_work_session::start_capability_graph_work;
+use crate::domain_computation::authorization::{
+    bridge_authorization_binding_identity, WorthQueryOperationAdmissionIdentity,
+    WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind,
+    WorthQueryRuntimeTimeSample,
+};
+use crate::domain_computation::primary_graph::{
+    WorthQueryApprovedElevation, WorthQueryAuthenticatedPrincipal,
+    WorthQueryPrimaryGraphApplicationRuntime,
+};
+use crate::domain_computation::provider_session::{
+    WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
+};
+
+pub fn validate_static_authority<
+    Schema,
+    Principal,
+    PrincipalIdentity,
+    Capability,
+    Operation,
+    Input,
+>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+) -> Result<(), WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+    Operation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+    <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
+    Input: 'static,
+{
+    if principal.is_expired() {
+        return Err(denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ExpiredAuthentication,
+            ),
+            principal.binding(),
+        ));
+    }
+    if principal.runtime_authority() != runtime.runtime.authority_identity() {
+        return Err(denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
+            capability.contract().name(),
+        ));
+    }
+    if principal.binding_identity() != capability.binding_identity()
+        || runtime.installed_schema.binding_identity() != *capability.binding_identity()
+    {
+        return Err(denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::StaleInstalledSchema,
+            ),
+            capability.contract().name(),
+        ));
+    }
+    runtime
+        .installed_schema
+        .validate_installed_capability(capability)
+        .map_err(|rejection| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleInstalledOperation,
+                ),
+                rejection.subject(),
+            )
+        })
+}
+
+pub fn admit_installed_plan<'a, Schema, Capability, Operation, Input>(
+    runtime: &'a WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+    approved: Option<&WorthQueryApprovedElevation>,
+) -> Result<&'a WorthQueryInstalledCapabilityPlan, WorthQueryOperationAuthorizationDenial> {
+    let installed = runtime
+        .runtime
+        .authorization
+        .capability_plan(capability)
+        .ok_or_else(|| policy_not_installed(capability))?;
+    validate_approved_applicability(installed, capability, approved)?;
+    let rules = installed.rules().iter().map(|rule| rule.bridge());
+    if !runtime
+        .runtime
+        .authorization
+        .bridge()
+        .matches_installed_policy(
+            installed.correspondence(),
+            &bridge_authorization_binding_identity(capability.binding_identity()),
+            installed.contract().name(),
+            &installed.request().resource_entity,
+            installed.contract().operation(),
+            rules,
+        )
+    {
+        return Err(policy_not_installed(capability));
+    }
+    Ok(installed)
+}
+
+pub fn project_request<Schema, Capability, Operation, Input>(
+    input: &Input,
+    installed: &WorthQueryInstalledCapabilityPlan,
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+    approved: Option<&WorthQueryApprovedElevation>,
+) -> Result<
+    ApplicationCapabilityRequestProjection<
+        Schema,
+        <Input as ApplicationCapabilityRequest<Schema, Capability>>::Scope,
+        <Input as ApplicationCapabilityRequest<Schema, Capability>>::Context,
+    >,
+    WorthQueryOperationAuthorizationDenial,
+>
+where
+    Schema: ApplicationSchema,
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+{
+    let projection = input.capability_request().map_err(|rejection| {
+        denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::CapabilityProjectionRejected,
+            ),
+            rejection.subject(),
+        )
+    })?;
+    validate_elevation_projection(installed.contract(), &projection)?;
+    require_approved_transition(installed, capability, approved)?;
+    Ok(projection)
+}
+
+/// The governed input with its operation input identity.
+///
+/// It is the identity the operation's input binding derives, so a mutation
+/// handler can compare it to the identity a retry key was bound to. An input
+/// the request already encoded keeps its identity; any other is encoded here,
+/// once. An input that cannot be encoded is refused as an invalid operation
+/// input: its drift could not be told apart, so no retry or redo could rely on
+/// it.
+pub fn govern_input<Schema, Capability, Operation, Input>(
+    input: CapabilityAdmissionInput<Operation::InputBinding>,
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+) -> Result<ApplicationEncodedInput<Operation::InputBinding>, WorthQueryOperationAuthorizationDenial>
+where
+    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+    Operation::InputBinding: ApplicationStructuredValueBinding<Value = Input>,
+    Input: ApplicationCapabilityRequest<Schema, Capability>,
+{
+    match input {
+        CapabilityAdmissionInput::Encoded(encoded) => Ok(encoded),
+        CapabilityAdmissionInput::Derive(input) => {
+            ApplicationEncodedInput::encode(input).map_err(|_| {
+                denial(
+                    WorthQueryOperationAuthorizationDenialKind::Refused(
+                        AuthorizationRefusal::InvalidOperationInput,
+                    ),
+                    capability.contract().name(),
+                )
+            })
+        }
+    }
+}
+
+pub fn validate_input<Schema, Operation, Input>(
+    input: &Input,
+    operation: &WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
+) -> Result<(), WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+    Operation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+    Operation::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
+{
+    <Operation::InputBinding as worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding>::validate(input)
+        .map_err(|_| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::InvalidOperationInput),
+                operation.operation(),
+            )
+        })
+}
+
+pub fn sample_trusted_time<Schema, Capability, Operation, Input>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+    installed: &WorthQueryInstalledCapabilityPlan,
+) -> Result<WorthQueryRuntimeTimeSample, WorthQueryOperationAuthorizationDenial> {
+    runtime
+        .runtime
+        .authorization_clock
+        .sample(installed.request().timeline)
+        .map_err(|_| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::TrustedTimeUnavailable,
+                ),
+                capability.contract().name(),
+            )
+        })
+}
+
+pub fn resolve_installed_operation<Schema, Capability, Operation, Input>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+) -> Result<
+    WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
+    WorthQueryOperationAuthorizationDenial,
+>
+where
+    Schema: ApplicationSchema,
+    Operation:
+        worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<
+                Schema,
+            > + 'static,
+    <Operation as worth_query_declaration::facade::application_schema::ApplicationOperationMarkerIdentity<Schema>>::InputBinding:
+        worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding<
+            Value = Input,
+        >,
+    Input: 'static,
+{
+    runtime
+        .installed_schema
+        .installed_operation_for_capability(capability)
+        .map_err(|_| {
+            denial(
+                WorthQueryOperationAuthorizationDenialKind::Refused(
+                    AuthorizationRefusal::StaleInstalledOperation,
+                ),
+                capability.contract().operation(),
+            )
+        })
+}
+
+pub fn mint_operation_admission<Schema, Capability, Operation, Input>(
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+) -> Result<WorthQueryOperationAdmissionIdentity, WorthQueryOperationAuthorizationDenial> {
+    WorthQueryOperationAdmissionIdentity::mint().ok_or_else(|| {
+        denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::AdmissionIdentityExhausted,
+            ),
+            capability.contract().operation(),
+        )
+    })
+}
+
+pub fn start_graph_work<Schema, Principal, PrincipalIdentity, Capability, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: crate::basis::WorthQueryProductBranchLease,
+    principal: &WorthQueryAuthenticatedPrincipal<Schema, Principal, PrincipalIdentity>,
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+    operation: &WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
+) -> Result<WorthQueryManagedGraphWorkSession, WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+{
+    start_capability_graph_work(
+        execution,
+        runtime,
+        product,
+        operation,
+        principal.principal_entity_id(),
+        WorthQueryGraphWorkAccessContextAffinity::installed_capability(
+            *capability.identity().bytes(),
+        ),
+    )
+}
+
+fn validate_approved_applicability<Schema, Capability, Operation, Input>(
+    installed: &WorthQueryInstalledCapabilityPlan,
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+    approved: Option<&WorthQueryApprovedElevation>,
+) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+    if installed.elevation().is_none() && approved.is_some() {
+        return Err(denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationNotApplicable,
+            ),
+            capability.contract().name(),
+        ));
+    }
+    Ok(())
+}
+
+fn require_approved_transition<Schema, Capability, Operation, Input>(
+    installed: &WorthQueryInstalledCapabilityPlan,
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+    approved: Option<&WorthQueryApprovedElevation>,
+) -> Result<(), WorthQueryOperationAuthorizationDenial> {
+    if installed.elevation().is_some() && approved.is_none() {
+        return Err(denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ElevationTransitionRequired,
+            ),
+            capability.contract().name(),
+        ));
+    }
+    Ok(())
+}
+
+fn policy_not_installed<Schema, Capability, Operation, Input>(
+    capability: &WorthQueryInstalledApplicationCapability<Schema, Capability, Operation, Input>,
+) -> WorthQueryOperationAuthorizationDenial {
+    denial(
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::PolicyNotInstalled,
+        ),
+        capability.contract().name(),
+    )
+}

@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::workflow::adoption::{
     WorkflowVocabularyCoverageRegistry, WorthQueryWorkflowDispositions,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
+use worth_query_execution_attempt::facade::ports::WorkflowDispositionsInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryProgramAdoptionRequirements, WorthQueryProgramAdoptionRequirementsDenial,
 };

@@ -16,6 +16,7 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryBinding, application_resource::ApplicationResourceBinding,
     application_schema::ApplicationSchema,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_installation::facade::WorthQueryResourceAccessPurpose;
 use worth_relational::facade::identity::EntityId;
 

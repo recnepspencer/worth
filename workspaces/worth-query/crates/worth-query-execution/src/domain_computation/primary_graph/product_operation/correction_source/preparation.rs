@@ -1,5 +1,10 @@
 //! Source material and exact target retained between inverse preparation and publication.
 use super::*;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod changed_fields;
 mod custody;
 mod directory_admission;
@@ -140,7 +145,7 @@ impl WorthQueryPreparedCorrectionSource {
             .cloned()
             .ok_or(Denial::MissingTargetParent)?;
         let execution = phase
-            .execution_request_for(&target.application().runtime.product_runtime)
+            .execution_request_for(target.application().inner.runtime.product_runtime_ref())
             .map_err(|_| Denial::ForeignPhase)?;
         let authored_identity = if lineage.role() == WorthQueryAftermathCausalRole::RecordedReverse
         {
@@ -200,7 +205,7 @@ impl WorthQueryPreparedCorrectionSource {
             lineage,
             target_program,
             required_root,
-            runtime: target.application().runtime.authority_identity(),
+            runtime: target.application().inner.runtime.authority_identity(),
             actor,
             scope: scope.subject(),
             action_input: *input.identity(),
@@ -353,6 +358,21 @@ impl WorthQueryPreparedCorrectionSource {
     }
     pub(crate) fn requires_root(&self, root: Option<PreparedOutputRootKind>) -> bool {
         self.required_root == root
+    }
+
+    pub(crate) fn matches_admission_basis(
+        &self,
+        runtime: WorthQueryRuntimeAuthorityIdentity,
+        principal: &crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        scope: &crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        target: Option<&WorthQueryProductBranchReadIdentity>,
+    ) -> bool {
+        self.runtime == runtime
+            && *principal
+                == crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.actor)
+            && *scope
+                == crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(self.scope)
+            && target.is_some_and(|identity| *identity == self.target)
     }
 
     pub(crate) fn matches_admission<Schema, Operation, Input, Scope>(

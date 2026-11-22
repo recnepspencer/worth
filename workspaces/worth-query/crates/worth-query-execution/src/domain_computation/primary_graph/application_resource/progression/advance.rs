@@ -1,5 +1,8 @@
 use super::super::{occurrence::ResourceLifecycle, value_capture};
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 
 fn finish_previous_provider<Schema, Binding>(
     execution: &ExecutionRequest<'_, '_>,
@@ -143,8 +146,9 @@ where
     let reading = installed.clock.observe().map_err(ResourceCause::Clock)?;
     execution.consult().map_err(ResourceCause::Request)?;
     let clock = runtime
+        .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional()
         .with_view(
             row.occurrence()
@@ -154,8 +158,9 @@ where
                 .signal_basis(),
             |bridge| {
                 runtime
+                    .inner
                     .runtime
-                    .product_runtime
+                    .product_runtime_ref()
                     .advance_owned_async_source_clock(
                         &bridge,
                         &installed.storage.nodes[index].declaration,
@@ -202,8 +207,9 @@ where
     };
     if owner.wake_cleanup_pending() {
         runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -218,8 +224,9 @@ where
     }
     if occurrence.timeout.is_none() && occurrence.retry.is_none() {
         let timeout = runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -251,8 +258,9 @@ where
             .as_ref()
             .ok_or(ResourceCause::Unavailable)?;
         let scheduled = runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -268,8 +276,9 @@ where
     }
     let before = owner.request_handle();
     let result = runtime
+        .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional()
         .with_view(
             occurrence
@@ -322,13 +331,15 @@ where
     };
     let before = owner.request_handle();
     let result = runtime
+        .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional()
         .with_view(selected.observation().basis().signal_basis(), |bridge| {
             runtime
+                .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .revalidate_custodied_owned_async_request(&bridge, owner, selected)
         })
         .map_err(ResourceCause::Bridge)?;

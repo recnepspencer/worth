@@ -1,4 +1,5 @@
 use worth_foundational::facade::CanonicalDigestDerivationDenial;
+use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort;
 use worth_query_installation::facade::{
     WorthQueryCanonicalWorkEvidence, WorthQueryTemporalIntentCandidate,
 };
@@ -82,7 +83,7 @@ pub(super) fn prepare_temporal_idempotency<Clock, Input>(
     let (intent, intent_work) = intent.derive()?;
 
     Ok(WorthQueryPreparedTemporalIdempotency {
-        binding: WorthQueryApplicationIdempotencyBinding::new(*key.bytes(), *intent.bytes()),
+        binding: <WorthQueryApplicationIdempotencyBinding as IdempotencyBindingInternalPort>::from_identities(*key.bytes(), *intent.bytes()),
         canonical_work: key_work.combine(intent_work),
     })
 }

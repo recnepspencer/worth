@@ -1,0 +1,50 @@
+use worth_relational::facade::branch::{
+    AdmittedRelationalBranchBasis, RelationalBranchBasisDenial, RelationalBranchIdentity,
+    RelationalOwnerServicePorts,
+};
+use worth_runtime_bridge::facade::RuntimeBridgeRelationalSource;
+
+use super::WorthQueryRelationalSourceOwner;
+
+/// Owner-issued inputs for composing the existing graph into a product World.
+/// The services, admitted basis, and Bridge registry come from one source owner.
+#[doc(hidden)]
+pub struct WorthQueryProductRelationalInstallation {
+    pub(super) services: RelationalOwnerServicePorts,
+    pub(super) basis: AdmittedRelationalBranchBasis,
+    pub(super) source: RuntimeBridgeRelationalSource,
+}
+
+impl WorthQueryRelationalSourceOwner {
+    pub fn prepare_product_source_at_basis(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Result<WorthQueryProductRelationalInstallation, RelationalBranchBasisDenial> {
+        self.with_runtime(execution, |runtime| {
+            // Validate this source's actual observation. Never rebind Bridge's
+            // head: Home preflight owns that independently observable cutover.
+            let retained = runtime.retain_observation_snapshot(basis)?;
+            drop(retained);
+            Ok(WorthQueryProductRelationalInstallation {
+                services: runtime.owner_component_services(),
+                basis: basis.clone(),
+                source: self.source.clone(),
+            })
+        })
+    }
+    pub fn prepare_product_source(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        branch: &RelationalBranchIdentity,
+    ) -> Result<WorthQueryProductRelationalInstallation, RelationalBranchBasisDenial> {
+        self.with_runtime(execution, |runtime| {
+            let (_, basis) = runtime.observe_branch(branch)?;
+            Ok(WorthQueryProductRelationalInstallation {
+                services: runtime.owner_component_services(),
+                basis,
+                source: self.source.clone(),
+            })
+        })
+    }
+}

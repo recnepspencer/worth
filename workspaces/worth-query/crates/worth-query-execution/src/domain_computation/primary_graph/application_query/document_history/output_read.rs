@@ -12,6 +12,10 @@ use crate::domain_computation::primary_graph::{
     WorthQuerySelectedProductOperation,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding;
+use worth_query_execution_query::facade::ports::AdmittedApplicationQueryControlsInternalPort as _;
+use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 type Scope<S, B> =
     <<B as ApplicationQueryBinding<S>>::ScopeBinding as ApplicationQueryScopeBinding<S>>::Scope;
@@ -42,18 +46,19 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         B: ApplicationQueryBinding<S>,
     {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
-        let request = control.controls.request_scope();
+        let request = control.controls().request_scope();
         authority
             .validate(phase, self, request)
             .map_err(ReadDenial::Authority)?;
-        validate_execution_plan(self, control).map_err(control_denial)?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
+        validate_execution_plan(self.inner(), control).map_err(control_denial)?;
+        validate_execution_lifetimes(self.inner(), &control.controls(), control.principal())
             .map_err(control_denial)?;
-        let access = WorthQueryApplicationQueryAccessContext::new(control.principal, control.scope);
-        if control.query.identity() != binding.query().identity()
-            || control.security_product.observation() != authority.current().observation()
-            || control.basis.selected_product().observation() != authority.current().observation()
-            || !control.controls.is_current_product_one_shot()
+        let access =
+            WorthQueryApplicationQueryAccessContext::new(control.principal(), control.scope());
+        if control.query().identity() != binding.query().identity()
+            || control.security_product().observation() != authority.current().observation()
+            || control.basis().selected_product().observation() != authority.current().observation()
+            || !control.controls().is_current_product_one_shot()
             || !authority.matches_read_principal(&access)
         {
             return Err(ReadDenial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ForeignDocument));
@@ -72,7 +77,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         authority: &WorthQueryHistoryOutputAuthority<'_, '_>,
         binding: &'control WorthQueryInstalledApplicationQueryBinding<S, B>,
         external: &WorthQueryAuthenticatedExternalPrincipal<S>,
-        control: HistoryOutputControlPlan<'control, S, B>,
+        mut control: HistoryOutputControlPlan<'control, S, B>,
         retained: WorthQuerySelectedProductOperation<'control, S>,
     ) -> Result<
         WorthQueryApplicationOneShotResult<B::Query, BoundRows<S, B>>,
@@ -83,19 +88,20 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         BoundRows<S, B>: WorthQueryApplicationProjection<S, B::Query>,
     {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
-        let request = control.controls.request_scope();
         self.validate_history_output_control(phase, authority, binding, &control)?;
-        let access = WorthQueryApplicationQueryAccessContext::new(control.principal, control.scope);
-        let execution = phase.checked_execution_request_for(&self.runtime.product_runtime)
+        let readmission = control.take_governance_readmission();
+        let access =
+            WorthQueryApplicationQueryAccessContext::new(control.principal(), control.scope());
+        let execution = phase.checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(|cause| ReadDenial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         let producer = retained.original_settled_producer().cloned();
         let (_, product, basis) = retained.into_parts();
         let controls = WorthQueryApplicationQueryControls::retained_product_one_shot(
-            control.security_product.retained_clone(),
+            control.security_product().retained_clone(),
             product,
             basis,
-            control.controls.maximum_result_count(),
-            request,
+            control.controls().maximum_result_count(),
+            control.controls().request_scope(),
         )
         .with_original_settled_producer(producer);
         // The original C session remains alive during this transfer. D receives
@@ -106,20 +112,20 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 &execution,
                 binding.query(),
                 &access,
-                control.parameters,
+                control.parameters().clone(),
                 controls,
-                control.governance.into_readmission(),
+                readmission,
             )
             .map_err(ReadDenial::Admission)?;
         let result = self
             .execute_application_query_binding_one_shot(phase, binding, external, plan)
             .map_err(ReadDenial::Read)?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
+        validate_execution_lifetimes(self.inner(), control.controls(), control.principal())
             .map_err(control_denial)?;
         let result = authority
-            .confirm_read(phase, self, request, result)
+            .confirm_read(phase, self, control.controls().request_scope(), result)
             .map_err(ReadDenial::Authority)?;
-        validate_execution_lifetimes(self, &control.controls, control.principal)
+        validate_execution_lifetimes(self.inner(), control.controls(), control.principal())
             .map_err(control_denial)?;
         Ok(result)
     }

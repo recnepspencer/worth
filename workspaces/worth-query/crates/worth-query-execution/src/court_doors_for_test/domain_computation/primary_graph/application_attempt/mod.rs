@@ -33,3 +33,4 @@ pub mod workflow_instance_observation;
 pub mod workflow_instance_program;
 #[path = "workflow_transition_program/mod.rs"]
 pub mod workflow_transition_program;
+pub use worth_query_execution_lineage::facade::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::advancement::WorthQueryAdvancementDenialCommitExt;

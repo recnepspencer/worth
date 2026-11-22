@@ -3,7 +3,7 @@ use super::*;
 use std::collections::BTreeSet;
 use worth_query_installation::facade::WorthQueryInstalledPackageIndex;
 
-pub(super) fn validate(
+pub fn validate(
     declared: &BTreeMap<String, DeclaredConditionalBinding>,
     index: &WorthQueryInstalledPackageIndex,
     owner: &str,

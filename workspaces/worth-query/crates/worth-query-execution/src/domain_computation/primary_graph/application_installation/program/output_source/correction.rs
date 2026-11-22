@@ -10,6 +10,8 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
 where
@@ -59,9 +61,10 @@ where
     {
         if let Err(cause) = source.admit_receiver(
             self.runtime()
+                .inner
                 .runtime
-                .product_runtime
-                .owner
+                .product_runtime_ref()
+                .owner_ref()
                 .owner_identity(),
         ) {
             return WorthQueryApplicationCommitOutcome::Denied(cause);
@@ -106,9 +109,10 @@ where
     {
         if let Err(cause) = source.admit_receiver(
             self.runtime()
+                .inner
                 .runtime
-                .product_runtime
-                .owner
+                .product_runtime_ref()
+                .owner_ref()
                 .owner_identity(),
         ) {
             return Ok((

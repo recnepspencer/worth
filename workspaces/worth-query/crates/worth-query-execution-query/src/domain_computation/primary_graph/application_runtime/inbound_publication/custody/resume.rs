@@ -1,0 +1,280 @@
+//! Explicit retirement custody outlives all transport/custody continuation guards.
+use super::*;
+use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
+use crate::domain_computation::primary_graph::application_runtime::inbound_publication::recovered::RecordedCompletionContinuationAdvanceExt as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Continue one retained observation. A World-performed result stays in
+    /// custody until the exact World protection and provider seal both succeed.
+    pub fn resume_installed_transport_completion(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
+        correlation: &ExternalEffectCorrelationIdentity,
+        request: &WorthQueryRequestScope,
+    ) -> InstalledTransportResumeOutcome {
+        let mut retirements = OwnerCleanupRetirements::default();
+        use InstalledTransportPendingReason as Pending;
+        use InstalledTransportResumeOutcome as Resume;
+        enum Work {
+            Recorded(
+                Arc<InstalledTransportCompletion>,
+                super::super::recovered::RecordedCompletionContinuation,
+            ),
+            Publish(Arc<InstalledTransportCompletion>),
+            Recover(
+                Arc<InstalledTransportCompletion>,
+                WorthQueryProductUnpublishedRecovery,
+            ),
+            Seal,
+        }
+        let work = {
+            let mut custody = self
+                .runtime
+                .transport_completion_custody
+                .lock()
+                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let Some(entry) = custody.entries.get_mut(correlation) else {
+                return Resume::Pending(Pending::UnknownCompletion);
+            };
+            match &mut entry.state {
+                RetainedCompletion::Recorded(evidence, continuation) => {
+                    let work = Work::Recorded(Arc::clone(evidence), continuation.clone());
+                    entry.state = RetainedCompletion::Recovering;
+                    work
+                }
+                RetainedCompletion::Publishing | RetainedCompletion::Recovering => {
+                    return Resume::Pending(Pending::ConcurrentContinuation);
+                }
+                RetainedCompletion::Unpublished(evidence, recovery, prior) => {
+                    if let Some(release) = prior.take()
+                        && let Err(failed) =
+                            self.finish_recovery_release(execution, release, &mut retirements)
+                    {
+                        *prior = Some(failed);
+                        return Resume::Pending(Pending::ProductRecoveryRequired);
+                    }
+                    let evidence = Arc::clone(evidence);
+                    let recovery = recovery.clone();
+                    entry.state = RetainedCompletion::Recovering;
+                    Work::Recover(evidence, recovery)
+                }
+                RetainedCompletion::StaleRelease(evidence, release) => {
+                    let evidence = Arc::clone(evidence);
+                    match self.finish_recovery_release(execution, release.clone(), &mut retirements)
+                    {
+                        Ok(()) => {
+                            entry.state = RetainedCompletion::Ready(evidence);
+                            self.runtime
+                                .primary_provider
+                                .clear_inbound_completion_publication_pending(correlation);
+                            return Resume::Pending(Pending::RecoveryStaleProduct);
+                        }
+                        Err(next) => {
+                            entry.state = RetainedCompletion::StaleRelease(evidence, next);
+                            return Resume::Pending(Pending::ProductRecoveryRequired);
+                        }
+                    }
+                }
+                RetainedCompletion::Ready(evidence) => {
+                    let evidence = Arc::clone(evidence);
+                    entry.state = RetainedCompletion::Publishing;
+                    Work::Publish(evidence)
+                }
+                RetainedCompletion::PerformedPending(_, _) => Work::Seal,
+            }
+        };
+        match work {
+            Work::Recorded(evidence, mut continuation) => {
+                let progress = continuation.advance(self, execution, &mut retirements);
+                if matches!(
+                    progress,
+                    Ok(super::super::recovered::RecordedCompletionProgress::StaleReleased)
+                ) {
+                    self.runtime
+                        .transport_completion_custody
+                        .lock()
+                        .unwrap_or_else(|p| p.into_inner())
+                        .entries
+                        .get_mut(correlation)
+                        .expect("recorded recovery retains its slot")
+                        .state = RetainedCompletion::Ready(evidence);
+                    self.runtime
+                        .primary_provider
+                        .clear_inbound_completion_publication_pending(correlation);
+                    return Resume::Pending(Pending::RecoveryStaleProduct);
+                }
+                let completed = progress.ok().and_then(|progress| {
+                    let super::super::recovered::RecordedCompletionProgress::Completed(terminal) =
+                        progress
+                    else {
+                        unreachable!("stale release returned above")
+                    };
+                    let binding = self
+                        .admit_installed_transport_completion_binding(
+                            execution,
+                            evidence.committed(),
+                        )
+                        .ok()?;
+                    if !terminal.matches_transport_observation(&evidence, &binding) {
+                        return None;
+                    }
+                    self.runtime
+                        .primary_provider
+                        .release_recorded_terminal_dispatch_provenance(
+                            evidence.committed(),
+                            &terminal,
+                        )
+                        .ok()?;
+                    Some(terminal)
+                });
+                let mut custody = self
+                    .runtime
+                    .transport_completion_custody
+                    .lock()
+                    .unwrap_or_else(|p| p.into_inner());
+                if completed.is_some() {
+                    custody.finish(correlation);
+                    return Resume::Performed;
+                }
+                custody
+                    .entries
+                    .get_mut(correlation)
+                    .expect("recorded recovery retains its slot")
+                    .state = RetainedCompletion::Recorded(evidence, continuation);
+                return Resume::Pending(Pending::ProductRecoveryRequired);
+            }
+            Work::Publish(evidence) => {
+                let outcome = self
+                    .publish_installed_transport_completion(execution, phase, evidence, request);
+                let mut custody = self
+                    .runtime
+                    .transport_completion_custody
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                let entry = custody
+                    .entries
+                    .get_mut(correlation)
+                    .expect("publishing custody slot");
+                match outcome {
+                    InstalledTransportPublicationOutcome::AlreadyCompleted => {
+                        custody.finish(correlation);
+                        return Resume::Performed;
+                    }
+                    InstalledTransportPublicationOutcome::Performed(performed) => {
+                        entry.state = RetainedCompletion::PerformedPending(performed, None);
+                    }
+                    InstalledTransportPublicationOutcome::ProductUnpublished(unpublished) => {
+                        let (evidence, unpublished) = unpublished.into_parts();
+                        entry.state = RetainedCompletion::Unpublished(
+                            evidence,
+                            unpublished.into_recovery(),
+                            None,
+                        );
+                        return Resume::Pending(Pending::ProductRecoveryRequired);
+                    }
+                    InstalledTransportPublicationOutcome::Denied(evidence, denial) => {
+                        entry.state = RetainedCompletion::Ready(evidence);
+                        return Resume::Pending(denial.pending_reason());
+                    }
+                    InstalledTransportPublicationOutcome::NoEffect(evidence) => {
+                        entry.state = RetainedCompletion::Ready(evidence);
+                        return Resume::Pending(Pending::PublicationRetryRequired);
+                    }
+                }
+            }
+            Work::Recover(evidence, recovery) => {
+                let progress = self.continue_transport_recovery(
+                    phase,
+                    evidence.clone(),
+                    recovery,
+                    request,
+                    &mut retirements,
+                );
+                let mut custody = self
+                    .runtime
+                    .transport_completion_custody
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner());
+                let entry = custody
+                    .entries
+                    .get_mut(correlation)
+                    .expect("recovering custody slot");
+                match progress {
+                    RecoveryProgress::Pending(next, prior, reason) => {
+                        entry.state = RetainedCompletion::Unpublished(evidence, next, prior);
+                        return Resume::Pending(reason);
+                    }
+                    RecoveryProgress::Performed(performed, prior) => {
+                        entry.state = RetainedCompletion::PerformedPending(performed, prior);
+                    }
+                    RecoveryProgress::StaleReleased => {
+                        entry.state = RetainedCompletion::Ready(evidence);
+                        self.runtime
+                            .primary_provider
+                            .clear_inbound_completion_publication_pending(correlation);
+                        return Resume::Pending(Pending::RecoveryStaleProduct);
+                    }
+                    RecoveryProgress::StalePending(release) => {
+                        entry.state = RetainedCompletion::StaleRelease(evidence, release);
+                        return Resume::Pending(Pending::ProductRecoveryRequired);
+                    }
+                }
+            }
+            Work::Seal => {}
+        }
+        let mut custody = self
+            .runtime
+            .transport_completion_custody
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let entry = custody
+            .entries
+            .get_mut(correlation)
+            .expect("retained completion");
+        let (performed, prior) = match &mut entry.state {
+            RetainedCompletion::PerformedPending(performed, prior) => (performed, prior),
+            RetainedCompletion::Ready(_)
+            | RetainedCompletion::Recorded(_, _)
+            | RetainedCompletion::Publishing
+            | RetainedCompletion::Unpublished(_, _, _)
+            | RetainedCompletion::Recovering
+            | RetainedCompletion::StaleRelease(_, _) => {
+                return Resume::Pending(Pending::ConcurrentContinuation)
+            }
+        };
+        if let Some(release) = prior.take()
+            && let Err(failed) = self.finish_recovery_release(execution, release, &mut retirements)
+        {
+            *prior = Some(failed);
+            return Resume::Pending(Pending::ProductRecoveryRequired);
+        }
+        if !performed.settle_fresh_delivery() {
+            return Resume::Pending(Pending::TerminalReleaseUnavailable);
+        }
+        let identity = performed.publication().publication().commit().identity();
+        let protection = match self
+            .runtime
+            .product_runtime
+            .owner_ref()
+            .inspection_port()
+            .protect_performed_publication(identity)
+        {
+            Ok(protection) => protection,
+            Err(_) => return Resume::Pending(Pending::TerminalProtectionUnavailable),
+        };
+        if self
+            .runtime
+            .primary_provider
+            .release_installed_transport_dispatch_provenance(performed, protection)
+            .is_err()
+        {
+            return Resume::Pending(Pending::TerminalReleaseUnavailable);
+        }
+        custody.finish(correlation);
+        Resume::Performed
+    }
+}
+
+mod court_doors_for_test;

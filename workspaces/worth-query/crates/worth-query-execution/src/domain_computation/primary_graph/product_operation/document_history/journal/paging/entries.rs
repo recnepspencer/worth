@@ -1,6 +1,7 @@
 //! One ordinary node range or one parent's child range; no whole-tree filtering.
 use super::*;
 use std::collections::btree_map::Range;
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
 pub(super) enum Entries<'a> {
     All {
@@ -24,8 +25,8 @@ impl<'a> Entries<'a> {
             },
             Some(parent) => Self::Children {
                 range: source.children.range((
-                    Included((parent.ordinal, start)),
-                    Excluded((parent.ordinal, end.max(start))),
+                    Included((parent.ordinal(), start)),
+                    Excluded((parent.ordinal(), end.max(start))),
                 )),
                 nodes: source.nodes,
             },

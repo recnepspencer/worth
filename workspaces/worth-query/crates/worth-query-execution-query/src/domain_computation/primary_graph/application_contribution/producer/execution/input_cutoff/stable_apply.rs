@@ -1,0 +1,57 @@
+//! Stable publication occurs only when the canonical owner cursor applies it.
+use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+
+pub fn publish<Schema, Binding, OperationType, Input, Scope>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    observation: &worth_runtime_world::facade::ProductBranchObservation,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    operation: &WorthQueryAdmittedApplicationOperation<Schema, OperationType, Input, Scope>,
+    fresh: crate::domain_computation::primary_graph::application_query::BoundStableObservedSourceFacts,
+    verified: crate::domain_computation::primary_graph::output_lineage::VerifiedInputCutoff<'_>,
+    required_output: RequiredOutputDemandContext,
+) -> Result<PublishedStableLineage, ProducerExecutionStop>
+where
+    Schema: ApplicationSchema + 'static,
+    Binding: WorthQueryApplicationProducerBinding<Schema>,
+{
+    let scope = operation.operation_scope_binding();
+    let handle = &runtime.runtime.primary_provider.graph_ref();
+    let source_owner = &handle.source_owner_ref().invalidation_owner;
+    let lane = runtime
+        .runtime
+        .primary_provider
+        .application_branch_commit_lane(observation);
+
+    let coordination = lane.enter();
+    let address = prepare_stable_address::<Operation<Schema, Binding>>(
+        handle.output_lineage_ref(),
+        verified,
+        scope,
+        observation,
+        &coordination,
+        execution,
+    )?;
+    let publication = address.prepare_record(fresh, operation, execution)?;
+    // Registry preparation is outside both lineage and Product guards.
+    let mut prerequisites = required_output
+        .prepare_prerequisites(publication.consumed_outputs().iter(), source_owner)?;
+    prerequisites.record_durable_prerequisites(execution, handle.output_lineage_ref())?;
+    prerequisites.reserve_identity(publication.identity())?;
+    let registration = publication.prepare_current_registration(source_owner, prerequisites.work_membership())
+        .map_err(|stop| match stop {
+            crate::domain_computation::primary_graph::output_lineage::invalidation::SettlementRegistrationStop::Admission(stop) => cutoff_admission_denial(stop),
+            _ => denial(WorthQueryOutputDemandDenialKind::PublicationStale, "producer input cutoff source changed during preparation"),
+        })?;
+    let displaced = publication.displaced_settlement();
+    let published = publication.publish(&operation.retain_admitted_request(), operation.operation(), observation, &runtime.runtime.product_runtime.owner_ref().observation_port(), registration, execution).map_err(|stop| match stop {
+        crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::Demand(stop) => ProducerExecutionStop::ExecutionStopped(stop),
+        crate::domain_computation::primary_graph::output_lineage::StablePublicationStop::RequestAuthority(stop) => super::denial::request_authority_denied(Binding::IDENTITY, stop),
+    })?;
+    prerequisites
+        .publish(Arc::clone(published.exact_settlement()))
+        .retire(displaced, source_owner);
+    Ok(published)
+}

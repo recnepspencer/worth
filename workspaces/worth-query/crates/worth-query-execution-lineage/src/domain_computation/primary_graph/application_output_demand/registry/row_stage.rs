@@ -1,0 +1,85 @@
+//! Where a row stands, read without beginning it.
+
+use super::DemandRecord;
+use super::DemandState;
+use super::ReadyCompletion;
+use super::WorthQueryOutputAdvancement;
+use super::WorthQueryOutputCheckpoint;
+use super::WorthQueryOutputDemandInterest;
+use super::WorthQueryOutputDemandRegistry;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+
+/// The stage of a demand's row. Reading it claims nothing and moves nothing,
+/// so a demand can decide what it does before it begins the row.
+pub enum OutputRowStage {
+    /// Another call is scheduling, executing or advancing the row.
+    Driven,
+    Stopped(WorthQueryOutputDemandDenial),
+    Ready(ReadyCompletion),
+    /// A real committed output still owes delivery or readiness; no call holds it.
+    Published,
+    /// Original publication or its keyed receipt delivery still needs advancement.
+    PublicationPending,
+    /// Admitted or scheduled, with no committed output: no call holds it.
+    BeforeReady,
+}
+
+impl WorthQueryOutputDemandRegistry {
+    pub fn row_stage(&self, interest: &WorthQueryOutputDemandInterest) -> OutputRowStage {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let record = state
+            .records
+            .get(&interest.key)
+            .expect("live demand interest retains its owner record");
+        stage_of(record)
+    }
+
+    /// The required driver observes the stage under its original request meter.
+    pub fn row_stage_admitted(
+        &self,
+        interest: &WorthQueryOutputDemandInterest,
+    ) -> Result<OutputRowStage, WorthQueryOutputDemandDenial> {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+
+        let record = state
+            .records
+            .get(&interest.key)
+            .expect("live demand interest retains its owner record");
+        Ok(stage_of(record))
+    }
+}
+
+fn stage_of(record: &DemandRecord) -> OutputRowStage {
+    match &record.state {
+        DemandState::Admitted | DemandState::Scheduled => OutputRowStage::BeforeReady,
+        DemandState::Scheduling | DemandState::Running => OutputRowStage::Driven,
+        DemandState::Failed(denial) => OutputRowStage::Stopped(denial.clone()),
+        DemandState::Output(output) => match output.advancement() {
+            WorthQueryOutputAdvancement::Claimed(_) => OutputRowStage::Driven,
+            WorthQueryOutputAdvancement::Stopped { denial, .. } => {
+                OutputRowStage::Stopped(denial.clone())
+            }
+            WorthQueryOutputAdvancement::Idle => match &output.checkpoint {
+                Some(WorthQueryOutputCheckpoint::PublicationPending { .. }) => {
+                    OutputRowStage::PublicationPending
+                }
+                Some(WorthQueryOutputCheckpoint::Ready(completion)) => {
+                    OutputRowStage::Ready(completion.clone())
+                }
+                Some(
+                    WorthQueryOutputCheckpoint::Published { .. }
+                    | WorthQueryOutputCheckpoint::RecoveredPublished { .. }
+                    | WorthQueryOutputCheckpoint::Delivered { .. }
+                    | WorthQueryOutputCheckpoint::RecoveredDelivered { .. },
+                ) => OutputRowStage::Published,
+                None => OutputRowStage::BeforeReady,
+            },
+        },
+    }
+}

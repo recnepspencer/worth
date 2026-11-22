@@ -1,0 +1,201 @@
+use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkIntent;
+use worth_query_admission::integration::{
+    admit_application_operation_graph_work, admit_application_operation_read_graph_work,
+    select_installed_graph_obligations,
+};
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_installation::facade::{
+    ApplicationSchema, WorthQueryInstalledApplicationOperation,
+    WorthQueryInstalledApplicationOperationGraphAuthority,
+};
+use worth_relational::facade::identity::EntityId;
+
+use crate::domain_computation::primary_graph::{
+    application_resource_request, WorthQueryApplicationSnapshotLease,
+    WorthQueryApplicationSnapshotLeaseDenial, WorthQueryPrimaryGraphApplicationRuntime,
+};
+use crate::domain_computation::provider_session::{
+    WorthQueryGraphWorkAccessContextAffinity, WorthQueryManagedGraphWorkSession,
+};
+
+use super::{WorthQueryOperationAuthorizationDenial, WorthQueryOperationAuthorizationDenialKind};
+
+mod selected;
+pub use selected::{start_selected_operation_graph_work_admitted, SelectedOperationGraphWorkStop};
+
+pub fn start_operation_graph_work<Schema, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: crate::basis::WorthQueryProductBranchLease,
+    operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+    resource_binding_identity: &str,
+    principal: EntityId,
+    access: WorthQueryGraphWorkAccessContextAffinity,
+) -> Result<WorthQueryManagedGraphWorkSession, WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+{
+    let graph = runtime.runtime.primary_graph().ok_or_else(|| {
+        denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
+            operation.operation(),
+        )
+    })?;
+    let lease = WorthQueryApplicationSnapshotLease::acquire(
+        execution,
+        graph.integration_handle(),
+        graph.retain_layout(),
+        product,
+    )
+    .map_err(|denial| snapshot_lease_denial(denial, operation.operation()))?;
+    let intent =
+        WorthQueryGraphWorkIntent::application_operation(operation.graph_obligations().rows());
+    let obligations = operation.retain_graph_obligations_for_admission();
+    let obligation_identity = obligations.identity().clone();
+    let selected = select_installed_graph_obligations(obligations, intent)
+        .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))?;
+    let request = application_resource_request(operation.contracts())
+        .ok_or_else(|| graph_work_denial(operation.operation()))?;
+    let plan = admit_application_operation_graph_work(
+        selected,
+        resource_binding_identity,
+        &request,
+        runtime.graph_work_resource_support(),
+    )
+    .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))?;
+    WorthQueryManagedGraphWorkSession::start_mutation(
+        plan,
+        runtime.runtime.authority_identity(),
+        operation.binding_identity(),
+        &obligation_identity,
+        operation.authority_identity(),
+        principal,
+        access,
+        Box::new(lease),
+        runtime.graph_work_provider_identity(),
+    )
+    .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))
+}
+
+pub fn start_capability_graph_work<Schema, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    product: crate::basis::WorthQueryProductBranchLease,
+    operation: &WorthQueryInstalledApplicationOperationGraphAuthority<Schema, Operation, Input>,
+    principal: EntityId,
+    access: WorthQueryGraphWorkAccessContextAffinity,
+) -> Result<WorthQueryManagedGraphWorkSession, WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+{
+    let graph = runtime.runtime.primary_graph().ok_or_else(|| {
+        denial(
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::ForeignRuntime,
+            ),
+            operation.operation(),
+        )
+    })?;
+    let lease = WorthQueryApplicationSnapshotLease::acquire(
+        execution,
+        graph.integration_handle(),
+        graph.retain_layout(),
+        product,
+    )
+    .map_err(|denial| snapshot_lease_denial(denial, operation.operation()))?;
+    let intent =
+        WorthQueryGraphWorkIntent::application_operation(operation.graph_obligations().rows());
+    let obligations = operation.retain_graph_obligations_for_admission();
+    let obligation_identity = obligations.identity().clone();
+    let selected = select_installed_graph_obligations(obligations, intent)
+        .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))?;
+    let support = runtime.graph_work_resource_support();
+    let plan = admit_application_operation_read_graph_work(selected, &support)
+        .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))?;
+    WorthQueryManagedGraphWorkSession::start_mutation(
+        plan,
+        runtime.runtime.authority_identity(),
+        operation.binding_identity(),
+        &obligation_identity,
+        operation.authority_identity(),
+        principal,
+        access,
+        Box::new(lease),
+        runtime.graph_work_provider_identity(),
+    )
+    .map_err(|cause| graph_work_denial_with_cause(operation.operation(), cause))
+}
+
+pub fn start_capability_operation_graph_work<Schema, Operation, Input>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    operation: &WorthQueryInstalledApplicationOperation<Schema, Operation, Input>,
+    resource_binding_identity: &str,
+    resource: EntityId,
+    principal: EntityId,
+    installed_capability: [u8; 32],
+    product: crate::basis::WorthQueryProductBranchLease,
+) -> Result<WorthQueryManagedGraphWorkSession, WorthQueryOperationAuthorizationDenial>
+where
+    Schema: ApplicationSchema,
+{
+    start_operation_graph_work(
+        execution,
+        runtime,
+        product,
+        operation,
+        resource_binding_identity,
+        principal,
+        WorthQueryGraphWorkAccessContextAffinity::governed_entity(resource, installed_capability),
+    )
+}
+
+fn graph_work_denial(subject: impl Into<String>) -> WorthQueryOperationAuthorizationDenial {
+    denial(
+        WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::GraphWorkAdmissionUnavailable,
+        ),
+        subject,
+    )
+}
+
+fn graph_work_denial_with_cause(
+    subject: impl Into<String>,
+    cause: impl std::fmt::Debug,
+) -> WorthQueryOperationAuthorizationDenial {
+    graph_work_denial(format!("{}: {cause:?}", subject.into()))
+}
+
+fn snapshot_lease_denial(
+    lease_denial: WorthQueryApplicationSnapshotLeaseDenial,
+    subject: impl Into<String>,
+) -> WorthQueryOperationAuthorizationDenial {
+    let kind = match lease_denial {
+        WorthQueryApplicationSnapshotLeaseDenial::ActiveSnapshotCapacityExhausted {
+            maximum_active_snapshots,
+        } => WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::ActiveSnapshotCapacityExhausted {
+                maximum_active_snapshots,
+            },
+        ),
+        WorthQueryApplicationSnapshotLeaseDenial::SnapshotIdentityExhausted => {
+            WorthQueryOperationAuthorizationDenialKind::Refused(
+                AuthorizationRefusal::SnapshotIdentityExhausted,
+            )
+        }
+        _ => WorthQueryOperationAuthorizationDenialKind::Refused(
+            AuthorizationRefusal::GraphWorkAdmissionUnavailable,
+        ),
+    };
+    denial(kind, subject)
+}
+
+fn denial(
+    kind: WorthQueryOperationAuthorizationDenialKind,
+    subject: impl Into<String>,
+) -> WorthQueryOperationAuthorizationDenial {
+    WorthQueryOperationAuthorizationDenial::new(kind, subject)
+}

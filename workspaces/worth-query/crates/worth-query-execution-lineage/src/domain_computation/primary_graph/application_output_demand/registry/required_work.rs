@@ -1,0 +1,324 @@
+//! Exact required-work hints shared by the demand record and native marks.
+
+pub mod branch_selection;
+pub mod claim;
+pub use claim::RequiredWorkClaim;
+pub mod current_record;
+pub mod discontinuity;
+pub mod interest_readmission;
+pub mod native_hints;
+pub mod pending_readmission;
+pub mod queue;
+pub mod refresh_claim;
+pub mod requested_claim;
+pub mod selection;
+pub mod successor_join;
+
+pub use pending_readmission::PendingUpstream;
+pub use refresh_claim::RequiredRefreshRejection;
+pub use refresh_claim::SelectedRequiredRefreshClaim;
+pub use requested_claim::RequestedOutputReadClaims;
+pub use selection::SelectedReadyReadmission;
+
+pub use queue::RequiredWorkPop;
+pub use queue::RequiredWorkQueue;
+
+pub use discontinuity::DiscontinuityCursors;
+use native_hints::NativeBranch;
+pub use native_hints::NativeHint;
+
+use std::sync::Arc;
+use std::sync::Mutex;
+use std::sync::Weak;
+
+use worth_relational::facade::mvcc::CompanionPublicationCompletionObserver;
+
+use super::WorthQueryOutputDemandKey;
+use super::WorthQueryOutputDemandRegistry;
+use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceInvalidationOwner;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
+
+pub struct RequiredWorkMembership {
+    key: Arc<WorthQueryOutputDemandKey>,
+    queue: Weak<RequiredWorkQueue>,
+    pub state: Mutex<MembershipState>,
+}
+
+impl std::fmt::Debug for RequiredWorkMembership {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("RequiredWorkMembership")
+            .field("key", &self.key)
+            .finish_non_exhaustive()
+    }
+}
+
+#[derive(Default)]
+pub struct MembershipState {
+    active: bool,
+    queued: bool,
+    claimed: bool,
+    version: u64,
+    version_exhausted: bool,
+    marked: bool,
+    unresolved_initial: bool,
+    discontinuity_pending: bool,
+    native_hints: Option<Box<NativeHint>>,
+    local_settlement: Option<Arc<RecordedSettlementIdentity>>,
+    pub next: Option<Arc<RequiredWorkMembership>>,
+    current_basis:
+        Option<crate::domain_computation::primary_graph::application_contribution::CurrentBasis>,
+}
+
+pub struct SelectedRequiredWork {
+    pub membership: Arc<RequiredWorkMembership>,
+    pub version: u64,
+    // The registry pins the row that answers this occurrence after succession.
+    certification_membership: Arc<RequiredWorkMembership>,
+    kind: SelectedRequiredWorkKind,
+    armed: bool,
+}
+
+pub enum SelectedRequiredWorkKind {
+    Native {
+        observer: CompanionPublicationCompletionObserver,
+        branch: Arc<NativeBranch>,
+    },
+    Local {
+        #[cfg_attr(not(test), allow(dead_code))] // Tests read which cutover a selection carries.
+        settlement: Arc<RecordedSettlementIdentity>,
+    },
+    Discontinuity,
+    UnresolvedInitial,
+}
+
+pub struct ReplacedRequiredWorkHint {
+    _native: Option<Box<NativeHint>>,
+    _settlement: Option<Arc<RecordedSettlementIdentity>>,
+}
+
+impl RequiredWorkMembership {
+    pub fn new(key: Arc<WorthQueryOutputDemandKey>, queue: &Arc<RequiredWorkQueue>) -> Self {
+        Self {
+            key,
+            queue: Arc::downgrade(queue),
+            state: Mutex::new(MembershipState::default()),
+        }
+    }
+
+    pub fn key(&self) -> &WorthQueryOutputDemandKey {
+        &self.key
+    }
+
+    pub fn key_arc(&self) -> &Arc<WorthQueryOutputDemandKey> {
+        &self.key
+    }
+
+    pub fn set_required(self: &Arc<Self>, required: bool) {
+        let should_enqueue = {
+            let mut state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if required && !state.active && !state.marked {
+                state.unresolved_initial = true;
+                state.marked = true;
+                bump_version(&mut state);
+            }
+            state.active = required;
+            required && state.marked
+        };
+        if should_enqueue && let Some(queue) = self.queue.upgrade() {
+            queue.enqueue(self);
+        }
+    }
+
+    /// The native prepared effect owns this observer. Publish its hint before
+    /// testing active membership so a simultaneous activation cannot miss it.
+    pub fn prepare_hint(self: &Arc<Self>, mut hint: Box<NativeHint>) {
+        let active = {
+            let mut state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            bump_version(&mut state);
+            state.marked = true;
+            hint.next = state.native_hints.take();
+            state.native_hints = Some(hint);
+            state.active
+        };
+        if active && let Some(queue) = self.queue.upgrade() {
+            queue.enqueue(self);
+        }
+    }
+
+    pub fn mark_local_required(
+        self: &Arc<Self>,
+        settlement: Arc<RecordedSettlementIdentity>,
+    ) -> ReplacedRequiredWorkHint {
+        let (prior, active) = {
+            let mut state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            bump_version(&mut state);
+            state.marked = true;
+            let prior = ReplacedRequiredWorkHint {
+                _native: None,
+                _settlement: state.local_settlement.replace(settlement),
+            };
+            (prior, state.active)
+        };
+        if active && let Some(queue) = self.queue.upgrade() {
+            queue.enqueue(self);
+        }
+        prior
+    }
+
+    pub fn mark_discontinuity(self: &Arc<Self>) {
+        let active = {
+            let mut state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            bump_version(&mut state);
+            state.discontinuity_pending = true;
+            state.marked = true;
+            state.active
+        };
+        if active && let Some(queue) = self.queue.upgrade() {
+            queue.enqueue(self);
+        }
+    }
+
+    pub fn acknowledge(
+        self: &Arc<Self>,
+        version: u64,
+        kind: &SelectedRequiredWorkKind,
+    ) -> Option<(ReplacedRequiredWorkHint, bool)> {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if state.version != version || state.version_exhausted {
+            return None;
+        }
+        let removed = match kind {
+            SelectedRequiredWorkKind::Native { .. } => {
+                let mut head = state
+                    .native_hints
+                    .take()
+                    .expect("selected native hint exists");
+                state.native_hints = head.next.take();
+                ReplacedRequiredWorkHint {
+                    _native: Some(head),
+                    _settlement: None,
+                }
+            }
+            SelectedRequiredWorkKind::Local { .. } => ReplacedRequiredWorkHint {
+                _native: None,
+                _settlement: state.local_settlement.take(),
+            },
+            SelectedRequiredWorkKind::Discontinuity => {
+                state.discontinuity_pending = false;
+                ReplacedRequiredWorkHint {
+                    _native: None,
+                    _settlement: None,
+                }
+            }
+            SelectedRequiredWorkKind::UnresolvedInitial => {
+                state.unresolved_initial = false;
+                ReplacedRequiredWorkHint {
+                    _native: None,
+                    _settlement: None,
+                }
+            }
+        };
+        Some((removed, finish_acknowledgement(&mut state)))
+    }
+}
+
+impl SelectedRequiredWork {
+    pub fn key(&self) -> &WorthQueryOutputDemandKey {
+        self.membership.key()
+    }
+
+    pub fn kind(&self) -> &SelectedRequiredWorkKind {
+        &self.kind
+    }
+
+    fn consume_selected_cause(mut self) -> Option<ReplacedRequiredWorkHint> {
+        let cleared = self.membership.acknowledge(self.version, &self.kind);
+        self.armed = cleared.as_ref().is_none_or(|(_, more)| *more);
+        cleared.map(|(removed, _)| removed)
+    }
+
+    /// An aborted native publication never moved the image. This door only
+    /// discards that void cause; it cannot acknowledge Current from a bool.
+    pub fn discard_aborted_native(
+        self,
+    ) -> Result<Option<ReplacedRequiredWorkHint>, WorthQueryOutputDemandDenial> {
+        if !matches!(&self.kind, SelectedRequiredWorkKind::Native { observer, .. }
+            if observer.state() == worth_relational::facade::mvcc::CompanionPublicationCompletion::Aborted)
+        {
+            return Err(WorthQueryOutputDemandDenial::new(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                "only an aborted native publication is void",
+            ));
+        }
+
+        Ok(self.consume_selected_cause())
+    }
+}
+
+/// A popped member may be requeued and selected again before this
+/// acknowledgement. Retire the selected version so that second selection
+/// cannot consume the next independent cause. Returns whether causes remain.
+fn finish_acknowledgement(state: &mut MembershipState) -> bool {
+    bump_version(state);
+    state.marked = state.native_hints.is_some()
+        || state.local_settlement.is_some()
+        || state.discontinuity_pending
+        || state.unresolved_initial;
+    state.marked
+}
+
+fn bump_version(state: &mut MembershipState) {
+    if let Some(next) = state.version.checked_add(1) {
+        state.version = next;
+    } else {
+        state.version_exhausted = true;
+    }
+}
+
+impl Drop for SelectedRequiredWork {
+    fn drop(&mut self) {
+        if self.armed
+            && let Some(queue) = self.membership.queue.upgrade()
+        {
+            queue.enqueue(&self.membership);
+        }
+    }
+}
+
+impl super::DemandRegistryState {
+    pub fn fixture_page_required_discontinuity(
+        &mut self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+        branch: &worth_relational::facade::history::BranchId,
+        epoch: worth_relational::facade::history::CommitId,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        self.page_required_discontinuity(occurrence, branch, epoch)
+            .map(|_| ())
+    }
+}
+
+pub mod proof_fixture;
+
+mod court_doors_for_test;
+
+pub mod subsumed;
+pub mod wave_admission;
+pub use wave_admission::{AdmittedRequiredWave, PreparedRequiredInputs};

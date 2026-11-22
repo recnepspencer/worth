@@ -5,8 +5,12 @@
 //! effect is prepared, so a handle onto a rostered peer program cannot commit
 //! on an occurrence that never activated it.
 
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
@@ -44,16 +48,17 @@ where
     Binding::Input: Clone + Send + Sync + 'static,
     Owner: WorthQueryProgramOwner<Schema> + ?Sized,
 {
-    let execution =
-        match phase.execution_request_for(&owner.owned_runtime().runtime.product_runtime) {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
-                    cause,
-                )
-                .into_commit_outcome()
-            }
-        };
+    let execution = match phase
+        .execution_request_for(owner.owned_runtime().inner.runtime.product_runtime_ref())
+    {
+        Ok(execution) => execution,
+        Err(cause) => {
+            return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
+                cause,
+            )
+            .into_commit_outcome()
+        }
+    };
     let binding = TypeId::of::<Binding>();
     if !owner.owns_action(binding.into_external()) {
         return WorthQueryApplicationCommitOutcome::Denied(program_required());

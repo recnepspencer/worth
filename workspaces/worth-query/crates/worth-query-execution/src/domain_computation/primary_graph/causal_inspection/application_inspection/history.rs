@@ -4,6 +4,7 @@ use crate::domain_computation::{
     authorization::application_disclosure::DiagnosticComparisonAdmission,
     primary_graph::application_output_demand::OriginalSettledProducerSource,
 };
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 use worth_runtime_bridge::facade::{
     BridgeConditionalCausalObservation, BridgeConditionalHistoryDetail,
 };
@@ -86,7 +87,7 @@ impl HistoryDetail {
 pub(super) fn original_native(
     original: &WorthQueryApplicationQueryObservation,
 ) -> Option<&BridgeConditionalCausalObservation> {
-    match original.source.original_settled_producer()?.source() {
+    match original.source().original_settled_producer()?.source() {
         OriginalSettledProducerSource::Committed { conditional, .. } => conditional.as_ref(),
         _ => None,
     }

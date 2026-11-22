@@ -59,15 +59,18 @@ disallowed-methods = [
 ignore-interior-mutability = [
   # DerivedSourceKey compares immutable relation, identity, root and direction; funding is excluded.
   "worth_query_execution::domain_computation::primary_graph::derived_source::key::DerivedSourceKey",
+  "worth_query_execution_lineage::domain_computation::primary_graph::derived_source::key::DerivedSourceKey",
   # Comparison reads only the immutable coordinate; the OnceLock retains funding.
   "worth_relational::graph_member::key::projected_storage::ProjectedMemberStorage",
   # Eq/Hash recognize the same installed allocation; its binding cache cannot change affinity.
   "worth_relational::validation::candidate_source::program::ManagedIndexSourceProgram",
   "bytes::Bytes",
   "worth_query_execution::domain_computation::primary_graph::structural_walk::key::StructuralWalkKey",
+  "worth_query_execution_lineage::domain_computation::primary_graph::structural_walk::key::StructuralWalkKey",
   # ordering_coordinates/Hash inspect fixed coordinates and meaning identity,
   # never retained footprint custody or its shared owner/ledger state.
   "worth_query_execution::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch",
+  "worth_query_execution_lineage::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceEpoch",
 ]
 
 # Operator-based pointer ordering is outside disallowed-methods coverage (owner ruling).

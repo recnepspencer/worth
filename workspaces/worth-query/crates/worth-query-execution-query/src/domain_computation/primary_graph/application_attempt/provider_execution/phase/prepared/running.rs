@@ -1,0 +1,253 @@
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_admission::facade::basis::basis_lifecycle;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ExecutionRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+use worth_query_installation::facade::ApplicationSchema;
+use worth_runtime_bridge::facade::{
+    BridgeDeliveryIntent, BridgeDiagnosticsTier, BridgeReplayMode, BridgeTruthViewSelector,
+    HistoricalEvaluationDeclaration, SnapshotReadPacket,
+};
+
+use crate::domain_computation::primary_graph::application_attempt::{
+    WorthQueryApplicationCommitDenialStage as DenialStage, WorthQueryApplicationCommitOutcome,
+};
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::provider_denial::{denied, denied_with_detail};
+use super::{LocalWorkflowSettlementPublication, WorthQueryPreparedApplicationCommit};
+use worth_query_execution_runtime::facade::ports::ApplicationOperationBindingInternalPort as _;
+use crate::domain_computation::primary_graph::{
+    WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
+};
+use crate::domain_computation::primary_graph::application_attempt::{
+    provider_binding::WorthQueryPreparedApplicationProviderAttempt,
+    snapshot_lease::WorthQueryApplicationSnapshotLease,
+    WorthQueryApplicationIdempotencyBinding,
+};
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::WorthQueryApplicationAttemptBasis;
+use crate::domain_computation::{
+    WorthQueryExecutionBoundOperationAuthority, WorthQueryManagedRunTerminalKind,
+    WorthQueryManagedTruthReadRequest,
+};
+
+pub mod completion_storage;
+pub mod progression;
+
+pub struct WorthQueryRunningApplicationCommit<
+    Schema,
+    Operation,
+    Input,
+    Scope,
+> {
+    completion_storage: completion_storage::ApplicationCommitCompletionStorage,
+    coupled_outputs: crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
+    admission: crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
+    lease: WorthQueryApplicationSnapshotLease,
+    provider_attempt: WorthQueryPreparedApplicationProviderAttempt,
+    outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+    workflow_settlement_publication: Option<LocalWorkflowSettlementPublication>,
+    authorization: crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
+    idempotency: WorthQueryApplicationIdempotencyBinding,
+    running: crate::domain_computation::WorthQueryRunningDirectRun,
+    mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
+    attempt_basis: WorthQueryApplicationAttemptBasis,
+    aftermath_causality: Option<
+        crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
+    >,
+}
+
+pub fn start_managed_application_commit<Schema, Operation, Input, Scope>(
+    phase: &WorthQueryAdvancementPhase<'_>,
+
+    application: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
+    prepared: WorthQueryPreparedApplicationCommit<Schema, Operation, Input, Scope>,
+) -> Result<
+    WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
+    WorthQueryApplicationCommitOutcome,
+>
+where
+    Schema: ApplicationSchema,
+{
+    let application = application.runtime_inner();
+    let WorthQueryPreparedApplicationCommit {
+        coupled_outputs,
+        mut admission,
+        lease,
+        provider_attempt,
+        outcome_identity,
+        workflow_settlement_publication,
+        effect_posture,
+        native_reference_invariants,
+        authorization,
+        idempotency,
+        aftermath_causality,
+    } = prepared;
+    let idempotency = *idempotency;
+    let snapshot = lease.snapshot();
+    let execution = phase
+        .execution_request_for(&application.runtime.product_runtime)
+        .map_err(|foreign| {
+            crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(foreign)
+                .into_commit_outcome()
+        })?;
+    let completion_storage =
+        completion_storage::ApplicationCommitCompletionStorage::prepare(&execution)?;
+    let attempt_basis = WorthQueryApplicationAttemptBasis::capture(
+        application,
+        &admission,
+        snapshot,
+        lease.product(),
+        execution.allocation_policy(),
+    )?;
+    let operation = bind_execution_operation(
+        application,
+        &admission,
+        &lease,
+        effect_posture,
+        &native_reference_invariants,
+        execution,
+    )?;
+    let reserved = admission
+        .graph_work_mut()
+        .take_operation_capacity()
+        .ok_or_else(|| denied(DenialStage::ResourceAdmission))?;
+    let attempt = application
+        .runtime
+        .execution()
+        .start_reserved_direct_resource_attempt(&operation, reserved)
+        .map_err(|_| denied(DenialStage::ResourceAdmission))?;
+    let read_request = WorthQueryManagedTruthReadRequest::for_product(
+        lease.product(),
+        SnapshotReadPacket::new(Vec::new()),
+    );
+    let request_bridge = application
+        .runtime
+        .bridge
+        .ordinary()
+        .fork_managed_request_lane();
+    let run_admission = application.runtime.execution().managed_run_admission(
+        &request_bridge,
+        application.runtime.product_runtime.source(),
+    );
+    let running = run_admission
+        .admit_direct(&operation, attempt, read_request, execution)
+        .map_err(|failure| {
+            let kind = failure.kind();
+            let detail = format!("{:?}: {}", kind, failure.detail());
+            failure.release();
+            match kind {
+                crate::domain_computation::WorthQueryManagedDirectRunAdmissionFailureKind::ReadExecution(cause) => WorthQueryApplicationCommitOutcome::Denied(crate::domain_computation::primary_graph::application_attempt::provider_compare_denial::provider_session_execution_denied(cause, DenialStage::ManagedRunAdmission, detail)),
+                _ => denied_with_detail(DenialStage::ManagedRunAdmission, detail),
+            }
+        })?
+        .start();
+    let Some(mutation_run) = admission.graph_work().bind_mutation_run(&running) else {
+        let _ = running
+            .terminal(WorthQueryManagedRunTerminalKind::Failed)
+            .cleanup();
+        return Err(denied(DenialStage::ManagedRunAdmission));
+    };
+    Ok(WorthQueryRunningApplicationCommit {
+        completion_storage,
+        coupled_outputs,
+        admission,
+        lease,
+        provider_attempt,
+        outcome_identity,
+        workflow_settlement_publication,
+        authorization,
+        idempotency,
+        running,
+        mutation_run,
+        attempt_basis,
+        aftermath_causality,
+    })
+}
+
+fn bind_execution_operation<Schema, Operation, Input, Scope>(
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    admission: &WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    lease: &WorthQueryApplicationSnapshotLease,
+    effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
+    native_reference_invariants: &worth_query_installation::facade::WorthQueryInvariantExecutionContract,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) -> Result<WorthQueryExecutionBoundOperationAuthority, WorthQueryApplicationCommitOutcome>
+where
+    Schema: ApplicationSchema,
+{
+    let snapshot = lease.snapshot();
+    application
+        .runtime
+        .primary_provider
+        .observe_managed_application_bridge_plan();
+    let branch = admission.graph_work().branch().truth().clone();
+    let bridge_snapshot = lease
+        .product()
+        .bridge_source_observation()
+        .snapshot_identity()
+        .clone();
+    application
+        .runtime
+        .bridge
+        .ordinary()
+        .plan_truth_view_packet(
+            HistoricalEvaluationDeclaration::new(
+                BridgeTruthViewSelector::branch_snapshot(branch, bridge_snapshot),
+                BridgeReplayMode::Disabled,
+                BridgeDiagnosticsTier::Standard,
+                BridgeDeliveryIntent::PrepareSignalEvaluation,
+            ),
+            SnapshotReadPacket::new(Vec::new()),
+            execution,
+        )
+        .map_err(|_| denied(DenialStage::BridgePlanning))?;
+    let basis = basis_lifecycle()
+        .branch_snapshot(
+            admission.graph_work_branch().0.clone(),
+            format!(
+                "relational-snapshot:{}:{}",
+                snapshot.snapshot_id().0,
+                snapshot.version_id().0
+            ),
+        )
+        .for_mutation_preparation()
+        .map_err(|_| denied(DenialStage::BasisAdmission))?
+        .admit()
+        .map_err(|_| denied(DenialStage::BasisAdmission))?;
+    WorthQueryExecutionBoundOperationAuthority::bind_application_parts(
+        application.runtime.execution(),
+        application.installed_schema.owner(),
+        admission.retain_installed_operation_fingerprint(),
+        admission.operation().into(),
+        admission.retain_resource_binding_identity(),
+        &basis,
+        admission.allowed_graph_contract(),
+        application.runtime.primary_graph_authority(),
+        application
+            .runtime
+            .primary_provider
+            .application_resource_support(),
+        admission.graph_work_session_identity(),
+        admission.graph_work_managed_run_identity(),
+        admission.admission_identity(),
+        admission.binding_identity(),
+        snapshot,
+        lease.product(),
+        effect_posture,
+        native_reference_invariants,
+    )
+    .map_err(|detail| denied_with_detail(DenialStage::InvariantExecution, detail))
+}
+
+pub mod court_doors_for_test;
+pub use completion_storage::WorthQueryManagedPhaseStorageForTest;
+#[cfg(test)]
+#[path = "running_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;

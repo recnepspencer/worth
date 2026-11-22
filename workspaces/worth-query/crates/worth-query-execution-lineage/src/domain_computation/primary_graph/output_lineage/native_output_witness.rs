@@ -1,0 +1,289 @@
+//! A performed output's native content authority, prepared before publication.
+
+use std::sync::Arc;
+use std::sync::OnceLock;
+
+use worth_foundational::facade::AspectKey;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::identity::KindId;
+use worth_relational::facade::identity::VersionId;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::RelationalRuntime;
+use worth_relational::facade::snapshots::SnapshotHandle;
+
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputCorrespondence;
+use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationOutputPosture;
+use crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout;
+
+use crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact as Fact;
+
+pub mod checkpoint;
+pub mod equality;
+pub mod fact_coverage;
+pub mod fact_projection;
+pub mod preparation;
+pub mod restored;
+pub mod retirement;
+use retirement::RetirementMetadata;
+
+#[derive(Debug)]
+pub struct RoleProbe {
+    role: String,
+    entity_name: String,
+    kind: KindId,
+    posture: WorthQueryApplicationOutputPosture,
+    retirement: Option<RetirementMetadata>,
+    entity: Option<EntityId>,
+    first_aspect: usize,
+    end_aspect: usize,
+}
+
+#[derive(Debug)]
+struct AspectProbe {
+    aspect: AspectKey,
+    // Outer None means the performed native basis has not filled this slot.
+    revision: Option<Option<u64>>,
+}
+
+/// Prepared role and aspect probes are constructed before the native commit.
+/// Their storage never authorizes a write.
+#[must_use = "the prepared output witness must be sealed or dropped"]
+pub struct PreparedNativeOutputWitness {
+    cell: Arc<OnceLock<SealedNativeOutputWitness>>,
+    roles: Vec<RoleProbe>,
+    aspects: Vec<AspectProbe>,
+}
+
+/// Equality of all installed aspect revisions plus native liveness/generation
+/// proves that the previously performed output has not changed. A revision
+/// change conservatively requests ordinary producer execution, even for ABA.
+pub struct SealedNativeOutputWitness {
+    roles: Vec<RoleProbe>,
+    aspects: Vec<AspectProbe>,
+    // Reconstructed historical expectations retain their own admitted storage.
+    _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+impl std::fmt::Debug for SealedNativeOutputWitness {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SealedNativeOutputWitness")
+            .field("roles", &self.roles)
+            .field("aspects", &self.aspects)
+            .finish()
+    }
+}
+
+/// A checked projection of the sealed performed roles into ordinary observed
+/// facts. It borrows the witness so the installed aspect list remains the only
+/// source of this output dependency footprint.
+pub struct PreparedNativeOutputFacts<'a> {
+    witness: &'a SealedNativeOutputWitness,
+    count: usize,
+    retained_payload_bytes: u64,
+}
+
+impl PreparedNativeOutputFacts<'_> {
+    pub fn count(&self) -> usize {
+        self.count
+    }
+
+    /// The caller has already reserved the complete flat Vec and Arc. No
+    /// additional allocation is possible except the admitted aspect clones.
+    pub fn append_into(self, facts: &mut Vec<Fact>) {
+        assert!(facts.capacity().saturating_sub(facts.len()) >= self.count);
+        for role in &self.witness.roles {
+            let entity_id = role.entity.expect("prepared witness role is filled");
+            facts.push(Fact::Entity {
+                entity_id,
+                kind: role.kind,
+            });
+            for aspect in &self.witness.aspects[role.first_aspect..role.end_aspect] {
+                facts.push(Fact::SourceAspectRevision {
+                    entity_id,
+                    aspect: aspect.aspect.clone(),
+                    native_revision: aspect.revision.expect("prepared aspect revision is filled"),
+                });
+            }
+        }
+    }
+}
+
+fn overflow() -> CompanionPreflightStop {
+    CompanionPreflightStop::PreparationMemoryCounterOverflow
+}
+
+impl PreparedNativeOutputWitness {
+    /// The committed correspondence supplies created IDs. All storage was
+    /// allocated by `prepare`; an unavailable native projection only makes
+    /// this optional reuse proof ineligible.
+    pub fn finish(
+        mut self,
+        correspondence: &WorthQueryApplicationOutputCorrespondence,
+        runtime: &RelationalRuntime,
+        committed: &SnapshotHandle,
+    ) -> Option<Arc<OnceLock<SealedNativeOutputWitness>>> {
+        let read = runtime.read_truth();
+        let actual = correspondence.native_witness_roles();
+        if actual.len() != self.roles.len() {
+            return None;
+        }
+        for (role, (name, posture, entity_name, entity)) in self.roles.iter_mut().zip(actual) {
+            if role.role != name || role.entity_name != entity_name || posture != role.posture {
+                return None;
+            }
+            // Optional reuse proof can decline a typed cold pin. It cannot
+            // demand storage or create a new read failure after publication.
+            let metadata = match read.pin_resident_entity_metadata(committed, entity) {
+                Ok(Some(metadata)) => metadata,
+                Ok(None) => return None,
+                Err(worth_relational::facade::runtime::RelationalEntityMetadataPinDenial::RegionNotResident(_)
+                    | worth_relational::facade::runtime::RelationalEntityMetadataPinDenial::SymbolsNotResident(_)) => return None,
+            };
+            if role.posture == WorthQueryApplicationOutputPosture::Retire {
+                let record = metadata.retirement()?;
+                let retired = retirement::RetirementMetadata {
+                    kind: record.kind_id(),
+                    created_at: record.created_at_version(),
+                    deleted_at: record.deleted_at_version(),
+                };
+                if retired.kind != role.kind || retired.deleted_at != committed.version_id() {
+                    return None;
+                }
+                role.retirement = Some(retired);
+            } else if metadata.live_kind() != Some(role.kind) {
+                return None;
+            }
+            role.entity = Some(entity);
+            for aspect in &mut self.aspects[role.first_aspect..role.end_aspect] {
+                aspect.revision = Some(metadata.aspect_version(&aspect.aspect)?);
+            }
+        }
+        let sealed = SealedNativeOutputWitness {
+            roles: self.roles,
+            aspects: self.aspects,
+            _memory: None,
+        };
+        self.cell.set(sealed).ok()?;
+        Some(self.cell)
+    }
+}
+
+impl SealedNativeOutputWitness {
+    /// Claim the actual role/aspect traversal and initialized name copies
+    /// before a stable alias materializes its observed-fact row. An unfilled
+    /// witness cannot be promoted into reusable output authority.
+    pub fn prepare_fact_projection(
+        &self,
+    ) -> Result<Option<PreparedNativeOutputFacts<'_>>, CompanionPreflightStop> {
+        let mut count = 0usize;
+        let mut payload = 0u64;
+        for role in &self.roles {
+            if role.entity.is_none() {
+                return Ok(None);
+            }
+            count = count
+                .checked_add(1)
+                .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
+            // Descriptive checkpoint facts cannot prove the original producer
+            // publication for a dead member. Keep the existing Fresh posture.
+            if role.posture == WorthQueryApplicationOutputPosture::Retire {
+                return Ok(None);
+            }
+            for aspect in &self.aspects[role.first_aspect..role.end_aspect] {
+                if aspect.revision.is_none() {
+                    return Ok(None);
+                }
+
+                payload = payload
+                    .checked_add(
+                        u64::try_from(aspect.aspect.owned_allocation_capacity_bytes()).map_err(
+                            |_| CompanionPreflightStop::PreparationMemoryCounterOverflow,
+                        )?,
+                    )
+                    .ok_or(CompanionPreflightStop::PreparationMemoryCounterOverflow)?;
+                count = count
+                    .checked_add(1)
+                    .ok_or(CompanionPreflightStop::WorkCounterOverflow)?;
+            }
+        }
+        Ok(Some(PreparedNativeOutputFacts {
+            witness: self,
+            count,
+            retained_payload_bytes: payload,
+        }))
+    }
+
+    /// A pending source may have changed authored fields on the same entity.
+    /// Native target identity/lifecycle still has to exist; this certifies no
+    /// output content and is never sufficient for Current.
+    pub fn roles_remain_present_in(
+        &self,
+        runtime: &RelationalRuntime,
+        selected: &SnapshotHandle,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, CompanionPreflightStop> {
+        for role in &self.roles {
+            if !role.remains_present(runtime, selected, execution)? {
+                return Ok(false);
+            }
+        }
+        Ok(true)
+    }
+
+    pub fn unchanged_in(
+        &self,
+        runtime: &RelationalRuntime,
+        selected: &SnapshotHandle,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, CompanionPreflightStop> {
+        let read = runtime.read_truth();
+        for role in &self.roles {
+            if !role.remains_present(runtime, selected, execution)? {
+                return Ok(false);
+            }
+            if role.posture == WorthQueryApplicationOutputPosture::Retire {
+                continue;
+            }
+            let entity = role.entity.expect("present role has an entity");
+            for aspect in &self.aspects[role.first_aspect..role.end_aspect] {
+                if read
+                    .read_exact_snapshot_entity_aspect_version(
+                        execution,
+                        selected,
+                        entity,
+                        &aspect.aspect,
+                    )
+                    .map_err(CompanionPreflightStop::Execution)?
+                    != aspect.revision
+                {
+                    return Ok(false);
+                }
+            }
+        }
+        Ok(true)
+    }
+}
+
+impl RoleProbe {
+    fn remains_present(
+        &self,
+        runtime: &RelationalRuntime,
+        selected: &SnapshotHandle,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<bool, CompanionPreflightStop> {
+        let Some(entity) = self.entity else {
+            return Ok(false);
+        };
+        if self.posture == WorthQueryApplicationOutputPosture::Retire {
+            return Ok(self.retirement.is_some()
+                && retirement::native_metadata(runtime, selected, entity, execution)?
+                    == self.retirement);
+        }
+        Ok(runtime
+            .read_truth()
+            .read_exact_snapshot_live_entity_kind(execution, selected, entity)
+            .map_err(CompanionPreflightStop::Execution)?
+            == Some(self.kind))
+    }
+}
+
+mod court_doors_for_test;

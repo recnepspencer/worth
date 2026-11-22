@@ -1,5 +1,6 @@
 //! Fixed control work classifies alternatives independently of the requested page width.
 use super::*;
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
 impl PageSource<'_> {
     pub(super) fn child_summary(
@@ -14,8 +15,8 @@ impl PageSource<'_> {
         )?;
         let range = || {
             self.children.range((
-                Included((parent.ordinal, 0)),
-                Excluded((parent.ordinal, self.completed_end)),
+                Included((parent.ordinal(), 0)),
+                Excluded((parent.ordinal(), self.completed_end)),
             ))
         };
         let mut children = range();

@@ -111,7 +111,10 @@ pub(in crate::domain_computation::primary_graph::application_installation::home_
             super::super::super::SourceInvalidationOwner::with_managed_views(
                 state.limits.world.invalidation_resources(),
                 schema.receipt.runtime_instance_id(),
-                Arc::clone(&schema.managed_views),
+                Arc::clone(&schema.managed_views)
+                    as Arc<
+                        dyn worth_query_execution_lineage::facade::ports::ManagedDerivedViewPort,
+                    >,
             ),
         ),
     )

@@ -1,0 +1,48 @@
+use worth_query_declaration::facade::application_schema::ApplicationEntityMarkerIdentity;
+use worth_query_installation::facade::{ApplicationSchema, OperationReads};
+use worth_relational::facade::runtime::ProjectionAspectScope;
+use worth_relational::facade::storage::RecordLifecycleState;
+
+use super::super::WorthQueryCurrentOutputDenial;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationOperationInvariantProjectionReader, WorthQueryInvariantEntityIdentity,
+};
+
+impl<'reader, 'runtime, Schema, Operation>
+    WorthQueryApplicationOperationInvariantProjectionReader<'reader, 'runtime, Schema, Operation>
+where
+    Schema: ApplicationSchema,
+{
+    pub(crate) fn current_source_is_live<Producer>(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
+    ) -> Result<bool, WorthQueryCurrentOutputDenial>
+    where
+        Producer: ApplicationEntityMarkerIdentity<Schema> + OperationReads<Operation>,
+    {
+        self.charge_current_output_work(1, Producer::IDENTIFIER)?;
+        let state = match self.reader.native.projection(self.reader.snapshot) {
+            Some(view) => view
+                .entity_record_with_projection_scope(
+                    execution,
+                    producer.entity_id(),
+                    ProjectionAspectScope::empty(),
+                    |record| Some((record.kind_id(), record.lifecycle())),
+                )
+                .map_err(|cause| {
+                    self.reader.native_read_stop.get_or_insert(cause);
+                    WorthQueryCurrentOutputDenial::new(
+                        super::super::WorthQueryCurrentOutputDenialKind::ExecutionRequest(cause),
+                        Producer::IDENTIFIER,
+                    )
+                })?,
+            None => None,
+        };
+        let live = state.is_some_and(|(kind, lifecycle)| {
+            lifecycle == RecordLifecycleState::Live
+                && self.reader.layout.entity_name(kind) == Some(Producer::IDENTIFIER)
+        });
+        Ok(live)
+    }
+}

@@ -1,5 +1,11 @@
 //! Distinct current or outside-domain evidence; neither is an SDK settlement.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 #[derive(PartialEq, Eq)]
 pub(super) enum TreeVerification {
     CurrentLeaf,
@@ -27,15 +33,15 @@ impl WorthQueryHistoryRecordingOutputOrigin {
             return Err(foreign().into());
         }
         let execution = phase
-            .checked_execution_request_for(&application.runtime.product_runtime)
+            .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(stopped)?;
-        let graph = &application.runtime.primary_provider.graph;
+        let graph = &application.inner.runtime.primary_provider_ref().graph_ref();
         graph.with_runtime(&execution, |native| {
             let owner = match native
                 .observe_model_owner(
                     &execution,
                     selected.product().relational_basis(),
-                    graph.layout.installed_history_ownership(),
+                    graph.layout_ref().installed_history_ownership(),
                     profile.source_intent().source_subject(),
                 )
             {
@@ -102,7 +108,7 @@ where
             TreeVerification::RequiresOriginal => return Ok(None),
         };
         let execution = phase
-            .checked_execution_request_for(&self.runtime().runtime.product_runtime)
+            .checked_execution_request_for(self.runtime().inner.runtime.product_runtime_ref())
             .map_err(stopped)?;
         let memory = memory::reserve(
             &execution,

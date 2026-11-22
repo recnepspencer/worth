@@ -1,5 +1,8 @@
 use super::*;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl<Schema, Program, Operation> WorthQueryAdmittedProgramOperation<'_, Schema, Program, Operation>
 where
@@ -17,9 +20,14 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
-        {
+        let execution = match phase.execution_request_for(
+            self.runtime
+                .backing
+                .runtime()
+                .inner
+                .runtime
+                .product_runtime_ref(),
+        ) {
             Ok(execution) => execution,
             Err(cause) => {
                 return self
@@ -72,9 +80,14 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
-        {
+        let execution = match phase.execution_request_for(
+            self.runtime
+                .backing
+                .runtime()
+                .inner
+                .runtime
+                .product_runtime_ref(),
+        ) {
             Ok(execution) => execution,
             Err(cause) => {
                 return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(
@@ -125,9 +138,14 @@ where
     where
         Input: Clone + Send + Sync + 'static,
     {
-        let execution = match phase
-            .execution_request_for(&self.runtime.backing.runtime().runtime.product_runtime)
-        {
+        let execution = match phase.execution_request_for(
+            self.runtime
+                .backing
+                .runtime()
+                .inner
+                .runtime
+                .product_runtime_ref(),
+        ) {
             Ok(execution) => execution,
             Err(cause) => {
                 return crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from(

@@ -1,0 +1,198 @@
+//! One typed field binding, completed Native contract, and installed sealing authority.
+use std::any::TypeId;
+use worth_query_declaration::facade::application_schema as schema;
+use worth_query_installation::facade as domain;
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NativeFieldBindingExpectation {
+    pub locus: schema::ApplicationFieldBindingLocus,
+    pub binding: TypeId,
+    pub value: TypeId,
+    pub identity:
+        worth_query_declaration::facade::portable_identity::WorthQueryPortableTypeIdentity,
+    pub scalar: domain::ScalarAspectType,
+    pub unit: Option<schema::ApplicationUnitIdentity>,
+    pub frame: Option<schema::ApplicationFrameIdentity>,
+    pub canonical: Option<schema::ApplicationCanonicalValueContract>,
+    pub presence: schema::ApplicationFieldPresence,
+    pub identity_name: &'static str,
+}
+
+impl NativeFieldBindingExpectation {
+    #[expect(
+        clippy::disallowed_methods,
+        reason = "Type identity serves point lookup; canonical order uses declared identity"
+    )]
+    pub fn of<F: schema::fragment::RecordSelection>(
+        field: F,
+    ) -> Result<Self, schema::ApplicationSchemaDeclarationDenial> {
+        let metadata = field.checked()?;
+        use schema::ApplicationScalarValueBinding;
+        Ok(Self {
+            locus: schema::ApplicationFieldBindingLocus::new(
+                field.entity(),
+                field.aspect(),
+                field.field(),
+            ),
+            binding: TypeId::of::<F::Binding>(),
+            value: TypeId::of::<F::Value>(),
+            identity: F::Binding::IDENTITY,
+            scalar: F::Binding::SCALAR_FAMILY,
+            unit: F::Binding::UNIT,
+            frame: F::Binding::FRAME,
+            canonical: F::Binding::canonical_contract(),
+            presence: metadata.presence(),
+            identity_name: F::Binding::IDENTITY_NAME,
+        })
+    }
+}
+
+#[derive(Debug)]
+pub struct NativeFieldContractDenial {
+    pub locus: schema::ApplicationFieldBindingLocus,
+    pub detail: String,
+}
+impl NativeFieldContractDenial {
+    pub fn detail(&self) -> &str {
+        &self.detail
+    }
+    pub fn field_locus(&self) -> Option<&schema::ApplicationFieldBindingLocus> {
+        Some(&self.locus)
+    }
+}
+fn field_denial(
+    locus: schema::ApplicationFieldBindingLocus,
+    detail: &str,
+) -> NativeFieldContractDenial {
+    NativeFieldContractDenial {
+        locus,
+        detail: detail.into(),
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FieldExpectation {
+    pub binding: NativeFieldBindingExpectation,
+    pub aspect: domain::AspectContract,
+    pub native_binding: domain::AspectBinding,
+}
+
+impl FieldExpectation {
+    pub fn declared<F: schema::fragment::RecordSelection>(
+        declaration: &schema::ErasedApplicationSchemaDeclaration,
+        field: F,
+    ) -> Result<Self, NativeFieldContractDenial> {
+        NativeFieldBindingExpectation::of(field)
+            .map_err(|cause| {
+                field_denial(
+                    schema::ApplicationFieldBindingLocus::new(
+                        field.entity(),
+                        field.aspect(),
+                        field.field(),
+                    ),
+                    &format!("{cause:?}"),
+                )
+            })?
+            .declare(declaration)
+    }
+}
+
+impl NativeFieldBindingExpectation {
+    pub fn declare(
+        &self,
+        declaration: &schema::ErasedApplicationSchemaDeclaration,
+    ) -> Result<FieldExpectation, NativeFieldContractDenial> {
+        let locus = &self.locus;
+        let fail = |detail: &str| field_denial(locus.clone(), detail);
+        let canonical = self.canonical.clone();
+        let member = declaration
+            .members()
+            .iter()
+            .find(|member| {
+                matches!(member,
+            schema::ApplicationSchemaMember::Field { entity,aspect,field: name,.. }
+                if entity == locus.entity() && aspect == locus.aspect() && name == locus.field())
+            })
+            .ok_or_else(|| fail("native field is absent from the completed declaration"))?;
+        let schema::ApplicationSchemaMember::Field {
+            presence,
+            scalar_family,
+            value_type,
+            canonical: actual_canonical,
+            unit,
+            frame,
+            ..
+        } = member
+        else {
+            unreachable!()
+        };
+        if *presence != self.presence
+            || *scalar_family != self.scalar
+            || value_type != self.identity_name
+            || *actual_canonical != canonical
+            || unit.as_deref() != self.unit.map(|unit| unit.as_str())
+            || frame.as_deref() != self.frame.map(|frame| frame.as_str())
+        {
+            return Err(fail(
+                "native field binding differs from its actual declaration",
+            ));
+        }
+        let aspect =
+            domain::declared_application_aspect(declaration, locus.entity(), locus.aspect())
+                .map_err(|_| fail("native aspect cannot form its complete native contract"))?;
+        Ok(FieldExpectation {
+            binding: self.clone(),
+            native_binding: aspect.binding().clone(),
+            aspect: aspect.contract().clone(),
+        })
+    }
+}
+
+impl FieldExpectation {
+    pub fn seal<S: schema::ApplicationSchema>(
+        &self,
+        installed: &domain::WorthQueryInstalledApplicationSchema<S>,
+    ) -> Result<(), NativeFieldContractDenial> {
+        self.seal_components(
+            installed.value_bindings().field(
+                self.binding.locus.entity(),
+                self.binding.locus.aspect(),
+                self.binding.locus.field(),
+            ),
+            installed
+                .native_contracts()
+                .aspect(self.binding.locus.entity(), self.binding.locus.aspect()),
+        )
+    }
+
+    pub fn seal_components(
+        &self,
+        binding: Option<&domain::WorthQueryInstalledApplicationValueBinding>,
+        native: Option<&domain::WorthQueryInstalledApplicationAspectContract>,
+    ) -> Result<(), NativeFieldContractDenial> {
+        let fail = |detail| field_denial(self.binding.locus.clone(), detail);
+        let binding = binding.ok_or_else(|| fail("native field has no installed binding"))?;
+        if binding.binding_type() != self.binding.binding
+            || binding.value_type() != self.binding.value
+            || binding.identity() != &self.binding.identity
+            || binding.scalar_family() != self.binding.scalar
+            || binding.unit() != self.binding.unit
+            || binding.frame() != self.binding.frame
+            || binding.canonical_contract() != self.binding.canonical.as_ref()
+        {
+            return Err(fail(
+                "native field differs from its installed value binding",
+            ));
+        }
+        if native.is_none_or(|aspect| {
+            aspect.contract() != &self.aspect || aspect.binding() != &self.native_binding
+        }) {
+            return Err(fail(
+                "native field differs from its complete installed aspect",
+            ));
+        }
+        Ok(())
+    }
+}
+
+mod court_doors_for_test;

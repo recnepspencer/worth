@@ -8,6 +8,7 @@ use super::installation::{
     WorthQueryConditionalRuntimeInstallationDenialKind as Kind,
 };
 use std::sync::Arc;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryHostConditionalPredicateProvider,
     WorthQueryInstalledGraphParticipationAuthority, WorthQueryInstalledHostConditionalProvider,
@@ -47,14 +48,13 @@ where
     ) -> Result<InstalledDefinitionDeclaration, D> {
         let request =
             super::predicate_admission::prepare_host_predicate_installation(&self.provider, graph)?;
-        request
-            .providers
-            .authored_descriptions()
-            .map_err(|cause| D::new(Kind::AuthoredProviderSourceRequired, format!("{cause:?}")))?;
+        request.providers.authored_descriptions().map_err(|cause| {
+            D::from_kind_and_subject(Kind::AuthoredProviderSourceRequired, format!("{cause:?}"))
+        })?;
         let lowering = builder
             .install_owned_conditional(request)
             .map_err(|cause| {
-                D::new(
+                D::from_kind_and_subject(
                     Kind::BridgeConditional(Box::new(cause.kind())),
                     cause.detail(),
                 )

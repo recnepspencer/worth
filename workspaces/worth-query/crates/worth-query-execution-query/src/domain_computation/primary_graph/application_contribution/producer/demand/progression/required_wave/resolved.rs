@@ -1,0 +1,234 @@
+//! Completed required successors may release their exact predecessor edges.
+
+use super::*;
+use crate::domain_computation::primary_graph::application_output_demand::ReadyCompletion;
+use crate::domain_computation::primary_graph::invariant_projection::SelectedPendingConsumedOutput;
+use crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+
+/// An exact old edge joined to the Ready cell resolved on this selected wave.
+pub struct ResolvedConsumedPredecessor {
+    old: Arc<RecordedSettlementIdentity>,
+    successor: ReadyCompletion,
+}
+impl ResolvedConsumedPredecessor {
+    fn retain(
+        old: Arc<RecordedSettlementIdentity>,
+        successor: &ReadyCompletion,
+    ) -> Result<Self, WorthQueryOutputDemandDenial> {
+        Ok(Self {
+            old,
+            successor: successor.clone(),
+        })
+    }
+    pub fn into_parts(self) -> (Arc<RecordedSettlementIdentity>, ReadyCompletion) {
+        (self.old, self.successor)
+    }
+}
+
+pub use worth_query_execution_lineage::facade::domain_computation::primary_graph::application_contribution::producer::demand::progression::required_wave::resolved::matched_predecessors;
+pub use matched_predecessors::MatchedRequiredPredecessors;
+pub use matched_predecessors::ReboundConsumedOutput;
+
+/// The rows this wave certified Current while resolving one dependent's
+/// consumed edges. A dependent of several outputs is readmitted once every
+/// pending edge it names has resolved here. A moved wave starts over.
+#[derive(Default)]
+pub struct ResolvedOnWave {
+    entries: Vec<(
+        SelectedReadyReadmission,
+        Arc<WorthQueryOutputDemandSettlement>,
+    )>,
+}
+
+impl ResolvedOnWave {
+    pub fn push(
+        &mut self,
+        ready: SelectedReadyReadmission,
+        current: Arc<WorthQueryOutputDemandSettlement>,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        if self.entries.len() == self.entries.capacity() {
+            let next = self.entries.capacity().saturating_mul(2).max(1);
+
+            self.entries
+                .try_reserve_exact(next - self.entries.len())
+                .map_err(|_| capacity_denial())?;
+        }
+        self.entries.push((ready, current));
+        Ok(())
+    }
+
+    pub fn clear(&mut self) {
+        self.entries.clear();
+    }
+
+    /// Whether `upstream` already resolved on this wave: asking for it again
+    /// cannot progress the dependent.
+    pub fn contains(&self, upstream: &SelectedReadyReadmission) -> bool {
+        self.entries
+            .iter()
+            .any(|(prior, _)| prior.completion().same_cell(upstream.completion()))
+    }
+
+    pub fn view_two<'a, Schema: ApplicationSchema>(
+        &'a self,
+        custody: &'a [RequiredFreshProgress<Schema>],
+        other_custody: &'a [RequiredFreshProgress<Schema>],
+    ) -> Option<ResolvedRequiredPredecessors<'a, Schema>> {
+        (!self.entries.is_empty()).then_some(ResolvedRequiredPredecessors {
+            resolved: &self.entries,
+            custody,
+            other_custody,
+        })
+    }
+}
+
+/// This borrow exists only while the caller handles the Current results on
+/// its selected wave. It cannot turn a predecessor into a Current settlement.
+/// `custody` holds the successors this wave refreshed; a row that was
+/// already Current has none there and resolves no predecessor edge exactly.
+pub struct ResolvedRequiredPredecessors<'a, Schema>
+where
+    Schema: ApplicationSchema,
+{
+    resolved: &'a [(
+        SelectedReadyReadmission,
+        Arc<WorthQueryOutputDemandSettlement>,
+    )],
+    custody: &'a [RequiredFreshProgress<Schema>],
+    other_custody: &'a [RequiredFreshProgress<Schema>],
+}
+
+impl<Schema> ResolvedRequiredPredecessors<'_, Schema>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    /// Match an actor-selected old consumed identity only to the real
+    /// predecessor of a successor that this wave already proved Current.
+    pub fn match_pending(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        pending: &SelectedPendingConsumedOutput<'_>,
+        positioned: &PositionedRelationalSnapshot,
+    ) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial> {
+        for (successor_ready, current) in self.resolved {
+            let mut progress = None;
+            for entry in self.custody.iter().chain(self.other_custody).rev() {
+                if successor_ready.matches_interest(entry.interest())? {
+                    progress = Some(entry);
+                    break;
+                }
+            }
+            let Some(progress) = progress else {
+                continue;
+            };
+            if let Some(old) = match_one(
+                runtime,
+                progress,
+                successor_ready,
+                current,
+                pending,
+                positioned,
+            )? {
+                return Ok(Some(old));
+            }
+        }
+        Ok(None)
+    }
+
+    /// `pending`'s old identity when its live upstream row is one this wave
+    /// certified Current, though no refresh of this wave replaced it: an
+    /// earlier advance already did. The consumer refreshes against that
+    /// Current row; holding it would wait on an upstream with nothing left
+    /// to refresh.
+    pub fn match_current_upstream(
+        &self,
+        runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        pending: &SelectedPendingConsumedOutput<'_>,
+        positioned: &PositionedRelationalSnapshot,
+    ) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial> {
+        let crate::domain_computation::primary_graph::application_output_demand::PendingUpstream::Ready(
+            upstream,
+        ) = runtime
+            .runtime.output_demands
+            .pending_exact_ready_readmission(pending, positioned)?
+        else {
+            return Ok(None);
+        };
+        for (successor_ready, _) in self.resolved {
+            if upstream.same_ready_cell(successor_ready)? {
+                return pending
+                    .retain_identity()
+                    .map_err(admission_denial)
+                    .and_then(|old| {
+                        ResolvedConsumedPredecessor::retain(old, successor_ready.completion())
+                            .map(Some)
+                    });
+            }
+        }
+        Ok(None)
+    }
+}
+
+/// One resolved successor's exact predecessor, when it is `pending`.
+fn match_one<Schema>(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    progress: &RequiredFreshProgress<Schema>,
+    successor_ready: &SelectedReadyReadmission,
+    current: &WorthQueryOutputDemandSettlement,
+    pending: &SelectedPendingConsumedOutput<'_>,
+    positioned: &PositionedRelationalSnapshot,
+) -> Result<Option<ResolvedConsumedPredecessor>, WorthQueryOutputDemandDenial>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    let progress_name = progress.producer_identity();
+
+    if !std::ptr::eq(pending.selected_root(), positioned)
+        || current.producer_identity() != progress_name
+    {
+        return Ok(None);
+    }
+    // Required admission sealed the typed predecessorâ†’successor relation.
+    // Initial and Preserve may have different bindings; this match authenticates
+    // the live successor cell and the exact consumed predecessor below.
+    let Some(live_successor) = runtime
+        .runtime
+        .output_demands
+        .interest_ready_readmission(progress.interest())?
+    else {
+        return Ok(None);
+    };
+    if !live_successor.same_ready_cell(successor_ready)? {
+        return Ok(None);
+    }
+
+    let predecessor = runtime
+        .runtime
+        .primary_provider
+        .graph_ref()
+        .output_lineage_ref()
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .resolve_required_settlement(
+            runtime.runtime.authority_identity().as_u64(),
+            &runtime.installed_schema.binding_identity(),
+            progress.predecessor().completion(),
+        );
+    let predecessor = match predecessor.map_err(required_settlement_denial)? {
+        Ok(Some(predecessor)) => predecessor,
+        // No exact predecessor row: this edge matches nothing.
+        Ok(None) | Err(_) => return Ok(None),
+    };
+
+    if predecessor.recorded_identity() != pending.identity() {
+        return Ok(None);
+    }
+    pending
+        .retain_identity()
+        .map_err(admission_denial)
+        .and_then(|old| {
+            ResolvedConsumedPredecessor::retain(old, successor_ready.completion()).map(Some)
+        })
+}

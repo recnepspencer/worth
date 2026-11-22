@@ -1,0 +1,370 @@
+use self::session_admission::admit_provider_session;
+use super::WorthQueryRunningApplicationCommit;
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::outcome::WorthQueryProviderProgressionOutcome;
+use crate::domain_computation::primary_graph::application_attempt::provider_execution::WorthQueryApplicationAttemptBasis;
+use crate::domain_computation::primary_graph::application_attempt::{
+    provider_binding::WorthQueryPreparedApplicationProviderAttempt,
+    snapshot_lease::WorthQueryApplicationSnapshotLease, WorthQueryApplicationIdempotencyBinding,
+};
+use crate::domain_computation::primary_graph::product_operation::document_history::HistoryProducerInvocation;
+use crate::domain_computation::primary_graph::provider::{
+    WorthQueryApplicationBranchCommitCoordination, WorthQueryPrimaryGraphProvider,
+};
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+
+pub mod authorized;
+pub mod commit_resolution;
+pub mod coupled;
+pub mod fresh;
+pub mod invariant;
+pub mod mutation_cleanup;
+pub mod progressed;
+pub mod registered;
+pub mod session_admission;
+
+pub use commit_resolution::WorthQueryFreshCommitReceiptPermit;
+use mutation_cleanup::WorthQueryApplicationMutationCleanupOwner;
+pub use registered::{
+    WorthQueryProviderAttemptRegistrationContext, WorthQueryRegisteredProviderAttempt,
+};
+
+pub struct WorthQueryProgressedApplicationCommit {
+    original_completion:
+        crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
+    outcome: WorthQueryProviderProgressionOutcome,
+    workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
+    lease: WorthQueryApplicationSnapshotLease,
+    running: crate::domain_computation::WorthQueryRunningDirectRun,
+    cleanup: WorthQueryApplicationMutationCleanupOwner,
+    request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+}
+
+struct WorthQueryProviderProgression<'a, Schema, Operation, Input, Scope> {
+    coupled_outputs: crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
+    application:
+        &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+            Schema,
+        >,
+    running: &'a mut crate::domain_computation::WorthQueryRunningDirectRun,
+    graph: &'a worth_query_installation::facade::WorthQueryInstalledGraphParticipationAuthority,
+    provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+    admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
+    prepared: WorthQueryPreparedApplicationProviderAttempt,
+    outcome_identity: crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitOutcomeIdentity,
+    attempt_basis: WorthQueryApplicationAttemptBasis,
+    authorization: crate::domain_computation::authorization::WorthQueryProviderCommitAuthorization,
+    idempotency: WorthQueryApplicationIdempotencyBinding,
+    aftermath_causality: Option<
+        crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
+    >,
+}
+
+pub struct WorthQueryProviderProgressionCompletion {
+    outcome: WorthQueryProviderProgressionOutcome,
+    cleanup: WorthQueryApplicationMutationCleanupOwner,
+}
+
+impl WorthQueryProviderProgressionCompletion {
+    fn finish(
+        self,
+        lease: WorthQueryApplicationSnapshotLease,
+        running: crate::domain_computation::WorthQueryRunningDirectRun,
+        workflow_settlement_publication: Option<super::LocalWorkflowSettlementPublication>,
+        request: worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        original_completion: crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
+    ) -> WorthQueryProgressedApplicationCommit {
+        WorthQueryProgressedApplicationCommit {
+            original_completion,
+            outcome: self.outcome,
+            workflow_settlement_publication,
+            lease,
+            running,
+            cleanup: self.cleanup,
+            request,
+        }
+    }
+}
+
+pub struct WorthQueryApplicationCommitProgressionAuthority<
+    'a,
+    'provider,
+    Schema,
+    Operation,
+    Input,
+    Scope,
+> {
+    coupled_outputs: &'a crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemands,
+    application:
+        &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+            Schema,
+        >,
+    outer_application: Option<&'a (dyn std::any::Any + Send + Sync)>,
+    provider: &'a std::sync::Arc<WorthQueryPrimaryGraphProvider>,
+    admission: &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    >,
+    authorization:
+        crate::domain_computation::authorization::WorthQueryRegisteredCommitAuthorization,
+    idempotency: WorthQueryApplicationIdempotencyBinding,
+    coordination: &'a WorthQueryApplicationBranchCommitCoordination<'provider>,
+    product: &'a crate::basis::WorthQueryProductBranchLease,
+    original_completion:
+        &'a crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
+    history: Option<HistoryProducerInvocation<'a>>,
+    aftermath_causality: Option<
+        crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
+    >,
+}
+
+impl<'a, 'provider, Schema, Operation, Input, Scope>
+    WorthQueryApplicationCommitProgressionAuthority<'a, 'provider, Schema, Operation, Input, Scope>
+{
+    pub fn application(
+        &self,
+    ) -> &'a crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+        Schema,
+    > {
+        self.application
+    }
+
+    pub fn outer_application(&self) -> Option<&'a (dyn std::any::Any + Send + Sync)> {
+        self.outer_application
+    }
+
+    pub fn provider(&self) -> &'a std::sync::Arc<WorthQueryPrimaryGraphProvider> {
+        self.provider
+    }
+
+    pub fn admission(
+        &self,
+    ) -> &'a crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+    > {
+        self.admission
+    }
+
+    pub fn idempotency(&self) -> WorthQueryApplicationIdempotencyBinding {
+        self.idempotency
+    }
+
+    pub fn coordination(&self) -> &'a WorthQueryApplicationBranchCommitCoordination<'provider> {
+        self.coordination
+    }
+
+    pub fn aftermath_causality(
+        &self,
+    ) -> Option<
+        &'_ crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
+    > {
+        self.aftermath_causality.as_ref()
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn progress_application_commit<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    application: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
+    running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
+    history: Option<HistoryProducerInvocation<'_>>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    held: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
+) -> super::completion_storage::CompletedApplicationCommit
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+    Input: Clone + Send + Sync + 'static,
+{
+    progress_application_commit_with_outer(
+        execution,
+        phase,
+        application.runtime_inner(),
+        application.outer_application_any(),
+        running_commit,
+        history,
+        allocation_policy,
+        held,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn progress_application_commit_with_outer<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+
+    application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
+        Schema,
+    >,
+    outer_application: Option<&(dyn std::any::Any + Send + Sync)>,
+    running_commit: WorthQueryRunningApplicationCommit<Schema, Operation, Input, Scope>,
+    history: Option<HistoryProducerInvocation<'_>>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    held: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
+) -> super::completion_storage::CompletedApplicationCommit
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+    Input: Clone + Send + Sync + 'static,
+{
+    let WorthQueryRunningApplicationCommit {
+        completion_storage,
+        coupled_outputs,
+        admission,
+        lease,
+        provider_attempt,
+        outcome_identity,
+        workflow_settlement_publication,
+        authorization,
+        idempotency,
+        mut running,
+        mutation_run,
+        mut attempt_basis,
+        aftermath_causality,
+    } = running_commit;
+    let original_completion = attempt_basis.take_original_completion();
+    let actual = progress_provider_application(
+        execution,
+        phase,
+        WorthQueryProviderProgression {
+            coupled_outputs,
+            application,
+            running: &mut running,
+            graph: application.runtime.primary_graph_authority(),
+            provider: &application.runtime.primary_provider,
+            admission: &admission,
+            prepared: provider_attempt,
+            outcome_identity,
+            attempt_basis,
+            authorization,
+            idempotency,
+            aftermath_causality,
+        },
+        mutation_run,
+        &original_completion,
+        history,
+        allocation_policy,
+        held,
+        outer_application,
+    )
+    .finish(
+        lease,
+        running,
+        workflow_settlement_publication,
+        admission.publication_request().clone(),
+        original_completion,
+    );
+    completion_storage.complete(actual)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn progress_provider_application<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    progression: WorthQueryProviderProgression<'_, Schema, Operation, Input, Scope>,
+    mutation_run: crate::domain_computation::provider_session::WorthQueryMutationRunBinding,
+    original_completion: &crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
+    history: Option<HistoryProducerInvocation<'_>>,
+    allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    held: Option<&crate::domain_computation::primary_graph::provider::WorthQueryApplicationBranchCommitCoordination<'_>>,
+    outer_application: Option<&(dyn std::any::Any + Send + Sync)>,
+) -> WorthQueryProviderProgressionCompletion
+where
+    Schema: worth_query_installation::facade::ApplicationSchema,
+    Input: Clone + Send + Sync + 'static,
+{
+    let WorthQueryProviderProgression {
+        coupled_outputs,
+        application,
+        running,
+        graph,
+        provider,
+        admission,
+        prepared,
+        outcome_identity,
+        attempt_basis,
+        mut authorization,
+        idempotency,
+        aftermath_causality,
+    } = progression;
+    let product = attempt_basis.retained_product();
+    let admitted_session = match admit_provider_session(
+        phase,
+        running,
+        graph,
+        product.retained_clone(),
+        mutation_run,
+    ) {
+        Ok(admitted) => admitted,
+        Err(failure) => return failure.into_completion(),
+    };
+    let registered_session = match admitted_session.register(
+        &mut authorization,
+        prepared,
+        attempt_basis,
+        WorthQueryProviderAttemptRegistrationContext::new(
+            provider,
+            admission,
+            idempotency,
+            outcome_identity,
+            aftermath_causality.as_ref(),
+        ),
+        allocation_policy,
+    ) {
+        Ok(registered) => registered,
+        Err(failure) => return failure.into_completion(),
+    };
+    let Some(authorization) = authorization.finish_registration() else {
+        return registered_session.deny(
+            crate::domain_computation::primary_graph::application_attempt::provider_execution::progression_denied(
+                crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationCommitDenialStage::DecisionReadSet,
+            ),
+        );
+    };
+    provider.after_application_attempt_registration_for_test();
+    let command_lane = application
+        .runtime
+        .primary_provider
+        .correction_commit_lane(&idempotency);
+    let _command = command_lane.as_ref().map(|lane| lane.enter());
+    let commit_lane = application
+        .runtime
+        .primary_provider
+        .application_branch_commit_lane(product.observation());
+
+    let owned_coordination;
+    let coordination = match held {
+        Some(held) => held,
+        None => {
+            owned_coordination = commit_lane.enter();
+            &owned_coordination
+        }
+    };
+    let authority = WorthQueryApplicationCommitProgressionAuthority {
+        coupled_outputs: &coupled_outputs,
+        application,
+        outer_application,
+        provider,
+        admission,
+        authorization,
+        idempotency,
+        coordination,
+        product: &product,
+        original_completion,
+        history,
+        aftermath_causality,
+    };
+    registered_session.progress(execution, phase, &authority, allocation_policy)
+}
+
+mod court_doors_for_test;

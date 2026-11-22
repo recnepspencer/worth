@@ -1,0 +1,90 @@
+//! Eviction of rebuildable primary index projections for real read-stop proofs.
+use super::*;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    #[doc(hidden)]
+    pub fn release_primary_index_generations_for_test(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<usize, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
+        let execution = phase.execution_request_for(self.product_runtime())?;
+        let graph = self
+            .runtime
+            .retain_primary_graph_integration_handle()
+            .expect("installed primary graph");
+        graph.with_runtime(&execution, |runtime| {
+            for index in graph.primary_index_ids_ref().iter() {
+                runtime
+                    .index_authority()
+                    .discard_generations(
+                        worth_relational::facade::indexes::DerivedIndexDiscardRequest::all_bases(
+                            *index,
+                        ),
+                    )
+                    .expect("installed primary index can discard rebuildable generations");
+            }
+        });
+        Ok(graph.primary_index_ids_ref().len())
+    }
+}
+
+impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Evicts only the named field's rebuildable equality generations, not authoritative facts.
+    #[doc(hidden)]
+    pub fn release_equality_index_generations_for_test<
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
+    >(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        field: F,
+    ) -> Result<usize, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
+        let execution = phase.execution_request_for(self.product_runtime())?;
+        let graph = self
+            .runtime
+            .retain_primary_graph_integration_handle()
+            .expect("installed primary graph");
+        Ok(graph.with_query_runtime(&execution, |runtime, layout| {
+            let index = layout
+                .equality_selector_index(field.entity(), field.aspect(), field.field())
+                .expect("installed equality field");
+            runtime
+                .index_authority()
+                .discard_generations(
+                    worth_relational::facade::indexes::DerivedIndexDiscardRequest::all_bases(index),
+                )
+                .expect("installed selected equality index")
+                .removed_generation_count()
+        }))
+    }
+    /// Observes resident generation presence without loading or reconstructing the index.
+    #[doc(hidden)]
+    pub fn has_equality_index_generation_for_test<
+        F: worth_query_declaration::facade::application_schema::fragment::RecordSelection,
+    >(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        branch: crate::basis::WorthQueryProductBranch,
+        field: F,
+    ) -> Result<bool, crate::domain_computation::primary_graph::WorthQueryAdvancementDenial> {
+        let execution = phase.execution_request_for(self.product_runtime())?;
+        let selected = self
+            .on_branch(branch)
+            .select(phase)
+            .expect("the observed branch selects");
+        let graph = self
+            .runtime
+            .retain_primary_graph_integration_handle()
+            .expect("installed primary graph");
+        Ok(graph.with_query_runtime(&execution, |runtime, layout| {
+            let index = layout
+                .equality_selector_index(field.entity(), field.aspect(), field.field())
+                .expect("installed equality field");
+            runtime.index_access().generation_residency_for_observation(
+                index,
+                &selected.product().relational_basis().observation(),
+            ) == worth_relational::facade::indexes::DerivedIndexGenerationResidency::Published
+        }))
+    }
+}

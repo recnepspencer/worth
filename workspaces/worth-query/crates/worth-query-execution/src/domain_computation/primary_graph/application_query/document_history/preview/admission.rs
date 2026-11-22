@@ -8,6 +8,9 @@ use crate::domain_computation::primary_graph::{
 };
 use std::sync::Arc;
 use worth_foundational::facade::CanonicalDigestId;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationQueryBindingObservation,
     WorthQueryInstalledApplicationQueryIdentity,
@@ -36,9 +39,9 @@ impl<'phase, 'scope> WorthQueryHistoryPreviewReadAdmission<'phase, 'scope> {
     ) -> Self {
         Self {
             completed,
-            model: preview.model.clone(),
-            step: preview.step.clone(),
-            source: Arc::clone(&preview.source),
+            model: preview.model().clone(),
+            step: preview.step().clone(),
+            source: Arc::clone(&preview.source()),
             query,
             binding,
             parameters,
@@ -78,16 +81,16 @@ impl<'phase, 'scope> WorthQueryHistoryPreviewReadAdmission<'phase, 'scope> {
     ) -> Result<(), Denial> {
         self.validate_selection(
             phase,
-            plan.query.identity(),
-            plan.query.binding_observation(),
+            plan.query().identity(),
+            plan.query().binding_observation(),
             WorthQueryProductBranchReadIdentity::from_observation(
-                plan.security_product.observation(),
+                plan.security_product().observation(),
             ),
-            HistoryModelIdentity::from_resolved(plan.scope),
+            HistoryModelIdentity::from_resolved(plan.scope()),
         )
         .map_err(|_| Denial::ForeignHistoryNode)?;
-        if plan.parameters.identity() != &self.parameters
-            || plan.principal.principal_entity_id() != self.principal
+        if plan.parameters().identity() != &self.parameters
+            || plan.principal().principal_entity_id() != self.principal
         {
             return Err(Denial::InstalledBindingMismatch);
         }

@@ -1,4 +1,7 @@
 //! Derivation material belongs to the original occurrence's installed mechanism.
+use worth_query_execution_lineage::facade::ports::{
+    CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
+};
 mod preimage;
 pub(super) mod recorded_input;
 use super::{

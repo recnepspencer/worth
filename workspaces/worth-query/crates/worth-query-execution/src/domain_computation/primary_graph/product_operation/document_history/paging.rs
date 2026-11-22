@@ -3,7 +3,7 @@ use super::{
     step::DocumentIncarnation, WorthQueryHistoryDescriptionContext, WorthQueryHistoryNodeId,
 };
 use std::num::NonZeroUsize;
-use worth_execution::{ExecutionMemoryReservation, WorkCeilingDenial};
+use worth_execution::ExecutionMemoryReservation;
 
 #[derive(Clone, Copy, Debug)]
 pub struct WorthQueryHistoryPageLimits {
@@ -74,16 +74,7 @@ impl WorthQueryHistoryPageEntry {
     }
 }
 
-#[derive(Debug)]
-pub enum WorthQueryHistoryPageDenial {
-    ForeignCursor,
-    StaleCursor,
-    CursorScopeMismatch,
-    StorageLimitExceeded,
-    SizeOverflow,
-    Allocation(std::collections::TryReserveError),
-    Request(WorkCeilingDenial),
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::WorthQueryHistoryPageDenial;
 
 /// Owned metadata backing is released on drop; copied rows convey no source custody.
 #[derive(Debug)]

@@ -4,6 +4,9 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryAftermathCausalRole, WorthQueryCorrectionLineageBinding,
     WorthQueryRecordedCorrectionSource,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub(super) fn source_locator<Schema>(
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
@@ -22,12 +25,13 @@ pub(super) fn reverse_lineage<Schema: ApplicationSchema>(
     use WorthQueryCorrectionDerivationDenial as Denial;
     let locator = source_locator(source);
     let execution = phase
-        .execution_request_for(&target.application().runtime.product_runtime)
+        .execution_request_for(target.application().inner.runtime.product_runtime_ref())
         .map_err(|_| Denial::ForeignPhase)?;
     if target
         .application()
+        .inner
         .runtime
-        .primary_provider
+        .primary_provider_ref()
         .reversal_of_source_at_basis(&execution, target.product().relational_basis(), &locator)
         .map_err(Denial::History)?
         .is_some()

@@ -1,0 +1,247 @@
+//! Cold aggregate reconstruction and sealed completed-scan publication.
+
+use std::sync::{Arc, Mutex};
+
+use worth_foundational::facade::AspectValue;
+use worth_query_installation::facade::ApplicationSignedAggregateValueBinding;
+
+use super::cache_resolution::UncachedAggregatePlan;
+use super::execution::AggregateWorkAccounting;
+use super::validated_plan::ValidatedAggregatePlan;
+use super::{
+    denial, WorthQueryInvariantAggregate, WorthQueryInvariantAggregateDenial,
+    WorthQueryInvariantAggregateDenialKind,
+};
+use crate::domain_computation::primary_graph::aggregate_projection::WorthQueryAggregateProjections;
+use crate::domain_computation::primary_graph::invariant_projection::WorthQueryRealizedProjectionScope;
+
+#[derive(Debug)]
+pub struct CompletedAggregateScan {
+    plan: ValidatedAggregatePlan,
+    sum: i64,
+    source_count: u64,
+}
+
+pub fn complete(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    native: &super::super::read_basis::NativeProjectionRead<'_>,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    miss: UncachedAggregatePlan,
+    accounting: &mut AggregateWorkAccounting<'_>,
+) -> Result<CompletedAggregateScan, WorthQueryInvariantAggregateDenial> {
+    let plan = miss.into_plan();
+    let accumulator = AggregateScanReader {
+        native,
+        snapshot,
+        plan: &plan,
+        accounting,
+    }
+    .rebuild(execution)?;
+    Ok(CompletedAggregateScan {
+        plan,
+        sum: accumulator.sum,
+        source_count: accumulator.source_count,
+    })
+}
+
+struct AggregateScanReader<'scan, 'work> {
+    native: &'scan super::super::read_basis::NativeProjectionRead<'scan>,
+    snapshot: &'scan worth_relational::facade::snapshots::SnapshotHandle,
+    plan: &'scan ValidatedAggregatePlan,
+    accounting: &'scan mut AggregateWorkAccounting<'work>,
+}
+
+impl AggregateScanReader<'_, '_> {
+    fn rebuild(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<AggregateScanAccumulator, WorthQueryInvariantAggregateDenial> {
+        let read = self
+            .branch_view()?
+            .bounded_incoming_relations_of_kind(
+                execution,
+                self.plan.target(),
+                self.plan.key().relation_kind,
+                self.accounting.remaining(),
+            )
+            .map_err(|cause| {
+                denial(
+                    WorthQueryInvariantAggregateDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    self.plan.relation_member(),
+                )
+            })?;
+        let read = read.map_err(|limit| {
+            self.accounting
+                .reject_initial_adjacency(limit, self.plan.relation_member())
+        })?;
+        let row_count = read.relation_records_examined();
+        self.accounting.complete_adjacency(
+            read.work_units(),
+            row_count,
+            self.plan.relation_member(),
+        )?;
+        self.accounting.record_cold_lookup(row_count);
+        let mut accumulator = AggregateScanAccumulator::new();
+        for record in read.into_records() {
+            let value = self.observe_source(execution, &record)?;
+            accumulator.push(value, self.plan)?;
+        }
+        Ok(accumulator)
+    }
+
+    fn observe_source(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        record: &worth_relational::facade::runtime::RelationReadRecord,
+    ) -> Result<Option<AspectValue>, WorthQueryInvariantAggregateDenial> {
+        let relations = self
+            .branch_view()?
+            .bounded_outgoing_relations_of_kind(
+                execution,
+                record.source,
+                self.plan.key().relation_kind,
+                self.accounting.remaining(),
+            )
+            .map_err(|cause| {
+                denial(
+                    WorthQueryInvariantAggregateDenialKind::ReadExecution(
+                        crate::facade::primary_graph::relational_execution_kind(cause, None),
+                    ),
+                    self.plan.relation_member(),
+                )
+            })?;
+        let relations = relations.map_err(|limit| {
+            self.accounting
+                .reject_bounded_adjacency(limit, self.plan.relation_member())
+        })?;
+        self.accounting.complete_adjacency(
+            relations.work_units(),
+            relations.relation_records_examined(),
+            self.plan.relation_member(),
+        )?;
+        if relations.into_records().as_slice() != [record.clone()] {
+            return Err(denial(
+                WorthQueryInvariantAggregateDenialKind::AmbiguousSourceRelation,
+                self.plan.relation_member(),
+            ));
+        }
+        self.accounting
+            .admit_source_field(self.plan.field_member())?;
+        let value = self.native.observe_field(
+            execution,
+            self.snapshot,
+            record.source,
+            self.plan.source_kind(),
+            &self.plan.key().field,
+            |raw| crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFieldObservation::from(raw),
+        )
+        .map_err(|cause| {
+            denial(
+                WorthQueryInvariantAggregateDenialKind::ReadExecution(
+                    crate::facade::primary_graph::relational_execution_kind(cause, None),
+                ),
+                self.plan.field_member(),
+            )
+        })?;
+        if value.is_some() {
+            self.accounting.record_source_field();
+        }
+        Ok(value.and_then(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationFieldObservation::into_value))
+    }
+
+    /// Reads the plan's snapshot on its own branch root, so a sibling branch's
+    /// commits at older versions never contribute. An unprojectable snapshot
+    /// has no readable source field, as `observe_field_value` also reports.
+    fn branch_view(
+        &self,
+    ) -> Result<
+        worth_relational::facade::runtime::VisibilityProjectionView,
+        WorthQueryInvariantAggregateDenial,
+    > {
+        self.native.projection(self.snapshot).ok_or_else(|| {
+            denial(
+                WorthQueryInvariantAggregateDenialKind::InvalidScalar,
+                self.plan.field_member(),
+            )
+        })
+    }
+}
+
+impl CompletedAggregateScan {
+    pub fn publish<Binding>(
+        self,
+        cache: &Arc<Mutex<WorthQueryAggregateProjections>>,
+        scope: &mut WorthQueryRealizedProjectionScope,
+    ) -> Result<WorthQueryInvariantAggregate<Binding::Value>, WorthQueryInvariantAggregateDenial>
+    where
+        Binding: ApplicationSignedAggregateValueBinding,
+    {
+        let value = Binding::decode_aggregate(self.sum).map_err(|_| {
+            denial(
+                WorthQueryInvariantAggregateDenialKind::InvalidScalar,
+                self.plan.field_member(),
+            )
+        })?;
+        scope.record(self.plan.target());
+        cache
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .retain_aggregate(
+                self.plan.key().clone(),
+                self.plan.target(),
+                self.plan.version(),
+                self.sum,
+                self.source_count,
+            );
+        Ok(WorthQueryInvariantAggregate {
+            value,
+            source_count: self.source_count,
+        })
+    }
+}
+
+struct AggregateScanAccumulator {
+    sum: i64,
+    source_count: u64,
+}
+
+impl AggregateScanAccumulator {
+    const fn new() -> Self {
+        Self {
+            sum: 0,
+            source_count: 0,
+        }
+    }
+
+    fn push(
+        &mut self,
+        value: Option<AspectValue>,
+        plan: &ValidatedAggregatePlan,
+    ) -> Result<(), WorthQueryInvariantAggregateDenial> {
+        let Some(AspectValue::Int64(value)) = value else {
+            return Err(denial(
+                WorthQueryInvariantAggregateDenialKind::InvalidScalar,
+                plan.field_member(),
+            ));
+        };
+        self.sum = self.sum.checked_add(value).ok_or_else(|| {
+            denial(
+                WorthQueryInvariantAggregateDenialKind::ArithmeticOverflow,
+                plan.field_member(),
+            )
+        })?;
+        // On supported targets a scan cannot contain more than `usize::MAX`
+        // records, so this is defensive for a future target wider than u64. We
+        // intentionally do not fabricate an impossible production cardinality
+        // merely to make this branch executable in a test.
+        self.source_count = self.source_count.checked_add(1).ok_or_else(|| {
+            denial(
+                WorthQueryInvariantAggregateDenialKind::SourceCountOverflow,
+                plan.relation_member(),
+            )
+        })?;
+        Ok(())
+    }
+}

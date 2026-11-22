@@ -1,6 +1,9 @@
 //! Every member's real admission precedes reservation and candidate creation.
 use super::*;
 use sha2::{Digest, Sha256};
+use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
@@ -96,12 +99,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             intent_hash.update((intent.len() as u64).to_le_bytes());
             intent_hash.update(intent.as_bytes());
         }
-        let meaning = WorthQueryApplicationIdempotencyBinding::new(
+        let meaning = <WorthQueryApplicationIdempotencyBinding as IdempotencyBindingInternalPort>::from_identities(
             key_hash.finalize().into(),
             intent_hash.finalize().into(),
         );
         let execution = phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let mut selected = self.selection.lock();
         match selected.journal.lookup(meaning) {
@@ -238,7 +241,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         drop(scopes);
         Ok(WorthQueryDocumentHistoryGroupAborting {
             reservation,
-            runtime_authority: self.application().runtime.authority_identity().as_u64(),
+            runtime_authority: self
+                .application()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64(),
             candidate: candidate.map(|(branch, _)| branch),
             _allocation,
         })

@@ -16,6 +16,9 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 mod completion;
 mod origin;
@@ -174,7 +177,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::ReceiptMismatch);
         }
         let execution = phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         WorthQueryHistoryRecordingOutputOrigin::capture(
             &execution,
@@ -211,7 +214,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         }
         self.validate_selected_output_root::<R>(phase, access, &origin.observation)
             .map_err(WorthQueryOriginalReadOutputDenial::Program)?;
-        let execution = phase.checked_execution_request_for(&self.runtime().runtime.product_runtime)
+        let execution = phase.checked_execution_request_for(self.runtime().inner.runtime.product_runtime_ref())
             .map_err(stopped)?;
         let original = OriginalOutputTree::retain(&execution, &origin.observation, root,
             dependents, dependencies, std::mem::size_of::<WorthQueryRetainedRecordingOutputTree>() + 2 * std::mem::size_of::<usize>())?;

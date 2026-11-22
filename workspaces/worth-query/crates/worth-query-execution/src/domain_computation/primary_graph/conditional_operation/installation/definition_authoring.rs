@@ -1,6 +1,8 @@
 //! Declare one conditional definition without installing its temporal runtime.
 use super::super::canonical_identity::CanonicalIdentityMaterial;
 use super::*;
+use worth_query_execution_query::facade::ports::ConditionalClockHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryAuthoredHostConditionalPredicateProvider,
     WorthQueryInstalledNamedClockConditionalNode,
@@ -66,7 +68,7 @@ impl<Schema: ApplicationSchema + 'static>
             .retain_authored_predicate_for_runtime()
             .is_none()
         {
-            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
+            return Err(WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                 WorthQueryConditionalRuntimeInstallationDenialKind::AuthoredProviderSourceRequired,
                 node.declaration().identity(),
             ));
@@ -95,20 +97,22 @@ impl<Schema: ApplicationSchema + 'static>
         material.text("source", clocked.source_identity().as_str());
         material.text("timeline", clocked.timeline_identity().as_str());
         let (digest, work) = material.derive().map_err(|cause| {
-            WorthQueryConditionalRuntimeInstallationDenial::new(
+            WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                 WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
                 format!("{cause:?}"),
             )
         })?;
         let identity: Arc<str> = format!("conditional-definition:{}", digest.render_hex()).into();
         if !self.binding_identities.insert(identity.clone()) {
-            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
-                WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,
-                identity.as_ref(),
-            ));
+            return Err(
+                WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
+                    WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,
+                    identity.as_ref(),
+                ),
+            );
         }
         let node_authority = Arc::from(node.authority_identity());
-        let lease = Arc::new(ConditionalClockLease);
+        let lease = WorthQueryConditionalClockHandle::<Schema, (), ()>::new_lease();
         self.definitions.push(Box::new(
             super::super::pending_definition::PendingTypedDefinition {
                 provider: clocked.into_definition_provider(),
@@ -116,13 +120,12 @@ impl<Schema: ApplicationSchema + 'static>
                 lease: lease.clone(),
             },
         ));
-        Ok(WorthQueryConditionalClockHandle {
-            binding_identity: identity,
-            binding_identity_digest: *digest.bytes(),
+        Ok(WorthQueryConditionalClockHandle::from_parts(
+            identity,
+            *digest.bytes(),
             node_authority,
-            binding_canonical_work: work.with_digest_text_materializations(1),
+            work.with_digest_text_materializations(1),
             lease,
-            marker: PhantomData,
-        })
+        ))
     }
 }

@@ -1,0 +1,29 @@
+use std::marker::PhantomData;
+use worth_query_declaration::facade::application_schema::ApplicationContentBinding;
+use worth_relational::facade::content::RelationalContentFrame;
+
+/// Completed field-bound admission retains actual Native byte custody.
+///
+/// A descriptive identity supplies neither the field admission nor byte custody:
+#[derive(Clone, Debug)]
+pub struct AdmittedContent<C: ApplicationContentBinding> {
+    frame: RelationalContentFrame,
+    _format: PhantomData<fn() -> C>,
+}
+impl<C: ApplicationContentBinding> AdmittedContent<C> {
+    pub fn from_resolved_frame(frame: RelationalContentFrame) -> Self {
+        Self {
+            frame,
+            _format: PhantomData,
+        }
+    }
+    pub fn identity(&self) -> worth_foundational::facade::ContentRefId {
+        self.frame.identity()
+    }
+    pub fn payload(&self) -> &[u8] {
+        self.frame.payload()
+    }
+    pub fn format(&self) -> &worth_foundational::facade::ContentFormat {
+        self.frame.format()
+    }
+}

@@ -4,6 +4,8 @@ use super::super::{
 };
 use crate::domain_computation::primary_graph::WorthQueryEntityResolutionRefusalKind as ResolutionRefusal;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionRefusalKind as PrincipalRefusal;
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph::conditional_operation) fn bridge_reconstruction_denial(
     detail: impl Into<String>,
@@ -53,7 +55,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn recon
     kind: WorthQueryConditionalRuntimeInstallationDenialKind,
     detail: impl Into<String>,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
-    WorthQueryConditionalRuntimeInstallationDenial::new(kind, detail)
+    WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(kind, detail)
 }
 
 pub(super) fn principal(

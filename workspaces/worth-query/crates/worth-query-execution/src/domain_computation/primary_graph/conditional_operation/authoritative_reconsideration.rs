@@ -1,4 +1,8 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_relational::facade::publication::PatchStreamPosition;
 use worth_runtime_bridge::facade::BridgeConditionalExecutionView;
 use worth_runtime_bridge::facade::{
@@ -40,10 +44,11 @@ pub(super) fn relevant_authoritative_commits<Schema>(
     interest: CommitTouchInterest<'_>,
 ) -> WorthQueryRelevantAuthoritativeCommits {
     let batch = runtime
+        .inner
         .runtime
-        .primary_provider
-        .graph
-        .source_owner
+        .primary_provider_ref()
+        .graph_ref()
+        .source_owner_ref()
         .invalidation_owner
         .touched_commits_after(branch, cursor, commit_ceiling, maximum_commits, interest);
     WorthQueryRelevantAuthoritativeCommits { batch }

@@ -165,7 +165,7 @@ fn retained_and_disposed_tokens_own_no_runtime_resource_types() {
     drop(continuation);
     context.assert_resource_baseline();
 
-    let token_source = include_str!("../../../../../../../../../worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/authority.rs");
+    let token_source = include_str!("../../../../../../../../../worth-query-execution-query/src/domain_computation/primary_graph/application_query/continuation/authority.rs");
     for forbidden in [
         "RelationalExecutionBasisLease",
         "WorthQueryApplicationBasisLease",
@@ -183,8 +183,8 @@ fn retained_and_disposed_tokens_own_no_runtime_resource_types() {
 
 #[test]
 fn continuation_parameter_affinity_retains_and_compares_foundational_basis() {
-    let token_source = include_str!("../../../../../../../../../worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/authority.rs");
-    let readmission_source = include_str!("../../../../../../../../../worth-query-execution/src/domain_computation/primary_graph/application_query/continuation/readmission.rs");
+    let token_source = include_str!("../../../../../../../../../worth-query-execution-query/src/domain_computation/primary_graph/application_query/continuation/authority.rs");
+    let readmission_source = include_str!("../../../../../../../../../worth-query-execution-query/src/domain_computation/primary_graph/application_query/continuation/readmission.rs");
 
     assert!(token_source.contains("WorthQueryApplicationParameterCanonicalArtifact"));
     assert!(!token_source.contains("parameter_identity: String"));

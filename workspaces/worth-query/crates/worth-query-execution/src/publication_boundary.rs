@@ -18,18 +18,15 @@
 //! use worth_query_execution::facade::primary_graph::WorthQueryCapabilityWorkflowIdempotency;
 //! ```
 
-/// Compiler-visible access to program-output progression owned by the
-/// publication crate. The host facade intentionally does not re-export this
-/// type or its issuer.
-pub struct WorthQueryProgramPublicationAccess {
-    _private: (),
-}
+pub use worth_query_execution_contracts::facade::{
+    program_publication_access, WorthQueryProgramPublicationAccess,
+};
 
-pub fn program_publication_access() -> WorthQueryProgramPublicationAccess {
-    WorthQueryProgramPublicationAccess { _private: () }
-}
+pub use worth_query_execution_lineage::facade::primary_graph::application_attempt::compare_and_commit::commit_outcome::denial::advancement::WorthQueryAdvancementDenialCommitExt;
+pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::capture::EffectProgramSynchronousOutputsExt;
 
 pub mod original_read_outputs {
+    pub use crate::domain_computation::primary_graph::application_query::observed_source::capture_original_operation_source;
     pub use crate::domain_computation::primary_graph::WorthQueryOriginalReadOutputDenial;
 }
 
@@ -202,7 +199,8 @@ pub mod capability_command {
 
 /// Executable sealed graph shape used only by source publication.
 pub mod synchronous_outputs {
-    pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::{default_producer_round_bounds, SynchronousDiscoveredOutputRoot, SynchronousOutputEdges, AppliedOutputParent, SynchronousOutputAssembly, SynchronousOutputFailure};
+    pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::{default_producer_round_bounds, SynchronousOutputEdges, AppliedOutputParent, SynchronousOutputAssembly, SynchronousOutputFailure};
+    pub use crate::domain_computation::primary_graph::application_contribution::synchronous_outputs::SynchronousDiscoveredOutputRoot;
 }
 
 pub mod authored_edit {

@@ -1,4 +1,6 @@
 //! Additive admitted identities describe actual originals and their fresh session.
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 mod evaluation;
 pub(super) mod history;
 use super::WorthQueryApplicationInspectionTarget;
@@ -63,6 +65,10 @@ pub(super) fn identities<Stop>(
     let (actual, current) = session
         .inspection_binding()
         .ok_or(InspectionIdentityStop::ForeignSession)?;
+    let actual = actual
+        .as_any()
+        .downcast_ref::<super::WorthQueryApplicationInspectionTarget>()
+        .ok_or(InspectionIdentityStop::ForeignSession)?;
     if !actual.admits_member(target) {
         return Err(InspectionIdentityStop::ForeignSession);
     }
@@ -78,29 +84,30 @@ pub(super) fn identities<Stop>(
             .before()
             .ok_or(InspectionIdentityStop::ForeignSession)?,
     };
-    let source = &original.source;
-    let source_product = product(&source.selection)?;
-    let receipt_product = product(original.basis.selection())?;
-    let schema = &source.schema_binding;
+    let source = original.source();
+    let selection = source.selection();
+    let source_product = product(&selection)?;
+    let receipt_product = product(original.basis().selection())?;
+    let schema = source.schema_binding_ref();
     let count =
-        u64::try_from(original.result_count).map_err(|_| InspectionIdentityStop::Overflow)?;
+        u64::try_from(original.result_count()).map_err(|_| InspectionIdentityStop::Overflow)?;
     let observation = compose(
         "query.application-inspection.original-observation.v1",
         &[
-            Part::Number(source.runtime_authority),
+            Part::Number(source.runtime_authority()),
             Part::Number(schema.runtime_ordinal()),
             Part::Number(schema.generation()),
             Part::Digest(*schema.package_identity()),
             Part::Digest(*schema.schema_identity()),
             Part::Digest(*target.contract().graph_obligations().identity().digest()),
-            Part::Digest(CanonicalDigestId::new(*source.query_identity.as_bytes())),
-            Part::Digest(source.parameter_binding_identity),
+            Part::Digest(CanonicalDigestId::new(*source.query_identity().as_bytes())),
+            Part::Digest(source.parameter_binding_identity()),
             Part::Digest(CanonicalDigestId::new(
                 source.idempotency_identity().bytes(),
             )),
-            Part::Number(original.basis.runtime_instance_id()),
-            Part::Text(original.basis.branch_id().0.as_str()),
-            Part::Number(original.basis.snapshot_id().0),
+            Part::Number(original.basis().runtime_instance_id()),
+            Part::Text(original.basis().branch_id().0.as_str()),
+            Part::Number(original.basis().snapshot_id().0),
             Part::Number(count),
             Part::Number(source_product.branch_identity().owner_identity().get()),
             Part::Text(source_product.branch_identity().name().as_str()),

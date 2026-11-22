@@ -6,6 +6,7 @@ use std::{
     collections::{BTreeMap, BTreeSet},
     sync::Arc,
 };
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 
 use worth_relational::facade::identity::{EntityId, PartitionId};
 use worth_runtime_bridge::facade::{BridgeInstalledConditionalLowering, BridgeSemanticLocality};
@@ -89,7 +90,7 @@ impl WorthQueryConditionalCommitWatchSet {
         let memory = execution.allocation_policy().reserve_memory(bytes);
         check_request(execution)?;
         let memory = memory.map_err(|cause| {
-            Denial::new(
+            Denial::from_kind_and_subject(
                 Kind::RetentionAllocation(cause),
                 "conditional commit watch allocation",
             )
@@ -129,7 +130,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn sourc
 }
 
 fn capacity() -> Denial {
-    Denial::new(
+    Denial::from_kind_and_subject(
         Kind::RetentionCapacityExhausted,
         "conditional commit watch capacity is exhausted",
     )
@@ -151,7 +152,7 @@ fn check_request(execution: &worth_execution::ExecutionRequest<'_, '_>) -> Resul
             Stop::Resource(denial) => Ok(Refusal::ExecutionResource { denial, partition_identity: None, policy_ancestor: None }),
             Stop::NestedPatternStopped => Ok(Refusal::ExecutionNestedPatternStopped { partition_identity: None }),
         };
-        Denial::new(Kind::ReadExecution(cause), "conditional commit watch request stopped")
+        Denial::from_kind_and_subject(Kind::ReadExecution(cause), "conditional commit watch request stopped")
     })
 }
 

@@ -1,11 +1,13 @@
 //! Directory admission retains the declared correction shape.
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 pub(super) fn admit<Schema: ApplicationSchema>(
     target: &WorthQuerySelectedProductOperation<'_, Schema>,
     source: &WorthQuerySelectedCorrectionSource<'_, Schema>,
 ) -> Result<(), WorthQueryCorrectionDerivationDenial> {
     use WorthQueryCorrectionDerivationDenial as Denial;
-    let runtime = &target.application().runtime.product_runtime;
+    let runtime = &target.application().inner.runtime.product_runtime_ref();
     if !runtime.is_directory_home() {
         return Ok(());
     }

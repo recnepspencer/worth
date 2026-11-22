@@ -1,5 +1,5 @@
 //! Exact original identity and declared key retained for native inverse validation.
-mod candidate;
+pub(crate) mod candidate;
 #[cfg(test)]
 mod candidate_tests;
 mod live_owner_members;

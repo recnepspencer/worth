@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 impl<Binding, Reconstruction, Execution, Clock, Input>
     WorthQueryInstalledTemporalOperation<Binding, Reconstruction, Execution, Clock, Input>
@@ -20,7 +21,7 @@ impl<Binding, Reconstruction, Execution, Clock, Input>
         ) {
             prepare_wake(request, runtime, wake)?;
         }
-        let owner = runtime.runtime.bridge.conditional_operations();
+        let owner = runtime.inner.runtime.bridge_ref().conditional_operations();
         let bridge = owner
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);

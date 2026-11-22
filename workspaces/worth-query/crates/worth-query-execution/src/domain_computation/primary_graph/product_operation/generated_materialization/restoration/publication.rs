@@ -4,6 +4,9 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -22,22 +25,22 @@ where
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
     ) -> Result<WorthQueryRestoredGeneratedOutput, WorthQueryGeneratedOutputRestorationFailure>
     {
-        let publication_execution = match phase.execution_request_for(&self.runtime.product_runtime)
-        {
-            Ok(execution) => execution,
-            Err(cause) => {
-                return Err(restoration_failure(
-                    suspended_from_completion(
-                        publication,
-                        branch,
-                        correspondence,
-                        producer,
-                        completion,
-                    ),
-                    WorthQueryGeneratedOutputRestorationFailureCause::advancement(cause.into()),
-                ))
-            }
-        };
+        let publication_execution =
+            match phase.execution_request_for(self.inner.runtime.product_runtime_ref()) {
+                Ok(execution) => execution,
+                Err(cause) => {
+                    return Err(restoration_failure(
+                        suspended_from_completion(
+                            publication,
+                            branch,
+                            correspondence,
+                            producer,
+                            completion,
+                        ),
+                        WorthQueryGeneratedOutputRestorationFailureCause::advancement(cause.into()),
+                    ))
+                }
+            };
         let prepared = match publication.prepare_relational_candidate(candidate, request, true) {
             Ok(prepared) => prepared,
             Err(PublicationDenial::ClockMismatch) => {

@@ -15,6 +15,9 @@ use worth_execution::MapKernelFailure;
 use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryScopeBinding,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationQueryBinding,
 };
@@ -116,6 +119,7 @@ pub(super) fn start<'a, 'storage, Schema: ApplicationSchema, Scope>(
 ) -> Result<InspectionRead<'a, 'storage, Schema, Scope>, InspectionAdmissionDenial> {
     let product = selected.product().read_lease();
     let graph = runtime
+        .inner
         .runtime
         .primary_graph()
         .ok_or(InspectionAdmissionDenial::MissingGraph)?;
@@ -144,9 +148,10 @@ pub(super) fn start<'a, 'storage, Schema: ApplicationSchema, Scope>(
             basis_ref.clone(),
             WorthQueryManagedGraphWorkSession::start_inspection(
                 reserved,
-                Arc::clone(&target),
+                Arc::clone(&target)
+                    as Arc<dyn worth_query_execution_runtime::facade::ports::InspectionTargetPort>,
                 plan,
-                runtime.runtime.authority_identity(),
+                runtime.inner.runtime.authority_identity(),
                 principal,
                 WorthQueryGraphWorkAccessContextAffinity::entity(scope.entity_id()),
                 basis_ref,

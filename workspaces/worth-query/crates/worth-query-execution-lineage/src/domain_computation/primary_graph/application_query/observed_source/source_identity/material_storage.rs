@@ -1,0 +1,208 @@
+//! Coordinate backing keeps its own grant, independently of read material.
+use super::*;
+use crate::domain_computation::primary_graph::source_facts::SourceFactsAllocation;
+use worth_execution::ExecutionRequest;
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+
+pub struct ManagedInternerStorage<'a, 'request, 'authority> {
+    pub execution: &'a ExecutionRequest<'request, 'authority>,
+    pub allocation: &'a Arc<SourceFactsAllocation>,
+}
+impl ManagedInternerStorage<'_, '_, '_> {
+    pub fn work(&self, units: usize) -> Result<(), Cause> {
+        let units = u64::try_from(units).map_err(|_| Cause::WorkCounterOverflow)?;
+        let mut result = None;
+        let outcome = self.execution.run_native_with_checkpoint(|context| {
+            result = Some(if context.has_accounting() {
+                context.checkpoint(units)
+            } else {
+                context.poll()
+            });
+        });
+        match (outcome, result) {
+            (Ok(_), Some(result)) => result.map_err(Into::into),
+            (
+                Err(worth_execution::WorkCeilingDenial::Stopped(
+                    worth_execution::MapKernelStop::NestedStopped,
+                )),
+                Some(Err(cause)),
+            ) => Err(cause.into()),
+            (Err(cause), _) => Err(cause.into()),
+            (Ok(_), None) => unreachable!("completed interner checkpoint"),
+        }
+    }
+
+    pub fn lookup(&self, count: usize) -> Result<(), Cause> {
+        // A lookup compares no key more than once; this bound requires no
+        // private BTree fanout or height contract.
+        self.work(
+            count
+                .checked_add(1)
+                .and_then(|count| {
+                    count.checked_mul(size_of::<WorthQueryObservedSourceCoordinate>())
+                })
+                .ok_or(Cause::WorkCounterOverflow)?,
+        )
+    }
+
+    pub fn comparison(
+        &self,
+        left: &WorthQueryObservedSourceFootprint,
+        right: &WorthQueryObservedSourceFootprint,
+    ) -> Result<(), Cause> {
+        admit_footprint_comparison(left, right, &mut |units| self.work(units))
+    }
+
+    pub fn scratch(
+        &self,
+        count: usize,
+    ) -> Result<Vec<Arc<WorthQueryObservedSourceMeaning>>, Cause> {
+        self.work(count.checked_mul(2).ok_or(Cause::WorkCounterOverflow)?)?;
+        self.allocation
+            .claim_slice::<Arc<WorthQueryObservedSourceMeaning>>(self.execution, count)?;
+        let mut values = Vec::new();
+        values
+            .try_reserve_exact(count)
+            .map_err(|_| Cause::AllocationFailed)?;
+        Ok(values)
+    }
+
+    pub fn meaning(&self) -> Result<(), Cause> {
+        let bytes = std::alloc::Layout::new::<[usize; 2]>()
+            .extend(std::alloc::Layout::new::<WorthQueryObservedSourceMeaning>())
+            .ok()
+            .map(|(layout, _)| layout.pad_to_align().size())
+            .and_then(|bytes| u64::try_from(bytes).ok())
+            .ok_or(Cause::ChargedBytesOverflow)?;
+        self.allocation.claim(self.execution, bytes)
+    }
+}
+
+#[derive(Default)]
+pub struct CoordinateMeanings {
+    pub entries: Vec<Weak<WorthQueryObservedSourceMeaning>>,
+    // The payload drops before its dedicated original funding. No batch read
+    // allocation is retained by an unrelated Source coordinate.
+    allocations: Vec<Arc<SourceFactsAllocation>>,
+}
+impl CoordinateMeanings {
+    pub fn reserve(
+        &mut self,
+        storage: &ManagedInternerStorage<'_, '_, '_>,
+        count: usize,
+    ) -> Result<(), Cause> {
+        if !self.allocations.is_empty() && self.entries.len() < self.entries.capacity() {
+            return Ok(());
+        }
+        // Each growth is funded by this request, never by resizing a prior
+        // reader's retained grant or keeping this request's payload batch alive.
+        let allocation = SourceFactsAllocation::open(storage.execution)?;
+        if self.allocations.is_empty() {
+            // Each live coordinate covers a conservative complete BTree node
+            // and path. Deletion allocates nothing; surviving coordinates keep
+            // their own node/slack bounds until the empty map is deallocated.
+            allocation.claim_tree::<(WorthQueryObservedSourceCoordinate, Self)>(
+                storage.execution,
+                count,
+            )?;
+        }
+        let next = self
+            .entries
+            .len()
+            .checked_add(1)
+            .ok_or(Cause::ChargedBytesOverflow)?;
+        allocation.claim_slice::<Weak<WorthQueryObservedSourceMeaning>>(
+            storage.execution,
+            next.max(self.entries.capacity()),
+        )?;
+        allocation.claim_slice::<Arc<SourceFactsAllocation>>(
+            storage.execution,
+            self.allocations
+                .len()
+                .checked_add(1)
+                .ok_or(Cause::ChargedBytesOverflow)?,
+        )?;
+        self.allocations
+            .try_reserve_exact(1)
+            .map_err(|_| Cause::AllocationFailed)?;
+        // Retain the grant before either live container can keep new capacity
+        // across a later refusal. A newly prepared bucket drops as one owner.
+        self.allocations.push(allocation);
+        if self.entries.len() == self.entries.capacity() {
+            self.entries
+                .try_reserve_exact(1)
+                .map_err(|_| Cause::AllocationFailed)?;
+        }
+        Ok(())
+    }
+}
+
+impl WorthQueryObservedSourceMeaningRegistryState {
+    pub fn take_empty_material_storage(
+        &mut self,
+    ) -> Option<BTreeMap<WorthQueryObservedSourceCoordinate, CoordinateMeanings>> {
+        self.meanings
+            .is_empty()
+            .then(|| std::mem::take(&mut self.meanings))
+    }
+}
+
+/// The same source-meaning comparison admission for a managed selection's
+/// borrowed dependencies; this neither allocates nor touches their old grant.
+pub fn admit_footprint_comparison(
+    left: &WorthQueryObservedSourceFootprint,
+    right: &WorthQueryObservedSourceFootprint,
+    admit: &mut impl FnMut(usize) -> Result<(), Cause>,
+) -> Result<(), Cause> {
+    for footprint in [left, right] {
+        if let Some(managed) = footprint
+            .root_selection
+            .as_ref()
+            .and_then(|selection| selection.managed_index.as_ref())
+        {
+            admit(managed.dependencies.len())?;
+        }
+    }
+    let mut visits = 0usize;
+    for facts in [left, right]
+        .into_iter()
+        .flat_map(|source| source.fact_sources())
+    {
+        visits = visits
+            .checked_add(facts.entities.len())
+            .and_then(|n| n.checked_add(facts.aspects.len()))
+            .and_then(|n| n.checked_add(facts.adjacencies.len()))
+            .ok_or(Cause::WorkCounterOverflow)?;
+    }
+    admit(visits)?;
+    let mut work = 0usize;
+    for facts in [left, right]
+        .into_iter()
+        .flat_map(|source| source.fact_sources())
+    {
+        work = work
+            .checked_add(
+                facts
+                    .entities
+                    .len()
+                    .checked_mul(size_of::<worth_relational::facade::identity::EntityId>())
+                    .ok_or(Cause::WorkCounterOverflow)?,
+            )
+            .ok_or(Cause::WorkCounterOverflow)?;
+        for aspect in facts.aspects {
+            work = work
+                .checked_add(size_of_val(aspect))
+                .and_then(|n| n.checked_add(aspect.entity_name.len()))
+                .and_then(|n| n.checked_add(aspect.aspect.as_str().len()))
+                .and_then(|n| n.checked_add(aspect.field.as_str().len()))
+                .ok_or(Cause::WorkCounterOverflow)?;
+        }
+        for adjacency in facts.adjacencies {
+            work = work
+                .checked_add(size_of_val(adjacency))
+                .and_then(|n| n.checked_add(adjacency.owned_capacity_bytes()))
+                .ok_or(Cause::WorkCounterOverflow)?;
+        }
+    }
+    admit(work)
+}

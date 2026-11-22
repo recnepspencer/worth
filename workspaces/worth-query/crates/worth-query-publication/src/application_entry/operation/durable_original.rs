@@ -168,8 +168,8 @@ impl<S: ApplicationSchema + 'static, I: ApplicationMutationIntent<S>>
             .select(phase)
             .map_err(|_| D::OwnershipMaterialUnavailable)?;
         let source = self.source.as_ref().map(|source| match source {
-            crate::application_entry::mutation::request::WorthQueryMutationExpectedSource::Row(row) => row.capture_original_operation_source(false, &access),
-            crate::application_entry::mutation::request::WorthQueryMutationExpectedSource::ResultSet(set) => set.source().capture_original_operation_source(true, &access),
+            crate::application_entry::mutation::request::WorthQueryMutationExpectedSource::Row(row) => worth_query_execution::publication_boundary::original_read_outputs::capture_original_operation_source(row, false, &access),
+            crate::application_entry::mutation::request::WorthQueryMutationExpectedSource::ResultSet(set) => worth_query_execution::publication_boundary::original_read_outputs::capture_original_operation_source(set.source(), true, &access),
         }).transpose()?;
         let description = rmp_serde::to_vec(&RecordedDescription {
             composition: action.composition_instance().to_owned(),

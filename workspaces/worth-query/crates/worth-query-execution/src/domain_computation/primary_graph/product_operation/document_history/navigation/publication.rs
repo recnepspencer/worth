@@ -1,5 +1,7 @@
 //! Original World publication and candidate-affine recovery retain exact D.
 use super::*;
+use crate::domain_computation::execution_runtime::product_world::ProductPublicationBindingPrimaryExt;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::{
     execution_runtime::product_world::{
         publication_denial::{
@@ -15,6 +17,18 @@ use crate::domain_computation::{
     WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) fn publication_denial(
@@ -38,17 +52,18 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         candidate: WorthQueryExpectedProductBranch<'runtime, S>,
         publication: WorthQueryPreparedProductPublication,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
-        let execution =
-            match phase.checked_execution_request_for(&self.application.runtime.product_runtime) {
-                Ok(execution) => execution,
-                Err(cause) => {
-                    self.phase = NavigationPhase::Publication {
-                        candidate,
-                        publication,
-                    };
-                    return Err(WorthQueryHistoryNavigationDenial::Stopped(cause));
-                }
-            };
+        let execution = match phase
+            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
+        {
+            Ok(execution) => execution,
+            Err(cause) => {
+                self.phase = NavigationPhase::Publication {
+                    candidate,
+                    publication,
+                };
+                return Err(WorthQueryHistoryNavigationDenial::Stopped(cause));
+            }
+        };
         match publication.execute(execution) {
             Ok(Outcome::Performed(performed)) => {
                 self.performed(candidate, performed);
@@ -94,10 +109,11 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .finish(committed)
                 .expect("World performed the prepared selection envelope");
             self.application
+                .inner
                 .runtime
-                .primary_provider
-                .graph
-                .output_lineage
+                .primary_provider_ref()
+                .graph_ref()
+                .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
                 .record_historical_transport(
@@ -106,16 +122,16 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                     restored.into_publications(),
                 );
         }
-        let exact = crate::basis::WorthQueryProductObservationLease::new(observation);
+        let exact = <crate::basis::WorthQueryProductObservationLease as ProductObservationLeaseInternalPort>::from_observation(observation);
         if self.output_profile.is_some() || self.ownership.is_some() {
             let original = crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation::from_product_with_memory(
-                self.application, exact.retained_clone(), self.output_source_memory.take(),
+                self.application.inner(), exact.retained_clone(), self.output_source_memory.take(),
             );
             let selected = self.ownership.map(|_| {
                 self.source
                     .as_ref()
                     .expect("a committed output restoration retains its selected preview")
-                    .source
+                    .source()
                     .product_observation()
                     .basis()
                     .relational_basis()
@@ -150,16 +166,18 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         &self,
         effects: worth_runtime_world::facade::ProductUnpublishedOwnerEffects,
     ) -> WorthQueryProductUnpublishedRecovery {
-        WorthQueryProductUnpublishedApplication::new(
+        WorthQueryProductUnpublishedApplication::from_effects(
             effects,
             self.application
+                .inner
                 .runtime
-                .product_runtime
-                .owner
+                .product_runtime_ref()
+                .owner_ref()
                 .recovery_port(),
             self.application
+                .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .unpublished_idempotency_disposition(),
         )
         .into_recovery()
@@ -175,12 +193,13 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         use WorthQueryHistoryNavigationDenial as Denial;
         let prepared = (|| {
             let execution = phase
-                .checked_execution_request_for(&self.application.runtime.product_runtime)
+                .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
                 .map_err(Denial::Stopped)?;
             let product = self
                 .application
+                .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .admit_product_occurrence(candidate.branch().occurrence())
                 .map_err(Denial::ProductAdmission)?;
             let selected = self
@@ -221,18 +240,19 @@ PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
                 return Err(cause);
             }
         };
-        let execution =
-            match phase.checked_execution_request_for(&self.application.runtime.product_runtime) {
-                Ok(execution) => execution,
-                Err(cause) => {
-                    drop(publication);
-                    self.phase = NavigationPhase::Unpublished {
-                        candidate,
-                        recovery,
-                    };
-                    return Err(Denial::Stopped(cause));
-                }
-            };
+        let execution = match phase
+            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
+        {
+            Ok(execution) => execution,
+            Err(cause) => {
+                drop(publication);
+                self.phase = NavigationPhase::Unpublished {
+                    candidate,
+                    recovery,
+                };
+                return Err(Denial::Stopped(cause));
+            }
+        };
         match publication.execute(execution) {
             Ok(Outcome::Performed(performed)) => {
                 self.performed(candidate, performed);

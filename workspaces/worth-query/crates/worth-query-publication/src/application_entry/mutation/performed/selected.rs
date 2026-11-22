@@ -1,6 +1,7 @@
 //! Performed sources committed under the program their branch selected.
 use crate::application_entry::mutation::recorded_replay::RecordedReplay;
 use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase as AdvancementPhase;
+use worth_query_execution::publication_boundary::EffectProgramSynchronousOutputsExt as _;
 
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIntent, ApplicationMutationScopeResolution,

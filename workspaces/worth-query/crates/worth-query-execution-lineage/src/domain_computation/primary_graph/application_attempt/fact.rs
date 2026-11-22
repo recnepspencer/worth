@@ -1,0 +1,281 @@
+use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue};
+use worth_relational::facade::identity::{EntityId, KindId, RelationId};
+use worth_relational::facade::indexes::DerivedIndexId;
+
+pub mod adjacency;
+pub mod dependency_key;
+pub mod effect_support;
+pub mod entity_touch;
+pub mod equality;
+pub mod image;
+pub mod indexed_entity_selection;
+pub use indexed_entity_selection::applied::observe as observe_applied_indexed_entity_selection;
+pub mod locator_identity;
+pub mod managed_source_read;
+pub mod movement;
+pub mod retirement_equality;
+pub mod source_currentness;
+pub mod source_read_authorization;
+
+pub mod source_merge;
+pub mod source_publication_read;
+pub use managed_source_read::ManagedSourceRead;
+
+pub mod workflow_definition_predecessor;
+pub mod workflow_history_basis;
+pub use workflow_history_basis::WorkflowHistoryRequirement;
+pub mod workflow_instance_capacity;
+pub use adjacency::observe_adjacency_with_work;
+pub use adjacency::observe_audit_outgoing_adjacency;
+pub use adjacency::{observe_adjacency, observe_adjacency_in_pin};
+pub use adjacency::{observe_adjacency_checked, AdjacencyObservationDenial};
+pub use indexed_entity_selection::reobserve as reobserve_indexed_entity_selection;
+pub use indexed_entity_selection::IndexedSelectionReobserveDenial;
+pub use indexed_entity_selection::{
+    observe_indexed_candidates, observe_indexed_entity_selection, WorthQueryIndexedSelectionRefusal,
+};
+pub use movement::{FactMovement, Movement, ObservedRetained};
+pub use source_currentness::WorthQuerySourceCurrentnessFailure;
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum WorthQueryApplicationAdjacencyDirection {
+    Outgoing,
+    Incoming,
+}
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct WorthQueryApplicationObservedRelation {
+    pub relation_id: RelationId,
+    pub from: EntityId,
+    pub to: EntityId,
+}
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum WorthQueryApplicationFactKey {
+    StructuralWalk(super::super::structural_walk::StructuralWalkKey),
+    Aggregate(super::super::aggregate_observation::AggregateKey),
+    ComponentSelection(super::super::component_selection::ComponentSelectionKey),
+    SourcePublication(SourcePublicationRead),
+    ManagedIndexSource(ManagedSourceReadKey),
+    SourceReadAuthorization(SourceReadAuthorizationKey),
+    Entity {
+        entity: String,
+        entity_id: EntityId,
+    },
+    Field {
+        entity: String,
+        entity_id: EntityId,
+        locator: AspectFieldLocator,
+    },
+    AspectPresence {
+        entity: String,
+        entity_id: EntityId,
+        locator: AspectFieldLocator,
+    },
+    Relation {
+        relation: String,
+        from: EntityId,
+        to: EntityId,
+    },
+    Adjacency {
+        relation: String,
+        anchor: EntityId,
+        direction: WorthQueryApplicationAdjacencyDirection,
+        maximum_work_units: usize,
+    },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationObservedFact {
+    /// Actual conventional Source permission, independently retained and checked.
+    SourceReadAuthorization {
+        observation: std::sync::Arc<SourceReadAuthorization>,
+    },
+    /// The complete original Source, including nonmatches and empty membership.
+    ManagedIndexSource {
+        observation: std::sync::Arc<ManagedSourceRead>,
+    },
+    ComponentSelection {
+        observation: std::sync::Arc<super::super::component_selection::ComponentSelection>,
+    },
+    /// Actual Native aggregate identity and complete membership at the original source.
+    Aggregate {
+        observation: std::sync::Arc<super::super::aggregate_observation::AggregateObservation>,
+    },
+    /// Complete original derived acquisition, including negative physical support.
+    DerivedSource {
+        observation: std::sync::Arc<super::super::derived_source::DerivedSourceObservation>,
+    },
+    /// Exact complete Native observation, issued under the original projection.
+    StructuralWalk {
+        observation: std::sync::Arc<super::super::structural_walk::StructuralWalkObservation>,
+    },
+    /// Owner-issued non-driving publication observation. The native slot and
+    /// image custody remain live; descriptive state alone cannot create this.
+    SourcePublication {
+        observation:
+            std::sync::Arc<super::super::output_lineage::invalidation::ObservedSourcePublication>,
+    },
+    /// Postcondition of a committed, declared output retirement. The original
+    /// read locator remains covered; the exact entity generation must stay retired.
+    RetiredOutputEntity {
+        entity_id: EntityId,
+        kind: KindId,
+        created_at: worth_relational::facade::identity::VersionId,
+        deleted_at: worth_relational::facade::identity::VersionId,
+        read_locator: String,
+    },
+    SourceEntity {
+        entity_id: EntityId,
+    },
+    SourceAspectRevision {
+        entity_id: EntityId,
+        aspect: AspectKey,
+        native_revision: Option<u64>,
+    },
+    SourceFieldRevision {
+        entity_id: EntityId,
+        locator: AspectFieldLocator,
+        native_revision: Option<worth_relational::facade::runtime::RelationalFieldRevision>,
+    },
+    SourceAdjacencyRevision {
+        relation_kind: KindId,
+        anchor: EntityId,
+        direction: worth_relational::facade::runtime::RelationalAdjacencyDirection,
+        native_revision: Option<worth_relational::facade::identity::VersionId>,
+        comparison_work_limit: usize,
+        endpoints: super::WorthQueryApplicationSourceAdjacencyEndpoints,
+    },
+    Entity {
+        entity_id: EntityId,
+        kind: KindId,
+    },
+    Field {
+        entity_id: EntityId,
+        kind: KindId,
+        locator: AspectFieldLocator,
+        value: AspectValue,
+    },
+    AbsentField {
+        entity_id: EntityId,
+        kind: KindId,
+        locator: AspectFieldLocator,
+    },
+    OptionalAspectAbsent {
+        entity_id: EntityId,
+        kind: KindId,
+        locator: AspectFieldLocator,
+    },
+    /// An optional field write may initialize only an aspect whose absence was read.
+    AspectPresence {
+        entity_id: EntityId,
+        kind: KindId,
+        aspect: AspectKey,
+        present: bool,
+    },
+    Relation {
+        relation_kind: KindId,
+        from: EntityId,
+        to: EntityId,
+        matching_relations: Vec<RelationId>,
+    },
+    Adjacency {
+        relation_kind: KindId,
+        anchor: EntityId,
+        direction: WorthQueryApplicationAdjacencyDirection,
+        maximum_work_units: usize,
+        relations: Vec<WorthQueryApplicationObservedRelation>,
+    },
+    /// Exact result of a bounded equality-index selection.
+    ///
+    /// This is owner-issued for Query-native application programs whose
+    /// correctness depends on both presence and absence. Re-executing the
+    /// same bounded lookup during provider recomparison closes the
+    /// check-then-create race without exposing raw index authority.
+    IndexedEntitySelection {
+        index_id: DerivedIndexId,
+        definition: worth_relational::facade::indexes::RetainedDerivedIndexDefinition,
+        entity_kind: KindId,
+        locator: AspectFieldLocator,
+        value: AspectValue,
+        candidate_limit: usize,
+        candidates: Vec<EntityId>,
+    },
+    /// Exact predecessor intent for a workflow-definition publication.
+    ///
+    /// A false observation is retained deliberately: retained idempotency is
+    /// resolved before fact recomparison, so an identical retry can recover
+    /// its receipt while a new effect attempt is forced stale.
+    WorkflowDefinitionPredecessor {
+        relation_kind: KindId,
+        lineage: Option<EntityId>,
+        expected_definition: Option<EntityId>,
+        maximum_work_units: usize,
+    },
+    /// Requires one exact performed definition to remain current at commit.
+    ///
+    /// This may deliberately be false at preparation so an exact retained
+    /// replay can resolve before a superseded definition makes a fresh start
+    /// stale.
+    WorkflowDefinitionCurrent {
+        relation_kind: KindId,
+        lineage: EntityId,
+        expected_definition: EntityId,
+        maximum_work_units: usize,
+    },
+    /// Exact bounded live-instance occupancy for one workflow lineage.
+    ///
+    /// Equality closes concurrent-start races. Capacity is also checked on
+    /// recomparison, so a full lineage can replay a retained start but cannot
+    /// commit a new instance.
+    WorkflowInstanceCapacity {
+        relation_kind: KindId,
+        lineage: EntityId,
+        maximum_instances: usize,
+        instances: Vec<WorthQueryApplicationObservedRelation>,
+    },
+    /// A budgeted history read at an exact immutable native basis. It carries
+    /// currentness, not permission to address arbitrary entities in that basis.
+    WorkflowHistoryBasis {
+        instance: EntityId,
+        requirement: WorkflowHistoryRequirement,
+        transition_count: usize,
+        snapshot: worth_relational::facade::snapshots::SnapshotHandle,
+    },
+}
+
+impl WorthQueryApplicationObservedFact {
+    pub const fn observed_field_value(&self) -> Option<&AspectValue> {
+        match self {
+            Self::Field { value, .. } => Some(value),
+            _ => None,
+        }
+    }
+
+    pub fn locator_identity(&self) -> String {
+        locator_identity::encode(self)
+    }
+
+    pub fn touches_entity(&self, candidate: EntityId) -> bool {
+        entity_touch::evaluate(self, candidate)
+    }
+}
+
+impl WorthQueryApplicationObservedFact {
+    pub fn write_dependency_locator(&self, output: &mut dyn std::fmt::Write) -> std::fmt::Result {
+        locator_identity::write(self, output)
+    }
+}
+
+pub mod consult_observation;
+
+mod court_doors_for_test;
+
+pub use source_publication_read::SourcePublicationRead;
+
+pub use managed_source_read::ManagedSourceReadKey;
+
+pub use source_read_authorization::SourceReadAuthorizationKey;
+
+pub use effect_support::source_stop as candidate_support_source_stop;
+pub use source_read_authorization::SourceReadAuthorization;

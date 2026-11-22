@@ -1,0 +1,355 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use crate::basis::{
+    WorthQueryProductBranch, WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease,
+};
+use crate::domain_computation::primary_graph::OriginalSettledProducerObservationExt;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+use worth_query_installation::facade::ApplicationSchema;
+use worth_runtime_world::facade::ProductBranchIdentity;
+
+pub use worth_query_execution_lineage::facade::primary_graph::product_operation::SelectedQueryOrigin;
+
+/// Shared application entry bound to one retained World occurrence. Selecting
+/// another occurrence requires a new admission; this context never resolves latest.
+pub struct WorthQuerySelectedProductOperation<'runtime, Schema> {
+    application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    selection_origin: SelectedQueryOrigin,
+    product: WorthQueryProductBranchLease,
+    application_basis:
+        super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
+    selected_program: Result<
+        super::super::WorthQuerySelectedProgramInspection,
+        super::super::WorthQuerySelectedProgramInspectionDenial,
+    >,
+    producer: Option<
+        std::sync::Arc<super::super::application_output_demand::OriginalSettledProducerObservation>,
+    >,
+}
+
+/// Public application entry naming one product occurrence. It performs no
+/// lookup until a concrete operation asks for an admitted selection.
+pub struct WorthQueryProductEntry<'runtime, Schema> {
+    pub(crate) application: &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    pub(crate) branch: WorthQueryProductBranch,
+}
+
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Installed host owner for lending a phase to public operations.
+    pub fn product_runtime(
+        &self,
+    ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime
+    {
+        &self.runtime.product_runtime
+    }
+
+    pub fn select_product_branch(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        identity: &ProductBranchIdentity,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'_, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        self.on_product(
+            execution,
+            self.runtime
+                .product_runtime
+                .admit_product_branch(identity)?,
+        )
+    }
+
+    /// Selects only a Query-issued occurrence token.
+    pub fn on_branch(&self, branch: WorthQueryProductBranch) -> WorthQueryProductEntry<'_, Schema> {
+        WorthQueryProductEntry {
+            application: self,
+            branch,
+        }
+    }
+
+    pub fn on_product(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        product: WorthQueryProductBranchLease,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'_, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        self.on_product_with_basis_admission(execution, product, |_| Ok(()))
+    }
+
+    pub fn on_mutation_product(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        lease: &super::super::application_attempt::WorthQueryApplicationSnapshotLease,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'_, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        let mut selected = self.on_product(execution, lease.product().retained_clone())?;
+        selected.selection_origin = lease.selection_origin();
+        Ok(selected)
+    }
+
+    fn on_product_with_basis_admission<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        mut product: WorthQueryProductBranchLease,
+        before_basis: impl FnOnce(
+            &worth_runtime_world::facade::ProductBranchObservation,
+        ) -> Result<(), Stop>,
+    ) -> Result<WorthQuerySelectedProductOperation<'_, Schema>, Stop> {
+        if product.observation().owner_identity()
+            != self.runtime.product_runtime.owner_ref().owner_identity()
+        {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            )
+            .into());
+        }
+        before_basis(product.observation())?;
+        let mut application_basis =
+            self.retain_product_application_basis(execution, product.observation())?;
+        let selected_program = self.bind_selected_program_interpretation(
+            execution,
+            product.relational_basis(),
+            &mut application_basis,
+        )?;
+        if let Ok(selected) = &selected_program {
+            product
+                .retain_selected_program_source(selected)
+                .map_err(|_| {
+                    WorthQueryProductBranchAdmissionDenial::Refused(
+                        AdmissionRefusal::ObservationRejected,
+                    )
+                })?;
+        }
+        Ok(WorthQuerySelectedProductOperation {
+            application: self,
+            selection_origin: SelectedQueryOrigin::default(),
+            product,
+            application_basis,
+            selected_program,
+            producer: None,
+        })
+    }
+
+    pub fn on_product_for_owner_recovery(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        mut product: WorthQueryProductBranchLease,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'_, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        if product.observation().owner_identity()
+            != self.runtime.product_runtime.owner_ref().owner_identity()
+        {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
+        }
+        let application_basis =
+            self.retain_product_application_basis(execution, product.observation())?;
+        let selected_program = super::super::product_activation::inspect_selected_program(
+            execution,
+            self,
+            product.relational_basis(),
+        );
+        if let Ok(selected) = &selected_program {
+            product
+                .retain_selected_program_source(selected)
+                .map_err(|_| {
+                    WorthQueryProductBranchAdmissionDenial::Refused(
+                        AdmissionRefusal::ObservationRejected,
+                    )
+                })?;
+        }
+        Ok(WorthQuerySelectedProductOperation {
+            application: self,
+            selection_origin: SelectedQueryOrigin::default(),
+            product,
+            application_basis,
+            selected_program,
+            producer: None,
+        })
+    }
+}
+
+impl<'runtime, Schema> WorthQueryProductEntry<'runtime, Schema>
+where
+    Schema: ApplicationSchema,
+{
+    /// Internal managed receiver hook at the actual retained Query basis owner.
+    pub(crate) fn select_for_managed_index<Stop: From<WorthQueryProductBranchAdmissionDenial>>(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+        before_basis: impl FnOnce(
+            &worth_runtime_world::facade::ProductBranchObservation,
+        ) -> Result<(), Stop>,
+    ) -> Result<WorthQuerySelectedProductOperation<'runtime, Schema>, Stop> {
+        let application = self.application;
+        let product = application.admit_with_observation_room(|| {
+            application
+                .runtime
+                .product_runtime
+                .admit_product_occurrence(self.branch.occurrence())
+        })?;
+        let mut selected =
+            application.on_product_with_basis_admission(request, product, before_basis)?;
+        selected.selection_origin = SelectedQueryOrigin::current_at_selection();
+        Ok(selected)
+    }
+
+    pub fn select(
+        self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'runtime, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        let request = phase
+            .execution_request_for(&self.application.runtime.product_runtime)
+            .map_err(|_| {
+                WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignPhase)
+            })?;
+        self.select_with_request(&request)
+    }
+
+    pub(crate) fn select_with_request(
+        self,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        WorthQuerySelectedProductOperation<'runtime, Schema>,
+        WorthQueryProductBranchAdmissionDenial,
+    > {
+        let application = self.application;
+        let mut selected = application.on_product(
+            request,
+            application.admit_with_observation_room(|| {
+                application
+                    .runtime
+                    .product_runtime
+                    .admit_product_occurrence(self.branch.occurrence())
+            })?,
+        )?;
+        selected.selection_origin = SelectedQueryOrigin::current_at_selection();
+        Ok(selected)
+    }
+}
+
+impl<'runtime, Schema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    /// Inspects the rostered program carried by this exact selected occurrence.
+    pub fn inspect_selected_program(
+        &self,
+    ) -> Result<
+        super::super::WorthQuerySelectedProgramInspection,
+        super::super::WorthQuerySelectedProgramInspectionDenial,
+    >
+    where
+        Schema: ApplicationSchema,
+    {
+        self.selected_program.clone()
+    }
+
+    pub fn selection_origin(&self) -> SelectedQueryOrigin {
+        self.selection_origin
+    }
+
+    pub fn product(&self) -> &WorthQueryProductBranchLease {
+        &self.product
+    }
+
+    pub fn application(&self) -> &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+        self.application
+    }
+
+    pub fn application_basis(
+        &self,
+    ) -> &super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease {
+        &self.application_basis
+    }
+
+    pub fn original_settled_producer(
+        &self,
+    ) -> Option<
+        &std::sync::Arc<
+            super::super::application_output_demand::OriginalSettledProducerObservation,
+        >,
+    > {
+        self.producer.as_ref()
+    }
+
+    pub fn application_basis_mut(
+        &mut self,
+    ) -> &mut super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease
+    {
+        &mut self.application_basis
+    }
+
+    pub fn into_parts(
+        self,
+    ) -> (
+        &'runtime WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+        WorthQueryProductBranchLease,
+        super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
+    ) {
+        (self.application, self.product, self.application_basis)
+    }
+}
+
+impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime, Schema> {
+    pub fn with_original_settled_producer(
+        mut self,
+        producer: Option<
+            std::sync::Arc<
+                super::super::application_output_demand::OriginalSettledProducerObservation,
+            >,
+        >,
+    ) -> Self {
+        self.producer =
+            producer.filter(|origin| origin.matches(self.application, self.product.observation()));
+        self
+    }
+
+    pub fn retain_selection(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, WorthQueryProductBranchAdmissionDenial> {
+        self.application
+            .on_product(execution, self.product.retained_clone())
+            .map(|mut selected| {
+                selected.selection_origin = self.selection_origin;
+                selected.with_original_settled_producer(self.producer.clone())
+            })
+    }
+}
+
+mod court_doors_for_test;
+#[cfg(test)]
+#[path = "context_inline_type_budget.rs"]
+pub(crate) mod inline_type_budget;
+
+#[cfg(test)]
+fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census) {
+    {
+        let mut owner = census.owner::<WorthQuerySelectedProductOperation<'static, ()>>("workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/product_operation/context.rs", "WorthQuerySelectedProductOperation", 128 * 1024);
+        owner.field::<&'static WorthQueryPrimaryGraphApplicationRuntime<()>>("application");
+        owner.field::<SelectedQueryOrigin>("selection_origin");
+        owner.field::<WorthQueryProductBranchLease>("product");
+        owner.field::<super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisLease>("application_basis");
+        owner.field::<Result<
+            super::super::WorthQuerySelectedProgramInspection,
+            super::super::WorthQuerySelectedProgramInspectionDenial,
+        >>("selected_program");
+        owner.field::<Option<
+            std::sync::Arc<
+                super::super::application_output_demand::OriginalSettledProducerObservation,
+            >,
+        >>("producer");
+    }
+}

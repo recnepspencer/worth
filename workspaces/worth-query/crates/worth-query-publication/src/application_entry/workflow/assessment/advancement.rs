@@ -48,9 +48,9 @@ where
             .into_output_demand_source();
         let posture = (disclosure.rows().len() == 1)
             .then(|| Family::<S, D>::assessment_posture(&disclosure.rows()[0]));
-        let progress = worth_query_execution::publication_boundary::program_publication_access()
+        let progress = runtime
             .advance_workflow_assessment_output(
-                runtime,
+                &worth_query_execution::publication_boundary::program_publication_access(),
                 phase,
                 admitted,
                 request.principal,

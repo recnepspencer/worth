@@ -1,0 +1,36 @@
+//! Exact installed native discontinuity for a selected live Product basis.
+
+use worth_relational::facade::history::CommitId;
+use worth_relational::facade::mvcc::CompanionPreflightStop;
+use worth_relational::facade::runtime::PositionedRelationalSnapshot;
+
+use super::SourceInvalidationOwner;
+
+impl SourceInvalidationOwner {
+    pub fn selected_installed_discontinuity(
+        &self,
+        selected: &PositionedRelationalSnapshot,
+    ) -> Result<Option<CommitId>, CompanionPreflightStop> {
+        if selected.runtime_instance_id() != self.runtime_instance_id {
+            return Err(CompanionPreflightStop::ForeignCell);
+        }
+        let Some(cell) = self.cell_for_read(selected)? else {
+            return Ok(None);
+        };
+
+        let image = cell.read_image();
+        if image.root_id() != selected.root_id()
+            || image.commit_id() != selected.commit_id()
+            || image.position() != selected.position()
+        {
+            return Err(CompanionPreflightStop::SelectedSourceMismatch);
+        }
+        // An evicted index has no delivery record. The native image header is
+        // the exact discontinuity identity; no retained row claims continuity.
+        Ok(if image.payload().last_native_marking.is_none() {
+            image.commit_id()
+        } else {
+            image.payload().current.delivery_epoch.commit_id()
+        })
+    }
+}

@@ -4,6 +4,8 @@ use super::super::{
     WorthQueryResourceFrameKind,
 };
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub(super) enum Received {
     None,
@@ -61,8 +63,9 @@ where
     };
     if matches!(candidate.queue, ResourceCandidateQueue::Unadmitted) {
         let admitted = runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -137,8 +140,9 @@ where
             let issued = witness.effects_indeterminate_issuer().certify(bytes);
             candidate.admission = Some(
                 runtime
+                    .inner
                     .runtime
-                    .bridge
+                    .bridge_ref()
                     .conditional()
                     .with_view(
                         occurrence
@@ -158,8 +162,9 @@ where
             .expect("actual indeterminate admission retained");
         if admission.report().denied_completion().is_some() {
             runtime
+                .inner
                 .runtime
-                .bridge
+                .bridge_ref()
                 .conditional()
                 .with_view(
                     occurrence
@@ -208,8 +213,9 @@ where
             u64::try_from(candidate.frame.length()).map_err(|_| ResourceCause::Unavailable)?,
         );
         let validated = runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -222,8 +228,9 @@ where
             .map_err(ResourceCause::Bridge)?
             .map_err(ResourceCause::Completion)?;
         let admitted = runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -243,8 +250,9 @@ where
         .expect("actual Native admission retained before handoff");
     if admission.report().denied_completion().is_some() {
         runtime
+            .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -264,8 +272,9 @@ where
     }
     execution.consult().map_err(ResourceCause::Request)?;
     let committed = runtime
+        .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional()
         .with_view(
             occurrence

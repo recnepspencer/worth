@@ -5,6 +5,7 @@ use crate::domain_computation::{
     execution_runtime::WorthQueryRuntimeAuthorityIdentity,
     primary_graph::WorthQueryApplicationCommitReceipt,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_installation::facade::ApplicationSchemaBindingIdentity;
 use worth_relational::facade::identity::{EntityId, KindId};
 

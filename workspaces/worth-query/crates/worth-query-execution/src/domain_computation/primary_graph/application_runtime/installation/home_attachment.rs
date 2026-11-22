@@ -4,6 +4,10 @@ use super::super::mutation_partition::ApplicationMutationPartitions;
 use super::*;
 use crate::domain_computation::authorization::WorthQueryRuntimeClock;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductWorldResourcesInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph) struct HomeApplicationServices<
     Schema: ApplicationSchema,
@@ -58,9 +62,14 @@ pub(in crate::domain_computation::primary_graph) fn prepare_home_application_ser
         bootstrap.resource_support.clone(),
         installed.installed_view().retain_operation_catalog(),
     );
+    provider.install_managed_views_execution(
+        crate::domain_computation::primary_graph::lineage_ports::downcast_managed_views_arc(
+            std::sync::Arc::clone(&provider.graph_ref().managed_derived_views()),
+        ),
+    );
     provider
-        .graph
-        .output_lineage
+        .graph_ref()
+        .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
         .install_binding_identities(
@@ -68,8 +77,11 @@ pub(in crate::domain_computation::primary_graph) fn prepare_home_application_ser
                 .installed_mutation_binding_inventory()
                 .map(|binding| (TypeId::from(binding.binding_type()), binding.identity())),
         );
-    let participation =
-        super::super::graph_participation::install(authority, truth_partition_role, anchor)?;
+    let participation = super::super::graph_participation::install(
+        authority.inner_ref(),
+        truth_partition_role,
+        anchor,
+    )?;
     Ok(HomeApplicationServices {
         provider,
         participation,
@@ -110,7 +122,7 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
     let checkpoint_restore_work = bootstrap.recovered_checkpoint_restore_work();
     let product_world_resources = bootstrap.product_world_resources.clone();
     let relational_branch_identity = provider
-        .graph
+        .graph_ref()
         .with_runtime(&phase.execution_request(), |native| {
             native.main_branch_identity()
         });
@@ -140,9 +152,14 @@ pub(in crate::domain_computation::primary_graph) fn finish_home_application<
         None,
         mutation_partitions,
     );
-    application.installed_producers = producers;
-    application.installed_conditionals = conditionals;
-    application.conditional_cleanup.definitions = definition_routes;
+    application.inner.installed_producers = producers;
+    application.inner.installed_conditionals = conditionals;
+    *application
+        .conditional_cleanup
+        .routes
+        .definitions
+        .write()
+        .unwrap_or_else(std::sync::PoisonError::into_inner) = definition_routes;
     super::owned_contributions::transfer(&mut application, resources, managed_indexes);
     application
 }
@@ -152,7 +169,7 @@ pub(in crate::domain_computation::primary_graph) fn readmit_home_branch_basis(
     provider: &WorthQueryPrimaryGraphProvider,
     basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    let graph = &provider.graph;
+    let graph = &provider.graph_ref();
     graph.with_runtime(&phase.execution_request(), |native| {
         graph.carry_primary_index_basis_for_basis(&phase.execution_request(), native, basis)
             .map_err(|cause| match cause {
@@ -170,7 +187,7 @@ pub(in crate::domain_computation::primary_graph) fn bind_home_root_basis(
     provider: &WorthQueryPrimaryGraphProvider,
     basis: &worth_relational::facade::branch::AdmittedRelationalBranchBasis,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
-    let graph = &provider.graph;
+    let graph = &provider.graph_ref();
     graph.with_runtime(&phase.execution_request(), |native| {
         graph
             .bind_truth_head_basis_in_runtime(native, basis)

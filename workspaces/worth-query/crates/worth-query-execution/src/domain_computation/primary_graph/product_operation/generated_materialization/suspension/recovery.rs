@@ -1,4 +1,9 @@
-use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
+use crate::domain_computation::execution_runtime::product_world::{
+    OwnerCleanupRetirements, ProductPublicationBindingPrimaryExt,
+};
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 mod advancement;
 use crate::basis::WorthQueryProductBranchAdmissionDenial as Admission;
 use crate::domain_computation::execution_runtime::product_world::publication_denial::{
@@ -171,7 +176,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryGeneratedOutputSuspensionRecoveryFailure,
     > {
         let source_read = {
-            let _read = self.runtime.product_runtime.enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::GeneratedRecoverySourceSelection);
+            let _read = self.inner.runtime.product_runtime_ref().enter_named_read(crate::domain_computation::execution_runtime::product_world::read_consult::NamedRead::GeneratedRecoverySourceSelection);
             execution
                 .consult()
                 .map_err(|cause| {

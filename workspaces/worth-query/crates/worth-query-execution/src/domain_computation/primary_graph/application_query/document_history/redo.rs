@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHistoryPageCursor, WorthQueryHistoryPageDenial, WorthQueryHistoryPageLimits,
     WorthQueryHistoryRedoChoices,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub fn read_document_history_redo_choices<H: ApplicationHistoryBinding<S>>(
@@ -20,7 +21,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         let completed = read.complete_metadata_read(self, phase, document, access)?;
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let context = document.history_description_context(access);
         let (choices, generation) = {

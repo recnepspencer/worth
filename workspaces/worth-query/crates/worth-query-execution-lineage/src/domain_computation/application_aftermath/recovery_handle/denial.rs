@@ -1,0 +1,170 @@
+//! Distinct denial causes for recovery-handle mint and transition (R8.28).
+
+/// Why minting or transitioning a recovery handle was denied.
+///
+/// Each binding axis and lifecycle failure has its own variant so drift attacks
+/// cannot collapse into one shared string or enum.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryRecoveryHandleDenialKind {
+    DurableClaimPublication,
+    RetainedMaterialUnavailable,
+    OriginalRead(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenialKind),
+    CompletionExecutionRequest(
+        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    ),
+    /// Exact installed admission refusal before any effect or owner read.
+    AdmissionAuthorization(
+        crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind,
+    ),
+    DurableStateAdmission(crate::domain_computation::execution_runtime::product_world::WorthQueryDurableStateAdmissionDenial),
+    RecoveryNotAdmitted,
+    /// This authoritative commit already opened its sole recovery handle.
+    RecoveryAlreadyMinted,
+    SchemaMismatch,
+    BranchMismatch,
+    ApplicationBindingGenerationMismatch,
+    OperationMismatch,
+    GovernedInputMismatch,
+    /// Handle is right; the admitted idempotency read was minted for a foreign
+    /// binding.
+    ForeignIdempotencyRead,
+    CorrelationMismatch,
+    CompatibilityGenerationMismatch,
+    Expired,
+    AlreadyTerminal,
+    ForeignPrincipal,
+    ForeignRuntime,
+    StaleIncarnation,
+    ForeignBranchEqualOrdinal,
+    /// The effect already reached its one terminal completion. Safe retry
+    /// admits no new physical attempt and the live handle is returned.
+    AlreadyCompleted,
+    /// The effect completed, but publishing that completion is still in flight
+    /// or awaits its retry. No attempt is admitted and the live handle is
+    /// returned; once the publication resolves, retry answers
+    /// [`Self::AlreadyCompleted`].
+    CompletionPublicationPending,
+    /// Publication remains pending with the execution owner's exact refusal.
+    CompletionExecutionDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionDenialKind,
+    },
+    /// Publication remains pending after the execution owner's control stop.
+    CompletionExecutionControlStopped {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: crate::domain_computation::WorthQueryProviderSessionControlStopKind,
+    },
+    /// The terminal completion index cannot answer for this effect, so no
+    /// attempt is admitted and the live handle is returned. It answers again
+    /// once a pending completion publication resolves or the index is repaired.
+    CompletionAllocationDenied {
+        stage: crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenialStage,
+        kind: worth_execution::ExecutionAllocationDenialClass,
+        requested_payload_bytes: Option<u64>,
+    },
+    CompletionStagingCardinalityOverflow,
+    CompletionInputDirectoryAllocationDenied {
+        requested_batches: usize,
+    },
+    TerminalIndexUnavailable,
+    /// The live handle binding carries no co-committed dispatch outbox.
+    DispatchOutboxMissing,
+    /// No external-effect transport is installed on this runtime.
+    TransportNotInstalled,
+    /// Relational could not establish the exact committed dispatch owner row.
+    DispatchOwnerReadDenied(
+        crate::domain_computation::primary_graph::WorthQueryCommittedDispatchOutboxReadDenial,
+    ),
+    /// This runtime could not mint a runtime-affine physical attempt.
+    AttemptAdmissionDenied(
+        crate::domain_computation::primary_graph::WorthQueryExternalDispatchAttemptDenial,
+    ),
+    /// Canonical derivation of the dispatch event identity failed.
+    CanonicalDerivationDenied,
+    /// The installed runtime clock could not classify the physical attempt.
+    TimeObservationDenied,
+    /// Installed mechanism axis does not admit compensate (distinct from reconcile).
+    CompensationNotAdmitted,
+    /// Installed authority axis does not admit reconcile (distinct from compensate).
+    ReconciliationNotAdmitted,
+    /// The presented effect authority is this runtime's, but it is not the
+    /// authority for this handle. Distinct from a lapse of the admitted
+    /// request below, which a fresh request can clear.
+    FreshAuthorityDenied,
+    /// The admitted request was cancelled before the recovery took effect.
+    AdmissionCancelled,
+    /// The admitted request reached its deadline before the recovery took
+    /// effect.
+    AdmissionDeadlineExceeded,
+    /// The admitted principal's authentication expired before the recovery
+    /// took effect.
+    AdmissionAuthenticationExpired,
+    DisclosureAdmissionRequired,
+    /// The attempted effect is known not to have happened; it did not complete.
+    ProvenNoEffect(worth_foundational::facade::ExternalEffectNoEffectCause),
+    UnresolvedExternalPosture,
+}
+
+/// Refusal to mint, inspect, or transition a recovery handle.
+///
+/// Read [`Self::kind`] for the exact binding axis or lifecycle check that
+/// failed. A transition denied during admission relinquishes the handle rather
+/// than consuming it; no compensation, reconciliation, or retry took effect.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct WorthQueryRecoveryHandleDenial {
+    kind: WorthQueryRecoveryHandleDenialKind,
+    source: Option<std::sync::Arc<WorthQueryRecoverySourceDenial>>,
+}
+
+impl WorthQueryRecoveryHandleDenial {
+    pub const fn new(kind: WorthQueryRecoveryHandleDenialKind) -> Self {
+        Self { kind, source: None }
+    }
+
+    pub const fn kind(&self) -> WorthQueryRecoveryHandleDenialKind {
+        self.kind
+    }
+}
+
+/// Exact owning refusal retained alongside its caller-level recovery classification.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum WorthQueryRecoverySourceDenial {
+    Journal(crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial),
+    Material(crate::domain_computation::application_aftermath::correction_material::QueryCorrectionMaterialDenial),
+    Original(crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial),
+}
+impl WorthQueryRecoveryHandleDenial {
+    pub fn source(&self) -> Option<&WorthQueryRecoverySourceDenial> {
+        self.source.as_deref()
+    }
+    pub fn journal(
+        cause: crate::domain_computation::application_aftermath::dispatch_journal::QueryDispatchJournalDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryRecoveryHandleDenialKind::DurableClaimPublication,
+            source: Some(std::sync::Arc::new(
+                WorthQueryRecoverySourceDenial::Journal(cause),
+            )),
+        }
+    }
+    pub fn material(
+        cause: crate::domain_computation::application_aftermath::correction_material::QueryCorrectionMaterialDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryRecoveryHandleDenialKind::RetainedMaterialUnavailable,
+            source: Some(std::sync::Arc::new(
+                WorthQueryRecoverySourceDenial::Material(cause),
+            )),
+        }
+    }
+    pub fn original(
+        cause: crate::domain_computation::primary_graph::WorthQueryApplicationIdempotencyResolutionDenial,
+    ) -> Self {
+        Self {
+            kind: WorthQueryRecoveryHandleDenialKind::OriginalRead(cause.kind()),
+            source: Some(std::sync::Arc::new(
+                WorthQueryRecoverySourceDenial::Original(cause),
+            )),
+        }
+    }
+}

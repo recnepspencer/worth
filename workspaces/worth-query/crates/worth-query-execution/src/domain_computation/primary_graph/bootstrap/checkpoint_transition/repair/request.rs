@@ -1,5 +1,6 @@
 //! Move-only recovery survives failure to enter the caller's original request.
 use super::*;
+use crate::domain_computation::primary_graph::application_contribution::request_execution::BootstrapCapturePolicyExt;
 use crate::domain_computation::primary_graph::application_contribution::with_bootstrap_advancement_from_request;
 impl WorthQueryCheckpointTransitionRecovery {
     /// Repair the same performed transition under original borrowed execution.

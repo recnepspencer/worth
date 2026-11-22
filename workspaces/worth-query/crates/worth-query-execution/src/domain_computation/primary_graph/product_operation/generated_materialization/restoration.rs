@@ -1,3 +1,8 @@
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 mod in_phase;
 mod publication;
 use worth_query_installation::facade::ApplicationSchema;
@@ -148,8 +153,9 @@ where
         &self,
         observation: worth_runtime_world::facade::ProductBranchObservation,
     ) -> WorthQueryProductPublicationBinding {
-        self.runtime
-            .product_runtime
+        self.inner
+            .runtime
+            .product_runtime_ref()
             .publication_binding(observation)
     }
 
@@ -166,11 +172,12 @@ where
         effects: worth_runtime_world::facade::ProductUnpublishedOwnerEffects,
         publication: &WorthQueryProductPublicationBinding,
     ) -> crate::domain_computation::WorthQueryProductUnpublishedApplication {
-        crate::domain_computation::WorthQueryProductUnpublishedApplication::new(
+        crate::domain_computation::WorthQueryProductUnpublishedApplication::from_effects(
             effects,
             publication.recovery(),
-            self.runtime
-                .primary_provider
+            self.inner
+                .runtime
+                .primary_provider_ref()
                 .unpublished_idempotency_disposition(),
         )
     }

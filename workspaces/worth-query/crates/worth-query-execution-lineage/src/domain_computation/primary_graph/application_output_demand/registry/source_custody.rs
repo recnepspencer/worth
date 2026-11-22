@@ -1,0 +1,363 @@
+use super::post_commit::source_retirement::retire_stale_records;
+use super::{
+    BoundOutputSource, SourceCustody, WorthQueryOutputDemandRegistry,
+    WorthQueryRetainedOutputDemandSource,
+};
+use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PreparedOutputRootKind {
+    Required(TypeId),
+    Discovered(TypeId),
+}
+
+#[derive(Default)]
+pub struct SourcePreparationState {
+    pub active: usize,
+    pub retired: bool,
+}
+use crate::domain_computation::primary_graph::{
+    WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
+};
+use std::cmp::Ordering;
+use worth_runtime_world::facade::CompositeCommitIdentity;
+
+pub mod cold_readmission;
+pub mod owned_affinity;
+pub mod recorded_replay;
+pub mod reservation_control;
+pub mod retention;
+pub use reservation_control::{
+    WorthQueryDiscoveredRetentionControlDenial, WorthQueryDiscoveredRetentionReservationForTest,
+};
+pub mod undelivered_root;
+
+impl WorthQueryOutputDemandRegistry {
+    pub fn validate_recovery_root_kind(
+        &self,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
+        kind: PreparedOutputRootKind,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let custody = state
+            .source_custody
+            .get(receipt.source_commit())
+            .filter(|_| {
+                super::post_commit::custody_reader::visible(&state, receipt.source_commit())
+            })
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                    "the requested publication has no retained output custody",
+                )
+            })?;
+        if let Some(retired) = &custody.retired {
+            return Err(retired.clone());
+        }
+        if custody.root_kind != kind
+            || custody
+                .source
+                .as_ref()
+                .is_none_or(|source| !source.receipt.same_retained_output_source_as(receipt))
+        {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignSource,
+                "recovery root kind or receipt differs from retained source custody",
+            ));
+        }
+        Ok(())
+    }
+
+    pub fn retained_prepared_source_observation(
+        &self,
+        receipt: &crate::domain_computation::primary_graph::WorthQueryOutputSourceEvidence,
+        root_type: TypeId,
+    ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if !super::post_commit::custody_reader::visible(&state, receipt.source_commit()) {
+            return None;
+        }
+        let custody = state
+            .source_custody
+            .get_mut(receipt.source_commit())
+            .filter(|custody| custody.retired.is_none() && !custody.completed)
+            .filter(|custody| custody.root_kind == PreparedOutputRootKind::Required(root_type))
+            .filter(|custody| {
+                custody
+                    .source
+                    .as_ref()
+                    .is_some_and(|source| source.receipt.same_retained_output_source_as(receipt))
+            })?;
+        custody.token_count += 1;
+        custody
+            .source
+            .as_ref()
+            .map(|source| source.observation.clone())
+    }
+
+    pub fn ensure_prepared_output_source_bound(
+        &self,
+        commit: &CompositeCommitIdentity,
+        source: BoundOutputSource,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        self.ensure_bound(commit, &[source])
+    }
+
+    pub fn validate_prepared_recovery_currentness(
+        &self,
+        commit: &CompositeCommitIdentity,
+        retained: crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
+        current: crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        if retained.same_semantic_source(&current) {
+            return Ok(());
+        }
+        if current.replacement_order(&retained) == Some(Ordering::Greater) {
+            let mut state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            let denial = denial(
+                WorthQueryOutputDemandDenialKind::Superseded,
+                "a newer source revision retired this prepared output root",
+            );
+            if let Some(custody) = state.source_custody.get_mut(commit) {
+                if matches!(custody.root_kind, PreparedOutputRootKind::Required(_)) {
+                    custody.retire(denial.clone());
+                } else if custody.source_denial(&retained).is_none() {
+                    custody.retired_sources.push((retained, denial.clone()));
+                }
+            }
+            return Err(denial);
+        }
+        Err(denial(
+            WorthQueryOutputDemandDenialKind::ForeignSource,
+            "current recovery source differs from the retained source occurrence",
+        ))
+    }
+
+    pub fn bind_prepared_output_source(
+        &self,
+        commit: &CompositeCommitIdentity,
+        source: BoundOutputSource,
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        self.bind_prepared_output_sources(commit, &[source])
+    }
+
+    pub fn bind_prepared_output_sources(
+        &self,
+        commit: &CompositeCommitIdentity,
+        sources: &[BoundOutputSource],
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        if sources.iter().enumerate().any(|(index, source)| {
+            sources[..index]
+                .iter()
+                .any(|prior| prior.identity.same_occurrence(&source.identity))
+        }) {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
+                "root discovery must contain distinct output source occurrences",
+            ));
+        }
+        let mut state = self
+            .state
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let custody = state
+            .source_custody
+            .get(commit)
+            .filter(|_| super::post_commit::custody_reader::visible(&state, commit))
+            .ok_or_else(|| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+                    "prepared source is absent",
+                )
+            })?;
+        if let Some(retired) = &custody.retired {
+            return Err(retired.clone());
+        }
+        if custody.bound_sources.is_some() || custody.source.is_none() {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::DuplicatePerformedSource,
+                "prepared root batch was already bound",
+            ));
+        }
+        let source = custody
+            .source
+            .as_ref()
+            .expect("active custody retains source");
+        let receipt = source.receipt.clone();
+        let occurrence = receipt.product_branch().occurrence();
+        // Completed custody is retained physically until a later drain. This
+        // admission-free reader must resolve it before using bound revisions.
+        super::post_commit::custody_reader::resolve_before_binding(
+            &mut state,
+            receipt.source_commit(),
+        );
+        let superseded = sources
+            .iter()
+            .filter(|source| {
+                state.source_custody.iter().any(|(other_commit, other)| {
+                    other_commit != commit
+                        && super::post_commit::custody_reader::visible(&state, other_commit)
+                        && other.retired.is_none()
+                        && other.occurrence == occurrence
+                        && other.bound_sources.as_ref().is_some_and(|bound| {
+                            bound.iter().any(|prior| {
+                                other.source_denial(&prior.identity).is_none()
+                                    && root_revision_order(prior, source) == Some(Ordering::Greater)
+                            })
+                        })
+                })
+            })
+            .map(|source| source.identity.clone())
+            .collect::<Vec<_>>();
+        state.note_custody_changes(|other_commit, other| {
+            if other_commit == commit || other.retired.is_some() {
+                return false;
+            }
+            if other.occurrence == occurrence {
+                let before = other.retired_sources.len();
+                other.retire_superseded_roots(sources);
+                return other.retired_sources.len() != before;
+            }
+            false
+        });
+        for source in sources {
+            retire_stale_records(&mut state, occurrence, source.scope, &source.identity);
+        }
+        let mut bound = sources.to_vec();
+        bound.sort_by_key(|source| source.identity.clone());
+        let custody = state
+            .source_custody
+            .get_mut(commit)
+            .expect("selected custody retained");
+        for identity in superseded {
+            if custody.source_denial(&identity).is_none() {
+                custody.retired_sources.push((
+                    identity,
+                    denial(
+                        WorthQueryOutputDemandDenialKind::Superseded,
+                        "a newer required-output source is retained for this root",
+                    ),
+                ));
+            }
+        }
+        custody.bound_sources = Some(bound);
+        if custody.retired.is_some() || !custody.retired_sources.is_empty() {
+            state.note_custody(commit);
+        }
+        Ok(())
+    }
+
+    pub fn ensure_discovered_sources_bound(
+        &self,
+        commit: &CompositeCommitIdentity,
+        sources: &[BoundOutputSource],
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        self.ensure_bound(commit, sources)
+    }
+
+    fn ensure_bound(
+        &self,
+        commit: &CompositeCommitIdentity,
+        sources: &[BoundOutputSource],
+    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        let bound = || {
+            let state = self
+                .state
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            state
+                .source_custody
+                .get(commit)
+                .filter(|_| super::post_commit::custody_reader::visible(&state, commit))
+                .map(|custody| (custody.retired.clone(), custody.bound_sources.clone()))
+        };
+        let mut expected = sources.to_vec();
+        expected.sort_by_key(|source| source.identity.clone());
+        if let Some((Some(retired), _)) = bound() {
+            return Err(retired);
+        }
+        if let Some((_, Some(existing))) = bound() {
+            return if existing == expected {
+                Ok(())
+            } else {
+                Err(denial(
+                    WorthQueryOutputDemandDenialKind::ForeignSource,
+                    "rediscovery differs from the bound root source set",
+                ))
+            };
+        }
+        match self.bind_prepared_output_sources(commit, sources) {
+            Ok(()) => Ok(()),
+            Err(_)
+                if bound().is_some_and(|(retired, bound)| {
+                    retired.is_none() && bound == Some(expected)
+                }) =>
+            {
+                Ok(())
+            }
+            Err(denial) => Err(denial),
+        }
+    }
+}
+
+impl SourceCustody {
+    pub fn retire(&mut self, cause: WorthQueryOutputDemandDenial) {
+        self.source = None;
+        self.discovery = None;
+        self.retired = Some(cause);
+    }
+
+    pub fn retire_superseded_roots(&mut self, successors: &[BoundOutputSource]) {
+        let retired = self
+            .bound_sources
+            .as_ref()
+            .into_iter()
+            .flatten()
+            .filter(|prior| {
+                successors
+                    .iter()
+                    .any(|successor| root_revision_order(prior, successor) == Some(Ordering::Less))
+            })
+            .map(|prior| prior.identity.clone())
+            .collect::<Vec<_>>();
+        for identity in retired {
+            if self.source_denial(&identity).is_none() {
+                self.retired_sources.push((
+                    identity,
+                    denial(
+                        WorthQueryOutputDemandDenialKind::Superseded,
+                        "a newer required-output source replaced this root",
+                    ),
+                ));
+            }
+        }
+    }
+}
+
+pub fn root_revision_order(
+    prior: &BoundOutputSource,
+    successor: &BoundOutputSource,
+) -> Option<Ordering> {
+    (prior.scope == successor.scope)
+        .then(|| prior.identity.replacement_order(&successor.identity))
+        .flatten()
+}
+
+pub fn denial(
+    kind: WorthQueryOutputDemandDenialKind,
+    subject: impl Into<std::borrow::Cow<'static, str>>,
+) -> WorthQueryOutputDemandDenial {
+    WorthQueryOutputDemandDenial::new(kind, subject)
+}
+
+mod court_doors_for_test;

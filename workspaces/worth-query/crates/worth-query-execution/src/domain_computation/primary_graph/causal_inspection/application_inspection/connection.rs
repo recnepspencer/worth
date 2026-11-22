@@ -1,5 +1,10 @@
 //! Exact original source/input and producer/output joins, after fresh diagnostics.
 use super::WorthQueryApplicationInspectionTarget;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 mod evaluation;
 #[cfg(test)]
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) use evaluation::require_compared;
@@ -151,10 +156,10 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
             .original()
             .ok_or(MapKernelFailure::Domain(Denial::ForeignSource.into()))?;
         let supplier = original
-            .source
+            .source()
             .original_settled_producer()
             .ok_or(MapKernelFailure::Domain(Denial::ProducerUnavailable.into()))?;
-        if !matches!(&original.source.selection,
+        if !matches!(&original.source().selection(),
             WorthQueryApplicationBasisSelectionIdentity::Product(read) if supplier.read() == read)
         {
             return Err(MapKernelFailure::Domain(Denial::ProducerUnavailable.into()));
@@ -174,7 +179,12 @@ pub(super) fn connect<Schema: worth_query_installation::facade::ApplicationSchem
         let observed = overlap::ObservationConnection {
             original,
             diagnostic,
-            layout: &runtime.runtime.primary_provider.graph.layout,
+            layout: &runtime
+                .inner
+                .runtime
+                .primary_provider_ref()
+                .graph_ref()
+                .layout_ref(),
             contracts: runtime.installed_schema().native_contracts(),
         };
         source::require_input(

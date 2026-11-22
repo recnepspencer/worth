@@ -1,5 +1,6 @@
 //! Navigation selects an existing occurrence without rewriting or appending its source.
 use super::*;
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 
 impl<S> HistoryJournal<'_, S> {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn resolve_navigation(
@@ -58,7 +59,7 @@ impl<S> HistoryJournal<'_, S> {
         debug_assert_eq!(self.view_generation.checked_add(1), Some(view_after));
         self.current = node;
         self.view_generation = view_after;
-        self.protect_head(node.ordinal);
+        self.protect_head(node.ordinal());
         self.trim_one()
     }
 }
@@ -90,9 +91,9 @@ impl<S> HistoryJournal<'_, S> {
             .view_generation
             .checked_add(1)
             .ok_or(Denial::RecordingIdentityExhausted)?;
-        let source = !self.retained.contains_key(&node.ordinal);
+        let source = !self.retained.contains_key(&node.ordinal());
         let child = parent
-            .map(|parent| (parent.ordinal, node.ordinal))
+            .map(|parent| (parent.ordinal(), node.ordinal()))
             .filter(|key| !self.children.contains_key(key));
         let source_memory = if source {
             Some(
@@ -112,7 +113,7 @@ impl<S> HistoryJournal<'_, S> {
         };
         if let Some(allocation) = source_memory {
             self.retained.insert(
-                node.ordinal,
+                node.ordinal(),
                 RetainedHistorySource {
                     source: None,
                     discovery_recipes: None,
@@ -145,7 +146,7 @@ impl<S> HistoryJournal<'_, S> {
         if reserved.source {
             let entry = self
                 .retained
-                .remove(&node.ordinal)
+                .remove(&node.ordinal())
                 .expect("prepaid restoration");
             assert!(entry.source.is_none());
         }
@@ -162,7 +163,7 @@ impl<S> HistoryJournal<'_, S> {
     ) -> Option<Arc<WorthQueryApplicationReadObservation>> {
         let entry = self
             .retained
-            .get_mut(&node.ordinal)
+            .get_mut(&node.ordinal())
             .expect("prepaid target source");
         if entry.source.is_none() {
             entry.source = Some(source);

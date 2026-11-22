@@ -87,7 +87,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
             ApplicationCapabilityRequest<Schema, Capability, Scope = AccessScope<Schema, Binding>>,
     {
         prepare_pending_disclosure(
-            self.runtime,
+            self.runtime.inner(),
             installed
                 .installed
                 .access_binding()

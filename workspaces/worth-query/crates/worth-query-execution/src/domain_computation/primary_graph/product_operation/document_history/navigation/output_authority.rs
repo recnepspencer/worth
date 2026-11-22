@@ -5,6 +5,7 @@ use crate::basis::{WorthQueryProductBranchReadIdentity, WorthQueryProductObserva
 use crate::domain_computation::authorization::{
     admitted_request::AdmittedRequestCurrentness, WorthQueryOperationAuthorizationDenial,
 };
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::{
     application_query::CompletedMetadataRead, WorthQueryAdmittedApplicationOperation,
     WorthQueryAdvancementPhase, WorthQueryApplicationReadObservation,
@@ -14,14 +15,19 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_history::{
     ApplicationHistoryBinding, ApplicationHistoryModel, ApplicationHistoryNavigationBinding,
 };
+use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaBindingIdentity, WorthQueryInstalledDocumentHistory,
 };
 
 mod discovery_recipe;
-pub(crate) mod producer_invocation;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::navigation::output_authority::producer_invocation;
 mod recording;
-mod restored_basis;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::navigation::output_authority::restored_basis;
 mod tree;
 pub(in crate::domain_computation::primary_graph) use producer_invocation::{
     HistoryBorrowedReadStop, HistoryProducerCutover,
@@ -84,14 +90,14 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
         if !std::ptr::eq(phase, self.phase)
-            || self.runtime != runtime.runtime.authority_identity().as_u64()
+            || self.runtime != runtime.inner.runtime.authority_identity().as_u64()
             || self.binding != runtime.installed_schema().binding_identity()
             || !self.request.same_request(request)
         {
             return Err(Denial::ForeignDocument);
         }
         phase
-            .check_live_for(&runtime.runtime.product_runtime)
+            .check_live_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         if let Some(lapse) = self.request.lapse() {
             return Err(Denial::Authorization(
@@ -184,7 +190,7 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
     ) -> Result<T, WorthQueryHistoryNavigationDenial> {
         self.validate(phase, runtime, request)?;
         self.producer_invocation()
-            .confirm_read(phase, runtime, value)
+            .confirm_read(phase, runtime.inner(), value)
     }
 }
 
@@ -214,13 +220,15 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         self.validate_navigation::<N>(phase, read, installed, admission)?;
         let original = restored.observation();
         if profile.model != self.model
-            || !original
-                .belongs_to_selected_occurrence(self.application(), original.product_observation())
+            || !original.belongs_to_selected_occurrence(
+                self.application().inner(),
+                original.product_observation(),
+            )
         {
             return Err(Denial::ForeignDocument);
         }
         let execution = phase
-            .checked_execution_request_for(&self.application().runtime.product_runtime)
+            .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let selection = {
             let mut selected = self.selection.lock();
@@ -243,7 +251,12 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             })?;
         let authority = WorthQueryHistoryOutputAuthority {
             phase,
-            runtime: self.application().runtime.authority_identity().as_u64(),
+            runtime: self
+                .application()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64(),
             binding: self.binding.clone(),
             profile: profile.clone(),
             current: read.current_product().retained_clone(),
