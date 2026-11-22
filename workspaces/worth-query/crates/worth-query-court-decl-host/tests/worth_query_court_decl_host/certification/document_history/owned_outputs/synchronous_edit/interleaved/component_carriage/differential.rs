@@ -319,12 +319,12 @@ fn a_leading_after_read_before_a_model_write_commits() {
     assert_eq!(positioned(&stages), Ok(sequential(&stages)));
 }
 
-/// The held shape (#229): `first:a` is prepared for the consumer, then a later
-/// stage changes its model. One commit per stage commits first 30; the
-/// positioned edit refuses atomically with the supersession hold and nothing
-/// else, attributed to the later authored stage.
+/// The formerly held shape (#229): `first:a` is retained for the consumer,
+/// then a later stage changes its model. Qualified use reopens it and its
+/// discovered child, so the positioned edit commits exactly the world one
+/// commit per stage commits: first 30, child 3000, results [21, 2000, 3].
 #[test]
-fn a_later_stage_changing_a_prepared_producers_input_is_held_on_supersession() {
+fn a_later_stage_changing_a_retained_producers_input_commits_the_sequential_world() {
     let stages = [
         (0, Stage::After(1)),
         (1, Stage::Consume),
@@ -332,5 +332,5 @@ fn a_later_stage_changing_a_prepared_producers_input_is_held_on_supersession() {
     ];
     assert_eq!(sequential(&stages).first, Some(30));
     assert_eq!(superseding_stage(&stages), Some(2));
-    assert_eq!(positioned(&stages), Err(Refusal::Supersession(2)));
+    assert_eq!(positioned(&stages), Ok(sequential(&stages)));
 }

@@ -10,6 +10,9 @@ use worth_relational::facade::publication::{
 mod birth;
 mod fold;
 mod refusals;
+mod review_c3a;
+mod rounds;
+mod settlement;
 
 type Candidate<'a> = RelationalAuthoredCoupledCandidate<'a>;
 type Failure = RelationalCoupledAssemblyFailure;

@@ -44,6 +44,7 @@ macro_rules! edit_stage {
 
 mod proptest_diff;
 mod r3_shapes;
+mod sibling_reopen;
 mod work_bounds;
 
 const GOLDEN: &str = "tests/worth_query_court_decl_host/certification/document_history/owned_outputs/family/captured_input/wave_order.golden";
@@ -126,6 +127,14 @@ pub(super) fn summarize_denial(
 }
 pub(super) fn wave_units(observation: &WorthQueryExecutionObservation) -> u64 {
     observation.wave_charged_units_for_test()
+}
+/// The wave units and the retained reads qualification visited since the
+/// last call, read before the observation is released.
+pub(super) fn scheduling_measures(observation: &WorthQueryExecutionObservation) -> (u64, u64) {
+    (
+        observation.wave_charged_units_for_test(),
+        observation.retained_reads_visited_for_test(),
+    )
 }
 pub(super) fn producer_contacts<P: ApplicationProgramDefinition<Schema>>(
     host: &WorthQueryProgramApplicationRuntime<Schema, P>,

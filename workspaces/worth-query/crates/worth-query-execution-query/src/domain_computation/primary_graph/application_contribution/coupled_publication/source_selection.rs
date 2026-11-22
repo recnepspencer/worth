@@ -52,7 +52,11 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
             before_pin,
             demand,
             candidate,
-            execution::CoupledSourceReadPurpose::OutputPreparation,
+            if self.superseding.get() {
+                execution::CoupledSourceReadPurpose::Supersede
+            } else {
+                execution::CoupledSourceReadPurpose::OutputPreparation
+            },
         )
     }
 }

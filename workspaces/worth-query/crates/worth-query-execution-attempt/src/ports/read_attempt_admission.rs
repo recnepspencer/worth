@@ -96,6 +96,7 @@ pub trait ApplicationReadAttemptAdmissionPort<
         projection: AppliedOperationProjection<Schema, Operation>,
         candidate: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     ) -> Result<
         WorthQueryApplicationReadAttempt<
             'request,

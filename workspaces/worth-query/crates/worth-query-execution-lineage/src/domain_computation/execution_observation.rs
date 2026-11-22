@@ -10,6 +10,7 @@ pub use worth_query_execution_contracts::facade::execution_observation::{
 thread_local! {
     static WAVE_EVENTS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
     static WAVE_UNITS: Cell<u64> = const { Cell::new(0) };
+    static WAVE_VISITED: Cell<u64> = const { Cell::new(0) };
     static WAVE_CLEANUP_REGISTERED: Cell<bool> = const { Cell::new(false) };
 }
 
@@ -27,12 +28,21 @@ fn clear_wave() {
     WAVE_CLEANUP_REGISTERED.with(|registered| registered.set(false));
     WAVE_EVENTS.with(|events| events.borrow_mut().clear());
     WAVE_UNITS.with(|units| units.set(0));
+    WAVE_VISITED.with(|visited| visited.set(0));
 }
 
 /// Adds work the synchronous output wave charged, only while observed.
 pub fn record_wave_charged(units: u64) {
     if observing_wave() {
         WAVE_UNITS.with(|total| total.set(total.get().saturating_add(units)));
+    }
+}
+
+/// Counts retained candidate reads qualified use visited in one lookup,
+/// only while observed: an index visits the entries it needs, a scan all.
+pub fn record_retained_reads_visited(entries: u64) {
+    if observing_wave() {
+        WAVE_VISITED.with(|total| total.set(total.get().saturating_add(entries)));
     }
 }
 
@@ -71,5 +81,10 @@ impl WorthQueryExecutionObservation {
     /// The work units the wave charged on this thread since the last call.
     pub fn wave_charged_units_for_test(&self) -> u64 {
         WAVE_UNITS.with(|units| units.replace(0))
+    }
+
+    /// Retained candidate reads qualified use visited since the last call.
+    pub fn retained_reads_visited_for_test(&self) -> u64 {
+        WAVE_VISITED.with(|visited| visited.replace(0))
     }
 }

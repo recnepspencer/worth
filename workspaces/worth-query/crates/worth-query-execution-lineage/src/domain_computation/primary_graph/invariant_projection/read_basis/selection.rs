@@ -77,7 +77,11 @@ impl NativeProjectionRead<'_> {
                 )
                 .map(ProjectionEntitySelection::committed)
                 .map_err(ProjectionSelectionStop::Committed),
-            Self::Applied { before, candidate } => {
+            Self::Applied {
+                before,
+                candidate,
+                own_outputs,
+            } => {
                 let prepared = before
                     .prepare_entity_field_lookup(
                         request.index_id(),
@@ -86,8 +90,9 @@ impl NativeProjectionRead<'_> {
                         execution,
                     )
                     .map_err(ProjectionSelectionStop::Committed)?;
-                ProjectionEntitySelection::applied(
+                ProjectionEntitySelection::applied_with_own_outputs(
                     candidate,
+                    *own_outputs,
                     &prepared,
                     request.value(),
                     request.candidate_limit(),
@@ -99,6 +104,44 @@ impl NativeProjectionRead<'_> {
 }
 
 impl ProjectionEntitySelection {
+    /// An applied selection seen by a successor round (§1.5): records its own
+    /// chain wrote exclusively match as they did before the chain, every
+    /// other record as it does now.
+    pub fn applied_with_own_outputs(
+        candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        own_outputs: Option<&super::OwnOutputOverlay>,
+        prepared: &PreparedEntityFieldLookup,
+        value: &AspectValue,
+        limit: usize,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<Self, ProjectionSelectionStop> {
+        let current = Self::applied(candidate, prepared, value, limit, execution)?;
+        let Some(own) = own_outputs else {
+            return Ok(current);
+        };
+        let head = Self::applied(own.head(), prepared, value, limit, execution)?;
+        let mut candidates = current
+            .candidates
+            .into_iter()
+            .filter(|entity| !own.covers(*entity))
+            .chain(
+                head.candidates
+                    .into_iter()
+                    .filter(|entity| own.covers(*entity)),
+            )
+            .collect::<Vec<_>>();
+        candidates.sort_unstable();
+        candidates.dedup();
+        Ok(Self {
+            definition: current.definition,
+            examined: current.examined.saturating_add(head.examined),
+            overflowed: current.overflowed || head.overflowed || candidates.len() > limit,
+            candidates,
+        })
+    }
+
     pub fn applied(
         candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,

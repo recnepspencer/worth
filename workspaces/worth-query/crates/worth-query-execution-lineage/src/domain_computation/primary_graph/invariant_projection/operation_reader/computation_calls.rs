@@ -174,6 +174,18 @@ impl<Schema, Operation>
         key: &WorthQueryApplicationFactKey,
     ) -> Result<ObservedRetained, WorthQueryApplicationAttemptDenial> {
         if let Some(pin) = self.reader.native.applied_pin() {
+            // A successor round's own-output view serves a field read of a
+            // record its chain wrote at the chain head, exactly as the read
+            // set's completion re-observes the carried read (PR C §1.5).
+            let pin = match key {
+                WorthQueryApplicationFactKey::Field { entity_id, .. } => self
+                    .reader
+                    .native
+                    .own_outputs()
+                    .and_then(|own| own.head_for(*entity_id))
+                    .unwrap_or(pin),
+                _ => pin,
+            };
             return crate::domain_computation::primary_graph::application_attempt::observe_admitted_applied_fact(
                 execution, self.reader.layout, key, pin,
             ).map(|observed| ObservedRetained::new(comparator, observed));

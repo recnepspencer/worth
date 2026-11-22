@@ -43,6 +43,9 @@ mod wave;
 pub use input_preparation::PrerequisiteInputs;
 pub use rounds::default_producer_round_bounds;
 pub use wave::SynchronousOutputWave;
+pub(in crate::domain_computation::primary_graph) use wave::{
+    observe_scheduling_work, visited_retained_reads,
+};
 
 /// The actual authored prefix read by root discovery, without producer settlement.
 struct AppliedAuthoredDiscovery {

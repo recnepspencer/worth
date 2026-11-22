@@ -27,6 +27,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
     ) -> Result<synchronous_outputs::AppliedOutputParent, CoupledSourceReadStop> {
         let read = self.next_read();
         parent.retained_as(read);
+        self.register_retention(execution, &parent, read)?;
         let input = parent
             .publication()
             .map(|publication| candidate.current_output_input(execution, publication))
@@ -45,6 +46,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
                 &self.root_session,
                 parent.source(),
                 self.applied_position(),
+                None,
                 crate::domain_computation::primary_graph::provider::CandidateReadSupport::Parent(
                     Box::new(parent),
                 ),

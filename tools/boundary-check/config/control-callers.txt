@@ -207,7 +207,7 @@ crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-ho
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-decl-host/tests/worth_query_court_decl_host/producer_succession/route_degree/courts.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-court-execution-primary-graph-application-attempt/tests/worth_query_court_execution_primary_graph_application_attempt/cost/schema_projection.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/primary_graph/output_lineage/historical_transport/denial/subject_capture_for_test.rs
-crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/primary_graph/application_contribution/coupled_publication/preparation.rs
+crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/primary_graph/application_contribution/coupled_publication/succession.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/primary_graph/application_runtime/certification_controls/cold_symbols.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/primary_graph/application_runtime/certification_controls/owned_publication.rs
 crates/worth-relational/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/primary_graph/application_runtime/certification_controls/owned_publication/inspection.rs
