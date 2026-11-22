@@ -277,19 +277,21 @@ fn write_len_prefixed(hasher: &mut Sha256, bytes: &[u8]) {
     hasher.update(bytes);
 }
 
-pub(super) fn mint_entity_births(
+pub(super) fn mint_target_births(
     scheme_registry: &InstalledPersistentNameSchemeRegistry,
     live_holders: &BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
     retired_in_commit: &BTreeSet<PersistentNameIdentity>,
-    created_entities: &BTreeSet<crate::identity::data::EntityId>,
-    named_births: &BTreeMap<crate::identity::data::EntityId, PersistentNameBirthRequest>,
-) -> Result<BTreeMap<crate::identity::data::EntityId, PersistentNameBirthRecord>, LineageNameDenial>
-{
+    created_targets: &BTreeSet<crate::lineage::data::LineageRecordTarget>,
+    named_births: &BTreeMap<crate::lineage::data::LineageRecordTarget, PersistentNameBirthRequest>,
+) -> Result<
+    BTreeMap<crate::lineage::data::LineageRecordTarget, PersistentNameBirthRecord>,
+    LineageNameDenial,
+> {
     if named_births.is_empty() {
         return Ok(BTreeMap::new());
     }
-    for (entity_id, request) in named_births {
-        if !created_entities.contains(entity_id) {
+    for (target, request) in named_births {
+        if !created_targets.contains(target) {
             return Err(LineageNameDenial::BirthWithoutCreate {
                 scheme_id: request.scheme_id.clone(),
                 occurrence_key: request.occurrence_key.clone(),
@@ -299,11 +301,13 @@ pub(super) fn mint_entity_births(
         }
     }
     // Order by canonical meaning parts (scheme, occurrence, role topological
-    // rank, role path, canonical discriminator) rather than `EntityId`
+    // rank, role path, canonical discriminator) rather than native record
     // allocation order so same-occurrence dependencies mint in rank order and
     // `DuplicateBirth` `first`/`second` reporting is allocation-independent.
-    let mut ordered: Vec<(crate::identity::data::EntityId, &PersistentNameBirthRequest)> =
-        named_births.iter().map(|(&id, req)| (id, req)).collect();
+    let mut ordered: Vec<(
+        crate::lineage::data::LineageRecordTarget,
+        &PersistentNameBirthRequest,
+    )> = named_births.iter().map(|(&id, req)| (id, req)).collect();
     ordered.sort_by(|(_, a), (_, b)| {
         let rank_a = scheme_registry
             .get(&a.scheme_id)
@@ -330,7 +334,7 @@ pub(super) fn mint_entity_births(
                 &b.holder,
             ))
     });
-    let entities: Vec<_> = ordered.iter().map(|(id, _)| *id).collect();
+    let targets: Vec<_> = ordered.iter().map(|(id, _)| *id).collect();
     let requests: Vec<_> = ordered.into_iter().map(|(_, req)| req.clone()).collect();
     let records = PersistentNameMintingAuthority::mint_commit_births(
         scheme_registry,
@@ -338,5 +342,5 @@ pub(super) fn mint_entity_births(
         retired_in_commit,
         &requests,
     )?;
-    Ok(entities.into_iter().zip(records).collect())
+    Ok(targets.into_iter().zip(records).collect())
 }
