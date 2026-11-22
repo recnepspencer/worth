@@ -28,6 +28,14 @@ pub enum ProducerExecutionStop {
 }
 
 impl ProducerExecutionStop {
+    /// The untyped producer failure a handler's or attempt's read failure
+    /// becomes (`ProducerUnavailable`). Request admission, cancellation,
+    /// deadline, authority, budget, integrity, domain and inspection stops
+    /// all keep their own kinds.
+    pub fn is_untyped_unavailable(&self) -> bool {
+        matches!(self, Self::ExecutionStopped(denial)
+            if denial.kind() == WorthQueryOutputDemandDenialKind::ProducerUnavailable)
+    }
     pub fn into_output_denial(self) -> WorthQueryOutputDemandDenial {
         match self {
             Self::RequestAdmissionDenied(rejection) => rejection.into_denial(),

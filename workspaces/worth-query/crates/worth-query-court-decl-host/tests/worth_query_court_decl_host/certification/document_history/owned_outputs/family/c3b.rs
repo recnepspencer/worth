@@ -16,6 +16,7 @@ pub mod guarded_current;
 pub mod guarded_first;
 pub mod decision_write_n;
 pub mod self_relation;
+pub mod aspect_probe;
 pub mod saturated_consumer;
 pub mod saturated_input;
 pub mod self_write;
@@ -39,7 +40,8 @@ pub fn contracts(
     guarded_current::contracts(contracts)?;
     guarded_first::contracts(contracts)?;
     decision_write_n::contracts(contracts)?;
-    self_relation::contracts(contracts)
+    self_relation::contracts(contracts)?;
+    aspect_probe::contracts(contracts)
 }
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
@@ -60,5 +62,6 @@ pub fn install(
     guarded_current::install(setup)?;
     guarded_first::install(setup)?;
     decision_write_n::install(setup)?;
-    self_relation::install(setup)
+    self_relation::install(setup)?;
+    aspect_probe::install(setup)
 }

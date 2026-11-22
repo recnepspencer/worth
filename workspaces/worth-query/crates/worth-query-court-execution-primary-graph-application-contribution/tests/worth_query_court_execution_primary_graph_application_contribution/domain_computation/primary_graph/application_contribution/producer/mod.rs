@@ -8,3 +8,5 @@ pub mod execution;
 pub mod registry;
 #[path = "orphan_backstop/mod.rs"]
 pub mod orphan_backstop;
+#[path = "prior_effect_conversion/mod.rs"]
+pub mod prior_effect_conversion;

@@ -132,10 +132,25 @@ impl WorthQueryApplicationSnapshotLease {
         let pin = self.applied_projection_of(entity)?;
         let observed =
             super::read_set::fact_observation::observe_applied_fact(execution, &self.layout, key, pin);
+        // Incoherent only when the entity itself is absent at the head pre-pin,
+        // never for an absent aspect or field of an entity that exists there.
         if let (Err(denial), Some(entity), Some(own)) = (&observed, entity, &self.own_outputs)
             && denial.kind() == super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact
+            && own.covers(entity)
+            && let super::WorthQueryApplicationFactKey::Field { entity: name, .. } = key
         {
-            own.mark_incoherent(entity);
+            let presence = super::WorthQueryApplicationFactKey::Entity {
+                entity: name.clone(),
+                entity_id: entity,
+            };
+            if super::read_set::fact_observation::observe_applied_fact(execution, &self.layout, &presence, pin)
+                .is_err_and(|denial| {
+                    denial.kind() == super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact
+                        && denial.relational_execution_cause().is_none()
+                })
+            {
+                own.mark_incoherent(entity);
+            }
         }
         Some(observed)
     }

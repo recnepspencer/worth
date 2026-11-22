@@ -71,18 +71,23 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
         }
     }
 
-    /// A successor round's prepare failed after a read its own-output view
-    /// served found a record the chain created absent at the head pre-pin.
-    /// The view is entity-only (#277): the round reached that record by a
-    /// read served at the current image, so its failure is the chain's
-    /// effect, not C, and it stops typed (`PriorEffectRead`) on the record.
-    /// Any other failure, or one with a coherent view, is unchanged.
+    /// A successor round's input capture or prepare failed, untyped, after a
+    /// read its own-output view served found a record the chain created
+    /// absent at the head pre-pin. The view is entity-only (#277): the round reached that
+    /// record by a read served at the current image, so the read's failure is
+    /// the chain's effect, not C, and it stops typed (`PriorEffectRead`) on
+    /// the record. Every typed stop (request, cancellation, deadline,
+    /// authority, budget, integrity, domain, inspection) keeps its own kind,
+    /// as does any failure with a coherent view.
     pub(super) fn successor_prepare_stop(
         &self,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
         chain: Option<&ContinuedChain>,
         stop: super::super::producer::execution::ProducerExecutionStop,
     ) -> CoupledSourceReadStop {
+        if !stop.is_untyped_unavailable() {
+            return stop.into();
+        }
         match chain.and_then(|chain| Some((chain.index, chain.own.incoherent()?))) {
             Some((index, record)) => candidate.prior_effect_read(index, Some(record)).into(),
             None => stop.into(),
