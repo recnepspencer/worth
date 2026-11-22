@@ -142,7 +142,7 @@ fn uninterrupted_reference(
         let ref_causality = correction.aftermath_causality().expect("reference correction lineage");
         assert_eq!(ref_causality.role(), WorthQueryAftermathCausalRole::RecordedReverse);
         assert_eq!(
-            ref_causality.source().relational().commit_id.0,
+            ref_causality.recorded_source().relational().commit_id.0,
             original.commit_reference().commit_id.0
         );
         let mut started = performed
