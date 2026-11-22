@@ -10,7 +10,6 @@ use crate::basis::{WorthQueryProductBranch, WorthQueryProductBranchAdmissionDeni
 
 #[derive(Debug)]
 pub enum WorthQueryProductBranchCloseDenial {
-    DurableBranchPublicationRequired,
     Selection(WorthQueryProductBranchAdmissionDenial),
     OwnerUnavailable,
     AlreadyClosed,
@@ -130,9 +129,6 @@ fn map_retirement_denial(
                 ),
             )
         }
-        RuntimeWorldServiceDenial::Denied(
-            RuntimeWorldBranchRetirementDenial::DurableBranchPublicationRequired,
-        ) => WorthQueryProductBranchCloseDenial::DurableBranchPublicationRequired,
         RuntimeWorldServiceDenial::OwnerUnavailable(_)
         | RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchRetirementDenial::OwnerUnavailable) => {
             WorthQueryProductBranchCloseDenial::OwnerUnavailable

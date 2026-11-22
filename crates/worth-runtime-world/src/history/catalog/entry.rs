@@ -35,6 +35,18 @@ impl CompositeHistoryCatalogEntry {
         self.pins.retention_keys()
     }
 
+    pub(crate) fn live_relational_commit_result(
+        &self,
+    ) -> Option<Arc<worth_relational::facade::transactions::CommitResult>> {
+        match &self.publication {
+            Some(crate::history::PublicationEvidence::Live(envelope)) => envelope
+                .facts()
+                .and_then(|facts| facts.component_results.result_for_snapshot_cleanup().ok())
+                .flatten(),
+            _ => None,
+        }
+    }
+
     pub(super) const fn metadata_charge(&self) -> HistoryMetadataCharge {
         self.metadata_charge
     }

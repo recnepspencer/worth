@@ -43,6 +43,11 @@ impl CompositeHistoryCatalog {
     ) -> Result<RuntimeWorldPerformedPublicationProtection, CompositeHistoryCatalogDenial> {
         let state = lock_state(&self.state);
         validate_owner(&state, identity.owner_identity())?;
+        if state.retiring.contains(identity) {
+            return Err(CompositeHistoryCatalogDenial::UnknownProtectionTarget(
+                identity.clone(),
+            ));
+        }
         let entry = state
             .entries
             .get(identity)

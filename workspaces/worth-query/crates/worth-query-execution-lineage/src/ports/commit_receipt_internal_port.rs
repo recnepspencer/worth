@@ -50,6 +50,7 @@ pub trait CommitReceiptInternalPort: Sized {
         self,
         denial: WorthQueryExternalDispatchPreparationDenial,
     ) -> Self;
+    fn settle_for_ready_cache(&mut self);
 }
 
 impl CommitReceiptInternalPort for WorthQueryApplicationCommitReceipt {
@@ -103,6 +104,10 @@ impl CommitReceiptInternalPort for WorthQueryApplicationCommitReceipt {
         denial: WorthQueryExternalDispatchPreparationDenial,
     ) -> Self {
         Self::with_external_dispatch_preparation_denial(self, denial)
+    }
+
+    fn settle_for_ready_cache(&mut self) {
+        Self::settle_for_ready_cache(self);
     }
 }
 

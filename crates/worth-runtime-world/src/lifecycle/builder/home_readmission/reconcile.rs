@@ -11,6 +11,7 @@ use worth_foundational::facade::{
 };
 use worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority;
 mod creation;
+mod horizon;
 mod unpublished;
 mod unresolved_creation;
 
@@ -44,7 +45,7 @@ where
 {
     let mut custody = WorldNativeReadmissionCustody::allocate(
         execution,
-        recovered.branches.len(),
+        recovered.branches.len() + recovered.occurrences.len(),
         recovered.occurrences.len(),
         recovered.opens.len(),
         recovered.creations.len(),
@@ -61,12 +62,36 @@ where
         let mut observations = Observations::default();
         let mut points = Points::default();
         let mut descriptors = Descriptors::default();
+        let mut horizon = horizon::HorizonContext::default();
         for (key, reference) in &recovered.references {
             execution.consult().map_err(|cause| {
                 Denial::Medium(crate::durability::WorldDurableMediumDenial::Request(cause))
             })?;
+            let commit_id = reference.fields().2;
+            if recovered.retired_history.contains_key(&commit_id) {
+                horizon.note_disposed(
+                    root,
+                    key,
+                    &reference.record().record,
+                    reference.event_position(),
+                    recovered,
+                    native,
+                    authority,
+                    &effects,
+                    &mut descriptors,
+                    &mut points,
+                    execution,
+                )?;
+                continue;
+            }
             let (observation, after, point) = match &reference.record().record {
-                WorldRecord::Branch { components, .. } => {
+                WorldRecord::Branch {
+                    head,
+                    components,
+                    ..
+                } => {
+                    horizon.root_incarnation = Some(head.incarnation);
+                    horizon.bridges.insert(key.0, components.bridge.clone());
                     let native_basis = authority
                         .admit_recorded_component(execution, native, &components.relational)
                         .map_err(|cause| Denial::NativeComponent(Box::new(cause)))?;
@@ -103,89 +128,131 @@ where
                     )
                 }
                 WorldRecord::BranchCreated(created) => {
-                    let before = find(&observations, &created.intent.source)?;
-                    let before_native = descriptors
-                        .get(&created.intent.source.commit)
-                        .ok_or(Denial::MissingPredecessor)?;
-                    let source_point = points
-                        .get(&(
-                            created.intent.source.incarnation,
-                            created.intent.source.generation,
-                        ))
-                        .ok_or(Denial::MissingPredecessor)?;
-                    let observed = creation::install(
-                        root,
-                        created,
-                        before,
-                        before_native,
-                        source_point,
-                        native,
-                        authority,
-                        &mut custody,
-                        execution,
-                    )?;
-                    (
-                        observed,
-                        created.components.relational.clone(),
-                        created.components.signal.point().clone(),
-                    )
+                    horizon.bridges.insert(key.0, created.components.bridge.clone());
+                    horizon
+                        .creation_boundaries
+                        .insert(key.0, created.intent.source.commit);
+                    if let Ok(before) = find(&observations, &created.intent.source) {
+                        let before_native = descriptors
+                            .get(&created.intent.source.commit)
+                            .ok_or(Denial::MissingPredecessor)?;
+                        let source_point = points
+                            .get(&(
+                                created.intent.source.incarnation,
+                                created.intent.source.generation,
+                            ))
+                            .ok_or(Denial::MissingPredecessor)?;
+                        let observed = creation::install(
+                            root,
+                            created,
+                            before,
+                            before_native,
+                            source_point,
+                            native,
+                            authority,
+                            &mut custody,
+                            execution,
+                        )?;
+                        (
+                            observed,
+                            created.components.relational.clone(),
+                            created.components.signal.point().clone(),
+                        )
+                    } else {
+                        let before_native = descriptors
+                            .get(&created.intent.source.commit)
+                            .ok_or(Denial::MissingPredecessor)?;
+                        let source_point = points
+                            .get(&(
+                                created.intent.source.incarnation,
+                                created.intent.source.generation,
+                            ))
+                            .ok_or(Denial::MissingPredecessor)?;
+                        horizon.install_surviving_created(
+                            root,
+                            created,
+                            before_native,
+                            source_point,
+                            native,
+                            authority,
+                            &mut custody,
+                            execution,
+                        )?
+                    }
                 }
                 WorldRecord::OpenAttempt(open) => {
-                    let occurrence = recovered
-                        .occurrences
-                        .get(&reference.event_position())
-                        .ok_or(Denial::MissingPredecessor)?;
-                    let before = find(&observations, &open.expected)?;
-                    let before_native = descriptors
-                        .get(&open.expected.commit)
-                        .ok_or(Denial::MissingPredecessor)?;
-                    let (owners, after) = super::occurrence_owners::readmit(
-                        occurrence,
-                        before_native,
-                        signal,
-                        native,
-                        authority,
-                        &effects,
-                        execution,
-                    )?;
-                    let index = custody.occurrence_owners.len();
-                    custody.occurrence_owners.push(Some(owners));
-                    let mut origin =
-                        crate::durability::PreparedCheckpointOccurrence::prepare(execution)
-                            .map_err(Denial::Medium)?;
-                    let record = match root.prepare_readmitted_occurrence(
-                        execution,
-                        before,
-                        occurrence,
-                        custody.occurrence_owners[index]
-                            .take()
-                            .expect("same actual owners"),
-                        before.basis().correspondence_basis().clone(),
-                    ) {
-                        Ok(value) => value,
-                        Err((owners, cause)) => {
-                            custody.occurrence_owners[index] = Some(owners);
-                            return Err(cause);
-                        }
-                    };
-                    custody.records.push(record.clone());
-                    let selected =
-                        root.install_readmitted_occurrence(&record, &mut custody.capacities)?;
-                    origin.bind(
-                        selected.basis(),
-                        selected
-                            .fork_checkpoint_history()
-                            .map_err(|_| Denial::RecoveryCapacity)?,
-                    );
-                    custody.checkpoint_occurrences.push(origin);
-                    let point = match occurrence.owners().signal() {
-                        Some(actual) => actual.point().clone(),
-                        None => points
-                            .get(&(open.expected.incarnation, open.expected.generation))
-                            .ok_or(Denial::MissingPredecessor)?
-                            .clone(),
-                    };
-                    (selected, after, point)
+                    if let Ok(before) = find(&observations, &open.expected) {
+                        let occurrence = recovered
+                            .occurrences
+                            .get(&reference.event_position())
+                            .ok_or(Denial::MissingPredecessor)?;
+                        let before_native = descriptors
+                            .get(&open.expected.commit)
+                            .ok_or(Denial::MissingPredecessor)?;
+                        let (owners, after) = super::occurrence_owners::readmit(
+                            occurrence,
+                            before_native,
+                            signal,
+                            native,
+                            authority,
+                            &effects,
+                            execution,
+                        )?;
+                        let index = custody.occurrence_owners.len();
+                        custody.occurrence_owners.push(Some(owners));
+                        let mut origin =
+                            crate::durability::PreparedCheckpointOccurrence::prepare(execution)
+                                .map_err(Denial::Medium)?;
+                        let record = match root.prepare_readmitted_occurrence(
+                            execution,
+                            before,
+                            occurrence,
+                            custody.occurrence_owners[index]
+                                .take()
+                                .expect("same actual owners"),
+                            before.basis().correspondence_basis().clone(),
+                        ) {
+                            Ok(value) => value,
+                            Err((owners, cause)) => {
+                                custody.occurrence_owners[index] = Some(owners);
+                                return Err(cause);
+                            }
+                        };
+                        custody.records.push(record.clone());
+                        let selected =
+                            root.install_readmitted_occurrence(&record, &mut custody.capacities)?;
+                        origin.bind(
+                            selected.selected_commit().ordinal(),
+                            selected.basis(),
+                            selected
+                                .fork_checkpoint_history()
+                                .map_err(|_| Denial::RecoveryCapacity)?,
+                        );
+                        custody.checkpoint_occurrences.push(origin);
+                        let point = match occurrence.owners().signal() {
+                            Some(actual) => actual.point().clone(),
+                            None => points
+                                .get(&(open.expected.incarnation, open.expected.generation))
+                                .ok_or(Denial::MissingPredecessor)?
+                                .clone(),
+                        };
+                        (selected, after, point)
+                    } else {
+                        horizon.install_surviving_open(
+                            root,
+                            key,
+                            open,
+                            reference.event_position(),
+                            recovered,
+                            &descriptors,
+                            &points,
+                            native,
+                            authority,
+                            &effects,
+                            &mut custody,
+                            execution,
+                        )?
+                    }
                 }
                 WorldRecord::Owner { .. }
                 | WorldRecord::Occurrence { .. }
@@ -193,12 +260,27 @@ where
                 | WorldRecord::Continued { .. }
                 | WorldRecord::PlannedSignalLeg(_)
                 | WorldRecord::CreationIntent(_)
-                | WorldRecord::CreationReleased { .. } => return Err(Denial::BranchLineage),
+                | WorldRecord::CreationReleased { .. }
+                | WorldRecord::BranchRetired { .. }
+                | WorldRecord::HistoryRetired { .. } => return Err(Denial::BranchLineage),
             };
+            horizon.ancestors.insert(commit_id, (observation.clone(), 0));
+            horizon.branch_heads.insert(key.0, observation.clone());
             custody.observations.push(observation.clone());
             insert(&mut observations, key, &observation, execution)?;
-            insert(&mut descriptors, &reference.fields().2, &after, execution)?;
+            insert(&mut descriptors, &commit_id, &after, execution)?;
             insert(&mut points, key, &point, execution)?;
+            if let Some(retired) = recovered.retired_branches.get(&key.0)
+                && retired.head().generation == key.1
+            {
+                let (cell, retirement) = root
+                    .state
+                    .branches
+                    .retire_readmitted_by_lifecycle(observation.lifecycle_incarnation())
+                    .map_err(|_| Denial::BranchLineage)?;
+                drop(cell);
+                drop(retirement);
+            }
         }
         unpublished::install(
             root,
@@ -232,12 +314,14 @@ where
             execution,
         )?;
         creation::retire_admissions(&mut custody, native, execution)?;
+        // All fallible readmission steps have succeeded.
         for origin in custody.checkpoint_origins.drain(..) {
             binding.retain_checkpoint_origin(origin);
         }
         for origin in custody.checkpoint_occurrences.drain(..) {
-            binding.retain_checkpoint_occurrence(origin);
+            binding.retain_checkpoint_origin(origin);
         }
+        binding.mark_checkpoint_origin_installed();
         Ok(())
     })();
     result.map_err(|cause| custody.refuse(cause))

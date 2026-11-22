@@ -53,13 +53,8 @@ impl WorthQueryHistorySourceEvidence<'_> {
         match self {
             Self::Live(receipt) => receipt
                 .committed_product_publication()
-                .original_movement()
-                .is_some_and(|movement| {
-                    previous
-                        == &WorthQueryProductBranchReadIdentity::from_reference_snapshot(
-                            movement.old_product_head(),
-                        )
-                }),
+                .original_movement_endpoints()
+                .is_some_and(|(before, _, _)| previous == &before),
             Self::Recorded(receipt) => {
                 recorded_endpoint_matches(receipt.old_product_head(), previous)
             }

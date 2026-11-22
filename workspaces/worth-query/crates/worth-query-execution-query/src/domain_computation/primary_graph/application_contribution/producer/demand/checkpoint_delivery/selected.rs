@@ -101,7 +101,7 @@ where
                 Ok(progressed)
             }
             Checkpoint::Delivered {
-                receipt,
+                mut receipt,
                 delivery,
                 ready_backing,
             } => {
@@ -132,6 +132,7 @@ where
                     }
                 };
 
+                worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort::settle_for_ready_cache(&mut receipt);
                 let completion = ready_backing.complete(WorthQueryCompletedOutputDemand {
                     authority: WorthQueryAcceptedOutputAuthority::Committed(receipt),
                     readiness,

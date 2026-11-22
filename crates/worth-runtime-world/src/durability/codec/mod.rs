@@ -139,6 +139,41 @@ fn decode_record(
                 custody,
             }
         }
+        11 => {
+            let head = read.head()?;
+            let retiring_incarnation =
+                HomeIncarnation::from_recorded(read.number()?).ok_or(Denial::Malformed)?;
+            WorldRecord::BranchRetired {
+                head,
+                retiring_incarnation,
+            }
+        }
+        12 => {
+            let owner = read.owner()?;
+            let retiring_incarnation =
+                HomeIncarnation::from_recorded(read.number()?).ok_or(Denial::Malformed)?;
+            let count = usize::try_from(read.number()?).map_err(|_| Denial::SizeLimit)?;
+            if count == 0 || count > read.remaining() / 8 {
+                return Err(Denial::Malformed.into());
+            }
+            let mut commits = Vec::new();
+            commits
+                .try_reserve_exact(count)
+                .map_err(|_| WorldDurableMediumDenial::NameAllocation)?;
+            for _ in 0..count {
+                commits.push(
+                    worth_foundational::facade::DurableCompositeCommitIdentity::from_recorded(
+                        owner,
+                        read.number()?,
+                    ),
+                );
+            }
+            WorldRecord::HistoryRetired {
+                owner,
+                commits,
+                retiring_incarnation,
+            }
+        }
         4 => {
             let open = read.open()?;
             let owners = owner_evidence::read(&mut read, execution)?;
@@ -241,6 +276,28 @@ pub(in crate::durability) fn write_record(
             out(&[9])?;
             association(out, value)?;
             number(out, custody.ordinal())
+        }
+        WorldRecord::BranchRetired {
+            head: value,
+            retiring_incarnation,
+        } => {
+            out(&[11])?;
+            head(out, value)?;
+            number(out, retiring_incarnation.get())
+        }
+        WorldRecord::HistoryRetired {
+            owner: value,
+            commits,
+            retiring_incarnation,
+        } => {
+            out(&[12])?;
+            owner(out, *value)?;
+            number(out, retiring_incarnation.get())?;
+            number(out, commits.len() as u64)?;
+            for commit in commits {
+                number(out, commit.ordinal())?;
+            }
+            Ok(())
         }
         WorldRecord::Occurrence {
             open: value,

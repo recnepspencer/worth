@@ -85,6 +85,7 @@ fn live_original_publication_reads_exact_native_source_after_a_later_publication
     .unwrap();
     let bootstrap = fixture.bootstrap_root(&execution);
     let mut expected = bootstrap.product_branch().clone();
+    let root_commit = expected.selected_commit().clone();
     drop(bootstrap);
     let cancellation = RuntimeWorldCancellationSource::new();
     let semantics =
@@ -104,6 +105,7 @@ fn live_original_publication_reads_exact_native_source_after_a_later_publication
             )
         };
     let mut reference = None;
+    let mut round0_protection = None;
     for round in 0..2 {
         let prepared = fixture.prepare_publication(
             &execution,
@@ -127,15 +129,19 @@ fn live_original_publication_reads_exact_native_source_after_a_later_publication
         }
         let mut consumed = performed.consume();
         expected = consumed.take_successor_observation().unwrap();
+        if round == 0 {
+            round0_protection = Some(expected.clone());
+        }
     }
-    assert!(matches!(
-        fixture
-            .home
-            .world()
-            .recovery_port()
-            .retire_changed_history(),
-        Err(HistoryReclamationDenial::AuthoritativeDurableHistory)
-    ));
+    // Durable history reclamation disposes unprotected root commit 0 while
+    // keeping explicitly protected round 0 live and source-readable.
+    let retired = fixture
+        .home
+        .world()
+        .recovery_port()
+        .retire_changed_history()
+        .unwrap();
+    assert_eq!(retired, vec![root_commit]);
     let (receipt, position, commit, attempt, semantic) = reference.unwrap();
     let native = fixture.home.relational().runtime();
     let mut subjects = native
@@ -189,8 +195,65 @@ fn live_original_publication_reads_exact_native_source_after_a_later_publication
         2
     );
     drop(original);
+    drop(round0_protection);
+    // Once round 0's protection is released, durable history reclamation
+    // disposes round 0 once and a later reopen does not resurrect it.
+    let retired_round0 = fixture
+        .home
+        .world()
+        .recovery_port()
+        .retire_changed_history()
+        .unwrap();
+    assert_eq!(retired_round0, vec![commit]);
+    assert!(fixture
+        .home
+        .world()
+        .recovery_port()
+        .retire_changed_history()
+        .unwrap()
+        .is_empty());
+    assert_eq!(
+        fixture
+            .home
+            .world()
+            .inspection_port()
+            .history_snapshot()
+            .unwrap()
+            .installed_commits(),
+        1
+    );
+    let effect = native
+        .durability_authority()
+        .readmit_associated_effect(&execution, &subject)
+        .unwrap();
+    assert!(matches!(
+        observation.readmitted_native_publication(&execution, effect),
+        Err(RuntimeWorldServiceDenial::Denied(
+            WorldReadmittedPublicationDenial::NotReadmitted
+        ))
+    ));
     drop(expected);
     super::world_occurrence_readmission::close(fixture.home, &execution);
+
+    let reopened = world_home::open(
+        home_opening::request(
+            directory.path(),
+            crate::workload::runtime_builder(crate::schema_transition::SOURCE),
+        ),
+        &execution,
+    )
+    .unwrap();
+    assert_eq!(
+        reopened
+            .home
+            .world()
+            .inspection_port()
+            .history_snapshot()
+            .unwrap()
+            .installed_commits(),
+        1
+    );
+    super::world_occurrence_readmission::close(reopened.home, &execution);
 }
 
 #[test]

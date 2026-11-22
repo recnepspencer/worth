@@ -71,9 +71,9 @@ impl SelectedReadyReadmission {
 
     pub fn retained_program_basis(
         &self,
-    ) -> Option<&Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>>
+    ) -> Option<Arc<crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation>>
     {
-        self.readmission.retained_program_basis.as_ref()
+        self.readmission.retained_program_basis()
     }
 
     /// A physical row may be reopened with another Ready cell. Member

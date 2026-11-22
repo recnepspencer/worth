@@ -47,10 +47,11 @@ pub(super) fn validate_parent_for_reservation(
             actual: parent.commit().owner_identity(),
         });
     }
-    if state
-        .entries
-        .get(parent.commit())
-        .is_none_or(|slot| slot.get().is_none())
+    if state.retiring.contains(parent.commit())
+        || state
+            .entries
+            .get(parent.commit())
+            .is_none_or(|slot| slot.get().is_none())
     {
         return Err(CompositeHistoryCatalogDenial::MissingParent(
             parent.commit().clone(),

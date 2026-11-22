@@ -34,6 +34,9 @@ impl CompositeHistoryCatalog {
         let state = lock_state(&self.state);
         validate_owner(&state, identity.owner_identity())?;
         use crate::recovery::PerformedPublicationRecoveryDenial as Denial;
+        if state.retiring.contains(identity) {
+            return Err(Denial::MissingCommit);
+        }
         let entry = state
             .entries
             .get(identity)

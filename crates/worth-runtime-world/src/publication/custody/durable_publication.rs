@@ -35,18 +35,18 @@ impl ActiveAttemptCustody {
             .as_mut()
             .expect("pre-effect backing admitted");
         if occurrence.origin_needs_binding() {
-            let basis = resources
+            let commit = resources
                 .commit
                 .as_ref()
-                .expect("actual Native successor commit")
-                .basis();
+                .expect("actual Native successor commit");
+            let basis = commit.basis();
             let ActivePinCustody::Bound(pins) = &resources.pins else {
                 unreachable!("durable publication owns the exact successor pins");
             };
             let pins = pins
                 .fork_history(basis)
                 .map_err(|_| WorldDurableMediumDenial::CheckpointOriginRetention)?;
-            occurrence.bind_origin(basis, pins);
+            occurrence.bind_origin(commit.identity().ordinal(), basis, pins);
         }
         let subject = occurrence
             .finalize_owners(evidence, binding.binding().incarnation())?

@@ -69,7 +69,9 @@ pub(in crate::durability) fn prepare(
             | WorldRecord::Continued { .. }
             | WorldRecord::PlannedSignalLeg(_)
             | WorldRecord::CreationIntent(_)
-            | WorldRecord::CreationReleased { .. } => return Err(Denial::BranchLineage),
+            | WorldRecord::CreationReleased { .. }
+            | WorldRecord::BranchRetired { .. }
+            | WorldRecord::HistoryRetired { .. } => return Err(Denial::BranchLineage),
         };
         sources
             .insert_cloned_native_for_request(&commit, &source, *request)
@@ -92,6 +94,7 @@ pub(in crate::durability) fn prepare(
             .get(&open.expected.commit)
             .ok_or(Denial::MissingPredecessor)?
             .clone();
+        let source_disposed = image.retired_history.contains_key(&open.expected.commit);
         let disposition = image.dispositions.get(&open.association.attempt());
         let fate = image
             .original_fate(open.association.attempt())
@@ -121,13 +124,22 @@ pub(in crate::durability) fn prepare(
                 RelationalWorldOriginalDescription::from_recorded(
                     request, caller, source, fate, effect, receipt,
                 )
-                .map_err(catalog_denial)?,
+                .map_err(catalog_denial)?
+                .with_source_disposed(source_disposed),
             )
             .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?;
     }
-    let mut heads = ExecutionRequestArrayBuilder::allocate(*request, image.heads.len())
+    let live_heads_count = image
+        .heads
+        .values()
+        .filter(|head| !image.retired_history.contains_key(&head.fields().2))
+        .count();
+    let mut heads = ExecutionRequestArrayBuilder::allocate(*request, live_heads_count)
         .map_err(|cause| Denial::Medium(Medium::Backing(cause)))?;
     for head in image.heads.values() {
+        if image.retired_history.contains_key(&head.fields().2) {
+            continue;
+        }
         heads
             .push(
                 sources

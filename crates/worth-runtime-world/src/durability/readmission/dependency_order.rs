@@ -12,6 +12,7 @@ use worth_foundational::facade::{
 pub(crate) enum CollectedWorldHistoryStep {
     BranchCreated(DurableCompositePublicationAttemptIdentity),
     Occurrence(u64),
+    BranchRetired(DurableProductBranchIncarnation),
 }
 
 impl WorldCheckpointImage {
@@ -24,12 +25,34 @@ impl WorldCheckpointImage {
         step: CollectedWorldHistoryStep,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Denial> {
+        let step_key = (coordinate.0, coordinate.1, 0);
         if self.references.contains_key(&coordinate)
-            || self.collected_steps.contains_key(&coordinate)
+            || self.collected_steps.contains_key(&step_key)
         {
             return Err(Denial::DuplicateIdentity);
         }
-        super::journal::insert(&mut self.collected_steps, &coordinate, &step, request)
+        super::journal::insert(&mut self.collected_steps, &step_key, &step, request)
+    }
+
+    pub(super) fn queue_retirement_step(
+        &mut self,
+        coordinate: (
+            DurableProductBranchIncarnation,
+            DurableProductReferenceGeneration,
+        ),
+        incarnation: DurableProductBranchIncarnation,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Denial> {
+        let step_key = (coordinate.0, coordinate.1, 1);
+        if self.collected_steps.contains_key(&step_key) {
+            return Err(Denial::DuplicateIdentity);
+        }
+        super::journal::insert(
+            &mut self.collected_steps,
+            &step_key,
+            &CollectedWorldHistoryStep::BranchRetired(incarnation),
+            request,
+        )
     }
 
     pub(in crate::durability) fn resolve_collected_history(
@@ -68,10 +91,14 @@ impl WorldCheckpointImage {
                         request,
                     )?;
                 }
+                CollectedWorldHistoryStep::BranchRetired(incarnation) => {
+                    self.admit_collected_branch_retirement(incarnation, request)?;
+                }
             }
         }
         self.collected_steps = Default::default();
         self.collected_occurrences = Default::default();
+        self.resolve_collected_history_retirements(request)?;
         Ok(())
     }
 
@@ -118,7 +145,11 @@ impl WorldCheckpointImage {
             recorded.position(),
             *recorded.digest(),
         );
-        if self.branches.contains_key(&key) {
+        if self
+            .branches
+            .contains_key(&created.intent.destination.incarnation)
+            || self.heads.contains_key(&key)
+        {
             return Err(Denial::BranchLineage);
         }
         let reuses = match created.intent.relational {
@@ -140,7 +171,12 @@ impl WorldCheckpointImage {
         }
         let head = WorldImageHead::branch(recorded.record().clone(), recorded.position());
         self.remember_reference(&head, request)?;
-        super::journal::insert(&mut self.branches, &key, &(), request)?;
+        super::journal::insert(
+            &mut self.branches,
+            &created.intent.destination.incarnation,
+            &key,
+            request,
+        )?;
         super::journal::insert(&mut self.heads, &key, &head, request)?;
         if !reuses {
             super::journal::insert(

@@ -102,10 +102,15 @@ impl HistoryReclamationOutcome {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HistoryReclamationDenial {
-    /// Occurrences and their exact components remain authoritative for the
-    /// lifetime of a directory Home. Durable reclamation is a later protocol.
-    AuthoritativeDurableHistory,
     OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),
+    /// At least one durable `HistoryRetired` frame committed and was applied
+    /// before a later frame failed. `reclaimed` lists the committed prefix;
+    /// `indeterminate` is true only when the failing frame's journal fate is
+    /// unresolved and remains fenced until reopen.
+    PartialPublication {
+        reclaimed: Vec<CompositeCommitIdentity>,
+        indeterminate: bool,
+    },
     Catalog(CompositeHistoryCatalogDenial),
     // A batch's candidates are refused whole; only the tests' batches name them.
     #[cfg(test)]

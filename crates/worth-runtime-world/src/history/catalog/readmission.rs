@@ -20,6 +20,9 @@ impl CompositeHistoryCatalog {
         let (publication, protection) = {
             let state = lock_state(&self.state);
             validate_owner(&state, owner).map_err(Denial::History)?;
+            if state.retiring.contains(&identity) {
+                return Err(Denial::NotReadmitted);
+            }
             let publication = state
                 .entries
                 .get(&identity)
@@ -31,6 +34,7 @@ impl CompositeHistoryCatalog {
                     PublicationEvidence::Readmitted(record.clone())
                 }
                 PublicationEvidence::Live(live) => PublicationEvidence::Live(live.clone()),
+                PublicationEvidence::ReadmittedHorizon => return Err(Denial::NotReadmitted),
             };
             lock_index(&state.reachability)
                 .increment_direct_protection(&identity)
@@ -45,6 +49,7 @@ impl CompositeHistoryCatalog {
         // No history lock crosses original-request admission or record allocation.
         let record = match publication {
             PublicationEvidence::Readmitted(record) => record,
+            PublicationEvidence::ReadmittedHorizon => return Err(Denial::NotReadmitted),
             PublicationEvidence::Live(live) => {
                 let facts = live.facts().ok_or(Denial::NotReadmitted)?;
                 let before = facts.movement.before();
@@ -94,6 +99,9 @@ impl CompositeHistoryCatalog {
     ) -> Result<WorldReadmittedPublication, Denial> {
         let state = lock_state(&self.state);
         validate_owner(&state, identity.owner_identity()).map_err(Denial::History)?;
+        if state.retiring.contains(identity) {
+            return Err(Denial::NotReadmitted);
+        }
         let record = match state
             .entries
             .get(identity)
@@ -101,7 +109,9 @@ impl CompositeHistoryCatalog {
             .and_then(|entry| entry.publication.as_ref())
         {
             Some(PublicationEvidence::Readmitted(record)) => record.clone(),
-            Some(PublicationEvidence::Live(_)) | None => return Err(Denial::NotReadmitted),
+            Some(PublicationEvidence::Live(_) | PublicationEvidence::ReadmittedHorizon) | None => {
+                return Err(Denial::NotReadmitted)
+            }
         };
         let native = record.native_view().ok_or(Denial::NativeMismatch)?;
         lock_index(&state.reachability)

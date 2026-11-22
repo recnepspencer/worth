@@ -96,16 +96,26 @@ impl WorldSelectionReplay {
         for source in self.admitted.source().heads() {
             self.select(request, runtime, plan, roots, source, true)?;
         }
-        // Every original product predecessor is needed by later full World
-        // reconciliation, even when it stopped being a Native branch head.
-        for source in self
-            .admitted
-            .source()
-            .originals()
-            .iter()
-            .map(|row| row.source())
-            .chain(self.admitted.source().heads())
-        {
+        // Every non-disposed original product predecessor is needed by later
+        // full World reconciliation, even when it stopped being a Native head.
+        // Predecessors explicitly marked disposed in World's authoritative
+        // `HistoryRetired` journal may already have been pruned from Native's
+        // checkpoint while Track H released originals or horizon commits remain.
+        for row in self.admitted.source().originals() {
+            let recorded = match self.recorded_source(row.source(), runtime, plan, roots, request) {
+                Ok(recorded) => recorded,
+                Err(Stop::Durability(_)) if row.source_disposed() => continue,
+                Err(cause) => return Err(cause),
+            };
+            let Some((root, _)) = roots.exact_image(request, runtime, &recorded)? else {
+                if row.source_disposed() {
+                    continue;
+                }
+                return Err(corrupt("World handoff source image is unavailable"));
+            };
+            roots.retain_world_selection_root(root.commit_id(), root, request)?;
+        }
+        for source in self.admitted.source().heads() {
             let recorded = self.recorded_source(source, runtime, plan, roots, request)?;
             let (root, _) = roots
                 .exact_image(request, runtime, &recorded)?

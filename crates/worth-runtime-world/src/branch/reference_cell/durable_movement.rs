@@ -14,6 +14,8 @@ pub(super) enum ProductMovementPhase {
     },
     CreationInFlight(Box<super::durable_creation::WorldCreationCellCustody>),
     CreationRecoveryRequired(Box<super::durable_creation::WorldCreationCellCustody>),
+    RetirementInFlight,
+    RetirementRecoveryRequired,
     RecoveryRequired {
         _subject: WorldDurableArtifact,
         _committed: Option<DurablyCommitted<ActualWorldPublication>>,
@@ -23,13 +25,22 @@ impl ProductMovementPhase {
     pub(super) fn denial(&self) -> Option<ProductBranchReferenceCellDenial> {
         match self {
             Self::Idle => None,
-            Self::MovementInFlight { .. } | Self::CreationInFlight(_) => {
-                Some(ProductBranchReferenceCellDenial::MovementInFlight)
-            }
-            Self::RecoveryRequired { .. } | Self::CreationRecoveryRequired(_) => {
+            Self::MovementInFlight { .. }
+            | Self::CreationInFlight(_)
+            | Self::RetirementInFlight => Some(ProductBranchReferenceCellDenial::MovementInFlight),
+            Self::RecoveryRequired { .. }
+            | Self::CreationRecoveryRequired(_)
+            | Self::RetirementRecoveryRequired => {
                 Some(ProductBranchReferenceCellDenial::RecoveryRequired)
             }
         }
+    }
+
+    pub(super) fn blocks_live_observation(&self) -> bool {
+        matches!(
+            self,
+            Self::RetirementInFlight | Self::RetirementRecoveryRequired
+        )
     }
 }
 
@@ -247,7 +258,9 @@ impl Drop for WorldProductMovementPermit {
             | ProductMovementPhase::MovementInFlight { .. }
             | ProductMovementPhase::RecoveryRequired { .. }
             | ProductMovementPhase::CreationInFlight(_)
-            | ProductMovementPhase::CreationRecoveryRequired(_)) => phase,
+            | ProductMovementPhase::CreationRecoveryRequired(_)
+            | ProductMovementPhase::RetirementInFlight
+            | ProductMovementPhase::RetirementRecoveryRequired) => phase,
         };
     }
 }
