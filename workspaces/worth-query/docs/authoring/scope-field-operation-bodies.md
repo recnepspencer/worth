@@ -220,6 +220,42 @@ Do not store graph quantities as String merely to bypass missing Decimal
 admission, round through floats, truncate fractions into whole-number fields, or
 skip the installed codec's validation.
 
+### Native scalar inputs
+
+Date, time, timestamp, UUID and inline-byte fields use the stock readable
+bindings in `application_schema`: `CanonicalDateApplicationValueBinding`,
+`CanonicalTimeApplicationValueBinding`,
+`CanonicalTimestampApplicationValueBinding`,
+`CanonicalTimestampTzApplicationValueBinding`, `UuidApplicationValueBinding`
+(`[u8; 16]`) and `InlineBytesApplicationValueBinding`. The input struct holds
+the foundational carrier itself:
+
+```rust,ignore
+#[derive(serde::Serialize)]
+struct Reschedule {
+    identity: String,
+    due: Option<CanonicalDate>, // Some sets the field; None clears it.
+    opens: CanonicalTime,
+}
+
+let body = Reschedule::reference().body()
+    .assign_optional_input(DueDate::reference(), "due")?
+    .assign_input(OpensAt::reference(), "opens")?
+    .finish()?;
+```
+
+The selector recognizes exactly the carriers' serialized forms: the temporal
+structs by their struct and field names, `[u8; 16]` as a 16-byte tuple and
+`InlineBytes` as its byte sequence. A different struct name, extra member or
+wrong integer sign is an unsupported shape; a day count outside `i32`, a time
+at or past midnight or a UTC offset of a day or more is an invalid scalar. Either
+refuses with `InputMismatch { member }` before any body effect, naming the
+member whose value was selected. Bare integers are never coerced into dates.
+Inline bytes are borrowed from the captured input and copied only after the
+request has reserved and charged them. The same bindings validate canonical
+form on encode and decode, so a stored non-canonical value refuses rather than
+being normalized.
+
 ### Compare a field with captured input
 
 Use `expect_input` when a mutation must compare committed graph truth with a

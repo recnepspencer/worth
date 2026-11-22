@@ -1,6 +1,10 @@
 //! Read the existing canonical serde grammar; no JSON or second serialization.
+#[path = "scalar_record/native_carrier.rs"]
+mod native_carrier;
+
 use super::super::encoder::tag;
 use super::{ApplicationCanonicalInputDenial as Denial, ApplicationCanonicalInputScalar};
+pub(super) use native_carrier::materialize_byte_sequence;
 use worth_foundational::facade::{AspectValue, CanonicalF32, CanonicalF64, ScalarAspectType};
 
 pub(super) fn select<'a>(
@@ -116,6 +120,15 @@ impl<'a> Cursor<'a> {
                 self.take(length)?;
             }
             tag::NONE | tag::UNIT => {}
+            tag::STRUCT => {
+                self.temporal_members()?;
+            }
+            tag::TUPLE => {
+                self.uuid_carrier()?;
+            }
+            tag::SEQ => {
+                self.byte_sequence_carrier()?;
+            }
             _ => return Err(Denial::UnsupportedShape),
         }
         Ok(())
@@ -125,6 +138,9 @@ impl<'a> Cursor<'a> {
         family: ScalarAspectType,
     ) -> Result<ApplicationCanonicalInputScalar<'a>, Denial> {
         use ScalarAspectType as F;
+        if let Some(carried) = self.native_carrier(family)? {
+            return Ok(carried);
+        }
         let value = match (self.byte()?, family) {
             (tag::BOOL, F::Bool) => match self.byte()? {
                 0 => AspectValue::Bool(false),

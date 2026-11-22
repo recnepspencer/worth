@@ -29,6 +29,7 @@ impl ExpressionType {
             Scalar::Float64 => Self::Float64,
             Scalar::Decimal => Self::Decimal,
             Scalar::String => Self::String,
+            Scalar::Date => Self::Date,
             _ => return Err(unsupported()),
         })
     }
@@ -52,6 +53,7 @@ impl ExpressionValue {
             AspectValue::Float64(value) => return Self::float64(*value),
             AspectValue::Decimal(value) => return Self::decimal(value),
             AspectValue::String(value) => Self::string(value.raw_text().ok_or_else(unsupported)?),
+            AspectValue::Date(value) => Self::date(*value),
             _ => return Err(unsupported()),
         })
     }

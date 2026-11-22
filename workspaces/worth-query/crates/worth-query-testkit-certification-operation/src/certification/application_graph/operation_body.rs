@@ -27,6 +27,8 @@ pub mod input_expectation;
 pub mod input_selection;
 #[path = "operation_body/installation.rs"]
 pub mod installation;
+#[path = "operation_body/native_scalars.rs"]
+pub mod native_scalars;
 #[path = "operation_body/optional_input.rs"]
 pub mod optional_input;
 #[path = "operation_body/output.rs"]

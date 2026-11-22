@@ -11,6 +11,13 @@ use super::{ExpressionType, IntegerType};
 
 const TYPE_DEPTH: u32 = 64;
 
+/// Built-in type names that nominal declarations cannot reuse.
+pub(super) const BUILTIN_TYPE_NAMES: [&str; 21] = [
+    "Bool", "Int8", "Int16", "Int32", "Int64", "UInt8", "UInt16", "UInt32", "UInt64", "Float32",
+    "Float64", "Decimal", "String", "Bytes", "Option", "List", "Map", "Quantity", "Bits", "Logic4",
+    "Date",
+];
+
 /// Resolves `syntax`, reporting denials at syntax node `node`.
 pub(crate) fn resolve_type(
     schema: &ExpressionSchema,
@@ -40,6 +47,7 @@ fn resolve_at(
         "Decimal" => Some(ExpressionType::Decimal),
         "String" => Some(ExpressionType::String),
         "Bytes" => Some(ExpressionType::Bytes),
+        "Date" => Some(ExpressionType::Date),
         other => IntegerType::ALL
             .into_iter()
             .find(|integer| integer.name() == other)

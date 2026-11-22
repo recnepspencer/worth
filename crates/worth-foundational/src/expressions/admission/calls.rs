@@ -218,6 +218,15 @@ fn builtin_signature(name: &str, types: &[ExpressionType]) -> Option<(Builtin, E
             };
             (builtin, T::Bool)
         }
+        ("contains_ignore_ascii_case", [T::String, T::String]) => {
+            (Builtin::ContainsIgnoreAsciiCase, T::Bool)
+        }
+        ("starts_with_ignore_ascii_case", [T::String, T::String]) => {
+            (Builtin::StartsWithIgnoreAsciiCase, T::Bool)
+        }
+        ("ends_with_ignore_ascii_case", [T::String, T::String]) => {
+            (Builtin::EndsWithIgnoreAsciiCase, T::Bool)
+        }
         ("slice", [text @ (T::String | T::Bytes), low, high]) if integer(low) && integer(high) => {
             (Builtin::Substring, T::option(text.clone()))
         }
