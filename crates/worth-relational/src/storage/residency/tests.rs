@@ -8,6 +8,8 @@ use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::Arc;
 
+#[path = "cross_region_forgery_tests.rs"]
+mod cross_region_forgery;
 #[path = "head_history_kind_tests.rs"]
 mod head_history_kind_tests;
 #[path = "head_metadata_tests.rs"]

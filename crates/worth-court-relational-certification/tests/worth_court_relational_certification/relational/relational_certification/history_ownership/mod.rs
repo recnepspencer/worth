@@ -153,3 +153,60 @@ fn ownership_observation_preserves_work_and_memory_refusals() {
         basis.descriptor().clone()
     );
 }
+
+#[test]
+fn missing_cold_ownership_edge_material_refuses_with_its_real_partition() {
+    use worth_relational::facade::storage::RelationalStorageSubject;
+    let host = serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let graph = graph(execution);
+    let (_, basis) = graph
+        .runtime
+        .observe_branch(&graph.runtime.main_branch_identity())
+        .unwrap();
+    // Warm only endpoint partitions through the real transaction read door.
+    let mut reader = begin(&graph.runtime);
+    assert!(reader
+        .read_entity(execution, graph.model)
+        .unwrap()
+        .effective()
+        .is_some());
+    assert!(reader
+        .read_entity(execution, graph.nested)
+        .unwrap()
+        .effective()
+        .is_some());
+    // Lose each remaining region member at the storage port. The required cold
+    // relation partition is distinct from both already admitted endpoint regions.
+    let read = graph.source.member_reads.lock().unwrap().clone();
+    for (&locator, bytes) in &graph.source.members {
+        if bytes.starts_with(b"WORTH-REL-REG") && !read.contains(&locator) {
+            graph
+                .source
+                .failures
+                .lock()
+                .unwrap()
+                .insert(locator, Cause::MissingMember);
+        }
+    }
+    let denial = graph
+        .runtime
+        .observe_model_owner(execution, &basis, &ownership(), graph.nested)
+        .unwrap_err();
+    let Denial::Native(RelationalExecutionDenialCause::StorageUnavailable(failure)) = denial else {
+        panic!("missing ownership material must not become absence: {denial:?}")
+    };
+    assert_eq!(failure.cause, Cause::MissingMember);
+    assert_eq!(
+        failure.subject,
+        RelationalStorageSubject::Region(PartitionId::main())
+    );
+    assert_eq!(
+        graph
+            .runtime
+            .observe_branch(&graph.runtime.main_branch_identity())
+            .unwrap()
+            .0,
+        basis.descriptor().clone()
+    );
+}

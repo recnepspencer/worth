@@ -1,9 +1,16 @@
 //! Public pin and fixed reached-region read after real cold checkpoint recovery.
 use crate::content::historical_kind::fixture::World;
-use std::{collections::BTreeSet, sync::Arc};
+use std::{
+    collections::BTreeSet,
+    sync::{atomic::Ordering, Arc},
+};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 use worth_relational::facade::{
-    durability::*, identity::KindId, runtime::RelationalRuntime, transactions::*,
+    durability::*,
+    identity::{KindId, PartitionId},
+    runtime::RelationalRuntime,
+    storage::{RelationalStorageSubject, RelationalStorageUnavailableCause as Cause},
+    transactions::*,
 };
 use worth_testkit_relational::maintenance::assert_change_bounded;
 mod queries;
@@ -30,7 +37,7 @@ struct ReadWork {
     pin_members: u64,
     symbol_at_pin: bool,
 }
-fn fixed_read_work(regions: u32, history: usize, width: usize) -> ReadWork {
+fn fixed_read_work(regions: u32, history: usize, width: usize, check_refusal: bool) -> ReadWork {
     let original = SerialRequest::from_memory(
         SerialMemoryBudget::new(Some(1 << 30)),
         CancellationSource::new().token(),
@@ -130,8 +137,8 @@ fn fixed_read_work(regions: u32, history: usize, width: usize) -> ReadWork {
         World::new().runtime,
     );
     assert!(
-        source.region_read_count() == 0,
-        "recovery leaves record regions cold"
+        source.region_read_count() == 0 && source.symbol_page_read_count() == 0,
+        "recovery leaves record regions and symbol pages cold"
     );
     // Recovery reads checkpoint metadata (the index catalog); count only reads after it.
     let recovered = source.reads.lock().unwrap().len() as u64;
@@ -189,6 +196,100 @@ fn fixed_read_work(regions: u32, history: usize, width: usize) -> ReadWork {
         work,
         "accepted region is reused"
     );
+    if check_refusal {
+        // A later Full demand can discover bad history, while this capability
+        // still owns its previously accepted immutable Head bytes.
+        source.damaged.store(true, Ordering::SeqCst);
+        let locator = AspectFieldLocator::new(
+            LocatorAuthority::Authoritative,
+            AspectKey::new("name").unwrap(),
+            CanonicalFieldPath::single(FieldKey::new("name").unwrap()),
+        );
+        let stopped = read.bounded_entity_field_equals_for_frontier(
+            &request,
+            &BTreeSet::from([selected]),
+            KindId(1),
+            &locator,
+            &AspectValue::String(InternedString::Raw("selected native symbol".into())),
+            Some(64),
+        );
+        use worth_relational::facade::runtime::BoundedFrontierReadStop;
+        assert!(matches!(stopped, Err(BoundedFrontierReadStop::Admission(
+            RelationalExecutionDenialCause::StorageUnavailable(f)))
+            if f.subject == RelationalStorageSubject::Region(PartitionId(7)) && f.cause == Cause::Damaged));
+        source.damaged.store(false, Ordering::SeqCst);
+        assert_eq!(
+            read.project_read()
+                .read_exact_entity_state(&request, selected, |m, _| m.entity_id)
+                .unwrap(),
+            Some(selected)
+        );
+        let fresh = pin(&runtime, &request);
+        assert!(
+            fresh
+                .project_read()
+                .read_exact_entity_state(&request, selected, |_, _| ())
+                .is_err(),
+            "fresh custody must refuse the now damaged region"
+        );
+        let regions_before = source.region_read_count();
+        let symbols_before = source.symbol_page_read_count();
+        // CHK23 reopen reads only the derived-index catalog and head canonical commit
+        // member; keep region, symbol, and lineage members unavailable across reopen.
+        source.unavailable.store(true, Ordering::SeqCst);
+        source
+            .allow_reopen_metadata_while_unavailable
+            .store(true, Ordering::SeqCst);
+        let denied_runtime = reopen(
+            &request,
+            &checkpoint,
+            Arc::clone(&source),
+            World::new().runtime,
+        );
+        source
+            .allow_reopen_metadata_while_unavailable
+            .store(false, Ordering::SeqCst);
+        assert_eq!(
+            source.region_read_count(),
+            regions_before,
+            "reopen reads no region members"
+        );
+        assert_eq!(
+            source.symbol_page_read_count(),
+            symbols_before,
+            "reopen reads no symbol pages"
+        );
+        let before = source.reads.lock().unwrap().len();
+        let denied = pin(&denied_runtime, &request);
+        assert_eq!(
+            source.reads.lock().unwrap().len(),
+            before,
+            "a lazy pin still succeeds without I/O"
+        );
+        let text_failure = denied.with_symbol_text(&request, text_symbol, |_| {
+            panic!("failed symbol admission cannot yield text")
+        });
+        assert!(matches!(text_failure,
+            Err(RelationalExecutionDenialCause::StorageUnavailable(f))
+            if matches!(f.subject, RelationalStorageSubject::Symbols { first, last }
+                if first <= text_symbol && text_symbol <= last) && f.cause == Cause::SourceUnavailable));
+        use worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial as Denial;
+        let failure = denied
+            .project_read()
+            .read_exact_entity_state(&request, selected, |_, _| panic!("no provisional callback"));
+        assert!(
+            matches!(failure, Err(Denial::Execution(RelationalExecutionDenialCause::StorageUnavailable(f)))
+            if f.subject == RelationalStorageSubject::Region(PartitionId(7)) && f.cause == Cause::SourceUnavailable)
+        );
+        source.unavailable.store(false, Ordering::SeqCst);
+        assert_eq!(
+            denied
+                .project_read()
+                .read_exact_entity_state(&request, selected, |m, _| m.entity_id)
+                .unwrap(),
+            Some(selected)
+        );
+    }
     ReadWork {
         members: work,
         pin_members,
@@ -197,8 +298,11 @@ fn fixed_read_work(regions: u32, history: usize, width: usize) -> ReadWork {
 }
 #[test]
 fn lazy_pin_and_fixed_read_do_not_grow_with_unrelated_regions_or_history() {
-    let model = (fixed_read_work(8, 8, 1), fixed_read_work(16, 8, 1));
-    let history = (fixed_read_work(4, 16, 1), fixed_read_work(4, 32, 1));
+    let model = (fixed_read_work(8, 8, 1, true), fixed_read_work(16, 8, 1, false));
+    let history = (
+        fixed_read_work(4, 16, 1, false),
+        fixed_read_work(4, 32, 1, false),
+    );
     eprintln!(
         "SDK fixed read cold member calls: model {}->{}; history {}->{}",
         model.0.members, model.1.members, history.0.members, history.1.members
@@ -226,8 +330,8 @@ fn lazy_pin_and_fixed_read_do_not_grow_with_unrelated_regions_or_history() {
 
 #[test]
 fn wide_frontier_does_not_escalate_to_unreached_regions() {
-    let base = fixed_read_work(64, 4, 33);
-    let doubled = fixed_read_work(128, 4, 33);
+    let base = fixed_read_work(64, 4, 33, false);
+    let doubled = fixed_read_work(128, 4, 33, false);
     eprintln!(
         "SDK fixed wide frontier member calls: {}->{}",
         base.members, doubled.members

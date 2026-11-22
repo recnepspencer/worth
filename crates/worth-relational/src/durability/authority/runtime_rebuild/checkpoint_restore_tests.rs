@@ -1,5 +1,9 @@
 use super::{partition_images, prepare_partitions, restore_branch_root_images};
 use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
+use crate::facade::identity::KindId;
+use crate::facade::transactions::{
+    BulkEntityCreateIntent, CreateIntent, MutationIntent, WorkerIntentBatch,
+};
 use crate::history::data::BranchId;
 use crate::identity::data::PartitionId;
 use crate::tests::support::*;
@@ -259,4 +263,107 @@ fn recovered_main_and_sibling_catalogs_reuse_exact_canonical_payloads() {
                 .expect("resident fixture has a canonical digest")
         );
     }
+}
+
+#[test]
+fn divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let medium = OwnedTestDurableMedium::new();
+    let source = durable_runtime_for_medium(&medium);
+    let main_entity = create_entity(execution, &source, "partial-mirror-main");
+    let mut transaction = test_owner_begin_transaction_for_main(&source);
+    transaction
+        .push_batch(
+            WorkerIntentBatch::new("partial-mirror-secondary").push(MutationIntent::Create(
+                CreateIntent::BulkEntities(BulkEntityCreateIntent {
+                    partition_id: PartitionId(41),
+                    kind_id: KindId(1),
+                    client_keys: vec![crate::symbols::data::ClientKey::raw("secondary")],
+                    field_patches: vec![single_string_aspect_field_patch(
+                        aspect_key("name"),
+                        field_key("name"),
+                        "secondary",
+                    )],
+                }),
+            )),
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )
+        .unwrap();
+    let committed = transaction.commit(execution, &source).unwrap();
+    let secondary = changed_entities(&committed)[0];
+    release_test_commit_snapshot(&source, &committed);
+    create_relation_in_partition(
+        execution,
+        &source,
+        main_entity,
+        secondary,
+        "cross-partition",
+        PartitionId(31),
+    );
+    let mut checkpoint = source.durability_authority().checkpoint(execution).unwrap();
+    let main_image = checkpoint
+        .partition_images
+        .iter_mut()
+        .find(|image| image.partition_id == PartitionId::main())
+        .unwrap();
+    main_image.entity_arena.snapshot_pins[0] += 1;
+
+    let mut restored = durable_runtime_for_medium(&OwnedTestDurableMedium::new());
+    let mut work = crate::durability::data::CheckpointRestoreWork::default();
+    let roots =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            restore_branch_root_images(lane, execution, &mut restored, &checkpoint, &mut work, None)
+        })
+        .unwrap();
+    let mirror =
+        prepare_partitions(execution, &mut restored, &checkpoint, &roots, &mut work).unwrap();
+    let root_commit = checkpoint.branch_roots[0].commit_id;
+    let root = roots.partitions.get(&root_commit).unwrap();
+    assert!(!shares_partition_generation(
+        &mirror,
+        root,
+        PartitionId::main()
+    ));
+    assert!(shares_partition_generation(&mirror, root, PartitionId(41)));
+    let mirror_relation = mirror.get(&PartitionId(31)).unwrap();
+    let root_relation = root.get(&PartitionId(31)).unwrap();
+    assert!(std::ptr::eq(
+        mirror_relation.relation_arena.generations.get(0).unwrap(),
+        root_relation.relation_arena.generations.get(0).unwrap(),
+    ));
+}
+
+#[test]
+fn equal_image_cannot_bypass_global_contract_readmission() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let medium = OwnedTestDurableMedium::new();
+    let source = durable_runtime_for_medium(&medium);
+    create_entity(execution, &source, "reuse-contract-corruption");
+    let mut checkpoint = source.durability_authority().checkpoint(execution).unwrap();
+    assert_eq!(
+        checkpoint.branch_roots[0].partition_images,
+        checkpoint.partition_images
+    );
+    checkpoint.aspect_contracts.clear();
+
+    let mut restored = durable_runtime_for_medium(&OwnedTestDurableMedium::new());
+    let mut work = crate::durability::data::CheckpointRestoreWork::default();
+    let roots =
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            restore_branch_root_images(lane, execution, &mut restored, &checkpoint, &mut work, None)
+        })
+        .unwrap();
+    let error =
+        prepare_partitions(execution, &mut restored, &checkpoint, &roots, &mut work).unwrap_err();
+    let crate::durability::data::RelationalRecoveryStop::Durability(error) = error else {
+        panic!("contract corruption must remain a durability refusal: {error:?}");
+    };
+    assert_eq!(
+        error.class,
+        crate::durability::data::RecoveryFailureClass::CorruptCheckpoint
+    );
 }
