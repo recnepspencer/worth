@@ -106,8 +106,9 @@ fn perf_commit_delta_matrix() {
     );
 
     let persisted_single_create_samples = capture_counted_samples(|| {
-        let runtime = runtime_with_test_schema();
-        commit_measurement(&runtime, |runtime| {
+        let medium = OwnedTestDurableMedium::new();
+        let runtime = durable_runtime_for_medium(&medium);
+        let mut sample = commit_measurement(&runtime, |runtime| {
             measure_counted_work(execution, || {
                 let mut txn =
                     crate::tests::support::test_owner_begin_transaction_for_main(runtime);
@@ -119,20 +120,34 @@ fn perf_commit_delta_matrix() {
                 txn.commit(execution, runtime)
                     .expect("persisted single entity create")
             })
-        })
+        });
+        assert_eq!(
+            medium.committed_count(),
+            1,
+            "persisted single create must append one canonical commit to the owned durable medium"
+        );
+        let latest = medium
+            .latest_committed_artifact()
+            .expect("owned durable medium must hold the appended commit artifact");
+        assert!(!latest.as_bytes().is_empty());
+        sample
+            .metrics
+            .insert_value("medium_committed_count", medium.committed_count());
+        sample
     });
     assert!(persisted_single_create_samples
         .iter()
         .all(|sample| sample.charged_work > 0));
     assert_counted_budget(
         &persisted_single_create_samples,
-        "persisted single creates should remain clone-free and single-partition",
+        "persisted single creates should remain clone-free, single-partition, and durably appended to an owned medium",
         |metrics| {
             counter_u64(metrics, "full_state_clones") == 0
                 && counter_u64(metrics, "snapshot_pin_full_rebuilds") == 0
                 && counter_u64(metrics, "partitions_touched_by_commit") == 1
                 && metric_u64(metrics, "packet_count") <= 4
                 && metric_u64(metrics, "durable_log_len") == 1
+                && metric_u64(metrics, "medium_committed_count") == 1
                 && metric_u64(metrics, "charged_work") > 0
         },
     );

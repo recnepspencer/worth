@@ -4,7 +4,8 @@ pub(super) fn certify_merge_planning_divergent_update(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let merge_planning_samples = capture_counted_samples(|| {
-        let runtime = runtime_with_test_schema();
+        let medium = OwnedTestDurableMedium::new();
+        let runtime = durable_runtime_for_medium(&medium);
         let shared = create_entity(execution, &runtime, "shared");
         create_branch_from_main(&runtime, "feature");
         let _ = update_entity(execution, &runtime, shared, "main-value");

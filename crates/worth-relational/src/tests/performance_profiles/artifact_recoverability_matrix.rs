@@ -1,5 +1,4 @@
 use super::*;
-use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 #[ignore = "counted performance profile campaign; run with -- --ignored --nocapture --test-threads=1"]
@@ -8,8 +7,9 @@ fn perf_artifact_recoverability_matrix() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let geometry_recoverability_samples = capture_counted_samples(|| {
+        let medium = OwnedTestDurableMedium::new();
         let runtime =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::GeometryKernel, &medium);
         let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
 
         let source = create_entity_outcome(execution, &runtime, "recover-geometry-source");
@@ -49,23 +49,15 @@ fn perf_artifact_recoverability_matrix() {
         let hot_artifacts = runtime.publication().diagnostics_since(diagnostics_start);
 
         let (_, checkpoint_work) = measure_counted_work(execution, || {
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
-                .expect("geometry recoverability checkpoint")
+            capture_and_file_checkpoint(execution, &runtime, &medium)
         });
+        assert!(medium.has_filed_checkpoint());
+        assert_eq!(medium.committed_count(), 6);
 
-        let plan = runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
         let mut recovered =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::GeometryKernel, &medium);
         let (_, recover_work) = measure_counted_work(execution, || {
-            recovered
-                .durability_recovery()
-                .recover(execution, plan)
-                .expect("geometry recoverability recovery")
+            recover_runtime_from_medium(execution, &mut recovered, &medium)
         });
 
         let (replay, replay_commit_work) = measure_counted_work(execution, || {
@@ -87,6 +79,12 @@ fn perf_artifact_recoverability_matrix() {
             .canonical_commit_envelope(execution, hot_commit.commit.commit_id)
             .unwrap()
             .expect("recovered canonical geometry envelope");
+        let authoritative_hot_summary = crate::diagnostics::data::RelationalDiagnosticArtifact {
+            scope: hot_bundle.diagnostics_summary.scope,
+            kind: hot_bundle.diagnostics_summary.kind,
+            determinism: hot_bundle.diagnostics_summary.determinism,
+            entries: Vec::new(),
+        };
 
         CountedPerfSample {
             charged_work: hot_commit_work + checkpoint_work + recover_work + replay_commit_work,
@@ -116,7 +114,7 @@ fn perf_artifact_recoverability_matrix() {
                     DiagnosticCode::CommitPublished,
                 ),
                 "recovered_summary_entry_count": recovered_envelope.diagnostics_summary.entries.len(),
-                "summary_digest_match": digest_diagnostics_surface(&hot_bundle.diagnostics_summary)
+                "summary_digest_match": digest_diagnostics_surface(&authoritative_hot_summary)
                     == digest_diagnostics_surface(&recovered_envelope.diagnostics_summary),
                 "replay_compared_diagnostics_surface": replay
                     .compared_surfaces
@@ -150,8 +148,9 @@ fn perf_artifact_recoverability_matrix() {
     );
 
     let chip_recoverability_samples = capture_counted_samples(|| {
+        let medium = OwnedTestDurableMedium::new();
         let mut runtime =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::ChipSimulation, &medium);
         apply_perf_diagnostics_policy(
             &mut runtime,
             PerfDiagnosticsPolicy::ChipOperationalHotPath,
@@ -213,23 +212,15 @@ fn perf_artifact_recoverability_matrix() {
         });
 
         let (_, checkpoint_work) = measure_counted_work(execution, || {
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
-                .expect("chip recoverability checkpoint")
+            capture_and_file_checkpoint(execution, &runtime, &medium)
         });
+        assert!(medium.has_filed_checkpoint());
+        assert_eq!(medium.committed_count(), 18);
 
-        let plan = runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
         let mut recovered =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::ChipSimulation, &medium);
         let (_, recover_work) = measure_counted_work(execution, || {
-            recovered
-                .durability_recovery()
-                .recover(execution, plan)
-                .expect("chip recoverability recovery")
+            recover_runtime_from_medium(execution, &mut recovered, &medium)
         });
 
         let (replay, replay_commit_work) = measure_counted_work(execution, || {

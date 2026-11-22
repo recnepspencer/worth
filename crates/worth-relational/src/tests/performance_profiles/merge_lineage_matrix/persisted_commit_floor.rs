@@ -4,7 +4,8 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let merge_vs_commit_floor_samples = capture_counted_samples(|| {
-        let merge_runtime = runtime_with_test_schema();
+        let merge_medium = OwnedTestDurableMedium::new();
+        let merge_runtime = durable_runtime_for_medium(&merge_medium);
         create_entity(execution, &merge_runtime, "main-anchor");
         create_branch_from_main(&merge_runtime, "feature");
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
@@ -49,9 +50,11 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
                 .execute_prepared_merge(execution, prepared)
                 .expect("execute merge")
         });
+        assert_eq!(merge_medium.committed_count(), 3);
         let merge_counters = merge_runtime.performance_access().counters();
 
-        let control_runtime = runtime_with_test_schema();
+        let control_medium = OwnedTestDurableMedium::new();
+        let control_runtime = durable_runtime_for_medium(&control_medium);
         control_runtime.performance_access().reset_counters();
         let (control_outcome, control_commit_work) = measure_counted_work(execution, || {
             let mut txn =
@@ -64,6 +67,7 @@ pub(super) fn certify_merge_execution_vs_persisted_commit_floor(
             txn.commit(execution, &control_runtime)
                 .expect("control persisted single create")
         });
+        assert_eq!(control_medium.committed_count(), 1);
         let control_counters = control_runtime.performance_access().counters();
 
         CountedPerfSample {

@@ -4,7 +4,8 @@ pub(super) fn certify_merge_execution_zero_diagnostics_budget(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let merge_execution_zero_diag_samples = capture_counted_samples(|| {
-        let mut runtime = runtime_with_test_schema();
+        let medium = OwnedTestDurableMedium::new();
+        let mut runtime = durable_runtime_for_medium(&medium);
         runtime.configure_diagnostics_for_test(|profile| {
             profile.max_entries_per_artifact = 0;
         });
@@ -50,6 +51,7 @@ pub(super) fn certify_merge_execution_zero_diagnostics_budget(
                 .execute_prepared_merge(execution, prepared)
                 .expect("execute merge")
         });
+        assert_eq!(medium.committed_count(), 3);
         let counters = runtime.performance_access().counters();
 
         CountedPerfSample {

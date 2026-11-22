@@ -1,5 +1,4 @@
 use super::*;
-use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 #[ignore = "counted performance profile campaign; run with -- --ignored --nocapture --test-threads=1"]
@@ -8,8 +7,9 @@ fn perf_recoverability_policy_matrix() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let geometry_policy_samples = capture_counted_samples(|| {
+        let medium = OwnedTestDurableMedium::new();
         let runtime =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::GeometryKernel, &medium);
         let diagnostics_start = runtime.publication().diagnostic_artifacts().len();
 
         let source = create_entity_outcome(execution, &runtime, "policy-geometry-source");
@@ -43,20 +43,12 @@ fn perf_recoverability_policy_matrix() {
             .clone();
         let hot_artifacts = runtime.publication().diagnostics_since(diagnostics_start);
 
-        runtime
-            .durability_authority()
-            .checkpoint(execution)
-            .expect("policy geometry checkpoint");
-        let plan = runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
+        capture_and_file_checkpoint(execution, &runtime, &medium);
+        assert!(medium.has_filed_checkpoint());
+        assert_eq!(medium.committed_count(), 6);
         let mut recovered =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
-        recovered
-            .durability_recovery()
-            .recover(execution, plan)
-            .expect("policy geometry recovery");
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::GeometryKernel, &medium);
+        recover_runtime_from_medium(execution, &mut recovered, &medium);
         let (replay, replay_commit_work) = measure_counted_work(execution, || {
             recovered
                 .replay_authority()
@@ -76,6 +68,12 @@ fn perf_recoverability_policy_matrix() {
             .canonical_commit_envelope(execution, hot_commit.commit.commit_id)
             .unwrap()
             .expect("policy recovered geometry envelope");
+        let authoritative_hot_summary = crate::diagnostics::data::RelationalDiagnosticArtifact {
+            scope: hot_bundle.diagnostics_summary.scope,
+            kind: hot_bundle.diagnostics_summary.kind,
+            determinism: hot_bundle.diagnostics_summary.determinism,
+            entries: Vec::new(),
+        };
 
         CountedPerfSample {
             charged_work: hot_commit_work + replay_commit_work,
@@ -87,7 +85,7 @@ fn perf_recoverability_policy_matrix() {
                     .filter(|artifact| artifact.kind == DiagnosticsArtifactKind::DetailedTrace)
                     .map(|artifact| artifact.entries.len())
                     .sum::<usize>(),
-                "summary_reconstructed": digest_diagnostics_surface(&hot_bundle.diagnostics_summary)
+                "summary_reconstructed": digest_diagnostics_surface(&authoritative_hot_summary)
                     == digest_diagnostics_surface(&recovered_envelope.diagnostics_summary),
                 "replay_mismatch_count": replay.mismatches.len(),
                 "replay_failure": replay.failure.as_ref().map(|failure| format!("{failure:?}")),
@@ -115,8 +113,9 @@ fn perf_recoverability_policy_matrix() {
     );
 
     let chip_policy_samples = capture_counted_samples(|| {
+        let medium = OwnedTestDurableMedium::new();
         let mut runtime =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::ChipSimulation, &medium);
         runtime.configure_diagnostics_for_test(|profile| {
             profile.detailed_traces_enabled = false;
             profile.max_entries_per_artifact = 0;
@@ -175,20 +174,12 @@ fn perf_recoverability_policy_matrix() {
                 .expect("policy hot chip compile")
         });
 
-        runtime
-            .durability_authority()
-            .checkpoint(execution)
-            .expect("policy chip checkpoint");
-        let plan = runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
+        capture_and_file_checkpoint(execution, &runtime, &medium);
+        assert!(medium.has_filed_checkpoint());
+        assert_eq!(medium.committed_count(), 10);
         let mut recovered =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
-        recovered
-            .durability_recovery()
-            .recover(execution, plan)
-            .expect("policy chip recovery");
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::ChipSimulation, &medium);
+        recover_runtime_from_medium(execution, &mut recovered, &medium);
         let (replay, replay_commit_work) = measure_counted_work(execution, || {
             recovered
                 .replay_authority()

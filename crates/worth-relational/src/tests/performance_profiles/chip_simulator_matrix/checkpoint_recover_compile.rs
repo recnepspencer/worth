@@ -1,11 +1,12 @@
 use super::*;
-use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let checkpoint_recover_compile_samples = capture_counted_samples(|| {
-        let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
+        let medium = OwnedTestDurableMedium::new();
+        let runtime =
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::ChipSimulation, &medium);
         let source =
             create_entity_in_partition(execution, &runtime, "persisted-driver", PartitionId(7));
         let targets = (0..12)
@@ -35,23 +36,15 @@ pub(super) fn certify_checkpoint_window_recover_compile_round_trip(
         }
 
         let (_, checkpoint_work) = measure_counted_work(execution, || {
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
-                .expect("chip checkpoint window")
+            capture_and_file_checkpoint(execution, &runtime, &medium)
         });
+        assert!(medium.has_filed_checkpoint());
+        assert_eq!(medium.committed_count(), 25);
 
-        let plan = runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
         let mut recovered =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::ChipSimulation);
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::ChipSimulation, &medium);
         let (recovery_outcome, recover_work) = measure_counted_work(execution, || {
-            recovered
-                .durability_recovery()
-                .recover(execution, plan)
-                .expect("chip checkpoint recovery")
+            recover_runtime_from_medium(execution, &mut recovered, &medium)
         });
 
         let recovered_commit = recovered

@@ -61,19 +61,19 @@ fn synthetic_native_restore_and_image_digest_benchmark() {
     assert!(encoded_bytes > 0, "partition checkpoint image is nonempty");
 
     let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
-    let buffered = (0..DIGEST_SAMPLES)
-        .map(|_| black_box(buffered_digest(roots)))
-        .next_back()
-        .unwrap();
-    let streamed = (0..DIGEST_SAMPLES)
-        .map(|_| {
-            black_box(
-                crate::durability::data::branch_root_partition_image_digest(&lane, roots).unwrap(),
-            )
-        })
-        .next_back()
-        .unwrap();
-    assert_eq!(streamed, buffered);
+    let mut expected_digest = None;
+    for _ in 0..DIGEST_SAMPLES {
+        let buffered = black_box(buffered_digest(roots));
+        let streamed = black_box(
+            crate::durability::data::branch_root_partition_image_digest(&lane, roots).unwrap(),
+        );
+        assert_eq!(streamed, buffered);
+        if let Some(previous) = expected_digest {
+            assert_eq!(streamed, previous);
+        } else {
+            expected_digest = Some(streamed);
+        }
+    }
 
     let (native, native_capture_report) = execution
         .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {

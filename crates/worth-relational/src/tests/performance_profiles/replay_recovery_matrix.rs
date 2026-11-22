@@ -1,5 +1,4 @@
 use super::*;
-use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 #[ignore = "counted performance profile campaign; run with -- --ignored --nocapture --test-threads=1"]
@@ -8,10 +7,12 @@ fn perf_replay_recovery_matrix() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let durable_replay_samples = capture_counted_samples(|| {
-        let runtime = runtime_with_test_schema();
+        let medium = OwnedTestDurableMedium::new();
+        let runtime = durable_runtime_for_medium(&medium);
         create_entity_outcome(execution, &runtime, "source");
         let second = create_entity_outcome(execution, &runtime, "target");
         let replay_commit_id = second.commit.commit_id;
+        assert_eq!(medium.committed_count(), 2);
 
         runtime.performance_access().reset_counters();
         let (outcome, replay_commit_work) = measure_counted_work(execution, || {
@@ -61,27 +62,19 @@ fn perf_replay_recovery_matrix() {
     );
 
     let checkpoint_recovery_samples = capture_counted_samples(|| {
-        let runtime = runtime_with_test_schema();
+        let medium = OwnedTestDurableMedium::new();
+        let runtime = durable_runtime_for_medium(&medium);
         create_entity_outcome(execution, &runtime, "source");
-        runtime
-            .durability_authority()
-            .checkpoint(execution)
-            .expect("checkpoint");
+        capture_and_file_checkpoint(execution, &runtime, &medium);
         let second = create_entity_outcome(execution, &runtime, "target");
         let tail_commit_id = second.commit.commit_id;
+        assert!(medium.has_filed_checkpoint());
+        assert_eq!(medium.committed_count(), 2);
 
-        let recovery_plan = runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
-        let mut recovered = runtime_with_test_schema();
-
+        let mut recovered = durable_runtime_for_medium(&medium);
         recovered.performance_access().reset_counters();
         let (outcome, recovery_work) = measure_counted_work(execution, || {
-            recovered
-                .durability_recovery()
-                .recover(execution, recovery_plan)
-                .expect("recover plan")
+            recover_runtime_from_medium(execution, &mut recovered, &medium)
         });
         let (replay, replay_commit_work) = measure_counted_work(execution, || {
             recovered

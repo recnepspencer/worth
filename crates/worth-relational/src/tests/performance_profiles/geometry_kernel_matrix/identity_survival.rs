@@ -1,11 +1,12 @@
 use super::*;
-use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 pub(super) fn certify_topology_identity_survival_recovery_round_trip(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let topology_identity_samples = capture_counted_samples(|| {
-        let runtime = runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
+        let medium = OwnedTestDurableMedium::new();
+        let runtime =
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::GeometryKernel, &medium);
         let created = create_entity_outcome(execution, &runtime, "topology-source");
         let entity = changed_entities(&created)[0];
         let start_lineage = runtime
@@ -44,23 +45,15 @@ pub(super) fn certify_topology_identity_survival_recovery_round_trip(
         let resolution_counters = runtime.performance_access().counters();
 
         let (_, checkpoint_work) = measure_counted_work(execution, || {
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
-                .expect("geometry topology checkpoint")
+            capture_and_file_checkpoint(execution, &runtime, &medium)
         });
+        assert!(medium.has_filed_checkpoint());
+        assert_eq!(medium.committed_count(), 2);
 
-        let plan = runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
         let mut recovered =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::GeometryKernel, &medium);
         let (recovery_outcome, recover_work) = measure_counted_work(execution, || {
-            recovered
-                .durability_recovery()
-                .recover(execution, plan)
-                .expect("geometry topology recovery")
+            recover_runtime_from_medium(execution, &mut recovered, &medium)
         });
 
         recovered.performance_access().reset_counters();

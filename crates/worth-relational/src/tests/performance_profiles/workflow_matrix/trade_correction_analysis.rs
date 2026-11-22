@@ -47,9 +47,11 @@ pub(super) fn certify_trade_correction_analysis_round_trip(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let trade_correction_samples = capture_counted_samples(|| {
-        let runtime = runtime_with_schema_registry_profile(
+        let medium = OwnedTestDurableMedium::new();
+        let runtime = durable_runtime_schema_profile_for_medium(
             RelationalRuntimeProfile::CertificationCore,
             trade_correction_schema_registry(),
+            &medium,
         );
         let account = create_entity_in_partition(
             execution,
@@ -188,6 +190,18 @@ pub(super) fn certify_trade_correction_analysis_round_trip(
         });
         let merged_entities = changed_entities(&merge_outcome.commit);
         assert_eq!(merged_entities.len(), 3);
+        assert_eq!(
+            medium.committed_count(),
+            3,
+            "owned durable medium must record account, analysis, and merged commits"
+        );
+        assert_eq!(
+            medium
+                .latest_committed_artifact()
+                .expect("merged durable artifact")
+                .commit_id(),
+            merge_outcome.commit.commit.commit_id
+        );
         let trade = merged_entities[0];
         let risk_view = merged_entities[1];
         let audit_record = merged_entities[2];

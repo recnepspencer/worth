@@ -4,8 +4,11 @@ pub(super) fn certify_replay_window_drift_stability(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let replay_window_drift_samples = capture_counted_samples(|| {
-        let runtime =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::CertificationCore);
+        let medium = OwnedTestDurableMedium::new();
+        let runtime = durable_runtime_profile_for_medium(
+            RelationalRuntimeProfile::CertificationCore,
+            &medium,
+        );
         const HISTORY_DEPTH: usize = 48;
         const REPLAY_WINDOW: usize = 32;
         let mut commit_ids = Vec::with_capacity(HISTORY_DEPTH);
@@ -14,6 +17,7 @@ pub(super) fn certify_replay_window_drift_stability(
                 create_entity_outcome(execution, &runtime, &format!("replay-window-{index}"));
             commit_ids.push(outcome.commit.commit_id);
         }
+        assert_eq!(medium.committed_count(), HISTORY_DEPTH);
 
         runtime.performance_access().reset_counters();
         let mut total_replay_work = 0u64;

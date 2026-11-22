@@ -116,17 +116,6 @@ pub(crate) fn runtime_with_test_schema_profile(
         .expect("valid native runtime configuration")
 }
 
-pub(crate) fn runtime_with_schema_registry_profile(
-    profile: RelationalRuntimeProfile,
-    schema_registry: RelationalSchemaRegistry,
-) -> RelationalRuntime {
-    RelationalRuntimeApi::builder()
-        .profile(profile)
-        .schema_registry(schema_registry)
-        .build()
-        .expect("valid native runtime configuration")
-}
-
 pub(crate) fn runtime_with_extra_entity_aspects_profile(
     profile: RelationalRuntimeProfile,
     extra_entity_aspects: Vec<DeclaredAspectContractBinding>,

@@ -4,7 +4,8 @@ pub(super) fn certify_merge_prepare_vs_execute_feature_adoption(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let merge_prepare_execute_split_samples = capture_counted_samples(|| {
-        let runtime = runtime_with_test_schema();
+        let medium = OwnedTestDurableMedium::new();
+        let runtime = durable_runtime_for_medium(&medium);
         create_entity(execution, &runtime, "main-anchor");
         create_branch_from_main(&runtime, "feature");
         let mut txn = crate::tests::support::test_owner_begin_transaction_for_branch(
@@ -51,6 +52,7 @@ pub(super) fn certify_merge_prepare_vs_execute_feature_adoption(
                 .execute_prepared_merge(execution, prepared)
                 .expect("execute merge")
         });
+        assert_eq!(medium.committed_count(), 3);
         let counters = runtime.performance_access().counters();
 
         CountedPerfSample {

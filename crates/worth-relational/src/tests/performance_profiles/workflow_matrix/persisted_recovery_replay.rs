@@ -1,38 +1,30 @@
 use super::*;
-use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 pub(super) fn certify_persisted_recovery_replay_round_trip(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let replay_recovery_samples = capture_counted_samples(|| {
-        let runtime = runtime_with_test_schema();
+        let medium = OwnedTestDurableMedium::new();
+        let runtime = durable_runtime_for_medium(&medium);
         let source_created = create_entity_outcome(execution, &runtime, "recovery-source");
         let source = changed_entities(&source_created)[0];
 
         let (_, checkpoint_work) = measure_counted_work(execution, || {
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
-                .expect("workflow checkpoint")
+            capture_and_file_checkpoint(execution, &runtime, &medium)
         });
 
         let (target_created, post_checkpoint_commit_work) = measure_counted_work(execution, || {
             create_entity_outcome(execution, &runtime, "recovery-target")
         });
         let target = changed_entities(&target_created)[0];
-        let recovery_plan = runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
         let tail_commit_id = target_created.commit.commit_id;
+        assert!(medium.has_filed_checkpoint());
+        assert_eq!(medium.committed_count(), 2);
 
-        let mut recovered = runtime_with_test_schema();
+        let mut recovered = durable_runtime_for_medium(&medium);
         recovered.performance_access().reset_counters();
         let (recovery_outcome, recover_work) = measure_counted_work(execution, || {
-            recovered
-                .durability_recovery()
-                .recover(execution, recovery_plan)
-                .expect("workflow recovery")
+            recover_runtime_from_medium(execution, &mut recovered, &medium)
         });
 
         let (replay_outcome, replay_commit_work) = measure_counted_work(execution, || {

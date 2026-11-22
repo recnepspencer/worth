@@ -1,5 +1,4 @@
 use super::*;
-use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 #[test]
 #[ignore = "counted performance profile campaign; run with -- --ignored --nocapture --test-threads=1"]
@@ -177,7 +176,8 @@ fn perf_index_parity_matrix() {
     );
 
     let persisted_recovery_samples = capture_counted_samples(|| {
-        let runtime = runtime_with_test_schema();
+        let medium = OwnedTestDurableMedium::new();
+        let runtime = durable_runtime_for_medium(&medium);
         let alpha = create_entity_outcome(execution, &runtime, "alpha");
         let index = runtime
             .index_authority()
@@ -222,19 +222,20 @@ fn perf_index_parity_matrix() {
             .expect("original persisted query outcome");
 
         let (recovered, recover_work) = measure_counted_work(execution, || {
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
-                .expect("index parity checkpoint");
-            let plan = runtime
-                .durability()
-                .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-                .unwrap();
-            let mut recovered = runtime_with_test_schema();
-            recovered
-                .durability_recovery()
-                .recover(execution, plan)
-                .expect("index parity recovery");
+            capture_and_file_checkpoint(execution, &runtime, &medium);
+            assert!(medium.has_filed_checkpoint());
+            assert_eq!(medium.committed_count(), 1);
+            let mut recovered = durable_runtime_for_medium(&medium);
+            recover_runtime_from_medium(execution, &mut recovered, &medium);
+            let persisted_generation = recovered
+                .index_access()
+                .read_latest_generation(execution, index.index_id, &BranchId("main".to_string()))
+                .expect("cold checkpoint index generation read succeeds")
+                .expect("persisted derived index generation survives durable checkpoint recovery");
+            assert_eq!(
+                persisted_generation.generation_id,
+                build.generations[0].generation_id
+            );
             recovered
         });
         let recovered_snapshot = recovered

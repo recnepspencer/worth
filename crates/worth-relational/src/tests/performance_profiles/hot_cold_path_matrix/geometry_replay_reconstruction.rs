@@ -1,12 +1,12 @@
 use super::*;
-use crate::durability::data::RecoveryVerificationMode as RecoveryMode;
 
 pub(super) fn certify_geometry_hot_commit_vs_replay_reconstruction(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let geometry_hot_vs_replay_samples = capture_counted_samples(|| {
+        let medium = OwnedTestDurableMedium::new();
         let mut runtime =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::GeometryKernel, &medium);
         runtime.configure_diagnostics_for_test(|profile| {
             profile.detailed_traces_enabled = false;
             profile.max_entries_per_artifact = 0;
@@ -72,24 +72,16 @@ pub(super) fn certify_geometry_hot_commit_vs_replay_reconstruction(
         });
 
         let (_, checkpoint_work) = measure_counted_work(execution, || {
-            runtime
-                .durability_authority()
-                .checkpoint(execution)
-                .expect("geometry hot/cold checkpoint")
+            capture_and_file_checkpoint(execution, &runtime, &medium)
         });
+        assert!(medium.has_filed_checkpoint());
+        assert_eq!(medium.committed_count(), 6);
 
-        let plan = runtime
-            .durability()
-            .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
-            .unwrap();
         let mut recovered =
-            runtime_with_test_schema_profile(RelationalRuntimeProfile::GeometryKernel);
+            durable_runtime_profile_for_medium(RelationalRuntimeProfile::GeometryKernel, &medium);
         recovered.performance_access().reset_counters();
         let (recovery_outcome, recover_work) = measure_counted_work(execution, || {
-            recovered
-                .durability_recovery()
-                .recover(execution, plan)
-                .expect("geometry hot/cold recovery")
+            recover_runtime_from_medium(execution, &mut recovered, &medium)
         });
 
         let (replay, replay_commit_work) = measure_counted_work(execution, || {
