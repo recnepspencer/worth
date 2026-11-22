@@ -16,12 +16,10 @@ impl CapturePause {
         let _ = self.resume.lock().unwrap_or_else(|p| p.into_inner()).recv();
     }
 }
-struct ResumeOnDrop(Option<SyncSender<()>>);
-impl Drop for ResumeOnDrop {
+struct ClearOnDrop<'a, T>(&'a Mutex<Option<T>>);
+impl<T> Drop for ClearOnDrop<'_, T> {
     fn drop(&mut self) {
-        if let Some(tx) = self.0.take() {
-            let _ = tx.send(());
-        }
+        let _ = self.0.lock().unwrap_or_else(|p| p.into_inner()).take();
     }
 }
 #[test]
@@ -346,26 +344,33 @@ fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boun
         entered: entered_tx,
         resume: Mutex::new(resume_rx),
     }));
+    let runtime_ref = &runtime;
     let (out_a, out_b) = std::thread::scope(|scope| {
-        // Declared inside `scope` so any panic unblocks Pass A BEFORE thread joins.
-        let resume_a = ResumeOnDrop(Some(resume_tx));
-        let pass_a = scope.spawn(|| runtime.history.try_reclaim_retired_branch_roots(1).unwrap());
-        entered_rx.recv().unwrap();
+        // Owned inside `scope`: dropping `resume_tx` (normal or panic unwind) is
+        // nonblocking and wakes `CapturePause::wait` BEFORE `thread::scope` joins.
+        let resume_tx = resume_tx;
+        let owner_for_a = Arc::clone(&owner);
+        let pass_a = scope.spawn(move || {
+            let _clear_pause = ClearOnDrop(&owner_for_a.reclamation_drop_pause);
+            runtime_ref.history.try_reclaim_retired_branch_roots(1).unwrap()
+        });
+        entered_rx
+            .recv()
+            .expect("Pass A must reach reclamation_drop_pause before exiting");
         assert!(owner.reclamation_gate.try_lock().is_err(), "Pass A holds gate across drop(root)");
         *owner.reclamation_gate_contended.lock().unwrap() = Some(contended_tx);
         let done_flag = Arc::clone(&pass_b_done);
         let owner_for_b = Arc::clone(&owner);
-        let runtime_ref = &runtime;
         let pass_b = scope.spawn(move || {
+            let _clear_contended = ClearOnDrop(&owner_for_b.reclamation_gate_contended);
             let out = runtime_ref.history.try_reclaim_retired_branch_roots(1).unwrap();
             done_flag.store(true, std::sync::atomic::Ordering::Release);
-            owner_for_b.reclamation_gate_contended.lock().unwrap().take();
             out
         });
         // Deterministic receiver-local contention observation: Pass B actually hit WouldBlock.
         contended_rx.recv().expect("Pass B must contend on reclamation_gate while Pass A holds it");
         assert!(!pass_b_done.load(std::sync::atomic::Ordering::Acquire), "Pass B remains blocked");
-        drop(resume_a);
+        drop(resume_tx);
         (pass_a.join().unwrap(), pass_b.join().unwrap())
     });
 
