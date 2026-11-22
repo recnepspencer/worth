@@ -38,6 +38,13 @@ pub use worth_query_declaration::{
     worth_query_portable_type, worth_query_query_binding, worth_query_structured_value_binding,
     worth_query_unit, worth_query_value_binding, worth_query_workflow,
 };
+/// Derive syntax over these declaration traits and macros; see
+/// [Build an Application](https://github.com/recnepspencer/worth/blob/master/docs/build-an-application.md).
+/// Expansions name `::worth_query_decl`; `WorthQueryProjection` also names
+/// `::worth_query_host`, so a crate deriving it depends on both.
+pub use worth_query_macros::{
+    WorthQueryAction, WorthQueryProjection, WorthQueryRecord, WorthQuerySchema,
+};
 
 /// Canonical proof-carrying query artifact for declaration consumers.
 ///

@@ -5,6 +5,7 @@ members = [
     "crates/worth-query-court-*",
     "crates/worth-query-decl",
     "crates/worth-query-host",
+    "crates/worth-query-macros",
     "crates/worth-query-replay",
     "crates/worth-query-certification",
     "crates/worth-query-declaration",
@@ -38,6 +39,7 @@ license = "BUSL-1.1"
 [workspace.dependencies]
 worth-query-decl = { path = "crates/worth-query-decl" }
 worth-query-host = { path = "crates/worth-query-host" }
+worth-query-macros = { path = "crates/worth-query-macros" }
 worth-query-replay = { path = "crates/worth-query-replay" }
 worth-query-certification = { path = "crates/worth-query-certification" }
 worth-query-declaration = { path = "crates/worth-query-declaration" }

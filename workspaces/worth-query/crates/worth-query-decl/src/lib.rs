@@ -22,6 +22,7 @@
 //! # }
 //! ```
 
+mod derive_contract;
 pub mod facade;
 
 #[cfg(test)]

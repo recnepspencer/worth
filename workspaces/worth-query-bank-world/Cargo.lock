@@ -3848,6 +3848,7 @@ name = "worth-query-decl"
 version = "0.1.0"
 dependencies = [
  "worth-query-declaration",
+ "worth-query-macros",
 ]
 
 [[package]]
@@ -4088,6 +4089,7 @@ dependencies = [
  "worth-query-declaration",
  "worth-query-execution",
  "worth-query-installation",
+ "worth-query-macros",
  "worth-query-publication",
  "worth-relational",
  "worth-runtime-bridge",
@@ -4108,6 +4110,15 @@ dependencies = [
  "worth-proof",
  "worth-query-declaration",
  "zeroize",
+]
+
+[[package]]
+name = "worth-query-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]

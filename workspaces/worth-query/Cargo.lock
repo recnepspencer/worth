@@ -1573,6 +1573,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-court-decl-host-macros"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "worth-foundational",
+ "worth-query-decl",
+ "worth-query-host",
+]
+
+[[package]]
 name = "worth-query-court-decl-host-native-fragments"
 version = "0.1.0"
 dependencies = [
@@ -1898,6 +1908,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "worth-query-declaration",
+ "worth-query-macros",
 ]
 
 [[package]]
@@ -2152,6 +2163,7 @@ dependencies = [
  "worth-query-declaration",
  "worth-query-execution",
  "worth-query-installation",
+ "worth-query-macros",
  "worth-query-publication",
  "worth-relational",
  "worth-runtime-bridge",
@@ -2173,6 +2185,15 @@ dependencies = [
  "worth-query-declaration",
  "worth-query-testkit-decl",
  "zeroize",
+]
+
+[[package]]
+name = "worth-query-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
 ]
 
 [[package]]
