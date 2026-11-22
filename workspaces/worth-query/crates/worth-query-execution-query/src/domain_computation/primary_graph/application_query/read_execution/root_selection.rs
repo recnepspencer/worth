@@ -13,6 +13,7 @@ mod aggregate;
 mod components;
 mod evidence;
 mod managed_index;
+mod narrowing;
 mod orbit;
 mod path_union;
 mod step_reads;
@@ -42,15 +43,49 @@ pub struct BoundedRootSelection {
 mod work;
 use work::RootSelectionWork;
 
+/// Index-seeking selection, then bounded narrowing of its candidates.
 pub fn select_bounded_roots(
     runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
     plan: &ReadPlan<'_>,
-
     capture_result_set: bool,
     spent: Option<&OneShotReadWorkObservation<'_>>,
+    interruption: super::ReadInterruption<'_>,
+) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
+    let selection = select_index_bounded_roots(
+        runtime,
+        execution,
+        graph,
+        plan,
+        capture_result_set,
+        spent,
+        interruption,
+    )?;
+    let projection = runtime
+        .project_snapshot(plan.snapshot)
+        .ok_or_else(|| plan.snapshot_unavailable_denial())?;
+    narrowing::narrow_selected_roots(
+        &narrowing::NarrowingRead {
+            runtime,
+            projection: &projection,
+            execution,
+            graph,
+            plan,
+        },
+        selection,
+        spent,
+        interruption,
+    )
+}
 
+fn select_index_bounded_roots(
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    plan: &ReadPlan<'_>,
+    capture_result_set: bool,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
     interruption: super::ReadInterruption<'_>,
 ) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
     interruption.checkpoint(plan.name)?;
@@ -265,7 +300,7 @@ pub fn select_applied_source_root(
     }
     interruption.checkpoint(permission.name)?;
     let projection = runtime.project_candidate();
-    match contract.predicates() {
+    let selection = match contract.predicates() {
         [] => Ok(BoundedRootSelection {
             candidates: vec![permission.root],
             selected_predicate_source: None,
@@ -290,7 +325,19 @@ pub fn select_applied_source_root(
             interruption,
         ),
         _ => Err(permission.predicate_unavailable_denial()),
-    }
+    }?;
+    narrowing::narrow_selected_roots(
+        &narrowing::NarrowingRead {
+            runtime,
+            projection: &projection,
+            execution,
+            graph,
+            plan: permission,
+        },
+        selection,
+        None,
+        interruption,
+    )
 }
 
 fn direct_root_source(

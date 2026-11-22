@@ -96,6 +96,20 @@ impl<'a> RootSelectionWork<'a> {
         Ok(())
     }
 
+    /// Bills residual-filter evaluation work after one bounded slice.
+    pub fn charge_residual_filter(
+        &mut self,
+        units: usize,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        if let Some(spent) = self.spent {
+            spent.charge(units, subject)?;
+        }
+        self.work_units = self.work_units.saturating_add(units);
+        self.predicate_work_units = self.predicate_work_units.saturating_add(units);
+        Ok(())
+    }
+
     pub fn charge_source_copy(
         &mut self,
         units: usize,

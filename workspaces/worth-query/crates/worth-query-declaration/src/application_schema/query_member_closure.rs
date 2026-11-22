@@ -13,6 +13,7 @@ mod history;
 mod inspection;
 mod invariant_source;
 mod managed_index;
+mod where_filter;
 
 use super::schema_read_closure::{entity_exists, field_matches, relation_exists};
 
@@ -55,6 +56,7 @@ fn validate_query(
     components::validate(definition, members)?;
     validate_result_shape(definition, members)?;
     validate_predicates(definition, members)?;
+    where_filter::validate(definition, members)?;
     validate_ordering(definition, members)
 }
 

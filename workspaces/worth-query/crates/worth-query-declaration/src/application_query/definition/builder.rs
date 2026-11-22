@@ -53,6 +53,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
                 managed_index_recipe: None,
                 cardinality: parts.cardinality,
                 predicates: Vec::new(),
+                where_filter: None,
                 ordering: Vec::new(),
                 continuation: None,
                 live_cause: None,
@@ -123,6 +124,19 @@ impl<Schema, Query, Parameters, QueryResult, Scope>
             parameter: parameter.name().to_owned(),
             scalar_family: Binding::SCALAR_FAMILY,
         });
+        self
+    }
+
+    /// Narrows the index-selected candidate rows by one admitted Boolean
+    /// expression over root fields and typed parameters. Structured
+    /// `where_equal` and root paths remain the index-seeking selection.
+    pub fn where_filter(
+        mut self,
+        filter: crate::application_query::ApplicationQueryWhereFilter<Query>,
+    ) -> Self {
+        let (program, fields) = filter.into_parts();
+        self.definition.field_expectations.extend(fields);
+        self.definition.where_filter = Some(program);
         self
     }
 
