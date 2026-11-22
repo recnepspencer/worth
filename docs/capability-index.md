@@ -2121,9 +2121,13 @@ Install it through the embedded Host's declared operation; raw callback bytes
 cannot replace any of those bindings. The Bank HTTP route uses the same factory.
 
 Directory dispatch, inbound custody and recovery claims support graceful
-close/reopen and quiescent kills. The Bank rail courts combine actual Home
-readmission with the real external rail and its independent consequence ledger.
-Full Bank-server restart and crash interruption remain uncertified.
+close/reopen, quiescent kills, and real-kill recovery of in-flight external
+dispatches, inbound duplicate callbacks across kills, and R14 rail state loss
+on the declared Directory Home courts (C3.5). The Bank rail courts combine
+actual Home readmission with the real external rail, its read-only
+reconciliation inquiry, and its independent consequence ledger. Full
+Bank-server restart and broader crash-certification windows (C4–C5) remain
+uncertified.
 
 
 Original producer DATA can be read through `DecisionReader::original_observation`

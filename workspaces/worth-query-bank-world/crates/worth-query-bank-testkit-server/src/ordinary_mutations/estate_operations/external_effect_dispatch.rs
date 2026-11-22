@@ -35,6 +35,7 @@ pub use worth_query_host::facade::publication::application_aftermath::{
 
 pub use self::rail_transport::{
     spawn_rail, spawn_rail_with_protocol_support, BankEstateRailTransport,
+    BankRailReconciliationDisposition,
 };
 pub use super::notify_death::fixture::{notification_world, NotificationFixture};
 pub use crate::facade::support::request_scope;

@@ -8,28 +8,52 @@ fn application_kill_in_flight_reconciles_all_six_bank_rail_fault_cases_without_s
     let execution = checkpoint_capture::ExecutionRequest::leased(&lease);
 
     // 1. Exactly-once completion: killed between dispatch and response recording.
-    // Reconcile reads the rail's ledger and completes with ZERO extra dispatch.
+    // Query admits reconciliation and Bank's read-only reconciliation inquiry
+    // resolves the rail's completed effect with ZERO extra dispatch.
     {
         let world = World::new();
         let key = 9501_u64;
+        let expected_notice = notice(key);
         let info: ChildDispatchInfo =
             serde_json::from_slice(&spawn_and_kill_child(&world, "dispatch:succeed", key, None))
                 .unwrap();
         let reopened = world.open(execution, false);
         assert_unresolved_unknown(&reopened, &info.correlation, "succeed");
         let rc = rail_correlation(&info.correlation);
-        assert_eq!(reopened.transport.ledger_status(&rc), LedgerStatus::Completed);
-        assert_eq!(reopened.transport.admission_count(), 1);
-        assert_eq!(reopened.transport.completed_effect_count(), 1);
-        let handle = reopened.recover(notice(key), key);
-        reopened.admitted(notice(key), key, |phase, admission, _, _| {
+        let handle = reopened.recover(expected_notice, key);
+        let disposition = reopened.admitted(expected_notice, key, |phase, admission, _, _| {
             let rt = reopened.home.runtime().runtime();
             let err = rt.settle_recorded_recovery_completion(phase, handle, admission).unwrap_err();
             assert_eq!(err.kind(), WorthQueryRecoveryHandleDenialKind::UnresolvedExternalPosture);
             let handle = err.into_parts().1.expect("claim retained");
             let auth = rt.admit_recovery_effect_authority(&handle, admission).unwrap();
-            reconcile_recovery_handle(phase, handle, &auth).unwrap();
+            let reconcile = reconcile_recovery_handle(phase, handle, &auth).unwrap();
+            reopened.transport.reconcile_admitted_effect(&reconcile)
         });
+        match disposition {
+            BankRailReconciliationDisposition::Completed {
+                correlation,
+                notice: observed,
+            } => {
+                assert_eq!(correlation, rc);
+                assert_eq!(observed.estate(), expected_notice.estate().get());
+                assert_eq!(observed.notice(), expected_notice.notice().get());
+                assert_eq!(observed.subject(), expected_notice.subject().get());
+            }
+            other => panic!("expected Completed reconciliation disposition, got {other:?}"),
+        }
+        assert_eq!(
+            reopened.admitted(expected_notice, key, |phase, admission, binding, _| {
+                reopened
+                    .home
+                    .runtime()
+                    .runtime()
+                    .resolve_admitted_recovery_claim_status(phase, admission, binding)
+                    .unwrap()
+                    .unwrap()
+            }),
+            WorthQueryRecoveryClaimStatus::Consumed
+        );
         assert!(
             reopened.transport.production_dispatches().is_empty(),
             "reconcile never redispatches completed effect"
@@ -88,7 +112,7 @@ fn application_kill_in_flight_reconciles_all_six_bank_rail_fault_cases_without_s
         assert_eq!(reopened.transport.completed_effect_count(), 0);
         let handle = reopened.recover(notice(key), key);
         reopened.transport.under(FaultScript::Succeed, Duration::from_secs(5));
-        reopened.admitted(notice(key), key, |phase, admission, _, _| {
+        let disposition = reopened.admitted(notice(key), key, |phase, admission, _, _| {
             let rt = reopened.home.runtime().runtime();
             let auth = rt.admit_recovery_effect_authority(&handle, admission).unwrap();
             let redisp = rt.redispatch_admitted_external_effect(phase, &handle, &auth, admission).unwrap();
@@ -99,8 +123,15 @@ fn application_kill_in_flight_reconciles_all_six_bank_rail_fault_cases_without_s
             let err = safe_retry_recovery_handle(phase, handle, &auth, redisp).unwrap_err();
             assert_eq!(err.kind(), WorthQueryRecoveryHandleDenialKind::UnresolvedExternalPosture);
             let retained = err.into_parts().1.expect("claim retained");
-            reconcile_recovery_handle(phase, retained, &auth).unwrap();
+            let reconcile = reconcile_recovery_handle(phase, retained, &auth).unwrap();
+            reopened.transport.reconcile_admitted_effect(&reconcile)
         });
+        assert_eq!(
+            disposition,
+            BankRailReconciliationDisposition::AcknowledgedPending {
+                correlation: rc.clone(),
+            }
+        );
         assert_eq!(
             reopened
                 .home
@@ -203,7 +234,7 @@ fn application_kill_in_flight_reconciles_all_six_bank_rail_fault_cases_without_s
         assert_eq!(reopened.transport.admission_count(), 0);
         assert_eq!(reopened.transport.completed_effect_count(), 0);
         let handle = reopened.recover_reject(notice(key), key);
-        reopened.admitted_reject(notice(key), key, |phase, admission, _, _| {
+        let disposition = reopened.admitted_reject(notice(key), key, |phase, admission, _, _| {
             let rt = reopened.home.runtime().runtime();
             let auth = rt.admit_recovery_effect_authority(&handle, admission).unwrap();
             let performed = rt
@@ -213,8 +244,15 @@ fn application_kill_in_flight_reconciles_all_six_bank_rail_fault_cases_without_s
                 performed.dispatch().posture().kind(),
                 WorthQueryExternalDispatchPostureKind::ProvenNoEffect
             );
-            reconcile_recovery_handle(phase, handle, &auth).unwrap();
+            let reconcile = reconcile_recovery_handle(phase, handle, &auth).unwrap();
+            reopened.transport.reconcile_admitted_effect(&reconcile)
         });
+        assert_eq!(
+            disposition,
+            BankRailReconciliationDisposition::UnresolvedNoRecord {
+                correlation: rail_correlation(&info.correlation),
+            }
+        );
         assert_eq!(
             reopened
                 .home

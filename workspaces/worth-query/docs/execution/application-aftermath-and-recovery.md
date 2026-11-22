@@ -805,9 +805,10 @@ recorded observation through World publication without another transport
 contact. An unpublished internal completion retains its actual original World
 recovery obligation and continues that occurrence.
 
-These are graceful-close and quiescent-reopen guarantees. Crash recovery remains
-uncertified, and Query makes no remote exactly-once claim beyond the external
-owner's admitted contract.
+Graceful close, quiescent reopen, and C3.5's recovered unobserved-dispatch
+readmission are covered on Directory Homes; broader crash-recovery
+certification remains deferred to C4–C5, and Query makes no remote exactly-once
+claim beyond the external owner's admitted contract.
 
 ## Recovery lifetime and scope
 
@@ -874,8 +875,9 @@ the newly opened Home; dropping an old incarnation's value cannot dispose the
 new incarnation's claim. An actual publication no-effect leaves the existing
 handle and claim retryable.
 
-These guarantees cover graceful close/reopen and the authorized quiescent
-ownership handoff. Crash recovery is not certified by this lane.
+These guarantees cover graceful close/reopen, authorized quiescent ownership
+handoff, and C3.5's unobserved-dispatch recovery cutover. Broader crash-recovery
+certification remains deferred to C4–C5.
 
 A recovered claim whose original external completion is already acknowledged
 uses `settle_recorded_recovery_completion(phase, handle, admission)`. It checks

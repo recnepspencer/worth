@@ -259,11 +259,15 @@ fixed owner order before the Home serves anything.
   never re-contacting the external rail during readmission. The recovered custody
   then enters the ordinary recovery handles (`reconcile_recovery_handle`,
   `safe_retry_recovery_handle`, `compensate_recovery_handle`,
-  `resolve_recovery_handle`, or authentic inbound completion callback), which
-  resolve the fate under the rail's admitted contract without redispatching a
-  completed effect. If the external rail itself restarts with lost state, the
-  Home never claims completion: the effect remains unresolved and reconciliation
-  reports the rail's contract (`NoRecord`).
+  `resolve_recovery_handle`, or authentic inbound completion callback).
+  `reconcile_recovery_handle` consumes the recovery claim and returns a
+  `WorthQueryRecoveryReconcileAdmission` carrying the durable outbox binding;
+  the owner's read-only reconciliation inquiry uses that binding to read the
+  rail's own fate (`Completed`, `AcknowledgedPending`, or `UnresolvedNoRecord`)
+  without redispatching a completed effect. If the external rail itself restarts
+  with lost state, the Home never claims completion: the effect remains
+  unresolved and the owner's reconciliation inquiry reports the restarted rail's
+  contract (`NoRecord`).
 - **A kill while graceful close was publishing its checkpoint:** reopen recovers
   the state committed before that close.
 - **Still refused (D18):** a Signal effect with no recorded open, and a Native

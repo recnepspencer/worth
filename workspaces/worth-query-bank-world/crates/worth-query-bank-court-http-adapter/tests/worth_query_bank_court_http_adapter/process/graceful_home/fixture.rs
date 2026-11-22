@@ -16,7 +16,7 @@ use ed25519_dalek::SigningKey;
 use worth_query_decl::facade::{application_program::*,application_schema::ApplicationSchema};
 use worth_query_host::facade::{application_installation::*,primary_graph::*,runtime::WorthQueryApplicationQueryResourceProfile,WorthQueryApplicationHome,WorthQueryApplicationHomeRequest,WorthQueryApplicationHomeLocation};
 pub use worth_query_testkit_host::facade::host::{checkpoint_capture,application_runtime_surface as identity};
-pub use worth_query_bank_testkit_server::facade::estate_operations::external_effect_dispatch::rail_transport::{BankEstateRailTransport,FaultScript,LedgerStatus,rail_binary_path};
+pub use worth_query_bank_testkit_server::facade::estate_operations::external_effect_dispatch::rail_transport::{BankEstateRailTransport,BankRailReconciliationDisposition,FaultScript,LedgerStatus,rail_binary_path};
 pub use worth_query_bank_testkit_server::facade::support::request_scope;
 pub type Home = WorthQueryApplicationHome<RailHomeSchema, RailHomeProgram>;
 pub type Admission =
