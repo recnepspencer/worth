@@ -1,5 +1,6 @@
 mod cadence;
 pub(crate) mod close_settlement;
+pub(crate) mod discard_for_test;
 mod input_memory;
 pub(crate) mod inspection;
 mod limits;
@@ -29,9 +30,9 @@ pub use manifest::{HomeManifestDenial, HOME_CHECKPOINT_PROTOCOL, HOME_CHECKPOINT
 pub use owner::ApplicationHomeCheckpointRecovery;
 pub use publication::{ApplicationHomeCheckpoint, ApplicationHomeCheckpointDenial};
 
-pub(crate) fn read(
+pub(crate) fn read_with_anchor_generation(
     serving: &worth_store::physical_runtime::ServingPhysicalRuntime,
     request: &worth_execution::ExecutionRequest<'_, '_>,
-) -> Result<Option<SelectedHomeManifest>, ApplicationHomeCheckpointDenial> {
-    SelectedHomeSource::capture(serving, request)?.selected(serving, request)
+) -> Result<(Option<SelectedHomeManifest>, u64), ApplicationHomeCheckpointDenial> {
+    SelectedHomeSource::capture(serving, request)?.selected_with_anchor_generation(serving, request)
 }

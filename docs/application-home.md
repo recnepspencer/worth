@@ -331,6 +331,11 @@ and its `with_maintenance_allowance(work, memory_bytes, timeout)`.
 reports what is due, and `home.recover_checkpoint(&request)` finishes an accepted
 attempt. On MemoryOnly they return
 `WorthQueryApplicationHomeCheckpointDenial::MemoryLifecycleRequired`.
+`home.discard_derived_for_test(&request)` is a sealed D14 certification door
+(recorded in `tools/boundary-check/config/control-callers.txt`) that discards
+the Home's durable derived checkpoint (`home.checkpoint` and its anchored
+members) so reopen reconstructs strictly from authoritative journals and
+recomputes derived state only on demand.
 
 `host::application_installation::WorthQueryInterimCheckpointRestore` is an
 internal certification door scheduled for deletion. Applications reopen their

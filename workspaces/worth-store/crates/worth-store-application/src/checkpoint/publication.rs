@@ -45,6 +45,9 @@ pub enum ApplicationHomeCheckpointDenial {
         detail: String,
     },
     PhysicalCheckpointOutcome(worth_store::physical_runtime::PhysicalCheckpointOutcome),
+    /// Derived state was explicitly discarded via D14's sealed test door; close
+    /// leaves `home.checkpoint` discarded instead of re-capturing it.
+    DerivedStateDiscarded,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

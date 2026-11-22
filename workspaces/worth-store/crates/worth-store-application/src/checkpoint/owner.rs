@@ -1,5 +1,8 @@
 //! The Home's single actual checkpoint attempt; returned observers own no work.
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, Mutex, Weak,
+};
 use worth_relational::facade::durability::OpaqueCapturedCheckpointSubject;
 use worth_runtime_world::facade::{
     PreparedWorldCheckpoint, WorldCheckpointSubject, WorldDurableMediumDenial,
@@ -14,6 +17,7 @@ pub(crate) struct HomeCheckpointOwner {
     pub(super) maintenance: super::maintenance::CheckpointMaintenance,
     pending: Mutex<Option<Arc<HomeCheckpointAttempt>>>,
     acknowledged_native: Mutex<[u64; 2]>,
+    derived_discarded: AtomicBool,
 }
 
 pub(crate) struct HomeCheckpointAttempt {
@@ -88,6 +92,17 @@ impl HomeCheckpointOwner {
             .acknowledged_native
             .lock()
             .unwrap_or_else(|error| error.into_inner()) = coverage;
+        self.derived_discarded.store(false, Ordering::Release);
+    }
+    pub(super) fn mark_derived_discarded(&self) {
+        *self
+            .acknowledged_native
+            .lock()
+            .unwrap_or_else(|error| error.into_inner()) = [0; 2];
+        self.derived_discarded.store(true, Ordering::Release);
+    }
+    pub(crate) fn is_derived_discarded(&self) -> bool {
+        self.derived_discarded.load(Ordering::Acquire)
     }
     #[cfg(feature = "certification-test-authority")]
     pub(crate) fn input_memory_bytes_for_test(&self) -> Option<u64> {

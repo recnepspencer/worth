@@ -59,12 +59,25 @@ impl SelectedHomeSource {
         serving: &ServingPhysicalRuntime,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Option<SelectedHomeManifest>, Denial> {
+        self.selected_with_anchor_generation(serving, request)
+            .map(|(manifest, _)| manifest)
+    }
+    pub(crate) fn selected_with_anchor_generation(
+        &self,
+        serving: &ServingPhysicalRuntime,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(Option<SelectedHomeManifest>, u64), Denial> {
         let mut cut = self
             .backing
             .cut
             .try_lock()
             .map_err(|_| Denial::ReadSourceBusy)?;
-        read::selected(&mut cut, serving, request)
+        let manifest = read::selected(&mut cut, serving, request)?;
+        let anchor_generation = cut
+            .selected
+            .as_ref()
+            .map_or(0, |read| read.membership.membership().version().generation());
+        Ok((manifest, anchor_generation))
     }
     pub(crate) fn journal_head(
         &self,

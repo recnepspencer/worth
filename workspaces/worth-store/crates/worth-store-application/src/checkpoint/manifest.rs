@@ -13,6 +13,16 @@ pub const HOME_CHECKPOINT_PROTOCOL: BoundaryProtocolIdentity =
 pub const HOME_CHECKPOINT_VERSION: BoundaryProtocolVersion = BoundaryProtocolVersion::new(3);
 const MAGIC: &[u8; 8] = b"WAPHCKP1";
 pub(super) const HEADER_BYTES: usize = 44;
+/// Sealed D14 marker published on `home.checkpoint` with zero members when
+/// derived material is discarded. `decode()` still refuses it as malformed so
+/// no owner ever reads bytes from a discarded checkpoint.
+pub(super) const DERIVED_DISCARDED_PAYLOAD: [u8; 14] = [
+    b'W', b'A', b'P', b'H', b'C', b'K', b'P', b'1', 3, 0, 0, 0, 0, 0,
+];
+
+pub(super) fn is_derived_discarded(bytes: &[u8]) -> bool {
+    bytes == DERIVED_DISCARDED_PAYLOAD
+}
 
 #[derive(Debug)]
 pub enum HomeManifestDenial {
@@ -112,6 +122,7 @@ impl SelectedHomeManifest {
     ) {
         (self.bytes.clone(), self.signal.clone())
     }
+    #[cfg(test)]
     pub(crate) fn generation(&self) -> u64 {
         self.membership.membership().version().generation()
     }

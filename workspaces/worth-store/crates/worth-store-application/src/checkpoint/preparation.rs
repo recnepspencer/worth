@@ -139,9 +139,16 @@ fn capture_after_world(
         .bind_home_admission_section(companion.bytes(), execution)
         .map_err(Denial::Native)?;
     // Native owns the actual read-custody fence BEFORE reading the anchor.
-    let previous = super::read(serving, execution)?;
+    let (previous, anchor_generation) = super::read_with_anchor_generation(serving, execution)?;
     validate_previous(&native, &world, previous.as_ref(), execution)?;
-    frame(native, world, &signal, previous.as_ref(), execution)
+    frame(
+        native,
+        world,
+        &signal,
+        previous.as_ref(),
+        anchor_generation,
+        execution,
+    )
 }
 
 fn validate_previous(
@@ -167,10 +174,10 @@ fn frame(
     world: worth_runtime_world::facade::PreparedWorldCheckpoint,
     signal: &worth_signal::facade::durability::SignalAuthoredHomeImage,
     previous: Option<&super::SelectedHomeManifest>,
+    generation: u64,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<PreparedHomeCheckpoint, ApplicationHomeCheckpointDenial> {
     use ApplicationHomeCheckpointDenial as Denial;
-    let generation = previous.map_or(0, |manifest| manifest.generation());
     let (members, member_memory) = native
         .prepare_members(
             previous.map_or(&[], |manifest| manifest.members()),
