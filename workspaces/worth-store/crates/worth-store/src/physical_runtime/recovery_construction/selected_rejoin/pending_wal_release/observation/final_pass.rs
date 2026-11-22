@@ -18,24 +18,24 @@ pub(super) struct FinalPassObservation<'claim> {
 #[inline(never)]
 pub(super) fn observe_and_match<'claim>(
     coordination: &PhysicalRecoveryCoordination,
-    first: Box<FirstPassObservation<'claim>>,
+    first: FirstPassObservation<'claim>,
     reopen: &CompletedPhysicalRecoveryFreshReopen,
     claim: &'claim VerifiedPendingWalReleaseCustody,
     recovery_allocation: PhysicalRecoveryAllocationAdmission,
     effective: &VerifiedEffectiveReleaseHeadRosterV14,
     tier_claim: Option<&VerifiedSelectedTierEpochCustody>,
     checkpoint: &SharedRecoveryCheckpoint,
-) -> Result<Box<FinalPassObservation<'claim>>, Denial> {
+) -> Result<FinalPassObservation<'claim>, Denial> {
     let FirstPassObservation {
-        media,
-        selected,
-        selected_tier,
-        controls,
-        first_heads,
         inventory,
-        sample,
         projection,
-    } = *first;
+        sample,
+        media,
+        first_heads,
+        controls,
+        selected_tier,
+        selected,
+    } = first;
     let store = media.store_identity();
     let mut final_discovery = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)
@@ -109,7 +109,7 @@ pub(super) fn observe_and_match<'claim>(
     drop(controls);
     drop(first_heads);
     drop(inventory);
-    Ok(Box::new(FinalPassObservation {
+    Ok(FinalPassObservation {
         media: final_discovery.finish(),
         final_selected,
         final_controls,
@@ -117,5 +117,5 @@ pub(super) fn observe_and_match<'claim>(
         final_inventory,
         sample,
         projection,
-    }))
+    })
 }

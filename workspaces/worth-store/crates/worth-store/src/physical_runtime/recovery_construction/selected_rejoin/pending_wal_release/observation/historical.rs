@@ -6,7 +6,7 @@ use crate::physical_runtime::SharedRecoveryCheckpoint;
 #[inline(never)]
 pub(super) fn verify_and_finalize(
     coordination: &PhysicalRecoveryCoordination,
-    final_obs: Box<FinalPassObservation<'_>>,
+    final_obs: FinalPassObservation<'_>,
     reopen: &CompletedPhysicalRecoveryFreshReopen,
     claim: &VerifiedPendingWalReleaseCustody,
     effective: &VerifiedEffectiveReleaseHeadRosterV14,
@@ -27,7 +27,7 @@ pub(super) fn verify_and_finalize(
         final_inventory,
         sample,
         projection,
-    } = *final_obs;
+    } = final_obs;
     let (media, historical_fingerprint) = if claim.ordered_history().is_some() {
         verify_ordered_history(
             coordination,

@@ -29,6 +29,9 @@ pub(super) fn admit(
         .bytes(clone_bytes)
         .and_then(|_| resident.bytes(assembly))
         .is_err()
+        || resident_basis::reserve_box::<VerifiedPendingWalReleaseCustody>(&mut resident).is_err()
+        || resident_basis::reserve_box::<crate::progression::PendingReleaseReplay>(&mut resident)
+            .is_err()
     {
         let limit = resident_basis::limit_failure(&context, &resident);
         return Err(context.redo_block(basis.planning_counters_at_peak(resident.peak()), limit));

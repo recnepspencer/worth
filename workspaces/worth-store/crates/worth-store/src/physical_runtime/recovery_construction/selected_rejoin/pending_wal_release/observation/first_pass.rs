@@ -27,7 +27,7 @@ pub(super) fn observe<'claim>(
     effective: &VerifiedEffectiveReleaseHeadRosterV14,
     tier_claim: Option<&VerifiedSelectedTierEpochCustody>,
     checkpoint: &SharedRecoveryCheckpoint,
-) -> Result<Box<FirstPassObservation<'claim>>, Denial> {
+) -> Result<FirstPassObservation<'claim>, Denial> {
     let store = media.store_identity();
     let mut discovery = media
         .bounded_discovery(MAX_DISCOVERY_ENTRIES, MAX_DISCOVERY_BYTES)
@@ -108,16 +108,16 @@ pub(super) fn observe<'claim>(
     let projection = wal_fate::matched_pending_projection(claim, &sample, reopen.format())
         .ok_or(Denial::WalFate)?;
     let inventory = inventory.into_fingerprint();
-    Ok(Box::new(FirstPassObservation {
-        media,
-        selected,
-        selected_tier,
-        controls,
-        first_heads,
+    Ok(FirstPassObservation {
         inventory,
-        sample,
         projection,
-    }))
+        sample,
+        media,
+        first_heads,
+        controls,
+        selected_tier,
+        selected,
+    })
 }
 
 #[inline(never)]

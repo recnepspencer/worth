@@ -44,6 +44,10 @@ pub(super) fn admit(
             return Err(block(context, basis, denial, limit));
         }
     };
+    if resident_basis::reserve_box::<VerifiedSelectedReleaseHeadCustodyV2>(&mut resident).is_err() {
+        let limit = resident_basis::limit_failure(&context, &resident);
+        return Err(block(context, basis, Denial::ResidentBoundExceeded, limit));
+    }
     let Some(shared) = context.coordination.owner().checkpoint() else {
         return Err(block(context, basis, Denial::MissingCheckpoint, None));
     };

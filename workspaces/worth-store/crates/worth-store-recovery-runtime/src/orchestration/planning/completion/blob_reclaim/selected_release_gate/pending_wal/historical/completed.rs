@@ -30,6 +30,17 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
             return Err(block(context, basis, 0, cause, limit));
         }
     };
+    if super::super::super::resident_basis::reserve_box::<VerifiedOrderedHistoricalReleaseCustody>(
+        &mut resident,
+    )
+    .is_err()
+        || super::super::super::resident_basis::reserve_box::<VerifiedEffectiveReleaseHeadRosterV14>(
+            &mut resident,
+        )
+        .is_err()
+    {
+        return Err(resident_block(context, basis, &resident));
+    }
     let selected_head_v2 = match std::mem::replace(&mut basis.custody, PlanningCustody::Unresolved)
     {
         PlanningCustody::SourceHeads(base) => Some(base),
