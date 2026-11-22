@@ -26,7 +26,19 @@ impl PreparedMemoryRelationalCutover<'_, '_, '_> {
     /// original request. Actual custody still returns outside the callback;
     /// an elapsed cutoff performs nothing.
     pub fn perform_before(self, deadline: std::time::Instant) {
-        self.inner.perform_before(Some(deadline));
+        self.inner.perform_with_cutoff(Some(deadline), None);
+    }
+
+    /// Narrow this cutover with an optional deadline and a reversible caller
+    /// stop gate consulted after Native's coordination and reservation waits,
+    /// immediately before canonical position assignment. Returning `false`
+    /// stops Native before any effect and leaves `publication` absent.
+    pub fn perform_with_cutoff(
+        self,
+        deadline: Option<std::time::Instant>,
+        allow_effect: &mut dyn FnMut() -> bool,
+    ) {
+        self.inner.perform_with_cutoff(deadline, Some(allow_effect));
     }
 }
 
@@ -38,11 +50,17 @@ pub(super) struct PreparedRelationalCutover<'cutover, 'policy, 'request> {
 
 impl PreparedRelationalCutover<'_, '_, '_> {
     pub(super) fn perform(self) {
-        self.perform_before(None);
+        self.perform_with_cutoff(None, None);
     }
 
-    fn perform_before(self, deadline: Option<std::time::Instant>) {
-        *self.outcome = Some(self.prepared.perform_cutover(self.execution, deadline));
+    fn perform_with_cutoff(
+        self,
+        deadline: Option<std::time::Instant>,
+        allow_effect: Option<&mut dyn FnMut() -> bool>,
+    ) {
+        *self.outcome = self
+            .prepared
+            .perform_cutover(self.execution, deadline, allow_effect);
     }
 }
 

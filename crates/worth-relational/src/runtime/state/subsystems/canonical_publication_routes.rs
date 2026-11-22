@@ -103,6 +103,8 @@ pub(crate) enum CanonicalPublicationRecordError {
     /// A caller narrowed the memory cutover and its deadline elapsed before
     /// canonical assignment. No position or owner effect was produced.
     CutoverDeadlineElapsed,
+    /// A caller's reversible cutoff stopped before canonical assignment.
+    CallerCutoffStopped,
     /// The durable step did not make the positioned commit durable, so the
     /// position was not consumed and nothing was installed.
     Durable(crate::durability::medium::RelationalDurableStepStop),
@@ -297,6 +299,7 @@ impl PreparedCanonicalPublicationRoute {
         publication_cell: crate::branch::RelationalBranchPublicationCell,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         cutover_before: Option<std::time::Instant>,
+        allow_effect: Option<&mut dyn FnMut() -> bool>,
         medium: Option<&crate::durability::medium::RelationalDurableMediumBinding>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition) -> T,
@@ -313,6 +316,7 @@ impl PreparedCanonicalPublicationRoute {
             &self.original_payload,
             admission,
             cutover_before,
+            allow_effect,
             medium,
             execution,
             cutover,

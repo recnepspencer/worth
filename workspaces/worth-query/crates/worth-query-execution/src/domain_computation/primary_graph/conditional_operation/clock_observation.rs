@@ -285,6 +285,13 @@ where
             .take_released_managed_cleanup()
     }
 
+    #[doc(hidden)]
+    pub fn reset_retained_wakes_for_replay_for_test(&mut self) {
+        self.operation
+            .lock_operation()
+            .reset_retained_wakes_for_replay_for_test();
+    }
+
     pub fn observe(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

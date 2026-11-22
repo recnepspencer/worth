@@ -121,6 +121,11 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
     fn lifecycle_resources(
         &self,
     ) -> super::super::lifecycle_inventory::WorthQueryConditionalOperationLiveness;
+
+    #[doc(hidden)]
+    fn reset_retained_wakes_for_replay_for_test(&mut self) {
+        unreachable!("replay reset is only defined for installed temporal operations")
+    }
 }
 
 #[derive(Clone, Copy, Default)]

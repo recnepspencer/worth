@@ -10,7 +10,7 @@ use crate::storage::substrate::maintenance::{
     ChangeWork, CommitChange, Maintained, MaintenanceConsistency, MaintenanceRoute,
     ReconstructionLane, ReconstructionWork,
 };
-use std::{collections::BTreeSet, sync::Arc};
+use std::{cell::RefCell, collections::BTreeSet, sync::Arc};
 use DerivedIndexMaintenanceDenialKind as Denial;
 
 pub(super) struct IndexSelectionMaintainer<
@@ -27,7 +27,7 @@ pub(super) struct IndexSelectionMaintainer<
     pub(super) before: &'a IndexRootView,
     pub(super) after: &'a IndexRootView,
     pub(super) request: &'a DerivedIndexBuildRequest,
-    pub(super) native: &'a mut MaintenanceWork<'payer, 'run, 'work_lease>,
+    pub(super) native: &'a RefCell<&'a mut MaintenanceWork<'payer, 'run, 'work_lease>>,
     pub(super) routes: Arc<InstalledIndexRouting>,
     pub(super) inputs: Option<RootMaintenanceInputs>,
     pub(super) prepared: Option<CandidateIndexPreparation>,
@@ -38,7 +38,7 @@ impl IndexSelectionMaintainer<'_, '_, '_, '_, '_, '_, '_> {
             self.owner.indexes,
             self.after.root(),
             refresh,
-            self.native,
+            &mut self.native.borrow_mut(),
         )?;
         let state = prepared
             .selection_state()
@@ -59,19 +59,20 @@ impl IndexSelectionMaintainer<'_, '_, '_, '_, '_, '_, '_> {
             .as_mut()
             .ok_or(Denial::ColdReconstructionRequired)?
             .retain_state(state);
+        let mut native = self.native.borrow_mut();
         let refresh = self.owner.prepare_refresh_with_inputs(
             self.execution,
             self.request,
             Some(self.before),
             self.after,
-            self.native,
+            &mut native,
             Some(inputs),
         )?;
         CandidateIndexPreparation::prepare(
             self.owner.indexes,
             self.after.root(),
             refresh,
-            self.native,
+            &mut native,
         )
     }
 }
@@ -101,14 +102,17 @@ impl Maintained for IndexSelectionMaintainer<'_, '_, '_, '_, '_, '_, '_> {
         {
             return Err(Denial::BeforeRootMismatch);
         }
-        let mut refresh = self.owner.prepare_refresh_with_inputs(
-            self.execution,
-            self.request,
-            Some(self.before),
-            self.after,
-            self.native,
-            Some(inputs),
-        )?;
+        let mut refresh = {
+            let mut native = self.native.borrow_mut();
+            self.owner.prepare_refresh_with_inputs(
+                self.execution,
+                self.request,
+                Some(self.before),
+                self.after,
+                &mut native,
+                Some(inputs),
+            )?
+        };
         if refresh.entries.is_empty() {
             refresh
                 .basis
@@ -124,13 +128,16 @@ impl Maintained for IndexSelectionMaintainer<'_, '_, '_, '_, '_, '_, '_> {
         work: &mut ReconstructionWork<'_, '_>,
     ) -> Result<Arc<Self::State>, Self::Error> {
         work.prepare(1, 0)?;
-        let refresh = self.owner.prepare_recovery(
-            lane,
-            self.execution,
-            self.request,
-            self.after,
-            self.native,
-        )?;
+        let refresh = {
+            let mut native = self.native.borrow_mut();
+            self.owner.prepare_recovery(
+                lane,
+                self.execution,
+                self.request,
+                self.after,
+                &mut native,
+            )?
+        };
         self.capture(refresh)
     }
     fn retire(

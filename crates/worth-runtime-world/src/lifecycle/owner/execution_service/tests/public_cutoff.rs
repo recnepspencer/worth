@@ -306,3 +306,90 @@ fn cutover_callback_world_cancellation_and_deadline_stop_before_native_effect() 
     assert!(owner.recovery_handles().is_empty());
     assert_eq!(mem.charged_memory_bytes(), 0);
 }
+
+#[test]
+fn cutover_native_wait_world_cancellation_and_deadline_stop_before_native_effect() {
+    use crate::publication::NoEffectCause;
+    use std::sync::atomic::{AtomicBool, AtomicUsize};
+    use worth_execution::{CancellationToken, ExecutionRequest, SerialMemoryBudget, SerialRequest};
+
+    // Exercises World cancellation and deadline expiry at every guarded cutoff
+    // inside Native's cutover after World's while_locked check (armed call 1)
+    // has already passed: call 2 = post-coordination (port_cutover.rs),
+    // call 3 = post-patch-position-reservation (performed_stream.rs),
+    // call 4 = post-frame-preparation before position assignment.
+    struct CountdownClock {
+        armed: Arc<AtomicBool>,
+        seen: Arc<AtomicUsize>,
+        target: usize,
+        trigger_cancel: bool,
+        cancel: Arc<RuntimeWorldCancellationSource>,
+    }
+    impl RuntimeWorldClockSource for CountdownClock {
+        fn now(&self) -> RuntimeWorldInstant {
+            if self.armed.load(Ordering::Acquire) {
+                let n = self.seen.fetch_add(1, Ordering::AcqRel) + 1;
+                if n >= self.target {
+                    if self.trigger_cancel {
+                        self.cancel.cancel();
+                        return RuntimeWorldInstant::from_ticks(0);
+                    }
+                    return RuntimeWorldInstant::from_ticks(10);
+                }
+            }
+            RuntimeWorldInstant::from_ticks(0)
+        }
+    }
+    let run_at_boundary = |target_call: usize, trigger_cancel: bool| {
+        let (armed, seen) = (Arc::new(AtomicBool::new(false)), Arc::new(AtomicUsize::new(0)));
+        let cancel = Arc::new(RuntimeWorldCancellationSource::new());
+        let (fixture, owner, expected) = setup_with_clock(RuntimeWorldClock::from_source(
+            CountdownClock {
+                armed: Arc::clone(&armed),
+                seen: Arc::clone(&seen),
+                target: target_call,
+                trigger_cancel,
+                cancel: Arc::clone(&cancel),
+            },
+        ));
+        let seeded = publish_ready_competing_head(
+            &owner,
+            ready_relational_competitor(&fixture, &owner, &expected, "wait-seed"),
+            &expected,
+        );
+        let rt = fixture.relational_runtime();
+        let before_native = rt.observe_branch(&rt.main_branch_identity()).unwrap().1.descriptor().clone();
+        let host = crate::test_execution_policy::serial_request();
+        let mut intent = CompositePublicationIntent::without_signal(RelationalTransactionIntent::ordinary())
+            .with_prepared_relational_candidate(fixture.prepare_relational_owner_candidate(
+                &ExecutionRequest::serial(&host),
+                if trigger_cancel { "native-cancel" } else { "native-deadline" },
+            ));
+        intent.require_current_read(seeded.clone()).unwrap();
+        let prepared = RuntimeWorldPreparationService::prepare_publication(
+            owner.as_ref(), seeded, intent, &cancel.token(), Some(RuntimeWorldInstant::from_ticks(10)),
+        ).unwrap();
+        let mem = SerialMemoryBudget::from_policy(&owner.state.execution.request_policy());
+        let req = SerialRequest::from_memory(mem.clone(), CancellationToken::new(), None);
+        let outcome = RuntimeWorldOwnerExecutionService::execute_without_signal_with_cutover(
+            owner.as_ref(),
+            ExecutionRequest::serial(&req),
+            prepared,
+            &cancel.token(),
+            Some(&mut |cutover| {
+                armed.store(true, Ordering::Release);
+                cutover.perform();
+            }),
+        );
+        assert_eq!(seen.load(Ordering::Acquire), target_call, "must stop at boundary {target_call}");
+        let expected_cause = if trigger_cancel { NoEffectCause::CancelledBeforeEffect } else { NoEffectCause::DeadlineBeforeEffect };
+        assert!(matches!(outcome, OwnerExecutionOutcome::NoEffect(refused) if refused.cause() == expected_cause));
+        assert_eq!(rt.observe_branch(&rt.main_branch_identity()).unwrap().1.descriptor(), &before_native);
+        assert!(owner.recovery_handles().is_empty());
+        assert_eq!(mem.charged_memory_bytes(), 0);
+    };
+    for target_call in [2, 3, 4] {
+        run_at_boundary(target_call, true);
+        run_at_boundary(target_call, false);
+    }
+}

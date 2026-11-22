@@ -84,6 +84,26 @@ where
     fn handoff_to_home(&mut self, request: &worth_execution::ExecutionRequest<'_, '_>, runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
         self.handoff_to_home(request, runtime)
     }
+
+    fn reset_retained_wakes_for_replay_for_test(&mut self) {
+        use super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision as D;
+        for wake in &mut self.retained_wakes {
+            let prev = std::mem::replace(&mut wake.decision, D::InterruptedDuringReentry);
+            wake.decision = match prev {
+                D::Eligible(e) | D::OperationRetryable(e, _) | D::OperationCommitRetryable(e, _)
+                | D::OperationExecutionControlRetryable(e, _) | D::OperationBackpressured(e, _)
+                | D::OperationControlStopped(e, _) | D::OperationTerminalFailure(e, _)
+                | D::OperationNoEffect(e, _) | D::OperationProductStale(e, _)
+                | D::OperationPreparationPending(e, _) | D::OperationPreparationRefused(e, _)
+                | D::OperationIndeterminate(e, _) => D::Eligible(e),
+                other => other,
+            };
+            wake.attempt = 0;
+            wake.application_attempted = false;
+            wake.continuation_identity = None;
+        }
+        self.operation_totals = Default::default();
+    }
     fn binding_identity(&self) -> &str {
         self.definition.binding_identity.support_identity()
     }
