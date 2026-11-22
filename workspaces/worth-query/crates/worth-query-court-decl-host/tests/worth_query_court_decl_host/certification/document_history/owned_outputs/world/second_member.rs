@@ -1,7 +1,7 @@
-//! A second member and a third model (PR C C4 r2/r3 courts).
+//! A second member, a third and a fourth model (PR C C4 r2-r5 courts).
 use super::*;
 
-/// Member `n` (`value`) owned by model `a`, and model `c` (9).
+/// Member `n` (`value`) owned by model `a`, model `c` (9) and model `d` (4).
 pub(super) fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
     value: u64,
@@ -27,6 +27,14 @@ pub(super) fn seed(
         )
         .field(ModelKey::at("ModelKey"), "c".to_owned())
         .field(ModelValue::at("ModelValue"), 9),
+    )?;
+    graph.bind_entity(
+        WorthQueryApplicationEntitySeed::new(
+            Model::reference(),
+            WorthQueryApplicationEntityKey::new("d").unwrap(),
+        )
+        .field(ModelKey::at("ModelKey"), "d".to_owned())
+        .field(ModelValue::at("ModelValue"), 4),
     )?;
     Ok(())
 }

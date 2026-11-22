@@ -128,10 +128,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         if matches!(self.tasks[i].state, TaskState::Closed { .. }) {
             // Clearing keeps the derived parents it closed on (the check);
             // this selection change is their invalidator.
-            if self.canonical_set(i).iter().any(|&parent| self.tasks[parent].is_done()) {
-                self.merge_reopen_check(context, i, Some(invalidator), Vec::new(), Vec::new())?;
-            }
-            self.clear_input_capture(context, i)?;
+            self.clear_input_capture(context, i, Some(invalidator))?;
         }
         self.raise_owed(i, owed);
         Ok(())
@@ -186,7 +183,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 continue;
             }
             if !self.tasks[reader].is_done() {
-                self.clear_input_capture(context, reader)?;
+                self.clear_input_capture(context, reader, None)?;
             } else if let Some(consumed) =
                 self.tasks[reader].parent().and_then(|parent| parent.read)
             {

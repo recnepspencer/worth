@@ -11,6 +11,8 @@ pub(in crate::domain_computation::primary_graph) use observation::{
     charged as observe_scheduling_work, visited_retained_reads,
 };
 mod occurrences;
+mod orphans;
+pub(super) use orphans::first_orphan;
 mod outgoing;
 mod prerequisites;
 mod refusal;
@@ -285,6 +287,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             observation::record(|| "blocked".to_owned());
             return Err(self.blocked_frontier());
         }
+        if allowed.is_none() {
+            self.require_no_orphans(context, candidate)?;
+        }
         Ok(false)
     }
 
@@ -339,7 +344,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 }
                 PlannedOutput::Recapture => {
                     observation::record(|| format!("break recapture at={i}"));
-                    self.clear_input_capture(context, i)?;
+                    self.clear_input_capture(context, i, None)?;
                     break;
                 }
             }

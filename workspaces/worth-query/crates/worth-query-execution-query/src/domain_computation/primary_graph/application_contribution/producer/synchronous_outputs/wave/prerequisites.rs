@@ -124,7 +124,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 None => true,
             };
             if !equal {
-                self.clear_input_capture(context, index)?;
+                self.clear_input_capture(context, index, None)?;
                 changed = true;
             }
         }
@@ -135,6 +135,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         i: usize,
+        invalidator: Option<usize>,
     ) -> Result<(), SynchronousOutputFailure> {
         let subject = self.tasks[i].subject;
         let rank = self.tasks[i].rank;
@@ -150,17 +151,15 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             )?;
         }
         self.leave_refusal(context, i);
-        // A parent it closed on that already derived is a selection it made:
-        // re-closing must select it again, verified once it derives again
-        // (`verify_rediscovered`). Every path that clears a capture keeps it,
-        // whether or not a selection change for it is still queued.
-        let derived = self
-            .canonical_set(i)
-            .into_iter()
-            .filter(|&parent| self.tasks[parent].is_done())
-            .collect::<Vec<_>>();
+        // A parent it closed on that derived in this edit (even if reopened
+        // since), or that reaches one, is a selection it made: re-closing
+        // must select it again, verified once it derives again
+        // (`verify_rediscovered`). Every path that clears a capture keeps
+        // it, whether or not a selection change for it is still queued; a
+        // selection change (`invalidator`) also ends earlier evidence there.
+        let derived = self.derived_selections(context, i)?;
         if !derived.is_empty() {
-            self.merge_reopen_check(context, i, None, Vec::new(), derived)?;
+            self.merge_reopen_check(context, i, invalidator, Vec::new(), derived)?;
         }
         let task = &mut self.tasks[i];
         task.close_epoch = task.close_epoch.wrapping_add(1);
