@@ -6,7 +6,10 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use worth_execution::ExecutionRequest;
 use worth_relational::facade::{
     history::{BranchId, CommitId},
-    indexes::{DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind},
+    indexes::{
+        DerivedIndexBuildRequest, DerivedIndexDefinition, DerivedIndexEntries, DerivedIndexId,
+        DerivedIndexKind,
+    },
 };
 use worth_store_application::{ApplicationHomeCloseOutcome, ApplicationHomeCheckpointDenial};
 use worth_store_testkit_application_oracle::{home_opening, world_home};
@@ -23,6 +26,13 @@ struct ChildSummary {
     index_id: u64,
     index_entry_count: usize,
     record_bytes: Vec<u8>,
+}
+
+fn entity_field_entry_count(entries: &DerivedIndexEntries) -> usize {
+    match entries {
+        DerivedIndexEntries::EntityField(map) => map.len(),
+        other => panic!("expected EntityField derived index entries, got {other:?}"),
+    }
 }
 
 fn entity_name_index() -> DerivedIndexDefinition {
@@ -137,7 +147,10 @@ fn verify_reopened(location: &Path, build: &str, summary: &ChildSummary) {
         .expect("replaying authoritative commit regenerates the registered derived index");
     assert_eq!(generation.source_commit_id, CommitId(summary.commit_id));
     assert!(summary.index_entry_count > 0);
-    assert_eq!(generation.entries.len(), summary.index_entry_count);
+    assert_eq!(
+        entity_field_entry_count(&generation.entries),
+        summary.index_entry_count
+    );
     let rebuilt = runtime.index_authority().build_for_commit(
         &execution,
         DerivedIndexBuildRequest {
@@ -265,11 +278,11 @@ fn discard_derived_signal_child() {
         .read_latest_generation(&execution, installed.index_id, &branch)
         .unwrap()
         .expect("built relational derived index generation");
+    let index_entry_count = entity_field_entry_count(&built_generation.entries);
     assert!(
-        !built_generation.entries.is_empty(),
+        index_entry_count > 0,
         "relational derived index must populate at least one entry"
     );
-    let index_entry_count = built_generation.entries.len();
     let record_bytes =
         serde_json::to_vec(&crate::workload::artifacts_of(&execution, runtime)).unwrap();
     drop(committed);
