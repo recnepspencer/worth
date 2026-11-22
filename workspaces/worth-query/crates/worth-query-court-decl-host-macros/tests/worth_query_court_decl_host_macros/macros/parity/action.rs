@@ -21,11 +21,18 @@ pub const RETITLE: ApplicationIdentityNamespace = worth_query_identity_namespace
 #[worth_query(schema = Schema, context = BoardContext, namespace = RETITLE,
     input = RetitleInput, operation = RetitleTask, binding = RetitleBinding, delivery = Retitled,
     result = BodyResultBinding, decision = WorthQueryOperationBodyDecision<Schema, Task>,
-    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task))]
+    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task),
+    validate = titled)]
 pub struct Retitle {
     #[worth_query(scope = TaskKey)]
     pub task: u64,
     pub title: String,
+}
+
+fn titled(retitle: &Retitle) -> Result<(), &'static str> {
+    (!retitle.title.is_empty())
+        .then_some(())
+        .ok_or("a task needs a title")
 }
 
 /// The same action, written with the declaration macros and trait impls.
@@ -36,7 +43,8 @@ mod written {
 
     worth_query_structured_value_binding!(pub RetitleInput for Retitle {
         identity: "macros.tasks.retitle.v1.input",
-        capture_input: true
+        capture_input: true,
+        validate: titled
     });
     worth_query_operation!(pub RetitleTask for Schema, input RetitleInput;
         access { read_fields: [TaskKey::at("TaskKey")]; };
@@ -122,7 +130,7 @@ fn derived() -> ApplicationSchemaDeclaration<Schema> {
 }
 
 #[test]
-fn a_derived_action_keeps_its_overridden_wire_identity_and_declares_the_written_schema() {
+fn a_derived_action_keeps_its_overridden_wire_identity_validator_and_written_schema() {
     let (derived, written) = (derived(), written::declared::<0>());
     assert_eq!(derived.identity(), written.identity());
     assert_eq!(derived.erased(), written.erased());
@@ -147,4 +155,21 @@ fn a_derived_action_keeps_its_overridden_wire_identity_and_declares_the_written_
         <Retitled as ApplicationActionDelivery<Schema, RetitleBinding>>::IDENTITY,
         <written::Retitled as ApplicationActionDelivery<Schema, written::RetitleBinding>>::IDENTITY,
     );
+
+    // `validate = titled` is the written `validate: titled`: the same refusal,
+    // under the same input identity, and the same admission.
+    let retitle = |title: &str| Retitle {
+        task: 1,
+        title: title.to_owned(),
+    };
+    let refused = RetitleInput::validate(&retitle(""));
+    assert_eq!(refused, written::RetitleInput::validate(&retitle("")));
+    let denial = refused.expect_err("an empty title is refused");
+    assert_eq!(denial.reason(), "a task needs a title");
+    assert_eq!(
+        denial.binding_identity().as_str(),
+        "macros.tasks.retitle.v1.input"
+    );
+    assert_eq!(RetitleInput::validate(&retitle("Ream")), Ok(()));
+    assert_eq!(written::RetitleInput::validate(&retitle("Ream")), Ok(()));
 }

@@ -63,9 +63,51 @@ fn an_action_without_exactly_one_scope_or_with_a_malformed_key_is_refused() {
             ),
             "unknown key for #[derive(WorthQueryAction)]",
         ),
+        (
+            format!(
+                "#[worth_query(validate = rules::title, validate = rules::other)] {HEADER} \
+                 struct Rename {{ #[worth_query(scope = TaskKey)] task: u64 }}"
+            ),
+            "duplicate `validate` key",
+        ),
+        (
+            format!(
+                "#[worth_query(validate = \"rules::title\")] {HEADER} \
+                 struct Rename {{ #[worth_query(scope = TaskKey)] task: u64 }}"
+            ),
+            "`validate` takes a function path",
+        ),
     ];
     for (source, expected) in cases {
         let message = refusal(&source);
         assert!(message.contains(expected), "{source}: {message}");
+    }
+}
+
+/// The validator reaches the input binding as the hand-written `validate:`
+/// clause, after `capture_input` when the handler is an authored body.
+#[test]
+fn a_validator_is_forwarded_to_the_input_binding_of_body_and_handler_actions() {
+    for (flags, clause) in [
+        ("validate = rules::title", "identity : "),
+        ("body, validate = rules::title", "capture_input : true"),
+    ] {
+        let source = format!(
+            "#[worth_query({flags})] {HEADER} \
+             struct Rename {{ #[worth_query(scope = TaskKey)] task: u64 }}"
+        );
+        let input = syn::parse_str(&source).expect("the court input parses");
+        let expansion = expand(&input).expect("the action expands").to_string();
+        // The binding's body is the first brace group after its invocation.
+        let binding = expansion
+            .split_once("worth_query_structured_value_binding !")
+            .and_then(|(_, rest)| rest.split_once('}'))
+            .map(|(body, _)| body)
+            .expect("the input binding is declared");
+        assert!(binding.contains(clause), "{binding}");
+        assert!(
+            binding.trim_end().ends_with(", validate : rules :: title"),
+            "{binding}"
+        );
     }
 }

@@ -965,7 +965,11 @@ or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
   forwarded `access(..)` and inline capabilities such as `reads(Task)`),
   contextual mutation binding and optional source-completion `delivery`, with
   identities from `namespace`. Exactly one field carries `scope = Alias`, or
-  the struct declares `principal_scope = Alias`.
+  the struct declares `principal_scope = Alias`. `validate = path::to::check`
+  forwards a `fn(&Input) -> Result<(), &'static str>` as the input binding's
+  `validate:`: an invalid input is refused at capture
+  (`WorthQueryOperationInputCaptureDenial::Encoding(Validation(..))`) with its
+  key returned, before any effect.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -991,11 +995,15 @@ pub struct TaskRow {
 #[worth_query(schema = Schema, context = BoardContext, namespace = RENAME,
     input = RenameInput, operation = RenameTask, binding = RenameBinding, delivery = Renamed,
     result = BodyResultBinding, decision = WorthQueryOperationBodyDecision<Schema, Task>,
-    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task))]
+    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task),
+    validate = titled)]
 pub struct Rename {
     #[worth_query(scope = TaskKey)]
     pub task: u64,
     pub title: String,
+}
+fn titled(rename: &Rename) -> Result<(), &'static str> {
+    (!rename.title.trim().is_empty()).then_some(()).ok_or("a task needs a title")
 }
 ```
 
@@ -1005,8 +1013,13 @@ installs a derived board beside hand-written members under
 searches with a case-insensitive `where_filter`, filters an
 `Option<CanonicalDate>` column and commits derived and written actions through
 `WorthQuerySourceCustody`; its parity courts compare derived and hand-written
-declarations, wire-identity overrides included. A `CanonicalDate` input
-member is captured through `serde::Serialize`; it is not a `WorthValue`.
+declarations, wire-identity overrides included. `CanonicalDate` and the other
+native scalar carriers (`CanonicalTime`, `CanonicalTimestamp`,
+`CanonicalTimestampTz`, `CanonicalF32`, `CanonicalF64`, `InlineBytes`,
+`InternedString`) are named from `decl::application_schema` (in Host,
+`host::declaration::application_schema`), so an application needs no
+`worth-foundational` dependency. A `CanonicalDate` input member is captured
+through `serde::Serialize`; it is not a `WorthValue`.
 
 Declare operation access once with `worth_query_operation!(... for Schema:
 SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
@@ -3684,7 +3697,9 @@ or phase is retained; matching a variant lends or returns the exact owner. Match
 `Pending`'s cause rather than retrying blindly:
 `Close(NativeObligationRetained)` means native recovery still owns the
 command. Report `Declined` evidence and drop it; do not keep the native carrier
-across frames.
+across frames. `WorthQueryTerminalSourceEvidence<S, I>` is `Debug` whenever the
+binding's `Denial` and `Result` are, so a generic helper reports it with that one
+bound (`where WorthQueryTerminalSourceEvidence<S, I>: Debug`).
 
 <!-- illustrative -->
 ```rust,ignore

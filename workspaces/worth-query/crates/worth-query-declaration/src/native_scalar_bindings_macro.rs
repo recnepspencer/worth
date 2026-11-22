@@ -66,15 +66,15 @@ macro_rules! worth_query_native_scalar_bindings {
             u32 => U32ApplicationValueBinding,
             u64 => U64ApplicationValueBinding,
             ::std::string::String => StringApplicationValueBinding,
-            $crate::__native_scalar_carriers::InternedString => InternedStringApplicationValueBinding,
-            $crate::__native_scalar_carriers::CanonicalDate => CanonicalDateApplicationValueBinding,
-            $crate::__native_scalar_carriers::CanonicalTime => CanonicalTimeApplicationValueBinding,
-            $crate::__native_scalar_carriers::CanonicalTimestamp => CanonicalTimestampApplicationValueBinding,
-            $crate::__native_scalar_carriers::CanonicalTimestampTz => CanonicalTimestampTzApplicationValueBinding,
+            $crate::facade::application_schema::InternedString => InternedStringApplicationValueBinding,
+            $crate::facade::application_schema::CanonicalDate => CanonicalDateApplicationValueBinding,
+            $crate::facade::application_schema::CanonicalTime => CanonicalTimeApplicationValueBinding,
+            $crate::facade::application_schema::CanonicalTimestamp => CanonicalTimestampApplicationValueBinding,
+            $crate::facade::application_schema::CanonicalTimestampTz => CanonicalTimestampTzApplicationValueBinding,
             [u8; 16] => UuidApplicationValueBinding,
-            $crate::__native_scalar_carriers::CanonicalF32 => CanonicalF32ApplicationValueBinding,
-            $crate::__native_scalar_carriers::CanonicalF64 => CanonicalF64ApplicationValueBinding,
-            $crate::__native_scalar_carriers::InlineBytes => InlineBytesApplicationValueBinding
+            $crate::facade::application_schema::CanonicalF32 => CanonicalF32ApplicationValueBinding,
+            $crate::facade::application_schema::CanonicalF64 => CanonicalF64ApplicationValueBinding,
+            $crate::facade::application_schema::InlineBytes => InlineBytesApplicationValueBinding
         );
     };
 }
