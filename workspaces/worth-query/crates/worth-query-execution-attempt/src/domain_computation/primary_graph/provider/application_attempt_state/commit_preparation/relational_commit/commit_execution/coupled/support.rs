@@ -15,6 +15,7 @@
 //! own consumer. Every other refusal carries no hold.
 use super::*;
 mod changed;
+pub mod court_doors_for_test;
 mod window;
 use crate::domain_computation::primary_graph::provider::{
     CandidateReadSupport, CoupledApplicationMember, CoupledApplicationMemberKind, ParentRead,
