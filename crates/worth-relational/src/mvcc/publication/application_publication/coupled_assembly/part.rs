@@ -112,6 +112,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let ordinary_ids = publication
             .resolve_ordinary_roles(execution, &self.mutation.outcome.created_entities)?;
         let publication_effect = &self.mutation.outcome.effect.publication;
+        let latest = super::succession::appended_rounds(&self.parts);
         let chain = super::succession::Chain {
             head_input: applied.read.clone(),
             prior_touches: Vec::new(),
@@ -122,8 +123,8 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             superseded: Vec::new(),
             local_keys: applied.local_keys,
             created: applied.created,
-            records_end: publication_effect.changed_records.len(),
             rounds: vec![first_record..publication_effect.changed_records.len()],
+            latest,
         };
         self.parts.push(CoupledPublicationPart {
             inputs: None,

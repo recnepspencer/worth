@@ -5,9 +5,12 @@ mod program;
 #[macro_use]
 mod staged;
 mod alias;
+mod cross_write;
 mod outgoing;
 mod prerequisite;
+mod prior_effect;
 mod selection;
+mod settlement;
 mod shared_read;
 mod superseded_window;
 mod unowned_reader;

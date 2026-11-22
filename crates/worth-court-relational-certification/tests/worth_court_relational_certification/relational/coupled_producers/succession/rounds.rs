@@ -7,7 +7,7 @@ use std::cell::Cell;
 
 /// One Birth round of `keys` in `partition`, each output linked (fieldless) to
 /// the world's source by `links`, keyed `link:<key>`.
-fn linked_round(
+pub(super) fn linked_round(
     world: &World,
     keys: &[&str],
     value: &str,

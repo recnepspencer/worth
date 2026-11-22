@@ -66,6 +66,8 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                         | Fact::ApplicationObservedSource { fact, .. } => fact,
                         Fact::Principal(_) | Fact::Authorization { .. } => continue,
                     };
+                    // Each read scans every touch the chain's earlier rounds made.
+                    charge(execution, prior.len())?;
                     let observed = std::ops::Deref::deref(&fact);
                     let record = touch_key::fact_record(observed);
                     let covered = record.is_some_and(|record| own.covers(record));
@@ -100,6 +102,30 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             answer
         })
     }
+}
+
+/// Charge one read's scan of `touches` earlier-round touches.
+fn charge(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    touches: usize,
+) -> Result<(), Denial> {
+    let subject = "successor independence";
+    let work = u64::try_from(touches)
+        .ok()
+        .and_then(|work| work.checked_add(1))
+        .ok_or_else(|| Denial::new(Kind::CandidateCapacityExceeded, subject))?;
+    execution
+        .run_native_with_checkpoint(|context| {
+            crate::domain_computation::primary_graph::admitted_capture::checkpoint(context, work)
+        })
+        .map_err(|cause| Denial::relational_read_stopped(cause.into(), subject))?
+        .0
+        .map_err(|cause| {
+            Denial::relational_read_stopped(
+                worth_execution::WorkCeilingDenial::Stopped(cause).into(),
+                subject,
+            )
+        })
 }
 
 /// A touch that writes only the entity it creates or changes.

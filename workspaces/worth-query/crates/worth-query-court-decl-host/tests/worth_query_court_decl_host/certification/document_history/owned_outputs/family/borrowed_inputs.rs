@@ -54,6 +54,10 @@ macro_rules! producer_operation {
     };
 }
 macro_rules! producer_decision_dependency {
+    // This family reads no demand key.
+    ($operation:ident, $reader:ident, $source:ident, $input:ident) => {
+        producer_decision_dependency!($operation, $reader, $source)
+    };
     ($operation:ident, $reader:ident, $source:ident) => {{
         let mut sum = 0;
         for link in $reader

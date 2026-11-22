@@ -17,6 +17,7 @@ pub use candidate_read_support::{
 pub mod applied_output;
 pub use applied_output::AppliedOutputParticipants;
 pub mod commit_completion;
+pub mod consumed_settlement;
 pub mod coupled_extraction;
 pub mod coupled_preparation;
 pub mod coupled_settlement;
@@ -26,6 +27,7 @@ pub use coupled_preparation::{
     AppliedParticipantOutputs, CoupledApplicationMember, CoupledApplicationMemberKind,
     CoupledAttemptPreparation, CoupledProducerPreparation, SupersededRound,
 };
+pub use coupled_preparation::rank_consumption;
 pub mod commit_preparation;
 pub mod coupled_publication;
 pub use commit_preparation::publish_recovered;

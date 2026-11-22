@@ -117,6 +117,15 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .map(PendingOutputDemand::Prefix)
             .collect::<Vec<_>>();
         for (physical, capture) in self.stage_captures().iter().enumerate() {
+            if let Some(order) = &order {
+                let context = synchronous_outputs::SynchronousOutputAssembly {
+                    owner: self,
+                    execution,
+                    before: &before_pin,
+                    order,
+                };
+                wave.qualify(&context, candidate).map_err(|cause| cause.0)?;
+            }
             self.prepare_pending(
                 execution,
                 &before_pin,
@@ -351,6 +360,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             producer: std::sync::Arc::clone(producer),
             stage: Some(CoupledWriterStage::Inspected(writer)),
             meaning: meaning.clone(),
+            head_key: None,
         };
         let chain = chain.map(|chain| chain.index);
         let index = self.append_round(
