@@ -5178,12 +5178,22 @@ allocation denial, the deadline or a work budget, refuses the edit at once.
   `StructuralEffect` (an effect a fold cannot lower in place: a deletion, a
   relation change, a new record or content) or `IntervenedOutput` (another
   writer changed one of the chain's records after its earlier round).
-  A relation the chain linked is outside the own-output view (public #277).
+  The own-output view covers records, not relations (public #277): a
+  relation read at the current image can reach a record the chain
+  created, whose fields the view then reads as absent. Such a round
+  stops with the same #119 postponement and reason `PriorEffectRead`, and
+  the edit refuses until #277 makes that view coherent.
 - A consumer of a re-derived output settles when the replacement is equal in
   payload, role, generation, custody, readiness and demand key. Otherwise the
   consumer re-runs.
 - A task's discovery whose support changed selects again. A child it already
-  derived and no longer selects refuses `SupersededSelectionDropped`. A root
+  derived and no longer selects refuses `SupersededSelectionDropped`, and so
+  does a parent it closed on that had derived in the edit, even if that
+  parent is being derived again. At the end of the edit, any output the
+  edit derived that no live selection reaches refuses the same way, so a
+  dropped derivation is never published. A dropped parent the edit only
+  verified (its committed output reused) also refuses; one commit per
+  stage would commit there. A root
   selection never selects again; one commit per stage evaluates each root
   once, in its own stage. Its support holds through that stage: a change by a
   member that runs before the next authored stage's append, in owed order,
