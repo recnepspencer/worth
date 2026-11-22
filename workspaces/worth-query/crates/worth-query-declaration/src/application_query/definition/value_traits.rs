@@ -22,6 +22,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope> Clone
             managed_index_recipe: self.managed_index_recipe.clone(),
             cardinality: self.cardinality,
             predicates: self.predicates.clone(),
+            where_filter: self.where_filter.clone(),
             ordering: self.ordering.clone(),
             continuation: self.continuation.clone(),
             live_cause: self.live_cause.clone(),
@@ -55,6 +56,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope> std::fmt::Debug
             .field("managed_index_recipe", &self.managed_index_recipe)
             .field("cardinality", &self.cardinality)
             .field("predicates", &self.predicates)
+            .field("where_filter", &self.where_filter)
             .field("ordering", &self.ordering)
             .field("continuation", &self.continuation)
             .field("live_cause", &self.live_cause)
@@ -86,6 +88,7 @@ impl<Schema, Query, Parameters, QueryResult, Scope> PartialEq
             && self.managed_index_recipe == other.managed_index_recipe
             && self.cardinality == other.cardinality
             && self.predicates == other.predicates
+            && self.where_filter == other.where_filter
             && self.ordering == other.ordering
             && self.continuation == other.continuation
             && self.live_cause == other.live_cause

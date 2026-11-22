@@ -13,6 +13,7 @@ use crate::{
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 #[derive(Debug)]
 pub enum WorthQueryDocumentHistoryCandidateDenial {

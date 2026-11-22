@@ -12,7 +12,7 @@ pub use worth_query_host::facade::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenialKind, WorthQueryPrincipalResolutionDenialKind,
 };
 
-pub use support::{block_on, request_scope, runtime, CausalCredential, DynamicIdentity};
+pub use support::{request_scope, runtime, DynamicIdentity};
 
 pub fn assert_resolution_denial<T>(
     result: Result<T, BankPrincipalAdmissionError>,

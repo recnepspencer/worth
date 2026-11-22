@@ -6,7 +6,7 @@ impl ExpressionValue {
     pub fn logical_bytes(&self) -> u64 {
         match &self.0 {
             Repr::Bool(_) | Repr::None => 1,
-            Repr::Enum(_) => 4,
+            Repr::Enum(_) | Repr::Date(_) => 4,
             Repr::Float32(_) => 4,
             Repr::Float64(_) | Repr::Quantity(_) => 8,
             Repr::Integer(_) => 16,

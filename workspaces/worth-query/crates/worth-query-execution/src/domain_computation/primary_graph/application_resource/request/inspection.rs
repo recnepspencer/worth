@@ -25,13 +25,7 @@ pub enum WorthQueryResourceState {
     NativeReleased,
 }
 
-/// Cleanup details exposed only through the installed CleanupDetail purpose.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub struct WorthQueryResourceCleanupDetail {
-    pub provider_closed: bool,
-    pub queue_drained: bool,
-    pub native_released: bool,
-}
+pub use crate::domain_computation::primary_graph::application_resource::closed::WorthQueryResourceCleanupDetail;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_, Schema> {
     pub(in crate::domain_computation::primary_graph::application_resource::request) fn inspect<

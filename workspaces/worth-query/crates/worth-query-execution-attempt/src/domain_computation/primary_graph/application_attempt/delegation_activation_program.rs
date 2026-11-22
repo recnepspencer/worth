@@ -1,0 +1,214 @@
+use super::effect_program::WorthQueryApplicationRealizedEffect;
+use super::effect_validation::denial;
+use super::{
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationEffectProgram, WorthQueryCompleteApplicationReadSet,
+    WorthQueryProjectedApplicationMutation,
+};
+use crate::domain_computation::authorization::delegation_progression::binding::program::WorthQueryDelegationActivationEffect;
+use crate::domain_computation::authorization::WorthQueryDelegationActivationBinding;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+
+/// Exact child activation produced from Query-owned delegation authority.
+pub struct WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope> {
+    program: WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+}
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        WorthQueryProjectedApplicationMutation,
+    >
+{
+    pub fn materialize_capability_delegation_program(
+        mut self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    > {
+        let phase_request = phase
+            .request_for_source(self.lease.handle().relational_runtime_instance_id())
+            .map_err(|_| {
+                denial(
+                    WorthQueryApplicationAttemptDenialKind::ForeignPhase,
+                    "delegation-activation-phase",
+                )
+            })?;
+        let execution = &phase_request;
+
+        let binding = self
+            .admission
+            .delegation_activation_binding()
+            .ok_or_else(|| transition_required(self.admission.operation()))?;
+        let effects = activation_effects(binding, self.admission.allowed_graph_contract())?;
+        self.observe_unique_write_values(execution, &effects, allocation_policy)?;
+        let program = WorthQueryApplicationEffectProgram {
+            synchronous_outputs: Vec::new(),
+            authored_stages: Vec::new(),
+            producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::rounds::default_producer_round_bounds(),
+            read_set: self,
+            effects,
+            conditional_definition: None,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Application,
+            output_correspondence: Default::default(),
+            retain_output_demand_observation: false,
+            retain_client_observation: false,
+            producer_required_invariants: &[],
+            output_currentness_facts: None,
+            content_attachments: Default::default(),
+        };
+        validate_delegation_activation_program(&program)?;
+        Ok(WorthQueryDelegationActivationProgram { program })
+    }
+}
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryDelegationActivationProgram<Schema, Operation, Input, Scope>
+{
+    #[inline]
+    pub(crate) fn application_program(
+        &self,
+    ) -> &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
+        &self.program
+    }
+
+    pub(crate) fn into_inner(
+        self,
+    ) -> WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
+        self.program
+    }
+}
+
+pub fn validate_delegation_activation_program<Schema, Operation, Input, Scope>(
+    program: &WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope>,
+) -> Result<(), WorthQueryApplicationAttemptDenial> {
+    let binding = program
+        .read_set
+        .admission
+        .delegation_activation_binding()
+        .ok_or_else(|| transition_required(program.read_set.admission.operation()))?;
+    let expected =
+        activation_effects(binding, program.read_set.admission.allowed_graph_contract())?;
+    if effects_are_exact(&program.effects, &expected) {
+        Ok(())
+    } else {
+        Err(program_mismatch(program.read_set.admission.operation()))
+    }
+}
+
+fn activation_effects(
+    binding: &WorthQueryDelegationActivationBinding,
+    installed: &worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts,
+) -> Result<Vec<WorthQueryApplicationRealizedEffect>, WorthQueryApplicationAttemptDenial> {
+    binding
+        .materialize_program(installed)
+        .map_err(|()| program_mismatch("delegation activation operation contract"))
+        .map(|effects| effects.into_iter().map(lower_effect).collect())
+}
+
+fn lower_effect(
+    effect: WorthQueryDelegationActivationEffect,
+) -> WorthQueryApplicationRealizedEffect {
+    match effect {
+        WorthQueryDelegationActivationEffect::CreateEntity { kind, key, fields } => {
+            WorthQueryApplicationRealizedEffect::CreateEntity {
+                kind,
+                key,
+                fields,
+                partition: super::effect_program::WorthQueryApplicationCreationPartition::Issued,
+            }
+        }
+        WorthQueryDelegationActivationEffect::CreateRelation {
+            kind,
+            key,
+            from,
+            to,
+        } => WorthQueryApplicationRealizedEffect::CreateRelation {
+            fields: Default::default(),
+            kind,
+            key,
+            from,
+            to,
+        },
+    }
+}
+
+fn effects_are_exact(
+    actual: &[WorthQueryApplicationRealizedEffect],
+    expected: &[WorthQueryApplicationRealizedEffect],
+) -> bool {
+    actual.len() == expected.len()
+        && actual
+            .iter()
+            .zip(expected)
+            .all(|(actual, expected)| effect_is_exact(actual, expected))
+}
+
+fn effect_is_exact(
+    actual: &WorthQueryApplicationRealizedEffect,
+    expected: &WorthQueryApplicationRealizedEffect,
+) -> bool {
+    match (actual, expected) {
+        (
+            WorthQueryApplicationRealizedEffect::CreateEntity {
+                kind,
+                key,
+                fields,
+                partition,
+            },
+            WorthQueryApplicationRealizedEffect::CreateEntity {
+                kind: expected_kind,
+                key: expected_key,
+                fields: expected_fields,
+                partition: expected_partition,
+            },
+        ) => {
+            kind == expected_kind
+                && key == expected_key
+                && fields == expected_fields
+                && partition == expected_partition
+        }
+        (
+            WorthQueryApplicationRealizedEffect::CreateRelation {
+                fields,
+                kind,
+                key,
+                from,
+                to,
+            },
+            WorthQueryApplicationRealizedEffect::CreateRelation {
+                fields: expected_fields,
+                kind: expected_kind,
+                key: expected_key,
+                from: expected_from,
+                to: expected_to,
+            },
+        ) => {
+            kind == expected_kind
+                && key == expected_key
+                && from == expected_from
+                && to == expected_to
+                && fields == expected_fields
+        }
+        _ => false,
+    }
+}
+
+fn transition_required(subject: impl Into<String>) -> WorthQueryApplicationAttemptDenial {
+    denial(
+        WorthQueryApplicationAttemptDenialKind::DelegationActivationRequired,
+        subject,
+    )
+}
+
+fn program_mismatch(subject: impl Into<String>) -> WorthQueryApplicationAttemptDenial {
+    denial(
+        WorthQueryApplicationAttemptDenialKind::DelegationActivationProgramMismatch,
+        subject,
+    )
+}

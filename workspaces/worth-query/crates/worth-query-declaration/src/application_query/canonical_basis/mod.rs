@@ -4,6 +4,7 @@ mod entry;
 mod history;
 mod inspection;
 mod result_shape;
+mod where_filter;
 
 use std::cmp::Ordering;
 

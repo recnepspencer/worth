@@ -1,0 +1,130 @@
+//! Fund executed-step descriptors once, independently of terminal row count.
+use super::*;
+use crate::domain_computation::primary_graph::application_query::access_receipt::{
+    RootPathReadEvidence, WorthQueryApplicationQueryRootPathStepRead as Step,
+};
+use crate::domain_computation::primary_graph::structural_walk::memory;
+use std::sync::Arc;
+use worth_query_declaration::facade::application_query::{
+    ApplicationQueryRootPathTraversal, RelationDirection,
+};
+use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
+
+impl RootSelectionWork<'_> {
+    pub fn reserve_steps(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        count: usize,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        self.checkpoint(subject)?;
+        let result = execution.run_native_with_checkpoint(|context| {
+            let bytes = count
+                .checked_mul(size_of::<Step>())
+                .and_then(|n| {
+                    n.checked_add(size_of::<RootPathReadEvidence>() + 2 * size_of::<usize>())
+                })
+                .and_then(|n| u64::try_from(n).ok())
+                .ok_or(Cause::ChargedBytesOverflow)?;
+            self.step_memory = memory::reserve(execution, context.has_accounting(), bytes)?;
+            self.steps
+                .try_reserve_exact(count)
+                .map_err(|_| Cause::AllocationFailed)?;
+            self.step_limit = count;
+            Ok::<(), Cause>(())
+        });
+        let result = match result {
+            Ok((value, _)) => value,
+            Err(stop) => Err(stop.into()),
+        };
+        self.checkpoint(subject)?;
+        result.map_err(|cause| super::super::denial::relational_read_denial(cause, subject))
+    }
+
+    pub fn record_step(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        path_index: usize,
+        step_index: usize,
+        source_kind: worth_query_declaration::facade::application_query::ApplicationQueryRootPathSourceKind,
+        traversal: ApplicationQueryRootPathTraversal,
+        direction: RelationDirection,
+        reads: WorthQueryInvariantProjectionWork,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        self.checkpoint(subject)?;
+        let result = execution.run_native_with_checkpoint(|_context| {
+            if let Some(step) = self.steps.iter_mut().find(|step| {
+                step.path_index() == path_index
+                    && step.step_index() == step_index
+                    && step.source_kind() == source_kind
+                    && step.traversal() == traversal
+                    && step.direction() == direction
+            }) {
+                let combined = step
+                    .reads()
+                    .checked_combined(reads)
+                    .ok_or(Cause::ChargedBytesOverflow)?;
+                *step = Step::new(
+                    path_index,
+                    step_index,
+                    source_kind,
+                    traversal,
+                    direction,
+                    combined,
+                );
+                return Ok(());
+            }
+            if self.steps.len() >= self.step_limit {
+                return Err(Cause::ExpectedIdentitiesNotCanonical);
+            }
+            self.steps.push(Step::new(
+                path_index,
+                step_index,
+                source_kind,
+                traversal,
+                direction,
+                reads,
+            ));
+            Ok::<(), Cause>(())
+        });
+        let result = match result {
+            Ok((value, _)) => value,
+            Err(stop) => Err(stop.into()),
+        };
+        self.checkpoint(subject)?;
+        result.map_err(|cause| super::super::denial::relational_read_denial(cause, subject))
+    }
+
+    pub fn take_steps(&mut self) -> Option<Arc<RootPathReadEvidence>> {
+        (!self.steps.is_empty()).then(|| {
+            Arc::new(RootPathReadEvidence::new(
+                std::mem::take(&mut self.steps),
+                self.step_memory.take(),
+            ))
+        })
+    }
+
+    pub fn charge_native_source(
+        &mut self,
+        lists: usize,
+        records: usize,
+        entities: usize,
+        work: usize,
+        subject: &str,
+    ) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+        // Acquired Native work survives a later caller stop or charge refusal.
+        self.reads.record_adjacencies(lists, records);
+        self.reads.record_endpoints(entities);
+        self.work_units = self.work_units.checked_add(work).ok_or_else(|| {
+            read_execution_denial(
+                WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
+                subject,
+            )
+        })?;
+        if let Some(spent) = self.spent {
+            spent.charge(work, subject)?;
+        }
+        self.checkpoint(subject)
+    }
+}

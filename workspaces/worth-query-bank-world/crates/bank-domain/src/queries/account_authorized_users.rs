@@ -68,14 +68,12 @@ worth_query_application_query!(
 );
 worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountAuthorizedUsersRequestBinding for AccountAuthorizedUsersRequest { identity: "AccountAuthorizedUsersRequest" });
 worth_query_decl::facade::worth_query_query_binding!(
-    pub AccountAuthorizedUsersQueryBinding for AccountAuthorizedUsersRequest, schema BankSchema,
+    pub AccountAuthorizedUsersQueryBinding for AccountAuthorizedUsersRequest, schema BankSchema, context crate::schema::BankBindingContext,
     identity "worth.bank.account-authorized-users-query-binding.v1",
     input AccountAuthorizedUsersRequestBinding,
     query AccountAuthorizedUsersQuery,
     parameters AccountAuthorizedUsersQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
     result AccountAuthorizedUsersQueryResultBinding,
-    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
-        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
     scope crate::schema::AccountIdentity,
     field crate::schema::AccountIdentity::at("AccountIdentity"),
     value AccountAuthorizedUsersRequest::account,

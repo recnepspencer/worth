@@ -1,9 +1,11 @@
 //! Fresh C permission precedes every reuse or retention of discovery evidence.
 use super::dependent::{DiscoveryBinding, QueryRows};
 use super::*;
+use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use crate::domain_computation::primary_graph::{
     WorthQueryHistoryOutputDiscovery, WorthQueryHistoryOutputReadDenial,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 type DiscoveryQuery<S, C> = <DiscoveryBinding<S, C> as ApplicationQueryBinding<S>>::Query;
 
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
@@ -43,7 +45,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             || !discovery.parent.same_custody(&crate::domain_computation::primary_graph::product_operation::document_history::navigation::HistoryDependentParent::Settled(std::sync::Arc::clone(&parent.settled.retained)))
             || !parent.profile.same_custody(&discovery.profile)
             || !std::sync::Arc::ptr_eq(&discovery.original, &parent.original)
-            || !parent.settled.retained.belongs_to(runtime)
+            || !parent.settled.retained.belongs_to(runtime.inner())
         {
             return Err(Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::ForeignDocument));
         }
@@ -62,7 +64,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::IncompleteDependencyCoverage,
                 "history discovery has no original set observation"),
         ))?.source();
-        let execution = phase.checked_execution_request_for(&runtime.runtime.product_runtime)
+        let execution = phase.checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         runtime
             .authorize_retained_history_query::<DiscoveryBinding<S, C>>(

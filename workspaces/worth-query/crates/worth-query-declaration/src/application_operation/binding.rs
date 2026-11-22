@@ -26,7 +26,8 @@ pub use identity::{
     application_computation_item_digest, application_computation_item_digest_polled,
     application_computation_partition_digest_polled, application_computation_partition_identity,
     application_value_identity, ApplicationCanonicalIdentity, ApplicationCanonicalInput,
-    ApplicationCanonicalInputDenial, ApplicationCanonicalInputScalar, ApplicationCanonicalWork,
+    ApplicationCanonicalInputBytes, ApplicationCanonicalInputDenial,
+    ApplicationCanonicalInputScalar, ApplicationCanonicalWork,
     ApplicationComputationPartitionIdentity, ApplicationComputationPartitionIdentityDenial,
     ApplicationEditEnvelopeKey, ApplicationEditEnvelopeOrder, ApplicationEditIntentIdentity,
     ApplicationEditStageIdentity, ApplicationEditStageIntent, ApplicationEncodedInput,
@@ -46,11 +47,20 @@ pub use output::{
     NoApplicationMutationOutputs,
 };
 pub use output_role::{
-    WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationDeclaredOutputRoleFamily,
+    ApplicationMutationLineageOutputContract, ApplicationMutationLineageOutputRoleDescriptor,
+    ApplicationMutationLineageOutputRoleFamilyDescriptor, ApplicationMutationLineagePostureKind,
+    ApplicationMutationLineagePostureSet, ApplicationMutationLineageSubjectKind,
+    ErasedLineageOutputPosture, ErasedMergeKeeper, WorthQueryApplicationDeclaredLineageOutputRole,
+    WorthQueryApplicationDeclaredLineageOutputRoleFamily, WorthQueryApplicationDeclaredOutputRole,
+    WorthQueryApplicationDeclaredOutputRoleFamily, WorthQueryApplicationLineageOutputAction,
+    WorthQueryApplicationLineageOutputRole, WorthQueryApplicationLineageOutputRoleFamily,
     WorthQueryApplicationOutputAction, WorthQueryApplicationOutputCardinality,
     WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
-    WorthQueryApplicationOutputRoleNameDenial, WorthQueryAtMostOneOutput, WorthQueryCreateOutput,
-    WorthQueryExactlyOneOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
+    WorthQueryApplicationOutputRoleNameDenial, WorthQueryApplicationOutputSubject,
+    WorthQueryAtMostOneOutput, WorthQueryCreateOutput, WorthQueryEntityOutputSubject,
+    WorthQueryExactlyOneOutput, WorthQueryLineageOutputPosture, WorthQueryLineagePostureDenial,
+    WorthQueryMergeKeeper, WorthQueryMergeOutput, WorthQueryPreserveOutput,
+    WorthQueryRelationOutputSubject, WorthQueryRetireOutput, WorthQuerySplitOutput,
 };
 pub use portable_description::{
     ApplicationMutationDescription, ApplicationMutationDescriptionParts,

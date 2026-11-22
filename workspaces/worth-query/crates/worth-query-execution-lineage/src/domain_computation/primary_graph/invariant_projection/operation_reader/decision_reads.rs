@@ -1,0 +1,323 @@
+//! The decision facts one operation projection read, and which of them a
+//! partitioned computation read in which owner call.
+
+use std::collections::BTreeSet;
+pub mod aggregates;
+pub mod aspect_presence;
+pub mod components;
+pub mod computation_inputs;
+pub mod expected_keys;
+pub mod managed_sources;
+pub mod source_publications;
+pub mod structural_walks;
+pub use computation_inputs::ObservedComputationInputs;
+pub use expected_keys::ExpectedFactKeys;
+
+use super::WorthQueryApplicationOperationInvariantProjectionReader;
+use crate::domain_computation::primary_graph::application_attempt::{
+    ComputationFactAttribution, ComputationRead, WorthQueryApplicationFactKey,
+};
+use crate::domain_computation::primary_graph::application_contribution::{
+    CompletedComputationRetention, ComputationDeposit, ComputationPrior, PriorAbsence, Suppression,
+};
+
+/// Every decision fact key of one projection.
+///
+/// A key read while an owner call of a partitioned computation holds the
+/// reader is recorded with that call, and one the handler read itself is
+/// recorded as the handler's. A key both read is both.
+#[derive(Default)]
+pub struct DecisionReads {
+    handler: BTreeSet<WorthQueryApplicationFactKey>,
+    source_publications: Option<std::sync::Arc<source_publications::IssuedSourcePublicationValues>>,
+    managed_sources: managed_sources::IssuedManagedSourceValues,
+    failed_managed_source: bool,
+    aspect_presence: aspect_presence::PresenceKeys,
+    /// The first read that failed. Its outcome depends on what its fact does
+    /// not hold, so a handler or owner call that swallowed the failure has an
+    /// outcome nothing retained, and the projection seals nothing.
+    failed: Option<WorthQueryApplicationFactKey>,
+    pub computation: ComputationFactAttribution,
+    reading: Option<ComputationRead>,
+    runs: ComputationRuns,
+    /// What the producer that runs the projection retained, for the first
+    /// partitioned computation to take.
+    prior: ComputationPriorCustody,
+    /// Where that computation leaves its completed run, when a producer runs
+    /// the projection.
+    deposit: Option<ComputationDeposit>,
+    // Last: authoring collections must drop before their original reservation.
+    walks: structural_walks::IssuedWalkValues,
+    aggregates: aggregates::IssuedAggregateValues,
+    failed_walk: bool,
+    components: components::IssuedComponentValues,
+    failed_component: bool,
+}
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum FailedDecisionRead {
+    Key(WorthQueryApplicationFactKey),
+    StructuralWalk,
+    ManagedSource,
+    ComponentSelection,
+    Execution(worth_relational::facade::transactions::RelationalExecutionDenialCause),
+}
+
+impl FailedDecisionRead {
+    pub fn into_attempt_denial(
+        self,
+        operation: &str,
+    ) -> crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial {
+        use crate::domain_computation::primary_graph::{
+            WorthQueryApplicationAttemptDenial as Denial,
+            WorthQueryApplicationAttemptDenialKind as Kind,
+        };
+        match self {
+            Self::Execution(cause) => Denial::relational_read_stopped(cause, operation),
+            failed => Denial::new(Kind::MissingAuthoritativeFact, format!("{failed:?}")),
+        }
+    }
+}
+
+/// A reader either has no producer, owns the handed prior, or has consumed it.
+#[derive(Default)]
+enum ComputationPriorCustody {
+    #[default]
+    NoProducer,
+    Handed(ComputationPrior),
+    Taken,
+}
+
+pub enum ComputationPriorUnavailable {
+    NoProducerPrior,
+    PriorAlreadyTaken,
+}
+impl ComputationPriorUnavailable {
+    pub fn suppression(&self) -> Suppression {
+        match self {
+            Self::NoProducerPrior => Suppression::NoProducerPrior,
+            Self::PriorAlreadyTaken => Suppression::PriorAlreadyTaken,
+        }
+    }
+    pub fn full_cause(&self) -> crate::domain_computation::primary_graph::application_contribution::WorthQueryPartitionedComputationFullCause{
+        PriorAbsence::Suppressed(self.suppression()).full_cause()
+    }
+}
+
+/// What became of one decision read. A field, entity or relation read
+/// records an absent value as its content, so only a traversal can fail.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DecisionReadOutcome {
+    Observed,
+    Failed,
+}
+
+/// How many partitioned computations read through the projection's reader.
+#[derive(Default)]
+enum ComputationRuns {
+    #[default]
+    None,
+    One,
+    Several,
+}
+
+impl DecisionReads {
+    pub fn begin_fresh_call(&mut self, read: ComputationRead) {
+        self.computation.begin_fresh(read);
+    }
+    pub fn materialize_carried(&mut self) {
+        self.computation.materialize_carried();
+    }
+    /// The reads of a projection a producer runs, handed what its selected
+    /// record retained.
+    pub fn with_prior(prior: ComputationPrior) -> Self {
+        Self {
+            prior: ComputationPriorCustody::Handed(prior),
+            deposit: Some(ComputationDeposit::new()),
+            ..Self::default()
+        }
+    }
+
+    /// The one way a decision read is recorded, on every outcome of the read.
+    pub fn record(&mut self, key: WorthQueryApplicationFactKey, outcome: DecisionReadOutcome) {
+        let key = self.aspect_presence.canonical_key(key);
+        if outcome == DecisionReadOutcome::Failed && self.failed.is_none() {
+            self.failed = Some(key.clone());
+        }
+        match self.reading {
+            Some(read) => self.computation.record(key, read),
+            None => {
+                crate::domain_computation::primary_graph::fact_verification_observation::handler_read_key_record();
+                self.handler.insert(key);
+            }
+        }
+    }
+
+    /// The keys the read attempt re-observes: every key read, by the handler
+    /// or by an owner call. With them, what the computation read.
+    ///
+    /// A key the handler read beside an owner call stays that call's: the
+    /// handler reads its own facts again on every attempt. There is no
+    /// reusable partition attribution unless exactly one computation ran: partition
+    /// identities name the partitions of one computation only.
+    /// The deposit is there only when exactly one partitioned computation
+    /// ran under a producer. A projection with a failed read has no keys to
+    /// re-observe: the key of the first failed read is returned instead.
+    pub fn into_expected(
+        self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            ExpectedFactKeys,
+            (ObservedComputationInputs, CompletedComputationRetention),
+        ),
+        FailedDecisionRead,
+    > {
+        let Self {
+            mut handler,
+            source_publications,
+            managed_sources,
+            failed,
+            mut computation,
+            runs,
+            deposit,
+            mut walks,
+            aggregates,
+            failed_walk,
+            components,
+            failed_component,
+            failed_managed_source,
+            ..
+        } = self;
+        if let Some(failed) = failed {
+            return Err(FailedDecisionRead::Key(failed));
+        }
+        if failed_managed_source {
+            return Err(FailedDecisionRead::ManagedSource);
+        }
+        if failed_component {
+            return Err(FailedDecisionRead::ComponentSelection);
+        }
+        if failed_walk {
+            return Err(FailedDecisionRead::StructuralWalk);
+        }
+        computation
+            .normalize_adjacencies(&mut handler, execution)
+            .map_err(FailedDecisionRead::Execution)?;
+        computation.retain_walk_memory(walks.take_memory());
+        let handler = std::sync::Arc::new(handler);
+        computation.retain_handler(std::sync::Arc::clone(&handler));
+        let computation = std::sync::Arc::new(computation);
+        let expected = ExpectedFactKeys::new(
+            handler,
+            std::sync::Arc::clone(&computation),
+            source_publications,
+            managed_sources,
+            walks,
+            aggregates,
+            components,
+        );
+        let result = match runs {
+            ComputationRuns::None => (
+                ObservedComputationInputs::None,
+                CompletedComputationRetention::Absent(PriorAbsence::NotProduced),
+            ),
+            ComputationRuns::One => (
+                ObservedComputationInputs::One(computation),
+                deposit.expect("begin creates the run deposit").take(),
+            ),
+            ComputationRuns::Several => {
+                // Partition attribution identifies one computation only. Keep the
+                // union of input keys for own-effect currentness after its state
+                // is dropped; several runs still read every one of these facts.
+                drop(deposit);
+                (
+                    ObservedComputationInputs::Several(computation),
+                    CompletedComputationRetention::Absent(PriorAbsence::Suppressed(
+                        Suppression::Several,
+                    )),
+                )
+            }
+        };
+        Ok((expected, result))
+    }
+}
+
+impl<Schema, Operation>
+    WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
+{
+    pub fn begin_native_carriage(
+        &mut self,
+        _: &crate::domain_computation::primary_graph::application_contribution::Comparator,
+        native: crate::domain_computation::primary_graph::application_contribution::NativeComputationReads,
+    ) {
+        self.decision_facts.computation.begin_native(native);
+    }
+    pub(crate) fn enter_native_carried(
+        &mut self,
+        _: &crate::domain_computation::primary_graph::application_contribution::Comparator,
+        read: ComputationRead,
+    ) -> bool {
+        self.decision_facts.computation.carry_native(read)
+    }
+    /// A partitioned computation begins reading through this reader.
+    pub fn begin_computation_reads(&mut self) {
+        let deposit = self
+            .decision_facts
+            .deposit
+            .get_or_insert_with(ComputationDeposit::new);
+        // Preparing is a run, even if its work or later execution stops.
+        deposit.write(CompletedComputationRetention::Absent(PriorAbsence::Stopped));
+        self.decision_facts.runs = match self.decision_facts.runs {
+            ComputationRuns::None => ComputationRuns::One,
+            ComputationRuns::One | ComputationRuns::Several => ComputationRuns::Several,
+        };
+    }
+
+    /// What the producer retained, taken by the first partitioned computation
+    /// to begin. Ordinary mutation readers are reachable here: the installed
+    /// producer operation can also be invoked without a producer admission.
+    /// Ordinary readers get NoProducerPrior. Once a producer prior was taken,
+    /// later invocations get NoPriorHanded.
+    pub(crate) fn take_computation_prior(
+        &mut self,
+    ) -> Result<ComputationPrior, ComputationPriorUnavailable> {
+        match &mut self.decision_facts.prior {
+            ComputationPriorCustody::NoProducer => {
+                Err(ComputationPriorUnavailable::NoProducerPrior)
+            }
+            ComputationPriorCustody::Taken => Err(ComputationPriorUnavailable::PriorAlreadyTaken),
+            handed @ ComputationPriorCustody::Handed(_) => {
+                let ComputationPriorCustody::Handed(prior) =
+                    std::mem::replace(handed, ComputationPriorCustody::Taken)
+                else {
+                    unreachable!()
+                };
+                Ok(prior)
+            }
+        }
+    }
+
+    /// Where a completed run is left for seal, when a producer runs the
+    /// projection.
+    pub fn computation_deposit(&self) -> ComputationDeposit {
+        self.decision_facts
+            .deposit
+            .clone()
+            .expect("prepare begins computation reads and creates the deposit before accessing it")
+    }
+
+    /// Runs one owner call, recording every fact key it reads as that call's.
+    pub fn attributed<Output>(
+        &mut self,
+        read: ComputationRead,
+        call: impl FnOnce(&mut Self) -> Output,
+    ) -> Output {
+        self.decision_facts.reading = Some(read);
+        let output = call(self);
+        self.decision_facts.reading = None;
+        output
+    }
+}
+
+mod court_doors_for_test;

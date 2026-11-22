@@ -1,4 +1,4 @@
-pub(in crate::domain_computation::primary_graph) mod route_binding;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::installation::route_binding;
 use super::operation_invocation::WorthQueryTemporalOperationExecution;
 use super::reconstruction_authority::WorthQueryTemporalReconstructionAccess;
 use crate::domain_computation::primary_graph::application_runtime::installation::ApplicationRuntimePublication;
@@ -11,10 +11,10 @@ use worth_query_installation::facade::{
     WorthQueryNamedClock, WorthQueryNamedClockSource,
     WorthQueryPortableApplicationConditionalOperationBinding, WorthQueryTemporalIntentProjector,
 };
-pub(crate) mod clock_handle;
+pub(crate) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::installation::clock_handle;
 pub(in crate::domain_computation::primary_graph) use clock_handle::ConditionalClockLease;
 pub use clock_handle::WorthQueryConditionalClockHandle;
-mod denial;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::conditional_operation::installation::denial;
 use denial::foreign_binding_denial;
 pub use denial::{
     WorthQueryConditionalRuntimeInstallationDenial,

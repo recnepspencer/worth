@@ -14,6 +14,8 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryScopeResolution,
     application_resource::ApplicationResourceInput,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryResourceAccessPurpose;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_, Schema> {
@@ -128,7 +130,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
                 .map_err(ResourceCause::Scope)?;
             let parameters = capture_parameters::<Schema, Binding::Access>(
                 execution,
-                self.runtime,
+                self.runtime.inner(),
                 std::mem::size_of::<OriginalResourceAccess>() + 2 * std::mem::size_of::<usize>(),
                 || Ok(Binding::parameters(input)),
             )

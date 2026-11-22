@@ -51,14 +51,12 @@ worth_query_application_query!(
 );
 worth_query_decl::facade::worth_query_structured_value_binding!(pub AccountSummaryRequestBinding for AccountSummaryRequest { identity: "AccountSummaryRequest" });
 worth_query_query_binding!(
-    pub AccountSummaryQueryBinding for AccountSummaryRequest, schema BankSchema,
+    pub AccountSummaryQueryBinding for AccountSummaryRequest, schema BankSchema, context crate::schema::BankBindingContext,
     identity "worth.bank.account-summary-query-binding.v1",
     input AccountSummaryRequestBinding,
     query AccountSummaryQuery,
     parameters AccountSummaryQueryParametersBinding => |_| ApplicationQueryParameterSet::new(),
     result AccountSummaryQueryResultBinding,
-    principal crate::schema::BankPrincipalBinding, mapping crate::schema::ExternalPrincipalMapping, principal_entity crate::schema::Principal,
-        principal_identity crate::model::BankPrincipalId, identity_binding crate::schema::BankPrincipalIdBinding,
     scope AccountIdentity,
     field AccountIdentity::at("AccountIdentity"),
     value AccountSummaryRequest::account,

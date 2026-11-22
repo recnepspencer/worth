@@ -1,0 +1,248 @@
+//! Certification observes published and discarded retention without execution authority.
+use super::retained::RetainedPartitions;
+use super::WorthQueryPartitionedComputationFullCause as Cause;
+use crate::domain_computation::primary_graph::application_contribution::RetainedComputation;
+use std::sync::Arc;
+use worth_execution::CanonicalBits;
+use worth_query_declaration::facade::application_operation::application_computation_item_digest;
+use worth_query_declaration::facade::application_program::ApplicationComputationPartition;
+
+#[derive(Clone)]
+pub struct WorthQueryPublishedComputationStateForTest {
+    state: Option<Arc<RetainedComputation>>,
+    absence: Option<Cause>,
+}
+
+impl std::fmt::Debug for WorthQueryPublishedComputationStateForTest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("PublishedComputationState")
+            .field("absence", &self.absence)
+            .finish_non_exhaustive()
+    }
+}
+
+thread_local! {
+    static DISCARDED: std::cell::RefCell<Vec<Option<Cause>>> = const { std::cell::RefCell::new(Vec::new()) };
+    static PUBLISHED: std::cell::RefCell<Vec<WorthQueryPublishedComputationStateForTest>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+pub fn observe_published(state: Option<&Arc<RetainedComputation>>, absence: Option<Cause>) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
+    // Decisions that ran nothing do not publish computation state.
+    if absence != Some(Cause::NotProduced) {
+        PUBLISHED.with(|published| {
+            published
+                .borrow_mut()
+                .push(WorthQueryPublishedComputationStateForTest {
+                    state: state.map(Arc::clone),
+                    absence,
+                })
+        });
+    }
+}
+
+pub fn published_partitioned_computations_on_this_thread_for_test(
+) -> Vec<WorthQueryPublishedComputationStateForTest> {
+    PUBLISHED.with(|published| std::mem::take(&mut *published.borrow_mut()))
+}
+
+/// Retention discarded when a completed ordinary mutation has no producer row.
+pub fn discarded_computation_retention_on_this_thread_for_test() -> Vec<Option<Cause>> {
+    DISCARDED.with(|discarded| std::mem::take(&mut *discarded.borrow_mut()))
+}
+
+pub fn observe_discarded(computation: &super::SealedComputationRetention) {
+    if !crate::domain_computation::execution_observation::is_installed() {
+        return;
+    }
+    if CLEANUP_REGISTERED.with(|registered| !registered.replace(true)) {
+        crate::domain_computation::execution_observation::register_cleanup(clear_observations);
+    }
+    let cause = match computation {
+        super::SealedComputationRetention::Produced(_) => None,
+        super::SealedComputationRetention::Absent(reason) => Some(reason.full_cause()),
+    };
+    DISCARDED.with(|discarded| discarded.borrow_mut().push(cause));
+}
+
+impl WorthQueryPublishedComputationStateForTest {
+    /// Compare the fields the next run reads under the supplied item binding
+    /// correspondence. Each state's stored digests must encode its actual
+    /// items: different installations intentionally encode different authority
+    /// identities, even over the same Native entities.
+    /// Execution exposes leaves, root and size, but no full tree encoding.
+    pub fn same_fields_for_test<
+        Key: 'static,
+        Item: ApplicationComputationPartition + 'static,
+        Reduced: Clone + CanonicalBits + 'static,
+    >(
+        &self,
+        other: &Self,
+        same_key: impl Fn(&Key, &Key) -> bool,
+        same_item: impl Fn(&Item, &Item) -> bool,
+    ) -> bool {
+        let (Some(left), Some(right)) = (&self.state, &other.state) else {
+            return self.state.is_none() && other.state.is_none() && self.absence == other.absence;
+        };
+        let left_typed = left
+            .typed
+            .downcast_ref::<RetainedPartitions<Key, Item, Reduced>>()
+            .expect("the certified owner fixes its state types");
+        let right_typed = right
+            .typed
+            .downcast_ref::<RetainedPartitions<Key, Item, Reduced>>()
+            .expect("the fresh owner fixes its state types");
+        let a = left_typed;
+        let b = right_typed;
+        let routing = |state: &RetainedPartitions<Key, Item, Reduced>| {
+            state
+                .routing
+                .partitions()
+                .map(|partition| {
+                    (
+                        partition,
+                        state.routing.digest(partition).copied(),
+                        state.routing.members(partition).collect::<Vec<_>>(),
+                    )
+                })
+                .collect::<Vec<_>>()
+        };
+        let item_keys = |state: &RetainedPartitions<Key, Item, Reduced>| {
+            state
+                .item_keys
+                .iter()
+                .map(|(item, call)| (*item, call.declared_units))
+                .collect::<Vec<_>>()
+        };
+        let digests_valid = |state: &RetainedPartitions<Key, Item, Reduced>| {
+            state.items.len() == state.digests.len()
+                && state.items.iter().all(|(id, item)| {
+                    application_computation_item_digest(item, &mut |_| Ok::<(), ()>(()))
+                        .ok()
+                        .as_ref()
+                        == state.digests.get(id)
+                })
+        };
+        digests_valid(a)
+            && digests_valid(b)
+            && a.items.len() == b.items.len()
+            && a.items
+                .iter()
+                .all(|(id, item)| b.items.get(id).is_some_and(|other| same_item(item, other)))
+            && a.membership.declared_units == b.membership.declared_units
+            && item_keys(a) == item_keys(b)
+            && routing(a) == routing(b)
+            && a.partitions.len() == b.partitions.len()
+            && a.partitions.iter().all(|(identity, partition)| {
+                b.partitions.get(identity).is_some_and(|next| {
+                    same_key(&partition.key, &next.key)
+                        && a.native_run
+                            .result(*identity)
+                            .zip(b.native_run.result(*identity))
+                            .is_some_and(|(left, right)| {
+                                left.has_same_native_cost(right)
+                                    && bits(left.value()) == bits(right.value())
+                            })
+                        && a.tree.leaf(*identity).map(bits) == b.tree.leaf(*identity).map(bits)
+                })
+            })
+            && bits(a.tree.result()) == bits(b.tree.result())
+            && left.facts.facts().eq(right.facts.facts())
+    }
+}
+
+impl WorthQueryPublishedComputationStateForTest {
+    /// A leaf value lives inline in its immutable tree node. Its address is
+    /// therefore a node identity, not a result-equality or call-count proxy.
+    #[doc(hidden)]
+    pub fn tree_node_sharing_with_for_test<
+        Key: 'static,
+        Item: 'static,
+        Reduced: Clone + CanonicalBits + 'static,
+    >(
+        &self,
+        other: &Self,
+    ) -> Vec<(worth_foundational::facade::PartitionIdentity, bool)> {
+        let left = self.state.as_ref().expect("a retained reference state");
+        let right = other.state.as_ref().expect("a retained successor state");
+        let a = left
+            .typed
+            .downcast_ref::<RetainedPartitions<Key, Item, Reduced>>()
+            .unwrap();
+        let b = right
+            .typed
+            .downcast_ref::<RetainedPartitions<Key, Item, Reduced>>()
+            .unwrap();
+        a.partitions
+            .keys()
+            .map(|identity| {
+                (
+                    *identity,
+                    a.tree
+                        .leaf(*identity)
+                        .zip(b.tree.leaf(*identity))
+                        .is_some_and(|(a, b)| std::ptr::eq(a, b)),
+                )
+            })
+            .collect()
+    }
+}
+
+impl WorthQueryPublishedComputationStateForTest {
+    /// Actual existing body relations for matching walk keys, in retained order.
+    /// Each pair is (same Arc, same source origin). No bodies or authority leave
+    /// this passive observer, and a different key roster returns None.
+    pub fn structural_walk_body_sharing_with_for_test(
+        &self,
+        prior: &Self,
+    ) -> Option<Vec<(bool, bool)>> {
+        use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact as Fact;
+        let walks = |state: &RetainedComputation| {
+            state
+                .original_facts()
+                .iter()
+                .filter_map(|fact| match fact {
+                    Fact::StructuralWalk { observation } => Some(Arc::clone(observation)),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        };
+        let current = walks(self.state.as_deref()?);
+        let old = walks(prior.state.as_deref()?);
+        if !current
+            .iter()
+            .map(|body| body.key())
+            .eq(old.iter().map(|body| body.key()))
+        {
+            return None;
+        }
+        Some(
+            current
+                .iter()
+                .zip(&old)
+                .map(|(a, b)| (Arc::ptr_eq(a, b), a.source() == b.source()))
+                .collect(),
+        )
+    }
+}
+
+fn bits(value: &impl CanonicalBits) -> Vec<u8> {
+    let mut bytes = Vec::new();
+    assert!(value.visit_canonical_bits(&mut |chunk| {
+        bytes.extend_from_slice(chunk);
+        true
+    }));
+    bytes
+}
+
+thread_local! { static CLEANUP_REGISTERED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) }; }
+fn clear_observations() {
+    CLEANUP_REGISTERED.with(|registered| registered.set(false));
+    PUBLISHED.with(|records| *records.borrow_mut() = Default::default());
+    DISCARDED.with(|records| *records.borrow_mut() = Default::default());
+}

@@ -32,6 +32,7 @@ mod installed_graph_participation;
 mod installed_handle_denial;
 mod installed_index;
 mod installed_operation;
+mod naming;
 mod package;
 mod package_requirements;
 
@@ -262,14 +263,15 @@ pub mod facade {
         WorthQueryInstalledManagedIndexParent, WorthQueryInstalledManagedIndexReadMeaning,
         WorthQueryInstalledOutputDependencyContract, WorthQueryInstalledQueryBindingAdmissionStop,
         WorthQueryInstalledRootPath, WorthQueryInstalledRootPathGuard,
-        WorthQueryInstalledRootPathStep, WorthQueryManagedIndexPredicateProfile,
-        WorthQueryManagedIndexPredicateProfileDenial, WorthQueryPlanningInventoryStop,
-        WorthQueryPreparedReadGraphPlanningContract, WorthQueryReadGraphGuardView,
-        WorthQueryReadGraphOrderingMechanism, WorthQueryReadGraphOrderingView,
-        WorthQueryReadGraphPlanningContract, WorthQueryReadGraphPredicateTarget,
-        WorthQueryReadGraphPredicateView, WorthQueryReadGraphProjectionView,
-        WorthQueryReadGraphRelationDirection, WorthQueryReadGraphRelationView,
-        WorthQueryResolvedApplicationQueryLimits,
+        WorthQueryInstalledRootPathStep, WorthQueryInstalledWhereFilter,
+        WorthQueryInstalledWhereFilterField, WorthQueryInstalledWhereFilterParameter,
+        WorthQueryManagedIndexPredicateProfile, WorthQueryManagedIndexPredicateProfileDenial,
+        WorthQueryPlanningInventoryStop, WorthQueryPreparedReadGraphPlanningContract,
+        WorthQueryReadGraphGuardView, WorthQueryReadGraphOrderingMechanism,
+        WorthQueryReadGraphOrderingView, WorthQueryReadGraphPlanningContract,
+        WorthQueryReadGraphPredicateTarget, WorthQueryReadGraphPredicateView,
+        WorthQueryReadGraphProjectionView, WorthQueryReadGraphRelationDirection,
+        WorthQueryReadGraphRelationView, WorthQueryResolvedApplicationQueryLimits,
         WorthQueryRetainedApplicationQueryGraphObligations,
     };
     pub use crate::application_schema::{
@@ -332,6 +334,10 @@ pub mod facade {
         WorthQueryPrincipalBindingValidationAdmissionStop, WorthQueryValidatedPrincipalBinding,
     };
     pub use crate::installed_operation::WorthQueryInstalledOperationAuthority;
+    pub use crate::naming::{
+        install_name_schemes, InstalledNameRoleLayout, InstalledNameSchemeCatalog,
+        InstalledNameSchemeLayout,
+    };
     pub use crate::package::{
         WorthQueryExpectedPortablePackageIdentity, WorthQueryPortableApplicationContractSpine,
         WorthQueryPortableApplicationOperationContractParts,
@@ -364,5 +370,11 @@ pub mod facade {
     pub use crate::package_requirements::{
         WorthQueryInstallationCapabilityFamily, WorthQueryInstallationConfigSectionFamily,
         WorthQueryInstallationContributionCategory, WorthQueryInstallationOperatingRequirement,
+    };
+    pub use worth_query_declaration::facade::application_naming::{
+        ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder,
+        ApplicationNameDiscriminatorValue, ApplicationNameRoleDependency, ApplicationNameScheme,
+        ApplicationNameSchemeBuilder, ApplicationNameSchemeDenial, ApplicationNameSubjectKind,
+        ErasedApplicationNameScheme, WorthQueryName,
     };
 }

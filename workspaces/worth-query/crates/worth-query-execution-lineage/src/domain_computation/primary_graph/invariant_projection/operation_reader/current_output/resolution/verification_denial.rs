@@ -1,0 +1,59 @@
+//! One current-output denial rule for verification and evidence retention.
+
+use super::*;
+
+pub fn from_stop(
+    stop: ConsumedOutputVerificationStop,
+    subject: &str,
+) -> WorthQueryCurrentOutputDenial {
+    WorthQueryCurrentOutputDenial::new(
+        match stop {
+            ConsumedOutputVerificationStop::ManagedIndex(cause) => {
+                return WorthQueryCurrentOutputDenial::managed_index(cause, subject)
+            }
+            ConsumedOutputVerificationStop::SourceQueryAuthorization(kind) => {
+                WorthQueryCurrentOutputDenialKind::SourceQueryAuthorization(kind)
+            }
+            ConsumedOutputVerificationStop::WorkExhausted => {
+                WorthQueryCurrentOutputDenialKind::WorkBudgetExceeded
+            }
+            ConsumedOutputVerificationStop::CapacityExhausted(_) => {
+                WorthQueryCurrentOutputDenialKind::RetentionCapacityExhausted
+            }
+            ConsumedOutputVerificationStop::PendingUpstream => {
+                WorthQueryCurrentOutputDenialKind::PendingUpstream
+            }
+            ConsumedOutputVerificationStop::RetryCurrentness(stop) => {
+                WorthQueryCurrentOutputDenialKind::CurrentnessRaced(stop)
+            }
+            ConsumedOutputVerificationStop::Execution(cause) => {
+                WorthQueryCurrentOutputDenialKind::ExecutionRequest(cause)
+            }
+            ConsumedOutputVerificationStop::Unavailable => {
+                WorthQueryCurrentOutputDenialKind::OutputUnavailable
+            }
+            ConsumedOutputVerificationStop::Interrupted(event) => {
+                WorthQueryCurrentOutputDenialKind::Interrupted(event.interruption())
+            }
+        },
+        subject,
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain_computation::primary_graph::invariant_projection::consumed_output::map_admission_stop;
+    use worth_relational::facade::mvcc::CompanionPreflightStop;
+
+    #[test]
+    fn a_full_ledger_reports_capacity_to_the_handler_not_output_unavailable() {
+        let stop = CompanionPreflightStop::PreparationMemoryCounterOverflow;
+        let denied = from_stop(map_admission_stop(stop), "consumed-family");
+        assert_eq!(
+            denied.kind(),
+            WorthQueryCurrentOutputDenialKind::RetentionCapacityExhausted
+        );
+        assert_eq!(denied.subject(), "consumed-family");
+    }
+}

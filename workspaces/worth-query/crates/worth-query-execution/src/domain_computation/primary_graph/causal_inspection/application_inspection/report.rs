@@ -129,7 +129,11 @@ pub fn materialize(
                 .ok_or(MapKernelFailure::Domain(
                     InspectionReportDenial::ForeignMaterialization,
                 ))?;
-        if !Arc::ptr_eq(target, bound_target) {
+        if !bound_target
+            .as_any()
+            .downcast_ref::<super::WorthQueryApplicationInspectionTarget>()
+            .is_some_and(|bound| std::ptr::eq(bound, target.as_ref()))
+        {
             return Err(MapKernelFailure::Domain(
                 InspectionReportDenial::ForeignMaterialization,
             ));

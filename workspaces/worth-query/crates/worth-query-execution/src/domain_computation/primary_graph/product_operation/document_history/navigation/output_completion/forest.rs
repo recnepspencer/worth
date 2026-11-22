@@ -1,5 +1,8 @@
 //! Original tree evidence is retained separately from collection qualification.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::CompletedOriginalReadOutputsInternalPort as _;
 mod verified;
 use crate::domain_computation::primary_graph::{
     application_output_demand::{qualify_output_collection, OriginalOutputTree},
@@ -53,7 +56,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         self.validate_selected_output_root::<R>(phase, access, &source.source)
             .map_err(Original::Program)?;
         let execution = phase
-            .checked_execution_request_for(&self.runtime().runtime.product_runtime)
+            .checked_execution_request_for(self.runtime().inner.runtime.product_runtime_ref())
             .map_err(stopped)?;
         let original = OriginalOutputTree::retain(
             &execution,
@@ -103,7 +106,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(foreign());
         }
         let execution = phase
-            .checked_execution_request_for(&self.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(stopped)?;
         if trees.is_empty() {
             return Err(ReadDenial::Incomplete {
@@ -120,7 +123,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return self.qualify_verified_history_forest(phase, access, authority, trees);
         }
         let original = qualify_output_collection(
-            self,
+            self.inner(),
             phase,
             access,
             authority.request(),
@@ -168,9 +171,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         >,
         trees: &[Arc<WorthQueryRetainedHistoryOutputTree>],
     ) -> Result<(), ReadDenial> {
-        self.runtime
-            .primary_provider
-            .graph
+        self.inner
+            .runtime
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(execution, |native| {
                 let evidence = authority
                     .selected_output_read(execution, native)

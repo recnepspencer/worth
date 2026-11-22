@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use worth_proof::TransitionOutcome;
 
-use super::basis::{literal_value, nominal_declarations, op_tag};
+use super::basis::{literal_value, op_tag, referenced_types};
 use crate::canonicalization::{
     admit_canonical_sequence_digest_derivation_with_budget, derive_canonical_digest,
     prepare_canonical_basis_sequence, CanonicalBasisDomain, CanonicalBasisEntry,
@@ -18,15 +18,16 @@ use crate::canonicalization::{
 };
 use crate::expressions::denial::{ExpressionDenial, ExpressionResource, ExpressionResult};
 use crate::expressions::functions::InstalledExpressionFunction;
+use crate::expressions::language_version::LanguageVersion;
 use crate::expressions::profile::ExpressionProfile;
-use crate::expressions::program::ExpressionProgram;
+use crate::expressions::program::{ExpressionProgram, Op};
 use crate::expressions::types::units::UNIT_CATALOG_VERSION;
 use crate::expressions::types::{ExpressionSchema, ExpressionType};
 
-/// The V1 language semantic version recorded in every identity.
-pub(crate) const LANGUAGE_VERSION: &str = "worth-expression-v1";
 const RULE_VERSION: &str = "worth-expression-identity-v1";
-const DOMAIN: CanonicalBasisDomain = CanonicalBasisDomain::Future(LANGUAGE_VERSION);
+/// The identity domain. It names the identity rule's first language and stays
+/// fixed; each basis records the language version its program requires.
+const DOMAIN: CanonicalBasisDomain = CanonicalBasisDomain::Future("worth-expression-v1");
 
 /// Exact canonical meaning of an admitted program.
 ///
@@ -38,6 +39,8 @@ pub struct ExpressionProgramIdentity {
     basis: CanonicalBasisSequence,
     digest: CanonicalDerivedDigest,
     functions: Box<[Arc<ExpressionProgramIdentity>]>,
+    /// Recorded in the basis; carried so callers inherit a function's version.
+    language: LanguageVersion,
 }
 
 impl ExpressionProgramIdentity {
@@ -88,7 +91,7 @@ pub(crate) struct IdentityInputs<'a> {
 pub(crate) fn derive_identity(
     inputs: IdentityInputs<'_>,
 ) -> ExpressionResult<ExpressionProgramIdentity> {
-    let entries = basis_entries(&inputs);
+    let (entries, language) = basis_entries(&inputs);
     let limit = inputs.profile.limit(ExpressionResource::CanonicalBytes);
     let exceeded = || ExpressionDenial::resource(ExpressionResource::CanonicalBytes, limit);
     let entry_count = u32::try_from(entries.len()).map_err(|_| exceeded())?;
@@ -135,13 +138,27 @@ pub(crate) fn derive_identity(
             .iter()
             .map(|function| function.identity().clone())
             .collect(),
+        language,
     })
 }
 
-fn basis_entries(inputs: &IdentityInputs<'_>) -> Vec<CanonicalBasisEntry> {
+/// The basis entries and the language version they record.
+fn basis_entries(inputs: &IdentityInputs<'_>) -> (Vec<CanonicalBasisEntry>, LanguageVersion) {
     let text = |value: String| CanonicalBasisValue::ExactText(value.into());
+    let types = inputs
+        .program
+        .nodes()
+        .iter()
+        .map(|node| &node.ty)
+        .chain(inputs.slots.iter().map(|(_, ty)| *ty));
+    let referenced = referenced_types(inputs.schema, types);
+    let language = program_language(inputs, referenced.language);
     let mut entries = vec![
-        named("language", "version", text(LANGUAGE_VERSION.to_string())),
+        named(
+            "language",
+            "version",
+            text(language.identity_label().to_string()),
+        ),
         named(
             "result",
             "type",
@@ -156,13 +173,7 @@ fn basis_entries(inputs: &IdentityInputs<'_>) -> Vec<CanonicalBasisEntry> {
             entries.push(named(&locus, "name", text((*name).to_string())));
         }
     }
-    let types = inputs
-        .program
-        .nodes()
-        .iter()
-        .map(|node| &node.ty)
-        .chain(inputs.slots.iter().map(|(_, ty)| *ty));
-    for (name, declaration) in nominal_declarations(inputs.schema, types) {
+    for (name, declaration) in referenced.declarations {
         entries.push(named(
             &format!("nominal:{name}"),
             "declaration",
@@ -195,7 +206,22 @@ fn basis_entries(inputs: &IdentityInputs<'_>) -> Vec<CanonicalBasisEntry> {
             entries.push(node_entry(ordinal, "literal", value));
         }
     }
-    entries
+    (entries, language)
+}
+
+/// The newest language version any reached type, builtin, or closure
+/// function requires. O(nodes + closure).
+fn program_language(inputs: &IdentityInputs<'_>, types: LanguageVersion) -> LanguageVersion {
+    let builtins = inputs
+        .program
+        .nodes()
+        .iter()
+        .filter_map(|node| match node.op {
+            Op::Builtin(builtin) => Some(builtin.language()),
+            _ => None,
+        });
+    let functions = inputs.closure.iter().map(|f| f.identity().language);
+    builtins.chain(functions).fold(types, LanguageVersion::max)
 }
 
 fn named(locus: &str, kind: &'static str, value: CanonicalBasisValue) -> CanonicalBasisEntry {

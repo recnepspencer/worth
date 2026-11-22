@@ -62,4 +62,5 @@ declaration_families! {
     Effect => "effect",
     ProjectedMemberDomain => "projected-member-domain",
     ScalarAspectField => "scalar-aspect-field",
+    ApplicationNameScheme => "application-name-scheme",
 }

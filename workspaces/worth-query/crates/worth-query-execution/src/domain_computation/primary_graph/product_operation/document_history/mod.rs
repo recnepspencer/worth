@@ -1,19 +1,36 @@
 //! The attached document owns its actual head and exact model association.
-mod allocation;
-pub(in crate::domain_computation::primary_graph) mod authority_lifetime;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::allocation;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::authority_lifetime;
 mod candidate;
 mod capture_pause;
 mod close;
 mod constraint;
 mod context;
 mod context_pause;
-mod current_head;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::current_head;
 pub use context::{WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits};
 #[doc(hidden)]
 pub use context_pause::WorthQueryHistoryContextRefreshPauseForTest;
 mod denial;
 mod description;
-pub(in crate::domain_computation::primary_graph) mod discovery_recipes;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::discovery_recipes;
+#[path = "discovery_recipes/enrollment.rs"]
+mod discovery_recipes_enrollment;
+
+pub(in crate::domain_computation::primary_graph) fn history_discovery_recipe_key<C: 'static>(
+    profile: &WorthQueryHistoryOutputProfile,
+    parent: (
+        crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding,
+        [u8; 32],
+    ),
+) -> discovery_recipes::HistoryDiscoveryRecipeKey {
+    discovery_recipes::HistoryDiscoveryRecipeKey::from_parts::<C>(
+        profile.discovery_recipe_tree_identity(),
+        profile.source_intent().source_subject(),
+        profile.source_intent().source_partition(),
+        parent,
+    )
+}
 pub use description::{
     WorthQueryDocumentHistoryIdentity, WorthQueryHistoryCommandContextDenial,
     WorthQueryHistoryDescriptionContext,
@@ -27,13 +44,11 @@ pub use group::{
     WorthQueryHistoryGroupCandidateCreation, WorthQueryHistoryGroupMemberAdmission,
 };
 mod journal;
-pub(crate) mod model;
+pub(crate) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::model;
 pub(crate) mod navigation;
+pub(in crate::domain_computation::primary_graph) use navigation::HistoryDependentSource;
 #[doc(hidden)]
 pub use navigation::WorthQueryHistoryNavigationPauseForTest;
-pub(in crate::domain_computation::primary_graph) use navigation::{
-    HistoryBorrowedReadStop, HistoryDependentSource, HistoryProducerCutover,
-};
 pub(in crate::domain_computation::primary_graph) use navigation::{
     HistoryOutputLookup, HistoryOutputLookupPhase,
 };
@@ -56,7 +71,7 @@ mod operation_scope;
 pub(in crate::domain_computation::primary_graph) use operation_scope::HistoryOperationScope;
 mod page_pause;
 mod paging;
-mod preview;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::preview;
 mod receiver_pause;
 mod retention_pause;
 #[doc(hidden)]
@@ -76,7 +91,7 @@ pub use recording_outputs::{
 mod selection;
 mod source_evidence;
 pub use source_evidence::WorthQueryHistorySourceEvidence;
-mod step;
+pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::document_history::step;
 pub use candidate::WorthQueryDocumentHistoryCandidateDenial;
 #[doc(hidden)]
 pub use capture_pause::WorthQueryDocumentHistoryCapturePauseForTest;

@@ -39,6 +39,7 @@ pub(crate) enum ApplicationSchemaCompilationDenial {
     Query(WorthQueryApplicationQueryInstallationDenial),
     Operation(crate::application_operation::WorthQueryApplicationOperationInstallationDenial),
     ValueBinding(WorthQueryApplicationValueBindingInstallationDenial),
+    Naming(worth_query_declaration::facade::application_naming::ApplicationNameSchemeDenial),
     DerivedSourceUnavailable(String),
 }
 
@@ -67,6 +68,7 @@ pub(crate) struct CompiledApplicationSchema<Schema> {
     pub capability_registry: ApplicationCapabilityRegistry,
     pub authorization_policy_registry: ApplicationAuthorizationPolicyRegistry,
     pub value_binding_catalog: WorthQueryInstalledApplicationValueBindingCatalog,
+    pub name_scheme_catalog: crate::naming::InstalledNameSchemeCatalog,
     pub native_contract_catalog: Arc<WorthQueryInstalledApplicationSchemaContractCatalog>,
     pub portable_native_contracts: Arc<Vec<WorthQueryPortableNativeAspectContractRecord>>,
     pub portable_operation_contracts:
@@ -85,6 +87,9 @@ where
         .map_err(ApplicationSchemaCompilationDenial::Contribution)?;
     derived_sources::validate(input.declaration.erased().members())
         .map_err(ApplicationSchemaCompilationDenial::DerivedSourceUnavailable)?;
+    let name_scheme_catalog =
+        crate::naming::compile_name_scheme_catalog(input.declaration.erased())
+            .map_err(ApplicationSchemaCompilationDenial::Naming)?;
     let binding_identity = ApplicationSchemaBindingIdentity::from_installed_parts(
         input.package_authority.runtime_ordinal,
         input.package_authority.generation.ordinal(),
@@ -127,6 +132,7 @@ where
         capability_registry,
         authorization_policy_registry,
         value_binding_catalog,
+        name_scheme_catalog,
         native_contract_catalog: input.native_contract_catalog,
         portable_native_contracts: input.portable_native_contracts,
         portable_operation_contracts: input.portable_operation_contracts,

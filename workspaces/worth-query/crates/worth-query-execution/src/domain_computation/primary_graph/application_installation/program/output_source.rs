@@ -7,6 +7,9 @@ use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
     ApplicationProgramOutputsShape,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 mod correction;
 mod discovered_envelope;
@@ -53,7 +56,7 @@ where
         };
         let receipt = source.into();
         let execution = phase
-            .execution_request_for(&self.runtime().runtime.product_runtime)
+            .execution_request_for(self.runtime().inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     Kind::ExecutionRequest(cause.into()),
@@ -177,26 +180,41 @@ where
         let source_preparation = self
             .backing
             .runtime()
+            .inner
             .runtime
-            .output_demands
+            .output_demands_ref()
             .begin_source_preparation(program.product_branch().occurrence());
         let branch = program.product_branch();
         let selected_program = presented.rendering().clone();
         let correction = match &causality {
-            crate::domain_computation::application_aftermath::ApplicationCommitCausality::RecordedCorrection(source) => Some(recovery::UnpublishedCorrectionCommand::new(source.intent(), &idempotency)),
+            crate::domain_computation::application_aftermath::ApplicationCommitCausality::RecordedCorrection(source) => Some(recovery::UnpublishedCorrectionCommand::new(
+                crate::domain_computation::primary_graph::attempt_ports::correction_source::downcast_prepared_correction_source(source.as_ref()).intent(),
+                &idempotency,
+            )),
             _ => None,
         };
         let idempotency = correction
             .as_ref()
             .map_or(idempotency, |command| command.bind(idempotency));
-        let discovery_recipe = match program.synchronous_outputs.iter().find_map(|root| root.source_recipe()) {
+        use worth_query_execution_attempt::facade::ports::EffectProgramInternalPort as _;
+        let discovery_recipe = match program.synchronous_outputs().iter().find_map(|root| {
+            root.downcast_ref::<crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::CapturedSynchronousOutputs>()
+                .expect("synchronous outputs slot always holds CapturedSynchronousOutputs")
+                .source_recipe()
+        }) {
             Some(Ok(value)) => Some(value.clone()),
             None => None,
             Some(Err(_)) => return Ok((crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome::Denied(crate::domain_computation::primary_graph::WorthQueryApplicationCommitDenial::required_output_preparation_missing(Source::IDENTITY)),None,None)),
         };
         let pending = WorthQueryUnpublishedProgramOutputSource {
             correction,
-            runtime_authority: self.backing.runtime().runtime.authority_identity().as_u64(),
+            runtime_authority: self
+                .backing
+                .runtime()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64(),
             revision: worth_foundational::facade::CanonicalDigestId::new(
                 *presented.revision().as_bytes(),
             ),

@@ -5,6 +5,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryCompletedRecordingOutputs, WorthQueryCompletedRequiredOutputs,
     WorthQueryHistoryRecordingOutputOrigin,
 };
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::CompletedRequiredOutputsInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
     WorthQueryDocumentHistory<'runtime, S, H>
 {

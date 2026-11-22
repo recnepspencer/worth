@@ -3,6 +3,10 @@ mod events;
 mod graph;
 mod invariants;
 mod metrics;
+mod name_resolution;
+mod naming;
+mod naming_denial;
+mod postures;
 mod resolution;
 
 pub use artifacts::{
@@ -10,7 +14,7 @@ pub use artifacts::{
     LineageCheckpointDigestBasis, LineageDecisionKind, LineageDecisionLogDigestBasis,
     LineageDecisionRecord, LineageDigestBasis, LineageEventBatchDigestBasis,
 };
-pub use events::{LineageEventKind, LineageEventRecord};
+pub use events::{LineageEventKind, LineageEventRecord, LineageSubject};
 pub use graph::{
     LineageDivergenceMetrics, LineageDivergenceRequest, LineageDivergenceSummary,
     LineageDivergenceTraversalBasis, LineageGraphDigestBasis, LineageGraphDigestMode,
@@ -19,6 +23,22 @@ pub use graph::{
 };
 pub use invariants::LineageInvariant;
 pub use metrics::LineageFinalizationCounters;
+pub use name_resolution::{
+    PersistentNameKey, PersistentNameResolution, PersistentNameResolutionDenial,
+    PersistentNameResolutionMetrics, PersistentNameResolutionOutcome, PersistentNameSelection,
+    PersistentNameTarget,
+};
+pub use naming::{
+    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry, PersistentNameBirthParts,
+    PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameDiscriminatorReference,
+    PersistentNameHolder, PersistentNameIdentity, PersistentNameReferenceBasis,
+    PersistentNameSubjectKind,
+};
+pub use naming_denial::{DiscriminatorBasisDenialReason, LineageNameDenial, LineagePostureKind};
+pub use postures::{
+    LineageCommitPostureInput, LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget,
+    LineageSplitChild,
+};
 pub use resolution::{
     HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,
     HistoricalLineageResolutionMetrics, HistoricalResolutionBoundednessBasis,

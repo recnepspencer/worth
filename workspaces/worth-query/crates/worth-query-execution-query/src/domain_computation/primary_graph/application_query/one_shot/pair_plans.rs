@@ -1,0 +1,64 @@
+//! Owner-held application plans for a closed, pinned pair read.
+
+use super::super::batch::PlannedBatchItem;
+use super::super::{
+    WorthQueryAdmittedApplicationQueryPlan, WorthQueryApplicationQueryBatchAdmission,
+};
+
+/// Two admitted public reads whose rooted identity is bound by Query before
+/// dispatch. Application projection stays on the caller's thread. The second
+/// scope must be the first row's declared identity field on the same basis.
+/// No callback can select a new basis or issue another read on a worker.
+pub struct WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C> {
+    pub(crate) first: WorthQueryAdmittedApplicationQueryPlan<'a, S, FQ, FP, FR, A, I, C>,
+    pub(crate) second: WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, C>,
+    pub(crate) batch: Option<WorthQueryApplicationQueryBatchAdmission>,
+    pub(crate) first_batch: Option<PlannedBatchItem>,
+    pub(crate) second_batch: Option<PlannedBatchItem>,
+}
+
+impl<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
+    WorthQueryDerivedPairReadPlans<'a, S, FQ, FP, FR, SQ, SP, SR, A, I, C>
+{
+    /// Carry both issued plans to the request's owner-side preparation stage.
+    /// Query checks their identities and constructs the closed worker binding
+    /// only inside the reconstruction request.
+    pub fn new(
+        first: WorthQueryAdmittedApplicationQueryPlan<'a, S, FQ, FP, FR, A, I, C>,
+        second: WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, C>,
+    ) -> Self {
+        Self {
+            first,
+            second,
+            batch: None,
+            first_batch: None,
+            second_batch: None,
+        }
+    }
+    /// Carry the same genuine shared read loan into closed pair preparation.
+    /// Issued planned items are checked against this loan before dispatch.
+    pub fn in_batch(
+        first: WorthQueryAdmittedApplicationQueryPlan<'a, S, FQ, FP, FR, A, I, C>,
+        second: WorthQueryAdmittedApplicationQueryPlan<'a, S, SQ, SP, SR, A, I, C>,
+        batch: &WorthQueryApplicationQueryBatchAdmission,
+    ) -> Self {
+        Self {
+            first,
+            second,
+            batch: Some(batch.clone()),
+            first_batch: None,
+            second_batch: None,
+        }
+    }
+}
+
+/// Owner-held pins for the fixed first/second query contracts of one map.
+#[derive(Default)]
+pub struct WorthQueryPairReadPins {
+    pub(crate) first: Option<
+        std::sync::Arc<crate::domain_computation::provider_session::WorthQueryPreparedQueryPin>,
+    >,
+    pub(crate) second: Option<
+        std::sync::Arc<crate::domain_computation::provider_session::WorthQueryPreparedQueryPin>,
+    >,
+}

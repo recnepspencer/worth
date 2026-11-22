@@ -78,7 +78,7 @@ where
 {
 }
 
-pub(in crate::domain_computation::primary_graph::application_contribution) fn install<S, C>(
+pub fn install<S, C>(
     configuration: impl WorthQueryFeatureConfiguration<S, C>,
     setup: &mut WorthQueryApplicationContributionSetup<'_, S>,
 ) -> Result<(), Denial>

@@ -1,0 +1,196 @@
+//! Courts over the demand's authentic retained receipt; no accessor or minted proof.
+use super::own_effect_observation::{self, Stage};
+use super::*;
+use crate::domain_computation::primary_graph::WorthQueryApplicationOutputDemandSource;
+use crate::domain_computation::primary_graph::{
+    application_attempt::WorthQueryApplicationObservedFact as Fact,
+    application_output_demand::{OutputRowStage, WorthQueryAcceptedOutputAuthority},
+    WorthQueryAdvancementPhase, WorthQueryApplicationCommitReceipt,
+    WorthQueryPrimaryGraphApplicationRuntime,
+};
+use worth_query_admission::facade::authenticated_principal::{
+    WorthQueryAuthenticatedExternalPrincipal, WorthQueryRequestScope,
+};
+use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+impl<Schema, Family> WorthQueryAdmittedOutputDemand<Schema, Family>
+where
+    Schema: ApplicationSchema + 'static,
+    Family: WorthQueryProducerOutputFamily<Schema> + 'static,
+    FamilySourceValue<Schema, Family>:
+        crate::domain_computation::primary_graph::WorthQueryApplicationProjection<
+                Schema,
+                FamilySourceQuery<Schema, Family>,
+            > + 'static,
+    FamilySourceQuery<Schema, Family>: 'static,
+    WorthQueryAdmittedOutputDemand<Schema, Family>: Send,
+{
+    pub fn assert_born_stale_absence_for_test(
+        &self,
+        runtime: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: worth_relational::facade::identity::EntityId,
+        locator: &worth_foundational::facade::AspectFieldLocator,
+        inspect: impl FnOnce(&WorthQueryApplicationCommitReceipt),
+        required_disclosure: Option<(
+            WorthQueryApplicationOutputDemandSource<
+                FamilySourceQuery<Schema, Family>,
+                FamilySourceValue<Schema, Family>,
+            >,
+            &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+            &WorthQueryRequestScope,
+        )>,
+    ) {
+        let runtime = runtime.runtime_inner();
+        let stages = own_effect_observation::take();
+        eprintln!("own-effect stages: {stages:?}");
+        assert_eq!(
+            stages,
+            [
+                Stage::Published,
+                Stage::DeliveryStarted,
+                Stage::Delivered,
+                Stage::Ready,
+                Stage::ReadySuperseded,
+                Stage::OwnPublicationContinuation,
+                Stage::DisclosureExhausted
+            ],
+            "identify the exact unfinished Progressed branch before any successor advance"
+        );
+        assert!(
+            !self.settled && self.settled_at_observation.is_none(),
+            "Progressed is not completion"
+        );
+        assert_eq!(self.producer_contacts_in_this_demand, 1);
+        assert_eq!(
+            runtime.producer_publications_at_root_on_this_thread_for_test(root),
+            1
+        );
+        assert_eq!(
+            runtime.producer_recorded_publications_at_root_on_this_thread_for_test(root),
+            1
+        );
+        let interest = self.interest.as_ref().expect("original live Interest");
+        let OutputRowStage::Ready(completion) = runtime.runtime.output_demands.row_stage(interest)
+        else {
+            panic!("the original row must retain its actual Ready, not an inferred commit");
+        };
+        let WorthQueryAcceptedOutputAuthority::Committed(receipt) = &completion.authority else {
+            panic!("performed original receipt, never stable alias or reconstruction");
+        };
+        let completed = runtime
+            .runtime
+            .primary_provider
+            .observe_completed_application(receipt.commit_reference())
+            .unwrap();
+        let facts = completed.commit_evidence().rebased_source_facts().unwrap();
+        assert!(completed.commit_evidence().source_facts_superseded_by_own_effect().any(|ordinal|
+            matches!(&facts[ordinal], Fact::OptionalAspectAbsent { entity_id, locator: read, .. }
+                if *entity_id == root && read == locator)), "the original selected-field aspect absence really moved");
+        let current = runtime
+            .on_branch(receipt.product_branch())
+            .select_with_request(execution)
+            .unwrap();
+        assert!(
+            receipt
+                .committed_product_publication()
+                .is_selected_at(current.product().observation()),
+            "own exact publication remains selected"
+        );
+        let refusal = current
+            .require_current_output_receipts(phase, [receipt])
+            .unwrap_err();
+        assert_eq!(refusal.kind(), WorthQueryOutputDemandDenialKind::Superseded);
+        inspect(receipt);
+        if let Some((source, principal, scope)) = required_disclosure {
+            self.assert_required_admission(runtime, phase, execution, principal, scope, source);
+        }
+    }
+    pub fn assert_preserve_successor_for_test(
+        &self,
+        runtime: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
+        root: worth_relational::facade::identity::EntityId,
+        contacts: usize,
+    ) {
+        let runtime = runtime.runtime_inner();
+        let stages = own_effect_observation::take();
+        eprintln!("successor stages: {stages:?}");
+        assert_eq!(stages.iter().filter(|s| **s == Stage::Published).count(), 1);
+        assert_eq!(stages.last(), Some(&Stage::ReadySettled));
+        assert!(!stages.contains(&Stage::DisclosureExhausted));
+        assert_eq!(self.producer_contacts_in_this_demand, contacts);
+        let publications = u64::try_from(contacts).expect("fixture publication count fits u64");
+        assert_eq!(
+            runtime.producer_publications_at_root_on_this_thread_for_test(root),
+            publications
+        );
+        assert_eq!(
+            runtime.producer_recorded_publications_at_root_on_this_thread_for_test(root),
+            publications
+        );
+        assert!(self.settled);
+    }
+    pub fn assert_changed_successor_for_test(
+        &self,
+        runtime: &dyn crate::ports::ApplicationRuntimeRef<Schema>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: worth_relational::facade::identity::EntityId,
+        inspect: impl FnOnce(&WorthQueryApplicationCommitReceipt),
+    ) {
+        let runtime = runtime.runtime_inner();
+        let stages = own_effect_observation::take();
+        assert_eq!(stages.iter().filter(|s| **s == Stage::Published).count(), 1);
+        assert!(stages.contains(&Stage::ReadySuperseded));
+        assert!(stages.contains(&Stage::OwnPublicationContinuation));
+        assert_eq!(stages.last(), Some(&Stage::DisclosureExhausted));
+        assert!(!self.settled && self.settled_at_observation.is_none());
+        assert_eq!(self.producer_contacts_in_this_demand, 2);
+        assert_eq!(
+            runtime.producer_publications_at_root_on_this_thread_for_test(root),
+            2
+        );
+        assert_eq!(
+            runtime.producer_recorded_publications_at_root_on_this_thread_for_test(root),
+            2
+        );
+        let interest = self.interest.as_ref().expect("actual P2 Interest");
+        let OutputRowStage::Ready(completion) = runtime.runtime.output_demands.row_stage(interest)
+        else {
+            panic!("P2 must retain its own completed publication");
+        };
+        let WorthQueryAcceptedOutputAuthority::Committed(receipt) = &completion.authority else {
+            panic!("P2 actually performed its handler");
+        };
+        assert!(
+            completion.original_producing_publication().is_none(),
+            "P2's canonical output mutation must reset P1 before renewal"
+        );
+        let completed = runtime
+            .runtime
+            .primary_provider
+            .observe_completed_application(receipt.commit_reference())
+            .unwrap();
+        let facts = completed.commit_evidence().rebased_source_facts().unwrap();
+        assert!(completed.commit_evidence().source_facts_superseded_by_own_effect()
+            .any(|ordinal| matches!(&facts[ordinal], Fact::SourceFieldRevision { entity_id, native_revision: Some(_), .. }
+                if *entity_id == root)),
+            "P2 actually moved a field read by the original query, not merely a rebased handler read");
+        let selected = runtime
+            .on_branch(receipt.product_branch())
+            .select_with_request(execution)
+            .unwrap();
+        assert!(receipt
+            .committed_product_publication()
+            .is_selected_at(selected.product().observation()));
+        assert_eq!(
+            selected
+                .require_current_output_receipts(phase, [receipt])
+                .unwrap_err()
+                .kind(),
+            WorthQueryOutputDemandDenialKind::Superseded
+        );
+        inspect(receipt);
+    }
+}

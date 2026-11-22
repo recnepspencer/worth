@@ -1,0 +1,66 @@
+use super::*;
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+
+#[allow(clippy::too_many_arguments)]
+pub fn observe_operation_approval_inputs(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    compiled: &crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowDefinition,
+    layout: &crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
+    graph_layout: &crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout,
+    resource: worth_relational::facade::identity::EntityId,
+    instance: &super::super::super::PublishedWorkflowInstanceRef,
+    progress: &crate::domain_computation::primary_graph::workflow::instance::WorkflowInstanceProgress,
+    approval: worth_relational::facade::identity::EntityId,
+    target_operation: &str,
+    handle: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphIntegrationHandle,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    observation_request: &WorthQueryRequestScope,
+) -> Result<
+    (
+        Vec<crate::domain_computation::primary_graph::WorthQueryApplicationObservedFact>,
+        crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis,
+    ),
+    WorthQueryApplicationAttemptDenial,
+> {
+    let observed = inputs::observe(
+        execution,
+        compiled,
+        layout,
+        graph_layout,
+        resource,
+        instance,
+        progress,
+        approval,
+        None,
+        handle,
+        snapshot,
+        observation_request,
+    )?;
+    let mut facts = observed.facts;
+    facts.extend(observed.currentness);
+    let transition = progress
+        .latest_transition(approval)
+        .ok_or_else(|| affinity("approved transition is absent"))?;
+    let evidence = observed
+        .evidence
+        .iter()
+        .map(|entry| entry.evidence.entity)
+        .collect::<Vec<_>>();
+    let authority = handle.with_runtime(execution, |runtime| {
+        super::super::super::workflow_instance_observation::observe_retained_approval_binding(
+            execution,
+            runtime,
+            snapshot,
+            layout,
+            graph_layout,
+            transition.entity(),
+            observed.proposal_entity,
+            &evidence,
+            target_operation,
+            &mut facts,
+        )
+    })?;
+    check_request_live(observation_request, "workflow retained evidence")?;
+    Ok((facts, authority))
+}

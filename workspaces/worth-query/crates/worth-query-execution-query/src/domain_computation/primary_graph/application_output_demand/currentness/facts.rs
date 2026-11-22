@@ -1,0 +1,76 @@
+use super::*;
+use crate::domain_computation::primary_graph::output_reuse;
+pub fn require_witnessed_output(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    relational: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    witness: Option<
+        &std::sync::Arc<
+            std::sync::OnceLock<
+                crate::domain_computation::primary_graph::output_lineage::SealedNativeOutputWitness,
+            >,
+        >,
+    >,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    use worth_relational::facade::mvcc::CompanionPreflightStop;
+    let witness = witness
+        .and_then(|witness| witness.get())
+        .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable))?;
+    match witness.unchanged_in(relational, snapshot, execution) {
+        Err(CompanionPreflightStop::Execution(cause)) => Err(output_reuse::read_denial(cause)),
+        Ok(true) => Ok(()),
+        Ok(false) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
+        Err(CompanionPreflightStop::ManagedSourceChanged) => Err(denial(WorthQueryOutputDemandDenialKind::Superseded)),
+        Err(CompanionPreflightStop::ManagedSourceNotPrepared) => Err(denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)),
+
+        Err(CompanionPreflightStop::Interrupted(event)) => {
+            Err(output_reuse::interruption_denial(event))
+        }
+        Err(CompanionPreflightStop::WorkCounterOverflow) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::WorkCounterOverflow)),
+        Err(CompanionPreflightStop::PreparationMemoryCounterOverflow) => Err(output_reuse::read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow)),
+        Err(CompanionPreflightStop::TopologyPending | CompanionPreflightStop::SelectedSourceMismatch | CompanionPreflightStop::SelectedPositionUnavailable { .. } | CompanionPreflightStop::ForeignCell | CompanionPreflightStop::RegistrationChanged) => Err(denial(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable)),
+    }
+}
+
+pub fn require_current_facts(
+    verification: &mut crate::domain_computation::primary_graph::output_reuse::RetainedFactVerification<'_, '_, '_>,
+    facts: &crate::domain_computation::primary_graph::output_lineage::ComparableSourceFacts,
+) -> Result<(), WorthQueryOutputDemandDenial> {
+    match first_moved_fact_in(verification, facts.iter()) {
+        Err(RetainedFactStop::ManagedIndex(cause)) => {
+            Err(WorthQueryOutputDemandDenial::managed_index(
+                cause,
+                "settled managed source consistency",
+            ))
+        }
+        Ok(None) => Ok(()),
+        Err(RetainedFactStop::OutputObservation(stop)) => Err(output_reuse::verification_denial(
+            stop,
+            "settled source observation",
+        )),
+        Ok(Some(moved)) => Err(denial_subject(
+            WorthQueryOutputDemandDenialKind::Superseded,
+            moved.locator_identity(),
+        )),
+        Err(RetainedFactStop::Execution(cause)) => Err(output_reuse::read_denial(cause)),
+        Err(RetainedFactStop::Interrupted(event)) => Err(output_reuse::interruption_denial(event)),
+        Err(RetainedFactStop::Work) => {
+            Err(denial(WorthQueryOutputDemandDenialKind::WorkBudgetExceeded))
+        }
+        Err(RetainedFactStop::Refused(refusal)) => Err(denial_subject(
+            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+            format!("comparison refused: {refusal:?}"),
+        )),
+        Err(RetainedFactStop::Unavailable(fact)) => Err(denial_subject(
+            WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable,
+            fact.locator_identity(),
+        )),
+    }
+}
+
+fn denial_subject(
+    kind: WorthQueryOutputDemandDenialKind,
+    fact: String,
+) -> WorthQueryOutputDemandDenial {
+    WorthQueryOutputDemandDenial::new(kind, format!("settled output fact is not current: {fact}"))
+}

@@ -5,6 +5,14 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryExpectedProductBranch,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::mvcc::{
     RelationalRetainedEntitySelectionPreparationError as Preparation, RelationalTransactionIntent,
@@ -28,10 +36,14 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                 .as_ref()
                 .expect("new historical work retains its original source");
             self.application
+                .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .require_live_product_occurrence(
-                    source.source.product_observation().lifecycle_incarnation(),
+                    source
+                        .source()
+                        .product_observation()
+                        .lifecycle_incarnation(),
                 )
                 .map_err(Denial::ProductAdmission)?;
         }
@@ -140,7 +152,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
     > {
         use WorthQueryHistoryNavigationDenial as Denial;
         let execution = phase
-            .checked_execution_request_for(&self.application.runtime.product_runtime)
+            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let current = self
             .application
@@ -153,10 +165,17 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .expect("pending selection owns the original retained source");
         let historical = self
             .application
-            .select_application_read_observation(phase, &source.source)
+            .select_application_read_observation(phase, &source.source())
             .map_err(Denial::ProductAdmission)?;
-        let graph = &self.application.runtime.primary_provider.graph;
-        let publisher = graph.application_publication.as_deref();
+        let graph = &self
+            .application
+            .inner
+            .runtime
+            .primary_provider_ref()
+            .graph_ref();
+        let publisher = graph
+            .application_publication_ref()
+            .map(std::sync::Arc::as_ref);
         let (prepared, custody) = graph.with_runtime(&execution, |native| {
             let transaction = native
                 .begin_branch_transaction(
@@ -172,7 +191,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                         current.product().relational_basis(),
                         historical.product().relational_basis(),
                         ownership,
-                        graph.layout.installed_history_ownership(),
+                        graph.layout_ref().installed_history_ownership(),
                         self.model.entity(),
                     )
                     .map_err(Denial::OwnedGraph)?;
@@ -205,14 +224,14 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
                         )
                     })?,
                 lineage: graph
-                    .output_lineage
+                    .output_lineage_ref()
                     .lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
                     .prepare_historical_transport(
                         &execution,
-                        self.application.runtime.authority_identity().as_u64(),
-                        &self.application.installed_schema.binding_identity(),
-                        &graph.layout,
+                        self.application.inner.runtime.authority_identity().as_u64(),
+                        &self.application.inner.installed_schema.binding_identity(),
+                        &graph.layout_ref(),
                         historical.product().observation(),
                         custody.routes.iter(),
                     )

@@ -4,6 +4,9 @@ use crate::basis::WorthQueryProductBranch;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::{
     ObservedProductBranches, ProductBranchInventoryDenial, RuntimeWorldServiceDenial,
@@ -33,12 +36,13 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'_, Schema>
         &self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryProductBranchInventory, WorthQueryProductBranchInventoryDenial> {
-        let runtime = &self.application.runtime.product_runtime;
+        let runtime = self.application.inner.runtime.product_runtime_ref();
         let execution = phase
             .execution_request_for(runtime)
             .map_err(WorthQueryProductBranchInventoryDenial::ForeignPhase)?;
+        use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
         let observed = runtime
-            .owner
+            .owner_ref()
             .observation_port()
             .observe_installed_product_branches(&execution)
             .map_err(WorthQueryProductBranchInventoryDenial::World)?;

@@ -1,0 +1,242 @@
+use crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload;
+pub mod effect_accumulator;
+pub use effect_accumulator::WorthQueryExpectedEffectStepPreparationWork;
+pub mod effect_lowering;
+pub mod registration;
+
+pub use registration::WorthQueryPrimaryGraphApplicationAttempt;
+pub use registration::WorthQueryProviderRegistrationInspectionPermit;
+pub use registration::WorthQueryRegisteredProviderAttemptSeal;
+
+#[cfg(test)]
+mod unique_value_tests;
+
+use worth_query_installation::facade::{
+    InstalledCorrectionMechanism, InstalledPreImageDemand, WorthQueryInstalledAftermathContract,
+};
+
+use self::effect_accumulator::WorthQueryProviderEffectAccumulator;
+use super::effect_program::WorthQueryApplicationRealizedEffect;
+use super::fact::WorthQueryApplicationObservedFact;
+use super::{
+    WorthQueryAdmittedApplicationEmissionBatch, WorthQueryApplicationAttemptDenial,
+    WorthQueryApplicationAttemptDenialKind, WorthQueryApplicationEmission,
+};
+
+pub struct WorthQueryPreparedApplicationProviderAttempt {
+    workflow_origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
+    local_action_settlement: Option<super::workflow_transition_program::LocalActionSettlementProof>,
+    required_output_demand: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
+    installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    facts: FactPayload,
+    application_projection: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection>>,
+    original_read: Option<std::sync::Arc<crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead>>,
+    consumed_outputs: Vec<crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence>,
+    effects: effect_accumulator::WorthQueryRegisteredProviderEffects,
+    preimage_demand: Option<InstalledPreImageDemand>,
+    conditional_definition:
+        Option<crate::domain_computation::primary_graph::product_operation::WorthQueryCheckedApplicationConditionalDefinition>,
+    retain_output_demand_observation: bool,
+    retain_client_observation: bool,
+    producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    output_currentness_facts: Option<super::OutputCurrentnessFacts>,
+}
+
+impl WorthQueryPreparedApplicationProviderAttempt {
+    pub fn with_content_attachments(
+        mut self,
+        attachments: worth_relational::facade::content::RelationalContentAttachments,
+    ) -> Self {
+        self.effects.bind_content_attachments(attachments);
+        self
+    }
+
+    pub fn with_workflow_origin(
+        mut self,
+        origin: Option<crate::domain_computation::primary_graph::workflow::operation_output::WorkflowOperationOrigin>,
+    ) -> Self {
+        self.workflow_origin = origin;
+        self
+    }
+    pub fn with_local_action_settlement(
+        mut self,
+        proof: Option<super::workflow_transition_program::LocalActionSettlementProof>,
+    ) -> Self {
+        self.local_action_settlement = proof;
+        self
+    }
+    pub fn with_body_external_emission(
+        mut self,
+        selection: Option<crate::domain_computation::primary_graph::operation_body::emission::BodyExternalEffectSelection>,
+    ) -> Self {
+        self.effects.bind_body_external_emission(selection);
+        self
+    }
+    pub fn with_required_output_demand(
+        mut self,
+        context: Option<crate::domain_computation::primary_graph::RequiredOutputDemandContext>,
+    ) -> Self {
+        self.required_output_demand = context;
+        self
+    }
+
+    pub fn register<'run, Schema, Operation, Input, Scope>(
+        self,
+        staged: crate::domain_computation::WorthQuerySessionBoundReadsAndEffects<'run>,
+        authorization: crate::domain_computation::authorization::WorthQueryProviderAuthorizationDecisionFacts,
+        attempt_basis: super::provider_execution::WorthQueryApplicationAttemptBasis,
+        context: super::provider_execution::WorthQueryProviderAttemptRegistrationContext<
+            '_,
+            Schema,
+            Operation,
+            Input,
+            Scope,
+        >,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> Result<
+        super::provider_execution::WorthQueryRegisteredProviderAttempt<'run>,
+        super::provider_execution::WorthQueryProviderProgressionOutcome,
+    > {
+        registration::register_provider_attempt(
+            self,
+            staged,
+            authorization,
+            attempt_basis,
+            context,
+            allocation_policy,
+        )
+    }
+}
+
+/// Derive the retention demand from the admitted operation's compiled aftermath
+/// (Q8.26-C1).
+///
+/// The demand is a property of the installed contract. Nothing about retention
+/// is a caller's to supply.
+pub fn installed_preimage_demand(
+    aftermath: Option<&WorthQueryInstalledAftermathContract>,
+) -> Option<InstalledPreImageDemand> {
+    match aftermath?.mechanism()? {
+        InstalledCorrectionMechanism::RecordedInverse(inverse) => {
+            (!inverse.preimage_demand().is_empty()).then(|| inverse.preimage_demand().clone())
+        }
+        InstalledCorrectionMechanism::Compensation(_) => None,
+    }
+}
+
+pub fn prepare_provider_attempt<'layout>(
+    unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
+        'layout,
+    >,
+    contracts: &'layout effect_lowering::AspectContracts<'layout>,
+    mutation_partition: worth_relational::facade::identity::PartitionId,
+    application_effect_count: usize,
+    installed_read_scopes: crate::domain_computation::primary_graph::application_attempt::CompletedReadScopes,
+    completed_facts: super::CompletedFactRoutes,
+    application_projection: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::CompletedFactProjection,
+        >,
+    >,
+    original_read: Option<
+        std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::CompletedOriginalRead,
+        >,
+    >,
+    consumed_outputs: Vec<
+        crate::domain_computation::primary_graph::invariant_projection::ConsumedOutputEvidence,
+    >,
+    effects: Vec<WorthQueryApplicationRealizedEffect>,
+    preimage_demand: Option<InstalledPreImageDemand>,
+    conditional_definition: Option<
+        crate::domain_computation::primary_graph::product_operation::WorthQueryCheckedApplicationConditionalDefinition,
+    >,
+    output_correspondence: super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    retain_output_demand_observation: bool,
+    retain_client_observation: bool,
+    producer_required_invariants:
+        &'static [crate::domain_computation::primary_graph::WorthQueryProducerInvariantRequirement],
+    output_currentness_facts: Option<super::OutputCurrentnessFacts>,
+) -> Result<WorthQueryPreparedApplicationProviderAttempt, WorthQueryApplicationAttemptDenial> {
+    let (facts, effect_routes) = completed_facts.into_parts();
+    let mut accumulator = WorthQueryProviderEffectAccumulator::new(
+        &facts,
+        unique_fields,
+        contracts,
+        &effects,
+        mutation_partition,
+        application_effect_count,
+        effect_routes,
+    );
+    for effect in effects {
+        accumulator.add_effect(effect)?;
+    }
+    let completed = accumulator.finish(output_correspondence)?;
+    Ok(WorthQueryPreparedApplicationProviderAttempt {
+        workflow_origin: None,
+        local_action_settlement: None,
+        required_output_demand: None,
+        installed_read_scopes,
+        facts,
+        application_projection,
+        original_read,
+        consumed_outputs,
+        effects: completed,
+        preimage_demand,
+        conditional_definition,
+        retain_output_demand_observation,
+        retain_client_observation,
+        producer_required_invariants,
+        output_currentness_facts,
+    })
+}
+
+pub fn prepare_program_migration_batch<'layout>(
+    unique_fields: crate::domain_computation::primary_graph::schema_layout::WorthQueryUniqueFields<
+        'layout,
+    >,
+    mutation_partition: worth_relational::facade::identity::PartitionId,
+    completed_facts: super::CompletedFactRoutes,
+    contracts: &'layout effect_lowering::AspectContracts<'layout>,
+    effects: Vec<WorthQueryApplicationRealizedEffect>,
+) -> Result<
+    worth_relational::facade::transactions::WorkerIntentBatch,
+    WorthQueryApplicationAttemptDenial,
+> {
+    let (facts, routes) = completed_facts.into_parts();
+    let mut accumulator = WorthQueryProviderEffectAccumulator::new(
+        &facts,
+        unique_fields,
+        contracts,
+        &effects,
+        mutation_partition,
+        effects.len(),
+        routes,
+    );
+    for effect in effects {
+        accumulator.add_effect(effect)?;
+    }
+    accumulator
+        .finish(
+            super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate::default(),
+        )?
+        .into_migration_batch()
+        .map_err(|_| progression_denial())
+}
+
+pub(super) fn progression_denial() -> WorthQueryApplicationAttemptDenial {
+    WorthQueryApplicationAttemptDenial::new(
+        WorthQueryApplicationAttemptDenialKind::IncompleteEffectBasis,
+        "provider progression",
+    )
+}
+
+pub(super) fn invalid_emission_denial() -> WorthQueryApplicationAttemptDenial {
+    WorthQueryApplicationAttemptDenial::new(
+        WorthQueryApplicationAttemptDenialKind::InvalidEffectValue,
+        "application emission batch",
+    )
+}
+
+pub mod court_doors_for_test;

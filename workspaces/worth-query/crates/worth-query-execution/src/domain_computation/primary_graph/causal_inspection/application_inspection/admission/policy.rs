@@ -17,6 +17,9 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryBinding, ApplicationQueryInspectionMetadataFacet as Facet,
     ApplicationQueryScopeBinding,
 };
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationQueryBinding,
 };
@@ -65,7 +68,7 @@ where
     let contract = original.validate(runtime, installed, selected, scope.scope().entity_id())?;
     let access = WorthQueryApplicationQueryAccessContext::new(principal.principal(), scope.scope());
     let root = SelectedIssuedAccessRoot::from_issued(
-        selected,
+        selected.inner(),
         &access,
         principal,
         scope,
@@ -89,6 +92,7 @@ where
             .map_err(InspectionAdmissionDenial::Capability)?;
     }
     let graph = runtime
+        .inner
         .runtime
         .primary_graph()
         .ok_or(InspectionAdmissionDenial::MissingGraph)?;
@@ -105,7 +109,7 @@ where
                     execution,
                     relational,
                     snapshot,
-                    runtime.runtime.authorization.bridge(),
+                    runtime.inner.runtime.authorization_ref().bridge(),
                 )
                 .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
             if let Some(capability) = metadata.authorization_mut() {
@@ -114,7 +118,7 @@ where
                         execution,
                         relational,
                         snapshot,
-                        runtime.runtime.authorization.bridge(),
+                        runtime.inner.runtime.authorization_ref().bridge(),
                     )
                     .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
             }
@@ -149,7 +153,7 @@ where
         Some(pending) => {
             let contract = compile_diagnostic_disclosure_contract(
                 installed.query(),
-                &graph.layout,
+                graph.layout_ref(),
                 execution,
                 memory,
             )
@@ -176,7 +180,7 @@ where
                                 execution,
                                 relational,
                                 security.snapshot_handle(),
-                                runtime.runtime.authorization.bridge(),
+                                runtime.inner.runtime.authorization_ref().bridge(),
                             )
                             .map_err(InspectionAdmissionDenial::CurrentAuthorization)
                     })?;

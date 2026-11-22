@@ -1,0 +1,57 @@
+//! Actual acknowledged material expiry authorizes one terminal support release.
+use super::*;
+use crate::domain_computation::primary_graph::retained_correction::MaterialPublication;
+use worth_foundational::facade::ProgramSupportObligationKind;
+pub trait QueryObligationHistoryOriginalExpiryExt {
+    fn dispose_expired_interpretations(
+        &self,
+        material: &MaterialPublication<'_>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial>;
+}
+
+impl QueryObligationHistoryOriginalExpiryExt for QueryObligationHistory {
+    fn dispose_expired_interpretations(
+        &self,
+        material: &MaterialPublication<'_>,
+        request: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryCorrectionRetentionDenial>
+    {
+        let medium = self
+            .medium
+            .get()
+            .ok_or(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::SupportUnavailable)?;
+        material.admit_obligation_scope(medium.as_ref())?;
+        let driver = self.lock_publication()?;
+        driver.finish_pending(medium.as_ref(), request)?;
+        let expired = {
+            let state = self.state();
+            let ledger = &state
+                .journal
+                .as_ref()
+                .ok_or(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::SupportUnavailable)?
+                .ledger;
+            ledger
+                .obligations()
+                .filter_map(|row| match row.kind {
+                    ProgramSupportObligationKind::OriginalInterpretation
+                        if row.source == row.target
+                            && material.expired_membership(row.original, row.source) =>
+                    {
+                        Some(row.identity)
+                    }
+                    ProgramSupportObligationKind::OriginalInterpretation
+                    | ProgramSupportObligationKind::BranchAdoption => None,
+                })
+                .collect::<Vec<_>>()
+        };
+        for identity in expired {
+            driver.publish(
+                medium.as_ref(),
+                QueryProgramSupportRecord::Release { identity },
+                request,
+            )?;
+        }
+        Ok(())
+    }
+}

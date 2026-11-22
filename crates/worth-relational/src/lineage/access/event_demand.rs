@@ -56,7 +56,10 @@ impl LineageAccess<'_> {
                 }).map_err(crate::execution::RelationalExecutionDenialCause::StorageUnavailable)?;
                 if matches!(
                     event.kind(),
-                    LineageEventKind::Replace | LineageEventKind::Split | LineageEventKind::Merge
+                    LineageEventKind::Replace
+                        | LineageEventKind::Split
+                        | LineageEventKind::Merge
+                        | LineageEventKind::Restore
                 ) {
                     targets.extend(
                         event

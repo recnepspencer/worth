@@ -14,6 +14,8 @@ use crate::domain_computation::primary_graph::provider::{
 use crate::domain_computation::primary_graph::query_obligations::{
     QueryConditionalDecisionRecord, QueryConditionalOriginal,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 /// Result of resolving or retrying an original conditional operation key on
@@ -49,7 +51,7 @@ where
         key: [u8; 32],
         intent: [u8; 32],
     ) -> Result<WorthQueryConditionalOriginalResolution, Denial> {
-        let provider = &self.runtime.runtime.primary_provider;
+        let provider = self.runtime.inner.runtime.primary_provider_ref();
         let publication = self.truth.product().publication_binding();
         match provider.conditional_key_fate(execution, &publication, key, intent)? {
             Fate::Published(receipt) => {

@@ -21,14 +21,7 @@ fn concurrent_program_transfers_cannot_overspend_one_account() {
                 unrelated.external(),
             )),
     ));
-    let actor = Arc::new(
-        block_on(world.runtime.authenticate_with(
-            &world.authentication,
-            CausalCredential::for_identity(&owner),
-            &request_scope(),
-        ))
-        .unwrap(),
-    );
+    let actor = Arc::new(world.authenticate(&owner, &request_scope()).unwrap());
     let source = snapshot
         .primary_account(id(BankPrincipalId::new, 1))
         .unwrap();

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 
 use worth_query_installation::facade::{
     WorthQueryHostConditionalPredicateProvider, WorthQueryInstalledTemporalConditionalOperation,
@@ -222,7 +223,7 @@ where
         let lowering = bridge
             .install_owned_conditional(request)
             .map_err(|denial| {
-                WorthQueryConditionalRuntimeInstallationDenial::new(
+                WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                     WorthQueryConditionalRuntimeInstallationDenialKind::BridgeConditional(
                         Box::new(denial.kind()),
                     ),
@@ -231,7 +232,7 @@ where
             })?;
         let runtime_canonical_identity =
             Arc::new(affinity.bind(&self.binding_identity).map_err(|denial| {
-                WorthQueryConditionalRuntimeInstallationDenial::new(
+                WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                     WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
                     format!("conditional runtime identity was denied: {denial:?}"),
                 )

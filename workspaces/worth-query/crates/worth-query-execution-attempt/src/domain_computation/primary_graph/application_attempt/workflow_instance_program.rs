@@ -1,0 +1,194 @@
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+pub mod publication;
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+use worth_query_declaration::facade::{
+    application_capability::ApplicationCapabilityMarkerIdentity,
+    application_program::ApplicationWorkflowSpec,
+    application_schema::ApplicationOperationMarkerIdentity,
+};
+use worth_query_installation::facade::{
+    ApplicationSchema, WorthQueryInstalledApplicationWorkflowSpec,
+};
+
+use super::{
+    observe_adjacency, PublishedWorkflowDefinitionRef, WorthQueryApplicationAdjacencyDirection,
+    WorthQueryApplicationAttemptDenial, WorthQueryApplicationAttemptDenialKind,
+    WorthQueryApplicationEffectProgram, WorthQueryApplicationObservedFact,
+    WorthQueryCompleteApplicationReadSet, WorthQueryProjectedApplicationMutation,
+};
+use crate::domain_computation::primary_graph::workflow::{
+    definition::{reconstruct_compiled_definition, WorkflowDefinitionCompilationPosture},
+    instance::{visit_instance_start_facts, WorkflowLineageCarry},
+};
+use crate::domain_computation::runtime_time::WorthQueryRuntimeClock;
+
+pub mod birth;
+pub mod cancellation;
+pub use birth::{guard_birth, WorkflowBirthBindingProof};
+pub use birth::{RequiredWorkflowBirth, WorkflowBirthAuthority, WorkflowBirthAuthoritySlot};
+pub mod discovery_intent;
+pub use discovery_intent::WorthQueryWorkflowInstanceDiscoveryIntent;
+pub mod intent_identity;
+pub mod migration;
+pub mod performed;
+pub mod start_basis;
+pub mod succession;
+pub use succession::{guard_succession, WorkflowSuccessionBindingProof};
+pub use succession::{
+    RequiredWorkflowSuccession, WorkflowSuccessionAuthority, WorkflowSuccessionAuthoritySlot,
+    WorkflowSuccessionTarget,
+};
+pub mod supersession;
+
+pub use publication::{
+    PerformedWorkflowInstanceStart, PreparedWorkflowInstanceStart, PublishedWorkflowInstanceRef,
+    WorkflowInstanceStartOutcome,
+};
+pub use supersession::{RetiredWorkflowDefinitionStart, SupersededWorkflowDefinitionStart};
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        WorthQueryProjectedApplicationMutation,
+    >
+where
+    Schema: ApplicationSchema,
+    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+{
+    pub(crate) fn materialize_workflow_instance_start<Capability, Spec>(
+        mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        published: PublishedWorkflowDefinitionRef,
+        start_key_identity: [u8; 32],
+        clock: &WorthQueryRuntimeClock,
+    ) -> Result<
+        PreparedWorkflowInstanceStart<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    >
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        self.authorize_instance_start::<Capability, Spec>(installed, published.branch())?;
+        let (compiled, carry, supersession) =
+            self.observe_workflow_start_basis(execution, installed, &published, clock)?;
+        let layout = self.lease.layout.workflow().clone();
+        let subject = self.admission.scope_entity_id();
+        let discovery_intent =
+            intent_identity::instance_identity(&compiled, subject, start_key_identity).map_err(
+                |()| {
+                    denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceIntentIdentityUnavailable,
+                self.admission.operation(),
+            )
+                },
+            )?;
+        let start_revision = self.lease.handle().with_runtime(execution, |runtime| {
+            crate::domain_computation::primary_graph::workflow::instance::start_provenance::admit(
+                execution,
+                runtime,
+                self.lease.product().relational_basis(),
+                compiled.program_revision(),
+            )
+        })?;
+        let branch_occurrence = self.lease.product().product_branch().occurrence_ordinal();
+        let mut effects = Vec::new();
+        visit_instance_start_facts(
+            &layout,
+            &compiled,
+            discovery_intent.lookup_identity(),
+            &start_revision,
+            branch_occurrence,
+            subject,
+            carry,
+            crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_admission(&self.admission),
+            |effect| {
+                effects.push(effect);
+                Ok::<(), WorthQueryApplicationAttemptDenial>(())
+            },
+        )?;
+
+        let start_path = compiled.start_path().to_owned();
+        let definition = compiled.definition();
+        let definition_content_identity = compiled.content_identity().clone();
+        let program_revision = *compiled.program_revision();
+        let program = WorthQueryApplicationEffectProgram {
+            synchronous_outputs: Vec::new(),
+            authored_stages: Vec::new(),
+            producer_round_limits: crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::default_producer_round_bounds(),
+            read_set: self,
+            effects,
+            conditional_definition: None,
+            effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform,
+            output_correspondence: Default::default(),
+            retain_output_demand_observation: false,
+            retain_client_observation: false,
+            producer_required_invariants: &[],
+            output_currentness_facts: None,
+            content_attachments: Default::default(),
+        };
+        Ok(PreparedWorkflowInstanceStart {
+            program,
+            program_revision,
+            definition,
+            definition_content_identity,
+            discovery_intent,
+            instance_identity_locator: layout.instance.identity.clone(),
+            start_path,
+            supersession,
+        })
+    }
+}
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        WorthQueryProjectedApplicationMutation,
+    >
+where
+    Schema: ApplicationSchema,
+    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+{
+    /// Starting and migrating an instance share one authority: the workflow's
+    /// installed start binding, on the branch the request selected.
+    fn authorize_instance_start<Capability, Spec>(
+        &self,
+        installed: &WorthQueryInstalledApplicationWorkflowSpec<Schema, Spec>,
+        branch: crate::basis::WorthQueryProductBranch,
+    ) -> Result<(), WorthQueryApplicationAttemptDenial>
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        if branch != self.lease.product().product_branch() {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAffinityMismatch,
+                self.admission.operation(),
+            ));
+        }
+        if !installed.instance_start_binding_matches::<Capability, Operation>()
+            || self.admission.installed_capability_identity()
+                != Some(*installed.instance_start_capability_identity_bytes())
+        {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowInstanceAuthorityMismatch,
+                self.admission.operation(),
+            ));
+        }
+        Ok(())
+    }
+}
+
+fn denial(
+    kind: WorthQueryApplicationAttemptDenialKind,
+    subject: impl Into<String>,
+) -> WorthQueryApplicationAttemptDenial {
+    WorthQueryApplicationAttemptDenial::new(kind, subject)
+}

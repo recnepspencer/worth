@@ -1,0 +1,39 @@
+//! Original body and original-request funding share exactly one lifetime.
+use super::super::OwnedProjectionRows;
+use std::sync::Arc;
+use worth_query_declaration::facade::application_query::ApplicationQueryResultSlotKey;
+
+pub struct OriginalProjection {
+    pub rows: OwnedProjectionRows,
+    // Every declared field/relation decision, including withheld slots.
+    // The original compiled binding interprets these exact shared slot keys.
+    pub disclosure: worth_execution::ExecutionArray<(Arc<ApplicationQueryResultSlotKey>, bool)>,
+    // Successful construction is only for complete non-continuation trees.
+    // Row source-dependency completeness is separate provenance, not payload.
+    pub _memory: Option<worth_execution::ExecutionMemoryReservation>,
+}
+
+impl OriginalProjection {
+    pub fn new(
+        rows: OwnedProjectionRows,
+        disclosure: worth_execution::ExecutionArray<(Arc<ApplicationQueryResultSlotKey>, bool)>,
+        memory: Option<worth_execution::ExecutionMemoryReservation>,
+    ) -> Self {
+        Self {
+            rows,
+            disclosure,
+            _memory: memory,
+        }
+    }
+
+    pub fn allocation_bytes() -> u64 {
+        std::alloc::Layout::new::<[std::sync::atomic::AtomicUsize; 2]>()
+            .extend(std::alloc::Layout::new::<Self>())
+            .expect("fixed original projection layout")
+            .0
+            .pad_to_align()
+            .size() as u64
+    }
+}
+
+mod court_doors_for_test;

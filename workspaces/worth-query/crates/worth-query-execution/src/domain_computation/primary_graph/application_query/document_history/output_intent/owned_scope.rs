@@ -1,5 +1,9 @@
 //! Installed Native ownership, never source type equality, admits graph members.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     pub(super) fn require_history_output_scope<H: ApplicationHistoryBinding<S>, E>(
         &self,
@@ -21,9 +25,9 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         if history.definition().parts().model_domain
             == ApplicationHistoryModelDomain::OwnedModelGraph
         {
-            let graph = &self.runtime.primary_provider.graph;
+            let graph = &self.inner.runtime.primary_provider_ref().graph_ref();
             let ownership = graph
-                .layout
+                .layout_ref()
                 .history_ownership(&history.definition().parts().identity)
                 .ok_or(WorthQueryHistoryOutputReadDenial::Authority(
                     WorthQueryHistoryNavigationDenial::Document(Document::InstalledBindingMismatch),

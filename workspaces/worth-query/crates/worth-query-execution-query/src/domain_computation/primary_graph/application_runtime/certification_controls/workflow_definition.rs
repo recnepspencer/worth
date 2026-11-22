@@ -1,0 +1,64 @@
+//! Read-only probe of a published definition's revision provenance.
+
+use worth_foundational::facade::AspectValue;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_installation::facade::ApplicationSchema;
+
+use super::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::primary_graph::application_attempt::observe_field_value;
+
+impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
+where
+    Schema: ApplicationSchema + 'static,
+{
+    /// The revision `definition` was published under and the latest revision
+    /// program adoption carried it to, as its branch's owner truth reads now.
+    #[doc(hidden)]
+    pub fn workflow_definition_revisions_for_test(
+        &self,
+        phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+        definition: &crate::domain_computation::primary_graph::PublishedWorkflowDefinitionRef,
+    ) -> Result<
+        Result<
+            (Option<AspectValue>, Option<AspectValue>),
+            worth_relational::facade::transactions::RelationalExecutionDenialCause,
+        >,
+        crate::domain_computation::primary_graph::WorthQueryAdvancementDenial,
+    > {
+        let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
+        let selected = self
+            .on_branch(definition.branch())
+            .select(phase)
+            .expect("the definition branch remains admitted");
+        let observation = selected.product().relational_basis().observation();
+        Ok(self
+            .runtime
+            .primary_graph()
+            .expect("the application retains its primary graph")
+            .integration_handle()
+            .with_query_runtime(&execution, |runtime, layout| {
+                let snapshot = runtime
+                    .snapshots()
+                    .snapshot_for_observation(&observation)
+                    .expect("the selected basis admits one probe snapshot");
+                let definition_layout = &layout.workflow().definition;
+                let read = |locator| {
+                    observe_field_value(
+                        runtime,
+                        &execution,
+                        &snapshot,
+                        definition.entity_id(),
+                        definition_layout.entity_kind,
+                        locator,
+                    )
+                };
+                let revisions = read(&definition_layout.program_revision).and_then(|program| {
+                    read(&definition_layout.carried_revision).map(|carried| (program, carried))
+                });
+                crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+                revisions
+            }))
+    }
+}

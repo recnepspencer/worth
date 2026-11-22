@@ -6,6 +6,8 @@ use crate::domain_computation::primary_graph::{
     causal_inspection::CausalInspectionReason,
 };
 use worth_execution::MapKernelFailure;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
@@ -71,7 +73,9 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                 worth_execution::MapKernelStop::WorkCounterOverflow,
             ))?;
             checkpoint(context, work).map_err(MapKernelFailure::Stop)?;
-            if before.source.parameter_binding_identity != after.source.parameter_binding_identity {
+            if before.source().parameter_binding_identity()
+                != after.source().parameter_binding_identity()
+            {
                 return Err(MapKernelFailure::Domain(()));
             }
             Ok(())
@@ -79,11 +83,11 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
         .map_err(InspectionAdmissionDenial::ComparisonParameters)?;
         require_request(execution, self.request)?;
         let before = before
-            .source
+            .source()
             .original_projection()
             .ok_or(InspectionAdmissionDenial::MissingOriginalProjection)?;
         let after = after
-            .source
+            .source()
             .original_projection()
             .ok_or(InspectionAdmissionDenial::MissingOriginalProjection)?;
         let equal = compare_original_projections(execution, self.memory, before, after, &admission)

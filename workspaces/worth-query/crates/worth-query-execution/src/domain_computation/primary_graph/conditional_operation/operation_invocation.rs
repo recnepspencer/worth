@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::ApplicationInvariantProjectionAuthorityInternalPort as _;
 
 use worth_query_installation::facade::{
     ApplicationReadableScalarValueBinding, ApplicationScalarValueBinding, ApplicationSchema,

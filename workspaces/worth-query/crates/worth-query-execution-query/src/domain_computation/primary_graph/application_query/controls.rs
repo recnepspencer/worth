@@ -1,0 +1,373 @@
+use super::super::application_output_demand::OriginalSettledProducerObservation;
+use crate::domain_computation::primary_graph::OriginalSettledProducerObservationExt;
+use std::marker::PhantomData;
+use std::num::NonZeroUsize;
+use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
+
+use worth_query_admission::facade::{
+    application_query::WorthQueryApplicationQueryLane,
+    authenticated_principal::WorthQueryRequestScope,
+};
+
+pub(crate) mod internal_port;
+mod selected_read;
+
+/// Where an admitted query read takes its basis from.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationQueryBasisPosture {
+    /// The basis selected on the product branch at admission.
+    SelectedProduct,
+}
+
+/// The consistency an admitted query read guarantees.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationQueryConsistency {
+    /// Every row comes from the one product-branch snapshot selected at admission.
+    SelectedProductSnapshot,
+}
+
+/// How fresh an admitted query read's basis is.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum WorthQueryApplicationQueryFreshness {
+    /// Current as of admission; later commits are not reflected.
+    SelectedAtAdmission,
+}
+
+pub struct WorthQueryApplicationQueryControls<'a, Schema> {
+    producer: Option<Arc<OriginalSettledProducerObservation>>,
+    basis: WorthQueryApplicationQueryBasis,
+    selection_origin: super::super::product_operation::SelectedQueryOrigin,
+    security_product: crate::basis::WorthQueryProductObservationLease,
+    publication_product: Option<crate::basis::WorthQueryProductBranchLease>,
+    lane: WorthQueryApplicationQueryLane,
+    maximum_result_count: NonZeroUsize,
+
+    request_scope: &'a WorthQueryRequestScope,
+    _schema: PhantomData<fn() -> Schema>,
+}
+
+/// Caller-chosen bounds for resuming a query continuation: page width, work
+/// limit, and the request scope to re-resolve.
+pub struct WorthQueryApplicationQueryResumeControls<'a> {
+    maximum_page_width: NonZeroUsize,
+
+    request_scope: &'a WorthQueryRequestScope,
+}
+
+/// The bounds and basis posture an admitted query plan will run under.
+///
+/// Read-only view of what admission fixed: lane, basis posture, consistency,
+/// freshness, basis deadline, result and work limits, and request scope.
+pub struct WorthQueryAdmittedApplicationQueryControls<'a> {
+    producer: Option<Arc<OriginalSettledProducerObservation>>,
+    current_product_one_shot: bool,
+    basis: WorthQueryApplicationQueryBasisPosture,
+    consistency: WorthQueryApplicationQueryConsistency,
+    freshness: WorthQueryApplicationQueryFreshness,
+    lane: WorthQueryApplicationQueryLane,
+    basis_deadline: Option<worth_execution::MonotonicDeadline>,
+    maximum_result_count: NonZeroUsize,
+
+    request_scope: &'a WorthQueryRequestScope,
+}
+
+pub enum WorthQueryApplicationQueryBasis {
+    Selected {
+        product: crate::basis::WorthQueryProductObservationLease,
+        application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
+    },
+    RetainedContinuation {
+        product: crate::basis::WorthQueryProductObservationLease,
+    },
+}
+
+impl<'a, Schema> WorthQueryApplicationQueryControls<'a, Schema> {
+    pub fn has_security_product(
+        &self,
+        product: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> bool {
+        self.security_product.observation() == product
+    }
+
+    pub fn with_selection_origin(
+        mut self,
+        origin: super::super::product_operation::SelectedQueryOrigin,
+    ) -> Self {
+        self.selection_origin = origin;
+        self
+    }
+
+    pub fn selected_current_at_selection(&self) -> bool {
+        self.selection_origin.is_current()
+    }
+
+    pub fn with_original_settled_producer(
+        mut self,
+        producer: Option<Arc<OriginalSettledProducerObservation>>,
+    ) -> Self {
+        self.producer = producer;
+        self
+    }
+
+    pub fn publication_product_branch(
+        &self,
+    ) -> Option<&crate::basis::WorthQueryProductBranchLease> {
+        self.publication_product.as_ref()
+    }
+    pub fn product_one_shot(
+        product: crate::basis::WorthQueryProductBranchLease,
+        application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
+        maximum_result_count: NonZeroUsize,
+
+        request_scope: &'a WorthQueryRequestScope,
+    ) -> Self {
+        let read = product.read_lease();
+        let security_product = read.retained_clone();
+        Self {
+            basis: WorthQueryApplicationQueryBasis::Selected {
+                product: read,
+                application_basis,
+            },
+            security_product,
+            publication_product: Some(product),
+            lane: WorthQueryApplicationQueryLane::OneShot,
+            maximum_result_count,
+
+            request_scope,
+            producer: None,
+            selection_origin: Default::default(),
+            _schema: PhantomData,
+        }
+    }
+
+    pub fn retained_product_one_shot(
+        security: crate::basis::WorthQueryProductObservationLease,
+        product: crate::basis::WorthQueryProductBranchLease,
+        application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
+        maximum_result_count: NonZeroUsize,
+
+        request_scope: &'a WorthQueryRequestScope,
+    ) -> Self {
+        Self {
+            basis: WorthQueryApplicationQueryBasis::Selected {
+                product: product.into_read_lease(),
+                application_basis,
+            },
+            security_product: security,
+            publication_product: None,
+            lane: WorthQueryApplicationQueryLane::OneShot,
+            maximum_result_count,
+
+            request_scope,
+            producer: None,
+            selection_origin: Default::default(),
+            _schema: PhantomData,
+        }
+    }
+
+    pub fn product_continuation(
+        product: crate::basis::WorthQueryProductObservationLease,
+        application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
+        maximum_page_width: NonZeroUsize,
+
+        request_scope: &'a WorthQueryRequestScope,
+    ) -> Self {
+        let security_product = product.retained_clone();
+        Self {
+            basis: WorthQueryApplicationQueryBasis::Selected {
+                product,
+                application_basis,
+            },
+            security_product,
+            publication_product: None,
+            lane: WorthQueryApplicationQueryLane::Continuation,
+            maximum_result_count: maximum_page_width,
+
+            request_scope,
+            producer: None,
+            selection_origin: Default::default(),
+            _schema: PhantomData,
+        }
+    }
+
+    pub fn product_live(
+        product: crate::basis::WorthQueryProductObservationLease,
+        application_basis: super::resource_lifecycle::WorthQueryApplicationBasisLease,
+        maximum_materialized_record_count: NonZeroUsize,
+
+        request_scope: &'a WorthQueryRequestScope,
+    ) -> Self {
+        let security_product = product.retained_clone();
+        Self {
+            basis: WorthQueryApplicationQueryBasis::Selected {
+                product,
+                application_basis,
+            },
+            security_product,
+            publication_product: None,
+            lane: WorthQueryApplicationQueryLane::Live,
+            maximum_result_count: maximum_materialized_record_count,
+
+            request_scope,
+            producer: None,
+            selection_origin: Default::default(),
+            _schema: PhantomData,
+        }
+    }
+
+    pub const fn basis_posture(&self) -> WorthQueryApplicationQueryBasisPosture {
+        WorthQueryApplicationQueryBasisPosture::SelectedProduct
+    }
+
+    pub const fn consistency(&self) -> WorthQueryApplicationQueryConsistency {
+        WorthQueryApplicationQueryConsistency::SelectedProductSnapshot
+    }
+
+    pub const fn freshness(&self) -> WorthQueryApplicationQueryFreshness {
+        WorthQueryApplicationQueryFreshness::SelectedAtAdmission
+    }
+
+    pub const fn lane(&self) -> WorthQueryApplicationQueryLane {
+        self.lane
+    }
+
+    pub const fn maximum_result_count(&self) -> NonZeroUsize {
+        self.maximum_result_count
+    }
+
+    pub const fn request_scope(&self) -> &'a WorthQueryRequestScope {
+        self.request_scope
+    }
+
+    pub fn selected_basis(
+        &self,
+    ) -> Option<(
+        &crate::basis::WorthQueryProductObservationLease,
+        &worth_relational::facade::snapshots::SnapshotHandle,
+    )> {
+        match &self.basis {
+            WorthQueryApplicationQueryBasis::Selected {
+                product,
+                application_basis,
+            } => Some((product, application_basis.snapshot_handle())),
+            WorthQueryApplicationQueryBasis::RetainedContinuation { .. } => None,
+        }
+    }
+
+    pub fn into_admission_parts(
+        self,
+    ) -> (
+        WorthQueryApplicationQueryBasis,
+        crate::basis::WorthQueryProductObservationLease,
+        WorthQueryAdmittedApplicationQueryControls<'a>,
+    ) {
+        let basis_deadline = self.request_scope.deadline();
+        let admitted = WorthQueryAdmittedApplicationQueryControls {
+            current_product_one_shot: self.publication_product.is_some()
+                && self.lane == WorthQueryApplicationQueryLane::OneShot,
+            basis: self.basis_posture(),
+            consistency: self.consistency(),
+            freshness: self.freshness(),
+            lane: self.lane(),
+            basis_deadline,
+            maximum_result_count: self.maximum_result_count,
+
+            request_scope: self.request_scope,
+            producer: self.producer,
+        };
+        (self.basis, self.security_product, admitted)
+    }
+
+    pub fn continuation_resume(
+        product: crate::basis::WorthQueryProductObservationLease,
+        controls: WorthQueryApplicationQueryResumeControls<'a>,
+    ) -> Self {
+        let security_product = product.retained_clone();
+        Self {
+            basis: WorthQueryApplicationQueryBasis::RetainedContinuation { product },
+            security_product,
+            publication_product: None,
+            lane: WorthQueryApplicationQueryLane::Continuation,
+            maximum_result_count: controls.maximum_page_width,
+
+            request_scope: controls.request_scope,
+            producer: None,
+            selection_origin: Default::default(),
+            _schema: PhantomData,
+        }
+    }
+}
+
+impl<'a> WorthQueryApplicationQueryResumeControls<'a> {
+    pub fn new(
+        maximum_page_width: NonZeroUsize,
+
+        request_scope: &'a WorthQueryRequestScope,
+    ) -> Self {
+        Self {
+            maximum_page_width,
+
+            request_scope,
+        }
+    }
+
+    pub const fn maximum_page_width(&self) -> NonZeroUsize {
+        self.maximum_page_width
+    }
+
+    pub const fn request_scope(&self) -> &'a WorthQueryRequestScope {
+        self.request_scope
+    }
+}
+
+impl WorthQueryAdmittedApplicationQueryControls<'_> {
+    pub(crate) fn is_current_product_one_shot(&self) -> bool {
+        self.current_product_one_shot
+    }
+    pub(crate) fn original_settled_producer_for(
+        &self,
+        actual: &worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Option<Arc<OriginalSettledProducerObservation>> {
+        self.producer
+            .as_ref()
+            .filter(|origin| origin.matches_read(actual))
+            .cloned()
+    }
+    pub const fn basis_posture(&self) -> WorthQueryApplicationQueryBasisPosture {
+        self.basis
+    }
+
+    pub const fn consistency(&self) -> WorthQueryApplicationQueryConsistency {
+        self.consistency
+    }
+
+    pub const fn freshness(&self) -> WorthQueryApplicationQueryFreshness {
+        self.freshness
+    }
+
+    pub const fn lane(&self) -> WorthQueryApplicationQueryLane {
+        self.lane
+    }
+
+    pub fn basis_deadline(&self) -> Option<worth_execution::MonotonicDeadline> {
+        self.basis_deadline.clone()
+    }
+
+    pub fn basis_is_expired(&self) -> bool {
+        self.basis_deadline
+            .as_ref()
+            .is_some_and(worth_execution::MonotonicDeadline::is_elapsed)
+    }
+
+    pub const fn maximum_result_count(&self) -> NonZeroUsize {
+        self.maximum_result_count
+    }
+
+    pub const fn request_scope(&self) -> &WorthQueryRequestScope {
+        self.request_scope
+    }
+}
+
+mod court_doors_for_test;

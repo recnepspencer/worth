@@ -40,6 +40,11 @@ pub(in crate::application_query) fn prepare_graph_basis(
     append_root_paths(&mut entries, &meaning.root_paths);
     append_relations(&mut entries, &meaning.relations);
     append_predicates(&mut entries, &meaning.predicates);
+    crate::application_query::WorthQueryInstalledWhereFilter::append_canonical(
+        meaning.where_filter.as_ref(),
+        &mut entries,
+        |locus, value| text(locus, value),
+    );
     append_ordering(&mut entries, &meaning.ordering);
     entries.extend([
         unsigned("maximum-traversal-depth", meaning.maximum_traversal_depth),

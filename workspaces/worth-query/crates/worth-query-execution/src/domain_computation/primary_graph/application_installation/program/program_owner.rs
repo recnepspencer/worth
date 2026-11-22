@@ -52,15 +52,7 @@ pub struct WorthQuerySelectedProgramOwner<'runtime, Schema> {
         worth_query_installation::facade::WorthQueryInstalledActionInventory<'runtime>,
 }
 
-#[derive(Debug)]
-pub enum WorthQuerySelectedProgramOwnerDenial {
-    ProductSelection(
-        crate::domain_computation::primary_graph::WorthQueryProductBranchAdmissionDenial,
-    ),
-    Inspection(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial),
-    InstalledOwnerUnavailable,
-    UndeclaredOutputRoot,
-}
+pub use worth_query_execution_query::facade::domain_computation::primary_graph::application_installation::WorthQuerySelectedProgramOwnerDenial;
 
 mod contract;
 mod output_root;

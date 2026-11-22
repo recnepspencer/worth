@@ -1,0 +1,397 @@
+use crate::domain_computation::primary_graph::application_attempt::check_request_live;
+use crate::domain_computation::primary_graph::application_installation::workflow_approval_authentication_intent;
+use worth_query_declaration::facade::{
+    application_capability::ApplicationCapabilityMarkerIdentity,
+    application_program::ApplicationWorkflowSpec,
+    application_schema::ApplicationOperationMarkerIdentity,
+};
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_installation::facade::ApplicationSchema;
+
+use super::*;
+
+#[path = "approval_decision/identity.rs"]
+mod identity;
+mod inputs;
+#[path = "approval_decision/materialization.rs"]
+mod materialization;
+mod operation_inputs;
+#[path = "approval_decision/projection.rs"]
+mod projection;
+#[path = "approval_decision/validation.rs"]
+mod validation;
+use materialization::materialize_decision;
+pub use operation_inputs::observe_operation_approval_inputs;
+pub use validation::validate_requirement_definition as actor_approval_node;
+use validation::*;
+
+impl<Schema, Operation, Input, Scope>
+    WorthQueryCompleteApplicationReadSet<
+        Schema,
+        Operation,
+        Input,
+        Scope,
+        WorthQueryProjectedApplicationMutation,
+    >
+where
+    Schema: ApplicationSchema,
+    Operation: ApplicationOperationMarkerIdentity<Schema> + 'static,
+{
+    pub(crate) fn materialize_workflow_approval<Capability, Spec>(
+        mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        workflow: &dyn crate::ports::WorkflowVocabularyPort<Schema, Spec>,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationWorkflowSpec<
+            Schema,
+            Spec,
+        >,
+        instance: super::super::PublishedWorkflowInstanceRef,
+        required: &RequiredWorkflowApproval,
+        proposal: &super::super::PublishedWorkflowProposalRef,
+        decision: WorkflowApprovalDecision,
+        clock: &crate::domain_computation::runtime_time::WorthQueryRuntimeClock,
+    ) -> Result<
+        PreparedWorkflowAdvance<Schema, Operation, Input, Scope>,
+        WorthQueryApplicationAttemptDenial,
+    >
+    where
+        Capability: ApplicationCapabilityMarkerIdentity<Schema = Schema> + 'static,
+        Spec: ApplicationWorkflowSpec<Schema = Schema>,
+    {
+        validate_request_binding::<Schema, Capability, Operation, _, _, _>(
+            &self, installed, &instance, required, proposal,
+        )?;
+        self.refuse_ended_workflow_instance(execution, &instance)?;
+        let layout = self.lease.layout.workflow().clone();
+        let published = super::super::PublishedWorkflowDefinitionRef::retained(
+            instance.branch(),
+            instance.definition_entity_id(),
+            instance.definition_content_identity().clone(),
+        );
+        let (mut compiled, mut facts) = crate::domain_computation::primary_graph::workflow::definition::reconstruct_compiled_definition(execution,
+                self.lease.handle(),
+                self.lease.snapshot(),
+                &layout,
+                &published,
+                installed.program_revision(),
+                Spec::IDENTITY.as_str(),
+                installed.support_identity_bytes(),
+                usize::from(installed.resources().maximum_definition_nodes()),
+                usize::from(installed.resources().maximum_definition_connections()),
+                crate::domain_computation::primary_graph::workflow::definition::WorkflowDefinitionCompilationPosture::Retained,
+        )?;
+        let subject = self.admission.scope_entity_id();
+        let maximum_transitions = usize::try_from(
+            installed
+                .resources()
+                .maximum_retained_transitions_per_instance(),
+        )
+        .unwrap_or(usize::MAX);
+        let mut observed = self.lease.handle().with_runtime(execution, |runtime| {
+            super::super::workflow_instance_observation::observe_workflow_instance(execution,
+                self.lease.handle(),
+                runtime,
+                self.lease.snapshot(),
+                &layout,
+                &instance,
+                subject,
+                compiled.lineage(),
+                &mut compiled,
+                maximum_transitions,
+                installed.resources().history_reconstruction_budget(),
+                super::super::workflow_instance_observation::WorkflowInstanceObservationPurpose::Advance,
+            )
+        })?;
+        let replays = publication::PreparedWorkflowTransitionReplays::retained(std::mem::take(
+            &mut observed.replays,
+        ));
+        let approval_node = validate_requirement_definition(&compiled, required)?;
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        let input_request = self.admission.publication_request();
+        let inputs = inputs::observe(
+            execution,
+            &compiled,
+            &layout,
+            &self.lease.layout,
+            self.admission.scope_entity_id(),
+            &instance,
+            observed.progress_basis.progress(),
+            approval_node,
+            Some(proposal),
+            self.lease.handle(),
+            self.lease.snapshot(),
+            input_request,
+        )?;
+        facts.extend(inputs.facts);
+        let meaning = identity::derive(
+            execution,
+            &compiled,
+            required,
+            proposal,
+            decision,
+            &self.admission,
+            &inputs.evidence,
+        )?;
+        let field_basis = self.lease.product().relational_basis().clone();
+        let admitted_text = self.lease.handle().with_runtime(execution, |runtime| {
+            crate::domain_computation::primary_graph::workflow::WorkflowApprovalFieldText::admit(
+                runtime,
+                execution,
+                &field_basis,
+                &meaning,
+            )
+        })?;
+        let approval_projection =
+            projection::prepare(&layout, &meaning, &field_basis, &admitted_text)?;
+        let latest = observed
+            .progress_basis
+            .progress()
+            .latest_transition(approval_node);
+        let older_settlement = latest
+            .is_some_and(|transition| transition.settlement().occurrence() > required.occurrence());
+        let settled = if older_settlement {
+            self.lease.handle().with_runtime(execution, |runtime| {
+                observed.ensure_history(
+                    execution,
+                    self.lease.handle(),
+                    runtime,
+                    self.lease.snapshot(),
+                    &layout,
+                    instance.entity_id(),
+                    maximum_transitions,
+                    &compiled,
+                )
+            })?;
+            observed.transitions.iter().find(|transition| {
+                transition.settlement.node() == approval_node
+                    && transition.settlement.occurrence() == required.occurrence()
+            }).map(|transition| {
+                crate::domain_computation::primary_graph::workflow::instance::WorkflowTransitionLocator::new(
+                    transition.entity, transition.settlement,
+                )
+            })
+        } else {
+            latest
+                .filter(|transition| transition.settlement().occurrence() == required.occurrence())
+        };
+        if let Some(settled) = settled {
+            let mut settlement_facts = Vec::new();
+            self.lease.handle().with_runtime(execution, |runtime| {
+                super::super::workflow_instance_observation::observe_retained_transition(
+                    execution,
+                    runtime,
+                    self.lease.snapshot(),
+                    &layout,
+                    settled,
+                    &mut settlement_facts,
+                )
+            })?;
+            facts.append(&mut settlement_facts);
+            let (selected_path, selected_identity, probe_identity) = if older_settlement {
+                // Current back-edge counters cannot reconstruct an earlier
+                // occurrence. History is charged and observed on an exact
+                // basis above, including the published transition identity.
+                let historical = observed
+                    .transitions
+                    .iter()
+                    .find(|transition| transition.entity == settled.entity())
+                    .ok_or_else(|| affinity("settled approval is absent from observed history"))?;
+                let node = compiled
+                    .node(historical.settlement.node())
+                    .ok_or_else(|| affinity("settled approval node is absent"))?;
+                let bytes = decode_transition_identity(&historical.identity)
+                    .ok_or_else(|| affinity("settled approval identity is malformed"))?;
+                (node.path().to_owned(), historical.identity.clone(), bytes)
+            } else {
+                let selected = select_settled_replay_transition(
+                    &compiled,
+                    instance.entity_id(),
+                    settled.settlement(),
+                    observed.progress_basis.progress().back_edge_iterations(),
+                    required.transition_identity(),
+                )?;
+                (
+                    selected.node_path().to_owned(),
+                    selected.identity().to_owned(),
+                    *selected.identity_bytes(),
+                )
+            };
+            if selected_path != required.node_path()
+                || selected_identity != required.transition_identity()
+                || settled.settlement().occurrence() != required.occurrence()
+            {
+                return Err(affinity(
+                    "approval requirement does not match its settled transition",
+                ));
+            }
+            facts.append(&mut observed.facts);
+            check_request_live(
+                self.admission.publication_request(),
+                self.admission.operation(),
+            )?;
+            self.append_completed_facts(
+                facts,
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )?;
+            return Ok(PreparedWorkflowAdvance::ReplayOnly {
+                read_set: self,
+                transition_identity_locator: layout.transition.identity.clone(),
+                assessment_identity_locator: layout.assessment_evidence.identity.clone(),
+                instance: instance.entity_id(),
+                approval: Some(approval_projection.clone()),
+                approval_identity: Some(meaning.identity),
+                approval_authentication: None,
+                replays: replays.with_probe_identity(probe_identity),
+                denial: denial(
+                    WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
+                    required.node_path(),
+                ),
+            });
+        }
+        let Some(live_membership) = observed.live_membership else {
+            return Ok(PreparedWorkflowAdvance::ReplayOnly {
+                read_set: self,
+                transition_identity_locator: layout.transition.identity.clone(),
+                assessment_identity_locator: layout.assessment_evidence.identity.clone(),
+                instance: instance.entity_id(),
+                approval: Some(approval_projection.clone()),
+                approval_identity: Some(meaning.identity),
+                approval_authentication: None,
+                replays,
+                denial: denial(
+                    WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAlreadySettled,
+                    required.node_path(),
+                ),
+            });
+        };
+        // A decision recorded before the budget is spent or the deadline
+        // passes still replays after it.
+        let allowance = match observed.ensure_step_left().and_then(|allowance| {
+            self.bind_workflow_deadline(execution, clock, &layout, instance.entity_id())
+                .map(|_| allowance)
+        }) {
+            Ok(allowance) => allowance,
+            Err(refused) => {
+                return Ok(PreparedWorkflowAdvance::ReplayOnly {
+                    read_set: self,
+                    transition_identity_locator: layout.transition.identity.clone(),
+                    assessment_identity_locator: layout.assessment_evidence.identity.clone(),
+                    instance: instance.entity_id(),
+                    approval: Some(approval_projection.clone()),
+                    approval_identity: Some(meaning.identity),
+                    approval_authentication: None,
+                    replays,
+                    denial: refused,
+                })
+            }
+        };
+        let selected = match select_current_transition(
+            &compiled,
+            instance.entity_id(),
+            &observed.progress_basis,
+        ) {
+            Ok(selected) => selected,
+            Err(denial)
+                if denial.kind()
+                    == WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported =>
+            {
+                return Ok(PreparedWorkflowAdvance::ReplayOnly {
+                    read_set: self,
+                    transition_identity_locator: layout.transition.identity.clone(),
+                    assessment_identity_locator: layout.assessment_evidence.identity.clone(),
+                    instance: instance.entity_id(),
+                    approval: Some(approval_projection.clone()),
+                    approval_identity: Some(meaning.identity),
+                    approval_authentication: None,
+                    replays,
+                    denial,
+                });
+            }
+            Err(denial) => return Err(denial),
+        };
+        let SelectedWorkflowTransitionKind::Approval(approval) = selected.kind().clone() else {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionNodeUnsupported,
+                selected.node_path(),
+            ));
+        };
+        let expected =
+            RequiredWorkflowApproval::from_selected(instance.entity_id(), &selected, approval);
+        if &expected != required {
+            return Err(denial(
+                WorthQueryApplicationAttemptDenialKind::WorkflowTransitionAffinityMismatch,
+                "approval requirement is stale or belongs to another transition",
+            ));
+        }
+        let replay_probe_identity = *selected.identity_bytes();
+        facts.append(&mut observed.facts);
+        check_request_live(
+            self.admission.publication_request(),
+            self.admission.operation(),
+        )?;
+        self.append_completed_facts(
+            facts,
+            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+        )?;
+        super::assessment::bind_currentness_facts(
+            execution,
+            &mut self,
+            &inputs.currentness,
+            required.node_path(),
+        )?;
+        let authentication_intent = identity::authentication_intent(
+            &instance,
+            required,
+            proposal,
+            decision,
+            &inputs.evidence,
+            &inputs.currentness,
+        );
+        let evidence_currentness = super::super::OutputCurrentnessFacts::admit_owned_program_facts(
+            inputs.currentness,
+            super::super::retained_decision_facts::StorageControl::new(
+                execution.allocation_policy(),
+                Some(self.admission.publication_request()),
+            ),
+        )
+        .map_err(|cause| cause.into_attempt_denial(required.node_path()))?;
+        let signing_basis = evidence_currentness.facts().clone();
+        let admitted = admit_workflow_transition(
+            self,
+            selected,
+            instance.entity_id(),
+            subject,
+            live_membership,
+            false,
+            allowance,
+        );
+        let mut prepared = materialize_decision(
+            &layout,
+            *compiled.program_revision(),
+            admitted,
+            meaning,
+            &field_basis,
+            &admitted_text,
+            evidence_currentness,
+            approval_projection,
+        )?;
+        let authentication = publication::PreparedWorkflowApprovalAuthentication::pending(
+            workflow.authentication_owner().clone(),
+            authentication_intent,
+            signing_basis,
+            &prepared,
+        )
+        .map_err(|_| affinity("approval lacks its natively admitted signing principal"))?;
+        if let PreparedWorkflowAdvance::Transition {
+            approval_authentication,
+            ..
+        } = &mut prepared
+        {
+            *approval_authentication = Some(authentication);
+        }
+        Ok(prepared.with_replays(replays.with_probe_identity(replay_probe_identity)))
+    }
+}

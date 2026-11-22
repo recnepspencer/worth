@@ -12,6 +12,9 @@ use worth_query_declaration::facade::{
     application_aftermath::{ApplicationCorrectionBinding, ApplicationInverseBinding},
     application_operation::{ApplicationMutationBinding, ApplicationMutationOutputContract},
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::RelationalBorrowedRecordReadDenial as ReadDenial;
 
@@ -33,7 +36,7 @@ pub(super) fn require<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
     {
         return Ok(());
     }
-    let provider = &target.application().runtime.primary_provider;
+    let provider = &target.application().inner.runtime.primary_provider_ref();
     // The caller already selected this occurrence's ancestry. This is an exact
     // completed-occurrence lookup, not another history traversal.
     let occurrence = provider
@@ -45,7 +48,7 @@ pub(super) fn require<S: ApplicationSchema, C: ApplicationCorrectionBinding<S>>(
     if publication != active.world() {
         return Err(Denial::ForeignAlternative);
     }
-    provider.graph.with_runtime(&execution, |runtime| {
+    provider.graph_ref().with_runtime(&execution, |runtime| {
         let snapshot = open_exact_basis_snapshot(runtime, target.product().relational_basis())
             .map_err(Denial::Basis)?;
         let result = (|| {

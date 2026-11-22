@@ -1,5 +1,6 @@
 //! A forest lends each original tree the same admitted C and candidate D.
 use super::*;
+use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 impl<'phase, 'scope> WorthQueryHistoryOutputAuthority<'phase, 'scope> {
     /// The child borrows the parent's revocable callback and selection lifetimes.

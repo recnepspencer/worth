@@ -1,4 +1,5 @@
 use worth_foundational::facade::CanonicalDigestDerivationDenial;
+use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort;
 use worth_query_installation::facade::{
     WorthQueryCanonicalWorkEvidence, WorthQueryTemporalIntentCandidate,
 };
@@ -85,7 +86,7 @@ fn derive_temporal_idempotency_parts(
     let (intent, intent_work) = intent.derive()?;
 
     Ok(WorthQueryPreparedTemporalIdempotency {
-        binding: WorthQueryApplicationIdempotencyBinding::new(*key.bytes(), *intent.bytes()),
+        binding: <WorthQueryApplicationIdempotencyBinding as IdempotencyBindingInternalPort>::from_identities(*key.bytes(), *intent.bytes()),
         canonical_work: key_work.combine(intent_work),
     })
 }
@@ -98,6 +99,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn deriv
     host_idempotency: &str,
     input_identity: &str,
 ) -> Result<([u8; 32], [u8; 32]), CanonicalDigestDerivationDenial> {
+    use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
     let selected = product.observation();
     let scope = match selected.owner_identity().durable() {
         Some(owner) => TemporalIdempotencyScope::Home {

@@ -3,6 +3,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryApplicationCleanupRequired,
     WorthQueryApplicationCommitOutcome, WorthQueryApplicationManagedCleanup,
 };
+use worth_query_execution_lineage::facade::ports::ManagedCleanupReceiptInternalPort as _;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 pub(super) struct RetainedManagedCleanup {
     outcome: WorthQueryApplicationCommitOutcome,
     pending: Option<WorthQueryApplicationManagedCleanup>,
@@ -28,7 +30,7 @@ impl RetainedManagedCleanup {
         &mut self,
     ) -> Option<crate::domain_computation::primary_graph::WorthQueryApplicationManagedCleanupReceipt>
     {
-        if self.pending.is_some() || self.receipt.as_ref()?.original.is_none() {
+        if self.pending.is_some() || self.receipt.as_ref()?.original().is_none() {
             return None;
         }
         let original = self.receipt.take()?;
@@ -123,7 +125,7 @@ pub(super) fn admit_reinstallation(
     identity: &str,
 ) -> Result<(), super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
     if let Some(kind) = kind {
-        return Err(super::installation::WorthQueryConditionalRuntimeInstallationDenial::new(
+        return Err(super::installation::WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
             super::installation::WorthQueryConditionalRuntimeInstallationDenialKind::ManagedCleanupRetained(kind), identity));
     }
     Ok(())

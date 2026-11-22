@@ -1,0 +1,226 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use worth_runtime_world::facade::{RuntimeWorldBranchAdmissionDenial, RuntimeWorldServiceDenial};
+
+use super::WorthQueryProductRuntime;
+use crate::basis::{WorthQueryProductBranchAdmissionDenial, WorthQueryProductBranchLease};
+
+impl WorthQueryProductRuntime {
+    pub(crate) fn readmit_product_reference(
+        &self,
+        description: &worth_runtime_world::facade::ProductBranchReferenceDescription,
+    ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        use worth_runtime_world::facade::ProductBranchReferenceReadmissionDenial as DescriptionDenial;
+        let observation = self
+            .owner
+            .observation_port()
+            .readmit_product_branch_reference(description)
+            .map_err(|denial| match denial {
+                RuntimeWorldServiceDenial::OwnerUnavailable(denial) => {
+                    map_world_denial(RuntimeWorldServiceDenial::OwnerUnavailable(denial))
+                }
+                RuntimeWorldServiceDenial::Denied(DescriptionDenial::Branch(denial)) => {
+                    map_world_denial(RuntimeWorldServiceDenial::Denied(denial))
+                }
+                RuntimeWorldServiceDenial::Denied(
+                    DescriptionDenial::UnsupportedDescriptionVersion { supported, actual },
+                ) => WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ExpectedDescriptionVersionUnsupported { supported, actual },
+                ),
+                RuntimeWorldServiceDenial::Denied(DescriptionDenial::InvalidName(_)) => {
+                    WorthQueryProductBranchAdmissionDenial::Refused(
+                        AdmissionRefusal::ExpectedDescriptionNameInvalid,
+                    )
+                }
+                RuntimeWorldServiceDenial::Denied(DescriptionDenial::IncarnationChanged) => {
+                    WorthQueryProductBranchAdmissionDenial::Refused(
+                        AdmissionRefusal::IncarnationChanged,
+                    )
+                }
+            })?;
+        let gate = self.activations.gate(observation.branch_identity())?;
+        gate.with_admission(|| self.lease_from_observation(observation))
+    }
+
+    pub fn admit_product_occurrence(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        self.admit_owner_incarnation(occurrence.owner_identity())?;
+        if occurrence.owner_identity() != self.owner.owner_identity() {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
+        }
+        let observation = self
+            .owner
+            .observation_port()
+            .observe_product_branch_occurrence(occurrence)
+            .map_err(map_world_denial)?;
+        let gate = self.activations.gate(observation.branch_identity())?;
+        gate.with_admission(|| self.lease_from_observation(observation))
+    }
+
+    /// Admit the original occurrence's lifecycle without treating its retained
+    /// data as current. The observed live head is not replacement source truth.
+    pub(crate) fn require_live_product_occurrence(
+        &self,
+        occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
+    ) -> Result<(), WorthQueryProductBranchAdmissionDenial> {
+        self.owner
+            .observation_port()
+            .observe_product_branch_occurrence(occurrence)
+            .map(|_| ())
+            .map_err(map_world_denial)
+    }
+
+    #[doc(hidden)]
+    pub fn integration_admit_product_branch(
+        &self,
+        branch: crate::basis::WorthQueryProductBranch,
+    ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        self.admit_product_occurrence(branch.occurrence())
+    }
+
+    pub(crate) fn admit_product_branch(
+        &self,
+        identity: &worth_runtime_world::facade::ProductBranchIdentity,
+    ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        self.with_product_observation(identity, |observation| {
+            self.lease_from_observation(observation)
+        })
+    }
+
+    pub(crate) fn lease_from_observation(
+        &self,
+        observation: worth_runtime_world::facade::ProductBranchObservation,
+    ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {
+        let bridge_source = self
+            .source()
+            .retain_branch_basis_for_bridge(observation.basis().relational_basis())
+            .map_err(|_| {
+                WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::BridgeSourceUnavailable,
+                )
+            })?;
+        Ok(WorthQueryProductBranchLease::new(
+            self.publication_binding(observation),
+            bridge_source,
+        ))
+    }
+
+    /// Resolve through World once while the selected executable package is stable.
+    /// The caller composes only the custody needed by its own entry purpose.
+    pub(crate) fn with_product_observation<Output>(
+        &self,
+        identity: &worth_runtime_world::facade::ProductBranchIdentity,
+        admit: impl FnOnce(
+            worth_runtime_world::facade::ProductBranchObservation,
+        ) -> Result<Output, WorthQueryProductBranchAdmissionDenial>,
+    ) -> Result<Output, WorthQueryProductBranchAdmissionDenial> {
+        self.admit_owner_incarnation(identity.owner_identity())?;
+        if identity.owner_identity() != self.owner.owner_identity() {
+            return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ForeignOwner,
+            ));
+        }
+        let gate = match self.activations.gate(identity) {
+            Ok(gate) => gate,
+            Err(super::activation::WorthQueryProductActivationDenial::UnknownProductBranch) => {
+                // Only World decides whether an uncoordinated name is unknown,
+                // retired, or temporarily awaiting executable-package activation.
+                self.owner
+                    .observation_port()
+                    .observe_product_branch(identity)
+                    .map_err(map_world_denial)?;
+                return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ProductActivationUnavailable,
+                ));
+            }
+            Err(denial) => return Err(denial.into()),
+        };
+        gate.with_admission(|| {
+            let observation = self
+                .owner
+                .observation_port()
+                .observe_product_branch(identity)
+                .map_err(map_world_denial)?;
+            if observation.owner_identity() != self.owner.owner_identity() {
+                return Err(WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ForeignOwner,
+                ));
+            }
+            admit(observation)
+        })
+    }
+}
+
+pub(super) fn map_world_denial(
+    denial: RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>,
+) -> WorthQueryProductBranchAdmissionDenial {
+    match denial {
+        RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired,
+        ) => WorthQueryProductBranchAdmissionDenial::Refused(
+            AdmissionRefusal::DurableBranchPublicationRequired,
+        ),
+        RuntimeWorldServiceDenial::OwnerUnavailable(_)
+        | RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable) => {
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::OwnerUnavailable)
+        }
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::ForeignOwner) => {
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ForeignOwner)
+        }
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::StaleIncarnation) => {
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::StaleIncarnation)
+        }
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::RetiredBranch) => {
+            WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::RetiredBranch)
+        }
+        RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchAdmissionDenial::CancelledBeforeEffect,
+        ) => WorthQueryProductBranchAdmissionDenial::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::Cancelled,
+        )),
+        RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchAdmissionDenial::DeadlineBeforeEffect,
+        ) => WorthQueryProductBranchAdmissionDenial::Stopped(Err(
+            crate::domain_computation::WorthQueryProviderSessionControlStopKind::TimedOut,
+        )),
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::CapacityExhausted) => {
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationCapacityExhausted,
+            )
+        }
+        RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchAdmissionDenial::CustodyCapacityExhausted,
+        ) => WorthQueryProductBranchAdmissionDenial::Refused(
+            AdmissionRefusal::CustodyCapacityExhausted,
+        ),
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::IdentityExhausted) => {
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationIdentityExhausted,
+            )
+        }
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::StaleSourceHead) => {
+            WorthQueryProductBranchAdmissionDenial::Refused(
+                AdmissionRefusal::ObservationStaleSourceHead,
+            )
+        }
+        RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchAdmissionDenial::DuplicateName
+            | RuntimeWorldBranchAdmissionDenial::HomeCreationRequestRequired
+            | RuntimeWorldBranchAdmissionDenial::MemoryCreationRequestRequired
+            | RuntimeWorldBranchAdmissionDenial::ProgramSourceRequired
+            | RuntimeWorldBranchAdmissionDenial::ForeignProgramSource
+            | RuntimeWorldBranchAdmissionDenial::ProgramSourceMismatch
+            | RuntimeWorldBranchAdmissionDenial::PlansOmitted
+            | RuntimeWorldBranchAdmissionDenial::UnsupportedRetainedSourcePlan
+            | RuntimeWorldBranchAdmissionDenial::RetainedSourceDurabilityUnsupported
+            | RuntimeWorldBranchAdmissionDenial::EmptyNativeForkSource
+            | RuntimeWorldBranchAdmissionDenial::ForkSourceChanged
+            | RuntimeWorldBranchAdmissionDenial::HistoryEntryUnavailable,
+        ) => WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::ObservationRejected),
+    }
+}
+
+mod court_doors_for_test;

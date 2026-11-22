@@ -1,5 +1,10 @@
 //! Admit and execute one restoration inside its original application phase.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub(super) fn restore_generated_output_in_phase<Producer>(
         &self,
@@ -10,7 +15,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     where
         Producer: WorthQueryApplicationProducerBinding<Schema>,
     {
-        let execution = match phase.execution_request_for(&self.runtime.product_runtime) {
+        let execution = match phase.execution_request_for(self.inner.runtime.product_runtime_ref())
+        {
             Ok(execution) => execution,
             Err(cause) => {
                 return Err(restoration_failure(
@@ -28,7 +34,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         } = completed;
         if !std::sync::Arc::ptr_eq(
             &suspended.publication.root_identity(),
-            &self.runtime.product_runtime.root_identity(),
+            &self.inner.runtime.product_runtime_ref().root_identity(),
         ) || !suspended.matches_runtime(self)
         {
             return Err(restoration_failure(
@@ -43,7 +49,11 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         if !suspended.matches_provider_version::<Schema, Producer>()
-            || self.installed_producers.provider::<Producer>().is_none()
+            || self
+                .inner
+                .installed_producers
+                .provider::<Producer>()
+                .is_none()
         {
             return Err(restoration_failure(
                 suspended,
@@ -57,9 +67,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             ));
         }
         let gate = match self
+            .inner
             .runtime
-            .product_runtime
-            .activations
+            .product_runtime_ref()
+            .activations_ref()
             .gate(suspended.publication.observation().branch_identity())
         {
             Ok(gate) => gate,
@@ -87,9 +98,10 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             producer,
         } = suspended;
         let prepared = self
+            .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(&execution, |runtime| {
                 runtime
                     .owner_component_services()

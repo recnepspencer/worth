@@ -12,6 +12,11 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use worth_foundational::facade::DurableCompositePublicationAttemptIdentity;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::{
+    ProductBranchLeaseInternalPort as _, ProductPublicationBindingInternalPort as _,
+};
 use worth_runtime_world::facade::WorldRecoveredContinuationOutcome as Continuation;
 
 /// `None` when the key has no recovered original: the ordinary commit path
@@ -25,7 +30,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn conti
     binding: WorthQueryApplicationIdempotencyBinding,
     joined: Option<DurableCompositePublicationAttemptIdentity>,
 ) -> Option<Outcome> {
-    let provider = &runtime.runtime.primary_provider;
+    let provider = runtime.inner.runtime.primary_provider_ref();
     let publication = product.publication_binding();
     let handle = provider.recovered_conditional_original(publication.observation(), binding)?;
     // Same-key retries serialize on the branch commit lane, as commits do.
@@ -107,7 +112,7 @@ pub(super) fn resolve_live_indeterminate_world_fate<Schema>(
     key: [u8; 32],
     intent: [u8; 32],
 ) -> Outcome {
-    let provider = &runtime.runtime.primary_provider;
+    let provider = runtime.inner.runtime.primary_provider_ref();
     let publication = product.publication_binding();
     match provider.conditional_key_fate(execution, &publication, key, intent) {
         Ok(fate) => match outcome_for_resolved_key_fate(fate) {

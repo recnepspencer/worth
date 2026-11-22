@@ -13,6 +13,11 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowReadRoute;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::publication::PatchStreamPosition;
 /// Coarse invalidation of an immutable view. No mark refreshes its retained data or grants authority.
@@ -62,9 +67,14 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             data, phase, vocabulary, principal, input, request, target,
         )?;
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Phase)?;
-        let source = &self.application().runtime.primary_provider.live_delivery;
+        let source = self
+            .application()
+            .inner
+            .runtime
+            .primary_provider_ref()
+            .live_delivery_ref();
         // Both cursors are native owner positions. A retired exact start position is a discontinuity.
         let subscription = source
             .open(data.product().observation())
@@ -74,10 +84,11 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         let touches = match basis.commit_id() {
             Some(commit) => self
                 .application()
+                .inner
                 .runtime
-                .primary_provider
-                .graph
-                .source_owner
+                .primary_provider_ref()
+                .graph_ref()
+                .source_owner_ref()
                 .invalidation_owner
                 .touch_position_at(basis.identity().branch_id(), commit, &execution)
                 .map_err(Denial::Work)?,
@@ -120,7 +131,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             return Err(Denial::PolicyMismatch);
         }
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Phase)?;
         execution.consult().map_err(Denial::Work)?;
         let Some(subscription) = interest.subscription.as_ref() else {
@@ -130,9 +141,10 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         let mut closed = false;
         match self
             .application()
+            .inner
             .runtime
-            .primary_provider
-            .live_delivery
+            .primary_provider_ref()
+            .live_delivery_ref()
             .poll(subscription, interest.cursor)
         {
             WorthQueryLiveSourcePoll::Overflow { .. } => {
@@ -155,10 +167,11 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
         let basis = self.product().relational_basis().observation();
         let batch = self
             .application()
+            .inner
             .runtime
-            .primary_provider
-            .graph
-            .source_owner
+            .primary_provider_ref()
+            .graph_ref()
+            .source_owner_ref()
             .invalidation_owner
             .touched_commits_after(
                 basis.identity().branch_id(),

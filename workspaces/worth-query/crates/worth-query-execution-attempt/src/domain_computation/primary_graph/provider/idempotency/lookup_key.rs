@@ -1,0 +1,33 @@
+//! Lookup affinity follows command meaning; it is not a second evidence owner.
+use super::{WorthQueryApplicationIdempotencyBinding, WorthQueryProductIdempotencyAffinity};
+
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub enum WorthQueryIdempotencyLookupKey {
+    Ordinary(WorthQueryProductIdempotencyAffinity, [u8; 32]),
+    Correction([u8; 32]),
+}
+impl WorthQueryIdempotencyLookupKey {
+    pub fn for_original(
+        product: WorthQueryProductIdempotencyAffinity,
+        key: [u8; 32],
+        intent: &str,
+    ) -> Result<Self, &'static str> {
+        Ok(
+            if WorthQueryApplicationIdempotencyBinding::recorded_correction_scope(intent)? {
+                Self::Correction(key)
+            } else {
+                Self::Ordinary(product, key)
+            },
+        )
+    }
+    pub fn for_binding(
+        product: &WorthQueryProductIdempotencyAffinity,
+        binding: &WorthQueryApplicationIdempotencyBinding,
+    ) -> Self {
+        if binding.correction_identity().is_some() {
+            Self::Correction(*binding.key_identity())
+        } else {
+            Self::Ordinary(product.clone(), *binding.key_identity())
+        }
+    }
+}

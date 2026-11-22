@@ -5,12 +5,20 @@ use super::original_intent::OriginalWorkflowCandidate;
 use super::view::WorthQueryWorkflowReadBasis;
 use crate::domain_computation::primary_graph::application_attempt::observe_adjacency;
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationAdjacencyDirection;
+use crate::domain_computation::primary_graph::application_discovery::workflow::view::WorthQueryWorkflowReadBasisRuntimeExt as _;
+use crate::domain_computation::primary_graph::ReadObservationRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use worth_query_admission::facade::authenticated_principal::WorthQueryAuthenticatedExternalPrincipal;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowReadBinding;
 use worth_query_declaration::facade::application_program::ApplicationWorkflowSpec;
+use worth_query_execution_attempt::facade::ports::WorkflowReadBasisInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_query::facade::ports::AdmittedCapabilityAccessInspectionPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledWorkflowReadBinding;
 use worth_relational::facade::identity::EntityId;
@@ -82,11 +90,10 @@ impl WorthQueryWorkflowReadTarget {
     {
         // Fresh security precedes even locator affinity and existence-dependent reads.
         let access = admit(current, phase, binding, principal, input, request)?;
-        if !self
-            .basis
-            .0
-            .belongs_to_selected_occurrence(current.application(), data.product().observation())
-            || !std::ptr::eq(current.application(), data.application())
+        if !self.basis.observation().belongs_to_selected_occurrence(
+            current.application().inner(),
+            data.product().observation(),
+        ) || !std::ptr::eq(current.application(), data.application())
             || current.product().branch_identity() != data.product().branch_identity()
             || self.basis.selected_commit() != data.product().selected_commit()
             || self.basis.branch_identity() != data.product().branch_identity()
@@ -95,10 +102,11 @@ impl WorthQueryWorkflowReadTarget {
             return Err(Denial::PolicyMismatch);
         }
         let execution = phase
-            .execution_request_for(&current.application().runtime.product_runtime)
+            .execution_request_for(current.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Phase)?;
         let graph = current
             .application()
+            .inner
             .runtime
             .primary_graph()
             .ok_or(Denial::BasisUnavailable)?;

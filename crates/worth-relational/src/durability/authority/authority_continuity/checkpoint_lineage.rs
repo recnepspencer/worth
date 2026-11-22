@@ -1,4 +1,8 @@
+use super::super::lineage_allocation::{
+    commit_allocations, entity_allocation_bindings, CommitAllocationView,
+};
 use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailureClass};
+use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::data::LineageCheckpointDigestBasis;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -91,63 +95,60 @@ fn validate_checkpoint_lineage_nodes(
         ));
     }
 
-    let mut created_lineages = BTreeSet::new();
-    for envelope in &checkpoint.envelopes {
-        let created_entities = envelope
-            .patch
-            .authoritative_record_patches
+    validate_entity_allocation_nodes(
+        &nodes,
+        checkpoint
+            .envelopes
             .iter()
-            .filter_map(|patch| {
-                (patch.structural_change
-                    == crate::publication::patch::data::RecordStructuralChange::Created)
-                    .then_some(&patch.target)
-            })
-            .filter_map(|target| match target {
-                crate::transactions::data::RecordRef::Entity(entity_id) => Some(*entity_id),
-                crate::transactions::data::RecordRef::Relation(_) => None,
-            })
-            .collect::<Vec<_>>();
-        let create_events = envelope
-            .lineage_events()
-            .iter()
-            .filter(|event| event.kind() == crate::lineage::data::LineageEventKind::Create)
-            .collect::<Vec<_>>();
-        if create_events.len() != created_entities.len() {
-            return Err(corrupt_lineage(format!(
-                "checkpoint commit {} does not bind one create lineage event to each created entity",
-                envelope.commit.commit_id.0
-            )));
-        }
-        for (event, expected_entity_id) in create_events.into_iter().zip(created_entities) {
-            let [lineage_id] = event.targets() else {
+            .map(|positioned| CommitAllocationView::of_envelope(positioned.envelope())),
+    )
+}
+
+/// Every lineage allocated across `commits` is unique, and the canonical
+/// nodes are exactly the entity allocations, each naming the entity its
+/// commit created.
+///
+/// Complexity: O(total events + total created entities log created).
+pub(super) fn validate_entity_allocation_nodes<'commit>(
+    nodes: &BTreeMap<LineageId, EntityId>,
+    commits: impl IntoIterator<Item = CommitAllocationView<'commit>>,
+) -> Result<(), DurabilityError> {
+    let mut allocated_lineages = BTreeSet::new();
+    let mut entity_lineages = BTreeSet::new();
+    for view in commits {
+        let commit_id = view.commit.commit_id.0;
+        let allocations = commit_allocations(view.events)
+            .map_err(|refusal| corrupt_lineage(refusal.describe(commit_id)))?;
+        for allocation in allocations {
+            if !allocated_lineages.insert(allocation.lineage) {
                 return Err(corrupt_lineage(format!(
-                    "checkpoint create event {} must name exactly one lineage target",
-                    event.event_id()
-                )));
-            };
-            if !created_lineages.insert(*lineage_id) {
-                return Err(corrupt_lineage(format!(
-                    "checkpoint create lineage id {} is reused",
-                    lineage_id.0
+                    "checkpoint allocated lineage id {} is reused",
+                    allocation.lineage.0
                 )));
             }
-            let Some(entity_id) = nodes.get(lineage_id) else {
+        }
+        let bindings = entity_allocation_bindings(&view)
+            .map_err(|refusal| corrupt_lineage(refusal.describe(commit_id)))?;
+        for (lineage_id, expected_entity_id) in bindings {
+            let Some(entity_id) = nodes.get(&lineage_id) else {
                 return Err(corrupt_lineage(format!(
-                    "checkpoint create lineage id {} has no canonical node",
+                    "checkpoint entity lineage id {} has no canonical node",
                     lineage_id.0
                 )));
             };
             if entity_id != &expected_entity_id {
                 return Err(corrupt_lineage(format!(
-                    "checkpoint lineage node {} does not name its exact entity in commit {}",
-                    lineage_id.0, envelope.commit.commit_id.0,
+                    "checkpoint lineage node {} does not name its exact entity in commit {commit_id}",
+                    lineage_id.0,
                 )));
             }
+            entity_lineages.insert(lineage_id);
         }
     }
-    if nodes.keys().copied().collect::<BTreeSet<_>>() != created_lineages {
+    if nodes.keys().copied().collect::<BTreeSet<_>>() != entity_lineages {
         return Err(corrupt_lineage(
-            "checkpoint lineage nodes are not bijective with canonical create events".to_owned(),
+            "checkpoint lineage nodes are not bijective with canonical entity allocations"
+                .to_owned(),
         ));
     }
     Ok(())

@@ -11,6 +11,9 @@ use super::super::{
 use super::*;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationOperation;
 use crate::domain_computation::primary_graph::WorthQueryWorkflowDispositions;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::WorthQueryProgramAdoptionRequirements;
 pub(in crate::domain_computation::primary_graph) enum AdoptionEffect<'a> {
     Read,
@@ -50,7 +53,7 @@ impl AdoptionEffect<'_> {
         admission: WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
     ) -> AdoptionEffectOutcome {
         let execution = phase
-            .execution_request_for(&selected.application().runtime.product_runtime)
+            .execution_request_for(selected.application().inner.runtime.product_runtime_ref())
             .expect("capability progression checked the phase owner");
         match self {
             Self::Read => AdoptionEffectOutcome::Read(admission.validate_current_authority()),
@@ -63,9 +66,10 @@ impl AdoptionEffect<'_> {
                 let prepared = (|| {
                     let gate = selected
                         .application()
+                        .inner
                         .runtime
-                        .product_runtime
-                        .activations
+                        .product_runtime_ref()
+                        .activations_ref()
                         .gate(selected.product().branch_identity())
                         .map_err(|denial| {
                             WorthQueryBranchAdoptionPreparationDenial::ProductActivation(

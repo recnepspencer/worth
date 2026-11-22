@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod admitted_projection;
 mod attempt_progression;
 mod denial;
@@ -275,9 +276,11 @@ where
             admission_canonical_work,
         });
     }
+    use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
     match runtime
+        .inner
         .runtime
-        .primary_provider
+        .primary_provider_ref()
         .live_conditional_key_fate(&product.publication_binding(), idempotency.binding())
     {
         Ok(Some(fate)) => {

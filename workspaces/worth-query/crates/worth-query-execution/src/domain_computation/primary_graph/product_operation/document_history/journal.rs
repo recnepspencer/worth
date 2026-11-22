@@ -15,6 +15,7 @@ use std::{
     sync::Arc,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 #[path = "journal/discovery_recipes.rs"]
 mod discovery_recipes;
 #[path = "journal/group.rs"]
@@ -189,11 +190,9 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
             0,
             HistoryNode {
                 binding: NodeBinding::Completed(RecordedNode {
-                    step: WorthQueryHistoryStep {
-                        id: current,
-                        parent: None,
-                        label: None,
-                        endpoint,
+                    step: {
+                        use worth_query_execution_query::facade::ports::HistoryStepConstructionPort as _;
+                        WorthQueryHistoryStep::new_history_step(current, None, None, endpoint)
                     },
                     root_posture: None,
                 }),
@@ -245,11 +244,11 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
 
     pub(super) fn step(&self, id: WorthQueryHistoryNodeId) -> Option<&WorthQueryHistoryStep> {
         self.access(Access::Selection);
-        if id.document != self.incarnation {
+        if id.document() != self.incarnation {
             return None;
         }
         self.access(Access::Node);
-        match &self.nodes.get(&id.ordinal)?.binding {
+        match &self.nodes.get(&id.ordinal())?.binding {
             NodeBinding::Completed(node) => Some(&node.step),
             NodeBinding::Reserved { .. } => None,
         }
@@ -272,18 +271,19 @@ impl<'runtime, S> HistoryJournal<'runtime, S> {
         self.access(Access::Node);
         let NodeBinding::Reserved { parent, label } = &self
             .nodes
-            .get(&reserved.node.ordinal)
+            .get(&reserved.node.ordinal())
             .expect("reserved node")
             .binding
         else {
             unreachable!("only the original pending node can complete")
         };
-        WorthQueryHistoryStep {
-            id: reserved.node,
-            parent: Some(*parent),
-            label: Some(Arc::clone(label)),
+        use worth_query_execution_query::facade::ports::HistoryStepConstructionPort as _;
+        WorthQueryHistoryStep::new_history_step(
+            reserved.node,
+            Some(*parent),
+            Some(Arc::clone(label)),
             endpoint,
-        }
+        )
     }
 
     pub(super) fn current_step(&self) -> &WorthQueryHistoryStep {

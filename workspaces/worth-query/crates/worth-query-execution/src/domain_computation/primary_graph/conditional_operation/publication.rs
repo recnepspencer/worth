@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 
 use super::installation::{
     WorthQueryConditionalRuntimeInstallationDenial,
@@ -56,13 +57,15 @@ pub(in crate::domain_computation::primary_graph) fn require_complete_binding_inv
     {
         Ok(())
     } else {
-        Err(WorthQueryConditionalRuntimeInstallationDenial::new(
-            WorthQueryConditionalRuntimeInstallationDenialKind::IncompleteBindingInventory,
-            format!(
-                "expected {expected} exact conditional bindings, admitted {}",
-                unique.len().saturating_add(non_temporal)
+        Err(
+            WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
+                WorthQueryConditionalRuntimeInstallationDenialKind::IncompleteBindingInventory,
+                format!(
+                    "expected {expected} exact conditional bindings, admitted {}",
+                    unique.len().saturating_add(non_temporal)
+                ),
             ),
-        ))
+        )
     }
 }
 
@@ -92,7 +95,7 @@ pub(in crate::domain_computation::primary_graph) fn install_pending_bindings<Sch
     for binding in bindings {
         let installed = binding.install(bridge, graph, &affinity, authoritative_commit_cursor)?;
         registry.install(installed).map_err(|()| {
-            WorthQueryConditionalRuntimeInstallationDenial::new(
+            WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                 WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,
                 "duplicate installed conditional binding",
             )
@@ -105,7 +108,7 @@ pub(in crate::domain_computation::primary_graph) fn publication_denial(
     denial: WorthQueryPrimaryGraphInstallationDenial,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
     let subject = denial.to_string();
-    WorthQueryConditionalRuntimeInstallationDenial::new(
+    WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
         WorthQueryConditionalRuntimeInstallationDenialKind::PrimaryGraphPublication(Box::new(
             denial,
         )),

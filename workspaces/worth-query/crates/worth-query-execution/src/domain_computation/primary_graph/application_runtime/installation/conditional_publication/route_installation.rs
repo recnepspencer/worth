@@ -1,5 +1,8 @@
 //! Seal actual conditional routes and resources before runtime assembly.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ApplicationOutputLineageInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 #[inline(never)]
 pub(super) fn install<S: ApplicationSchema + 'static>(
     phase: &crate::domain_computation::primary_graph::WorthQueryBootstrapAdvancementPhase<'_>,
@@ -29,8 +32,8 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
     let mut graph = graph.consume();
     let authoritative_commit_cursor = graph
         .primary_provider
-        .graph
-        .source_owner
+        .graph_ref()
+        .source_owner_ref()
         .invalidation_owner
         .latest_position();
     let conditional_operations =
@@ -67,8 +70,8 @@ pub(super) fn install<S: ApplicationSchema + 'static>(
     {
         let mut lineage = graph
             .primary_provider
-            .graph
-            .output_lineage
+            .graph_ref()
+            .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         lineage.install_output_families(producers.output_family_bindings());

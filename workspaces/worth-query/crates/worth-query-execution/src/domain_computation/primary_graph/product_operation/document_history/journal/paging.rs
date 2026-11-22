@@ -11,6 +11,7 @@ use super::super::{
 use super::*;
 use std::ops::Bound::{Excluded, Included};
 use worth_execution::WorkCeilingDenial;
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 #[path = "paging/children.rs"]
 mod children;
 #[path = "paging/entries.rs"]
@@ -207,15 +208,18 @@ impl PageSource<'_> {
                         Some(parent)
                             if self
                                 .retained
-                                .get(&parent.ordinal)
+                                .get(&parent.ordinal())
                                 .is_some_and(|source| source.source.is_some()) =>
                         {
                             Parent::Retained(parent)
                         }
                         Some(_) => Parent::Truncated,
                     },
-                    label: node.step.label.clone(),
-                    endpoint: node.step.endpoint.clone(),
+                    label: {
+                        use worth_query_execution_query::facade::ports::HistoryStepConstructionPort as _;
+                        node.step.label_arc()
+                    },
+                    endpoint: node.step.endpoint().clone(),
                 },
             });
         }

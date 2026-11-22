@@ -1,0 +1,234 @@
+use super::completion_publication::{CompletionPreparationDenial, PreparedCompletionPublication};
+use crate::domain_computation::execution_runtime::product_world::publication_denial::{
+    WorthQueryProductPublicationDenial as PublicationDenial,
+    WorthQueryProductPublicationOutcome as PublicationOutcome,
+};
+use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use crate::domain_computation::primary_graph::provider::WorthQueryInboundCompletionPreparationDenial as Preparation;
+use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use std::sync::atomic::Ordering;
+use std::sync::Arc;
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+use worth_relational::facade::mvcc::ValidatedRelationalProposal;
+
+use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_installation::facade::ApplicationSchema;
+
+use super::outcome::{
+    WorthQueryInboundPublicationDenial as Denial, WorthQueryInboundPublicationOutcome as Outcome,
+    WorthQueryPerformedInboundCompletion, WorthQueryUnpublishedInboundCompletion,
+};
+use crate::domain_computation::application_aftermath::WorthQueryAcceptedInboundOccurrence;
+use crate::domain_computation::execution_runtime::product_world::WorthQueryReservedProductPublicationReceipt;
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use crate::domain_computation::WorthQueryProductUnpublishedApplication;
+
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Progress one accepted occurrence at the current head of the exact
+    /// incarnation that issued its dispatch. Only World Performed may become
+    /// terminal completion; an unpublished Relational effect stays in custody.
+    pub fn publish_inbound_completion(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+
+        accepted: Arc<WorthQueryAcceptedInboundOccurrence>,
+        request: &WorthQueryRequestScope,
+    ) -> Outcome {
+        let publication_execution = match phase.execution_request_for(&self.runtime.product_runtime)
+        {
+            Ok(execution) => execution,
+            Err(cause) => return Outcome::Denied(Denial::ExecutionDenied(cause.into())),
+        };
+        let owner = accepted.owner();
+        let cost = self
+            .inbound_cost_for_operation(accepted.operation())
+            .expect("accepted occurrence retains its installed operation");
+        let original = owner.committed_product_publication();
+        let incarnation = original.product_incarnation();
+        let runtime_instance = self
+            .runtime
+            .product_runtime
+            .source()
+            .authoritative_source_profile()
+            .runtime_instance_id();
+        if owner.relational_runtime_instance_id() != runtime_instance {
+            return Outcome::Denied(Denial::ForeignRelationalRuntime);
+        }
+        if original.product_branch().owner_identity()
+            != self.runtime.product_runtime.owner_ref().owner_identity()
+        {
+            return Outcome::Denied(Denial::ForeignProductWorld);
+        }
+        if owner.commit_reference() != original.relational_commit() {
+            return Outcome::Denied(Denial::OriginalPublicationCommitMismatch);
+        }
+
+        // Ordinary application commits and branch close share this exact
+        // incarnation lane, so none can pass between basis admission and the
+        // completion's World publication attempt.
+        let lane = self
+            .runtime
+            .primary_provider
+            .application_branch_commit_lane_for_occurrence(incarnation);
+
+        let _coordination = lane.enter();
+        // A transport completion may have won after this signed occurrence
+        // entered custody but before it acquired the shared incarnation lane.
+        // Recheck canonical terminal ownership here before creating a second
+        // completion mutation.
+        cost.cost
+            .terminal_key_probes
+            .fetch_add(1, Ordering::Relaxed);
+        match self
+            .runtime
+            .primary_provider
+            .lookup_completed_inbound(accepted.owner().record().correlation())
+        {
+            Ok(Some(terminal))
+                if terminal.matches_effect(accepted.operation(), accepted.claims()) =>
+            {
+                return Outcome::AlreadyCompleted;
+            }
+            Ok(Some(_)) => return Outcome::Denied(Denial::CorrelationAlreadyOwned),
+            Err(_) => return Outcome::Denied(Denial::TerminalIndexUnavailable),
+            Ok(None) => {}
+        }
+        let lease = match self
+            .runtime
+            .product_runtime
+            .admit_product_occurrence(incarnation)
+        {
+            Ok(lease) => lease,
+            Err(_) => return Outcome::Denied(Denial::ProductAdmission),
+        };
+        cost.cost
+            .completion_candidate_prepares
+            .fetch_add(1, Ordering::Relaxed);
+        // Ordinary selection carries the program observed at this exact occurrence.
+        let selected = match self.on_product(execution, lease) {
+            Ok(selected) => selected,
+            Err(_) => return Outcome::Denied(Denial::ProductAdmission),
+        };
+        let lease = selected.product();
+        let candidate = match completion_candidate(
+            self.runtime
+                .primary_provider
+                .validate_inbound_completion_proposal(
+                    execution,
+                    lease.relational_basis(),
+                    &accepted,
+                ),
+        ) {
+            Ok(candidate) => candidate,
+            Err(outcome) => return outcome,
+        };
+        let binding = lease.publication_binding();
+        let recovery = binding.recovery();
+        let prepared = match PreparedCompletionPublication::prepare(&self.runtime.primary_provider, &binding, candidate, request, execution) {
+            Ok(prepared) => prepared,
+            Err(CompletionPreparationDenial::Native(cause)) => return Outcome::Denied(Denial::CompletionPreparation(cause)),
+            Err(CompletionPreparationDenial::Opening(cause)) => {
+                return Outcome::Denied(match super::completion_publication::opening_request_stop(cause) {
+                    Some(stop) => Denial::ExecutionDenied(advancement_denial(stop)),
+                    None => Denial::ProductAdmission,
+                });
+            },
+            Err(CompletionPreparationDenial::Request(PublicationDenial::ClockMismatch)) => {
+                return Outcome::Denied(Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
+            },
+Err(CompletionPreparationDenial::Request(PublicationDenial::Stopped(stop))) => {
+                return Outcome::Denied(Denial::ExecutionDenied(advancement_denial(stop)))
+            }
+            Err(CompletionPreparationDenial::Request(PublicationDenial::Refused(_))) => return Outcome::NoEffect,
+        };
+        accepted.record_preparation_denial(prepared.preparation_denial());
+        let terminal = WorthQueryReservedProductPublicationReceipt::new(
+            binding.root_identity(),
+            prepared.unpublished_recovery_handle(),
+            false,
+            false,
+            false,
+        );
+        let correlation = *accepted.owner().record().correlation();
+        self.runtime
+            .primary_provider
+            .mark_inbound_completion_publication_pending(&correlation);
+        cost.cost
+            .world_publication_attempts
+            .fetch_add(1, Ordering::Relaxed);
+        match prepared.execute(publication_execution) {
+            Ok(PublicationOutcome::Performed(publication)) => {
+                cost.cost
+                    .world_performed_publications
+                    .fetch_add(1, Ordering::Relaxed);
+                Outcome::Performed(WorthQueryPerformedInboundCompletion::new(
+                    accepted,
+                    incarnation,
+                    terminal.fill(publication.consume(), None),
+                ))
+            }
+            Err(PublicationDenial::ClockMismatch) => {
+                self.runtime
+                    .primary_provider
+                    .clear_inbound_completion_publication_pending(&correlation);
+                Outcome::Denied(Denial::ExecutionDenied(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock)))
+            }
+            Err(PublicationDenial::Stopped(stop)) => {
+                self.runtime
+                    .primary_provider
+                    .clear_inbound_completion_publication_pending(&correlation);
+                Outcome::Denied(Denial::ExecutionDenied(advancement_denial(stop)))
+            }
+            Err(PublicationDenial::Refused(_)) => {
+                self.runtime
+                    .primary_provider
+                    .clear_inbound_completion_publication_pending(&correlation);
+                Outcome::NoEffect
+            }
+            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
+                Outcome::ProductUnpublished(WorthQueryUnpublishedInboundCompletion::new(
+                    accepted,
+                    WorthQueryProductUnpublishedApplication::from_effects(
+                        effects,
+                        recovery,
+                        self.runtime
+                            .primary_provider
+                            .unpublished_idempotency_disposition(),
+                    ),
+                ))
+            }
+        }
+    }
+}
+
+// Both entry routes keep HEAD's preparation-refusal posture. The complete
+// refusal travels with the publication outcome rather than becoming a string.
+pub fn completion_candidate(
+    result: Result<ValidatedRelationalProposal, Preparation>,
+) -> Result<ValidatedRelationalProposal, Outcome> {
+    match result {
+        Ok(candidate) => Ok(candidate),
+        Err(
+            denial @ (Preparation::ExecutionDenied { .. }
+            | Preparation::ExecutionControlStopped { .. }
+            | Preparation::OriginalOutboxNotAnEntity
+            | Preparation::ForeignOrStaleBasis
+            | Preparation::AllocationDenied { .. }
+            | Preparation::StagingAllocationDenied { .. }
+            | Preparation::StagingCardinalityOverflow
+            | Preparation::StagingInputDirectoryAllocationDenied { .. }
+            | Preparation::StagingUnavailable
+            | Preparation::ValidationUnavailable
+            | Preparation::PreparationUnavailable
+            | Preparation::SnapshotUnavailable
+            | Preparation::InstalledBindingMismatch
+            | Preparation::DispatchOwnerMismatch),
+        ) => Err(Outcome::Denied(Denial::CompletionPreparation(denial))),
+    }
+}

@@ -12,6 +12,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::RelationalRuntime;
 
@@ -25,7 +29,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
 ) -> Result<(), Denial> {
     let application = target.application();
     let execution = phase
-        .execution_request_for(&application.runtime.product_runtime)
+        .execution_request_for(application.inner.runtime.product_runtime_ref())
         .map_err(|_| Denial::ForeignPhase)?;
     // Direct-head correction preserves its existing strict comparison for ALL
     // fact classes. Equality is the actual World occurrence AND admitted basis,
@@ -34,9 +38,10 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
         && target.product().observation().basis() == source.ancestry().source().basis()
     {
         return application
+            .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(&execution, |runtime| {
                 let snapshot =
                     open_exact_basis_snapshot(runtime, target.product().relational_basis())
@@ -53,47 +58,45 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
             });
     }
     let original = source.ancestry().source().basis().relational_basis();
-    let selection =
-        application
-            .runtime
-            .primary_provider
-            .graph
-            .with_runtime(&execution, |runtime| {
-                with_support_snapshots(
-                    runtime,
-                    original,
-                    target.product().relational_basis(),
-                    |runtime, before, current| {
-                        let original_view = runtime
-                            .read_truth()
-                            .project_snapshot(before)
-                            .ok_or(Denial::SemanticMaterialUnavailable)?;
-                        let target_view = runtime
-                            .read_truth()
-                            .project_snapshot(current)
-                            .ok_or(Denial::SemanticMaterialUnavailable)?;
-                        overlap::select(execution, facts, runtime, &original_view, &target_view)
-                            .map_err(Denial::RestoredSupport)
-                            .inspect_err(|cause| {
-                                correction_rejection("overlap-selection", None, cause)
-                            })
-                    },
-                )
-            })?;
-    let occurrences =
-        application
-            .runtime
-            .primary_provider
-            .graph
-            .with_runtime(&execution, |runtime| {
-                history::collect(
-                    runtime,
-                    execution,
-                    original,
-                    target.product().relational_basis(),
-                    &selection,
-                )
-            })?;
+    let selection = application
+        .inner
+        .runtime
+        .primary_provider_ref()
+        .graph_ref()
+        .with_runtime(&execution, |runtime| {
+            with_support_snapshots(
+                runtime,
+                original,
+                target.product().relational_basis(),
+                |runtime, before, current| {
+                    let original_view = runtime
+                        .read_truth()
+                        .project_snapshot(before)
+                        .ok_or(Denial::SemanticMaterialUnavailable)?;
+                    let target_view = runtime
+                        .read_truth()
+                        .project_snapshot(current)
+                        .ok_or(Denial::SemanticMaterialUnavailable)?;
+                    overlap::select(execution, facts, runtime, &original_view, &target_view)
+                        .map_err(Denial::RestoredSupport)
+                        .inspect_err(|cause| correction_rejection("overlap-selection", None, cause))
+                },
+            )
+        })?;
+    let occurrences = application
+        .inner
+        .runtime
+        .primary_provider_ref()
+        .graph_ref()
+        .with_runtime(&execution, |runtime| {
+            history::collect(
+                runtime,
+                execution,
+                original,
+                target.product().relational_basis(),
+                &selection,
+            )
+        })?;
     let occurrences = history::narrow(target, execution, facts, occurrences)
         .inspect_err(|cause| correction_rejection("managed-historical-relevance", None, cause))?;
     cancellation::require(target, execution, &occurrences).inspect_err(|cause| {
@@ -108,9 +111,10 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
         )
     })?;
     application
+        .inner
         .runtime
-        .primary_provider
-        .graph
+        .primary_provider_ref()
+        .graph_ref()
         .with_runtime(&execution, |runtime| {
             with_support_snapshots(
                 runtime,

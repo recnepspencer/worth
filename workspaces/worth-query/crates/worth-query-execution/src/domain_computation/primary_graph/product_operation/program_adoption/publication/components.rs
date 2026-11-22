@@ -3,6 +3,7 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_runtime_world::facade::NoEffectCompositePublication;
 
 use super::{WorthQueryPerformedBranchAdoption, WorthQueryUnpublishedBranchAdoption};
@@ -145,11 +146,14 @@ Err(PublicationDenial::Stopped(stop)) => {
                 )
             }
         };
-        let stage_control = &application
+        use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryBranchAdoptionStageForTest as AdoptionStage;
+        use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+        use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+        let stage_control = application
+            .inner
             .runtime
-            .primary_provider
-            .application_attempt_operation_control;
-        use crate::domain_computation::primary_graph::application_runtime::operation_control::WorthQueryBranchAdoptionStageForTest as AdoptionStage;
+            .primary_provider_ref()
+            .application_attempt_operation_control_ref();
         if matches!(
             &outcome,
             WorthQueryBranchAdoptionPublicationOutcome::Performed(_)

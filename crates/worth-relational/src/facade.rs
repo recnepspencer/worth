@@ -125,6 +125,9 @@ pub mod history {
     };
 }
 
+#[path = "facade/aggregate_identity.rs"]
+pub mod aggregate_identity;
+
 #[path = "facade/identity.rs"]
 pub mod identity;
 
@@ -137,21 +140,8 @@ pub mod indexes;
 #[path = "facade/inspection.rs"]
 pub mod inspection;
 
-pub mod lineage {
-    pub use crate::lineage::access::{RelationalLineageDiscoveryDenial, RelationalLineageNodeRead};
-    pub use crate::lineage::data::{
-        HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,
-        HistoricalLineageResolutionMetrics, HistoricalResolutionBoundednessBasis,
-        HistoricalResolutionDigestMode, HistoricalResolutionRequest, HistoricalResolutionTrace,
-        LineageArtifactCounters, LineageCheckpointArtifact, LineageCheckpointCounters,
-        LineageCheckpointDigestBasis, LineageDecisionKind, LineageDecisionLogDigestBasis,
-        LineageDigestBasis, LineageDivergenceMetrics, LineageDivergenceRequest,
-        LineageDivergenceSummary, LineageDivergenceTraversalBasis, LineageEventBatchDigestBasis,
-        LineageEventKind, LineageEventRecord, LineageGraphDigestBasis, LineageGraphDigestMode,
-        LineageGraphMetrics, LineageGraphRequest, LineageGraphSnapshot, LineageGraphTraversalBasis,
-        LineageInvariant, LineageNode, RecordHistoryRequest,
-    };
-}
+#[path = "facade/lineage.rs"]
+pub mod lineage;
 
 pub mod merge {
     pub use crate::merge::data::{
@@ -310,9 +300,8 @@ pub mod publication {
     };
     pub use crate::publication::data::{
         AuthoredRetirementRefusal, CoupledFreshWriter, CoupledProvenancePostponement,
-        PublicationArtifactSnapshot,
-        PublicationDiagnosticsSnapshot, PublicationError, PublicationObservationSnapshot,
-        PublicationSettlementRepairError,
+        PublicationArtifactSnapshot, PublicationDiagnosticsSnapshot, PublicationError,
+        PublicationObservationSnapshot, PublicationSettlementRepairError,
     };
     pub use crate::publication::patch::data::{
         PatchDetail, PatchFragmentBudget, PatchOrdering, PatchPublicationMode, PatchStreamBatch,

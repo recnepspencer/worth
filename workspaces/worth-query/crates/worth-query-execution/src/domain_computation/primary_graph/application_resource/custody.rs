@@ -1,4 +1,5 @@
 //! Retain original work before effects; only live owners record release.
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 pub(super) mod handoff;
 use super::super::{query_obligations::*, WorthQueryPrimaryGraphApplicationRuntime};
 use super::{

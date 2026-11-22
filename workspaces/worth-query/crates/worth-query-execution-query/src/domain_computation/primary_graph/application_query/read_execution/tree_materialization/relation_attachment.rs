@@ -1,0 +1,386 @@
+use std::collections::{BTreeMap, BTreeSet};
+
+use worth_query_admission::facade::application_query::WorthQueryAdmittedApplicationQueryParameters;
+use worth_query_declaration::facade::application_query::{
+    ApplicationQueryCardinality, ApplicationQueryResultTraversalDirection,
+};
+use worth_query_installation::facade::{
+    WorthQueryInstalledGraphReadContract, WorthQueryInstalledGraphRelation,
+};
+use worth_relational::facade::identity::EntityId;
+
+use super::relation_distribution::distribute_relation_rows;
+use super::relation_occurrence::{attach_occurrences, RelationProjectionTarget};
+use super::relation_target_filter::retain_matching_targets;
+use super::{
+    project_nodes, ActiveResultTreeCollectionSelection, ResultTreeWork, TargetedCollectionChild,
+    WorthQueryApplicationProjectionNode, WorthQueryApplicationReadExecutionDenial,
+};
+use crate::domain_computation::primary_graph::application_query::read_execution::{
+    read_execution_denial, WorthQueryApplicationReadExecutionDenialKind,
+};
+
+mod omitted_relation;
+mod ordered;
+pub use omitted_relation::advance_omitted_relation;
+use ordered::attach_ordered_relation;
+
+#[allow(clippy::too_many_arguments)]
+pub fn attach_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    read: &crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::read_basis::ResultTreeRead<'_>,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    contract: &WorthQueryInstalledGraphReadContract,
+    governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    parameters: &WorthQueryAdmittedApplicationQueryParameters,
+    relation: &WorthQueryInstalledGraphRelation,
+    parents: &mut [WorthQueryApplicationProjectionNode],
+    work: &mut ResultTreeWork,
+    collection_selection: &mut ActiveResultTreeCollectionSelection,
+) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+    let layout = graph
+        .relation(relation.relation())
+        .filter(|layout| {
+            graph.entity_kind(relation.from()) == Some(layout.from)
+                && graph.entity_kind(relation.to()) == Some(layout.to)
+        })
+        .ok_or_else(|| traversal_denial(relation.result_path()))?;
+    if work.materialized() {
+        for before in 0..parents.len() {
+            work.material_tree::<EntityId>(before)?;
+        }
+    }
+    let frontier = parents
+        .iter()
+        .map(WorthQueryApplicationProjectionNode::entity_id)
+        .collect::<BTreeSet<_>>();
+    match collection_selection {
+        ActiveResultTreeCollectionSelection::Ordered(window)
+            if window
+                .request
+                .as_ref()
+                .is_some_and(|request| request.collection_path == relation.result_path()) =>
+        {
+            return attach_ordered_relation(
+                execution, read, projection, graph, contract, governance, parameters, relation,
+                parents, work, window,
+            );
+        }
+        ActiveResultTreeCollectionSelection::Targeted(target)
+            if target.collection_path == relation.result_path() =>
+        {
+            return attach_targeted_relation(
+                execution, read, projection, graph, contract, governance, parameters, relation,
+                parents, work, target,
+            );
+        }
+        ActiveResultTreeCollectionSelection::Complete
+        | ActiveResultTreeCollectionSelection::Ordered(_)
+        | ActiveResultTreeCollectionSelection::Targeted(_) => {}
+    }
+    work.checkpoint(relation.result_path())?;
+    let adjacency = match relation.direction() {
+        ApplicationQueryResultTraversalDirection::Forward => projection
+            .bounded_outgoing_relations_for_frontier(
+                execution,
+                &frontier,
+                layout.kind,
+                None,
+            ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
+        ApplicationQueryResultTraversalDirection::Reverse => projection
+            .bounded_incoming_relations_for_frontier(
+                execution,
+                &frontier,
+                layout.kind,
+                None,
+            ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
+    }
+    .map_err(|_| work_limit_denial(relation.result_path()))?;
+    work.charge_adjacency(
+        adjacency.adjacency_lists_read(),
+        adjacency.relation_records_examined(),
+        adjacency.endpoint_records_reserved(),
+        relation.result_path(),
+    )?;
+    let mut targets = BTreeMap::<EntityId, Vec<RelationProjectionTarget>>::new();
+    for record in adjacency.into_records() {
+        work.checkpoint(relation.result_path())?;
+        let (parent, child) = match relation.direction() {
+            ApplicationQueryResultTraversalDirection::Forward => (record.source, record.target),
+            ApplicationQueryResultTraversalDirection::Reverse => (record.target, record.source),
+        };
+        if work.materialized() && !targets.contains_key(&parent) {
+            work.material_tree::<(EntityId, Vec<RelationProjectionTarget>)>(targets.len())?;
+        }
+        let selected = targets.entry(parent).or_default();
+        work.material_next(selected)?;
+        selected.push(RelationProjectionTarget {
+            entity: child,
+            relation: record.relation_id,
+        });
+    }
+    let target_count = if work.materialized() {
+        parents.iter().try_fold(0usize, |count, parent| {
+            work.checkpoint(relation.result_path())?;
+            count.checked_add(targets.get(&parent.entity_id()).map_or(0, Vec::len)).ok_or_else(|| super::super::denial::relational_read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow, relation.result_path()))
+        })?
+    } else {
+        0
+    };
+    let predicate_counts = work.collect_material(
+        parents.len(),
+        parents.iter().map(|parent| {
+            if relation.predicate().is_some() {
+                targets.get(&parent.entity_id()).map_or(0, Vec::len)
+            } else {
+                0
+            }
+        }),
+        relation.result_path(),
+    )?;
+    let predicate_sources = if relation.predicate().is_some() {
+        work.collect_material(
+            target_count,
+            parents.iter().flat_map(|parent| {
+                targets
+                    .get(&parent.entity_id())
+                    .into_iter()
+                    .flatten()
+                    .map(|target| target.entity)
+            }),
+            relation.result_path(),
+        )?
+    } else {
+        Vec::new()
+    };
+    for target in targets.values_mut() {
+        retain_matching_targets(
+            execution,
+            projection,
+            graph,
+            governance,
+            parameters,
+            relation,
+            target,
+            |target| target.entity,
+            work,
+        )?;
+    }
+    let counts = if work.materialized() {
+        work.material_slots::<usize>(parents.len())?;
+        let mut counts = super::allocate_result_vector(parents.len(), relation.result_path())?;
+        for parent in parents.iter() {
+            let count = targets.get(&parent.entity_id()).map_or(0, Vec::len);
+            validate_relation_cardinality(relation, count)?;
+            counts.push(count);
+        }
+        counts
+    } else {
+        parents
+            .iter()
+            .map(|parent| {
+                let count = targets.get(&parent.entity_id()).map_or(0, Vec::len);
+                validate_relation_cardinality(relation, count)?;
+                Ok(count)
+            })
+            .collect::<Result<Vec<_>, WorthQueryApplicationReadExecutionDenial>>()?
+    };
+    let selected_count = if work.materialized() {
+        parents.iter().try_fold(0usize, |count, parent| {
+            work.checkpoint(relation.result_path())?;
+            count.checked_add(targets.get(&parent.entity_id()).map_or(0, Vec::len)).ok_or_else(|| super::super::denial::relational_read_denial(worth_relational::facade::transactions::RelationalExecutionDenialCause::ChargedBytesOverflow, relation.result_path()))
+        })?
+    } else {
+        0
+    };
+    let selected_targets = work.collect_material(
+        selected_count,
+        parents.iter().flat_map(|parent| {
+            targets
+                .get(&parent.entity_id())
+                .into_iter()
+                .flat_map(|ids| ids.iter().copied())
+        }),
+        relation.result_path(),
+    )?;
+    let child_ids = work.collect_material(
+        selected_count,
+        selected_targets.iter().map(|target| target.entity),
+        relation.result_path(),
+    )?;
+    let mut children = project_nodes(
+        execution,
+        read,
+        projection,
+        graph,
+        contract,
+        governance,
+        parameters,
+        Some(relation.result_path_identity()),
+        relation.result_path(),
+        relation.child_entity(),
+        &child_ids,
+        work,
+        collection_selection,
+    )?;
+    attach_occurrences(
+        &mut children,
+        &selected_targets,
+        relation.result_path(),
+        work,
+    )?;
+    distribute_relation_rows(
+        parents,
+        relation,
+        counts,
+        children,
+        contract,
+        governance,
+        work,
+        false,
+        predicate_counts,
+        predicate_sources,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn attach_targeted_relation(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    read: &crate::domain_computation::primary_graph::application_query::read_execution::tree_materialization::read_basis::ResultTreeRead<'_>,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    contract: &WorthQueryInstalledGraphReadContract,
+    governance: &crate::domain_computation::primary_graph::application_query::disclosure::WorthQueryApplicationQueryGovernance,
+    parameters: &WorthQueryAdmittedApplicationQueryParameters,
+    relation: &WorthQueryInstalledGraphRelation,
+    parents: &mut [WorthQueryApplicationProjectionNode],
+    work: &mut ResultTreeWork,
+    target: &TargetedCollectionChild,
+) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+    let [parent] = parents else {
+        return Err(traversal_denial(relation.result_path()));
+    };
+    let layout = graph
+        .relation(relation.relation())
+        .ok_or_else(|| traversal_denial(relation.result_path()))?;
+    let frontier = BTreeSet::from([target.child_entity_id]);
+    work.checkpoint(relation.result_path())?;
+    let adjacency = match relation.direction() {
+        ApplicationQueryResultTraversalDirection::Forward => projection
+            .bounded_incoming_relations_for_frontier(
+                execution,
+                &frontier,
+                layout.kind,
+                None,
+            ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
+        ApplicationQueryResultTraversalDirection::Reverse => projection
+            .bounded_outgoing_relations_for_frontier(
+                execution,
+                &frontier,
+                layout.kind,
+                None,
+            ).map_err(|cause| crate::domain_computation::primary_graph::application_query::read_execution::denial::relational_read_denial(cause, relation.result_path()))?,
+    }
+    .map_err(|_| work_limit_denial(relation.result_path()))?;
+    work.charge_adjacency(
+        adjacency.adjacency_lists_read(),
+        adjacency.relation_records_examined(),
+        adjacency.endpoint_records_reserved(),
+        relation.result_path(),
+    )?;
+    let matching_memberships = adjacency
+        .into_records()
+        .into_iter()
+        .filter(|record| match relation.direction() {
+            ApplicationQueryResultTraversalDirection::Forward => {
+                record.source == parent.entity_id() && record.target == target.child_entity_id
+            }
+            ApplicationQueryResultTraversalDirection::Reverse => {
+                record.source == target.child_entity_id && record.target == parent.entity_id()
+            }
+        })
+        .count();
+    if matching_memberships != 1 {
+        return Err(traversal_denial(relation.result_path()));
+    }
+    let mut filtered_target = vec![target.child_entity_id];
+    retain_matching_targets(
+        execution,
+        projection,
+        graph,
+        governance,
+        parameters,
+        relation,
+        &mut filtered_target,
+        |entity| *entity,
+        work,
+    )?;
+    if filtered_target.len() != 1 {
+        return Err(traversal_denial(relation.result_path()));
+    }
+    let mut nested_selection = ActiveResultTreeCollectionSelection::Complete;
+    let children = project_nodes(
+        execution,
+        read,
+        projection,
+        graph,
+        contract,
+        governance,
+        parameters,
+        Some(relation.result_path_identity()),
+        relation.result_path(),
+        relation.child_entity(),
+        &[target.child_entity_id],
+        work,
+        &mut nested_selection,
+    )?;
+    distribute_relation_rows(
+        parents,
+        relation,
+        vec![1],
+        children,
+        contract,
+        governance,
+        work,
+        true,
+        vec![usize::from(relation.predicate().is_some())],
+        relation
+            .predicate()
+            .map(|_| vec![target.child_entity_id])
+            .unwrap_or_default(),
+    )
+}
+
+pub fn validate_relation_cardinality(
+    relation: &WorthQueryInstalledGraphRelation,
+    count: usize,
+) -> Result<(), WorthQueryApplicationReadExecutionDenial> {
+    let valid = match relation.cardinality() {
+        ApplicationQueryCardinality::OptionalOne => count <= 1,
+        ApplicationQueryCardinality::ExactlyOne => count == 1,
+        ApplicationQueryCardinality::Many => true,
+    };
+    if valid {
+        Ok(())
+    } else {
+        Err(read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::CardinalityMismatch,
+            relation.result_path(),
+        ))
+    }
+}
+
+fn traversal_denial(subject: impl Into<String>) -> WorthQueryApplicationReadExecutionDenial {
+    read_execution_denial(
+        WorthQueryApplicationReadExecutionDenialKind::TraversalUnavailable,
+        subject,
+    )
+}
+
+fn work_limit_denial(subject: impl Into<String>) -> WorthQueryApplicationReadExecutionDenial {
+    read_execution_denial(
+        WorthQueryApplicationReadExecutionDenialKind::WorkLimitExceeded,
+        subject,
+    )
+}

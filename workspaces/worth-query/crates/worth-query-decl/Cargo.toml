@@ -10,6 +10,7 @@ publish = false
 
 [dependencies]
 worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-macros = { path = "../worth-query-macros" }
 
 [lints]
 workspace = true

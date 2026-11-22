@@ -86,6 +86,19 @@ impl TransactionCommitError {
         }
     }
 
+    pub(crate) fn lineage_name_denial(denial: crate::lineage::data::LineageNameDenial) -> Self {
+        Self::publication(PublicationError::from_lineage_name_denial(denial))
+    }
+
+    /// Typed persistent-naming refusal, when name minting or collision guards
+    /// stopped this commit before seal.
+    pub fn lineage_name_denial_ref(&self) -> Option<&crate::lineage::data::LineageNameDenial> {
+        match self {
+            Self::Publication { error, .. } => error.lineage_name_denial(),
+            _ => None,
+        }
+    }
+
     pub fn preparation(error: CommitPreparationError) -> Self {
         Self::Preparation {
             error,

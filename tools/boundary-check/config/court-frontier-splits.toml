@@ -237,6 +237,27 @@ owners = ["domain_computation/primary_graph/tests/authorization", "domain_comput
 delegates = []
 
 [[splits]]
+court = "worth-query-court-decl-host-where-filter"
+frontier = ["worth-query-decl", "worth-query-host"]
+area = "where-filter"
+owners = ["where_filter"]
+delegates = []
+
+[[splits]]
+court = "worth-query-court-decl-host-single-source"
+frontier = ["worth-query-decl", "worth-query-host"]
+area = "single-source"
+owners = ["single_source"]
+delegates = []
+
+[[splits]]
+court = "worth-query-court-decl-host-macros"
+frontier = ["worth-query-decl", "worth-query-host"]
+area = "macros"
+owners = ["macros"]
+delegates = []
+
+[[splits]]
 court = "worth-query-court-decl-host-native-fragments"
 frontier = ["worth-query-decl", "worth-query-host"]
 area = "native-fragments"

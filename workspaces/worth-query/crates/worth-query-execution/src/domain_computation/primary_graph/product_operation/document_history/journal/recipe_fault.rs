@@ -4,6 +4,7 @@ use super::*;
 use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_query::facade::ports::HistoryNodeIdInternalPort as _;
 impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHistory<'_, S, H> {
     #[doc(hidden)]
     pub fn clear_history_discovery_recipes_for_test(
@@ -72,11 +73,11 @@ impl<S> HistoryJournal<'_, S> {
         &mut self,
         step: WorthQueryHistoryNodeId,
     ) -> Option<&mut RetainedHistorySource> {
-        if step.document != self.incarnation {
+        if step.document() != self.incarnation {
             return None;
         }
         self.retained
-            .get_mut(&step.ordinal)
+            .get_mut(&step.ordinal())
             .filter(|source| source.source.is_some())
     }
 }

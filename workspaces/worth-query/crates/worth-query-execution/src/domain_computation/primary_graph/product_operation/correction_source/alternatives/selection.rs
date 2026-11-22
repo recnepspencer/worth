@@ -1,5 +1,8 @@
 //! Descriptive operated-source coordinates resolve only through canonical native history.
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 /// A changed observation invalidates traversal only within the same branch occurrence.
 pub(super) fn require_current_target(
@@ -52,12 +55,13 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
             .map_err(|cause| Denial::Selection(Box::new(cause)))?;
         let source = super::super::lineage::source_locator(&source);
         let execution = phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(|_| Denial::ForeignPhase)?;
         let fact = self
             .application()
+            .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .reversal_of_source_at_basis(&execution, self.product().relational_basis(), &source)
             .map_err(Denial::History)?
             .ok_or(Denial::ForeignAlternative)?;

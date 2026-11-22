@@ -1,4 +1,4 @@
-//! The closed V1 expression type vocabulary.
+//! The closed expression type vocabulary: V1 types plus the V2 `Date`.
 
 mod dimension;
 mod name;
@@ -86,7 +86,7 @@ impl IntegerType {
     }
 }
 
-/// A V1 expression type.
+/// An expression type. `Date` is V2 vocabulary; every other type is V1.
 ///
 /// Nominal types name an exact schema declaration version. `MapEntry` exists
 /// only as the element type `entries(map)` produces; schemas cannot declare it.
@@ -109,6 +109,9 @@ pub enum ExpressionType {
     Quantity(ExpressionDimension),
     Bits(u32),
     Logic4(u32),
+    /// A proleptic Gregorian calendar day, ordered by its day count from the
+    /// Unix epoch. Declared last so V1 type order is unchanged.
+    Date,
 }
 
 impl ExpressionType {
@@ -138,9 +141,9 @@ impl ExpressionType {
     }
 
     /// Types with a language ordering: numeric scalars, quantities, String,
-    /// and Bytes.
+    /// Bytes, and Date.
     pub(crate) fn is_ordered(&self) -> bool {
-        self.is_numeric() || matches!(self, Self::String | Self::Bytes)
+        self.is_numeric() || matches!(self, Self::String | Self::Bytes | Self::Date)
     }
 
     /// Map keys have a canonical ordering: String, integers, and nominal IDs.
@@ -169,6 +172,7 @@ impl fmt::Display for ExpressionType {
             Self::Quantity(dimension) => write!(f, "Quantity<{dimension}>"),
             Self::Bits(width) => write!(f, "Bits<{width}>"),
             Self::Logic4(width) => write!(f, "Logic4<{width}>"),
+            Self::Date => f.write_str("Date"),
         }
     }
 }

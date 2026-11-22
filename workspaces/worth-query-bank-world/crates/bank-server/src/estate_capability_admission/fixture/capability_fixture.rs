@@ -1,13 +1,12 @@
 use bank_domain::estate::BankEstateWorld;
 use worth_query_host::facade::declaration::authentication::WorthQueryExternalPrincipalIdentity;
 
-use super::{block_on, request_scope, TestAuthenticationAdapter, TestCredential};
-use crate::{BankAuthenticatedPrincipal, BankAuthenticationBoundary, BankIdentityRuntime};
+use super::{authentication_configuration, local_principal, request_scope};
+use crate::{BankAuthenticatedPrincipal, BankIdentityRuntime};
 
 pub(crate) struct CapabilityFixture {
     pub(crate) runtime: BankIdentityRuntime,
     pub(super) estate_world: BankEstateWorld,
-    pub(super) authentication: BankAuthenticationBoundary<TestAuthenticationAdapter>,
     pub(super) specialist_identity: WorthQueryExternalPrincipalIdentity,
     pub(super) executor_identity: WorthQueryExternalPrincipalIdentity,
     pub(super) approver_identity: WorthQueryExternalPrincipalIdentity,
@@ -37,13 +36,13 @@ impl CapabilityFixture {
         &self,
         identity: WorthQueryExternalPrincipalIdentity,
     ) -> BankAuthenticatedPrincipal {
-        let request = request_scope();
-        block_on(self.runtime.authenticate_with(
-            &self.authentication,
-            TestCredential(identity),
-            &request,
-        ))
-        .expect("the mapped employee should authenticate")
+        let authentication = self
+            .runtime
+            .admit_authentication_adapter(authentication_configuration(), local_principal(identity))
+            .expect("the local process principal should admit");
+        self.runtime
+            .authenticate_local(&authentication, &request_scope())
+            .expect("the mapped employee should authenticate")
     }
 
     pub(in crate::estate_capability_admission) fn source_beneficiaries(

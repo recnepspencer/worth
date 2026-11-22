@@ -71,7 +71,7 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
         fixture::seed_principal(&mut bootstrap, &state.installed);
         let bridge = super::super::super::super::managed_bridge::install_application_bridge(
             &state.installed,
-            &bootstrap.graph.layout,
+            bootstrap.graph.layout_ref(),
             bootstrap
                 .graph
                 .integration_handle()
@@ -98,8 +98,9 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
             None,
         )
         .unwrap();
+        use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
         let root = world
-            .owner
+            .owner_ref()
             .observation_port()
             .observe_root_product_branch()
             .unwrap();
@@ -164,11 +165,11 @@ fn refused_home_world_attachment_retains_nonempty_provider_instances() {
         let refused = prepared
             .attach_home_world(
                 &phase,
-                world.owner.publication_port(),
-                world.owner.branch_port(),
-                world.owner.observation_port(),
-                world.owner.inspection_port(),
-                world.owner.recovery_port(),
+                world.owner_ref().publication_port(),
+                world.owner_ref().branch_port(),
+                world.owner_ref().observation_port(),
+                world.owner_ref().inspection_port(),
+                world.owner_ref().recovery_port(),
                 root,
                 Arc::new(MaintenanceMustRemainUnentered),
                 Arc::new(worth_proof::InstalledBranchProgramSourceOwner::fresh()),

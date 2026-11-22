@@ -87,6 +87,9 @@ impl WorthQueryInstalledGraphReadContract {
                 .managed_index()
                 .map(|selection| Arc::new(selection.clone())),
             predicates,
+            where_filter: definition
+                .where_filter()
+                .map(super::WorthQueryInstalledWhereFilter::compile),
             ordering,
             maximum_traversal_depth,
             maximum_result_count,

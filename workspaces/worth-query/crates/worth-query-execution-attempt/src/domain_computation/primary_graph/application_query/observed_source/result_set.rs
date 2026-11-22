@@ -1,0 +1,67 @@
+use super::WorthQueryObservedSource;
+use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
+
+/// Owner-issued evidence for the membership of one completed query result set.
+/// Unlike a row source, this also retains observations that selected no row.
+pub struct WorthQueryObservedResultSet<Query> {
+    pub(crate) source: WorthQueryObservedSource<Query>,
+}
+
+// Retain the same completed-set proof for a retry; cloning does not issue a
+// row proof, reobserve the graph or materialize its facts.
+impl<Query> Clone for WorthQueryObservedResultSet<Query> {
+    fn clone(&self) -> Self {
+        Self {
+            source: self.source.clone(),
+        }
+    }
+}
+
+impl<Query> WorthQueryObservedResultSet<Query> {
+    pub(crate) fn new(source: WorthQueryObservedSource<Query>) -> Self {
+        Self { source }
+    }
+
+    pub fn idempotency_identity(&self) -> [u8; 32] {
+        self.source.idempotency_identity().bytes()
+    }
+
+    pub fn source(&self) -> &WorthQueryObservedSource<Query> {
+        &self.source
+    }
+
+    /// Descriptive qualification posture, never a currentness or publication grant.
+    pub fn has_verified_realized_footprint(&self) -> bool {
+        self.source().has_verified_realized_footprint()
+    }
+
+    pub fn declared_orbit(&self) -> Option<&super::DeclaredOrbitSelection> {
+        self.source
+            .source_meaning()
+            .footprint()
+            .root_selection
+            .as_ref()?
+            .orbit
+            .as_ref()
+    }
+
+    pub fn declared_components(&self) -> Option<&super::DeclaredComponentSelection> {
+        self.source
+            .source_meaning()
+            .footprint()
+            .root_selection
+            .as_ref()?
+            .components
+            .as_ref()
+    }
+
+    pub fn selection_for_test(&self) -> &super::WorthQueryObservedRootSelection {
+        self.source
+            .source_meaning()
+            .footprint()
+            .root_selection
+            .as_deref()
+            .expect("result-set evidence retains native selection facts")
+    }
+}
+mod court_doors_for_test;

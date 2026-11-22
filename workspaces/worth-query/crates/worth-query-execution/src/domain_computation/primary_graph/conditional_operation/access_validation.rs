@@ -1,3 +1,4 @@
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, ApplicationSchemaMember};
 
 use super::{
@@ -88,7 +89,7 @@ where
 fn foreign_binding_denial(
     subject: impl Into<String>,
 ) -> WorthQueryConditionalRuntimeInstallationDenial {
-    WorthQueryConditionalRuntimeInstallationDenial::new(
+    WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
         WorthQueryConditionalRuntimeInstallationDenialKind::ForeignBinding,
         subject,
     )

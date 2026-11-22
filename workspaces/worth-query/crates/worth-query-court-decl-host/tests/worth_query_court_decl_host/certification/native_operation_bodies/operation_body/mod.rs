@@ -194,6 +194,8 @@ pub(crate) mod input_expectation;
 
 pub(crate) mod input_selection;
 
+pub(crate) mod native_scalars;
+
 pub(crate) mod optional_input;
 
 pub(crate) mod output;

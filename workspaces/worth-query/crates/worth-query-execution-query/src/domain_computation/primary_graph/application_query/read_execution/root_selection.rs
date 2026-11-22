@@ -1,0 +1,353 @@
+use crate::domain_computation::primary_graph::read_observation::WorthQueryInvariantProjectionWork;
+use worth_query_declaration::facade::application_query::ApplicationQueryObservableInfluence;
+use worth_relational::facade::identity::EntityId;
+use worth_relational::facade::indexes::DerivedIndexGenerationId;
+
+use super::{
+    read_execution_denial, OneShotReadWorkObservation, WorthQueryApplicationReadExecutionDenial,
+    WorthQueryApplicationReadExecutionDenialKind,
+};
+use crate::domain_computation::primary_graph::application_query::read_execution::read_plan::ReadPlan;
+
+mod aggregate;
+mod components;
+mod evidence;
+mod managed_index;
+mod narrowing;
+mod orbit;
+mod path_union;
+mod step_reads;
+
+use evidence::RootPathSourceBuilder;
+
+pub struct BoundedRootSelection {
+    pub candidates: Vec<EntityId>,
+    pub selected_predicate_source:
+        Option<super::super::observed_source::WorthQueryObservedFieldRevision>,
+    pub root_path_source: Option<
+        std::collections::BTreeMap<
+            EntityId,
+            std::sync::Arc<super::super::observed_source::WorthQueryObservedRootSelection>,
+        >,
+    >,
+    pub result_set_source:
+        Option<std::sync::Arc<super::super::observed_source::WorthQueryObservedRootSelection>>,
+    pub examined_candidates: usize,
+    pub predicate_work_units: usize,
+    pub work_units: usize,
+    pub predicate_index_generation: Option<DerivedIndexGenerationId>,
+    pub reads: WorthQueryInvariantProjectionWork,
+    pub root_path_steps: Option<std::sync::Arc<super::super::access_receipt::RootPathReadEvidence>>,
+}
+
+mod work;
+use work::RootSelectionWork;
+
+/// Index-seeking selection, then bounded narrowing of its candidates.
+pub fn select_bounded_roots(
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    plan: &ReadPlan<'_>,
+    capture_result_set: bool,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
+    interruption: super::ReadInterruption<'_>,
+) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
+    let selection = select_index_bounded_roots(
+        runtime,
+        execution,
+        graph,
+        plan,
+        capture_result_set,
+        spent,
+        interruption,
+    )?;
+    let projection = runtime
+        .project_snapshot(plan.snapshot)
+        .ok_or_else(|| plan.snapshot_unavailable_denial())?;
+    narrowing::narrow_selected_roots(
+        &narrowing::NarrowingRead {
+            runtime,
+            projection: &projection,
+            execution,
+            graph,
+            plan,
+        },
+        selection,
+        spent,
+        interruption,
+    )
+}
+
+fn select_index_bounded_roots(
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    plan: &ReadPlan<'_>,
+    capture_result_set: bool,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
+    interruption: super::ReadInterruption<'_>,
+) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
+    interruption.checkpoint(plan.name)?;
+    let contract = plan.contract;
+    if contract.managed_index_selection().is_some() {
+        return managed_index::select(
+            runtime,
+            execution,
+            graph,
+            plan,
+            capture_result_set,
+            spent,
+            interruption,
+        );
+    }
+    if plan.managed_rows.is_some() {
+        return Err(path_union::traversal_denial(plan.name));
+    }
+    if contract.component_selection().is_some() {
+        let mut work = RootSelectionWork::new(interruption, spent);
+        return components::select(execution, runtime, graph, plan, &mut work);
+    }
+    if contract.orbit().is_some() {
+        let mut work = RootSelectionWork::new(interruption, spent);
+        return orbit::select(execution, runtime, graph, plan, &mut work);
+    }
+    if !contract.root_paths().is_empty() {
+        return path_union::select_root_path_union(
+            execution,
+            runtime,
+            graph,
+            plan,
+            contract.root_paths(),
+            capture_result_set,
+            spent,
+            interruption,
+        );
+    }
+    match contract.predicates() {
+        [] => {
+            if let Some(spent) = spent {
+                spent.charge(1, plan.name)?;
+                spent.root(1);
+            }
+            let result_set_source = capture_result_set
+                .then(|| direct_root_source(execution, plan))
+                .transpose()?;
+            Ok(BoundedRootSelection {
+                candidates: vec![plan.root],
+                selected_predicate_source: None,
+                root_path_source: None,
+                result_set_source,
+                examined_candidates: 1,
+                predicate_work_units: 1,
+                work_units: 1,
+                predicate_index_generation: None,
+                reads: WorthQueryInvariantProjectionWork::default(),
+                root_path_steps: None,
+            })
+        }
+        [predicate] => select_scoped_root(
+            runtime,
+            &runtime
+                .project_snapshot(plan.snapshot)
+                .ok_or_else(|| plan.snapshot_unavailable_denial())?,
+            execution,
+            graph,
+            plan,
+            predicate,
+            capture_result_set,
+            spent,
+            interruption,
+        ),
+        _ => Err(read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+            plan.name,
+        )),
+    }
+}
+
+fn select_scoped_root<ReadIdentity>(
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead<ReadIdentity>,
+    projection: &worth_relational::facade::runtime::VisibilityProjectionView,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    plan: &ReadPlan<'_>,
+    predicate: &worth_query_installation::facade::WorthQueryInstalledGraphPredicate,
+
+    capture_result_set: bool,
+    spent: Option<&OneShotReadWorkObservation<'_>>,
+
+    interruption: super::ReadInterruption<'_>,
+) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
+    let (entity, aspect, field) = predicate.field();
+    let computation = plan
+        .governance
+        .admit_internal_projection(
+            predicate.field(),
+            predicate.field_key(),
+            ApplicationQueryObservableInfluence::RowPresence,
+        )
+        .ok_or_else(|| {
+            read_execution_denial(
+                WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+                field,
+            )
+        })?;
+    let layout = graph.equality_field(entity, aspect, field).ok_or_else(|| {
+        read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+            field,
+        )
+    })?;
+    if !computation.admits_locator(&layout.locator) {
+        return Err(read_execution_denial(
+            WorthQueryApplicationReadExecutionDenialKind::ProjectionUnavailable,
+            field,
+        ));
+    }
+    let expected = plan
+        .parameters
+        .bindings()
+        .iter()
+        .find(|(name, _)| name.as_ref() == predicate.parameter())
+        .map(|(_, value)| value)
+        .ok_or_else(|| {
+            read_execution_denial(
+                WorthQueryApplicationReadExecutionDenialKind::PredicateIndexUnavailable,
+                predicate.parameter(),
+            )
+        })?;
+    let mut work = RootSelectionWork::new(interruption, spent);
+    let mut set_source =
+        RootPathSourceBuilder::for_material_source(execution, plan.material_source)?;
+    // Observe both matching and filtered subjects: a later guard change can
+    // change row presence even when the current result is empty.
+    let observed = {
+        set_source.observe_entity(execution, plan.root)?;
+        set_source.observe_guard_field(
+            execution,
+            projection,
+            graph,
+            plan.root,
+            entity,
+            predicate.aspect_key(),
+            predicate.field_key(),
+            &mut work,
+        )?
+    };
+    interruption.checkpoint(field)?;
+    let frontier = std::collections::BTreeSet::from([plan.root]);
+    let lookup = path_union::read_governed_root_guard(
+        execution,
+        runtime,
+        computation,
+        &frontier,
+        layout.entity_kind,
+        &layout.locator,
+        expected,
+    )
+    .map_err(|stop| path_union::frontier_denial(stop, field))?;
+    work.charge_predicate(
+        lookup.entity_records_examined(),
+        lookup.matching_entity_ids_reserved(),
+        lookup.field_reads(),
+        field,
+    )?;
+    let examined_candidates = lookup.entity_records_examined();
+    let scoped = lookup.into_matching_entity_ids().into_iter().next();
+    let selected_predicate_source = scoped.map(|_| observed);
+    let result_set_source = capture_result_set
+        .then(|| set_source.finish(execution))
+        .transpose()?;
+    Ok(BoundedRootSelection {
+        candidates: scoped.into_iter().collect(),
+        selected_predicate_source,
+        root_path_source: None,
+        result_set_source,
+        examined_candidates,
+        predicate_work_units: work.predicate_work_units,
+        work_units: work.work_units,
+        predicate_index_generation: None,
+        reads: work.reads,
+        root_path_steps: work.take_steps(),
+    })
+}
+
+/// Opted-in source queries are installed as direct entity-scope reads. Their
+/// actual candidate projection shares guard and result-tree evaluators with
+/// the committed path, while carrying no committed index generation.
+pub fn select_applied_source_root(
+    runtime: &worth_relational::facade::runtime::RelationalPinnedRead<
+        worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+    >,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    graph: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphLayout,
+    permission: &ReadPlan<'_>,
+    interruption: super::ReadInterruption<'_>,
+) -> Result<BoundedRootSelection, WorthQueryApplicationReadExecutionDenial> {
+    let contract = permission.contract;
+    if !contract.root_paths().is_empty()
+        || contract.component_selection().is_some()
+        || contract.orbit().is_some()
+    {
+        return Err(path_union::traversal_denial(permission.name));
+    }
+    if contract.managed_index_selection().is_some() {
+        return managed_index::select_applied(runtime, execution, graph, permission, interruption);
+    }
+    if permission.applied_managed_rows.is_some() || permission.managed_rows.is_some() {
+        return Err(path_union::traversal_denial(permission.name));
+    }
+    interruption.checkpoint(permission.name)?;
+    let projection = runtime.project_candidate();
+    let selection = match contract.predicates() {
+        [] => Ok(BoundedRootSelection {
+            candidates: vec![permission.root],
+            selected_predicate_source: None,
+            root_path_source: None,
+            result_set_source: Some(direct_root_source(execution, permission)?),
+            examined_candidates: 1,
+            predicate_work_units: 0,
+            work_units: 1,
+            predicate_index_generation: None,
+            reads: WorthQueryInvariantProjectionWork::default(),
+            root_path_steps: None,
+        }),
+        [predicate] => select_scoped_root(
+            runtime,
+            &projection,
+            execution,
+            graph,
+            permission,
+            predicate,
+            true,
+            None,
+            interruption,
+        ),
+        _ => Err(permission.predicate_unavailable_denial()),
+    }?;
+    narrowing::narrow_selected_roots(
+        &narrowing::NarrowingRead {
+            runtime,
+            projection: &projection,
+            execution,
+            graph,
+            plan: permission,
+        },
+        selection,
+        None,
+        interruption,
+    )
+}
+
+fn direct_root_source(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    plan: &ReadPlan<'_>,
+) -> Result<
+    std::sync::Arc<super::super::observed_source::WorthQueryObservedRootSelection>,
+    WorthQueryApplicationReadExecutionDenial,
+> {
+    let mut source = RootPathSourceBuilder::for_material_source(execution, plan.material_source)?;
+    source.observe_entity(execution, plan.root)?;
+    source.finish(execution)
+}

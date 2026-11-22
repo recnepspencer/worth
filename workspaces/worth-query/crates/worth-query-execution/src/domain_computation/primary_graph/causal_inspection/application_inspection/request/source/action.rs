@@ -1,13 +1,14 @@
 //! Source and query inspection enter the same current READ/session/terminal owner.
 use super::super::super::{
     admission::{self, InspectionDiagnosticPreparation, InspectionSubject},
-    source_original::SourceOriginal,
+    source_original::{SourceOriginal, SourceOriginalRuntimeExt as _},
 };
 use super::*;
 use crate::domain_computation::{
     authorization::application_disclosure::WorthQueryPendingApplicationQueryGovernance,
     primary_graph::application_query::FreshQueryPermissionStop,
 };
+use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 use worth_relational::facade::identity::EntityId;
 enum SourceMaterialization {

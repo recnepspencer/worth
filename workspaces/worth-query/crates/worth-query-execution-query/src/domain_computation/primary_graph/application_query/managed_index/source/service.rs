@@ -1,0 +1,342 @@
+//! Installed generic mechanics consume Native Source loans, never caller scope lists.
+use super::failure::{source_preparation_denial, source_storage};
+mod correspondence;
+mod factory;
+mod ordered_predecessor;
+mod update;
+use super::super::{
+    adapter::{InstalledIndexProvider, TypedIndexProvider},
+    source::occurrences::PersistentSourceRows,
+    WorthQueryManagedIndexProvider, WorthQueryManagedIndexSourceChange as Change,
+    WorthQueryManagedIndexSourceSlot as Slot,
+};
+use crate::domain_computation::{
+    primary_graph::source_facts::SourceFactsAllocation,
+    provider_session::WorthQueryGraphWorkSessionIdentity,
+};
+use std::{any::Any, sync::Arc};
+use worth_execution::ExecutionRequest;
+use worth_query_declaration::facade::{
+    application_query::{
+        ApplicationManagedIndexBinding, ApplicationManagedIndexColdSource as Cold,
+    },
+    application_schema::ApplicationSchema,
+};
+use worth_query_installation::facade::WorthQueryInstalledManagedIndex;
+use worth_relational::facade::runtime::{
+    ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram as Program,
+    ManagedIndexSourceScope, PreparedManagedIndexSourceRoot,
+};
+
+pub type Payload = Arc<dyn Any + Send + Sync>;
+
+pub trait SourceFactory: Send + Sync {
+    fn definition(
+        &self,
+    ) -> &worth_query_declaration::facade::application_query::ErasedApplicationManagedIndexDefinition;
+    fn bind(
+        self: Arc<Self>,
+        execution: &ExecutionRequest<'_, '_>,
+        program: Program,
+        cold: Cold,
+        authority: super::initialization::SourceInitializationAuthority,
+    ) -> Result<
+        Arc<dyn SourceService>,
+        worth_relational::facade::transactions::RelationalExecutionDenialCause,
+    >;
+}
+pub trait SourceService: Send + Sync {
+    fn inspect_pages(
+        &self,
+        payload: &(dyn Any + Send + Sync),
+        inspection: &mut super::super::nodes::pages::inspection::PageInspection,
+    ) -> Result<(), super::super::WorthQueryManagedIndexStop>;
+    fn predicate_axis(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_query::derived_view::SourcePredicateAxis>>;
+    fn binding_type(&self) -> std::any::TypeId;
+    fn admits_initialization(
+        &self,
+        proof: &worth_proof::AdmittedManagedIndexSourceInitialization,
+    ) -> bool;
+    fn prepare_initial(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        proof: &worth_proof::AdmittedManagedIndexSourceInitialization,
+        scope: ManagedIndexSourceScope<'_>,
+        retained: Option<&Payload>,
+    ) -> Result<PreparedManagedIndexSourceRoot, Denial>;
+    fn prepare(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        scope: ManagedIndexSourceScope<'_>,
+        retained: Option<&Payload>,
+        predecessor: Option<&Payload>,
+    ) -> Result<PreparedManagedIndexSourceRoot, Denial>;
+}
+
+pub struct ManagedSourceRoot<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>> {
+    pub installed: WorthQueryInstalledManagedIndex<S, I>,
+    pub rows: PersistentSourceRows,
+    pub nodes: Payload,
+    pub adapter: Arc<dyn InstalledIndexProvider<S, I>>,
+    pub bindings:
+        worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    _allocation: Arc<SourceFactsAllocation>,
+}
+pub struct TypedSourceService<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>, P: WorthQueryManagedIndexProvider<S,I>>
+{
+    pub provider: Arc<TypedIndexProvider<S, I, P>>,
+    pub program: Program,
+    cold: Cold,
+    predicate: Option<Arc<crate::domain_computation::primary_graph::application_query::derived_view::SourcePredicateAxis>>,
+    pub initialization: super::initialization::SourceInitializationAuthority,
+}
+impl<S, I, P> SourceService for TypedSourceService<S, I, P>
+where
+    S: ApplicationSchema,
+    I: ApplicationManagedIndexBinding<S>,
+    P: WorthQueryManagedIndexProvider<S, I>,
+{
+    fn inspect_pages(
+        &self,
+        payload: &(dyn Any + Send + Sync),
+        inspection: &mut super::super::nodes::pages::inspection::PageInspection,
+    ) -> Result<(), super::super::WorthQueryManagedIndexStop> {
+        let root = payload
+            .downcast_ref::<ManagedSourceRoot<S, I>>()
+            .filter(|root| root.installed.same_installation(&self.provider.installed))
+            .ok_or(super::super::WorthQueryManagedIndexStop::ForeignSourceSlot)?;
+        root.adapter.inspect_pages(root.nodes.as_ref(), inspection)
+    }
+    fn predicate_axis(&self) -> Option<&Arc<crate::domain_computation::primary_graph::application_query::derived_view::SourcePredicateAxis>>{
+        self.predicate.as_ref()
+    }
+
+    fn admits_initialization(
+        &self,
+        proof: &worth_proof::AdmittedManagedIndexSourceInitialization,
+    ) -> bool {
+        self.initialization.admits(proof)
+    }
+    fn binding_type(&self) -> std::any::TypeId {
+        crate::equality_type_id::EqualityTypeId::of::<(S, I)>().into_external()
+    }
+    fn prepare_initial(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        proof: &worth_proof::AdmittedManagedIndexSourceInitialization,
+        scope: ManagedIndexSourceScope<'_>,
+        retained: Option<&Payload>,
+    ) -> Result<PreparedManagedIndexSourceRoot, Denial> {
+        self.initial_root(execution, proof, scope, retained)
+    }
+    fn prepare(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        scope: ManagedIndexSourceScope<'_>,
+        retained: Option<&Payload>,
+        predecessor: Option<&Payload>,
+    ) -> Result<PreparedManagedIndexSourceRoot, Denial> {
+        if scope.program() != &self.program {
+            return Err(Denial::ForeignSource);
+        }
+        let proposed_exists = scope.scope_exists()?;
+        if !proposed_exists
+            || scope.physical_availability()
+                == worth_relational::facade::runtime::ManagedIndexSourceAvailability::Unavailable
+        {
+            self.invalidate_predicates(execution, &scope)?;
+        }
+        if proposed_exists && let Some(payload) = self.corresponding_root(execution, &scope)? {
+            // Native proved this root logically equal: nothing changed.
+            return Ok(scope.seal(None, Some(payload), Default::default()));
+        }
+        // Unavailable is an explicit Native physical posture, not an empty
+        // membership result. All other before-view failures retain their cause.
+        let before_exists = match scope.committed_scope_exists() {
+            Ok(exists) => exists,
+            Err(Denial::RootUnavailable) => {
+                self.invalidate_predicates(execution, &scope)?;
+                false
+            }
+            Err(cause) => return Err(cause),
+        };
+        // Only a scope logically absent before is born from its predecessor.
+        // An evicted existing scope rebuilds its committed baseline below and
+        // diffs exactly: cache residency never changes the delta.
+        if retained.is_none()
+            && !before_exists
+            && proposed_exists
+            && scope.program().has_ordered_predecessor()
+        {
+            return self.prepare_ordered(execution, scope, predecessor);
+        }
+        let before = if before_exists {
+            match retained {
+                Some(retained) => {
+                    let root = retained
+                        .downcast_ref::<ManagedSourceRoot<S, I>>()
+                        .ok_or(Denial::ForeignSource)?;
+                    if !root.installed.same_installation(&self.provider.installed) {
+                        return Err(Denial::ForeignSource);
+                    }
+                    Some(Arc::clone(retained))
+                }
+                None if self.cold == Cold::AdmitRebuild => {
+                    Some(self.cold(execution, &scope, &scope.committed()?)?)
+                }
+                None => return Err(Denial::RootUnavailable),
+            }
+        } else {
+            None
+        };
+        if !proposed_exists {
+            // A retired scope is never invoked; no row is lent for it.
+            return Ok(scope.seal(before, None, Default::default()));
+        }
+        // The owner's exact delta: an updated root's changed entries, or a
+        // newly built scope's delta (`built_changes`).
+        let (proposed, changes) = if let Some(before) = &before {
+            self.update(execution, &scope, before)?
+        } else if self.cold == Cold::AdmitRebuild {
+            let built = self.cold(execution, &scope, &scope.proposed())?;
+            let changes = self.built_changes(execution, &scope, &built)?;
+            (built, changes)
+        } else {
+            return Err(Denial::RootUnavailable);
+        };
+        execution.consult().map_err(|cause| {
+            Denial::Source(
+                worth_relational::facade::runtime::DerivedRelationReadDenial::Request(cause.into()),
+            )
+        })?;
+        Ok(scope.seal(before, Some(proposed), changes))
+    }
+}
+
+impl<S, I, P> TypedSourceService<S, I, P>
+where
+    S: ApplicationSchema,
+    I: ApplicationManagedIndexBinding<S>,
+    P: WorthQueryManagedIndexProvider<S, I>,
+{
+    fn invalidate_predicates(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        scope: &ManagedIndexSourceScope<'_>,
+    ) -> Result<(), Denial> {
+        if let Some(axis) = &self.predicate {
+            super::super::super::derived_view::mark_prepared_predicates_unavailable(
+                execution,
+                scope.preparation_metadata(),
+                axis,
+                scope.scope(),
+                &scope.read_budget(),
+            )?;
+        }
+        Ok(())
+    }
+    pub fn cold(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        scope: &ManagedIndexSourceScope<'_>,
+        loan: &worth_relational::facade::runtime::ManagedIndexSourceRows<'_>,
+    ) -> Result<Payload, Denial> {
+        let owner = WorthQueryGraphWorkSessionIdentity::for_native_source(scope)?;
+        let graph = self.provider.installed.source_read().query().read_graph();
+        let rows = PersistentSourceRows::acquire(
+            execution,
+            loan,
+            owner,
+            graph,
+            self.maximum_source_rows(),
+        )
+        .map_err(super::super::source::occurrences::MaterialDenial::into_native)?;
+        let budget = scope.read_budget();
+        let nodes = self
+            .provider
+            .build(
+                execution,
+                owner,
+                rows.view(&self.provider.bindings, Some(&budget)),
+            )
+            .map_err(|cause| source_preparation_denial(execution, cause))?;
+        retain_root(
+            execution,
+            self.provider.clone(),
+            self.provider.bindings.clone(),
+            rows,
+            nodes,
+        )
+    }
+    fn maximum_source_rows(&self) -> usize {
+        let source = self.provider.installed.source_read();
+        source.limits().maximum_results().get().min(
+            std::num::NonZeroUsize::new(source.query().read_graph().maximum_result_count())
+                .map_or(usize::MAX, std::num::NonZeroUsize::get),
+        )
+    }
+}
+
+/// Every member of a newly built root entered its scope. The typed shell
+/// only finds the rows; one concrete walk builds the delta.
+pub fn entered_all<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
+    scope: &ManagedIndexSourceScope<'_>,
+    built: &Payload,
+) -> Result<worth_relational::facade::runtime::ManagedIndexSourceChanges, Denial> {
+    let root = built
+        .downcast_ref::<ManagedSourceRoot<S, I>>()
+        .ok_or(Denial::ForeignSource)?;
+    entered_rows(scope, &root.rows)
+}
+/// The built root's rows, already in entity order, charged to the Source's
+/// own budget: one checkpoint per row and the vector's storage claimed first.
+fn entered_rows(
+    scope: &ManagedIndexSourceScope<'_>,
+    rows: &PersistentSourceRows,
+) -> Result<worth_relational::facade::runtime::ManagedIndexSourceChanges, Denial> {
+    use worth_relational::facade::runtime::DerivedRelationReadDenial;
+    let budget = scope.read_budget();
+    budget
+        .claim_retained(
+            (rows.len() * size_of::<worth_relational::facade::identity::EntityId>()) as u64,
+        )
+        .map_err(DerivedRelationReadDenial::Structural)?;
+    let mut entered = Vec::new();
+    entered.try_reserve_exact(rows.len()).map_err(|_| {
+        source_storage(
+            worth_relational::facade::transactions::RelationalExecutionDenialCause::AllocationFailed,
+        )
+    })?;
+    for row in rows.keys() {
+        budget
+            .checkpoint(1)
+            .map_err(DerivedRelationReadDenial::Structural)?;
+        entered.push(row);
+    }
+    Ok(worth_relational::facade::runtime::ManagedIndexSourceChanges::new(Vec::new(), entered))
+}
+
+pub fn retain_root<S: ApplicationSchema, I: ApplicationManagedIndexBinding<S>>(
+    execution: &ExecutionRequest<'_, '_>,
+    adapter: Arc<dyn InstalledIndexProvider<S, I>>,
+    bindings: worth_query_installation::facade::WorthQueryInstalledApplicationValueBindingCatalog,
+    rows: PersistentSourceRows,
+    nodes: Payload,
+) -> Result<Payload, Denial> {
+    // The backing itself, not an old request, follows the immutable share.
+    let allocation = SourceFactsAllocation::open(execution).map_err(source_storage)?;
+    super::super::super::one_shot::outcome::material::MaterialCompletion::new(
+        execution,
+        &allocation,
+    )
+    .arc::<ManagedSourceRoot<S, I>>()
+    .map_err(source_storage)?;
+    Ok(Arc::new(ManagedSourceRoot {
+        installed: adapter.installed().clone(),
+        adapter,
+        bindings,
+        rows,
+        nodes,
+        _allocation: allocation,
+    }))
+}

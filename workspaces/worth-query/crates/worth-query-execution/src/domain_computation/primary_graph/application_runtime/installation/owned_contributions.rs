@@ -23,5 +23,5 @@ pub(super) fn transfer<Schema: ApplicationSchema>(
     indexes: ManagedIndexProviderCatalog<Schema>,
 ) {
     application.conditional_cleanup.resources = resources;
-    application.managed_indexes = indexes;
+    application.inner.managed_indexes = indexes;
 }

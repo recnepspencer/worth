@@ -1,0 +1,159 @@
+use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::SelectedProgramInspectionInternalPort as _;
+use worth_query_installation::facade::ApplicationSchema;
+use worth_relational::facade::branch::AdmittedRelationalBranchBasis;
+use worth_relational::facade::runtime::{ProjectionAspectRequirement, ProjectionAspectScope};
+use worth_relational::facade::storage::RecordLifecycleState;
+
+use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+
+/// The rostered program actually carried by one selected product occurrence.
+/// This is descriptive operator evidence; it grants no mutation or adoption
+/// authority.
+pub use worth_query_execution_runtime::facade::execution_runtime::product_world::WorthQuerySelectedProgramInspection;
+
+/// Why the program carried by a selected product could not be inspected.
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::product_activation_types::WorthQuerySelectedProgramInspectionDenial;
+
+pub fn inspect_selected_program<Schema: ApplicationSchema>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    basis: &AdmittedRelationalBranchBasis,
+) -> Result<WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial> {
+    let support = application
+        .installed_program_support()
+        .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramSupportUnavailable)?;
+    let activation = support
+        .activation()
+        .published()
+        .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnavailable)?;
+    let graph = &application.runtime.primary_provider.graph_ref();
+    let layout = graph.layout_ref().program_activation().clone();
+    let locator = &layout.program_revision_locator;
+    // The activation record is read on the selected branch's own root: a
+    // version alone would also see a sibling's later adoption.
+    let rendering =
+        graph
+            .with_runtime(execution, |runtime| {
+                let field = locator
+                    .field_path()
+                    .fields()
+                    .first()
+                    .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable)?
+                    .clone();
+                let aspect = locator.aspect().aspect_key();
+                let scope = ProjectionAspectScope::from_requirements([
+                    ProjectionAspectRequirement::fields(aspect.clone(), [field.clone()]),
+                ]);
+                runtime
+                    .read_truth()
+                    .project_observation(&basis.observation())
+                    .map_err(|_| {
+                        WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable
+                    })?
+                    .entity_record_with_projection_scope(execution, activation, scope, |record| {
+                        if record.kind_id() != layout.entity_kind
+                            || record.lifecycle() != RecordLifecycleState::Live
+                        {
+                            return None;
+                        }
+                        record.aspect_field_value(aspect, &field).cloned()
+                    })
+                    .map_err(|cause| {
+                        WorthQuerySelectedProgramInspectionDenial::ReadExecution(
+                            crate::facade::primary_graph::relational_execution_kind(cause, None),
+                        )
+                    })
+            })?
+            .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnreadable)?;
+    let entry = support
+        .rostered_for_rendering(&rendering)
+        .ok_or(WorthQuerySelectedProgramInspectionDenial::ProgramActivationUnrostered)?;
+    Ok(WorthQuerySelectedProgramInspection::from_rostered(
+        entry.identity().clone(),
+        *entry.revision(),
+    ))
+}
+
+impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub(in crate::domain_computation::primary_graph) fn retain_selected_program_interpretation(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Result<
+        WorthQueryRetainedSelectedProgramInspection,
+        crate::basis::WorthQueryProductBranchAdmissionDenial,
+    > {
+        let inspection = inspect_selected_program(execution, self, basis);
+        if let Err(WorthQuerySelectedProgramInspectionDenial::ReadExecution(stop)) = &inspection {
+            return Err(crate::basis::WorthQueryProductBranchAdmissionDenial::Stopped(*stop));
+        }
+        let interpretation = if let (Some(support), Ok(selected)) =
+            (self.installed_program_support(), &inspection)
+        {
+            Some(support.retain_interpretation(selected.revision()).ok_or(
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ObservationRejected,
+                ),
+            )?)
+        } else {
+            None
+        };
+        Ok(WorthQueryRetainedSelectedProgramInspection {
+            inspection,
+            interpretation,
+        })
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn bind_selected_program_interpretation(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        relational: &AdmittedRelationalBranchBasis,
+        basis: &mut crate::domain_computation::primary_graph::application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
+    ) -> Result<
+        Result<WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial>,
+        crate::basis::WorthQueryProductBranchAdmissionDenial,
+    > {
+        if basis.identity().runtime_instance_id() != relational.identity().runtime_instance_id()
+            || basis.identity().branch_id() != relational.identity().branch_id()
+            || basis.identity().descriptor() != relational.descriptor()
+            || basis.version_id() != relational.observation().version_id()
+        {
+            return Err(
+                crate::basis::WorthQueryProductBranchAdmissionDenial::Refused(
+                    AdmissionRefusal::ObservationRejected,
+                ),
+            );
+        }
+        let (selected, interpretation) = self
+            .retain_selected_program_interpretation(execution, relational)?
+            .into_parts();
+        if let Some(interpretation) = interpretation {
+            basis.bind_program_interpretation(interpretation);
+        }
+        let marked = basis.mark_selected_program_inspected(relational);
+        debug_assert!(marked, "the checked selected program belongs to this basis");
+        Ok(selected)
+    }
+}
+
+pub(in crate::domain_computation::primary_graph) struct WorthQueryRetainedSelectedProgramInspection
+{
+    inspection:
+        Result<WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial>,
+    interpretation:
+        Option<super::super::program_occurrence::WorthQueryProgramSupportInterpretation>,
+}
+
+impl WorthQueryRetainedSelectedProgramInspection {
+    pub(in crate::domain_computation::primary_graph) fn into_parts(
+        self,
+    ) -> (
+        Result<WorthQuerySelectedProgramInspection, WorthQuerySelectedProgramInspectionDenial>,
+        Option<super::super::program_occurrence::WorthQueryProgramSupportInterpretation>,
+    ) {
+        (self.inspection, self.interpretation)
+    }
+}

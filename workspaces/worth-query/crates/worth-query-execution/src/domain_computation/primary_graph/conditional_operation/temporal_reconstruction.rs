@@ -1,5 +1,6 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use std::{collections::BTreeMap, num::NonZeroUsize};
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryHostConditionalPredicateProvider,

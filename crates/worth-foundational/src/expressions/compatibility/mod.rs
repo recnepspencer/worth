@@ -7,20 +7,21 @@
 //! depth ceilings, identifiers, and normalized decimal text.
 //!
 //! Layout, little-endian: magic `WXDR`, wire version `u16`, language version
-//! `u16`, node count `u32`, then nodes in canonical post-order: each node's
+//! `u16` (the oldest version whose vocabulary the draft needs, so V1-only
+//! drafts keep their V1 bytes), node count `u32`, then nodes in canonical post-order: each node's
 //! children, in order, are the subtrees immediately before it. Each node is
 //! a tag byte and its payload; children are `u32` node indices, and the last
 //! node is the root.
 
 mod decode;
 mod encode;
+mod language;
 
 pub(crate) use decode::decode_draft;
 pub(crate) use encode::encode_draft;
 
 const MAGIC: [u8; 4] = *b"WXDR";
 const WIRE_VERSION: u16 = 1;
-const LANGUAGE_VERSION: u16 = 1;
 
 mod tag {
     pub(super) const BOOL: u8 = 0;

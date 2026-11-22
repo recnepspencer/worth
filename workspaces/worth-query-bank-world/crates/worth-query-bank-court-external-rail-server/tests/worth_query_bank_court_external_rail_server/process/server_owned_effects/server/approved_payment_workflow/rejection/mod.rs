@@ -28,7 +28,7 @@ fn rejected_payment_workflow_terminates_without_payment_or_rail_effect() {
     };
     let (instance, proposal, required) =
         journey::prepare_approved_payment_approval(&workflow, &authority);
-    let original = support::block_on(workflow.approve(
+    let original = authentication::complete_approval(workflow.approve(
         instance.clone(),
         &required,
         &proposal,
@@ -43,7 +43,7 @@ fn rejected_payment_workflow_terminates_without_payment_or_rail_effect() {
     };
     assert_eq!(original.node_path(), "approval");
     assert!(!original.replayed());
-    let retry = support::block_on(workflow.approve(
+    let retry = authentication::complete_approval(workflow.approve(
         instance.clone(),
         &required,
         &proposal,

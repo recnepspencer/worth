@@ -184,7 +184,11 @@ impl Registration<IdentityExecutionSchema> for Contracts {
                 .application_query(invalid_disclosure_queries::forbidden_influence_definition())
                 .application_query(
                     invalid_disclosure_queries::result_rule_predicate_definition(),
-                );
+                )
+                .application_query(
+                    filtered_disclosure_queries::filter_row_presence_only_definition(),
+                )
+                .application_query(filtered_disclosure_queries::filter_membership_definition());
             capability::install(schema)
         })
     }

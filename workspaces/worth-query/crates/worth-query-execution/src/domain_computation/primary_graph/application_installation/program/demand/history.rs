@@ -1,5 +1,7 @@
 //! A retained history demand reenters only through fresh current-control custody.
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 mod dependent;
 mod discovery;
 mod parent_query;
@@ -38,7 +40,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         authority
             .confirm_read(phase, runtime, request, ())
             .map_err(Denial::Authority)?;
-        let execution = phase.execution_request_for(&runtime.runtime.product_runtime).map_err(|cause| {
+        let execution = phase.execution_request_for(runtime.inner.runtime.product_runtime_ref()).map_err(|cause| {
             Denial::Demand(WorthQueryOutputDemandDenial::new(
                 crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
                 "history output advancement phase",

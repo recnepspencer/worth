@@ -121,6 +121,10 @@ pub trait WorthQueryReadGraphPlanningContract {
     }
     fn predicate_count(&self) -> usize;
     fn predicate(&self, index: usize) -> Option<WorthQueryReadGraphPredicateView<'_>>;
+    /// Residual row narrowing after index-seeking selection.
+    fn where_filter(&self) -> Option<&super::WorthQueryInstalledWhereFilter> {
+        None
+    }
     fn guard_count(&self) -> usize {
         0
     }
@@ -187,6 +191,9 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphPlanningPre
     }
     fn root_union_dedup_required(&self) -> bool {
         !self.meaning.root_paths.is_empty()
+    }
+    fn where_filter(&self) -> Option<&super::WorthQueryInstalledWhereFilter> {
+        self.meaning.where_filter.as_ref()
     }
 
     fn predicate_count(&self) -> usize {
@@ -262,6 +269,9 @@ impl WorthQueryReadGraphPlanningContract for WorthQueryInstalledGraphReadContrac
     }
     fn root_union_dedup_required(&self) -> bool {
         !self.root_paths().is_empty()
+    }
+    fn where_filter(&self) -> Option<&super::WorthQueryInstalledWhereFilter> {
+        WorthQueryInstalledGraphReadContract::where_filter(self)
     }
 
     fn predicate_count(&self) -> usize {

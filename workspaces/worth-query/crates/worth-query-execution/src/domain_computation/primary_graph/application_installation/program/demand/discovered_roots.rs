@@ -7,6 +7,10 @@ use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchema, ApplicationStructuredValueBinding,
 };
+use worth_query_execution_lineage::facade::ports::PreparedRequiredOutputSourceInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 use super::{WorthQueryAdmittedProgramOutput, WorthQueryProgramApplicationRuntime};
 use crate::domain_computation::primary_graph::{
@@ -56,18 +60,24 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.backing.runtime().inner.runtime.product_runtime_ref()) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "program-source-phase")),
         };
         let execution = &phase_request;
 
         self.require_discovered_root::<Root>()?;
-        if prepared.runtime_authority
-            != self.backing.runtime().runtime.authority_identity().as_u64()
-            || &prepared.source_commit != receipt.source_commit()
-            || &prepared.source_commit != observation.selected_commit()
-            || prepared.product_occurrence != observation.branch_incarnation()
+        if prepared.runtime_authority()
+            != self
+                .backing
+                .runtime()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64()
+            || prepared.source_commit() != receipt.source_commit()
+            || prepared.source_commit() != observation.selected_commit()
+            || prepared.product_occurrence() != observation.branch_incarnation()
             || branch.occurrence() != observation.branch_incarnation()
         {
             return Err(WorthQueryOutputDemandDenial::new(
@@ -75,7 +85,7 @@ where
                 "discovered continuation differs from its original runtime or publication",
             ));
         }
-        self.backing.runtime().runtime.output_demands.validate_recovery_root_kind(
+        self.backing.runtime().inner.runtime.output_demands_ref().validate_recovery_root_kind(
             receipt,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )?;
@@ -127,15 +137,21 @@ where
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
         self.require_discovered_root::<Root>()?;
-        if prepared.runtime_authority
-            != self.backing.runtime().runtime.authority_identity().as_u64()
+        if prepared.runtime_authority()
+            != self
+                .backing
+                .runtime()
+                .inner
+                .runtime
+                .authority_identity()
+                .as_u64()
         {
             return Err(WorthQueryOutputDemandDenial::new(
                 WorthQueryOutputDemandDenialKind::ForeignSource,
                 "the program source belongs to another runtime",
             ));
         }
-        self.backing.runtime().runtime.output_demands.retain_program_source(
+        self.backing.runtime().inner.runtime.output_demands_ref().retain_program_source(
             prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Discovered(TypeId::of::<Root>()),
         )
@@ -212,7 +228,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.backing.runtime().inner.runtime.product_runtime_ref()) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };
@@ -272,7 +288,7 @@ where
             + worth_query_declaration::facade::application_program::ApplicationDiscoveredOutputRoot,
         RootConnection<Schema, Root>: WorthQueryApplicationDiscoveredOutputConnection<Schema>,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.backing.runtime().inner.runtime.product_runtime_ref()) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };

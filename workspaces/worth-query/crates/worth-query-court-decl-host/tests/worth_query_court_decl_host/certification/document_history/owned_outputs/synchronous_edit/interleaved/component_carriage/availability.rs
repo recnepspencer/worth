@@ -35,7 +35,10 @@ impl OperationHandler<Schema, Binding> for Handler {
             let producer = reader.resolve_entity(ModelKey::at("ModelKey"), input.source.clone())?;
             let observed = reader.output_availability(
                 &producer,
-                Demand { source: input.source.clone(), selector: None },
+                Demand {
+                    source: input.source.clone(),
+                    selector: None,
+                },
             )?;
             let value = match observed.state() {
                 WorthQueryOutputAvailabilityState::Pending => 0,

@@ -8,6 +8,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProductBranchCloseDenial,
 };
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 #[must_use = "retain the live document or its actual retired cleanup obligation"]
@@ -38,7 +40,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         WorthQueryDocumentHistoryCloseFailure<'runtime, S, H>,
     > {
         if phase
-            .execution_request_for(&self.application().runtime.product_runtime)
+            .execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .is_err()
         {
             return Err(WorthQueryDocumentHistoryCloseFailure::Retained {

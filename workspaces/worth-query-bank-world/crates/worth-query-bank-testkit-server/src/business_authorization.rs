@@ -29,9 +29,7 @@ pub use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizatio
 pub use business_authorization_fixture::{
     approver_crowded_world, binding, id, key, pending_business_payment_world,
 };
-pub use support::{
-    block_on, request_scope, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld,
-};
+pub use support::{request_scope, runtime, DynamicIdentity, TestIdentityWorld};
 
 // A business payment is approved only through its Bank-owned workflow, so the
 // real authorization graph answers at the workflow's first authored step.
@@ -90,12 +88,7 @@ pub fn authenticate(
     world: &TestIdentityWorld,
     identity: &DynamicIdentity,
 ) -> bank_server::BankAuthenticatedPrincipal {
-    block_on(world.runtime.authenticate_with(
-        &world.authentication,
-        CausalCredential::for_identity(identity),
-        &request_scope(),
-    ))
-    .unwrap()
+    world.authenticate(identity, &request_scope()).unwrap()
 }
 
 pub fn publish(

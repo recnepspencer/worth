@@ -4,6 +4,8 @@ use super::*;
 use crate::domain_computation::primary_graph::application_contribution::{
     TypedPendingOutputReadiness, WorthQueryApplicationProducerBinding,
 };
+use worth_query_execution_query::facade::ports::ConditionalClockHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryAuthoredHostConditionalPredicateProvider, WorthQueryAuthoredHostPredicateBinding,
     WorthQueryInstalledApplicationConditionalNode,
@@ -82,17 +84,19 @@ impl<Schema: ApplicationSchema + 'static>
             delivery_dependency_ordinal as u64,
         );
         let (digest, work) = material.derive().map_err(|cause| {
-            WorthQueryConditionalRuntimeInstallationDenial::new(
+            WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
                 WorthQueryConditionalRuntimeInstallationDenialKind::BridgeRejected,
                 format!("{cause:?}"),
             )
         })?;
         let identity: Arc<str> = format!("conditional-definition:{}", digest.render_hex()).into();
         if !self.binding_identities.insert(identity.clone()) {
-            return Err(WorthQueryConditionalRuntimeInstallationDenial::new(
-                WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,
-                identity.as_ref(),
-            ));
+            return Err(
+                WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(
+                    WorthQueryConditionalRuntimeInstallationDenialKind::DuplicateBinding,
+                    identity.as_ref(),
+                ),
+            );
         }
         let node_authority = Arc::from(node.authority_identity());
         let providers = super::super::predicate_admission::output_readiness_providers::<Node, _>(
@@ -103,7 +107,7 @@ impl<Schema: ApplicationSchema + 'static>
                 Arc::clone(&node_authority),
             ),
         );
-        let lease = Arc::new(ConditionalClockLease);
+        let lease = WorthQueryConditionalClockHandle::<Schema, (), ()>::new_lease();
         self.output_readiness
             .push(Box::new(TypedPendingOutputReadiness::new(
                 Producer::IDENTITY,
@@ -111,13 +115,12 @@ impl<Schema: ApplicationSchema + 'static>
                 node,
                 Some((identity.clone(), lease.clone(), providers)),
             )));
-        Ok(WorthQueryConditionalClockHandle {
-            binding_identity: identity,
-            binding_identity_digest: *digest.bytes(),
+        Ok(WorthQueryConditionalClockHandle::from_parts(
+            identity,
+            *digest.bytes(),
             node_authority,
-            binding_canonical_work: work.with_digest_text_materializations(1),
+            work.with_digest_text_materializations(1),
             lease,
-            marker: PhantomData,
-        })
+        ))
     }
 }

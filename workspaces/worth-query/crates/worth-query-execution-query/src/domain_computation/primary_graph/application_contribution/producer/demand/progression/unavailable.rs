@@ -1,0 +1,81 @@
+//! Finish a failed original demand without scheduling or invoking its producer.
+use super::*;
+use crate::domain_computation::primary_graph::{
+    WorthQueryApplicationOutputDemandSource, WorthQueryPreparedRequiredOutputSource,
+};
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    pub fn finish_unavailable_output_demand<Family>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        phase: &WorthQueryAdvancementPhase<'_>,
+        demand: &mut WorthQueryAdmittedOutputDemand<Schema, Family>,
+        prepared: &WorthQueryPreparedRequiredOutputSource,
+        principal: &WorthQueryAuthenticatedExternalPrincipal<Schema>,
+        scope: &WorthQueryRequestScope,
+        branch: crate::basis::WorthQueryProductBranch,
+        disclosure: WorthQueryApplicationOutputDemandSource<
+            FamilySourceQuery<Schema, Family>,
+            FamilySourceValue<Schema, Family>,
+        >,
+    ) -> Result<WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenial>
+    where
+        Family: WorthQueryProducerOutputFamily<Schema>,
+    {
+        phase
+            .execution_request_for(&self.runtime.product_runtime)
+            .map_err(|cause| {
+                denial(
+                    WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),
+                    "foreign advancement phase",
+                )
+            })?;
+        if demand.runtime_authority != self.runtime.authority_identity().as_u64()
+            || demand.schema_binding != self.installed_schema.binding_identity()
+            || demand.settled
+            || demand.settled_at_observation.is_some()
+            || demand.unpublished_selected_checkpoint.is_some()
+            || !demand.required_continuations.is_empty()
+        {
+            return Err(denial(
+                WorthQueryOutputDemandDenialKind::ForeignDemand,
+                Family::IDENTITY,
+            ));
+        }
+        let interest = demand
+            .interest
+            .as_ref()
+            .ok_or_else(|| denial(WorthQueryOutputDemandDenialKind::Closed, Family::IDENTITY))?;
+        // Same exact query/request-affinity and installed-edition owner as advance;
+        // validation consumes disclosure only and never enters producer execution.
+        validate_disclosure(
+            execution,
+            self,
+            demand,
+            principal,
+            scope,
+            branch,
+            true,
+            disclosure,
+            demand.installed_entry.edition,
+        )?;
+
+        let result = self.runtime.output_demands.finish_unavailable_source(
+            prepared,
+            interest,
+            &self
+                .runtime
+                .primary_provider
+                .graph_ref()
+                .source_owner_ref()
+                .invalidation_owner,
+            self.installed_program_support()
+                .map(|support| support.lifecycle()),
+            execution,
+        )?;
+        demand.close();
+        Ok(result)
+    }
+}

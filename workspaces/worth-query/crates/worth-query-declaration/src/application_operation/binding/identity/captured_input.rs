@@ -3,13 +3,18 @@
 #[path = "captured_input/decimal_tests.rs"]
 mod decimal_tests;
 #[cfg(test)]
+#[path = "captured_input/native_carrier_tests.rs"]
+mod native_carrier_tests;
+#[cfg(test)]
 #[path = "captured_input/optional_tests.rs"]
 mod optional_tests;
 mod scalar_record;
 
 use super::{ApplicationCanonicalIdentity, ApplicationCanonicalWork};
 use std::sync::Arc;
-use worth_foundational::facade::{AspectValue, CanonicalDecimal, InternedString, ScalarAspectType};
+use worth_foundational::facade::{
+    AspectValue, CanonicalDecimal, InlineBytes, InternedString, ScalarAspectType,
+};
 
 /// Read-only captured input data. Only native identity encoding constructs it.
 /// It carries no authorization, world observation or currentness authority.
@@ -29,18 +34,45 @@ pub enum ApplicationCanonicalInputDenial {
 }
 
 /// A borrowed scalar selected from the captured encoding. Native execution
-/// reserves its retained representation before materializing text in decision.
+/// reserves its retained representation before materializing text or bytes
+/// in decision.
 pub enum ApplicationCanonicalInputScalar<'a> {
     Inline(AspectValue),
     Text(&'a str),
     /// Exact captured representation, not admitted Decimal/domain validity.
     DecimalText(&'a str),
+    /// A captured `InlineBytes` payload whose length fits native framing.
+    Bytes(ApplicationCanonicalInputBytes<'a>),
 }
+
+/// A byte sequence borrowed from the captured encoding; it is copied only
+/// when materialized.
+#[derive(Clone, Copy, Debug)]
+pub struct ApplicationCanonicalInputBytes<'a> {
+    encoded: &'a [u8],
+    length: usize,
+}
+
+impl<'a> ApplicationCanonicalInputBytes<'a> {
+    pub(super) fn new(encoded: &'a [u8], length: usize) -> Self {
+        Self { encoded, length }
+    }
+
+    pub fn len(&self) -> usize {
+        self.length
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.length == 0
+    }
+}
+
 impl ApplicationCanonicalInputScalar<'_> {
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
         match self {
             Self::Inline(value) => value.owned_allocation_capacity_bytes(),
             Self::Text(value) | Self::DecimalText(value) => value.len(),
+            Self::Bytes(bytes) => bytes.len(),
         }
     }
     pub fn into_value(self) -> AspectValue {
@@ -52,6 +84,13 @@ impl ApplicationCanonicalInputScalar<'_> {
             Self::DecimalText(value) => {
                 AspectValue::Decimal(CanonicalDecimal::new(String::from(Box::<str>::from(value))))
             }
+            Self::Bytes(bytes) => AspectValue::InlineBytes(
+                InlineBytes::try_new(scalar_record::materialize_byte_sequence(
+                    bytes.encoded,
+                    bytes.length,
+                ))
+                .expect("selection admitted the inline length"),
+            ),
         }
     }
 }

@@ -1,10 +1,4 @@
-use crate::{
-    model::BankPrincipalId,
-    schema::{
-        AccountIdentity, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
-        ExternalPrincipalMapping, Principal,
-    },
-};
+use crate::schema::{AccountIdentity, BankSchema};
 
 use super::{
     AccountActivityLiveCause, AccountActivityQuery, AccountActivityQueryParametersBinding,
@@ -18,14 +12,12 @@ worth_query_decl::facade::worth_query_structured_value_binding!(
     }
 );
 worth_query_decl::facade::worth_query_query_binding!(
-    pub AccountActivityQueryBinding for AccountActivityRequest, schema BankSchema,
+    pub AccountActivityQueryBinding for AccountActivityRequest, schema BankSchema, context crate::schema::BankBindingContext,
     identity "worth.bank.account-activity-query-binding.v1",
     input AccountActivityRequestBinding,
     query AccountActivityQuery,
     parameters AccountActivityQueryParametersBinding => |_| worth_query_decl::facade::application_query::ApplicationQueryParameterSet::new(),
     result AccountActivityQueryResultBinding,
-    principal BankPrincipalBinding, mapping ExternalPrincipalMapping, principal_entity Principal,
-        principal_identity BankPrincipalId, identity_binding BankPrincipalIdBinding,
     scope AccountIdentity,
     field AccountIdentity::at("AccountIdentity"),
     value AccountActivityRequest::account,

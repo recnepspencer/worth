@@ -1,7 +1,10 @@
 //! Actual cold World custody and original Query keys admit the service phase.
 use super::*;
 use crate::domain_computation::primary_graph::provider::aftermath_causality::readmission as corrections;
+use crate::domain_computation::primary_graph::query_obligations::history::journal_readmission::QueryObligationHistoryJournalReadmissionExt;
 use worth_proof::CustodyReadmitted;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 #[derive(Debug)]
 pub enum QueryHomeCustodyReadmissionDenial {
@@ -61,9 +64,10 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let owner = self
             .runtime
             .runtime()
+            .inner
             .runtime
-            .product_runtime
-            .owner
+            .product_runtime_ref()
+            .owner_ref()
             .owner_identity();
         if owner.durable().map(|owner| owner.home()) != Some(obligations.home()) {
             return Err(QueryHomeCustodyReadmissionRefused {
@@ -101,9 +105,10 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let originals = match self
             .runtime
             .runtime()
+            .inner
             .runtime
-            .product_runtime
-            .owner
+            .product_runtime_ref()
+            .owner_ref()
             .inspection_port()
             .observe_program_activation_history(execution)
         {
@@ -131,8 +136,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let material_admission = match self
             .runtime
             .runtime()
+            .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .readmit_correction_material(std::sync::Arc::clone(&material), &originals, execution)
         {
             Ok(admission) => admission,
@@ -145,7 +151,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         };
         self.correction_material_admission = std::sync::OnceLock::from(material_admission);
         let admission =
-            match self.runtime.runtime().runtime.primary_provider
+            match self.runtime.runtime().inner.runtime.primary_provider_ref()
                 .readmit_retained_program_support(support.lifecycle(), obligations, &originals, execution)
             {
                 Ok(admission) => admission,
@@ -163,10 +169,10 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         if let Err(cause) = crate::domain_computation::primary_graph::application_installation::checkpoint_lineage::readmit_journal(self.runtime.runtime(), &originals, execution) {
             return Err(QueryHomeCustodyReadmissionRefused { query: self, cause: QueryHomeCustodyReadmissionDenial::ProgramSupport(cause) });
         }
-        let serving = &self.runtime.runtime().runtime;
+        let serving = &self.runtime.runtime().inner.runtime;
         if let Err(cause) = support
             .obligation_history()
-            .bind_live_receivers(&serving.primary_provider, serving.execution())
+            .bind_live_receivers(serving.primary_provider_ref(), serving.execution())
         {
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
@@ -201,7 +207,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 cause: QueryHomeCustodyReadmissionDenial::Activation(cause),
             });
         }
-        if let Err(cause) = corrections::verify(self.runtime.runtime(), execution) {
+        if let Err(cause) = corrections::verify(self.runtime.runtime().inner(), execution) {
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
                 cause: QueryHomeCustodyReadmissionDenial::Correction(cause),
@@ -240,9 +246,10 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let originals = match self
             .runtime
             .runtime()
+            .inner
             .runtime
-            .product_runtime
-            .owner
+            .product_runtime_ref()
+            .owner_ref()
             .inspection_port()
             .observe_program_activation_history(execution)
         {
@@ -268,8 +275,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         match self
             .runtime
             .runtime()
+            .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .readmit_correction_material(material, &originals, execution)
         {
             Ok(admission) => {
@@ -285,12 +293,13 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         // Cold terminal ACK settlement may advance the journal after its first
         // fold. Admit the final exact prefix before the service witness escapes.
         let application = self.runtime.runtime();
-        match application.runtime.dispatch_journal.readmit(
+        match application.inner.runtime.dispatch_journal_ref().readmit(
             dispatch,
             execution,
             application
+                .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .dispatch_readmission_catalog(),
         ) {
             Ok(admission) => self.dispatch_custody_admission = std::sync::OnceLock::from(admission),
@@ -304,8 +313,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         // Empty-original release and cold custody settlement may acknowledge
         // Query discharges after the first fold, just as dispatch does above.
         if let Err(cause) = application
+            .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .release_resolved_program_support_interpretations(
                 application
                     .installed_program_support()

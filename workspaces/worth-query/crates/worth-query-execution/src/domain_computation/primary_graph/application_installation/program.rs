@@ -12,6 +12,7 @@ pub(crate) mod demand;
 pub(in crate::domain_computation::primary_graph) use demand::HistoryAdmittedChildSource;
 pub(in crate::domain_computation::primary_graph) use demand::OriginalProgramRootCompletion;
 mod derived_artifact;
+mod original_outputs;
 mod output_roots;
 mod output_source;
 pub use output_source::{

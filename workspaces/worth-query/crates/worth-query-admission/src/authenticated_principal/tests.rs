@@ -381,3 +381,5 @@ impl worth_query_declaration::facade::application_schema::fragment::Fragment for
     type Bindings = worth_query_declaration::facade::application_schema::fragment::NoBindings;
     type Members = (Principal,);
 }
+
+mod local_process;

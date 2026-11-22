@@ -1,6 +1,7 @@
 //! Descriptive custody of an original, exposed only by a freshly published report.
 use super::super::WorthQueryApplicationQueryObservation;
 use crate::domain_computation::primary_graph::application_output_demand::OriginalSettledProducerSource;
+use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
 
 /// Whether this original still owns the indicated immutable evidence.
 /// Absence says nothing about whether a producer ran or whether evidence expired.
@@ -76,13 +77,13 @@ impl WorthQueryInspectionEvidenceAvailability {
     pub(super) fn from_original(original: &WorthQueryApplicationQueryObservation) -> Self {
         use WorthQueryInspectionRetainedEvidence::{NotRetained, Retained};
         use WorthQueryInspectionSupplierEvidence as Supplier;
-        let projection = if original.source.original_projection().is_some() {
+        let projection = if original.source().original_projection().is_some() {
             Retained
         } else {
             NotRetained
         };
         let (supplier, native_observation) = match original
-            .source
+            .source()
             .original_settled_producer()
             .map(|original| original.source())
         {

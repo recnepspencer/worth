@@ -24,6 +24,11 @@ mod checkpoint_region_consistency;
 mod checkpoint_transition;
 mod checkpointing;
 mod diagnostics;
+mod lineage_allocation;
+#[cfg(test)]
+mod lineage_allocation_fixtures;
+#[cfg(test)]
+mod lineage_allocation_tests;
 mod recorded_component_readmission;
 mod recovered_associated_effects;
 mod recovered_publication;

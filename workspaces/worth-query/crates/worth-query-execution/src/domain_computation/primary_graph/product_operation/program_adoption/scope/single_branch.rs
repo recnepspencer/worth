@@ -1,5 +1,7 @@
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryProgramAdoptionRequirements};
 
 use super::super::{
@@ -126,7 +128,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
     ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
         let application = self.application();
         let _phase_request = phase
-            .execution_request_for(&application.runtime.product_runtime)
+            .execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 WorthQueryBranchAdoptionPreparationDenial::ExecutionDenied(cause.into())
             })?;

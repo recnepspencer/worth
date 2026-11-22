@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_resource::occurrence::ResourceLifecycle;
 use crate::domain_computation::primary_graph::WorthQueryApplicationReadObservation;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_, Schema> {
     /// Instrumentation using actual public State admission before source comparison.

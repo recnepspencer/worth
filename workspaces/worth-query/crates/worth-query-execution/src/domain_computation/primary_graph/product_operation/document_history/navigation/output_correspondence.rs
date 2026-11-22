@@ -1,6 +1,7 @@
 //! Fund semantic comparison outside guards, then retain its actual original custody.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 pub(super) struct ComparedOutputProfile {
     original: Option<WorthQueryHistoryOutputProfile>,
@@ -37,7 +38,7 @@ impl<S: worth_query_installation::facade::ApplicationSchema> NavigationAttempt<'
             (None, None) => true,
             (Some(original), Some(supplied)) => {
                 let execution = phase
-                    .checked_execution_request_for(&application.runtime.product_runtime)
+                    .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
                     .map_err(Denial::Stopped)?;
                 original.equivalent(&execution, supplied).map_err(|cause| {
                     Denial::Document(super::super::WorthQueryDocumentHistoryDenial::Recording(

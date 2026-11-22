@@ -1,5 +1,6 @@
 //! A validated single or group completion shares one immutable origin constructor.
 use super::*;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
 impl WorthQueryHistoryRecordingOutputOrigin {
     pub(in crate::domain_computation::primary_graph::product_operation::document_history) fn matches_group_member(
         &self,

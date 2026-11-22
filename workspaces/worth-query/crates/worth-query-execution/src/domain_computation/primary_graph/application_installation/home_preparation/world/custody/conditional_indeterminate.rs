@@ -16,6 +16,11 @@ use crate::domain_computation::primary_graph::query_obligations::{
     QueryConditionalOriginal as Original, QueryConditionalPosture as Posture,
     QueryManagedCleanupOriginal,
 };
+use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::{
+    ProductBranchLeaseInternalPort as _, ProductRuntimeInternalPort as _,
+};
 use QueryHomeCustodyReadmissionDenial as Denial;
 
 impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Program: 'static>
@@ -45,9 +50,10 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             return Ok(());
         }
         let installed = application
+            .inner
             .runtime
-            .product_runtime
-            .owner
+            .product_runtime_ref()
+            .owner_ref()
             .observation_port()
             .observe_installed_product_branches(execution)
             .map_err(|_| Denial::OriginalBindingUnavailable)?;
@@ -63,8 +69,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 .ok_or(Denial::OriginalBindingUnavailable)?
                 .lifecycle_incarnation();
             let product = application
+                .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .admit_product_occurrence(occurrence)
                 .map_err(|_| Denial::OriginalBindingUnavailable)?
                 .publication_binding();
@@ -87,7 +94,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         row: &QueryConditionalDecision,
         recorded: Original,
     ) -> Result<Option<Record>, Denial> {
-        let provider = &self.runtime.runtime().runtime.primary_provider;
+        let provider = self.runtime.runtime().inner.runtime.primary_provider_ref();
         let finish = Record::Finish {
             key: row.key,
             intent: row.intent,

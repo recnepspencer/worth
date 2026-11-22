@@ -1,6 +1,8 @@
 //! Principal-first capability admission, before any workflow existence lookup.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
+use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
-use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenial;
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionMode;
@@ -12,32 +14,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowSpe
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_installation::facade::WorthQueryInstalledWorkflowReadBinding;
 
-/// No absence/status payload is carried by an admission refusal.
-#[derive(Debug)]
-pub enum WorthQueryWorkflowReadDenial {
-    PolicyMismatch,
-    SubscriptionCapacity,
-    Work(worth_execution::WorkCeilingDenial),
-    ContinuationMismatch,
-    Page(worth_relational::facade::indexes::BoundedRelatedEntityPrefixDenial),
-    PageShape(worth_relational::facade::indexes::BoundedRelatedEntityOrderedLookupDenial),
-    Reconstruction(worth_relational::facade::indexes::DerivedIndexMaintenanceDenial),
-    PinnedRead(worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial),
-    Installation(worth_query_installation::facade::WorthQueryApplicationWorkflowInstallationDenial),
-    Allocation(worth_execution::ExecutionAllocationDenial),
-    Preparation(worth_relational::facade::mvcc::CompanionPreflightStop),
-    Index(worth_relational::facade::indexes::BoundedEntityFieldLookupDenialKind),
-    SelectedIndexUnavailable,
-    BasisUnavailable,
-    Corrupt,
-    UnsupportedInstanceProtocol(u64),
-    Relational(worth_relational::facade::transactions::RelationalExecutionDenialCause),
-    Phase(crate::domain_computation::primary_graph::WorthQueryForeignAdvancementPhase),
-    Inspection(crate::domain_computation::primary_graph::WorthQuerySelectedProgramInspectionDenial),
-    Execution(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial),
-    Principal(crate::domain_computation::primary_graph::WorthQueryPrincipalResolutionDenial),
-    Authorization(WorthQueryOperationAuthorizationDenial),
-}
+pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_discovery::workflow::denial::WorthQueryWorkflowReadDenial;
 
 pub(in crate::domain_computation::primary_graph) fn admit<Schema, Spec, B>(
     selected: &WorthQuerySelectedProductOperation<'_, Schema>,
@@ -67,7 +44,7 @@ where
         return Err(Denial::PolicyMismatch);
     }
     let execution = phase
-        .execution_request_for(&selected.application().runtime.product_runtime)
+        .execution_request_for(selected.application().inner.runtime.product_runtime_ref())
         .map_err(Denial::Phase)?;
     // The selected native principal owner prepares only its installed identity index.
     let principal = selected
@@ -90,7 +67,7 @@ where
         )
         .map_err(Denial::Authorization)?;
     access
-        .validate_workflow_read_authority(&execution, selected.application())
+        .validate_workflow_read_authority(&execution, selected.application().inner())
         .map_err(Denial::Authorization)?;
     Ok(access)
 }

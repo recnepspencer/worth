@@ -13,6 +13,7 @@ use worth_query_execution::publication_boundary::workflow_advance::{
     PreparedWorkflowAdvance, PublishedWorkflowInstanceRef, RequiredWorkflowAssessment,
     WorkflowProgressOutcome, WorthQueryWorkflowAdvanceAdapter,
 };
+use worth_query_execution::publication_boundary::WorthQueryAdvancementDenialCommitExt as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::application_entry::{

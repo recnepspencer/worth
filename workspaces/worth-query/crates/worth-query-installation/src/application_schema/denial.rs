@@ -34,6 +34,10 @@ pub enum WorthQueryInstalledApplicationSchemaDenialKind {
     CanonicalEntryBudgetExceeded,
     CanonicalEncodedByteBudgetExceeded,
     CanonicalDigestSlotRejected,
+    NamingSchemeCyclicRoleOrder,
+    NamingSchemeMissingSplitDiscriminator,
+    NamingSchemeDuplicate,
+    NamingSchemeInvalid,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]

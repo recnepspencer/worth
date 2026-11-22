@@ -8,6 +8,7 @@ use worth_foundational::facade::{
     AspectFieldLocator, AspectValue, ContractValidatedAspectValueView, StructAspectValue,
 };
 use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationSchema, WorthQueryProgramSupportRoster,
 };
@@ -59,7 +60,7 @@ pub(in crate::domain_computation::primary_graph) fn readmit<Schema: ApplicationS
                 terminal,
                 created,
                 counts,
-            } = decode_selected_row(&view, &bootstrap.graph.layout, &execution)?;
+            } = decode_selected_row(&view, bootstrap.graph.layout_ref(), &execution)?;
             admit_binding(roster, selected, binding, expected)?;
             admit_receipts(native, basis, terminal, created)?;
             let activation = admit_activation(bootstrap, &view, &execution, roster)?;
@@ -254,7 +255,7 @@ fn admit_activation<Schema: ApplicationSchema>(
     super::super::program_activation_recovery::read_activation(
         execution,
         view,
-        bootstrap.graph.layout.program_activation(),
+        bootstrap.graph.layout_ref().program_activation(),
         usize::MAX,
         "Home root does not activate its admitted program",
         |rendering| {
@@ -275,13 +276,13 @@ fn publication<Schema: ApplicationSchema>(
 ) -> WorthQueryPrimaryGraphPublication {
     let [principal_binding_count, identity_index_count, application_equality_index_count, policy_entity_count, policy_relation_count] =
         counts;
-    WorthQueryPrimaryGraphPublication {
-        binding_identity: installed.binding_identity().clone(),
+    <WorthQueryPrimaryGraphPublication as worth_query_execution_lineage::facade::ports::PrimaryGraphPublicationInternalPort>::from_parts(
+        installed.binding_identity().clone(),
         principal_binding_count,
         identity_index_count,
         application_equality_index_count,
         policy_entity_count,
         policy_relation_count,
-        bootstrap_commit_id: terminal,
-    }
+        terminal,
+    )
 }

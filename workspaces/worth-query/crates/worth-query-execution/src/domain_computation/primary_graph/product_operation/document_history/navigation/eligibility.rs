@@ -13,6 +13,13 @@ use worth_query_declaration::facade::{
     },
     application_query::ApplicationQueryBinding,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledDocumentHistory};
 use worth_relational::facade::mvcc::{
     RelationalRetainedEntitySelectionPreparationError as Preparation, RelationalTransactionIntent,
@@ -44,12 +51,12 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     {
         return Err(correction(Eligibility::ModelDomain));
     }
-    if source.model != *model {
+    if *source.model() != *model {
         return Err(Denial::Document(
             super::super::WorthQueryDocumentHistoryDenial::ForeignModel,
         ));
     }
-    if source.root_posture.is_some()
+    if source.root_posture().is_some()
         && outputs.is_none()
         && definition.model_domain == ApplicationHistoryModelDomain::ScopeEntityRecord
     {
@@ -67,23 +74,28 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     }
     let application = current.application();
     if application
+        .inner
         .runtime
-        .primary_provider
-        .graph
-        .layout
+        .primary_provider_ref()
+        .graph_ref()
+        .layout_ref()
         .is_live_control_entity_kind(model.kind())
     {
         return Err(correction(Eligibility::LiveControlDomain));
     }
     application
+        .inner
         .runtime
-        .product_runtime
+        .product_runtime_ref()
         .require_live_product_occurrence(
-            source.source.product_observation().lifecycle_incarnation(),
+            source
+                .source()
+                .product_observation()
+                .lifecycle_incarnation(),
         )
         .map_err(Denial::ProductAdmission)?;
     let historical = application
-        .select_application_read_observation(phase, &source.source)
+        .select_application_read_observation(phase, &source.source())
         .map_err(Denial::ProductAdmission)?;
     if historical
         .product()
@@ -111,7 +123,13 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     }
     let supported = application
         .installed_program_support()
-        .and_then(|support| support.native_program(current_program.revision()))
+        .and_then(|support| {
+            support.native_program(current_program.revision()).map(|r| {
+                crate::domain_computation::primary_graph::attempt_ports::downcast_supported_program(
+                    r.as_ref(),
+                )
+            })
+        })
         .ok_or_else(|| correction(Eligibility::ProgramUnavailable))?;
     let access = ApplicationHistoryAccessBinding::<S, H>::descriptor();
     let expected_output = if let Some(profile) = outputs {
@@ -143,7 +161,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     };
     if let Some(profile) = outputs.filter(|profile| profile.is_output_forest()) {
         let execution = phase
-            .checked_execution_request_for(&application.runtime.product_runtime)
+            .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let work = profile
             .tree_profiles()
@@ -195,17 +213,23 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         }
     }
     let execution = phase
-        .checked_execution_request_for(&application.runtime.product_runtime)
+        .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
         .map_err(Denial::Stopped)?;
     // This real admission on C catches medium/schema/source eligibility before
     // fork. Actual preparation later repeats admission on the new C-derived target.
     application
+        .inner
         .runtime
-        .primary_provider
-        .graph
+        .primary_provider_ref()
+        .graph_ref()
         .with_runtime(&execution, |native| {
             if definition.model_domain == ApplicationHistoryModelDomain::OwnedModelGraph {
-                let layout = &application.runtime.primary_provider.graph.layout;
+                let layout = &application
+                    .inner
+                    .runtime
+                    .primary_provider_ref()
+                    .graph_ref()
+                    .layout_ref();
                 let ownership =
                     layout
                         .history_ownership(&definition.identity)
@@ -232,11 +256,12 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                     &execution,
                     native,
                     application
+                        .inner
                         .runtime
-                        .primary_provider
-                        .graph
-                        .application_publication
-                        .as_deref(),
+                        .primary_provider_ref()
+                        .graph_ref()
+                        .application_publication_ref()
+                        .map(std::sync::Arc::as_ref),
                     transaction,
                     graph,
                 )?;

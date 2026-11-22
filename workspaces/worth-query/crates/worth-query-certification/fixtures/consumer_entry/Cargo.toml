@@ -36,10 +36,15 @@ worth-query-declaration.opt-level = 0
 worth-query-installation.opt-level = 0
 worth-query-decl.opt-level = 0
 worth-query-admission.opt-level = 0
+worth-query-execution-contracts.opt-level = 0
 worth-query-execution-diagnostics.opt-level = 0
 worth-query-execution-foundation.opt-level = 0
 worth-query-execution-layout.opt-level = 0
 worth-query-execution-obligations.opt-level = 0
+worth-query-execution-runtime.opt-level = 0
+worth-query-execution-lineage.opt-level = 0
+worth-query-execution-attempt.opt-level = 0
+worth-query-execution-query.opt-level = 0
 worth-query-execution.opt-level = 0
 worth-query-publication.opt-level = 0
 worth-query-host.opt-level = 0
@@ -54,6 +59,11 @@ worth-runtime-world.opt-level = 0
 # line tables pass the 4 GiB PDB limit, so rust-lld cannot link it on Windows.
 # Query builds worth-query-execution without debug info for the same reason.
 # Panic locations stay exact.
+worth-query-execution-contracts.debug = false
+worth-query-execution-runtime.debug = false
+worth-query-execution-lineage.debug = false
+worth-query-execution-attempt.debug = false
+worth-query-execution-query.debug = false
 worth-query-execution.debug = false
 worth-query-topology-entry.debug = false
 
@@ -68,10 +78,15 @@ worth-query-declaration.opt-level = 0
 worth-query-installation.opt-level = 0
 worth-query-decl.opt-level = 0
 worth-query-admission.opt-level = 0
+worth-query-execution-contracts.opt-level = 0
 worth-query-execution-diagnostics.opt-level = 0
 worth-query-execution-foundation.opt-level = 0
 worth-query-execution-layout.opt-level = 0
 worth-query-execution-obligations.opt-level = 0
+worth-query-execution-runtime.opt-level = 0
+worth-query-execution-lineage.opt-level = 0
+worth-query-execution-attempt.opt-level = 0
+worth-query-execution-query.opt-level = 0
 worth-query-execution.opt-level = 0
 worth-query-publication.opt-level = 0
 worth-query-host.opt-level = 0
@@ -83,5 +98,10 @@ worth-signal.opt-level = 0
 worth-runtime-bridge.opt-level = 0
 worth-runtime-world.opt-level = 0
 # Topology-entry symbols exceed the PDB limit; see [profile.dev.package].
+worth-query-execution-contracts.debug = false
+worth-query-execution-runtime.debug = false
+worth-query-execution-lineage.debug = false
+worth-query-execution-attempt.debug = false
+worth-query-execution-query.debug = false
 worth-query-execution.debug = false
 worth-query-topology-entry.debug = false

@@ -72,6 +72,8 @@ impl Registration<BankSchema> for Contracts {
                 .application_query_binding::<crate::queries::AccountDiscoveryQueryBinding>()
                 .application_query(crate::queries::current_accounts_definition())
                 .application_query_binding::<crate::queries::CurrentAccountsQueryBinding>()
+                .application_query(crate::queries::account_search_definition())
+                .application_query_binding::<crate::queries::AccountSearchQueryBinding>()
                 .managed_index(worth_query_decl::facade::application_query::ApplicationManagedIndexDefinition::<BankSchema, crate::queries::CurrentAccountsIndex>::new())
                 .application_query(crate::queries::account_detail_definition())
                 .application_query_binding::<crate::queries::AccountDetailQueryBinding>()

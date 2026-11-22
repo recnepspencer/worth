@@ -13,15 +13,12 @@ use worth_query_decl::facade::{
 };
 
 use crate::model::{AccountId, AccountName, BankPrincipalId, InstitutionId};
-use crate::proposals::{BankIdempotencyKey, BankProposalDenial};
+use crate::proposals::BankProposalDenial;
 
 use super::{
     CreatePersonalAccount, CreatePersonalAccountInputBinding, CreatePersonalAccountOperation,
 };
-use crate::schema::{
-    Account, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, ExternalPrincipalMapping,
-    InstitutionIdentityField, Principal,
-};
+use crate::schema::{Account, BankSchema, InstitutionIdentityField};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct CreatePersonalAccountResult {
@@ -120,23 +117,16 @@ fn institution_scope(input: &CreatePersonalAccount) -> InstitutionId {
 }
 
 worth_query_mutation_binding!(
-    pub CreatePersonalAccountMutationBinding for CreatePersonalAccount, schema BankSchema,
+    pub CreatePersonalAccountMutationBinding for CreatePersonalAccount, schema BankSchema, context crate::schema::BankBindingContext,
     identity "bank.operation.create-personal-account.mutation-binding.v1",
     input CreatePersonalAccountInputBinding,
     operation CreatePersonalAccountOperation,
     result CreatePersonalAccountResultBinding,
-    idempotency BankIdempotencyKey,
-        identity "bank.application-mutation-client-key.v1",
     decision CreatePersonalAccountDecision,
     denial CreatePersonalAccountDenialBinding,
     handler identity "bank.operation.create-personal-account.handler.v1",
     program required,
     outputs CreatePersonalAccountOutputs,
-    principal BankPrincipalBinding,
-        mapping ExternalPrincipalMapping,
-        principal_entity Principal,
-        principal_identity BankPrincipalId,
-        identity_binding BankPrincipalIdBinding,
     scope InstitutionIdentityField,
     field InstitutionIdentityField::at("InstitutionIdentityField"),
     value institution_scope,
