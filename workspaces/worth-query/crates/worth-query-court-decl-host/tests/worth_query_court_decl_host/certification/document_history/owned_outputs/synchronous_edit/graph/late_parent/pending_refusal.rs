@@ -119,7 +119,7 @@ fn refused(outcome: &Outcome) -> Option<String> {
         .and_then(|denial| denial.domain_reason().map(str::to_owned))
 }
 
-/// The addendum's positive shape: stage 0 (a = 4) roots guarded-input(a),
+/// (e) Base-order equality. The addendum's positive shape: stage 0 (a = 4) roots guarded-input(a),
 /// which over b = 3 (odd) refuses, and stage 1 writes b = 8. One commit per
 /// stage refuses at stage 0. In the envelope no barrier needs the route, so
 /// base order derives it after the last stage, over b = 8: 4 + 8 = 12, the
@@ -141,9 +141,10 @@ fn a_pending_refusal_a_later_stage_fixes_commits_the_final_derivation() {
     assert_eq!(guarded, oracle);
 }
 
-/// Stage 1 writes b = 5, still odd: the retry refuses the same way and the
-/// refusal is still pending at the end of the envelope, which reports it
-/// unchanged.
+/// Stage 1 writes b = 5, still odd: guarded-input(a) refuses the same way
+/// over the final state, and that refusal is reported unchanged. Identical
+/// with deferral disabled: base order runs the route after the last stage,
+/// so it is never pending here.
 #[test]
 fn a_pending_refusal_still_refused_at_the_end_reports_its_refusal() {
     let (outcome, guarded) = run(&[("a", 4), ("b", 5)], true);
@@ -151,8 +152,10 @@ fn a_pending_refusal_still_refused_at_the_end_reports_its_refusal() {
     assert_eq!(guarded, None);
 }
 
-/// Stage 1 writes b = 101: the retry refuses differently, and that last
-/// refusal is the one reported.
+/// Stage 1 writes b = 101: guarded-input(a) refuses differently over the final
+/// state, and that last refusal is the one reported. Identical with deferral
+/// disabled, for the same reason (the within-drive retry is
+/// `pending_retry.rs`).
 #[test]
 fn a_retry_that_refuses_differently_reports_the_last_refusal() {
     let (outcome, guarded) = run(&[("a", 4), ("b", 101)], true);
@@ -160,7 +163,8 @@ fn a_retry_that_refuses_differently_reports_the_last_refusal() {
     assert_eq!(guarded, None);
 }
 
-/// With no later stage, a domain refusal is reported at once, as before.
+/// With no later stage and no later append to retry it, a domain refusal is
+/// reported with its original stop.
 #[test]
 fn a_refusal_in_the_last_stage_is_reported_at_once() {
     let (outcome, _) = run(&[("a", 4)], true);

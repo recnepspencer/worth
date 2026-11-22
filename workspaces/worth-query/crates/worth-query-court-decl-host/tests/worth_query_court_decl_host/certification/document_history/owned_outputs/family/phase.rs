@@ -65,6 +65,8 @@ macro_rules! producer_operation {
     (CycleConsumerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CycleConsumerPreserve, $entity, $key, $value, $of); };
     (GuardedInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedInputInitial, $entity, $key, $value, $of); };
     (GuardedInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedInputPreserve, $entity, $key, $value, $of); };
+    (GuardedMemberInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedMemberInitial, $entity, $key, $value, $of); };
+    (GuardedMemberPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read GuardedMemberPreserve, $entity, $key, $value, $of); };
     (@member_write $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
         worth_query_operation!(pub $operation for Schema, input InputBinding; access {
             read_entities: [SourceEntity, $entity, Member]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
@@ -163,6 +165,8 @@ macro_rules! producer_decision_dependency {
     (SaturatedInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader).min(5) };
     (GuardedInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@model_b $reader) };
     (GuardedInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@model_b $reader) };
+    (GuardedMemberInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (GuardedMemberPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (@model_b $reader:ident) => {{
         let b = $reader.resolve_entity(ModelKey::at("ModelKey"), "b".to_owned())?;
         $reader.field(&b, ModelValue::at("ModelValue"))?.expect("model b has its value")
