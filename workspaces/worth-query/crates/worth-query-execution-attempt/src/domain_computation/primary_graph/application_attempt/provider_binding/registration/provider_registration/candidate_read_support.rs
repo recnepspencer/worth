@@ -257,8 +257,9 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
                 .changed_fact(execution, runtime, before, entry.support.pin(), current)
             {
                 Ok(changed) => changed.is_some(),
-                // Unavailable at this image: a possible change.
-                Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => true,
+                // Unavailable at this image: unknown. The selection is kept;
+                // final support compares this support strictly.
+                Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => false,
                 Err(cause) => return Err(cause),
             };
             if changed {
@@ -327,8 +328,9 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
         match parent.changed_fact(execution, runtime, before, parent.pin(), current) {
             Ok(None) => return Ok(RetainedReadRequalification::Equal),
             Ok(Some(_)) => {}
-            // Unavailable at this image: a possible change.
-            Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => {}
+            // Unavailable at this image: unknown. The retention is kept;
+            // final support compares it strictly.
+            Err(cause) if !crate::domain_computation::primary_graph::provider::application_attempt_state::candidate_read_support::is_hard_comparison_stop(&cause) => return Ok(RetainedReadRequalification::Equal),
             Err(cause) => return Err(cause),
         }
         if settles(parent.as_ref()) {
