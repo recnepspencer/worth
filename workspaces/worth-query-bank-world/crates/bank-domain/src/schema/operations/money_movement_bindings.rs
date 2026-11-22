@@ -3,17 +3,16 @@ use worth_query_decl::facade::{
     worth_query_structured_value_binding,
 };
 
-use crate::model::{AccountId, BankPrincipalId, InstitutionId, JournalEntryId};
-use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial};
+use crate::model::{AccountId, InstitutionId, JournalEntryId};
+use crate::proposals::{BankInvariantApprovedProposal, BankProposalDenial};
 
 use super::{
     ApplyOpeningFunding, ApplyOpeningFundingInputBinding, Deposit, DepositInputBinding, SendMoney,
     SendMoneyInputBinding, Withdraw, WithdrawInputBinding,
 };
 use crate::schema::{
-    AccountIdentity, ApplyOpeningFundingOperation, BankPrincipalBinding, BankPrincipalIdBinding,
-    BankSchema, DepositOperation, ExternalPrincipalMapping, InstitutionIdentityField, Principal,
-    SendMoneyOperation, SendMoneyOutputs, WithdrawOperation,
+    AccountIdentity, ApplyOpeningFundingOperation, BankSchema, DepositOperation,
+    InstitutionIdentityField, SendMoneyOperation, SendMoneyOutputs, WithdrawOperation,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -52,23 +51,15 @@ fn send_scope(input: &SendMoney) -> AccountId {
 macro_rules! institution_movement_binding {
     ($Binding:ident, $Input:ty, $InputBinding:ty, $Operation:ty, $identity:literal, $handler:literal, $scope:ident) => {
         worth_query_mutation_binding!(
-            pub $Binding for $Input, schema BankSchema,
+            pub $Binding for $Input, schema BankSchema, context crate::schema::BankBindingContext,
             identity $identity,
             input $InputBinding,
             operation $Operation,
             result MoneyMovementResultBinding,
-            idempotency BankIdempotencyKey,
-                identity "bank.application-mutation-client-key.v1",
             decision BankInvariantApprovedProposal,
-            denial MoneyMovementDenialBinding,
             handler identity $handler,
             program required,
             outputs NoApplicationMutationOutputs,
-            principal BankPrincipalBinding,
-                mapping ExternalPrincipalMapping,
-                principal_entity Principal,
-                principal_identity BankPrincipalId,
-                identity_binding BankPrincipalIdBinding,
             scope InstitutionIdentityField,
     field InstitutionIdentityField::at("InstitutionIdentityField"),
             value $scope,
@@ -105,23 +96,15 @@ institution_movement_binding!(
 );
 
 worth_query_mutation_binding!(
-    pub SendMoneyMutationBinding for SendMoney, schema BankSchema,
+    pub SendMoneyMutationBinding for SendMoney, schema BankSchema, context crate::schema::BankBindingContext,
     identity "bank.operation.send-money.mutation-binding.v1",
     input SendMoneyInputBinding,
     operation SendMoneyOperation,
     result MoneyMovementResultBinding,
-    idempotency BankIdempotencyKey,
-        identity "bank.application-mutation-client-key.v1",
     decision BankInvariantApprovedProposal,
-    denial MoneyMovementDenialBinding,
     handler identity "bank.operation.send-money.handler.v1",
     program required,
     outputs SendMoneyOutputs,
-    principal BankPrincipalBinding,
-        mapping ExternalPrincipalMapping,
-        principal_entity Principal,
-        principal_identity BankPrincipalId,
-        identity_binding BankPrincipalIdBinding,
     scope AccountIdentity,
     field AccountIdentity::at("AccountIdentity"),
     value send_scope,

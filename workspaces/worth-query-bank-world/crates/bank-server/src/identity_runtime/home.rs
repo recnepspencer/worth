@@ -186,6 +186,15 @@ where
         )
         .await
     }
+
+    /// Authenticates an admitted local process principal on the calling thread.
+    pub fn authenticate_local(
+        &self,
+        authentication: &BankAuthenticationBoundary<WorthQueryLocalProcessPrincipal>,
+        scope: &WorthQueryRequestScope,
+    ) -> Result<BankAuthenticatedPrincipal, BankPrincipalAdmissionError> {
+        authenticate_local(self.runtime.runtime(), &self.binding, authentication, scope)
+    }
 }
 
 impl BankHomeRuntime<'_> {
@@ -247,6 +256,28 @@ where
         .authenticate(credential, scope)
         .await
         .map_err(BankPrincipalAdmissionError::Authentication)?;
+    resolve_principal(runtime, binding, external, scope)
+}
+
+pub(super) fn authenticate_local(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
+    binding: &InstalledBankPrincipalBinding,
+    authentication: &BankAuthenticationBoundary<WorthQueryLocalProcessPrincipal>,
+    scope: &WorthQueryRequestScope,
+) -> Result<BankAuthenticatedPrincipal, BankPrincipalAdmissionError> {
+    let external = authentication
+        .authenticate_local(scope)
+        .map_err(BankPrincipalAdmissionError::Authentication)?;
+    resolve_principal(runtime, binding, external, scope)
+}
+
+/// Resolves an authenticated external identity to its installed Bank principal.
+fn resolve_principal(
+    runtime: &WorthQueryPrimaryGraphApplicationRuntime<BankSchema>,
+    binding: &InstalledBankPrincipalBinding,
+    external: WorthQueryAuthenticatedExternalPrincipal<BankSchema>,
+    scope: &WorthQueryRequestScope,
+) -> Result<BankAuthenticatedPrincipal, BankPrincipalAdmissionError> {
     runtime
         .with_application_advancement(scope, |phase| {
             let selected = runtime

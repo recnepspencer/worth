@@ -7,13 +7,12 @@ use worth_query_decl::facade::{
     worth_query_mutation_binding, worth_query_structured_value_binding,
 };
 
-use crate::model::{BankPrincipalId, PaymentId};
-use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial};
+use crate::model::PaymentId;
+use crate::proposals::{BankInvariantApprovedProposal, BankProposalDenial};
 
 use super::{ApprovePayment, ApprovePaymentInputBinding, RejectPayment, RejectPaymentInputBinding};
 use crate::schema::{
-    ApprovePaymentOperation, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
-    ExternalPrincipalMapping, PaymentIdentityField, PaymentIntent, Principal,
+    ApprovePaymentOperation, BankSchema, PaymentIdentityField, PaymentIntent,
     RejectPaymentOperation,
 };
 
@@ -69,13 +68,11 @@ fn payment_scope_from_rejection(input: &RejectPayment) -> PaymentId {
 }
 
 worth_query_mutation_binding!(
-    pub ApprovePaymentMutationBinding for ApprovePayment, schema BankSchema,
+    pub ApprovePaymentMutationBinding for ApprovePayment, schema BankSchema, context crate::schema::BankBindingContext,
     identity "bank.operation.approve-payment.mutation-binding.v1",
     input ApprovePaymentInputBinding,
     operation ApprovePaymentOperation,
     result PaymentDecisionResultBinding,
-    idempotency BankIdempotencyKey,
-        identity "bank.application-mutation-client-key.v1",
     decision BankInvariantApprovedProposal,
     denial PaymentDecisionDenialBinding,
     handler identity "bank.operation.approve-payment.handler.v1",
@@ -83,34 +80,22 @@ worth_query_mutation_binding!(
     workflow_authority required,
     workflow_requirements worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::requiring_approval::<crate::schema::workflow::ApprovedBusinessPaymentApproval>(),
     outputs super::ApprovedPaymentOutputs,
-    principal BankPrincipalBinding,
-        mapping ExternalPrincipalMapping,
-        principal_entity Principal,
-        principal_identity BankPrincipalId,
-        identity_binding BankPrincipalIdBinding,
     scope PaymentIdentityField,
     field PaymentIdentityField::at("PaymentIdentityField"),
     value payment_scope_from_approval,
 );
 
 worth_query_mutation_binding!(
-    pub RejectPaymentMutationBinding for RejectPayment, schema BankSchema,
+    pub RejectPaymentMutationBinding for RejectPayment, schema BankSchema, context crate::schema::BankBindingContext,
     identity "bank.operation.reject-payment.mutation-binding.v1",
     input RejectPaymentInputBinding,
     operation RejectPaymentOperation,
     result PaymentDecisionResultBinding,
-    idempotency BankIdempotencyKey,
-        identity "bank.application-mutation-client-key.v1",
     decision RejectedPaymentDecision,
     denial PaymentDecisionDenialBinding,
     handler identity "bank.operation.reject-payment.handler.v1",
     program required,
     outputs PaymentDecisionOutputs,
-    principal BankPrincipalBinding,
-        mapping ExternalPrincipalMapping,
-        principal_entity Principal,
-        principal_identity BankPrincipalId,
-        identity_binding BankPrincipalIdBinding,
     scope PaymentIdentityField,
     field PaymentIdentityField::at("PaymentIdentityField"),
     value payment_scope_from_rejection,

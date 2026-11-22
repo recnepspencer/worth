@@ -21,9 +21,7 @@ pub use bank_server::{
 pub use crate::facade::authorization_time::{
     runtime_with_authorization_time, AuthorizationTimeController,
 };
-pub use crate::facade::support::{
-    block_on, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld,
-};
+pub use crate::facade::support::{runtime, DynamicIdentity, TestIdentityWorld};
 pub use snapshot::snapshot;
 pub use world::estate_world;
 
@@ -105,12 +103,9 @@ impl DisbursementFixture {
 
     pub fn authenticate(&self, identity: usize) -> BankAuthenticatedPrincipal {
         let request = crate::facade::support::request_scope();
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(&self.identities[identity]),
-            &request,
-        ))
-        .expect("the disbursement fixture principal should authenticate")
+        self.world
+            .authenticate(&self.identities[identity], &request)
+            .expect("the disbursement fixture principal should authenticate")
     }
 
     pub fn action(&self, amount: i64) -> EstateAction {

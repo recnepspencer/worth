@@ -16,8 +16,7 @@ pub use bank_server::{
 };
 
 pub use super::support::{
-    block_on, runtime, runtime_with_approval_authentication, CausalCredential, DynamicIdentity,
-    TestIdentityWorld,
+    runtime, runtime_with_approval_authentication, DynamicIdentity, TestIdentityWorld,
 };
 
 pub const OWNER: usize = 0;
@@ -57,12 +56,9 @@ pub struct OrdinaryReadFixture {
 impl OrdinaryReadFixture {
     pub fn authenticate(&self, principal: usize) -> BankAuthenticatedPrincipal {
         let request = super::support::request_scope();
-        block_on(self.world.runtime.authenticate_with(
-            &self.world.authentication,
-            CausalCredential::for_identity(&self.identities[principal]),
-            &request,
-        ))
-        .expect("fixture principal should authenticate")
+        self.world
+            .authenticate(&self.identities[principal], &request)
+            .expect("fixture principal should authenticate")
     }
 }
 

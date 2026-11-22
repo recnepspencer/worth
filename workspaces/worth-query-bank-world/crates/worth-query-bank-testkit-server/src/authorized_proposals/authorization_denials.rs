@@ -5,6 +5,4 @@ pub use worth_query_host::facade::application_entry::WorthQueryApplicationReques
 pub use worth_query_host::facade::primary_graph::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
 
 pub use super::fixture::{funded_personal_world, id, key};
-pub use crate::facade::support::{
-    block_on, request_scope, runtime, CausalCredential, DynamicIdentity,
-};
+pub use crate::facade::support::{request_scope, runtime, DynamicIdentity};

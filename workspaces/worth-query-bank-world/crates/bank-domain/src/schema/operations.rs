@@ -1,10 +1,5 @@
+use worth_query_decl::facade::worth_query_operation;
 use worth_query_decl::facade::worth_query_structured_value_binding;
-use worth_query_decl::facade::{
-    worth_query_operation, worth_query_operation_creates, worth_query_operation_deletes,
-    worth_query_operation_emits, worth_query_operation_expects_fact,
-    worth_query_operation_expects_version, worth_query_operation_links,
-    worth_query_operation_unlinks,
-};
 
 mod account_access_bindings;
 mod approved_payment_outputs;
@@ -13,7 +8,6 @@ mod create_personal_account_binding;
 mod initiate_business_payment_binding;
 mod money_movement_bindings;
 mod payment_decision_bindings;
-mod read_capabilities;
 mod reverse_journal_binding;
 mod send_money_access;
 mod send_money_outputs;
@@ -151,90 +145,82 @@ worth_query_structured_value_binding!(pub GrantAccountAuthorizationInputBinding 
 worth_query_structured_value_binding!(pub RevokeAccountAuthorizationInputBinding for RevokeAccountAuthorization { identity: "bank.operation.revoke-account-authorization.input.v1" });
 worth_query_structured_value_binding!(pub ReverseJournalInputBinding for ReverseJournal { identity: "bank.operation.reverse-journal.input.v1" });
 
-worth_query_operation!(pub CreatePersonalAccountOperation for BankSchema, input CreatePersonalAccountInputBinding);
-worth_query_operation!(pub CreateBusinessAccountOperation for BankSchema, input CreateBusinessAccountInputBinding);
-worth_query_operation!(pub ApplyOpeningFundingOperation for BankSchema, input ApplyOpeningFundingInputBinding);
-worth_query_operation!(pub DepositOperation for BankSchema, input DepositInputBinding);
-worth_query_operation!(pub WithdrawOperation for BankSchema, input WithdrawInputBinding);
-worth_query_operation!(pub SendMoneyOperation for BankSchema, input SendMoneyInputBinding);
-
-worth_query_operation!(pub InitiateBusinessPaymentOperation for BankSchema, input InitiateBusinessPaymentInputBinding);
-worth_query_operation!(pub ApprovePaymentOperation for BankSchema, input ApprovePaymentInputBinding);
-worth_query_operation!(pub RejectPaymentOperation for BankSchema, input RejectPaymentInputBinding);
-worth_query_operation!(pub GrantAccountAuthorizationOperation for BankSchema, input GrantAccountAuthorizationInputBinding);
-worth_query_operation!(pub RevokeAccountAuthorizationOperation for BankSchema, input RevokeAccountAuthorizationInputBinding);
-worth_query_operation!(pub ReverseJournalOperation for BankSchema, input ReverseJournalInputBinding);
-
-worth_query_operation_creates!(CreatePersonalAccountOperation => [Account]);
-worth_query_operation_creates!(CreateBusinessAccountOperation => [Account]);
-worth_query_operation_links!(
-    CreatePersonalAccountOperation => [PersonalOwner, InstitutionAccount]
-);
-worth_query_operation_links!(
-    CreateBusinessAccountOperation => [BusinessAccount, InstitutionAccount]
+worth_query_operation!(pub CreatePersonalAccountOperation for BankSchema, input CreatePersonalAccountInputBinding;
+    reads [PersonalOwner, InstitutionAccount, BusinessAccount];
+    creates [Account];
+    links [PersonalOwner, InstitutionAccount];
 );
 
-worth_query_operation_creates!(ApplyOpeningFundingOperation => [JournalEntry, Posting]);
-worth_query_operation_creates!(DepositOperation => [JournalEntry, Posting]);
-worth_query_operation_creates!(WithdrawOperation => [JournalEntry, Posting]);
-worth_query_operation_creates!(SendMoneyOperation => [JournalEntry, Posting]);
-worth_query_operation_creates!(ReverseJournalOperation => [JournalEntry, Posting]);
-worth_query_operation_links!(
-    ApplyOpeningFundingOperation => [JournalPosting, PostingAccount]
-);
-worth_query_operation_links!(DepositOperation => [JournalPosting, PostingAccount]);
-worth_query_operation_links!(WithdrawOperation => [JournalPosting, PostingAccount]);
-worth_query_operation_links!(SendMoneyOperation => [JournalPosting, PostingAccount]);
-worth_query_operation_links!(ReverseJournalOperation => [JournalPosting, PostingAccount]);
-worth_query_operation_links!(ReverseJournalOperation => [JournalReversal]);
-
-worth_query_operation_creates!(InitiateBusinessPaymentOperation => [PaymentIntent]);
-
-worth_query_operation_links!(
-    InitiateBusinessPaymentOperation => [
-        PaymentSource,
-        PaymentDestination,
-        PaymentBusiness,
-        PaymentInitiator
-    ]
-);
-worth_query_operation_creates!(ApprovePaymentOperation => [Approval, JournalEntry, Posting]);
-worth_query_operation_links!(
-    ApprovePaymentOperation => [
-        PaymentApproval,
-        ApprovalPrincipal,
-        JournalPosting,
-        PostingAccount
-    ]
+worth_query_operation!(pub CreateBusinessAccountOperation for BankSchema, input CreateBusinessAccountInputBinding;
+    reads [BusinessAccount, InstitutionAccount, PersonalOwner];
+    creates [Account];
+    links [BusinessAccount, InstitutionAccount];
 );
 
-worth_query_operation_creates!(RejectPaymentOperation => [Approval]);
-worth_query_operation_links!(
-    RejectPaymentOperation => [PaymentApproval, ApprovalPrincipal]
+worth_query_operation!(pub ApplyOpeningFundingOperation for BankSchema, input ApplyOpeningFundingInputBinding;
+    reads [InstitutionAccount, InstitutionCashAccount, PersonalOwner, BusinessAccount, PostingAccount, JournalPosting, JournalReversal];
+    creates [JournalEntry, Posting];
+    links [JournalPosting, PostingAccount];
+    emits [AccountActivityEffect];
 );
 
-worth_query_operation_creates!(
-    GrantAccountAuthorizationOperation => [AccountAuthorization]
+worth_query_operation!(pub DepositOperation for BankSchema, input DepositInputBinding;
+    reads [InstitutionAccount, InstitutionCashAccount, PersonalOwner, BusinessAccount, PostingAccount, JournalPosting, JournalReversal];
+    creates [JournalEntry, Posting];
+    links [JournalPosting, PostingAccount];
+    emits [AccountActivityEffect];
 );
 
-worth_query_operation_links!(
-    GrantAccountAuthorizationOperation => [AccountAuthorizedUser, AuthorizationAccount]
-);
-worth_query_operation_unlinks!(
-    RevokeAccountAuthorizationOperation => [AccountAuthorizedUser, AuthorizationAccount]
-);
-worth_query_operation_deletes!(
-    RevokeAccountAuthorizationOperation => [AccountAuthorization]
+worth_query_operation!(pub WithdrawOperation for BankSchema, input WithdrawInputBinding;
+    reads [InstitutionAccount, InstitutionCashAccount, PersonalOwner, BusinessAccount, PostingAccount, JournalPosting, JournalReversal];
+    creates [JournalEntry, Posting];
+    links [JournalPosting, PostingAccount];
+    emits [AccountActivityEffect];
 );
 
-worth_query_operation_emits!(ApplyOpeningFundingOperation => [AccountActivityEffect]);
-worth_query_operation_emits!(DepositOperation => [AccountActivityEffect]);
-worth_query_operation_emits!(WithdrawOperation => [AccountActivityEffect]);
-worth_query_operation_emits!(SendMoneyOperation => [AccountActivityEffect]);
-worth_query_operation_emits!(ApprovePaymentOperation => [AccountActivityEffect]);
-worth_query_operation_emits!(ApprovePaymentOperation => [ApprovedPaymentSettlementEffect]);
-worth_query_operation_emits!(ReverseJournalOperation => [AccountActivityEffect]);
+worth_query_operation!(pub SendMoneyOperation for BankSchema, input SendMoneyInputBinding;
+    reads [PersonalOwner, InstitutionAccount, BusinessAccount, PostingAccount, JournalPosting, JournalReversal];
+    creates [JournalEntry, Posting];
+    links [JournalPosting, PostingAccount];
+    emits [AccountActivityEffect];
+    expects_version [AccountingRevision];
+    expects_fact [Status];
+);
 
-worth_query_operation_expects_version!(SendMoneyOperation => [AccountingRevision]);
+worth_query_operation!(pub InitiateBusinessPaymentOperation for BankSchema, input InitiateBusinessPaymentInputBinding;
+    reads [BusinessAccount, PersonalOwner, InstitutionAccount];
+    creates [PaymentIntent];
+    links [PaymentSource, PaymentDestination, PaymentBusiness, PaymentInitiator];
+);
 
-worth_query_operation_expects_fact!(SendMoneyOperation => [Status]);
+worth_query_operation!(pub ApprovePaymentOperation for BankSchema, input ApprovePaymentInputBinding;
+    reads [PaymentSource, PaymentDestination, PaymentBusiness, PaymentInitiator, PaymentApproval, ApprovalPrincipal, InstitutionAccount, PersonalOwner, BusinessAccount, PostingAccount, JournalPosting, JournalReversal];
+    creates [Approval, JournalEntry, Posting];
+    links [PaymentApproval, ApprovalPrincipal, JournalPosting, PostingAccount];
+    emits [AccountActivityEffect, ApprovedPaymentSettlementEffect];
+);
+
+worth_query_operation!(pub RejectPaymentOperation for BankSchema, input RejectPaymentInputBinding;
+    reads [PaymentSource, PaymentDestination, PaymentBusiness, PaymentInitiator, PaymentApproval, ApprovalPrincipal, InstitutionAccount, PersonalOwner, BusinessAccount];
+    creates [Approval];
+    links [PaymentApproval, ApprovalPrincipal];
+);
+
+worth_query_operation!(pub GrantAccountAuthorizationOperation for BankSchema, input GrantAccountAuthorizationInputBinding;
+    reads [AccountAuthorizedUser, AuthorizationAccount, InstitutionAccount, PersonalOwner, BusinessAccount];
+    creates [AccountAuthorization];
+    links [AccountAuthorizedUser, AuthorizationAccount];
+);
+
+worth_query_operation!(pub RevokeAccountAuthorizationOperation for BankSchema, input RevokeAccountAuthorizationInputBinding;
+    reads [AccountAuthorization, AccountAuthorizedUser, AuthorizationAccount, InstitutionAccount, PersonalOwner, BusinessAccount];
+    deletes [AccountAuthorization];
+    unlinks [AccountAuthorizedUser, AuthorizationAccount];
+);
+
+worth_query_operation!(pub ReverseJournalOperation for BankSchema, input ReverseJournalInputBinding;
+    reads [InstitutionAccount, PersonalOwner, BusinessAccount, JournalPosting, PostingAccount, JournalReversal];
+    creates [JournalEntry, Posting];
+    links [JournalPosting, PostingAccount, JournalReversal];
+    emits [AccountActivityEffect];
+);

@@ -4,10 +4,7 @@ use crate::{
     application_definition::{BankApplication, BankApplicationP1},
     identity_runtime::application_custody::{BankApplicationCustody, BankUnboundApplication},
     identity_runtime::{installation, prepare_seeds},
-    support::{
-        authentication_configuration, block_on, request_scope, CausalBankAuthenticationAdapter,
-        CausalCredential, DynamicIdentity,
-    },
+    support::{authentication_configuration, local_principal, request_scope, DynamicIdentity},
     BankApprovalAuthenticationConfiguration, BankAuthenticationBoundary, BankPrincipalSeed,
     PersonalAccountCreationAction,
 };
@@ -63,14 +60,14 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
             WorthQueryAuthenticationAdapterAdmission::new(
                 configuration.audience,
                 configuration.method, worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
-            CausalBankAuthenticationAdapter,
+            local_principal(&identity),
         )
         .expect("the real authentication adapter is admitted"),
     );
     let scope = request_scope();
-    let principal =
-        block_on(authentication.authenticate(CausalCredential::for_identity(&identity), &scope))
-            .expect("the installing principal authenticates");
+    let principal = authentication
+        .authenticate_local(&scope)
+        .expect("the installing principal authenticates");
     let operation = retain_unexecuted(
         unbound_runtime(&pending.runtime),
         &principal,
@@ -108,10 +105,9 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
 
     let cancellation = WorthQueryCancellationSource::new();
     let stopped_scope = WorthQueryRequestScope::new(None, cancellation.token(), worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system());
-    let stopped_principal = block_on(
-        authentication.authenticate(CausalCredential::for_identity(&identity), &stopped_scope),
-    )
-    .expect("authentication precedes cancellation");
+    let stopped_principal = authentication
+        .authenticate_local(&stopped_scope)
+        .expect("authentication precedes cancellation");
     cancellation.cancel();
     let (operation, denial) = match operation
         .close(&unbound_runtime(&pending.runtime).request(&stopped_principal, &stopped_scope))
@@ -129,10 +125,9 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
         WorthQueryWorkflowRuntimeBindingDenial::RuntimeKeepaliveRetained,
     );
     let fresh_scope = request_scope();
-    let fresh_principal = block_on(
-        authentication.authenticate(CausalCredential::for_identity(&identity), &fresh_scope),
-    )
-    .expect("lawful close receives freshly authenticated request context");
+    let fresh_principal = authentication
+        .authenticate_local(&fresh_scope)
+        .expect("lawful close receives freshly authenticated request context");
     operation
         .close(&unbound_runtime(&pending.runtime).request(&fresh_principal, &fresh_scope))
         .unwrap_or_else(|(_, denial)| panic!("actual Initial owner closes: {denial:?}"));
@@ -150,12 +145,9 @@ fn workflow_binding_refusal_preserves_inputs_until_real_operation_closes() {
         ),
         BankApplicationCustody::Home(_) => panic!("this court retains its actual Memory world"),
     }
-    let admitted = block_on(bank.authenticate_with(
-        &authentication,
-        CausalCredential::for_identity(&identity),
-        &fresh_scope,
-    ))
-    .expect("the returned Bank runtime retains its original principal binding");
+    let admitted = bank
+        .authenticate_local(&authentication, &fresh_scope)
+        .expect("the returned Bank runtime retains its original principal binding");
     assert_eq!(admitted.principal_id(), owner);
     assert_eq!(bank.mapped_principal_count(), 1);
 

@@ -7,13 +7,12 @@ use worth_query_decl::facade::{
     worth_query_mutation_binding, worth_query_structured_value_binding,
 };
 
-use crate::model::{AccountId, BankPrincipalId, InstitutionId};
-use crate::proposals::{BankIdempotencyKey, BankInvariantApprovedProposal, BankProposalDenial};
+use crate::model::{AccountId, InstitutionId};
+use crate::proposals::{BankInvariantApprovedProposal, BankProposalDenial};
 
 use super::{CreateBusinessAccount, CreateBusinessAccountInputBinding};
 use crate::schema::{
-    Account, BankPrincipalBinding, BankPrincipalIdBinding, BankSchema,
-    CreateBusinessAccountOperation, ExternalPrincipalMapping, InstitutionIdentityField, Principal,
+    Account, BankSchema, CreateBusinessAccountOperation, InstitutionIdentityField,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -57,23 +56,16 @@ fn institution_scope(input: &CreateBusinessAccount) -> InstitutionId {
 }
 
 worth_query_mutation_binding!(
-    pub CreateBusinessAccountMutationBinding for CreateBusinessAccount, schema BankSchema,
+    pub CreateBusinessAccountMutationBinding for CreateBusinessAccount, schema BankSchema, context crate::schema::BankBindingContext,
     identity "bank.operation.create-business-account.mutation-binding.v1",
     input CreateBusinessAccountInputBinding,
     operation CreateBusinessAccountOperation,
     result CreateBusinessAccountResultBinding,
-    idempotency BankIdempotencyKey,
-        identity "bank.application-mutation-client-key.v1",
     decision BankInvariantApprovedProposal,
     denial CreateBusinessAccountDenialBinding,
     handler identity "bank.operation.create-business-account.handler.v1",
     program required,
     outputs CreateBusinessAccountOutputs,
-    principal BankPrincipalBinding,
-        mapping ExternalPrincipalMapping,
-        principal_entity Principal,
-        principal_identity BankPrincipalId,
-        identity_binding BankPrincipalIdBinding,
     scope InstitutionIdentityField,
     field InstitutionIdentityField::at("InstitutionIdentityField"),
     value institution_scope,

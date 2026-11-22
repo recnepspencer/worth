@@ -1,7 +1,5 @@
 pub use super::*;
-pub use crate::facade::support::{
-    block_on, runtime, CausalCredential, DynamicIdentity, TestIdentityWorld,
-};
+pub use crate::facade::support::{runtime, DynamicIdentity, TestIdentityWorld};
 pub use bank_domain::{
     model::{AccountName, BankSnapshotVersion, EmployeeAssignmentId, EmployeeRole, InstitutionId},
     proposals::BankSnapshotBuilder,
@@ -28,14 +26,8 @@ impl World {
         let [source, destination] = [10, 11].map(|id| AccountId::new(id).unwrap());
         let seed = seeded_world(institution, &identities, false);
         let native = runtime(seed);
-        let [owner, recipient, teller] = identities.map(|identity| {
-            block_on(native.runtime.authenticate_with(
-                &native.authentication,
-                CausalCredential::for_identity(&identity),
-                &request_scope(),
-            ))
-            .unwrap()
-        });
+        let [owner, recipient, teller] =
+            identities.map(|identity| native.authenticate(&identity, &request_scope()).unwrap());
         let scope = request_scope();
         let request = native.runtime.request(&teller, &scope);
         let funding = native

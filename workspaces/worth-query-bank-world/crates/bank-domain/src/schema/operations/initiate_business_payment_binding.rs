@@ -15,8 +15,7 @@ use crate::proposals::{
 
 use super::{InitiateBusinessPayment, InitiateBusinessPaymentInputBinding};
 use crate::schema::{
-    BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, BusinessIdentityField,
-    ExternalPrincipalMapping, InitiateBusinessPaymentOperation, PaymentIntent, Principal,
+    BankSchema, BusinessIdentityField, InitiateBusinessPaymentOperation, PaymentIntent,
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -96,23 +95,16 @@ pub fn initiate_business_payment_application_idempotency(
 }
 
 worth_query_mutation_binding!(
-    pub InitiateBusinessPaymentMutationBinding for InitiateBusinessPayment, schema BankSchema,
+    pub InitiateBusinessPaymentMutationBinding for InitiateBusinessPayment, schema BankSchema, context crate::schema::BankBindingContext,
     identity "bank.operation.initiate-business-payment.mutation-binding.v1",
     input InitiateBusinessPaymentInputBinding,
     operation InitiateBusinessPaymentOperation,
     result InitiateBusinessPaymentResultBinding,
-    idempotency BankIdempotencyKey,
-        identity "bank.application-mutation-client-key.v1",
     decision InitiateBusinessPaymentDecision,
     denial InitiateBusinessPaymentDenialBinding,
     handler identity "bank.operation.initiate-business-payment.handler.v1",
     program required,
     outputs InitiateBusinessPaymentOutputs,
-    principal BankPrincipalBinding,
-        mapping ExternalPrincipalMapping,
-        principal_entity Principal,
-        principal_identity BankPrincipalId,
-        identity_binding BankPrincipalIdBinding,
     scope BusinessIdentityField,
     field BusinessIdentityField::at("BusinessIdentityField"),
     value business_scope,
