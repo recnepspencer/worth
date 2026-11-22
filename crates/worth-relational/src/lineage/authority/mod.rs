@@ -2,9 +2,11 @@ mod commit_finalization;
 mod discriminator_scan;
 mod event_emission;
 mod name_minting;
+mod posture_continuity;
 mod posture_drafts;
 mod posture_finalization;
 mod posture_merge_validation;
+mod posture_split_validation;
 mod posture_validation;
 mod staged_effects;
 

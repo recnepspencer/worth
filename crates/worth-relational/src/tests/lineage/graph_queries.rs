@@ -317,6 +317,7 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
                     target: LineageRecordTarget::Entity(f1),
                     name: f1_name,
                 }],
+                ..Default::default()
             },
         )
         .err()
@@ -334,66 +335,54 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
     retire_relation(&mut staged, s1, VersionId(2));
     let s1_a = push_relation(&mut staged, VersionId(2), f1, f1);
     let s1_b = push_relation(&mut staged, VersionId(2), f1, f1);
+    let c2_changed = [
+        RecordRef::Entity(f2),
+        RecordRef::Relation(s1),
+        RecordRef::Relation(s1_a),
+        RecordRef::Relation(s1_b),
+    ];
+    let c2_input = LineageCommitPostureInput {
+        scheme_registry: registry,
+        live_holders,
+        live_lineages,
+        postures: vec![
+            LineagePostureClaim::Merge {
+                parents: vec![
+                    (LineageRecordTarget::Entity(f1), f1_name),
+                    (LineageRecordTarget::Entity(f2), f2_name),
+                ],
+                target: LineageRecordTarget::Entity(f1),
+                keeper: LineageMergeKeeper::KeepParent(f1_name),
+            },
+            LineagePostureClaim::Split {
+                parent_target: LineageRecordTarget::Relation(s1),
+                parent_name: s1_name,
+                children: vec![
+                    LineageSplitChild {
+                        target: LineageRecordTarget::Relation(s1_a),
+                        birth: seam_birth("occ.rt.2", "seam_piece", vec![s1_name], "a", s1_a),
+                    },
+                    LineageSplitChild {
+                        target: LineageRecordTarget::Relation(s1_b),
+                        birth: seam_birth("occ.rt.2", "seam_piece", vec![s1_name], "b", s1_b),
+                    },
+                ],
+            },
+        ],
+        ..Default::default()
+    };
     let c2 = authority
         .ensure_lineage_for_commit_with_postures(
             execution,
             &mut staged,
             &receipt_at(2, 2),
             &[],
-            &[
-                RecordRef::Entity(f2),
-                RecordRef::Relation(s1),
-                RecordRef::Relation(s1_a),
-                RecordRef::Relation(s1_b),
-            ],
-            &LineageCommitPostureInput {
-                scheme_registry: registry,
-                live_holders,
-                live_lineages,
-                postures: vec![
-                    LineagePostureClaim::Merge {
-                        parents: vec![
-                            (LineageRecordTarget::Entity(f1), f1_name),
-                            (LineageRecordTarget::Entity(f2), f2_name),
-                        ],
-                        target: LineageRecordTarget::Entity(f1),
-                        keeper: LineageMergeKeeper::KeepParent(f1_name),
-                    },
-                    LineagePostureClaim::Split {
-                        parent_target: LineageRecordTarget::Relation(s1),
-                        parent_name: s1_name,
-                        children: vec![
-                            LineageSplitChild {
-                                target: LineageRecordTarget::Relation(s1_a),
-                                birth: seam_birth(
-                                    "occ.rt.2",
-                                    "seam_piece",
-                                    vec![s1_name],
-                                    "a",
-                                    s1_a,
-                                ),
-                            },
-                            LineageSplitChild {
-                                target: LineageRecordTarget::Relation(s1_b),
-                                birth: seam_birth(
-                                    "occ.rt.2",
-                                    "seam_piece",
-                                    vec![s1_name],
-                                    "b",
-                                    s1_b,
-                                ),
-                            },
-                        ],
-                    },
-                ],
-            },
+            &c2_changed,
+            &c2_input,
         )
         .expect("runtime Merge + relation Split succeeds");
     let c2_ev = c2.artifact().event_batch().events();
-    assert!(c2_ev
-        .iter()
-        .any(|e| e.kind() == LineageEventKind::Merge && e.subject() == LineageSubject::Entity));
-    assert!(c2_ev
-        .iter()
-        .any(|e| e.kind() == LineageEventKind::Split && e.subject() == LineageSubject::Relation));
+    let has = |k, s| c2_ev.iter().any(|e| e.kind() == k && e.subject() == s);
+    assert!(has(LineageEventKind::Merge, LineageSubject::Entity));
+    assert!(has(LineageEventKind::Split, LineageSubject::Relation));
 }

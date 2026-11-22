@@ -17,9 +17,9 @@ pub enum LineageSubject {
 /// What a committed lineage event did to entity or relation lineages, as
 /// recorded in a [`LineageEventRecord`].
 ///
-/// Lineage resolution follows `Replace`, `Split`, and `Merge` events from
-/// their sources to their targets; `Create` and `Retire` start or end a
-/// lineage and are not followed.
+/// Lineage resolution follows `Replace`, `Split`, `Merge`, and `Restore`
+/// events from their sources to their targets; `Create` and `Retire` start or
+/// end a lineage and are not followed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LineageEventKind {
     /// A new lineage began; it has no sources and one target.
@@ -32,6 +32,10 @@ pub enum LineageEventKind {
     Merge,
     /// A lineage ended; it has one source and no targets.
     Retire,
+    /// Undo, redo, history checkout, or authored restore re-activating a
+    /// previously retired persistent name onto a fresh generational
+    /// `RecordId` (`EntityId` or `RelationId`) and fresh `LineageId`.
+    Restore,
 }
 
 /// One lineage event published by a Relational commit: which commit and

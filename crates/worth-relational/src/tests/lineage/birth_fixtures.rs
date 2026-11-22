@@ -113,6 +113,7 @@ pub(super) fn create_postures_input(
         scheme_registry,
         live_holders: BTreeMap::new(),
         live_lineages: BTreeMap::new(),
+        retired_lineages: BTreeMap::new(),
         postures: births
             .into_iter()
             .map(|(entity, birth)| LineagePostureClaim::Create {

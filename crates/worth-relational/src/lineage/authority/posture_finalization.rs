@@ -233,6 +233,43 @@ fn assign_posture_drafts(
                     kept_name,
                 }
             }
+            PostureEventDraft::Restore {
+                target,
+                source_lineage,
+                name,
+                existing_lineage_id,
+            } => {
+                let lineage_id = match existing_lineage_id {
+                    Some(id) => id,
+                    None => LineageId(reserved.next().ok_or_else(|| {
+                        "lineage id reservation did not cover posture plan".to_owned()
+                    })?),
+                };
+                if lineage_id == source_lineage {
+                    return Err("restore target lineage must differ from retired source".to_owned());
+                }
+                created_lineages.insert(target, lineage_id);
+                let (entity_node, relation_lineage) = match target {
+                    LineageRecordTarget::Entity(entity_id) => (
+                        Some((entity_id, lineage_id, existing_lineage_id.is_none())),
+                        None,
+                    ),
+                    LineageRecordTarget::Relation(relation_id) => {
+                        (None, Some((relation_id, lineage_id)))
+                    }
+                };
+                AssignedPostureEvent {
+                    kind: LineageEventKind::Restore,
+                    decision_kind: LineageDecisionKind::RestoreAccepted,
+                    subject: target.subject(),
+                    sources: vec![source_lineage],
+                    targets: vec![lineage_id],
+                    entity_node,
+                    relation_lineage,
+                    name_birth: None,
+                    kept_name: Some(name),
+                }
+            }
             PostureEventDraft::Retire {
                 subject,
                 lineage_id,
@@ -248,30 +285,31 @@ fn assign_posture_drafts(
                 kept_name: None,
             },
             PostureEventDraft::Replace {
+                subject,
                 source_lineage_id,
-                target_entity_id,
+                target,
                 target_lineage_id,
+                kept_name,
             } => {
                 let target_lineage_id = target_lineage_id
-                    .or_else(|| {
-                        created_lineages
-                            .get(&LineageRecordTarget::Entity(target_entity_id))
-                            .copied()
+                    .or_else(|| created_lineages.get(&target).copied())
+                    .or_else(|| match target {
+                        LineageRecordTarget::Entity(entity_id) => entity_lineage(staged, entity_id),
+                        LineageRecordTarget::Relation(_) => None,
                     })
-                    .or_else(|| entity_lineage(staged, target_entity_id))
                     .ok_or_else(|| {
                         "lineage replacement target lost its planned lineage".to_owned()
                     })?;
                 AssignedPostureEvent {
                     kind: LineageEventKind::Replace,
                     decision_kind: LineageDecisionKind::ReplaceAccepted,
-                    subject: LineageSubject::Entity,
+                    subject,
                     sources: vec![source_lineage_id],
                     targets: vec![target_lineage_id],
                     entity_node: None,
                     relation_lineage: None,
                     name_birth: None,
-                    kept_name: None,
+                    kept_name,
                 }
             }
             PostureEventDraft::Split {

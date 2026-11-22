@@ -72,31 +72,44 @@ pub(super) fn view_at(log: &[PersistentNameCommittedBatch], basis: u64) -> Oracl
             holders.insert(*lineage, Holder::Relation(*relation));
         }
         for event in &batch.lineage_events {
-            if event.kind() != LineageEventKind::Create {
-                continue;
-            }
-            let lineage = event.targets()[0];
-            if let Some(birth) = event.name_birth() {
-                let k = key(event.subject(), birth.identity());
-                view.born.insert(k);
-                let side = birth.parts().canonical_discriminator();
-                if !side.is_empty() {
-                    view.sides.insert(k, side.to_vec());
+            match event.kind() {
+                LineageEventKind::Create => {
+                    let lineage = event.targets()[0];
+                    if let Some(birth) = event.name_birth() {
+                        let k = key(event.subject(), birth.identity());
+                        view.born.insert(k);
+                        let side = birth.parts().canonical_discriminator();
+                        if !side.is_empty() {
+                            view.sides.insert(k, side.to_vec());
+                        }
+                        view.live
+                            .insert(k, (target(k, holders[&lineage], lineage), BTreeSet::new()));
+                        names.insert(lineage, k);
+                    }
+                    if let Some(kept) = event.kept_name() {
+                        let k = key(event.subject(), kept);
+                        let carriers = view.live[&k].1.clone();
+                        view.live
+                            .insert(k, (target(k, holders[&lineage], lineage), carriers));
+                        names.insert(lineage, k);
+                    }
                 }
-                view.live
-                    .insert(k, (target(k, holders[&lineage], lineage), BTreeSet::new()));
-                names.insert(lineage, k);
-            }
-            if let Some(kept) = event.kept_name() {
-                let k = key(event.subject(), kept);
-                let carriers = view.live[&k].1.clone();
-                view.live
-                    .insert(k, (target(k, holders[&lineage], lineage), carriers));
-                names.insert(lineage, k);
+                LineageEventKind::Restore => {
+                    let lineage = event.targets()[0];
+                    let restored = event.kept_name().expect("Restore carries kept_name");
+                    let k = key(event.subject(), restored);
+                    view.live
+                        .insert(k, (target(k, holders[&lineage], lineage), BTreeSet::new()));
+                    names.insert(lineage, k);
+                }
+                _ => {}
             }
         }
         for event in &batch.lineage_events {
-            if event.kind() == LineageEventKind::Create {
+            if matches!(
+                event.kind(),
+                LineageEventKind::Create | LineageEventKind::Restore
+            ) {
                 continue;
             }
             let successors: Vec<_> = event

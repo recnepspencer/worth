@@ -144,7 +144,10 @@ impl<'runtime> LineageAccess<'runtime> {
                 continue;
             }
             match event.kind() {
-                LineageEventKind::Replace | LineageEventKind::Split | LineageEventKind::Merge => {
+                LineageEventKind::Replace
+                | LineageEventKind::Split
+                | LineageEventKind::Merge
+                | LineageEventKind::Restore => {
                     traversed_event_ids.push(event.event_id());
                     for source in event.sources() {
                         current.remove(source);

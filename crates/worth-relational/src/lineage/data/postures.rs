@@ -82,6 +82,13 @@ pub enum LineagePostureClaim {
         target: LineageRecordTarget,
         name: PersistentNameIdentity,
     },
+    /// Explicit cross-commit restore re-activating a previously retired
+    /// persistent name onto a newly created target record (undo, redo,
+    /// history checkout, or authored restore).
+    Restore {
+        target: LineageRecordTarget,
+        name: PersistentNameIdentity,
+    },
     Split {
         parent_target: LineageRecordTarget,
         parent_name: PersistentNameIdentity,
@@ -101,5 +108,8 @@ pub struct LineageCommitPostureInput {
     pub scheme_registry: InstalledPersistentNameSchemeRegistry,
     pub live_holders: BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
     pub live_lineages: BTreeMap<PersistentNameHolder, LineageId>,
+    /// Previously retired persistent names and their most recent retired
+    /// `(LineageSubject, LineageId)` at the commit's basis.
+    pub retired_lineages: BTreeMap<PersistentNameIdentity, (LineageSubject, LineageId)>,
     pub postures: Vec<LineagePostureClaim>,
 }

@@ -7,7 +7,8 @@ use crate::facade::lineage::{
     PersistentNameSelection, PersistentNameTarget,
 };
 
-use super::name_world::{side_of, Name};
+use super::name_group_world::{member, GroupWorld};
+use super::name_world::{side_of, Keep, LineageWorld, Name, Subject};
 
 pub(super) type Answer = Result<PersistentNameResolution, PersistentNameResolutionDenial>;
 
@@ -106,4 +107,52 @@ pub(super) fn probes(
         edge_visits,
         event_visits,
     }
+}
+
+/// A branch mixing entity, relation, and group naming in shared commits.
+pub(super) fn mixed_history() -> (
+    Vec<PersistentNameCommittedBatch>,
+    PersistentNameBranchIndex,
+    Vec<Name>,
+) {
+    let mut world = LineageWorld::new();
+    let mut groups = GroupWorld::new();
+    let mut incremental = PersistentNameBranchIndex::new(main_branch(), None);
+    let mut log = Vec::new();
+    let mut push = |batch: PersistentNameCommittedBatch, log: &mut Vec<_>| {
+        incremental.apply(&batch).expect("committed batch ingests");
+        log.push(batch);
+    };
+    push(world.log()[0].clone(), &mut log);
+    let face = world.create(Subject::Entity, "face");
+    let seam = world.create(Subject::Relation, "seam");
+    let cutter = world.create(Subject::Entity, "cutter");
+    let batch = world.commit();
+    let born = groups.step(&[&[1, 2, 3, 4]]).unwrap();
+    push(batch.with_group_transition(&born), &mut log);
+    let cutter_name = world.name_of(&cutter);
+    let face_pieces = world.split(world.name_of(&face), &["left", "right"]);
+    world.bind_carriers(&face_pieces[0], &[cutter_name]);
+    let seam_pieces = world.split(world.name_of(&seam), &["top", "bottom"]);
+    let batch = world.commit();
+    let split = groups.step(&[&[2], &[3, 4]]).unwrap();
+    push(batch.with_group_transition(&split), &mut log);
+    world.retire(world.name_of(&face_pieces[1]));
+    world.merge(
+        &[
+            world.name_of(&seam_pieces[0]),
+            world.name_of(&seam_pieces[1]),
+        ],
+        Keep::Recreated,
+    );
+    let batch = world.commit();
+    let revived = groups.step(&[&[1], &[2, 3, 4]]).unwrap();
+    push(batch.with_group_transition(&revived), &mut log);
+    world.merge(
+        &[world.name_of(&face_pieces[0]), cutter_name],
+        Keep::MintNew,
+    );
+    let batch = world.commit();
+    push(batch, &mut log);
+    (log, incremental, vec![cutter_name, member(2), member(3)])
 }

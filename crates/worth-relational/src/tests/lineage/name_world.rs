@@ -9,8 +9,8 @@ use crate::facade::identity::{EntityId, KindId, LineageId, PartitionId, VersionI
 use crate::facade::lineage::{
     InstalledPersistentNameSchemeRegistry, LineageCommitPostureInput, LineageEventKind,
     LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget, LineageSplitChild,
-    PersistentNameBirthRequest, PersistentNameCommittedBatch, PersistentNameHolder,
-    PersistentNameIdentity, PersistentNameKey,
+    LineageSubject, PersistentNameBirthParts, PersistentNameBirthRequest,
+    PersistentNameCommittedBatch, PersistentNameHolder, PersistentNameIdentity, PersistentNameKey,
 };
 use crate::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, EntitySpec, MutationIntent, RecordRef,
@@ -51,9 +51,11 @@ pub(super) struct LineageWorld {
     anchors: (EntityId, EntityId),
     holders: BTreeMap<LineageId, PersistentNameHolder>,
     births: BTreeMap<PersistentNameHolder, Name>,
-    live_holders: BTreeMap<Name, PersistentNameHolder>,
+    pub(super) birth_parts: BTreeMap<Name, PersistentNameBirthParts>,
+    pub(super) live_holders: BTreeMap<Name, PersistentNameHolder>,
     live_lineages: BTreeMap<PersistentNameHolder, LineageId>,
-    postures: Vec<LineagePostureClaim>,
+    pub(super) retired_lineages: BTreeMap<Name, (LineageSubject, LineageId)>,
+    pub(super) postures: Vec<LineagePostureClaim>,
     changed: Vec<RecordRef>,
     plan: Vec<MutationIntent>,
     carriers: Vec<(PersistentNameHolder, BTreeSet<Name>)>,
@@ -77,8 +79,10 @@ impl LineageWorld {
             anchors,
             holders: BTreeMap::new(),
             births: BTreeMap::new(),
+            birth_parts: BTreeMap::new(),
             live_holders: BTreeMap::new(),
             live_lineages: BTreeMap::new(),
+            retired_lineages: BTreeMap::new(),
             postures: Vec::new(),
             changed: vec![RecordRef::Entity(anchors.0), RecordRef::Entity(anchors.1)],
             plan: Vec::new(),
@@ -122,7 +126,7 @@ impl LineageWorld {
         format!("occ.{}.{}", self.commit + 1, self.ordinal)
     }
 
-    fn new_record(&mut self, subject: Subject) -> PersistentNameHolder {
+    pub(super) fn new_record(&mut self, subject: Subject) -> PersistentNameHolder {
         let version = self.version();
         let holder = match subject {
             Subject::Entity => PersistentNameHolder::Entity(push_entity(&mut self.staged, version)),
@@ -135,7 +139,7 @@ impl LineageWorld {
         holder
     }
 
-    fn retire_record(&mut self, holder: &PersistentNameHolder) {
+    pub(super) fn retire_record(&mut self, holder: &PersistentNameHolder) {
         let version = self.version();
         match holder {
             PersistentNameHolder::Entity(e) => retire_entity(&mut self.staged, *e, version),
@@ -274,6 +278,7 @@ impl LineageWorld {
             scheme_registry: self.registry.clone(),
             live_holders: self.live_holders.clone(),
             live_lineages: self.live_lineages.clone(),
+            retired_lineages: self.retired_lineages.clone(),
             postures: std::mem::take(&mut self.postures),
         };
         let prepared = finalize_postures_in_working_state(
@@ -294,34 +299,48 @@ impl LineageWorld {
                 .insert(*lineage, PersistentNameHolder::Relation(*relation));
         }
         let events = prepared.artifact().event_batch().events();
-        for event in events
-            .iter()
-            .filter(|e| e.kind() == LineageEventKind::Create)
-        {
+        for event in events.iter().filter(|e| {
+            matches!(
+                e.kind(),
+                LineageEventKind::Create | LineageEventKind::Restore
+            )
+        }) {
             let lineage = event.targets()[0];
             let holder = self.holders[&lineage].clone();
             if let Some(birth) = event.name_birth() {
+                self.birth_parts
+                    .insert(birth.identity(), birth.parts().clone());
                 self.births.insert(holder.clone(), birth.identity());
                 self.live_holders.insert(birth.identity(), holder.clone());
                 self.live_lineages.insert(holder.clone(), lineage);
+                self.retired_lineages.remove(&birth.identity());
             }
             if let Some(kept) = event.kept_name() {
                 self.births.insert(holder.clone(), kept);
                 self.live_holders.insert(kept, holder.clone());
                 self.live_lineages.insert(holder, lineage);
+                self.retired_lineages.remove(&kept);
             }
         }
-        for event in events
-            .iter()
-            .filter(|e| e.kind() != LineageEventKind::Create)
-        {
+        for event in events.iter().filter(|e| {
+            !matches!(
+                e.kind(),
+                LineageEventKind::Create | LineageEventKind::Restore
+            )
+        }) {
             for source in event.sources() {
                 if event.targets().contains(source) {
                     continue;
                 }
                 let holder = self.holders[source].clone();
                 self.live_lineages.remove(&holder);
-                self.live_holders.retain(|_, live| *live != holder);
+                if let Some(&name) = self.births.get(&holder)
+                    && self.live_holders.get(&name) == Some(&holder)
+                {
+                    self.live_holders.remove(&name);
+                    self.retired_lineages
+                        .insert(name, (event.subject(), *source));
+                }
             }
         }
         let mut batch =
@@ -343,14 +362,14 @@ pub(super) fn key(holder: &PersistentNameHolder, name: Name) -> PersistentNameKe
     }
 }
 
-fn subject_of(holder: &PersistentNameHolder) -> Subject {
+pub(super) fn subject_of(holder: &PersistentNameHolder) -> Subject {
     match holder {
         PersistentNameHolder::Relation(_) => Subject::Relation,
         _ => Subject::Entity,
     }
 }
 
-fn record_target(holder: &PersistentNameHolder) -> LineageRecordTarget {
+pub(super) fn record_target(holder: &PersistentNameHolder) -> LineageRecordTarget {
     match holder {
         PersistentNameHolder::Entity(e) => LineageRecordTarget::Entity(*e),
         PersistentNameHolder::Relation(r) => LineageRecordTarget::Relation(*r),

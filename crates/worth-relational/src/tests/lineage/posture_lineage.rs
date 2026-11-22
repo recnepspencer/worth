@@ -34,6 +34,7 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
         scheme_registry: registry.clone(),
         live_holders: BTreeMap::new(),
         live_lineages: BTreeMap::new(),
+        retired_lineages: BTreeMap::new(),
         postures: vec![
             LineagePostureClaim::Create {
                 target: LineageRecordTarget::Entity(f_a),
@@ -128,6 +129,7 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
         scheme_registry: registry.clone(),
         live_holders: live_holders.clone(),
         live_lineages: live_lineages.clone(),
+        retired_lineages: BTreeMap::new(),
         postures: vec![
             LineagePostureClaim::Split {
                 parent_target: LineageRecordTarget::Entity(f_a),
@@ -264,6 +266,7 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
         scheme_registry: registry.clone(),
         live_holders: live_holders.clone(),
         live_lineages: live_lineages.clone(),
+        retired_lineages: BTreeMap::new(),
         postures: vec![
             LineagePostureClaim::Merge {
                 parents: vec![
@@ -360,6 +363,7 @@ fn entity_and_relation_split_merge_happy_path_emits_canonical_lineage() {
         scheme_registry: registry,
         live_holders,
         live_lineages,
+        retired_lineages: BTreeMap::new(),
         postures: Vec::new(),
     };
     let c4 = finalize_postures_in_working_state(

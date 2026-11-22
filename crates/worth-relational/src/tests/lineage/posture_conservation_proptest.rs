@@ -43,6 +43,7 @@ fn run_multi_op_conservation_sequence(commit_batches: &[Vec<StepOp>]) {
             scheme_registry: registry.clone(),
             live_holders: BTreeMap::new(),
             live_lineages: BTreeMap::new(),
+            retired_lineages: BTreeMap::new(),
             postures: vec![
                 LineagePostureClaim::Create {
                     target: LineageRecordTarget::Entity(anchor_a),
@@ -103,6 +104,7 @@ fn run_multi_op_conservation_sequence(commit_batches: &[Vec<StepOp>]) {
                 scheme_registry: registry.clone(),
                 live_holders: live_holders.clone(),
                 live_lineages: live_lineages.clone(),
+                retired_lineages: BTreeMap::new(),
                 postures: acc.postures,
             },
         )
@@ -181,7 +183,8 @@ fn run_multi_op_conservation_sequence(commit_batches: &[Vec<StepOp>]) {
                 LineageEventKind::Retire
                 | LineageEventKind::Split
                 | LineageEventKind::Merge
-                | LineageEventKind::Replace => {
+                | LineageEventKind::Replace
+                | LineageEventKind::Restore => {
                     for &src in ev.sources() {
                         let is_inplace_keeper =
                             ev.kind() == LineageEventKind::Merge && ev.targets() == [src];
