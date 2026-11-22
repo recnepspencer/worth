@@ -91,7 +91,10 @@ impl ApplicationAttemptPort for WorthQueryPrimaryGraphApplicationAttempt {
             completion: &prep.completion,
             after_own: prep.after_own.as_ref(),
             output_meaning: prep.outputs.as_ref().map(|outputs| &outputs.meaning),
-            output_producer: self.output_producer(),
+            output_producer: prep
+                .outputs
+                .as_ref()
+                .map(|outputs| outputs.producer.as_str()),
         })
     }
 
@@ -100,14 +103,16 @@ impl ApplicationAttemptPort for WorthQueryPrimaryGraphApplicationAttempt {
         role: &str,
         entity: worth_relational::facade::identity::EntityId,
     ) -> bool {
+        let Some(outputs) = self
+            .coupled_preparation()
+            .and_then(|prep| prep.outputs.as_ref())
+        else {
+            return false;
+        };
         self.native_publication_roles()
-            .any(|(candidate_role, _, _, reference)| {
-                candidate_role == role
-                    && matches!(
-                        reference,
-                        worth_relational::facade::transactions::EntityReference::Existing(existing)
-                            if *existing == entity
-                    )
+            .zip(outputs.entities.iter())
+            .any(|((candidate_role, _, _, _), candidate_entity)| {
+                candidate_role == role && *candidate_entity == entity
             })
     }
 
