@@ -238,15 +238,64 @@ fn controlled_full_commitment_clone_retains_only_its_actual_node_backing() {
     assert_eq!(unchanged_input.entity_arena.slot_count(), 3);
 }
 
+fn publish_one_slot_and_assert(
+    execution: &ExecutionRequest<'_, '_>,
+    initial: &PreparedResidentRegion,
+    initial_region: &crate::storage::residency::ResidentRegion,
+    extra: EntityExtra,
+    version: VersionId,
+    schema: &std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+    symbols: &RuntimeSymbolTable,
+    expect_zero_scans: bool,
+    label: &str,
+) {
+    let mut overlay = initial_region.partition.clone();
+    overlay.entity_arena.apply_extra_update(0, extra, version).unwrap();
+    let mut journal = PartitionMutationJournal::default();
+    journal.entity_slots.insert(0);
+    let scans_before = crate::storage::substrate::extra_delta_resolve_scans_on_current_thread();
+    let updated = PreparedResidentRegion::incremental(
+        execution,
+        RegionCaptureBasis {
+            retention: &initial.retention,
+            directory: &initial.directory,
+            inventory: initial.inventory,
+            unavailable_records: initial.unavailable_records,
+            kind_commitment: initial.kind_commitment,
+        },
+        &overlay,
+        &journal,
+        schema.clone(),
+        symbols,
+        None,
+    )
+    .unwrap();
+    let scans_after = crate::storage::substrate::extra_delta_resolve_scans_on_current_thread();
+    assert_eq!(overlay.entity_arena.slot_count(), initial_region.partition.entity_arena.slot_count());
+    if expect_zero_scans {
+        assert_eq!(scans_after - scans_before, 0, "{label}: must never scan prior partition");
+    }
+    let actual = &updated.retention.capture_region().unwrap().unwrap().partition;
+    let exp_new = locality_helpers::assert_directed_ids(
+        &initial_region.partition,
+        actual,
+        initial_region.sealed_watermarks,
+    );
+    assert_eq!(updated.new_payload_bytes, exp_new);
+    assert_eq!(updated.inventory, actual.allocation_inventory().unwrap());
+    drop(overlay);
+}
+
 #[test]
 fn ordinary_one_slot_incremental_publication_does_not_scan_prior_partition_with_live_overlay() {
-    use crate::storage::substrate::extra_delta_resolve_scans_on_current_thread;
     use locality_helpers::{
-        assert_directed_ids, make_stored_extra, seed_stored_partition, stored_label_contract,
+        make_one_field_struct, make_stored_extra, make_struct_extra, seed_stored_partition,
+        seed_struct_partition, stored_label_contract, struct_payload_contract,
     };
     use worth_foundational::facade::StoredValueText;
 
-    let contract = stored_label_contract();
+    let scalar_contract = stored_label_contract();
+    let struct_contract = struct_payload_contract();
     let registry = crate::schema::data::RelationalSchemaRegistry::default();
     let schema = crate::branch::RelationalBranchRootSchemaAuthority::capture(
         1,
@@ -256,114 +305,58 @@ fn ordinary_one_slot_incremental_publication_does_not_scan_prior_partition_with_
         None,
     )
     .unwrap();
-    let runtime_symbols = RuntimeSymbolTable::default();
+    let symbols = RuntimeSymbolTable::default();
+    let lane = crate::storage::substrate::maintenance::ReconstructionLane::oracle();
 
     // Independently scale untouched population (8 -> 128) and prior history depth (2 -> 24).
     for (population, history_depth) in [(8_usize, 2_u64), (128_usize, 2_u64), (8_usize, 24_u64)] {
-        let (base, existing_slot1_stored) =
-            seed_stored_partition(&contract, population, history_depth);
-        let budget = SerialMemoryBudget::new(Some(32 * 1024 * 1024));
+        let budget = SerialMemoryBudget::new(Some(64 * 1024 * 1024));
         let host = SerialRequest::from_memory(budget, CancellationSource::new().token(), None);
         let execution = ExecutionRequest::serial(&host);
-        let initial = PreparedResidentRegion::initial(
-            &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
-            &execution,
-            base,
-            &StringInterner::default(),
-        )
-        .unwrap();
-        let initial_region = initial.retention.capture_region().unwrap().unwrap();
 
-        // 1. Fresh StoredValueText with an external live clone retaining its seal Arc
-        //    (plus the borrowed overlay retained live): must incur ZERO prior-partition scans.
+        // A. Fresh externally-cloned StoredValueText scalar + pre-existing seal alias.
+        let (base, slot1_stored) = seed_stored_partition(&scalar_contract, population, history_depth);
+        let initial = PreparedResidentRegion::initial(&lane, &execution, base, &StringInterner::default()).unwrap();
+        let region = initial.retention.capture_region().unwrap().unwrap();
         let fresh_stored = StoredValueText::new(format!("fresh-{population}-{history_depth}"));
         let external_seal_holder = fresh_stored.clone();
-        let mut overlay = initial_region.partition.clone();
-        overlay
-            .entity_arena
-            .apply_extra_update(
-                0,
-                make_stored_extra(&contract, fresh_stored),
-                VersionId(history_depth + 10),
-            )
-            .unwrap();
-        let mut journal = PartitionMutationJournal::default();
-        journal.entity_slots.insert(0);
-
-        let scans_before = extra_delta_resolve_scans_on_current_thread();
-        let updated = PreparedResidentRegion::incremental(
-            &execution,
-            RegionCaptureBasis {
-                retention: &initial.retention,
-                directory: &initial.directory,
-                inventory: initial.inventory,
-                unavailable_records: initial.unavailable_records,
-                kind_commitment: initial.kind_commitment,
-            },
-            &overlay,
-            &journal,
-            schema.clone(),
-            &runtime_symbols,
-            None,
-        )
-        .unwrap();
-        let scans_after = extra_delta_resolve_scans_on_current_thread();
-        assert_eq!(overlay.entity_arena.slot_count(), population);
+        publish_one_slot_and_assert(
+            &execution, &initial, &region,
+            make_stored_extra(&scalar_contract, fresh_stored),
+            VersionId(history_depth + 10), &schema, &symbols, true,
+            &format!("fresh scalar (pop={population}, hist={history_depth})"),
+        );
         assert!(!external_seal_holder.is_empty());
-        assert_eq!(
-            scans_after - scans_before,
-            0,
-            "fresh externally-cloned StoredValueText (pop={population}, hist={history_depth}) must never scan prior partition"
-        );
-        let actual = &updated.retention.capture_region().unwrap().unwrap().partition;
-        let exp_new = assert_directed_ids(
-            &initial_region.partition,
-            actual,
-            initial_region.sealed_watermarks,
-        );
-        assert_eq!(updated.new_payload_bytes, exp_new);
-        assert_eq!(updated.inventory, actual.allocation_inventory().unwrap());
-        drop((overlay, external_seal_holder));
-
-        // 2. Separate existing-alias case: slot 0 adopts a clone of slot 1's pre-existing
-        //    StoredValueText (seal born BEFORE initial was sealed). Exact directed IDs must
-        //    omit the already-present seal from `introduced` and from `updated.inventory`.
+        drop(external_seal_holder);
         if population == 8 && history_depth == 2 {
-            let mut alias_overlay = initial_region.partition.clone();
-            alias_overlay
-                .entity_arena
-                .apply_extra_update(
-                    0,
-                    make_stored_extra(&contract, existing_slot1_stored),
-                    VersionId(history_depth + 11),
-                )
-                .unwrap();
-            let aliased = PreparedResidentRegion::incremental(
-                &execution,
-                RegionCaptureBasis {
-                    retention: &initial.retention,
-                    directory: &initial.directory,
-                    inventory: initial.inventory,
-                    unavailable_records: initial.unavailable_records,
-                    kind_commitment: initial.kind_commitment,
-                },
-                &alias_overlay,
-                &journal,
-                schema.clone(),
-                &runtime_symbols,
-                None,
-            )
-            .unwrap();
-            let alias_actual = &aliased.retention.capture_region().unwrap().unwrap().partition;
-            let alias_new = assert_directed_ids(
-                &initial_region.partition,
-                alias_actual,
-                initial_region.sealed_watermarks,
+            publish_one_slot_and_assert(
+                &execution, &initial, &region,
+                make_stored_extra(&scalar_contract, slot1_stored),
+                VersionId(history_depth + 11), &schema, &symbols, false,
+                "existing scalar seal alias",
             );
-            assert_eq!(aliased.new_payload_bytes, alias_new);
-            assert_eq!(
-                aliased.inventory,
-                alias_actual.allocation_inventory().unwrap()
+        }
+
+        // B. Fresh externally-cloned whole StructAspectValue (inline scalar) + pre-existing struct alias.
+        let (s_base, slot1_struct) = seed_struct_partition(&struct_contract, population, history_depth);
+        let s_initial = PreparedResidentRegion::initial(&lane, &execution, s_base, &StringInterner::default()).unwrap();
+        let s_region = s_initial.retention.capture_region().unwrap().unwrap();
+        let fresh_struct = make_one_field_struct(900_000 + population as u64 + history_depth);
+        let external_struct_holder = fresh_struct.clone();
+        publish_one_slot_and_assert(
+            &execution, &s_initial, &s_region,
+            make_struct_extra(&struct_contract, fresh_struct),
+            VersionId(history_depth + 10), &schema, &symbols, true,
+            &format!("fresh cloned whole struct (pop={population}, hist={history_depth})"),
+        );
+        assert_eq!(external_struct_holder.len(), 1);
+        drop(external_struct_holder);
+        if population == 8 && history_depth == 2 {
+            publish_one_slot_and_assert(
+                &execution, &s_initial, &s_region,
+                make_struct_extra(&struct_contract, slot1_struct),
+                VersionId(history_depth + 11), &schema, &symbols, false,
+                "existing struct alias",
             );
         }
     }

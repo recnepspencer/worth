@@ -45,6 +45,8 @@ pub(super) struct RelationalBranchRetentionOwnerInner {
     #[cfg(test)]
     pub(super) reclamation_drop_pause:
         Mutex<Option<Arc<super::component_cut_tests::CapturePause>>>,
+    #[cfg(test)]
+    pub(super) reclamation_gate_contended: Mutex<Option<std::sync::mpsc::SyncSender<()>>>,
     max_live_root_obligations: usize,
     max_retired_branch_roots: usize,
     pub(super) live_head_count: AtomicUsize,
@@ -161,6 +163,8 @@ impl RelationalBranchRetentionOwner {
                 component_capture_pause: Mutex::new(None),
                 #[cfg(test)]
                 reclamation_drop_pause: Mutex::new(None),
+                #[cfg(test)]
+                reclamation_gate_contended: Mutex::new(None),
                 max_live_root_obligations,
                 max_retired_branch_roots,
                 live_head_count: AtomicUsize::new(0),

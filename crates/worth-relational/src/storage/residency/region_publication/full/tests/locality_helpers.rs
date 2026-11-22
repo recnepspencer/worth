@@ -8,9 +8,10 @@ use crate::storage::substrate::{
 };
 use std::collections::BTreeMap;
 use worth_foundational::facade::{
-    admit_authoritative_record_aspect_state, validate_aspect_value, AspectContract,
-    AspectContractRevision, AspectIdentity, AspectKey, AspectValue, ContractValidationInput,
-    InternedString, ScalarAspectType, StoredValueText,
+    admit_authoritative_record_aspect_state, validate_aspect_value, AbsenceLaw, AspectContract,
+    AspectContractRevision, AspectEvolutionPolicy, AspectIdentity, AspectKey, AspectValue,
+    ContractValidationInput, FieldDeclaration, FieldKey, FieldRequirement, InternedString,
+    ScalarAspectType, StoredValueText, StructAspectShape, StructAspectValue,
 };
 use worth_proof::TransitionOutcome;
 
@@ -21,6 +22,109 @@ pub(super) fn stored_label_contract() -> AspectContract {
         AspectContractRevision(1),
         ScalarAspectType::String,
     )
+}
+
+pub(super) fn struct_payload_contract() -> AspectContract {
+    let shape = StructAspectShape::new([
+        FieldDeclaration::new(
+            FieldKey::new("count").unwrap(),
+            ScalarAspectType::UInt64,
+            FieldRequirement::Required,
+            AbsenceLaw::Required,
+            AspectEvolutionPolicy::AdditiveFieldsAllowed,
+        )
+        .unwrap(),
+        FieldDeclaration::new(
+            FieldKey::new("note").unwrap(),
+            ScalarAspectType::String,
+            FieldRequirement::Optional,
+            AbsenceLaw::Optional,
+            AspectEvolutionPolicy::AdditiveFieldsAllowed,
+        )
+        .unwrap(),
+    ])
+    .unwrap();
+    AspectContract::struct_aspect(
+        AspectKey::new("payload").unwrap(),
+        AspectIdentity(92),
+        AspectContractRevision(1),
+        shape,
+    )
+}
+
+pub(super) fn make_one_field_struct(count: u64) -> StructAspectValue {
+    StructAspectValue::from_sorted_fields(
+        vec![(FieldKey::new("count").unwrap(), AspectValue::UInt64(count))].into_boxed_slice(),
+    )
+    .unwrap()
+}
+
+pub(super) fn make_struct_extra(
+    contract: &AspectContract,
+    value: StructAspectValue,
+) -> EntityExtra {
+    let TransitionOutcome::Success(val) =
+        validate_aspect_value(contract, ContractValidationInput::Struct(value))
+    else {
+        panic!("admitted struct")
+    };
+    let TransitionOutcome::Success(admitted) = admit_authoritative_record_aspect_state([val])
+    else {
+        panic!("admitted state")
+    };
+    EntityExtra::from_unbudgeted_parts(None, None, Some(admitted.into_parts().into_parts().0))
+}
+
+pub(super) fn seed_struct_partition(
+    contract: &AspectContract,
+    population: usize,
+    history_depth: u64,
+) -> (PartitionState, StructAspectValue) {
+    let mut base = PartitionState {
+        partition_id: PartitionId(1),
+        adjacency_policy: crate::config::data::AdjacencyPolicy {
+            backend: crate::config::data::AdjacencyBackend::InlineSmallDegreeAdjacency,
+            small_degree_inline_capacity: 4,
+        },
+        relation_overlay_is_sparse: false,
+        entity_arena: EntityArena::with_capacity(population),
+        relation_arena: RelationArena::with_capacity(0),
+        adjacency: Default::default(),
+        reverse_adjacency: Default::default(),
+    };
+    let mut slot1_struct = None;
+    for slot in 0..population {
+        let seed = make_one_field_struct((slot as u64) * 1000);
+        if slot == 1 {
+            slot1_struct = Some(seed.clone());
+        }
+        base.entity_arena
+            .write_reserved_slot(
+                SlotInit {
+                    partition_id: base.partition_id,
+                    kind_id: KindId(1),
+                    version_id: VersionId(1),
+                    extra: make_struct_extra(contract, seed),
+                },
+                slot,
+                1,
+            )
+            .unwrap();
+        for step in 1..history_depth {
+            let step_val = make_one_field_struct((slot as u64) * 1000 + step);
+            if slot == 1 {
+                slot1_struct = Some(step_val.clone());
+            }
+            base.entity_arena
+                .apply_extra_update(
+                    slot,
+                    make_struct_extra(contract, step_val),
+                    VersionId(1 + step),
+                )
+                .unwrap();
+        }
+    }
+    (base, slot1_struct.unwrap())
 }
 
 pub(super) fn make_stored_extra(contract: &AspectContract, text: StoredValueText) -> EntityExtra {

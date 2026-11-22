@@ -35,6 +35,37 @@ pub struct RelationalBranchRootReclamationOutcome {
 }
 
 impl super::RelationalBranchRetentionOwner {
+    #[cfg(not(test))]
+    fn lock_reclamation_gate(&self) -> std::sync::MutexGuard<'_, ()> {
+        self.inner
+            .reclamation_gate
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+    }
+
+    #[cfg(test)]
+    fn lock_reclamation_gate(&self) -> std::sync::MutexGuard<'_, ()> {
+        match self.inner.reclamation_gate.try_lock() {
+            Ok(guard) => guard,
+            Err(std::sync::TryLockError::Poisoned(poisoned)) => poisoned.into_inner(),
+            Err(std::sync::TryLockError::WouldBlock) => {
+                if let Some(signal) = self
+                    .inner
+                    .reclamation_gate_contended
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner())
+                    .take()
+                {
+                    let _ = signal.send(());
+                }
+                self.inner
+                    .reclamation_gate
+                    .lock()
+                    .unwrap_or_else(|poisoned| poisoned.into_inner())
+            }
+        }
+    }
+
     fn reclaim_retired_roots_checked(
         &self,
         maximum_roots: usize,
@@ -57,11 +88,7 @@ impl super::RelationalBranchRetentionOwner {
             // concurrent pass can observe an already-removed root as an external
             // holder of shared regions/backing, without holding `retired_roots`
             // or `maintenance_counters` across the drop itself.
-            let _reclaim_guard = self
-                .inner
-                .reclamation_gate
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner());
+            let _reclaim_guard = self.lock_reclamation_gate();
             enum StepOutcome {
                 Reclaimed {
                     retired: super::owner::RelationalRetiredBranchRoot,

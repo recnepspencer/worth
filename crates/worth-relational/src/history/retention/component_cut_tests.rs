@@ -12,8 +12,16 @@ pub(super) struct CapturePause {
 }
 impl CapturePause {
     pub(super) fn wait(&self) {
-        self.entered.send(()).unwrap();
-        self.resume.lock().unwrap().recv().unwrap();
+        let _ = self.entered.send(());
+        let _ = self.resume.lock().unwrap_or_else(|p| p.into_inner()).recv();
+    }
+}
+struct ResumeOnDrop(Option<SyncSender<()>>);
+impl Drop for ResumeOnDrop {
+    fn drop(&mut self) {
+        if let Some(tx) = self.0.take() {
+            let _ = tx.send(());
+        }
     }
 }
 #[test]
@@ -332,52 +340,39 @@ fn concurrent_reclamation_passes_account_shared_backing_exactly_across_drop_boun
     // Pause Pass A right after removing root 1 and BEFORE `drop(root 1)`.
     let (entered_tx, entered_rx) = sync_channel(0);
     let (resume_tx, resume_rx) = sync_channel(0);
-    let (pass_b_started_tx, pass_b_started_rx) = sync_channel(0);
+    let (contended_tx, contended_rx) = sync_channel(0);
     let pass_b_done = Arc::new(std::sync::atomic::AtomicBool::new(false));
     *owner.reclamation_drop_pause.lock().unwrap() = Some(Arc::new(CapturePause {
         entered: entered_tx,
         resume: Mutex::new(resume_rx),
     }));
     let (out_a, out_b) = std::thread::scope(|scope| {
+        // Declared inside `scope` so any panic unblocks Pass A BEFORE thread joins.
+        let resume_a = ResumeOnDrop(Some(resume_tx));
         let pass_a = scope.spawn(|| runtime.history.try_reclaim_retired_branch_roots(1).unwrap());
         entered_rx.recv().unwrap();
-        assert!(
-            owner.reclamation_gate.try_lock().is_err(),
-            "Pass A holds reclamation_gate across drop(root) so Pass B cannot measure prematurely"
-        );
+        assert!(owner.reclamation_gate.try_lock().is_err(), "Pass A holds gate across drop(root)");
+        *owner.reclamation_gate_contended.lock().unwrap() = Some(contended_tx);
         let done_flag = Arc::clone(&pass_b_done);
+        let owner_for_b = Arc::clone(&owner);
         let runtime_ref = &runtime;
         let pass_b = scope.spawn(move || {
-            pass_b_started_tx.send(()).unwrap();
             let out = runtime_ref.history.try_reclaim_retired_branch_roots(1).unwrap();
             done_flag.store(true, std::sync::atomic::Ordering::Release);
+            owner_for_b.reclamation_gate_contended.lock().unwrap().take();
             out
         });
-        pass_b_started_rx.recv().unwrap();
-        // Give Pass B time to arrive at reclamation_gate and confirm it cannot finish before drop.
-        std::thread::sleep(std::time::Duration::from_millis(15));
-        assert!(
-            !pass_b_done.load(std::sync::atomic::Ordering::Acquire),
-            "Pass B must remain blocked on reclamation_gate until Pass A drops root 1"
-        );
-        resume_tx.send(()).unwrap();
+        // Deterministic receiver-local contention observation: Pass B actually hit WouldBlock.
+        contended_rx.recv().expect("Pass B must contend on reclamation_gate while Pass A holds it");
+        assert!(!pass_b_done.load(std::sync::atomic::Ordering::Acquire), "Pass B remains blocked");
+        drop(resume_a);
         (pass_a.join().unwrap(), pass_b.join().unwrap())
     });
 
-    assert_eq!(out_a.roots_reclaimed(), 1);
-    assert_eq!(out_b.roots_reclaimed(), 1);
-    assert_eq!(runtime.retired_branch_root_count(), 0);
+    assert_eq!((out_a.roots_reclaimed(), out_b.roots_reclaimed(), runtime.retired_branch_root_count()), (1, 1, 0));
     let combined = out_a.unique_authoritative_bytes_reclaimed()
         + out_b.unique_authoritative_bytes_reclaimed();
-    assert_eq!(
-        combined, expected_union_bytes,
-        "concurrent passes must exactly equal the independent live-inspection reclaimable allocation union"
-    );
-    assert_eq!(
-        runtime
-            .retention_cost_counters()
-            .reclamation_unique_authoritative_bytes
-            - baseline_bytes,
-        expected_union_bytes,
-    );
+    assert_eq!(combined, expected_union_bytes, "concurrent passes must match live-inspection union");
+    let delta = runtime.retention_cost_counters().reclamation_unique_authoritative_bytes - baseline_bytes;
+    assert_eq!(delta, expected_union_bytes);
 }

@@ -211,7 +211,7 @@ impl StructAspectValue {
         let (allocation, semantic) = field_extent(&key, &value);
         self.allocation_bytes += allocation;
         self.semantic_bytes += semantic;
-        self.fields.insert(key, std::sync::Arc::new(value));
+        self.fields.insert_fresh(key, value);
     }
 }
 fn field_extent(key: &FieldKey, value: &AspectValue) -> (u128, u128) {
