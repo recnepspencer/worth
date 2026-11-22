@@ -123,6 +123,16 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         }
         observation::record(|| format!("reselect task={i} owed={owed} (not done)"));
         if matches!(self.tasks[i].state, TaskState::Closed { .. }) {
+            // A parent it closed on that already derived is a selection it
+            // made: re-closing must keep it, verified once it derives again.
+            let derived = self
+                .canonical_set(i)
+                .into_iter()
+                .filter(|&parent| self.tasks[parent].is_done())
+                .collect::<Vec<_>>();
+            if !derived.is_empty() {
+                self.merge_reopen_check(context, i, invalidator, Vec::new(), derived)?;
+            }
             self.clear_input_capture(context, i)?;
         }
         self.raise_owed(i, owed);

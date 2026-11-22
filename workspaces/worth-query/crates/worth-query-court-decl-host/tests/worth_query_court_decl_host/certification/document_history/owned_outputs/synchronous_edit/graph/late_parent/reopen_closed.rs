@@ -4,6 +4,10 @@
 use super::*;
 use family::c3b::{decision_write_n, guarded_first};
 use family::decision_write;
+use std::sync::atomic::{AtomicBool, Ordering};
+/// Whether `decision-write-n` reads model `a` (n = 3) instead of `b` (n = 8):
+/// per court, and each court runs in its own process.
+static SECOND_WRITER_A: AtomicBool = AtomicBool::new(false);
 use super::super::super::interleaved::valued_members;
 use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
 
@@ -144,7 +148,7 @@ impl WorthQueryApplicationPrerequisiteOutputConnection<Schema> for WriteEdge {
         Ok(first::Demand(row.key.clone()))
     }
 }
-/// `decision-write(b)` to `decision-write-n(b)` (n = b + 1 = 8), an occurrence
+/// `decision-write(b)` to `decision-write-n(k)` (n = k + 1; `k` per court), an occurrence
 /// discovered only once `decision-write(b)` has run (no prerequisite: model
 /// `b` owns no member).
 pub struct SecondEdge;
@@ -176,7 +180,7 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for SecondEdge {
     fn demands_from_discovery(
         _: &query::Row,
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
-        Ok(vec![decision_write_n::Demand("b".into())])
+        Ok(vec![decision_write_n::Demand(if SECOND_WRITER_A.load(Ordering::Relaxed) { "a" } else { "b" }.into())])
     }
 }
 impl WorthQueryApplicationPrerequisiteOutputConnection<Schema> for SecondEdge {
@@ -257,7 +261,7 @@ fn a_second_selection_change_while_a_reopened_task_waits_closed_is_never_dropped
         2,
         Some(7),
         world::Configuration {
-            second_member: true,
+            second_member: Some(5),
             ..Default::default()
         },
     );
@@ -295,4 +299,48 @@ fn a_second_selection_change_while_a_reopened_task_waits_closed_is_never_dropped
         Some(90),
         "the guard re-closed on the current selection, which selects first(c)"
     );
+}
+
+/// A dropped prerequisite that already derived (PR C C4 r3). The same
+/// program over a world where `n` starts at 8. The guard first closes on
+/// `first(c)` (row `n`). `decision-write(b)` sets m = 8, so it closes again on
+/// `{first(c), first(b)}` before it ever ran, and `first(c)` derives. Then
+/// `decision-write-n(a)` sets n = 3 while the guard still waits on `first(b)`,
+/// dropping row `n`: a parent it closed on and that already derived. The
+/// re-close must remember that selection, so the guard's derivation, which
+/// no longer selects `first(c)`, refuses `SupersededSelectionDropped`. Red
+/// before the fix: re-closing forgot the derived parent and the edit
+/// committed with `first:c` derived for nothing.
+#[test]
+fn a_closed_task_whose_reselection_drops_a_derived_parent_refuses() {
+    SECOND_WRITER_A.store(true, Ordering::Relaxed);
+    let host: WorthQueryProgramApplicationRuntime<Schema, Program> = world::install_configured(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        2,
+        Some(7),
+        world::Configuration {
+            second_member: Some(8),
+            ..Default::default()
+        },
+    );
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let head = courts::native_head(&host);
+    let mut edit = request
+        .edit_envelope()
+        .idempotency("dropped-derived-parent".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    edit.push_stage::<Tree, _>(edit::Intent {
+        key: "a".into(),
+        value: 2,
+    })
+    .unwrap();
+    let outcome = edit
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    super::selection::require_dropped(outcome);
+    assert_eq!(courts::native_head(&host), head);
 }
