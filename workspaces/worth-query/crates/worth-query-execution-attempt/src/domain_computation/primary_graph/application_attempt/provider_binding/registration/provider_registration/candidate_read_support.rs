@@ -282,7 +282,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
                 continue;
             }
             charge_scan(execution, "selection support qualification", 1)?;
-            crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::visited_retained_reads(1);
+            crate::domain_computation::execution_observation::record_retained_reads_visited(1);
             if entry
                 .support
                 .changed_fact(execution, runtime, before, entry.support.pin(), current)?
