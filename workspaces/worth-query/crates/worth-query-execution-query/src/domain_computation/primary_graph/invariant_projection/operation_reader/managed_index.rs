@@ -1,8 +1,5 @@
 //! Ordinary declared index queries inside an admitted decision reader.
 
-use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
-use worth_query_execution_lineage::facade::ports::InvariantProjectionReaderInternalPort as _;
-use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionReaderInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::application_query::{
     self, ApplicationQueryNativeAccess, SourceQueryReaderAccess,
@@ -14,15 +11,21 @@ use worth_query_declaration::facade::{
     },
     application_schema::ApplicationStructuredValueBinding,
 };
-use worth_query_execution_lineage::facade::primary_graph::invariant_projection::operation_reader::managed_index::IndexDecisionStop;
+use worth_query_execution_lineage::facade::ports::InvariantProjectionReaderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::OperationInvariantProjectionReaderInternalPort as _;
+use worth_query_execution_lineage::facade::primary_graph::invariant_projection::operation_reader::managed_index::{
+    IndexDecisionFailure as Failure, WorthQueryComputationManagedIndexDenial,
+};
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 type Value<S, B> =
     <<B as ApplicationQueryBinding<S>>::ResultBinding as ApplicationStructuredValueBinding>::Value;
 
-fn unavailable() -> HandlerExecutionDenial {
-    HandlerExecutionDenial::new(IndexDecisionStop::ContextUnavailable)
+const fn unavailable() -> Failure {
+    Failure::ContextUnavailable
 }
 
+/// The handler's door: each refusal keeps the exact boxed cause it had.
 pub fn index_query<Schema: ApplicationSchema, Operation, B>(
     reader_self: &mut WorthQueryApplicationOperationInvariantProjectionReader<
         '_,
@@ -33,6 +36,52 @@ pub fn index_query<Schema: ApplicationSchema, Operation, B>(
     source_query: Option<&SourceQueryReaderAccess<'_, Schema>>,
     intent: B::Input,
 ) -> Result<Vec<Value<Schema, B>>, HandlerExecutionDenial>
+where
+    B: ApplicationQueryBinding<Schema>,
+    B::Input: ApplicationQueryIntent<Schema, Binding = B>,
+    B::ScopeBinding: ApplicationQueryScopeResolution<Schema, B::PrincipalIdentity>,
+    Value<Schema, B>: application_query::WorthQueryApplicationProjection<Schema, B::Query>,
+{
+    decision_index_query::<Schema, Operation, B>(reader_self, source_query, intent)
+        .map_err(Failure::into_handler)
+}
+
+/// A partitioned computation's owner call makes the same issued decision
+/// read. The read's facts are recorded with that call, and its refusal is
+/// retained as a typed, comparable computation read denial.
+pub fn computation_index_query<Schema: ApplicationSchema, Operation, B>(
+    reader_self: &mut WorthQueryApplicationOperationInvariantProjectionReader<
+        '_,
+        '_,
+        Schema,
+        Operation,
+    >,
+    source_query: Option<&SourceQueryReaderAccess<'_, Schema>>,
+    intent: B::Input,
+) -> Result<Vec<Value<Schema, B>>, WorthQueryComputationManagedIndexDenial>
+where
+    B: ApplicationQueryBinding<Schema>,
+    B::Input: ApplicationQueryIntent<Schema, Binding = B>,
+    B::ScopeBinding: ApplicationQueryScopeResolution<Schema, B::PrincipalIdentity>,
+    Value<Schema, B>: application_query::WorthQueryApplicationProjection<Schema, B::Query>,
+{
+    if let Some(context) = reader_self.source_context_use() {
+        context.set(context.get().source_query_permission());
+    }
+    decision_index_query::<Schema, Operation, B>(reader_self, source_query, intent)
+        .map_err(Failure::into_computation)
+}
+
+fn decision_index_query<Schema: ApplicationSchema, Operation, B>(
+    reader_self: &mut WorthQueryApplicationOperationInvariantProjectionReader<
+        '_,
+        '_,
+        Schema,
+        Operation,
+    >,
+    source_query: Option<&SourceQueryReaderAccess<'_, Schema>>,
+    intent: B::Input,
+) -> Result<Vec<Value<Schema, B>>, Failure>
 where
     B: ApplicationQueryBinding<Schema>,
     B::Input: ApplicationQueryIntent<Schema, Binding = B>,
@@ -53,7 +102,7 @@ where
                     parent: worth_query_declaration::facade::application_query::ApplicationQueryBindingReference::of::<Schema, B>(),
                 },
             )
-            .map_err(HandlerExecutionDenial::new)?;
+            .map_err(Failure::Undeclared)?;
         let scope = reader_self
             .operation_scope()
             .as_ref()
@@ -63,7 +112,7 @@ where
             .application
             .installed_schema()
             .installed_query_binding::<B>()
-            .map_err(HandlerExecutionDenial::new)?;
+            .map_err(Failure::Installation)?;
         for field in installed.query().read_graph().projections() {
             reader_self
                 .admit_decision_target(
@@ -73,7 +122,7 @@ where
                         field: field.field().to_owned(),
                     },
                 )
-                .map_err(HandlerExecutionDenial::new)?;
+                .map_err(Failure::Undeclared)?;
         }
         let selected = access.shared.selected();
         let original = reader_self
@@ -83,7 +132,7 @@ where
             .ok_or_else(unavailable)?
             .read_truth()
             .positioned_snapshot(reader_self.reader().snapshot())
-            .map_err(|_| HandlerExecutionDenial::new(IndexDecisionStop::ForeignProjection))?;
+            .map_err(|_| Failure::ForeignProjection)?;
         let borrowed = reader_self
             .reader()
             .native()
@@ -91,7 +140,7 @@ where
             .ok_or_else(unavailable)?
             .read_truth()
             .positioned_snapshot(selected.application_basis().snapshot_handle())
-            .map_err(|_| HandlerExecutionDenial::new(IndexDecisionStop::ForeignProjection))?;
+            .map_err(|_| Failure::ForeignProjection)?;
         if original != borrowed
             || reader_self.reader().selected_product_occurrence()
                 != Some(selected.product().observation().lifecycle_incarnation())
@@ -104,9 +153,7 @@ where
                         .get(),
                 )
         {
-            return Err(HandlerExecutionDenial::new(
-                IndexDecisionStop::ForeignProjection,
-            ));
+            return Err(Failure::ForeignProjection);
         }
         let execution = reader_self.reader().execution();
         let graph = access
@@ -122,7 +169,7 @@ where
                 .committed_runtime()
                 .ok_or_else(unavailable)?,
         )
-        .map_err(HandlerExecutionDenial::new)?;
+        .map_err(Failure::NativeAccess)?;
         let (rows, observation) = application_query::managed_index::read_decision::<Schema, B>(
             execution,
             access,
@@ -131,12 +178,12 @@ where
             &scope,
             &mut native,
         )
-        .map_err(HandlerExecutionDenial::new)?;
+        .map_err(Failure::ManagedIndex)?;
         let snapshot = reader_self.reader().snapshot();
         reader_self
             .decision_facts_mut()
             .record_managed_source(&observation, admission, contracts, snapshot, execution)
-            .map_err(|cause| HandlerExecutionDenial::new(IndexDecisionStop::Native(cause)))?;
+            .map_err(Failure::Native)?;
         Ok(rows)
     })();
     if result.is_err() {

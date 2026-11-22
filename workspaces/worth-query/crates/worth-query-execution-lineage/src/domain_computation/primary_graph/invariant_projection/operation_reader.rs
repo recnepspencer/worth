@@ -36,7 +36,10 @@ pub use derived_relation::{
     WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
 };
 pub mod managed_index;
-pub use managed_index::native_index_decision_cause;
+pub use managed_index::{
+    native_index_decision_cause, WorthQueryComputationManagedIndexDenial,
+    WorthQueryComputationManagedIndexDenialKind,
+};
 pub mod output_availability;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,

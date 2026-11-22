@@ -27,3 +27,9 @@ pub fn native_index_decision_cause<'a>(
         _ => None,
     }
 }
+
+pub mod failure;
+pub use failure::{
+    IndexDecisionFailure, WorthQueryComputationManagedIndexDenial,
+    WorthQueryComputationManagedIndexDenialKind,
+};

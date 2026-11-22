@@ -30,6 +30,7 @@ pub mod operation_reader;
 pub use operation_reader::native_index_decision_cause;
 pub use operation_reader::BorrowedOperationProjection;
 pub use operation_reader::{
+    WorthQueryComputationManagedIndexDenial, WorthQueryComputationManagedIndexDenialKind,
     WorthQueryInvariantDerivedMemberRelation, WorthQueryInvariantDerivedRelation,
     WorthQueryInvariantDerivedWalk, WorthQueryInvariantDerivedWalkStep,
     WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,

@@ -72,6 +72,9 @@ mod feature;
 mod setup;
 pub(crate) mod synchronous_outputs;
 
+pub use super::invariant_projection::{
+    WorthQueryComputationManagedIndexDenial, WorthQueryComputationManagedIndexDenialKind,
+};
 pub(in crate::domain_computation::primary_graph) use composition::PreparedApplicationRuntimeContributions;
 pub use composition::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionTuple,

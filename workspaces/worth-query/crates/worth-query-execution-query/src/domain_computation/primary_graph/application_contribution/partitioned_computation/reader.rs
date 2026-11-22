@@ -3,6 +3,7 @@
 
 mod content;
 mod derived_relation;
+mod managed_index;
 mod orbit;
 mod output_availability;
 mod structural_walk;

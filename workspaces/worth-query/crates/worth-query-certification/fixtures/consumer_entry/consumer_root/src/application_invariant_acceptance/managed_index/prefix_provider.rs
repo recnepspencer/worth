@@ -290,10 +290,24 @@ impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> WorthQueryManagedIndexProvid
     }
     fn validate_probe(
         &self,
-        _probe: &Probe,
+        probe: &Probe,
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<(), Stop> {
         self.0.probe_validations.fetch_add(1, Ordering::SeqCst);
+        #[cfg(test)]
+        {
+            let mut at = self.0.at_probe.lock().unwrap();
+            if at
+                .as_ref()
+                .is_some_and(|(prefix, _)| *prefix == probe.prefix)
+            {
+                let (_, observe) = at.take().unwrap();
+                drop(at);
+                observe();
+            }
+        }
+        #[cfg(not(test))]
+        let _ = probe;
         control.checkpoint(1).map_err(Into::into)
     }
     fn matches_source(

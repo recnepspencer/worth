@@ -30,6 +30,11 @@ impl<Query> WorthQueryObservedResultSet<Query> {
         &self.source
     }
 
+    /// Descriptive qualification posture, never a currentness or publication grant.
+    pub fn has_verified_realized_footprint(&self) -> bool {
+        self.source().has_verified_realized_footprint()
+    }
+
     pub fn declared_orbit(&self) -> Option<&super::DeclaredOrbitSelection> {
         self.source
             .source_meaning()

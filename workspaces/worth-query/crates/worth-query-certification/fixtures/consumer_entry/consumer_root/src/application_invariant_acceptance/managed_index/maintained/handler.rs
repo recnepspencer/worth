@@ -1,5 +1,5 @@
 //! Both original decision work and candidate construction use ordinary public receivers.
-use super::{mutation, query, schema::*};
+use super::{mutation, probe, query, schema::*};
 use worth_query_host::facade::primary_graph::*;
 #[derive(Clone, Copy)]
 pub(super) enum DecisionRead {
@@ -8,9 +8,56 @@ pub(super) enum DecisionRead {
     TwoProbes,
     OtherScope,
     Undeclared,
+    /// The handler's partitioned computation probes the Parent instead.
+    Partitioned(probe::Probe),
 }
-pub(super) struct Handler(pub DecisionRead);
+pub(super) struct Handler(pub DecisionRead, pub probe::Installed);
 impl OperationHandler<Catalog, mutation::Binding> for Handler {
+    fn prepare_decision(
+        &self,
+        input: &mutation::Rename,
+        reader: &mut DecisionReader<'_, '_, '_, Catalog, mutation::Binding>,
+    ) -> WorthQueryDecisionPlan<WorthQueryInvariantMutationTarget<Catalog, Item>, mutation::Denial>
+    {
+        let DecisionRead::Partitioned(probe) = self.0 else {
+            return WorthQueryDecisionPlan::immediate(self.decide(input, reader));
+        };
+        let request = probe::ProbeRequest {
+            directory: input.directory.clone(),
+            prefix: input.prefix.clone(),
+            probe,
+        };
+        let prepared = match self.1.prepare(reader, &request) {
+            Ok(prepared) => prepared,
+            Err(cause) => {
+                if let worth_query_host::facade::application_contribution::WorthQueryPartitionedComputationDenial::Read(
+                    worth_query_host::facade::application_contribution::WorthQueryComputationReadDenial::ManagedIndex(denial),
+                ) = &cause
+                {
+                    probe::REFUSED.with(|refused| refused.borrow_mut().push(denial.clone()));
+                }
+                return WorthQueryDecisionPlan::immediate(HandlerResult::ExecutionDenied(
+                    HandlerExecutionDenial::new(cause),
+                ));
+            }
+        };
+        let decided = mutation::Handler.decide(input, reader);
+        let item = input.item.clone();
+        prepared.into_decision_plan(move |completed| match (completed, decided) {
+            (Ok(completed), HandlerResult::Completed(target)) => match completed.complete() {
+                Ok(rows) => {
+                    assert!(
+                        rows.iter().any(|(identity, _)| *identity == item),
+                        "the computation's committed Parent read actually selected the item"
+                    );
+                    HandlerResult::Completed(target)
+                }
+                Err(cause) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+            },
+            (Err(cause), _) => HandlerResult::ExecutionDenied(HandlerExecutionDenial::new(cause)),
+            (_, other) => other,
+        })
+    }
     fn decide(
         &self,
         input: &mutation::Rename,
@@ -40,6 +87,7 @@ impl OperationHandler<Catalog, mutation::Binding> for Handler {
                     prefix: input.prefix.clone(),
                 })
             }
+            DecisionRead::Partitioned(_) => unreachable!("prepared through the computation"),
             DecisionRead::Undeclared => {
                 reader.index_query::<query::SourceBinding>(query::ReadSource {
                     directory: input.directory.clone(),

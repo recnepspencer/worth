@@ -22,6 +22,8 @@ pub enum WorthQueryComputationReadDenial {
     RetainedFact(crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind),
     Field(WorthQueryInvariantDecisionPlanDenial),
     Relations(WorthQueryInvariantProjectionTraversalDenial),
+    /// The operation's issued managed index decision read was refused.
+    ManagedIndex(crate::domain_computation::primary_graph::invariant_projection::WorthQueryComputationManagedIndexDenial),
 }
 
 /// Why an owner call that reads the input has no answer.
@@ -47,6 +49,7 @@ impl worth_execution::ChargedBytes for WorthQueryComputationReadDenial {
             Self::RetainedFact(_) => 0,
             Self::Field(denial) => denial.additional_charged_bytes(),
             Self::Relations(denial) => denial.additional_charged_bytes(),
+            Self::ManagedIndex(denial) => denial.additional_charged_bytes(),
         }
     }
 }

@@ -2,6 +2,8 @@
 //! the one a partitioned computation makes of the facts it retained.
 
 pub mod basis;
+#[cfg(test)]
+mod managed_source;
 use basis::FactObservationBasis as Basis;
 use worth_relational::facade::runtime::{ProjectionAspectScope, RelationalRuntime};
 use worth_relational::facade::snapshots::SnapshotHandle;
