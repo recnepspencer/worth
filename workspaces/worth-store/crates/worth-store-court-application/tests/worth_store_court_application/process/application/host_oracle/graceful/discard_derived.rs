@@ -75,15 +75,18 @@ fn assert_semantic_state_parity(
     assert_eq!(home.custody.len(), reference.custody.len());
     assert_eq!(home.entities.len(), reference.entities.len());
     for (h, r) in home.entities.iter().zip(&reference.entities) {
-        assert_eq!(h.kind_name, r.kind_name);
-        assert_eq!(h.lifecycle, r.lifecycle);
-        assert_eq!(h.authoritative_aspect_state, r.authoritative_aspect_state);
+        assert_eq!((&h.kind_name, h.lifecycle, &h.authoritative_aspect_state), (&r.kind_name, r.lifecycle, &r.authoritative_aspect_state));
     }
     assert_eq!(home.relations.len(), reference.relations.len());
     for (h, r) in home.relations.iter().zip(&reference.relations) {
-        assert_eq!(h.kind_name, r.kind_name);
-        assert_eq!(h.lifecycle, r.lifecycle);
-        assert_eq!(h.authoritative_aspect_state, r.authoritative_aspect_state);
+        assert_eq!((&h.kind_name, h.lifecycle, &h.authoritative_aspect_state), (&r.kind_name, r.lifecycle, &r.authoritative_aspect_state));
+    }
+    let home_keys: std::collections::HashSet<_> = home.idempotency.iter().map(|r| r.key).collect();
+    let ref_keys: std::collections::HashSet<_> = reference.idempotency.iter().map(|r| r.key).collect();
+    assert_eq!((home.idempotency.len(), home_keys.len(), ref_keys.len()), (reference.idempotency.len(), home.idempotency.len(), reference.idempotency.len()));
+    for h in &home.idempotency {
+        let r = reference.idempotency.iter().find(|r| r.key == h.key).expect("matching reference idempotency key");
+        assert_eq!((&h.intent, h.emitted, h.settlement), (&r.intent, r.emitted, r.settlement));
     }
 }
 
@@ -328,50 +331,36 @@ fn run_discard_oracle(kill: bool, reopen_build: &str) {
         assert_eq!(continued_state.occurrences.len(), abandoned_state.occurrences.len() + 1);
 
         let orig_effect = original_custody.original_effect.as_ref().unwrap();
+        let orig_native = orig_effect.native.receipt();
         let receipt = continued_mutation.receipt.as_ref().unwrap();
         let expected_receipt = expected_semantic.receipt.as_ref().unwrap();
-        assert_eq!(receipt.attempt_owner, orig_effect.attempt_owner);
-        assert_eq!(receipt.attempt, orig_effect.attempt);
-        assert_eq!(&receipt.native, orig_effect.native.receipt());
-        assert_eq!(receipt.before, abandoned_state.head);
-        assert_eq!(receipt.after, continued_state.head);
-        assert_eq!(receipt.changed, expected_receipt.changed);
-        assert_eq!(receipt.emitted, expected_receipt.emitted);
-        assert_eq!(receipt.key, expected_receipt.key);
-        assert_eq!(receipt.intent, expected_receipt.intent);
+        assert_eq!((receipt.attempt_owner, receipt.attempt), (orig_effect.attempt_owner, orig_effect.attempt));
+        assert_eq!(&receipt.native, orig_native);
+        assert_eq!((&receipt.before, &receipt.after), (&abandoned_state.head, &continued_state.head));
+        assert_eq!((receipt.changed, receipt.emitted, receipt.key, receipt.intent), (expected_receipt.changed, expected_receipt.emitted, expected_receipt.key, expected_receipt.intent));
+        let binding = continued_state.idempotency.iter().find(|row| Some(row.key) == receipt.key).expect("continued key must have a durable idempotency binding");
+        assert_eq!((receipt.outcome, binding.emitted as usize, binding.created), (Some(binding.outcome), receipt.emitted, orig_native.version_id));
 
-        let new_occ = continued_state
-            .occurrences
-            .iter()
-            .find(|occ| occ.commit == continued_state.head.commit)
-            .expect("continued head must appear in World occurrence ancestry");
+        let prior_occurrences: Vec<_> = continued_state.occurrences.iter().filter(|occ| occ.commit != continued_state.head.commit).cloned().collect();
+        assert_eq!(prior_occurrences, abandoned_state.occurrences);
+        let new_occ = continued_state.occurrences.iter().find(|occ| occ.commit == continued_state.head.commit).expect("continued head must appear in World occurrence ancestry");
+        let sem_ref_state = projection::observe(sem_ref.runtime(), &execution);
+        let ref_occ = sem_ref_state.occurrences.iter().find(|occ| occ.commit == sem_ref_state.head.commit).expect("semantic reference head occurrence");
         assert_eq!(new_occ.owner, orig_effect.attempt_owner);
         assert_eq!(new_occ.parent, Some(abandoned_state.head.commit));
-        assert_eq!(
-            new_occ.provenance,
-            projection::OccurrenceProvenance::Publication(orig_effect.attempt)
-        );
-        assert_eq!(
-            new_occ.relational_publication.as_ref().map(|p| p.commit_id()),
-            Some(orig_effect.native.receipt().commit_id)
-        );
-        let sem_ref_state = projection::observe(sem_ref.runtime(), &execution);
+        assert_eq!(new_occ.provenance, projection::OccurrenceProvenance::Publication(orig_effect.attempt));
+        assert_eq!((new_occ.relational_changed, new_occ.signal_changed, &new_occ.signal_movement, new_occ.relational_fork.is_some()), (ref_occ.relational_changed, ref_occ.signal_changed, &ref_occ.signal_movement, ref_occ.relational_fork.is_some()));
+        let rel_pub = new_occ.relational_publication.as_ref().expect("continued occurrence records Native publication");
+        assert_eq!((rel_pub.commit_id(), rel_pub.version_id(), rel_pub.authoring_branch()), (orig_native.commit_id, orig_native.version_id, &orig_native.branch_id));
         assert_semantic_state_parity(continued_state, &sem_ref_state);
 
-        let retry_continue = session.send(Request::ContinueOriginal {
-            key: 3,
-            value: 33,
-            pause_after_disposition: false,
-        });
+        let retry_continue = session.send(Request::ContinueOriginal { key: 3, value: 33, pause_after_disposition: false });
         assert_eq!(retry_continue.contacts, 0);
         let retry_state = retry_continue.state.as_ref().unwrap();
         assert!(retry_state.custody.is_empty());
-        assert_eq!(retry_state.head, continued_state.head);
-        assert_eq!(retry_state.occurrences, continued_state.occurrences);
-        let retry_mutation = match retry_continue.disposition {
-            Some(Disposition::Continued(mutation)) => mutation,
-            other => panic!("expected Continued retry disposition, got {other:?}"),
-        };
+        assert_eq!((&retry_state.head, &retry_state.occurrences), (&continued_state.head, &continued_state.occurrences));
+        assert_eq!(serde_json::to_value(&retry_state.idempotency).unwrap(), serde_json::to_value(&continued_state.idempotency).unwrap());
+        let Some(Disposition::Continued(retry_mutation)) = retry_continue.disposition else { panic!("expected Continued retry disposition"); };
         assert_eq!(retry_mutation, continued_mutation);
         assert_semantic_state_parity(retry_state, &sem_ref_state);
         let refused_sem = sem_ref.close(&execution).err().unwrap();
