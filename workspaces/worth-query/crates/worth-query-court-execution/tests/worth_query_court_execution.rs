@@ -6,5 +6,6 @@ mod cost;
 #[path = "worth_query_court_execution/domain_computation/mod.rs"]
 pub mod domain_computation;
 mod naming_discriminator_agreement;
+mod naming_posture_agreement;
 
 mod query_obligations;

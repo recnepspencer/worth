@@ -1,6 +1,17 @@
 use std::fmt;
 
+use super::events::LineageSubject;
 use super::naming::{PersistentNameHolder, PersistentNameIdentity};
+
+/// Posture kind named in a [`LineageNameDenial::LineagePostureMismatch`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum LineagePostureKind {
+    Create,
+    Preserve,
+    Retire,
+    Split,
+    Merge,
+}
 
 /// Specific reason a discriminator's referenced names failed basis validation.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,6 +85,22 @@ pub enum LineageNameDenial {
         role_path: String,
         parent: PersistentNameIdentity,
     },
+    /// Declared output posture contradicted the actual performed commit
+    /// effects (e.g., `Split` on an unretired parent or with zero targets,
+    /// `Merge` with an unretired non-keeper, `Preserve` on a fresh create, or
+    /// `Retire` on an unretired record).
+    LineagePostureMismatch {
+        posture: LineagePostureKind,
+        subject: LineageSubject,
+        holder: PersistentNameHolder,
+        detail: String,
+    },
+    /// `Merge` posture named a `KeepParent` identity that is not a member of
+    /// its declared `parents` list.
+    InvalidMergeKeeper {
+        keeper: PersistentNameIdentity,
+        parents: Vec<PersistentNameIdentity>,
+    },
 }
 
 impl fmt::Display for LineageNameDenial {
@@ -145,6 +172,21 @@ impl fmt::Display for LineageNameDenial {
                 formatter,
                 "duplicate parent identity `{}` for role `{role_path}` in scheme `{scheme_id}`",
                 parent.render_hex()
+            ),
+            Self::LineagePostureMismatch {
+                posture,
+                subject,
+                holder,
+                detail,
+            } => write!(
+                formatter,
+                "lineage posture mismatch for {subject:?} {posture:?} on {holder:?}: {detail}"
+            ),
+            Self::InvalidMergeKeeper { keeper, parents } => write!(
+                formatter,
+                "invalid merge keeper `{}` is not among declared parents ({} parents)",
+                keeper.render_hex(),
+                parents.len()
             ),
         }
     }

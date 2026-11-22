@@ -58,11 +58,24 @@ pub use worth_query_declaration::{
 ///
 /// ```
 /// use worth_query_decl::facade::application_naming::WorthQueryName;
+/// use worth_query_decl::facade::application_operation::{
+///     ApplicationMutationLineagePostureKind, WorthQueryLineageOutputPosture,
+///     WorthQueryMergeKeeper, WorthQueryMergeOutput, WorthQuerySplitOutput,
+/// };
 /// struct Face;
 /// # fn _same_type(
 /// #     name: worth_query_declaration::facade::application_naming::WorthQueryName<Face>,
-/// # ) -> WorthQueryName<Face> {
-/// #     name
+/// # ) -> (
+/// #     WorthQueryName<Face>,
+/// #     WorthQueryLineageOutputPosture<Face>,
+/// #     ApplicationMutationLineagePostureKind,
+/// # ) {
+/// #     let _ = std::marker::PhantomData::<(WorthQuerySplitOutput, WorthQueryMergeOutput)>;
+/// #     let posture = WorthQueryLineageOutputPosture::Merge {
+/// #         parents: vec![name],
+/// #         keeper: WorthQueryMergeKeeper::KeepParent(name),
+/// #     };
+/// #     (name, posture, ApplicationMutationLineagePostureKind::Split)
 /// # }
 /// ```
 pub use worth_query_declaration::facade::canonicalization::CanonicalQueryArtifact;

@@ -46,11 +46,20 @@ pub use output::{
     NoApplicationMutationOutputs,
 };
 pub use output_role::{
-    WorthQueryApplicationDeclaredOutputRole, WorthQueryApplicationDeclaredOutputRoleFamily,
+    ApplicationMutationLineageOutputContract, ApplicationMutationLineageOutputRoleDescriptor,
+    ApplicationMutationLineageOutputRoleFamilyDescriptor, ApplicationMutationLineagePostureKind,
+    ApplicationMutationLineagePostureSet, ApplicationMutationLineageSubjectKind,
+    ErasedLineageOutputPosture, ErasedMergeKeeper, WorthQueryApplicationDeclaredLineageOutputRole,
+    WorthQueryApplicationDeclaredLineageOutputRoleFamily, WorthQueryApplicationDeclaredOutputRole,
+    WorthQueryApplicationDeclaredOutputRoleFamily, WorthQueryApplicationLineageOutputAction,
+    WorthQueryApplicationLineageOutputRole, WorthQueryApplicationLineageOutputRoleFamily,
     WorthQueryApplicationOutputAction, WorthQueryApplicationOutputCardinality,
     WorthQueryApplicationOutputRole, WorthQueryApplicationOutputRoleFamily,
-    WorthQueryApplicationOutputRoleNameDenial, WorthQueryAtMostOneOutput, WorthQueryCreateOutput,
-    WorthQueryExactlyOneOutput, WorthQueryPreserveOutput, WorthQueryRetireOutput,
+    WorthQueryApplicationOutputRoleNameDenial, WorthQueryApplicationOutputSubject,
+    WorthQueryAtMostOneOutput, WorthQueryCreateOutput, WorthQueryEntityOutputSubject,
+    WorthQueryExactlyOneOutput, WorthQueryLineageOutputPosture, WorthQueryLineagePostureDenial,
+    WorthQueryMergeKeeper, WorthQueryMergeOutput, WorthQueryPreserveOutput,
+    WorthQueryRelationOutputSubject, WorthQueryRetireOutput, WorthQuerySplitOutput,
 };
 pub use portable_description::{
     ApplicationMutationDescription, ApplicationMutationDescriptionParts,

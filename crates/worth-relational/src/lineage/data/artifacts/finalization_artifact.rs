@@ -1,6 +1,9 @@
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 
 use crate::history::data::BranchId;
+use crate::identity::data::{LineageId, RelationId};
 
 use super::digest_basis::{decision_log_digest_basis, event_batch_digest_basis};
 use super::{
@@ -11,6 +14,7 @@ use super::{
 pub(crate) struct PreparedLineageFinalization {
     artifact: LineageFinalizationArtifact,
     new_nodes: Vec<crate::lineage::data::LineageNode>,
+    new_relation_lineages: BTreeMap<RelationId, LineageId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -89,11 +93,29 @@ impl PreparedLineageFinalization {
         Self {
             artifact,
             new_nodes,
+            new_relation_lineages: BTreeMap::new(),
+        }
+    }
+
+    pub(crate) fn with_relation_lineages(
+        artifact: LineageFinalizationArtifact,
+        new_nodes: Vec<crate::lineage::data::LineageNode>,
+        new_relation_lineages: BTreeMap<RelationId, LineageId>,
+    ) -> Self {
+        Self {
+            artifact,
+            new_nodes,
+            new_relation_lineages,
         }
     }
 
     pub(crate) fn artifact(&self) -> &LineageFinalizationArtifact {
         &self.artifact
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn relation_lineages(&self) -> &BTreeMap<RelationId, LineageId> {
+        &self.new_relation_lineages
     }
 
     pub(crate) fn into_parts(

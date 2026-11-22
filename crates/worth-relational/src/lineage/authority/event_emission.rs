@@ -1,8 +1,14 @@
+#[cfg(test)]
 use crate::history::data::RelationalCommitReceipt;
+#[cfg(test)]
 use crate::identity::data::LineageId;
-use crate::lineage::authority::{LineageAuthority, LineagePreparationAuthority};
+use crate::lineage::authority::LineageAuthority;
+#[cfg(test)]
+use crate::lineage::authority::LineagePreparationAuthority;
+#[cfg(test)]
 use crate::lineage::data::{
     LineageDecisionKind, LineageDecisionRecord, LineageEventKind, LineageEventRecord,
+    LineageSubject, PersistentNameBirthRecord, PersistentNameIdentity,
 };
 
 impl<'runtime> LineageAuthority<'runtime> {
@@ -21,15 +27,20 @@ impl<'runtime> LineageAuthority<'runtime> {
     }
 }
 
+#[cfg(test)]
 impl<'runtime> LineagePreparationAuthority<'runtime> {
+    #[cfg(test)]
+    #[allow(clippy::too_many_arguments)]
     pub(super) fn prepare_authoritative_lineage_event(
         &self,
         event_id: u64,
         commit: &RelationalCommitReceipt,
         kind: LineageEventKind,
+        subject: LineageSubject,
         sources: Vec<LineageId>,
         targets: Vec<LineageId>,
-        name_birth: Option<crate::lineage::data::PersistentNameBirthRecord>,
+        name_birth: Option<PersistentNameBirthRecord>,
+        kept_name: Option<PersistentNameIdentity>,
     ) -> LineageEventRecord {
         LineageEventRecord {
             event_id,
@@ -38,10 +49,13 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
             kind,
             sources,
             targets,
+            subject,
             name_birth,
+            kept_name,
         }
     }
 
+    #[cfg(test)]
     pub(super) fn accepted_decision_record(
         &self,
         kind: LineageDecisionKind,

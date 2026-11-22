@@ -14,17 +14,36 @@ use crate::application_schema::{ApplicationEntityMarkerIdentity, ApplicationSche
 mod action;
 mod cardinality;
 mod family;
+mod lineage_posture;
+mod lineage_role;
 mod name;
 
+#[cfg(test)]
+mod tests;
+
 pub use action::{
-    WorthQueryApplicationOutputAction, WorthQueryCreateOutput, WorthQueryPreserveOutput,
-    WorthQueryRetireOutput,
+    ApplicationMutationLineagePostureKind, ApplicationMutationLineagePostureSet,
+    WorthQueryApplicationLineageOutputAction, WorthQueryApplicationOutputAction,
+    WorthQueryCreateOutput, WorthQueryMergeOutput, WorthQueryPreserveOutput,
+    WorthQueryRetireOutput, WorthQuerySplitOutput,
 };
 pub use cardinality::{
     WorthQueryApplicationOutputCardinality, WorthQueryAtMostOneOutput, WorthQueryExactlyOneOutput,
 };
 pub use family::{
     WorthQueryApplicationDeclaredOutputRoleFamily, WorthQueryApplicationOutputRoleFamily,
+};
+pub use lineage_posture::{
+    ApplicationMutationLineageSubjectKind, ErasedLineageOutputPosture, ErasedMergeKeeper,
+    WorthQueryLineageOutputPosture, WorthQueryLineagePostureDenial, WorthQueryMergeKeeper,
+};
+pub use lineage_role::{
+    ApplicationMutationLineageOutputContract, ApplicationMutationLineageOutputRoleDescriptor,
+    ApplicationMutationLineageOutputRoleFamilyDescriptor,
+    WorthQueryApplicationDeclaredLineageOutputRole,
+    WorthQueryApplicationDeclaredLineageOutputRoleFamily, WorthQueryApplicationLineageOutputRole,
+    WorthQueryApplicationLineageOutputRoleFamily, WorthQueryApplicationOutputSubject,
+    WorthQueryEntityOutputSubject, WorthQueryRelationOutputSubject,
 };
 pub use name::WorthQueryApplicationOutputRoleNameDenial;
 

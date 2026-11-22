@@ -1,25 +1,36 @@
+#[cfg(test)]
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::history::data::RelationalCommitReceipt;
-use crate::identity::data::{EntityId, KindId, LineageId, PartitionId, VersionId};
+#[cfg(test)]
+use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::authority::LineagePreparationAuthority;
+use crate::lineage::data::PreparedLineageFinalization;
+#[cfg(test)]
 use crate::lineage::data::{
     FinalizedLineageEventBatch, InstalledPersistentNameSchemeRegistry, LineageDecisionKind,
-    LineageDecisionLog, LineageEventKind, LineageFinalizationArtifact, LineageNode,
+    LineageDecisionLog, LineageEventKind, LineageFinalizationArtifact, LineageNode, LineageSubject,
     PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameHolder,
-    PersistentNameIdentity, PreparedLineageFinalization,
+    PersistentNameIdentity,
 };
 use crate::runtime::WorkingState;
-use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    EntityMutationIntent, MutationIntent, RecordRef, TransactionCommitError,
+#[cfg(test)]
+use crate::transactions::data::EntityMutationIntent;
+use crate::transactions::data::{MutationIntent, RecordRef, TransactionCommitError};
+
+#[cfg(test)]
+use super::staged_effects::{
+    created_entity_lineage_slot, entity_lineage, find_replace_target_entity, install_lineage_id,
+    lineage_error,
 };
 
+#[cfg(test)]
 struct LineageFinalizationPlan {
     drafts: Vec<LineageEventDraft>,
     required_lineage_ids: usize,
 }
 
+#[cfg(test)]
 enum LineageEventDraft {
     Create {
         entity_id: EntityId,
@@ -35,6 +46,7 @@ enum LineageEventDraft {
     },
 }
 
+#[cfg(test)]
 struct AssignedLineageEvent {
     kind: LineageEventKind,
     decision_kind: LineageDecisionKind,
@@ -44,6 +56,7 @@ struct AssignedLineageEvent {
     name_birth: Option<PersistentNameBirthRecord>,
 }
 
+#[cfg(test)]
 struct AssignedLineageNode {
     entity_id: EntityId,
     lineage_id: LineageId,
@@ -59,19 +72,17 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         merged_plan: &[MutationIntent],
         changed_records: &[RecordRef],
     ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
-        self.ensure_lineage_for_commit_with_births(
+        self.ensure_lineage_for_commit_with_postures(
             execution,
             staged,
             commit,
             merged_plan,
             changed_records,
-            &InstalledPersistentNameSchemeRegistry::new(),
-            &BTreeMap::new(),
-            &BTreeSet::new(),
-            &BTreeMap::new(),
+            &crate::lineage::data::LineageCommitPostureInput::default(),
         )
     }
 
+    #[cfg(test)]
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn ensure_lineage_for_commit_with_births(
         &self,
@@ -145,9 +156,11 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
                 event_id,
                 commit,
                 assigned.kind,
+                LineageSubject::Entity,
                 assigned.sources,
                 assigned.targets,
                 assigned.name_birth,
+                None,
             );
             decisions.push(self.accepted_decision_record(assigned.decision_kind, &event));
             events.push(event);
@@ -168,6 +181,7 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
     }
 }
 
+#[cfg(test)]
 impl LineageFinalizationPlan {
     fn from_staged(
         staged: &WorkingState,
@@ -314,84 +328,4 @@ impl LineageFinalizationPlan {
         }
         Ok(assigned)
     }
-}
-
-fn created_entity_lineage_slot(
-    staged: &WorkingState,
-    entity_id: EntityId,
-    version_id: VersionId,
-) -> Option<Option<LineageId>> {
-    let partition = staged.get_current_partition(entity_id.partition_id)?;
-    let arena = partition.entity_arena();
-    if arena.created_at_for_slot(entity_id.slot_index()) != Some(version_id) {
-        return None;
-    }
-    Some(arena.get(&entity_id)?.extra().lineage_id)
-}
-
-fn lineage_error(detail: String) -> TransactionCommitError {
-    TransactionCommitError::publication(crate::publication::data::PublicationError::new(
-        crate::publication::bundle::PublicationStage::BundleAssembly,
-        detail,
-    ))
-}
-
-fn install_lineage_id(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    staged: &mut WorkingState,
-    entity_id: EntityId,
-    lineage_id: LineageId,
-) -> Result<(), TransactionCommitError> {
-    staged
-        .get_partition_mut(entity_id.partition_id)
-        .entity_arena
-        .install_lineage_id(execution, entity_id.slot_index(), lineage_id)
-        .map_err(|denial| match denial {
-            crate::storage::substrate::ExtraLineageDenial::Request(cause) => {
-                TransactionCommitError::execution(cause.into())
-            }
-            crate::storage::substrate::ExtraLineageDenial::Missing(detail) => {
-                lineage_error(detail.to_owned())
-            }
-        })
-}
-
-fn entity_lineage(staged: &WorkingState, entity_id: EntityId) -> Option<LineageId> {
-    staged
-        .get_current_partition(entity_id.partition_id)
-        .and_then(|partition| partition.entity_arena().get(&entity_id))
-        .and_then(|slot_view| slot_view.extra().lineage_id)
-}
-
-fn find_replace_target_entity(
-    staged: &WorkingState,
-    changed_records: &[RecordRef],
-    source_entity_id: EntityId,
-    replacement_partition_id: PartitionId,
-    replacement_kind_id: KindId,
-    version_id: VersionId,
-    consumed_replace_targets: &mut BTreeSet<EntityId>,
-) -> Option<EntityId> {
-    let source_index = changed_records.iter().position(
-        |record| matches!(record, RecordRef::Entity(candidate) if *candidate == source_entity_id),
-    )?;
-    for record in changed_records.iter().skip(source_index + 1) {
-        let RecordRef::Entity(candidate) = record else {
-            continue;
-        };
-        if consumed_replace_targets.contains(candidate) {
-            continue;
-        }
-        let partition = staged.get_current_partition(candidate.partition_id)?;
-        let arena = partition.entity_arena();
-        let created_now = arena.created_at_for_slot(candidate.slot_index()) == Some(version_id);
-        let matching_partition = candidate.partition_id == replacement_partition_id;
-        let matching_kind =
-            arena.get(candidate).and_then(|slot| slot.kind_id()) == Some(replacement_kind_id);
-        if created_now && matching_partition && matching_kind {
-            consumed_replace_targets.insert(*candidate);
-            return Some(*candidate);
-        }
-    }
-    None
 }
