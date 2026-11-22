@@ -95,6 +95,7 @@ fn shape(value: &ExpressionValue) -> &'static str {
         Repr::Map(_) => "map",
         Repr::Record(_) => "record",
         Repr::Entry(_) => "map entry",
+        Repr::Date(_) => "Date",
     }
 }
 
@@ -116,6 +117,7 @@ fn conform(
             | (Repr::Bytes(_), ExpressionType::Bytes)
             | (Repr::Id(_), ExpressionType::Id(_))
             | (Repr::Quantity(_), ExpressionType::Quantity(_))
+            | (Repr::Date(_), ExpressionType::Date)
             | (Repr::None, ExpressionType::Option(_)) => true,
             (Repr::Integer(integer), ExpressionType::Integer(width)) => {
                 if !(IntegerType::min(*width)..=IntegerType::max(*width)).contains(integer) {

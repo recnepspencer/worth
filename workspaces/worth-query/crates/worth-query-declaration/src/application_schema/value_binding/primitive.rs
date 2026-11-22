@@ -75,6 +75,60 @@ primitive_binding!(
     ApplicationValueSignedAggregateAvailable
 );
 primitive_binding!(
+    I8ApplicationValueBinding,
+    i8,
+    "worth.rust.i8",
+    Int8,
+    Int8,
+    ApplicationValueIsNotIdentity,
+    ApplicationValueSignedAggregateUnavailable
+);
+primitive_binding!(
+    I16ApplicationValueBinding,
+    i16,
+    "worth.rust.i16",
+    Int16,
+    Int16,
+    ApplicationValueIsNotIdentity,
+    ApplicationValueSignedAggregateUnavailable
+);
+primitive_binding!(
+    I32ApplicationValueBinding,
+    i32,
+    "worth.rust.i32",
+    Int32,
+    Int32,
+    ApplicationValueIsNotIdentity,
+    ApplicationValueSignedAggregateUnavailable
+);
+primitive_binding!(
+    U8ApplicationValueBinding,
+    u8,
+    "worth.rust.u8",
+    UInt8,
+    UInt8,
+    ApplicationValueIsNotIdentity,
+    ApplicationValueSignedAggregateUnavailable
+);
+primitive_binding!(
+    U16ApplicationValueBinding,
+    u16,
+    "worth.rust.u16",
+    UInt16,
+    UInt16,
+    ApplicationValueIsNotIdentity,
+    ApplicationValueSignedAggregateUnavailable
+);
+primitive_binding!(
+    U32ApplicationValueBinding,
+    u32,
+    "worth.rust.u32",
+    UInt32,
+    UInt32,
+    ApplicationValueIsNotIdentity,
+    ApplicationValueSignedAggregateUnavailable
+);
+primitive_binding!(
     U64ApplicationValueBinding,
     u64,
     "worth.rust.u64",
@@ -123,7 +177,13 @@ macro_rules! readable_copy_binding {
 
 readable_copy_binding!(ContentRefApplicationValueBinding, ContentRef);
 readable_copy_binding!(BoolApplicationValueBinding, Bool);
+readable_copy_binding!(I8ApplicationValueBinding, Int8);
+readable_copy_binding!(I16ApplicationValueBinding, Int16);
+readable_copy_binding!(I32ApplicationValueBinding, Int32);
 readable_copy_binding!(I64ApplicationValueBinding, Int64);
+readable_copy_binding!(U8ApplicationValueBinding, UInt8);
+readable_copy_binding!(U16ApplicationValueBinding, UInt16);
+readable_copy_binding!(U32ApplicationValueBinding, UInt32);
 readable_copy_binding!(U64ApplicationValueBinding, UInt64);
 
 impl ApplicationReadableScalarValueBinding for StringApplicationValueBinding {
@@ -173,7 +233,7 @@ impl ApplicationSignedAggregateValueBinding for I64ApplicationValueBinding {
     }
 }
 
-fn decode_primitive_admitted<Binding: ApplicationReadableScalarValueBinding>(
+pub(super) fn decode_primitive_admitted<Binding: ApplicationReadableScalarValueBinding>(
     value: &AspectValue,
     admission: &mut super::ValueDecodeAdmission<'_>,
 ) -> Result<Binding::Value, ApplicationValueDecodeDenial> {
@@ -189,7 +249,7 @@ fn decode_primitive_admitted<Binding: ApplicationReadableScalarValueBinding>(
     Binding::decode(value)
 }
 
-fn family_mismatch<Binding: ApplicationScalarValueBinding>(
+pub(super) fn family_mismatch<Binding: ApplicationScalarValueBinding>(
     value: &AspectValue,
 ) -> ApplicationValueDecodeDenial {
     ApplicationValueDecodeDenial::ScalarFamilyMismatch {

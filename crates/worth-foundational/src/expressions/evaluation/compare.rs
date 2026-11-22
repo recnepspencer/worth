@@ -1,7 +1,7 @@
 //! Resumable structural comparison.
 //!
 //! One comparison orders two values of the same type: numerically for
-//! numbers and quantities, bytewise for String, Bytes, and IDs, and
+//! numbers, quantities, and dates, bytewise for String, Bytes, and IDs, and
 //! lexicographically then by length for options and composites. Equality is
 //! an `Equal` ordering; only ordered types use the direction. Scalars cost one
 //! unit, buses one per limb and plane, byte strings one per started 8-byte
@@ -129,6 +129,7 @@ impl Comparison {
             (Repr::Bool(x), Repr::Bool(y)) => x.cmp(y),
             (Repr::Integer(x), Repr::Integer(y)) => x.cmp(y),
             (Repr::Enum(x), Repr::Enum(y)) => x.cmp(y),
+            (Repr::Date(x), Repr::Date(y)) => x.cmp(y),
             (Repr::Float32(x), Repr::Float32(y)) => {
                 float(f64::from(f32::from_bits(*x)), f64::from(f32::from_bits(*y)))
             }
