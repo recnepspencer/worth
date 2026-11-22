@@ -14,6 +14,7 @@ mod occurrences;
 mod outgoing;
 mod prerequisites;
 mod reopen;
+mod settlement;
 mod state;
 use state::{capacity_denied, push_funded, Scheduled, TaskState};
 
@@ -130,6 +131,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             children: Vec::new(),
             _children_memory: None,
             reopen_check: None,
+            settling: None,
             subject,
             rank,
             owed: context.owner.owing(),
@@ -191,6 +193,17 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         self.storage = memory;
         Ok(())
     }
+
+    /// R2 before a later stage's pending demands prepare: a task a prior
+    /// append made stale reopens before anything reads its output again.
+    pub fn qualify(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        candidate: &mut RelationalAuthoredCoupledCandidate<'_>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        self.reopen_stale(context, candidate).map(|_| ())
+    }
+
     pub fn drive(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
@@ -310,6 +323,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 }
             }
             self.retain_parent_inputs(context, candidate, i)?;
+            if self.settle_consumers(context, candidate, i)? {
+                observation::record(|| format!("break settle after={i}"));
+                break;
+            }
         }
         Ok(completed)
     }

@@ -64,6 +64,24 @@ impl AppliedOutputParent {
     pub fn source(&self) -> worth_relational::facade::identity::EntityId {
         self.source
     }
+    /// The Native input this output supplies, when it is an owned output.
+    pub fn input(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::RelationalRequiredOutputInput> {
+        self.input.as_ref()
+    }
+    /// The image this output was read at.
+    pub fn pin(
+        &self,
+    ) -> &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
+        &self.pin
+    }
+    /// The assembly's identity for this output.
+    pub fn read(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::provider::ParentRead> {
+        self.read
+    }
     pub fn new(
         pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         source: worth_relational::facade::identity::EntityId,

@@ -45,8 +45,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             let owed = self.tasks[i].owed.position().max(reopen.invalidator_owed);
             if !self.tasks[i].is_done() {
                 // An earlier reopen of this batch already reopened it with
-                // its parent (R3): it also owes this append's invalidation.
-                self.tasks[i].owed = crate::domain_computation::primary_graph::application_contribution::coupled_publication::OwedDemand::at(owed);
+                // its parent (R3): it, and every consumer it deferred, also
+                // owes this append's invalidation.
+                self.raise_owed(i, owed);
                 observation::record(|| format!("reopen task={i} owed={owed} (already reopened)"));
                 continue;
             }
@@ -56,7 +57,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         Ok(reopened)
     }
 
-    fn reopen_task(
+    pub(super) fn reopen_task(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         candidate: &RelationalAuthoredCoupledCandidate<'_>,
@@ -76,6 +77,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             self.routes(context, candidate, children)?
         };
         let task = &mut self.tasks[i];
+        let previous = match std::mem::replace(&mut task.state, TaskState::Identified) {
+            TaskState::Done { parent } => parent,
+            _ => None,
+        };
         task.reopen_check = Some(ReopenCheck {
             invalidator,
             prior_children,
@@ -89,8 +94,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         task.owed = crate::domain_computation::primary_graph::application_contribution::coupled_publication::OwedDemand::at(owed);
         self.reopen_aliases(context, candidate, i, invalidator)?;
         // Readers that have not run yet close again and wait on it; readers
-        // that already consumed it reopen with it (R3), at the same
-        // invalidator, and wait on its new derivation.
+        // that already consumed it wait for its new derivation, then settle
+        // to it or reopen with it at the same invalidator (R3).
         let readers = std::mem::take(&mut self.tasks[i].readers);
         let mut consumers = Vec::new();
         for &(reader, epoch) in &readers {
@@ -103,23 +108,13 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             } else if let Some(consumed) =
                 self.tasks[reader].parent().and_then(|parent| parent.read)
             {
-                consumers.push((reader, consumed));
+                let owed = self.tasks[reader].owed.position().max(owed);
+                consumers.push((reader, consumed, owed));
             }
         }
         self.tasks[i].readers = readers;
         self.needed_dirty = true;
-        for (reader, consumed) in consumers {
-            if !self.tasks[reader].is_done() {
-                continue;
-            }
-            context
-                .owner
-                .supersede_consumer(context.execution, consumed, invalidator)?;
-            let owed = self.tasks[reader].owed.position().max(owed);
-            observation::record(|| format!("reopen consumer task={reader} owed={owed}"));
-            self.reopen_task(context, candidate, reader, owed, invalidator)?;
-        }
-        Ok(())
+        self.defer_consumers(context, i, previous, consumers, invalidator)
     }
 
     /// Rows coalesced onto a reopened task discover their own static intent

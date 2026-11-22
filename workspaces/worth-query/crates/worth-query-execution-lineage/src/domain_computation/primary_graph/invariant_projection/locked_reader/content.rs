@@ -221,8 +221,9 @@ impl<S: ApplicationSchema> Reader<'_, S> {
             return Ok(None);
         };
         content::resolve_frame(self.execution, session, &binding, value, &mut || {
+            // The same view `content_reference` read the reference at.
             self.native
-                .projection(self.snapshot)
+                .projection_of(self.snapshot, identity.entity_id)
                 .ok_or(Denial::UnavailableBasis)?
                 .retain_entity_field_content(
                     self.execution,

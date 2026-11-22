@@ -1,4 +1,6 @@
 //! Optional predecessor observations and lifecycle bindings stay at their fixture owner.
+#[macro_use]
+mod members;
 macro_rules! producer_capture_contract {
     () => {
         None
@@ -32,8 +34,35 @@ macro_rules! producer_operation {
     (DecisionInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputPreserve, $entity, $key, $value, $of); };
     (ParityInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputInitial, $entity, $key, $value, $of); };
     (ParityInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputPreserve, $entity, $key, $value, $of); };
+    (SaturatedInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedInputInitial, $entity, $key, $value, $of); };
+    (SaturatedInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedInputPreserve, $entity, $key, $value, $of); };
     (DecisionWriteInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWriteInitial, $entity, $key, $value, $of); };
     (DecisionWritePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write DecisionWritePreserve, $entity, $key, $value, $of); };
+    (CrossReaderInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CrossReaderInitial, $entity, $key, $value, $of); };
+    (CrossReaderPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CrossReaderPreserve, $entity, $key, $value, $of); };
+    (CrossConvergeInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write CrossConvergeInitial, $entity, $key, $value, $of); };
+    (CrossConvergePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write CrossConvergePreserve, $entity, $key, $value, $of); };
+    (CrossOscillateInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write CrossOscillateInitial, $entity, $key, $value, $of); };
+    (CrossOscillatePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_write CrossOscillatePreserve, $entity, $key, $value, $of); };
+    (SelfWriteInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@self_write SelfWriteInitial, $entity, $key, $value, $of); };
+    (SelfWritePreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@self_write SelfWritePreserve, $entity, $key, $value, $of); };
+    // The source is the member it writes: each record and field once.
+    (@self_write $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [Member, $entity]; read_fields: [MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), $key::at(stringify!($key)), $value::at(stringify!($value))];
+            read_relations: [$of]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), MemberValue::at("MemberValue")]; creates: [$entity]; links: [$of];
+        });
+    };
+    (SaturatedConsumerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedConsumerInitial, $entity, $key, $value, $of); };
+    (SaturatedConsumerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SaturatedConsumerPreserve, $entity, $key, $value, $of); };
+    (CappedReaderInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedReaderInitial, $entity, $key, $value, $of); };
+    (CappedReaderPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedReaderPreserve, $entity, $key, $value, $of); };
+    (CappedConsumerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedConsumerInitial, $entity, $key, $value, $of); };
+    (CappedConsumerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CappedConsumerPreserve, $entity, $key, $value, $of); };
+    (CycleParentInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CycleParentInitial, $entity, $key, $value, $of); };
+    (CycleParentPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CycleParentPreserve, $entity, $key, $value, $of); };
+    (CycleConsumerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CycleConsumerInitial, $entity, $key, $value, $of); };
+    (CycleConsumerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read CycleConsumerPreserve, $entity, $key, $value, $of); };
     (@member_write $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
         worth_query_operation!(pub $operation for Schema, input InputBinding; access {
             read_entities: [SourceEntity, $entity, Member]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue")];
@@ -54,6 +83,70 @@ macro_rules! producer_operation {
     };
 }
 macro_rules! producer_decision_dependency {
+    (CycleParentInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cycle_parent $reader) };
+    (CycleConsumerInitial, $reader:ident, $source:ident, $input:ident) => {{
+        let model = $reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
+        producer_decision_dependency!(@current_output $reader, model, super::super::cycle_parent::Family)
+    }};
+    (CycleParentPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cycle_parent $reader) };
+    (CycleConsumerPreserve, $reader:ident, $source:ident, $input:ident) => {{
+        let model = $reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
+        producer_decision_dependency!(@current_output $reader, model, super::super::cycle_parent::Family)
+    }};
+    // min(m, 5); once m > 5, also read consumer `cycle-consumer(c)`.
+    (@cycle_parent $reader:ident) => {{
+        let member = producer_decision_dependency!(@member_read $reader);
+        if member > 5 {
+            let model = $reader.resolve_entity(ModelKey::at("ModelKey"), "c".to_owned())?;
+            producer_decision_dependency!(@current_output $reader, model, super::super::cycle_consumer::Family);
+        }
+        member.min(5)
+    }};
+    (SaturatedConsumerInitial, $reader:ident, $source:ident, $input:ident) => {{
+        let model = $reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
+        producer_decision_dependency!(@current_output $reader, model, super::super::saturated_input::Family)
+    }};
+    (CappedReaderInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_member $reader, $input).min(1) };
+    (CappedConsumerInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@current_output $reader, $source, super::super::capped_reader::Family) };
+    (SaturatedConsumerPreserve, $reader:ident, $source:ident, $input:ident) => {{
+        let model = $reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
+        producer_decision_dependency!(@current_output $reader, model, super::super::saturated_input::Family)
+    }};
+    (CappedReaderPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_member $reader, $input).min(1) };
+    (CappedConsumerPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@current_output $reader, $source, super::super::capped_reader::Family) };
+    // The value of the output `$family` currently publishes for `$producer`.
+    (@current_output $reader:ident, $producer:ident, $family:ty) => {{
+        match $reader.current_output::<$family, Model>(&$producer)? {
+            WorthQueryCurrentOutputSelection::Unique(output) => $reader
+                .field(&output, FirstValue::at("FirstValue"))?
+                .expect("current output has its value"),
+            _ => panic!("the consumed output is current and unique"),
+        }
+    }};
+    (SelfWriteInitial, $reader:ident, $source:ident, $input:ident) => {{
+        let first = $reader.resolve_entity(FirstKey::at("FirstKey"), "first:a".to_owned())?;
+        $reader.field(&first, FirstValue::at("FirstValue"))?.expect("derived first:a has its value")
+    }};
+    (SelfWritePreserve, $reader:ident, $source:ident, $input:ident) => {{
+        let first = $reader.resolve_entity(FirstKey::at("FirstKey"), "first:a".to_owned())?;
+        $reader.field(&first, FirstValue::at("FirstValue"))?.expect("derived first:a has its value")
+    }};
+    (CrossReaderInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_member $reader, $input) };
+    (CrossReaderPreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_member $reader, $input) };
+    (CrossConvergeInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_supplier $reader, $input) };
+    (CrossConvergePreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_supplier $reader, $input) };
+    (CrossOscillateInitial, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_supplier $reader, $input) };
+    (CrossOscillatePreserve, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!(@cross_supplier $reader, $input) };
+    (@cross_member $reader:ident, $input:ident) => {{
+        let member = $reader.resolve_entity(MemberKey::at("MemberKey"), format!("x:{}", $input.0.key))?;
+        $reader.field(&member, MemberValue::at("MemberValue"))?.expect("seeded cross member has its value")
+    }};
+    (@cross_supplier $reader:ident, $input:ident) => {{
+        let supplier = $reader.resolve_entity(FirstKey::at("FirstKey"), format!("cross:{}", $input.0.key))?;
+        $reader.field(&supplier, FirstValue::at("FirstValue"))?.expect("derived cross reader has its value")
+    }};
+    // Every other family reads no demand key.
+    ($operation:ident, $reader:ident, $source:ident, $input:ident) => { producer_decision_dependency!($operation, $reader, $source) };
     (ConvergentPreserve, $reader:ident, $source:ident) => {{
         let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
         $reader.field(&member, CalibrationReady::at("Ready"))?.unwrap_or(0)
@@ -64,39 +157,13 @@ macro_rules! producer_decision_dependency {
     (DecisionInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (ParityInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (ParityInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (SaturatedInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader).min(5) };
+    (SaturatedInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader).min(5) };
     (@member_read $reader:ident) => {{
         let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
         $reader.field(&member, MemberValue::at("MemberValue"))?.expect("seeded decision member has its required value")
     }};
     ($operation:ident, $reader:ident, $source:ident) => { 0 };
-}
-macro_rules! producer_member_target {
-    (ConvergentPreserve, $reader:ident) => {{
-        let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
-        Some($reader.mutation_target(&member)?)
-    }};
-    (DecisionWriteInitial, $reader:ident) => { producer_member_target!(@write $reader) };
-    (DecisionWritePreserve, $reader:ident) => { producer_member_target!(@write $reader) };
-    (@write $reader:ident) => {{
-        let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
-        $reader.field(&member, MemberValue::at("MemberValue"))?;
-        Some($reader.mutation_target(&member)?)
-    }};
-    ($operation:ident, $reader:ident) => { None };
-}
-macro_rules! producer_member_effect {
-    (ConvergentPreserve, $writer:ident, $decision:ident, $input:ident) => {{
-        let member = $writer.projected_entity($decision.member_target.as_ref().expect("completed calibration decision"))?;
-        $writer.write_field(&member, CalibrationReady::at("Ready"), 1)?;
-    }};
-    (DecisionWriteInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
-    (DecisionWritePreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
-    (@write $writer:ident, $decision:ident, $input:ident) => {{
-        let member = $writer.projected_entity($decision.member_target.as_ref().expect("actual completed member decision"))?;
-        $writer.write_field(&member, MemberValue::at("MemberValue"), $input.0.value + 1)?;
-    }};
-    // A producer with no member effect decided no member target.
-    ($operation:ident, $writer:ident, $decision:ident, $input:ident) => { assert!($decision.member_target.is_none()) };
 }
 // Shared fixture hooks default to no predecessor observation.
 macro_rules! original_contract {
@@ -251,8 +318,8 @@ macro_rules! phase {
                         let source = reader.resolve_entity(source_key(), input.0.key.clone())?;
                         reader.field(&source, source_value())?;
                         predecessor_hook!($operation, reader, source);
-                        let member_value = producer_decision_dependency!($operation, reader, source);
-                        let member_target = producer_member_target!($operation, reader);
+                        let member_value = producer_decision_dependency!($operation, reader, source, input);
+                        let member_target = producer_member_target!($operation, reader, input);
                         let prior = if $preserve { Some(reader.prior_output_preserved_or_created::<preserve::Binding, preserve::Output, initial::Binding, initial::Output>()?) }
                             else { reader.resolve_optional_entity($key::at(stringify!($key)), output_key(&input.0))? };
                         if !$preserve && prior.is_some() { return Ok(Err(Denial::InitialHasPriorOutput)); }

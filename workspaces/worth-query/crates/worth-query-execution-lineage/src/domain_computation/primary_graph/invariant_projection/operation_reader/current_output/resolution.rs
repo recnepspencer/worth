@@ -123,13 +123,16 @@ where
                 })?;
             replaced.push((None, partition));
         }
+        // A current output the applied overlay supplied makes stale committed
+        // heads tolerable, as a current committed head does.
+        let applied = !entities.is_empty();
         let committed = match &self.reader.native {
             NativeProjectionRead::Committed(native) => Some(*native),
             NativeProjectionRead::Applied { .. } => None,
         };
         let correspondences = if let Some(native) = committed {
             self.current_correspondences::<Family, Producer>(
-                execution, producer, native, &replaced,
+                execution, producer, native, &replaced, applied,
             )?
         } else {
             let access = self.source_query.ok_or_else(|| {
@@ -141,7 +144,7 @@ where
             let mut result = None;
             access.with_committed_runtime_dyn(execution, &mut |native| {
                 result = Some(self.current_correspondences::<Family, Producer>(
-                    execution, producer, native, &replaced,
+                    execution, producer, native, &replaced, applied,
                 ));
             });
             result.expect("committed runtime callback ran")?
@@ -185,6 +188,7 @@ where
         producer: &WorthQueryInvariantEntityIdentity<Schema, Producer>,
         native: &worth_relational::facade::runtime::RelationalRuntime,
         replaced: &[(Option<TypeId>, [u8; 32])],
+        applied: bool,
     ) -> Result<
         Vec<(
             std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
@@ -340,7 +344,7 @@ where
                 Family::IDENTITY,
             ));
         }
-        if current.is_empty() && stale {
+        if current.is_empty() && stale && !applied {
             let mut denial = WorthQueryCurrentOutputDenial::new(
                 WorthQueryCurrentOutputDenialKind::StaleSource,
                 Family::IDENTITY,

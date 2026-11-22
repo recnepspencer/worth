@@ -119,6 +119,16 @@ fn declare(
     let schema = family::borrowed_inputs::declare(schema);
     let schema = family::convergent::declare(schema);
     let schema = family::parity_input::declare(schema);
+    let schema = family::saturated_input::declare(schema);
+    let schema = family::saturated_consumer::declare(schema);
+    let schema = family::capped_reader::declare(schema);
+    let schema = family::capped_consumer::declare(schema);
+    let schema = family::c3b::cycle_parent::declare(schema);
+    let schema = family::c3b::cycle_consumer::declare(schema);
+    let schema = family::self_write::declare(schema);
+    let schema = family::cross_reader::declare(schema);
+    let schema = family::cross_converge::declare(schema);
+    let schema = family::cross_oscillate::declare(schema);
     let schema = synchronous_edit::reconciliation::declare(schema);
     let schema = family::ordinary_input::declare(family::decision_write::declare(
         family::decision_input::declare(schema),

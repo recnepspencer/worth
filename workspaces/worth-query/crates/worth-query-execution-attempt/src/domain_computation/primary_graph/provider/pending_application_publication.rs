@@ -225,7 +225,13 @@ fn publish_with_snapshot(
                 .expect("one group receipt basis"),
             dispatch_claims,
         );
-    for (ordinal, member) in pending.members.iter_mut().enumerate() {
+    // Final support ranked the group in consumption order before the World
+    // commit, refusing a cycle: each member finishes after every member its
+    // consumptions settle against.
+    let mut order = (0..pending.members.len()).collect::<Vec<_>>();
+    order.sort_by_key(|&ordinal| pending.members[ordinal].consumption_rank);
+    for ordinal in order {
+        let member = &mut pending.members[ordinal];
         let leaf = member
             .pending
             .as_mut()

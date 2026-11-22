@@ -44,6 +44,10 @@ pub enum WorthQueryInvariantExecutionDenialKind {
     /// A Native participant has no retained Query settlement session.
     CoupledSettlementMissing,
     CoupledReadSupportChanged,
+    /// R3 settlement left members of one coupled group consuming each
+    /// other's outputs in a cycle: no order of the members derives them, so
+    /// the edit refuses whole before the World commit.
+    CoupledConsumptionCycle,
     CoupledReadSupportUnavailable {
         cause: crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind,
     },
