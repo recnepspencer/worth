@@ -123,7 +123,7 @@ mod tests {
         .admit()
         .unwrap();
         let selected = admitted.discover().unwrap().select().unwrap();
-        let ctx = context::PlanningContextBody::from_selected(selected);
+        let ctx = context::PlanningContextBody::from_selected(selected).unwrap();
         let (ctx, basis) = admitted_basis::admit(ctx).unwrap();
         resolved_basis::resolve(ctx, basis).unwrap()
     }

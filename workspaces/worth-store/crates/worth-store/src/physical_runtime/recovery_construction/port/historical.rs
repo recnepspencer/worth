@@ -19,27 +19,6 @@ use super::{
 };
 
 impl PhysicalRecoveryConstructionPort {
-    pub fn construct_with_verified_ordered_historical_release(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        recovery_allocation: PhysicalRecoveryAllocationAdmission,
-        historical: VerifiedOrderedHistoricalReleaseCustody,
-        effective: VerifiedEffectiveReleaseHeadRosterV14,
-        tier: Option<VerifiedSelectedTierEpochCustody>,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_ordered_historical_inner(
-            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
-            coordination,
-            media,
-            cleanup,
-            recovery_allocation,
-            Box::new(historical),
-            Box::new(effective),
-            tier,
-        )
-    }
-
     pub(super) fn construct_ordered_historical_inner(
         backing: PreparedRecoveredRuntimeCoreBacking,
         mut coordination: PhysicalRecoveryCoordination,

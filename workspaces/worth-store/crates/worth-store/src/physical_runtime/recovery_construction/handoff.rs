@@ -31,12 +31,6 @@ impl PreparedRecoveredRuntimeCoreBacking {
             .checked_mul(Self::required_bytes())
     }
 
-    pub(super) fn prepare_direct() -> Self {
-        Self {
-            inner: Vec::with_capacity(1),
-        }
-    }
-
     #[inline(never)]
     pub(super) fn finish(
         mut self,

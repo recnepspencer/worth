@@ -35,16 +35,21 @@ pub struct PhysicalRecoveryConstructionPort {
 }
 
 impl PhysicalRecoveryConstructionPort {
+    /// Post-publication construction requires caller-prepaid core backing via
+    /// `construct_with_backing`; direct un-backed calls deny without allocating.
     pub fn construct(
         coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
+        _media: AdmittedRecoveryFilesystemMedia,
         cleanup: ClosedPhysicalRecoveryCleanup,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_direct(
-            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
-            coordination,
-            media,
-            cleanup,
+        let _ = coordination.shutdown_is_quiescent();
+        if cleanup.live_media_handle_delta() != 0 {
+            return Err(RecoveredPhysicalRuntimeConstructionDenial::CleanupMediaNotQuiescent);
+        }
+        Err(
+            RecoveredPhysicalRuntimeConstructionDenial::RejoinResident(
+                crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::MissingResidentAdmission,
+            ),
         )
     }
 
@@ -67,45 +72,6 @@ impl PhysicalRecoveryConstructionPort {
             None,
             None,
             None,
-        )
-    }
-
-    pub fn construct_with_verified_tier_no_release(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        tier: VerifiedSelectedTierEpochCustody,
-        no_release: VerifiedSelectedNoReleaseCustody,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_tier_no_release(
-            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
-            coordination,
-            media,
-            cleanup,
-            tier,
-            Box::new(no_release),
-            || {},
-        )
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    #[doc(hidden)]
-    pub fn certification_construct_with_verified_tier_no_release(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        tier: VerifiedSelectedTierEpochCustody,
-        no_release: VerifiedSelectedNoReleaseCustody,
-        pause_before_final_reread: impl FnOnce(),
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_tier_no_release(
-            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
-            coordination,
-            media,
-            cleanup,
-            tier,
-            Box::new(no_release),
-            pause_before_final_reread,
         )
     }
 
@@ -150,41 +116,6 @@ impl PhysicalRecoveryConstructionPort {
             Some(tier),
             selected_wal,
             selected_controls,
-        )
-    }
-
-    pub fn construct_with_verified_no_release(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        no_release: VerifiedSelectedNoReleaseCustody,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_no_release(
-            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
-            coordination,
-            media,
-            cleanup,
-            Box::new(no_release),
-            || {},
-        )
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    #[doc(hidden)]
-    pub fn certification_construct_with_verified_no_release(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        no_release: VerifiedSelectedNoReleaseCustody,
-        pause_before_final_reread: impl FnOnce(),
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_no_release(
-            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
-            coordination,
-            media,
-            cleanup,
-            Box::new(no_release),
-            pause_before_final_reread,
         )
     }
 

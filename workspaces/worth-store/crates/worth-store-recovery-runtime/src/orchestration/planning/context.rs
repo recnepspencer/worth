@@ -4,12 +4,14 @@ use worth_store_recovery_physics::{
 
 use crate::entry::{
     AdmittedPlatformAuthority, PhysicalRecoveryBlockKind, PhysicalRecoveryLimitDeclaration,
-    PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome, PhysicalRecoveryPlanningDenial,
-    PhysicalRecoveryRootProtocolArtifact, PhysicalRecoveryRootProtocolDenial,
-    PhysicalRecoverySourceDenial,
+    PhysicalRecoveryLimitDimension, PhysicalRecoveryLimitFailure, PhysicalRecoveryOutcome,
+    PhysicalRecoveryPlanningDenial, PhysicalRecoveryRootProtocolArtifact,
+    PhysicalRecoveryRootProtocolDenial, PhysicalRecoverySourceDenial,
 };
+use crate::orchestration::recovery_budget::RecoveryAllowance;
 use crate::progression::{
-    PhysicalRecoveryDiscoveryCounters, RecoveryIntegrityEvidence, SelectedPhysicalRecovery,
+    PhysicalRecoveryDiscoveryCounters, PlanningMemoryDenial, PlanningResidentAllowance,
+    RecoveryIntegrityEvidence, SelectedPhysicalRecovery,
 };
 
 use super::super::{RecoveryCoordination, ResidentSourceSelection};
@@ -33,7 +35,9 @@ pub(super) struct PlanningContextBody {
 }
 
 impl PlanningContextBody {
-    pub(super) fn from_selected(selected: SelectedPhysicalRecovery) -> PlanningContext {
+    pub(super) fn from_selected(
+        selected: SelectedPhysicalRecovery,
+    ) -> Result<PlanningContext, PhysicalRecoveryOutcome> {
         let (
             authority,
             coordination,
@@ -45,7 +49,62 @@ impl PlanningContextBody {
         ) = selected.into_parts();
         let limits = authority.limits.declaration();
         let effects_before = authority.media.recovery_effect_count();
-        Box::new(Self {
+        let live_before = super::resident_memory::selected_live_bytes(
+            &coordination,
+            &selection,
+            &integrity,
+            &root_protocol_denials,
+            &integrity_trace,
+        )
+        .ok_or(PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX });
+        let slot_bytes = PlanningResidentAllowance::slot_bytes::<Self>(1);
+        let admitted = live_before.and_then(|live| {
+            let mut allowance =
+                PlanningResidentAllowance::new(live, limits.recovery_memory_bytes)?;
+            allowance.retain(slot_bytes?)
+        });
+        if let Err(PlanningMemoryDenial::RecoveryMemoryBytes { observed }) = admitted {
+            let limit = RecoveryAllowance::declared(
+                &limits,
+                PhysicalRecoveryLimitDimension::RecoveryMemoryBytes,
+            )
+            .past(observed);
+            return Err(cost_denial_block(
+                authority,
+                coordination,
+                counters,
+                RecoveryPlanningCounters::default().with_peak_recovery_bytes(observed),
+                Default::default(),
+                RecoveryPlanCostDenial::RecoveryMemoryBytes,
+                limit,
+                root_protocol_denials,
+            )
+            .with_integrity_trace(integrity_trace)
+            .with_block_integrity_observations(integrity.into_observations()));
+        } else if let Err(PlanningMemoryDenial::Allocation {
+            requested_bytes,
+            cause,
+        }) = admitted
+        {
+            return Err(block_with_planning_attempt_denial(
+                authority,
+                coordination,
+                PhysicalRecoveryBlockKind::RedoPlanning,
+                counters,
+                RecoveryPlanningCounters::default(),
+                Default::default(),
+                "planning-context-allocation",
+                None,
+                PhysicalRecoveryPlanningDenial::ResolvedStateAllocation {
+                    requested_bytes,
+                    cause,
+                },
+                root_protocol_denials,
+            )
+            .with_integrity_trace(integrity_trace)
+            .with_block_integrity_observations(integrity.into_observations()));
+        }
+        Ok(Box::new(Self {
             authority,
             coordination,
             selection,
@@ -56,7 +115,7 @@ impl PlanningContextBody {
             limits,
             effects_before,
             integrity_trace,
-        })
+        }))
     }
 
     #[inline(never)]
@@ -274,3 +333,7 @@ impl PlanningContextBody {
             .with_staged_selector_route(route);
     }
 }
+
+#[cfg(test)]
+#[path = "context_tests.rs"]
+mod tests;

@@ -19,14 +19,17 @@ pub(super) fn verify_and_finalize(
     ),
     Denial,
 > {
+    // Bind in original acquisition order so refusal/unwind drops remaining
+    // owners in reverse order: final_inventory, final_heads, final_controls,
+    // final_selected, media, projection, sample.
     let FinalPassObservation {
+        sample,
+        projection,
         media,
         final_selected,
         final_controls,
         final_heads,
         final_inventory,
-        sample,
-        projection,
     } = final_obs;
     let (media, historical_fingerprint) = if claim.ordered_history().is_some() {
         verify_ordered_history(

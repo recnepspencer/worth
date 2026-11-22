@@ -6,13 +6,13 @@ use super::first_pass::FirstPassObservation;
 use crate::physical_runtime::{SharedRecoveryCheckpoint, StoreRecoveryBindingFreshnessSample};
 
 pub(super) struct FinalPassObservation<'claim> {
-    pub(super) media: AdmittedRecoveryFilesystemMedia,
-    pub(super) final_selected: selection::Selection,
-    pub(super) final_controls: controls::Controls,
-    pub(super) final_heads: head_v14::ObservedHeadV14<'claim>,
     pub(super) final_inventory: wal_inventory::AdmittedWalInventory,
-    pub(super) sample: StoreRecoveryBindingFreshnessSample,
+    pub(super) final_heads: head_v14::ObservedHeadV14<'claim>,
+    pub(super) final_controls: controls::Controls,
+    pub(super) final_selected: selection::Selection,
+    pub(super) media: AdmittedRecoveryFilesystemMedia,
     pub(super) projection: PersistedPhysicalRecoveryProjection,
+    pub(super) sample: StoreRecoveryBindingFreshnessSample,
 }
 
 #[inline(never)]
@@ -26,15 +26,19 @@ pub(super) fn observe_and_match<'claim>(
     tier_claim: Option<&VerifiedSelectedTierEpochCustody>,
     checkpoint: &SharedRecoveryCheckpoint,
 ) -> Result<FinalPassObservation<'claim>, Denial> {
+    // Bind in original acquisition order so refusal/unwind drops remaining
+    // first-pass owners in reverse order: inventory, projection, sample,
+    // first_heads, controls, selected_tier, selected (media moves into
+    // final_discovery immediately below).
     let FirstPassObservation {
-        inventory,
-        projection,
-        sample,
         media,
-        first_heads,
-        controls,
-        selected_tier,
         selected,
+        selected_tier,
+        controls,
+        first_heads,
+        sample,
+        projection,
+        inventory,
     } = first;
     let store = media.store_identity();
     let mut final_discovery = media

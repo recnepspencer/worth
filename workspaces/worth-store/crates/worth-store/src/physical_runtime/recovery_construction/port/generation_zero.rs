@@ -20,48 +20,6 @@ use super::{
 };
 
 impl PhysicalRecoveryConstructionPort {
-    /// Seals a recovered runtime whose basis is generation zero, keyed by the
-    /// absence witness `coordination` minted. Every WAL binding must carry the
-    /// identity of `declaration` admitted over `media`.
-    pub fn construct_generation_zero(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        declaration: ConfiguredPhysicalDurabilityDeclaration,
-        absent: AbsentCheckpointWitness,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_generation_zero_inner(
-            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
-            coordination,
-            media,
-            cleanup,
-            declaration,
-            absent,
-            || {},
-        )
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    #[doc(hidden)]
-    pub fn certification_construct_generation_zero_with_rejoin_pause(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        declaration: ConfiguredPhysicalDurabilityDeclaration,
-        absent: AbsentCheckpointWitness,
-        pause_before_final_reread: impl FnOnce(),
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_generation_zero_inner(
-            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
-            coordination,
-            media,
-            cleanup,
-            declaration,
-            absent,
-            pause_before_final_reread,
-        )
-    }
-
     pub(super) fn construct_generation_zero_inner(
         backing: PreparedRecoveredRuntimeCoreBacking,
         coordination: PhysicalRecoveryCoordination,

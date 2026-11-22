@@ -56,6 +56,12 @@ pub(super) fn admit(
             ))
         }
     };
+    let context_retained =
+        super::resident_memory::context_live_bytes(&context).unwrap_or(u64::MAX);
+    let remaining_memory = context
+        .limits
+        .recovery_memory_bytes
+        .saturating_sub(context_retained);
     let sample = match PhysicalRecoveryFreshnessPort::sample_binding(
         context.coordination.owner(),
         &context.authority.media,
@@ -66,7 +72,7 @@ pub(super) fn admit(
             .recoverable_frame_view(context.selection.wal_tail()),
         context.limits.operation_bindings,
         context.limits.redo_bytes,
-        context.limits.recovery_memory_bytes,
+        remaining_memory,
     ) {
         Ok(sample) => sample,
         Err(failure) => {
@@ -129,7 +135,7 @@ pub(super) fn admit(
         context.authority.media.store_identity(),
         format,
         PhysicalRedoAdmissionLimits {
-            recovery_memory_bytes: context.limits.recovery_memory_bytes,
+            recovery_memory_bytes: remaining_memory,
             targets: context.limits.redo_targets,
             distinct_targets: context.limits.distinct_pages_and_extents,
             projection: PhysicalRecoveryProjectionDecodeLimits {

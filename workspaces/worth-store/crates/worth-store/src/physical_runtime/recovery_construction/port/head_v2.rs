@@ -18,49 +18,6 @@ use crate::physical_runtime::{
 };
 
 impl PhysicalRecoveryConstructionPort {
-    pub fn construct_with_verified_head_custody_v2(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        recovery_allocation: PhysicalRecoveryAllocationAdmission,
-        claim: VerifiedSelectedReleaseHeadCustodyV2,
-        tier: Option<VerifiedSelectedTierEpochCustody>,
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_head_v2(
-            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
-            coordination,
-            media,
-            cleanup,
-            recovery_allocation,
-            Box::new(claim),
-            tier,
-            || {},
-        )
-    }
-
-    #[cfg(feature = "certification-test-authority")]
-    #[doc(hidden)]
-    pub fn certification_construct_with_verified_head_custody_v2_and_rejoin_pause(
-        coordination: PhysicalRecoveryCoordination,
-        media: AdmittedRecoveryFilesystemMedia,
-        cleanup: ClosedPhysicalRecoveryCleanup,
-        recovery_allocation: PhysicalRecoveryAllocationAdmission,
-        claim: VerifiedSelectedReleaseHeadCustodyV2,
-        tier: Option<VerifiedSelectedTierEpochCustody>,
-        pause_before_final_reread: impl FnOnce(),
-    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        Self::construct_head_v2(
-            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
-            coordination,
-            media,
-            cleanup,
-            recovery_allocation,
-            Box::new(claim),
-            tier,
-            pause_before_final_reread,
-        )
-    }
-
     pub(super) fn construct_head_v2(
         backing: PreparedRecoveredRuntimeCoreBacking,
         mut coordination: PhysicalRecoveryCoordination,
