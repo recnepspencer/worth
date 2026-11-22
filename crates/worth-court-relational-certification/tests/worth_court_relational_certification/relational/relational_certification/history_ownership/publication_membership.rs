@@ -1,6 +1,7 @@
 //! Membership and exclusivity include the original Native source-scope custody.
 use super::publication_fixture::PublishedModel;
 use super::*;
+use worth_relational::facade::storage::RelationalStorageSubject;
 #[test]
 fn owned_publication_members_join_the_model_and_refuse_a_second_document_owner() {
     let host = serial_request();
@@ -110,6 +111,49 @@ fn cold_native_publication_custody_proves_owned_members_without_history_reconstr
             .1
             .descriptor(),
         basis.descriptor()
+    );
+}
+
+#[test]
+fn missing_cold_publication_material_refuses_at_its_actual_custody_partition() {
+    let host = serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let world = PublishedModel::new(execution);
+    let (cold, storage) = fixture::cold::reopen(
+        execution,
+        &world.runtime,
+        super::publication_fixture::registry(),
+    );
+    let mut read = begin(&cold);
+    assert!(read
+        .read_entity(execution, world.output)
+        .unwrap()
+        .base()
+        .is_some());
+    let loaded = storage.member_reads.lock().unwrap().clone();
+    for (&locator, bytes) in &storage.members {
+        if bytes.starts_with(b"WORTH-REL-REG") && !loaded.contains(&locator) {
+            storage
+                .failures
+                .lock()
+                .unwrap()
+                .insert(locator, Cause::MissingMember);
+        }
+    }
+    let (_, basis) = cold.observe_branch(&cold.main_branch_identity()).unwrap();
+    let error = cold
+        .observe_model_owner(execution, &basis, &ownership(), world.output)
+        .unwrap_err();
+    let Denial::Custody(TransactionCommitError::Preparation { error, .. }) = error else {
+        panic!("{error:?}");
+    };
+    let CommitPreparationReason::StorageUnavailable(failure) = error.reason() else {
+        panic!("{error:?}");
+    };
+    assert_eq!(failure.cause, Cause::MissingMember);
+    assert_eq!(
+        failure.subject,
+        RelationalStorageSubject::Region(world.source.partition_id)
     );
 }
 #[test]

@@ -3,7 +3,9 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Mutex,
 };
-use worth_query_host::facade::primary_graph::WorthQueryManagedIndexSourceSlot;
+use worth_query_host::facade::primary_graph::{
+    WorthQueryManagedIndexNodeId, WorthQueryManagedIndexSourceSlot,
+};
 pub(crate) const OBSERVED_COORDINATES: usize = 8;
 #[derive(Default)]
 pub struct Calls {
@@ -46,6 +48,10 @@ pub struct Calls {
     pub(crate) repeat_candidates: std::sync::atomic::AtomicBool,
     #[cfg(test)]
     pub(crate) foreign_candidate: Mutex<Option<WorthQueryManagedIndexSourceSlot>>,
+    #[cfg(test)]
+    pub(crate) observed_root: Mutex<Option<WorthQueryManagedIndexNodeId>>,
+    #[cfg(test)]
+    pub(crate) foreign_node: Mutex<Option<WorthQueryManagedIndexNodeId>>,
     pub matched_sources: AtomicUsize,
     pub successful_matches: AtomicUsize,
     pub summary_comparisons: AtomicUsize,
