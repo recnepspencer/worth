@@ -37,6 +37,15 @@ where
 {
     pub(in crate::application_entry) operation: WorthQuerySourceOnlyOperation<S, I, P, A, M>,
 }
+/// The exact native evidence a closed terminal source operation stopped with.
+pub enum WorthQueryTerminalSourceEvidence<S: ApplicationSchema, I: ApplicationMutationIntent<S>> {
+    /// The native mutation outcome, including a business `DomainDenied`.
+    Outcome(NativeOutcome<S, I>),
+    /// The pinned source moved before admission; no business effect occurred.
+    AdmissionStopped(WorthQueryApplicationRequestMutationDenial),
+    /// Keyed resolution settled the original without a live outcome.
+    Keyed(worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution),
+}
 impl<S, I, P, A, M> WorthQueryCompletedSourceOperation<S, I, P, A, M>
 where
     S: ApplicationSchema + 'static,
@@ -167,6 +176,35 @@ where
     ) -> Result<WorthQueryClosedOperation, (Self, WorthQueryOperationCloseDenial)> {
         self.close_in_place(request)
             .map_err(|denial| (self, denial))
+    }
+
+    /// Closes like [`Self::close`], then transfers the exact evidence that
+    /// stopped this operation. Refusal returns this owner with that evidence.
+    pub fn close_with_evidence(
+        mut self,
+        request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
+    ) -> Result<
+        (
+            WorthQueryClosedOperation,
+            WorthQueryTerminalSourceEvidence<S, I>,
+        ),
+        (Self, WorthQueryOperationCloseDenial),
+    > {
+        let closed = match self.close_in_place(request) {
+            Ok(closed) => closed,
+            Err(denial) => return Err((self, denial)),
+        };
+        let evidence = match (self.operation.keyed_terminal.take(), self.operation.state) {
+            (Some(resolution), _) => WorthQueryTerminalSourceEvidence::Keyed(resolution),
+            (None, SourceState::<S, I>::Stopped(outcome)) => {
+                WorthQueryTerminalSourceEvidence::Outcome(outcome)
+            }
+            (None, SourceState::<S, I>::AdmissionStopped(denial)) => {
+                WorthQueryTerminalSourceEvidence::AdmissionStopped(denial)
+            }
+            (None, _) => unreachable!("closable terminal custody owns its stopping evidence"),
+        };
+        Ok((closed, evidence))
     }
 
     pub(in crate::application_entry::operation) fn close_in_place(

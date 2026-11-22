@@ -30,6 +30,10 @@ mod live_open;
 mod retained_projection;
 pub use retained_projection::WorthQueryApplicationProjectionRetentionRequest;
 mod managed_index;
+mod projected;
+pub use projected::{
+    WorthQueryProjectedQuery, WorthQueryProjectedQueryBinding, WorthQueryProjectedValue,
+};
 
 /// A query request. `execute` runs it once; `subscribe` opens it live; `limits` bounds its
 /// results and work.

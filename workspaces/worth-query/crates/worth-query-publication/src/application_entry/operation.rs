@@ -24,6 +24,10 @@ pub use source_only::{
     WorthQuerySourceOnlyDenial, WorthQuerySourceOnlyOperation, WorthQuerySourceOnlyPosture,
     WorthQuerySourceOperationBinding, WorthQueryTerminalSourceOperation,
 };
+pub use source_only::{
+    WorthQuerySourceCompletionAction, WorthQuerySourceMutation, WorthQuerySourceMutationBinding,
+    WorthQuerySourcelessMutation, WorthQueryTerminalSourceEvidence,
+};
 pub use workflow::{
     WorthQueryCompletedWorkflowOperation, WorthQueryCompletedWorkflowSelection,
     WorthQueryOwnedWorkflowBinding, WorthQuerySelectedWorkflowOperation,
