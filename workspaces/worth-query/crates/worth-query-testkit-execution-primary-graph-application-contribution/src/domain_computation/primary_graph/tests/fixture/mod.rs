@@ -130,6 +130,9 @@ pub use crate::domain_computation::primary_graph::tests::fixture::forbidden_live
 pub use crate::domain_computation::primary_graph::tests::fixture::forbidden_live_identity_queries::ForbiddenLiveScopeIdentityQuery;
 pub use crate::domain_computation::primary_graph::tests::fixture::forbidden_live_identity_queries::ForbiddenLiveTargetIdentityQuery;
 
+pub use crate::domain_computation::primary_graph::tests::fixture::filtered_disclosure_queries::{
+    FilterMembershipQuery, FilterRowPresenceOnlyQuery,
+};
 pub use crate::domain_computation::primary_graph::tests::fixture::invalid_disclosure_queries::ForbiddenInfluenceQuery;
 pub use crate::domain_computation::primary_graph::tests::fixture::invalid_disclosure_queries::IncompleteDisclosureQuery;
 pub use crate::domain_computation::primary_graph::tests::fixture::invalid_disclosure_queries::ResultRulePredicateQuery;
@@ -253,6 +256,9 @@ pub mod current_output_source;
 pub mod diagnostic_comparison;
 #[path = "filtered_activity_query/mod.rs"]
 pub mod filtered_activity_query;
+
+#[path = "filtered_disclosure_queries/mod.rs"]
+pub mod filtered_disclosure_queries;
 #[path = "forbidden_hidden_ordering_query/mod.rs"]
 pub mod forbidden_hidden_ordering_query;
 #[path = "forbidden_live_identity_queries/mod.rs"]

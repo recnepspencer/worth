@@ -8,12 +8,7 @@ pub(super) fn path(
     registry: &RelationalSchemaRegistry,
     basis: (&SchemaId, SchemaVersionId),
 ) -> Result<Vec<Node>, Denial> {
-    if !source.predicates().is_empty()
-        || !source.parameters().is_empty()
-        || source.root_paths().is_empty()
-        || source.disclosure().posture() != worth_query_declaration::facade::application_query::ApplicationQueryDisclosurePosture::Public
-        || !source.disclosure().rules().is_empty()
-    {
+    if !is_complete_membership(source) {
         return Err(unsupported(source.name()));
     }
     let mut nodes = Vec::new();
@@ -71,3 +66,18 @@ pub(super) fn path(
     }
     Ok(nodes)
 }
+
+/// Complete Source membership is a public, unparameterized path union with
+/// no predicate or residual filter it could silently drop.
+pub(super) fn is_complete_membership(source: &ErasedApplicationQueryDefinition) -> bool {
+    source.predicates().is_empty()
+        && source.where_filter().is_none()
+        && source.parameters().is_empty()
+        && !source.root_paths().is_empty()
+        && source.disclosure().posture()
+            == worth_query_declaration::facade::application_query::ApplicationQueryDisclosurePosture::Public
+        && source.disclosure().rules().is_empty()
+}
+
+#[cfg(test)]
+mod tests;

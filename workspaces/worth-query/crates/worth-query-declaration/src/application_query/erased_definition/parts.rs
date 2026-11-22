@@ -25,6 +25,7 @@ pub struct WorthQueryPortableApplicationQueryParts {
     pub managed_index: Option<super::super::ApplicationQueryManagedIndexMeaning>,
     pub cardinality: ApplicationQueryCardinality,
     pub predicates: Vec<ApplicationQueryPredicate>,
+    pub where_filter: Option<crate::application_query::ApplicationQueryWhereFilterProgram>,
     pub ordering: Vec<ApplicationQueryOrderingTerm>,
     pub continuation: Option<ApplicationQueryContinuationTarget>,
     pub live_cause: Option<ApplicationQueryLiveCauseContract>,
@@ -99,6 +100,12 @@ impl WorthQueryPortableApplicationQueryParts {
         &self.predicates
     }
 
+    pub fn where_filter(
+        &self,
+    ) -> Option<&crate::application_query::ApplicationQueryWhereFilterProgram> {
+        self.where_filter.as_ref()
+    }
+
     pub fn ordering(&self) -> &[ApplicationQueryOrderingTerm] {
         &self.ordering
     }
@@ -150,6 +157,7 @@ impl WorthQueryPortableApplicationQueryParts {
             component_selection: definition.component_selection,
             cardinality: definition.cardinality,
             predicates: definition.predicates,
+            where_filter: definition.where_filter,
             ordering: definition.ordering,
             continuation: definition.continuation,
             live_cause: definition.live_cause,
@@ -179,6 +187,7 @@ impl WorthQueryPortableApplicationQueryParts {
             component_selection: definition.component_selection.clone(),
             cardinality: definition.cardinality,
             predicates: definition.predicates.clone(),
+            where_filter: definition.where_filter.clone(),
             ordering: definition.ordering.clone(),
             continuation: definition.continuation.clone(),
             live_cause: definition.live_cause.clone(),

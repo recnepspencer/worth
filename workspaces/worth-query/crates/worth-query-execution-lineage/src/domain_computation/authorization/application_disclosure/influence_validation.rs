@@ -49,6 +49,16 @@ pub fn validate_influence<Schema, Query, Parameters, QueryResult, Scope, E>(
         admit_cone(admit)?;
         require_field_influence(fields, predicate.field(), membership_surfaces(query), admit)?;
     }
+    // Residual filter fields decide row presence exactly like predicates,
+    // including fields the result never projects.
+    for field in query
+        .read_graph()
+        .where_filter()
+        .map_or(&[][..], |filter| filter.fields())
+    {
+        admit_cone(admit)?;
+        require_field_influence(fields, field.field(), membership_surfaces(query), admit)?;
+    }
     for relation in query.read_graph().relations() {
         if relation
             .predicate()

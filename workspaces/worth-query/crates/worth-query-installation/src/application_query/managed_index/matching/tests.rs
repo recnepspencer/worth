@@ -107,3 +107,37 @@ fn predicate_field_absent_from_source_projection_cannot_claim_tracked_refinement
         Err(WorthQueryManagedIndexPredicateProfileDenial::UntrackedSelection)
     );
 }
+
+#[test]
+fn a_filtered_source_cannot_claim_a_tracked_profile() {
+    let (source, parent) = definitions();
+    let mut parts = source.into_parts();
+    use worth_query_declaration::facade::application_query::{
+        ApplicationQueryWhereFilterOperand as Operand, ApplicationQueryWhereFilterProgram,
+        ApplicationQueryWhereFilterSource as Source,
+    };
+    let rank = Operand::from_untrusted(
+        "rank".into(),
+        Source::Field {
+            entity: "Account".into(),
+            aspect: "AccountFacts".into(),
+            field: "Rank".into(),
+            scalar_family: worth_foundational::facade::ScalarAspectType::Int64,
+            presence:
+                worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Required,
+        },
+    );
+    let draft = worth_foundational::expression_api::expressions()
+        .parse("rank >= 5")
+        .unwrap()
+        .encode();
+    parts.where_filter =
+        Some(ApplicationQueryWhereFilterProgram::from_untrusted(vec![rank], &draft).unwrap());
+    assert_eq!(
+        profile(
+            &ErasedApplicationQueryDefinition::from_untrusted_parts(parts),
+            &parent
+        ),
+        Err(WorthQueryManagedIndexPredicateProfileDenial::UntrackedSelection)
+    );
+}

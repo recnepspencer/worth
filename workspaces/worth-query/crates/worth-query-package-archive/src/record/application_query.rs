@@ -28,6 +28,7 @@ mod managed_index;
 mod orbit;
 pub(in crate::record) mod result_shape;
 mod root_selection;
+mod where_filter;
 pub(in crate::record) use root_selection::{
     decode_path as decode_root_path, write_path as write_root_path,
 };
@@ -69,7 +70,8 @@ pub(super) fn write(
     disclosure::write(output, parts.disclosure())?;
     controls::write_authorization(output, parts.authorization())?;
     controls::write_basis_support(output, parts.basis_support())?;
-    controls::write_lanes(output, parts.lanes())
+    controls::write_lanes(output, parts.lanes())?;
+    where_filter::write(output, parts.where_filter())
 }
 
 pub(super) fn decode(
@@ -111,6 +113,7 @@ fn decode_with_shape_depth(
     let authorization = controls::decode_authorization(input)?;
     let basis_support = controls::decode_basis_support(input)?;
     let lanes = controls::decode_lanes(input)?;
+    let where_filter = where_filter::decode(input, budget)?;
     Ok(ErasedApplicationQueryDefinition::from_untrusted_parts(
         WorthQueryPortableApplicationQueryParts {
             name,
@@ -128,6 +131,7 @@ fn decode_with_shape_depth(
             managed_index,
             cardinality,
             predicates,
+            where_filter,
             ordering,
             continuation,
             live_cause,

@@ -118,6 +118,12 @@ impl ErasedApplicationQueryDefinition {
         &self.parts.predicates
     }
 
+    pub fn where_filter(
+        &self,
+    ) -> Option<&crate::application_query::ApplicationQueryWhereFilterProgram> {
+        self.parts.where_filter.as_ref()
+    }
+
     pub fn ordering(&self) -> &[ApplicationQueryOrderingTerm] {
         &self.parts.ordering
     }
