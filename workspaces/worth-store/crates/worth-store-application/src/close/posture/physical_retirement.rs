@@ -1,8 +1,10 @@
-//! The original physical close task and terminal outcome retain their custody.
+//! The original physical close task and terminal outcome retain their custody
+//! inside the prepaid Home close slot without per-poll heap allocations.
 use super::*;
+
 enum PhysicalReleaseStep {
     Pending,
-    Closed(Box<worth_store::physical_runtime::ServingShutdownOutcome<worth_store::physical_runtime::ClosedRuntime>>),
+    Closed,
     Refused(ApplicationHomeCloseDenial),
 }
 
@@ -19,7 +21,7 @@ impl ApplicationHomeRecoveryCustody {
         loop {
             match self.poll_physical_close_step() {
                 PhysicalReleaseStep::Pending => {}
-                PhysicalReleaseStep::Closed(shutdown) => return self.into_closed(*shutdown),
+                PhysicalReleaseStep::Closed => return self.into_closed(),
                 PhysicalReleaseStep::Refused(denial) => return self.refused(denial),
             }
             if let Err(cause) = interrupted(execution) {
@@ -35,16 +37,17 @@ impl ApplicationHomeRecoveryCustody {
         execution: &ExecutionRequest<'_, '_>,
         start: PhysicalCloseStart,
     ) -> Result<(), ApplicationHomeCloseDenial> {
-        if !matches!(self.inner.physical, Some(PhysicalCloseCustody::Retained(_))) {
+        if !matches!(self.body().physical, Some(PhysicalCloseCustody::Retained(_))) {
             return Ok(());
         }
+        let body = self.body_mut();
         let PhysicalCloseCustody::Retained(serving) =
-            self.inner.physical.take().expect("live physical custody")
+            body.physical.take().expect("live physical custody")
         else {
             unreachable!("checked retained posture above")
         };
         if let Err(cause) = interrupted(execution) {
-            self.inner.physical = Some(PhysicalCloseCustody::Retained(serving));
+            body.physical = Some(PhysicalCloseCustody::Retained(serving));
             return Err(ApplicationHomeCloseDenial::Execution(cause));
         }
         let serving = match Arc::try_unwrap(serving) {
@@ -52,20 +55,20 @@ impl ApplicationHomeRecoveryCustody {
             Err(serving) => {
                 let holders = super::super::physical_holders::observe(
                     &serving,
-                    self.inner.signal_medium.as_ref(),
+                    body.signal_medium.as_ref(),
                 );
-                self.inner.physical = Some(PhysicalCloseCustody::Retained(serving));
+                body.physical = Some(PhysicalCloseCustody::Retained(serving));
                 return Err(ApplicationHomeCloseDenial::PhysicalCustodyRetained(holders));
             }
         };
         match start.start(serving) {
             Ok(task) => {
-                self.inner.physical = Some(PhysicalCloseCustody::Running(Box::new(task)));
+                body.physical = Some(PhysicalCloseCustody::Running(task));
                 Ok(())
             }
             Err(refused) => {
                 let (serving, error) = refused.into_parts();
-                self.inner.physical = Some(PhysicalCloseCustody::Retained(Arc::new(serving)));
+                body.physical = Some(PhysicalCloseCustody::Retained(Arc::new(serving)));
                 Err(ApplicationHomeCloseDenial::PhysicalCloseStartFailed {
                     kind: error.kind(),
                     detail: error.to_string(),
@@ -76,26 +79,27 @@ impl ApplicationHomeRecoveryCustody {
 
     #[inline(never)]
     fn poll_physical_close_step(&mut self) -> PhysicalReleaseStep {
-        match self.inner.physical.take().expect("live physical custody") {
-            PhysicalCloseCustody::Running(task) => match (*task).poll() {
+        let body = self.body_mut();
+        match body.physical.take().expect("live physical custody") {
+            PhysicalCloseCustody::Running(task) => match task.poll() {
                 PhysicalStoreCloseTaskPoll::Pending(task) => {
-                    self.inner.physical = Some(PhysicalCloseCustody::Running(Box::new(task)));
+                    body.physical = Some(PhysicalCloseCustody::Running(task));
                     PhysicalReleaseStep::Pending
                 }
                 PhysicalStoreCloseTaskPoll::Failed(failure) => {
                     let cause = *failure.cause();
-                    self.inner.physical = Some(PhysicalCloseCustody::Failed(Box::new(failure)));
+                    body.physical = Some(PhysicalCloseCustody::Failed(failure));
                     PhysicalReleaseStep::Refused(ApplicationHomeCloseDenial::PhysicalCloseFailed(
                         cause,
                     ))
                 }
                 PhysicalStoreCloseTaskPoll::Completed(outcome) => match outcome {
                     PhysicalStoreCloseOutcome::Closed { shutdown, .. } => {
-                        PhysicalReleaseStep::Closed(Box::new(shutdown))
+                        body.physical = Some(PhysicalCloseCustody::Closed(shutdown));
+                        PhysicalReleaseStep::Closed
                     }
                     outcome @ PhysicalStoreCloseOutcome::InspectionRequired { .. } => {
-                        self.inner.physical =
-                            Some(PhysicalCloseCustody::InspectionRequired(Box::new(outcome)));
+                        body.physical = Some(PhysicalCloseCustody::InspectionRequired(outcome));
                         PhysicalReleaseStep::Refused(
                             ApplicationHomeCloseDenial::PhysicalInspectionRequired,
                         )
@@ -103,13 +107,17 @@ impl ApplicationHomeRecoveryCustody {
                 },
             },
             PhysicalCloseCustody::InspectionRequired(outcome) => {
-                self.inner.physical = Some(PhysicalCloseCustody::InspectionRequired(outcome));
+                body.physical = Some(PhysicalCloseCustody::InspectionRequired(outcome));
                 PhysicalReleaseStep::Refused(ApplicationHomeCloseDenial::PhysicalInspectionRequired)
             }
             PhysicalCloseCustody::Failed(failure) => {
                 let cause = *failure.cause();
-                self.inner.physical = Some(PhysicalCloseCustody::Failed(failure));
+                body.physical = Some(PhysicalCloseCustody::Failed(failure));
                 PhysicalReleaseStep::Refused(ApplicationHomeCloseDenial::PhysicalCloseFailed(cause))
+            }
+            PhysicalCloseCustody::Closed(shutdown) => {
+                body.physical = Some(PhysicalCloseCustody::Closed(shutdown));
+                PhysicalReleaseStep::Closed
             }
             PhysicalCloseCustody::Retained(_) => {
                 unreachable!("retained physical owner was classified before waiting")
@@ -118,13 +126,11 @@ impl ApplicationHomeRecoveryCustody {
     }
 
     #[inline(never)]
-    fn into_closed(
-        self,
-        shutdown: worth_store::physical_runtime::ServingShutdownOutcome<
-            worth_store::physical_runtime::ClosedRuntime,
-        >,
-    ) -> ApplicationHomeCloseOutcome {
-        let body = *self.inner;
+    fn into_closed(self) -> ApplicationHomeCloseOutcome {
+        let body = self.take_body();
+        let Some(PhysicalCloseCustody::Closed(shutdown)) = body.physical else {
+            unreachable!("into_closed follows PhysicalReleaseStep::Closed")
+        };
         let allocation = super::super::RetiredApplicationHomeAllocation {
             _location: body.location,
             _descriptor: body.descriptor,

@@ -2,8 +2,8 @@
 //! Inline plan values and transient construction buffers are not charged here.
 
 use super::{
-    RecoveryBaseImagePlan, RecoveryPublicationExpectation, RecoveryPublicationPlan,
-    RecoveryReleaseTopologyProof, RecoveryStagingLayoutPlan,
+    PlanningResidentAllowance, RecoveryBaseImagePlan, RecoveryPublicationExpectation,
+    RecoveryPublicationPlan, RecoveryReleaseTopologyProof, RecoveryStagingLayoutPlan,
 };
 
 fn boxed_bytes<T>(entries: &[T]) -> Option<u64> {
@@ -15,7 +15,8 @@ fn boxed_bytes<T>(entries: &[T]) -> Option<u64> {
 impl RecoveryBaseImagePlan {
     pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
         let body = self.body();
-        let mut bytes = boxed_bytes(&self.inner)?
+        let mut bytes = PlanningResidentAllowance::vector_bytes(&self.inner)
+            .ok()?
             .checked_add(boxed_bytes(&body.selected_root_topology)?)?
             .checked_add(boxed_bytes(&body.actions)?)?
             .checked_add(boxed_bytes(&body.segment_updates)?)?
@@ -64,7 +65,8 @@ impl RecoveryReleaseTopologyProof {
 impl RecoveryPublicationPlan {
     pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
         let body = self.body();
-        let mut bytes = boxed_bytes(&self.inner)?
+        let mut bytes = PlanningResidentAllowance::vector_bytes(&self.inner)
+            .ok()?
             .checked_add(body.expectation_backing.backing_bytes()?)?
             .checked_add(boxed_bytes(&body.actions)?)?
             .checked_add(boxed_bytes(&body.referenced_artifacts)?)?

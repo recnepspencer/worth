@@ -57,10 +57,10 @@ pub(super) fn retained_bytes(
             bytes = bytes
                 .checked_add(u64::try_from(std::mem::size_of_val(&**claim)).ok()?)?
                 .checked_add(u64::try_from(std::mem::size_of_val(&**replay)).ok()?)?
-                .checked_add(u64::try_from(std::mem::size_of_val(&**effective_heads)).ok()?)?
+                .checked_add(vector_bytes(effective_heads)?)?
                 .checked_add(claim.owned_heap_bytes()?)?
                 .checked_add(replay.owned_heap_bytes()?)?
-                .checked_add(effective_heads.owned_heap_bytes()?)?;
+                .checked_add(effective_heads.first()?.owned_heap_bytes()?)?;
         }
         crate::progression::CustodyState::OrderedCompleted {
             claim,

@@ -2,14 +2,51 @@ use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
 use worth_store_physical_format::{
     store_namespace::StableStoreIdentity, DurablePhysicalRootManifest,
 };
-use worth_store_recovery_physics::{
-    VerifiedEffectiveReleaseHeadRosterV14, VerifiedOrderedHistoricalReleaseCustody,
-    VerifiedPendingWalReleaseCustody, VerifiedSelectedReleaseHeadCustodyV2,
-    VerifiedSelectedTierEpochCustody,
-};
+use worth_store_recovery_physics::VerifiedSelectedTierEpochCustody;
 
-use crate::physical_runtime::record_serving::RecoveredNoReleaseCustody;
+use crate::physical_runtime::record_serving::RecoveredReleaseCustody;
 use crate::physical_runtime::{CompletedPhysicalRecoveryFreshReopen, RuntimeIdentity};
+
+/// Prepaid one-slot backing for `RecoveredPhysicalRuntimeCore`, reserved by the
+/// recovery owner before recovery effects so Store construction never allocates
+/// the core body after publication.
+pub struct PreparedRecoveredRuntimeCoreBacking {
+    inner: Vec<RecoveredPhysicalRuntimeCoreBody>,
+}
+
+impl PreparedRecoveredRuntimeCoreBacking {
+    pub const fn required_bytes() -> u64 {
+        std::mem::size_of::<RecoveredPhysicalRuntimeCoreBody>() as u64
+    }
+
+    pub fn try_prepare() -> Result<Self, std::collections::TryReserveError> {
+        let mut inner = Vec::new();
+        inner.try_reserve_exact(1)?;
+        Ok(Self { inner })
+    }
+
+    pub fn owned_heap_bytes(&self) -> Option<u64> {
+        u64::try_from(self.inner.capacity())
+            .ok()?
+            .checked_mul(Self::required_bytes())
+    }
+
+    pub(super) fn prepare_direct() -> Self {
+        Self {
+            inner: Vec::with_capacity(1),
+        }
+    }
+
+    #[inline(never)]
+    pub(super) fn finish(
+        mut self,
+        body: RecoveredPhysicalRuntimeCoreBody,
+    ) -> RecoveredPhysicalRuntimeCore {
+        assert!(self.inner.is_empty() && self.inner.capacity() >= 1);
+        self.inner.push(body);
+        RecoveredPhysicalRuntimeCore { inner: self.inner }
+    }
+}
 
 pub struct RecoveredPhysicalRuntimeCore {
     inner: Vec<RecoveredPhysicalRuntimeCoreBody>,
@@ -28,12 +65,8 @@ pub(super) struct RecoveredPhysicalRuntimeCoreBody {
     pub(super) root: DurablePhysicalRootManifest,
     pub(super) media: AdmittedRecoveryFilesystemMedia,
     pub(super) reopen: CompletedPhysicalRecoveryFreshReopen,
-    pub(super) head_v2_custody: Option<Box<VerifiedSelectedReleaseHeadCustodyV2>>,
-    pub(super) no_release_custody: Option<Box<RecoveredNoReleaseCustody>>,
-    pub(super) pending_wal_release_custody: Option<Box<VerifiedPendingWalReleaseCustody>>,
-    pub(super) effective_release_heads: Option<Box<VerifiedEffectiveReleaseHeadRosterV14>>,
-    pub(super) historical_release_custody: Option<Box<VerifiedOrderedHistoricalReleaseCustody>>,
-    pub(super) tier_custody: Option<Box<VerifiedSelectedTierEpochCustody>>,
+    pub(super) release_custody: Option<RecoveredReleaseCustody>,
+    pub(super) tier_custody: Option<VerifiedSelectedTierEpochCustody>,
     pub(super) selected_wal: Option<super::selected_rejoin::SelectedWalMediaFingerprint>,
     pub(super) selected_controls: Option<super::selected_rejoin::SelectedControlMediaFingerprint>,
 }
@@ -154,16 +187,8 @@ pub enum PhysicalRecoveryWalResidentStage {
 }
 
 impl RecoveredPhysicalRuntimeCore {
-    pub(super) fn from_body(body: RecoveredPhysicalRuntimeCoreBody) -> Self {
-        Self { inner: vec![body] }
-    }
-
     pub(super) const fn body(&self) -> &RecoveredPhysicalRuntimeCoreBody {
         &self.inner.as_slice()[0]
-    }
-
-    pub(super) fn body_mut(&mut self) -> &mut RecoveredPhysicalRuntimeCoreBody {
-        &mut self.inner[0]
     }
 
     pub(super) fn into_body(mut self) -> RecoveredPhysicalRuntimeCoreBody {

@@ -38,7 +38,7 @@ pub enum PhysicalStoreCloseFailureCause {
 pub struct PhysicalStoreCloseFailure {
     custody: PhysicalCloseTaskCustody,
     cause: PhysicalStoreCloseFailureCause,
-    actual: Option<Box<PhysicalStoreCloseOutcome>>,
+    actual: Option<PhysicalStoreCloseOutcome>,
     observation: Option<PhysicalStoreCloseObservation>,
 }
 
@@ -46,7 +46,7 @@ impl PhysicalStoreCloseFailure {
     pub(super) fn new(
         custody: PhysicalCloseTaskCustody,
         cause: PhysicalStoreCloseFailureCause,
-        actual: Option<Box<PhysicalStoreCloseOutcome>>,
+        actual: Option<PhysicalStoreCloseOutcome>,
         observation: Option<PhysicalStoreCloseObservation>,
     ) -> Self {
         Self {
@@ -64,7 +64,7 @@ impl PhysicalStoreCloseFailure {
         &self.cause
     }
     pub fn actual_outcome(&self) -> Option<&PhysicalStoreCloseOutcome> {
-        self.actual.as_deref()
+        self.actual.as_ref()
     }
     pub fn observation(&self) -> Option<&PhysicalStoreCloseObservation> {
         self.observation.as_ref()
@@ -84,7 +84,7 @@ impl PhysicalStoreCloseFailure {
             observation,
         } = self;
         custody.failure_evidence_delivered();
-        (cause, actual.map(|outcome| *outcome), observation)
+        (cause, actual, observation)
     }
 }
 

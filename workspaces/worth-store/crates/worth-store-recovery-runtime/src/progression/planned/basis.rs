@@ -125,7 +125,7 @@ pub struct RecoveryBaseImagePlan {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct RecoveryBaseImagePlanBody {
+pub(super) struct RecoveryBaseImagePlanBody {
     selected_selector: DurableRootSelector,
     selected_root: DurablePhysicalRootManifest,
     latest_blob_publication: Option<IndexedThroughBlobPublication>,
@@ -196,7 +196,7 @@ pub struct RecoveryPublicationPlan {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-struct RecoveryPublicationPlanBody {
+pub(crate) struct RecoveryPublicationPlanBody {
     expectation_backing: ExpectationBacking,
     store: StableStoreIdentity,
     checkpoint: Option<PhysicalCheckpointIdentity>,

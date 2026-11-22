@@ -75,9 +75,6 @@ impl PendingReleaseReplay {
     pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
         self.head.owned_heap_bytes()
     }
-    pub(crate) fn into_head(self) -> VerifiedSelectedReleaseHeadReplayV14 {
-        self.head
-    }
 }
 
 /// Only complete custody states cross into Store's post-reopen construction.
@@ -87,8 +84,8 @@ pub(crate) enum CustodyState {
     SourceHeads(Box<VerifiedSelectedReleaseHeadCustodyV2>),
     Pending {
         claim: Box<VerifiedPendingWalReleaseCustody>,
-        replay: Box<VerifiedSelectedReleaseHeadReplayV14>,
-        effective_heads: Box<VerifiedEffectiveReleaseHeadRosterV14>,
+        replay: Box<PendingReleaseReplay>,
+        effective_heads: Vec<VerifiedEffectiveReleaseHeadRosterV14>,
     },
     OrderedCompleted {
         claim: Box<VerifiedOrderedHistoricalReleaseCustody>,

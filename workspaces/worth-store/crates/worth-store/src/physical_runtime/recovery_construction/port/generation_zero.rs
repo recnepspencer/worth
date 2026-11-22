@@ -6,7 +6,7 @@ use sha2::{Digest, Sha256};
 use worth_store_physical_backend::AdmittedRecoveryFilesystemMedia;
 
 use crate::physical_runtime::record_serving::{
-    GenerationZeroNoReleaseCustody, RecoveredNoReleaseCustody,
+    GenerationZeroNoReleaseCustody, RecoveredNoReleaseCustody, RecoveredReleaseCustody,
 };
 use crate::physical_runtime::{
     AbsentCheckpointWitness, ClosedPhysicalRecoveryCleanup,
@@ -15,7 +15,8 @@ use crate::physical_runtime::{
 
 use super::{
     selected_rejoin, validate_construction_binding, PhysicalRecoveryConstructionPort,
-    RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
+    PreparedRecoveredRuntimeCoreBacking, RecoveredPhysicalRuntimeConstructionDenial,
+    RecoveredPhysicalRuntimeCore,
 };
 
 impl PhysicalRecoveryConstructionPort {
@@ -30,6 +31,7 @@ impl PhysicalRecoveryConstructionPort {
         absent: AbsentCheckpointWitness,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         Self::construct_generation_zero_inner(
+            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
             coordination,
             media,
             cleanup,
@@ -50,6 +52,7 @@ impl PhysicalRecoveryConstructionPort {
         pause_before_final_reread: impl FnOnce(),
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         Self::construct_generation_zero_inner(
+            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
             coordination,
             media,
             cleanup,
@@ -59,7 +62,8 @@ impl PhysicalRecoveryConstructionPort {
         )
     }
 
-    fn construct_generation_zero_inner(
+    pub(super) fn construct_generation_zero_inner(
+        backing: PreparedRecoveredRuntimeCoreBacking,
         coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         cleanup: ClosedPhysicalRecoveryCleanup,
@@ -99,10 +103,13 @@ impl PhysicalRecoveryConstructionPort {
             Sha256::digest(reopen.fresh_reopen_occurrence().root().bytes()).into();
         let custody = GenerationZeroNoReleaseCustody::rejoined(reopen.root().clone(), root_sha256);
         Self::construct_inner(
+            backing,
             coordination,
             media,
             reopen,
-            Some(RecoveredNoReleaseCustody::GenerationZero(custody)),
+            Some(RecoveredReleaseCustody::NoRelease(
+                RecoveredNoReleaseCustody::GenerationZero(custody),
+            )),
             None,
             Some(selected_wal),
             Some(selected_controls),

@@ -2,8 +2,8 @@
 use worth_store::physical_runtime::{
     AbsentCheckpointWitness, AdmittedRecoveryFilesystemMedia, ClosedPhysicalRecoveryCleanup,
     ConfiguredPhysicalDurabilityDeclaration, PhysicalRecoveryAllocationAdmission,
-    PhysicalRecoveryCoordination, RecoveredPhysicalRuntimeConstructionDenial,
-    RecoveredPhysicalRuntimeCore,
+    PhysicalRecoveryCoordination, PreparedRecoveredRuntimeCoreBacking,
+    RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
 };
 use worth_store_recovery_physics::{
     VerifiedEffectiveReleaseHeadRosterV14, VerifiedOrderedHistoricalReleaseCustody,
@@ -24,6 +24,7 @@ pub(super) struct RejoinConstruction {
 impl RejoinConstruction {
     pub(super) fn complete(
         self,
+        core_body: PreparedRecoveredRuntimeCoreBacking,
         custody: crate::progression::CustodyState,
         tier: Option<VerifiedSelectedTierEpochCustody>,
         allocation: Option<PhysicalRecoveryAllocationAdmission>,
@@ -33,11 +34,11 @@ impl RejoinConstruction {
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         match custody {
             crate::progression::CustodyState::SourceHeads(claim) => {
-                self.source_heads(*claim, tier, allocation, selection)
+                self.source_heads(core_body, claim, tier, allocation, selection)
             }
             crate::progression::CustodyState::NoRelease(claim) => match tier {
-                Some(tier) => self.tier_no_release(*claim, tier),
-                None => self.no_release(*claim),
+                Some(tier) => self.tier_no_release(core_body, claim, tier),
+                None => self.no_release(core_body, claim),
             },
             crate::progression::CustodyState::Pending {
                 claim,
@@ -47,21 +48,28 @@ impl RejoinConstruction {
                 drop(replay);
                 match tier {
                     Some(tier) => self.tier_pending_release(
-                        *claim,
-                        *effective_heads,
+                        core_body,
+                        claim,
+                        effective_heads,
                         tier,
                         allocation,
                         selection,
                     ),
-                    None => self.pending_release(*claim, *effective_heads, allocation, selection),
+                    None => self.pending_release(
+                        core_body,
+                        claim,
+                        effective_heads,
+                        allocation,
+                        selection,
+                    ),
                 }
             }
             crate::progression::CustodyState::OrderedCompleted {
                 claim,
                 effective_heads,
-            } => self.ordered_release(*claim, *effective_heads, tier, allocation),
+            } => self.ordered_release(core_body, claim, effective_heads, tier, allocation),
             crate::progression::CustodyState::NoCheckpoint => match tier {
-                None => self.no_checkpoint(absent, durability),
+                None => self.no_checkpoint(core_body, absent, durability),
                 Some(_tier) => {
                     Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch)
                 }

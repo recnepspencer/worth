@@ -6,14 +6,16 @@ use worth_store_recovery_physics::{
     VerifiedSelectedTierEpochCustody,
 };
 
+use crate::physical_runtime::record_serving::RecoveredReleaseCustody;
 use crate::physical_runtime::{
-    ClosedPhysicalRecoveryCleanup, PhysicalRecoveryAllocationAdmission,
-    PhysicalRecoveryCoordination,
+    ClosedPhysicalRecoveryCleanup, CompletedPhysicalRecoveryFreshReopen,
+    PhysicalRecoveryAllocationAdmission, PhysicalRecoveryCoordination,
 };
 
 use super::{
     selected_rejoin, validate_construction_binding, PhysicalRecoveryConstructionPort,
-    RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
+    PreparedRecoveredRuntimeCoreBacking, RecoveredPhysicalRuntimeConstructionDenial,
+    RecoveredPhysicalRuntimeCore,
 };
 
 impl PhysicalRecoveryConstructionPort {
@@ -26,12 +28,13 @@ impl PhysicalRecoveryConstructionPort {
         effective: VerifiedEffectiveReleaseHeadRosterV14,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         Self::construct_pending_wal_release(
+            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
             coordination,
             media,
             cleanup,
             recovery_allocation,
-            pending,
-            effective,
+            Box::new(pending),
+            vec![effective],
             None,
             || {},
         )
@@ -47,12 +50,13 @@ impl PhysicalRecoveryConstructionPort {
         tier: VerifiedSelectedTierEpochCustody,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         Self::construct_pending_wal_release(
+            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
             coordination,
             media,
             cleanup,
             recovery_allocation,
-            pending,
-            effective,
+            Box::new(pending),
+            vec![effective],
             Some(tier),
             || {},
         )
@@ -72,12 +76,13 @@ impl PhysicalRecoveryConstructionPort {
         pause_before_final_reread: impl FnOnce(),
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         Self::construct_pending_wal_release(
+            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
             coordination,
             media,
             cleanup,
             recovery_allocation,
-            pending,
-            effective,
+            Box::new(pending),
+            vec![effective],
             None,
             pause_before_final_reread,
         )
@@ -96,31 +101,35 @@ impl PhysicalRecoveryConstructionPort {
         pause_before_final_reread: impl FnOnce(),
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         Self::construct_pending_wal_release(
+            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
             coordination,
             media,
             cleanup,
             recovery_allocation,
-            pending,
-            effective,
+            Box::new(pending),
+            vec![effective],
             Some(tier),
             pause_before_final_reread,
         )
     }
 
-    fn construct_pending_wal_release(
+    pub(super) fn construct_pending_wal_release(
+        backing: PreparedRecoveredRuntimeCoreBacking,
         coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         cleanup: ClosedPhysicalRecoveryCleanup,
         recovery_allocation: PhysicalRecoveryAllocationAdmission,
-        pending: VerifiedPendingWalReleaseCustody,
-        effective: VerifiedEffectiveReleaseHeadRosterV14,
+        pending: Box<VerifiedPendingWalReleaseCustody>,
+        effective: Vec<VerifiedEffectiveReleaseHeadRosterV14>,
         tier: Option<VerifiedSelectedTierEpochCustody>,
         pause_before_final_reread: impl FnOnce(),
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        let pending = Box::new(pending);
-        let effective = Box::new(effective);
-        let tier = tier.map(Box::new);
-        if cleanup.live_media_handle_delta() != 0
+        let Some(effective_ref) = effective.first() else {
+            let _ = coordination.shutdown_is_quiescent();
+            return Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch);
+        };
+        if effective.len() != 1
+            || cleanup.live_media_handle_delta() != 0
             || coordination
                 .require_selected_checkpoint(pending.checkpoint())
                 .is_err()
@@ -135,7 +144,7 @@ impl PhysicalRecoveryConstructionPort {
             let _ = coordination.shutdown_is_quiescent();
             return Err(RecoveredPhysicalRuntimeConstructionDenial::CleanupMediaNotQuiescent);
         }
-        if effective.retained_bytes() > recovery_allocation.byte_limit() {
+        if effective_ref.retained_bytes() > recovery_allocation.byte_limit() {
             let _ = coordination.shutdown_is_quiescent();
             return Err(RecoveredPhysicalRuntimeConstructionDenial::SelectedCustodyMismatch);
         }
@@ -151,8 +160,8 @@ impl PhysicalRecoveryConstructionPort {
                 &reopen,
                 &pending,
                 recovery_allocation,
-                &effective,
-                tier.as_deref(),
+                effective_ref,
+                tier.as_ref(),
                 pause_before_final_reread,
             ) {
                 Ok(value) => value,
@@ -161,19 +170,46 @@ impl PhysicalRecoveryConstructionPort {
                     return Err(super::rejoin_denial::construction_denial(denial));
                 }
             };
-        let mut core = Self::construct_inner(
+        Self::finish_pending_wal_release(
+            backing,
             coordination,
             media,
             reopen,
-            None,
-            None,
+            pending,
+            effective,
+            tier,
+            selected_wal,
+            selected_controls,
+        )
+    }
+
+    #[inline(never)]
+    fn finish_pending_wal_release(
+        backing: PreparedRecoveredRuntimeCoreBacking,
+        coordination: PhysicalRecoveryCoordination,
+        media: AdmittedRecoveryFilesystemMedia,
+        reopen: CompletedPhysicalRecoveryFreshReopen,
+        pending: Box<VerifiedPendingWalReleaseCustody>,
+        mut effective: Vec<VerifiedEffectiveReleaseHeadRosterV14>,
+        tier: Option<VerifiedSelectedTierEpochCustody>,
+        selected_wal: selected_rejoin::SelectedWalMediaFingerprint,
+        selected_controls: selected_rejoin::SelectedControlMediaFingerprint,
+    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
+        let effective = effective
+            .pop()
+            .expect("prepaid effective roster holds one value");
+        Self::construct_inner(
+            backing,
+            coordination,
+            media,
+            reopen,
+            Some(RecoveredReleaseCustody::PendingWal {
+                claim: *pending,
+                effective,
+            }),
+            tier,
             Some(selected_wal),
             Some(selected_controls),
-        )?;
-        let body = core.body_mut();
-        body.pending_wal_release_custody = Some(pending);
-        body.effective_release_heads = Some(effective);
-        body.tier_custody = tier;
-        Ok(core)
+        )
     }
 }

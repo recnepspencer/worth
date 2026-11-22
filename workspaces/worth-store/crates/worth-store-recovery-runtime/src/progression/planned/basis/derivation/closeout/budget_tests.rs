@@ -62,3 +62,51 @@ fn publication_allocation_preserves_real_cause_and_does_not_mislabel_image_const
         Vec::<u8>::new().try_reserve_exact(usize::MAX).unwrap_err()
     );
 }
+
+#[test]
+fn plan_body_slots_refuse_one_byte_short_and_overlap_under_allowance() {
+    let base_slot = PlanningResidentAllowance::slot_bytes::<RecoveryBaseImagePlanBody>(1).unwrap();
+    let pub_slot = PlanningResidentAllowance::slot_bytes::<RecoveryPublicationPlanBody>(1).unwrap();
+    let exp_payload = PlanningResidentAllowance::slot_bytes::<ExpectationPayload>(1).unwrap();
+    let exp_movement = pub_slot + 2 * exp_payload;
+    let basis_slot = PlanningResidentAllowance::slot_bytes::<ExecutionBasisState>(1).unwrap();
+
+    // Base-image body slot denies one byte short before allocating.
+    let mut denied_base = PlanningResidentAllowance::new(19, 19 + base_slot - 1).unwrap();
+    assert_eq!(
+        denied_base.reserve::<RecoveryBaseImagePlanBody>(1),
+        Err(PlanningMemoryDenial::RecoveryMemoryBytes {
+            observed: 19 + base_slot
+        })
+    );
+    assert_eq!((denied_base.used(), denied_base.peak()), (19, 19));
+
+    // Publication body + expectation conversion overlap while base-image body stays live.
+    let overlap_peak = (19 + base_slot + pub_slot + exp_payload + exp_movement)
+        .max(19 + base_slot + pub_slot + exp_payload + 2 * basis_slot);
+    let mut denied_overlap = PlanningResidentAllowance::new(19, overlap_peak - 1).unwrap();
+    let _base_inner = denied_overlap.reserve::<RecoveryBaseImagePlanBody>(1).unwrap();
+    let _pub_inner = denied_overlap
+        .reserve::<RecoveryPublicationPlanBody>(1)
+        .unwrap();
+    let failure = ExpectationBacking::prepare(&mut denied_overlap)
+        .and_then(|_exp| ExecutionBasisBacking::prepare(&mut denied_overlap));
+    assert!(matches!(
+        failure,
+        Err(PlanningMemoryDenial::RecoveryMemoryBytes { observed }) if observed == overlap_peak
+    ));
+
+    let mut admitted = PlanningResidentAllowance::new(19, overlap_peak).unwrap();
+    let base_inner = admitted.reserve::<RecoveryBaseImagePlanBody>(1).unwrap();
+    let pub_inner = admitted.reserve::<RecoveryPublicationPlanBody>(1).unwrap();
+    let exp_backing = ExpectationBacking::prepare(&mut admitted).unwrap();
+    let basis_backing = ExecutionBasisBacking::prepare(&mut admitted).unwrap();
+    let expected_used = 19
+        + PlanningResidentAllowance::vector_bytes(&base_inner).unwrap()
+        + PlanningResidentAllowance::vector_bytes(&pub_inner).unwrap()
+        + exp_backing.backing_bytes().unwrap()
+        + basis_slot;
+    assert_eq!(admitted.used(), expected_used);
+    assert_eq!(admitted.peak(), overlap_peak);
+    drop((basis_backing, exp_backing, pub_inner, base_inner));
+}

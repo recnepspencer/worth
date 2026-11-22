@@ -3,7 +3,8 @@ use super::*;
 impl RejoinConstruction {
     pub(super) fn no_release(
         self,
-        no_release: VerifiedSelectedNoReleaseCustody,
+        core_body: PreparedRecoveredRuntimeCoreBacking,
+        no_release: Box<VerifiedSelectedNoReleaseCustody>,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         let Self {
             coordination,
@@ -13,26 +14,28 @@ impl RejoinConstruction {
 
         #[cfg(feature = "certification-test-authority")]
         if crate::certification::enabled() {
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_no_release(
-                    coordination,
-                    media,
-                    closed_cleanup,
-                    no_release,
-                    crate::certification::take_rejoin_pause(),
-                )
+            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_no_release_and_backing(
+                core_body,
+                coordination,
+                media,
+                closed_cleanup,
+                no_release,
+                crate::certification::take_rejoin_pause(),
+            )
         } else {
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_no_release(
-                    coordination, media, closed_cleanup, no_release,
-                )
+            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_no_release_and_backing(
+                core_body, coordination, media, closed_cleanup, no_release,
+            )
         }
         #[cfg(not(feature = "certification-test-authority"))]
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_no_release(
-                coordination, media, closed_cleanup, no_release,
-            )
+        worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_no_release_and_backing(
+            core_body, coordination, media, closed_cleanup, no_release,
+        )
     }
     pub(super) fn tier_no_release(
         self,
-        no_release: VerifiedSelectedNoReleaseCustody,
+        core_body: PreparedRecoveredRuntimeCoreBacking,
+        no_release: Box<VerifiedSelectedNoReleaseCustody>,
         tier: VerifiedSelectedTierEpochCustody,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         let Self {
@@ -43,22 +46,23 @@ impl RejoinConstruction {
 
         #[cfg(feature = "certification-test-authority")]
         if crate::certification::enabled() {
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_tier_no_release(
-                    coordination,
-                    media,
-                    closed_cleanup,
-                    tier,
-                    no_release,
-                    crate::certification::take_rejoin_pause(),
-                )
+            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::certification_construct_with_verified_tier_no_release_and_backing(
+                core_body,
+                coordination,
+                media,
+                closed_cleanup,
+                tier,
+                no_release,
+                crate::certification::take_rejoin_pause(),
+            )
         } else {
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_tier_no_release(
-                    coordination, media, closed_cleanup, tier, no_release,
-                )
+            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_tier_no_release_and_backing(
+                core_body, coordination, media, closed_cleanup, tier, no_release,
+            )
         }
         #[cfg(not(feature = "certification-test-authority"))]
-            worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_tier_no_release(
-                coordination, media, closed_cleanup, tier, no_release,
-            )
+        worth_store::physical_runtime::PhysicalRecoveryConstructionPort::construct_with_verified_tier_no_release_and_backing(
+            core_body, coordination, media, closed_cleanup, tier, no_release,
+        )
     }
 }

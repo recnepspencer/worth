@@ -126,25 +126,30 @@ pub(super) fn assemble(
         .ok_or(ExecutionBasisDenial::Invalid)?;
     drop((placements, materialization));
     allowance.release(scratch);
-    Ok(RecoveryBaseImagePlan {
-        inner: vec![RecoveryBaseImagePlanBody {
-            selected_selector: selection.root().selected().selector(),
-            selected_root: selection.root().selected().manifest().clone(),
-            latest_blob_publication,
-            latest_blob_quarantine,
-            tier_epoch_anchor: selection.root().selected().manifest().tier_epoch_anchor(),
-            record_anchors,
-            derived_family_directory,
-            selected_root_topology: allowance.charge_boxed_slice(topology)?,
-            destination_generation: pending.staging_generation,
-            actions: allowance.charge_boxed_slice(actions)?,
-            segment_updates: allowance.charge_boxed_slice(updates)?,
-            manifests: allowance.charge_boxed_slice(manifests)?,
-            root_states: allowance.charge_boxed_slice(root_states)?,
-            release_head_replay: replay,
-            source_artifacts,
-        }],
-    })
+    let selected_root_topology = allowance.charge_boxed_slice(topology)?;
+    let actions = allowance.charge_boxed_slice(actions)?;
+    let segment_updates = allowance.charge_boxed_slice(updates)?;
+    let manifests = allowance.charge_boxed_slice(manifests)?;
+    let root_states = allowance.charge_boxed_slice(root_states)?;
+    let mut inner = allowance.reserve::<RecoveryBaseImagePlanBody>(1)?;
+    inner.push(RecoveryBaseImagePlanBody {
+        selected_selector: selection.root().selected().selector(),
+        selected_root: selection.root().selected().manifest().clone(),
+        latest_blob_publication,
+        latest_blob_quarantine,
+        tier_epoch_anchor: selection.root().selected().manifest().tier_epoch_anchor(),
+        record_anchors,
+        derived_family_directory,
+        selected_root_topology,
+        destination_generation: pending.staging_generation,
+        actions,
+        segment_updates,
+        manifests,
+        root_states,
+        release_head_replay: replay,
+        source_artifacts,
+    });
+    Ok(RecoveryBaseImagePlan { inner })
 }
 
 fn materialization_backing(

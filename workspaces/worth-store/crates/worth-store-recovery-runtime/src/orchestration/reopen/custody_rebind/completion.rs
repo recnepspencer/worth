@@ -18,7 +18,7 @@ pub(in crate::orchestration::reopen) fn complete(
         expectation,
         publication_counters,
         publication_settlement,
-        reopened_backing,
+        mut reopened_backing,
     } = durable.into_payload();
     let counters = completed_counters(&completed);
     let planning = std::mem::replace(&mut state.custody, PlanningCustody::Unresolved);
@@ -27,10 +27,12 @@ pub(in crate::orchestration::reopen) fn complete(
         (PlanningCustody::NoRelease(claim), None) => CustodyState::NoRelease(claim),
         (PlanningCustody::SourceHeads(claim), None) => CustodyState::SourceHeads(claim),
         (PlanningCustody::PendingPrepared { claim, replay }, Some(effective_heads)) => {
+            let mut effective_slot = reopened_backing.take_pending_effective_slot();
+            effective_slot.push(effective_heads);
             CustodyState::Pending {
                 claim,
-                replay: Box::new(replay.into_head()),
-                effective_heads: Box::new(effective_heads),
+                replay,
+                effective_heads: effective_slot,
             }
         }
         (

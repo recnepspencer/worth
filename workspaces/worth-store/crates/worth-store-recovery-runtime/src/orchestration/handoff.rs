@@ -119,6 +119,11 @@ fn prepare(
 fn construct(mut prepared: PreparedHandoff) -> ConstructedHandoff {
     let result = match prepared.input {
         Ok(input) => {
+            let core_body = prepared
+                .backing
+                .core_body
+                .take()
+                .expect("prepaid Store core body");
             let construction::RejoinConstructionInput {
                 construction,
                 custody,
@@ -129,6 +134,7 @@ fn construct(mut prepared: PreparedHandoff) -> ConstructedHandoff {
             } = input;
             construction
                 .complete(
+                    core_body,
                     custody,
                     tier,
                     allocation,

@@ -4,15 +4,17 @@ use worth_store_physical_format::PersistedPhysicalRecoveryProjection;
 use super::super::*;
 use crate::physical_runtime::{SharedRecoveryCheckpoint, StoreRecoveryBindingFreshnessSample};
 
+// Drop order mirrors the original local scope on unwind: WAL fingerprint,
+// projection and freshness sample release before `media` drops its lease.
 pub(super) struct FirstPassObservation<'claim> {
-    pub(super) media: AdmittedRecoveryFilesystemMedia,
-    pub(super) selected: selection::Selection,
-    pub(super) selected_tier: Option<tier::selection::ObservedTierSelection>,
-    pub(super) controls: controls::Controls,
-    pub(super) first_heads: head_v14::ObservedHeadV14<'claim>,
     pub(super) inventory: SelectedWalMediaFingerprint,
-    pub(super) sample: StoreRecoveryBindingFreshnessSample,
     pub(super) projection: PersistedPhysicalRecoveryProjection,
+    pub(super) sample: StoreRecoveryBindingFreshnessSample,
+    pub(super) media: AdmittedRecoveryFilesystemMedia,
+    pub(super) first_heads: head_v14::ObservedHeadV14<'claim>,
+    pub(super) controls: controls::Controls,
+    pub(super) selected_tier: Option<tier::selection::ObservedTierSelection>,
+    pub(super) selected: selection::Selection,
 }
 
 #[inline(never)]

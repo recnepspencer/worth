@@ -6,7 +6,7 @@ impl ApplicationHomeRecoveryCustody {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, (Self, ApplicationHomeCloseDenial)> {
         if matches!(
-            self.inner.native,
+            self.body().native,
             NativeCloseCustody::NeverAttached | NativeCloseCustody::Retired(_)
         ) {
             return Ok(self);
@@ -14,15 +14,18 @@ impl ApplicationHomeRecoveryCustody {
         if let Err(cause) = self.settle_retained_checkpoint(execution) {
             return Err((self, cause));
         }
-        let native = std::mem::replace(&mut self.inner.native, NativeCloseCustody::NeverAttached);
+        let native =
+            std::mem::replace(&mut self.body_mut().native, NativeCloseCustody::NeverAttached);
         let mut native = match native {
             NativeCloseCustody::Serving(native) => {
-                let preparation = self.inner.checkpoint.take_native_retirement();
+                let preparation = self.body_mut().checkpoint.take_native_retirement();
                 match native.prepare_close(preparation, execution) {
                     Ok(native) => native,
                     Err((native, preparation, cause)) => {
-                        self.inner.checkpoint.restore_native_retirement(preparation);
-                        self.inner.native = NativeCloseCustody::Serving(native);
+                        self.body_mut()
+                            .checkpoint
+                            .restore_native_retirement(preparation);
+                        self.body_mut().native = NativeCloseCustody::Serving(native);
                         return Err((self, ApplicationHomeCloseDenial::Relational(cause)));
                     }
                 }
@@ -32,8 +35,9 @@ impl ApplicationHomeRecoveryCustody {
                 unreachable!("terminal Native posture returned before advancement")
             }
         };
-        let Some(PhysicalCloseCustody::Retained(actual)) = &self.inner.physical else {
-            self.inner.native = NativeCloseCustody::Prepared(native);
+        let body = self.body_mut();
+        let Some(PhysicalCloseCustody::Retained(actual)) = &body.physical else {
+            body.native = NativeCloseCustody::Prepared(native);
             return Err((
                 self,
                 ApplicationHomeCloseDenial::PhysicalCustodyPhaseMismatch,
@@ -41,7 +45,7 @@ impl ApplicationHomeRecoveryCustody {
         };
         loop {
             if let Err(cause) = interrupted(execution) {
-                self.inner.native = NativeCloseCustody::Prepared(native);
+                body.native = NativeCloseCustody::Prepared(native);
                 return Err((self, ApplicationHomeCloseDenial::Execution(cause)));
             }
             match native.advance(execution, actual) {
@@ -50,11 +54,11 @@ impl ApplicationHomeRecoveryCustody {
                     let original = native
                         .into_retired()
                         .unwrap_or_else(|_| unreachable!("same complete original section"));
-                    self.inner.native = NativeCloseCustody::Retired(original);
+                    body.native = NativeCloseCustody::Retired(original);
                     return Ok(self);
                 }
                 Err(cause) => {
-                    self.inner.native = NativeCloseCustody::Prepared(native);
+                    body.native = NativeCloseCustody::Prepared(native);
                     return Err((self, ApplicationHomeCloseDenial::Relational(cause)));
                 }
             }

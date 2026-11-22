@@ -6,19 +6,21 @@ use worth_store_recovery_physics::{
     VerifiedSelectedTierEpochCustody,
 };
 
+use crate::physical_runtime::record_serving::RecoveredReleaseCustody;
 use crate::physical_runtime::{
-    ClosedPhysicalRecoveryCleanup, PhysicalRecoveryAllocationAdmission,
-    PhysicalRecoveryCoordination,
+    ClosedPhysicalRecoveryCleanup, CompletedPhysicalRecoveryFreshReopen,
+    PhysicalRecoveryAllocationAdmission, PhysicalRecoveryCoordination,
 };
 
 use super::{
     selected_rejoin, validate_construction_binding, PhysicalRecoveryConstructionPort,
-    RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
+    PreparedRecoveredRuntimeCoreBacking, RecoveredPhysicalRuntimeConstructionDenial,
+    RecoveredPhysicalRuntimeCore,
 };
 
 impl PhysicalRecoveryConstructionPort {
     pub fn construct_with_verified_ordered_historical_release(
-        mut coordination: PhysicalRecoveryCoordination,
+        coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         cleanup: ClosedPhysicalRecoveryCleanup,
         recovery_allocation: PhysicalRecoveryAllocationAdmission,
@@ -26,8 +28,28 @@ impl PhysicalRecoveryConstructionPort {
         effective: VerifiedEffectiveReleaseHeadRosterV14,
         tier: Option<VerifiedSelectedTierEpochCustody>,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
-        let historical = Box::new(historical);
-        let effective = Box::new(effective);
+        Self::construct_ordered_historical_inner(
+            PreparedRecoveredRuntimeCoreBacking::prepare_direct(),
+            coordination,
+            media,
+            cleanup,
+            recovery_allocation,
+            Box::new(historical),
+            Box::new(effective),
+            tier,
+        )
+    }
+
+    pub(super) fn construct_ordered_historical_inner(
+        backing: PreparedRecoveredRuntimeCoreBacking,
+        mut coordination: PhysicalRecoveryCoordination,
+        media: AdmittedRecoveryFilesystemMedia,
+        cleanup: ClosedPhysicalRecoveryCleanup,
+        recovery_allocation: PhysicalRecoveryAllocationAdmission,
+        historical: Box<VerifiedOrderedHistoricalReleaseCustody>,
+        effective: Box<VerifiedEffectiveReleaseHeadRosterV14>,
+        tier: Option<VerifiedSelectedTierEpochCustody>,
+    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         if cleanup.live_media_handle_delta() != 0
             || coordination
                 .require_selected_checkpoint(historical.checkpoint())
@@ -71,18 +93,41 @@ impl PhysicalRecoveryConstructionPort {
                     return Err(super::rejoin_denial::construction_denial(denial));
                 }
             };
-        let mut core = Self::construct_inner(
+        Self::finish_ordered_historical(
+            backing,
             coordination,
             media,
             reopen,
-            None,
+            historical,
+            effective,
+            selected_wal,
+            selected_controls,
+        )
+    }
+
+    #[inline(never)]
+    fn finish_ordered_historical(
+        backing: PreparedRecoveredRuntimeCoreBacking,
+        coordination: PhysicalRecoveryCoordination,
+        media: AdmittedRecoveryFilesystemMedia,
+        reopen: CompletedPhysicalRecoveryFreshReopen,
+        historical: Box<VerifiedOrderedHistoricalReleaseCustody>,
+        effective: Box<VerifiedEffectiveReleaseHeadRosterV14>,
+        selected_wal: selected_rejoin::SelectedWalMediaFingerprint,
+        selected_controls: selected_rejoin::SelectedControlMediaFingerprint,
+    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
+        Self::construct_inner(
+            backing,
+            coordination,
+            media,
+            reopen,
+            Some(RecoveredReleaseCustody::OrderedHistorical {
+                effective: *effective,
+                claim: *historical,
+            }),
             None,
             Some(selected_wal),
             Some(selected_controls),
-        )?;
-        let body = core.body_mut();
-        body.historical_release_custody = Some(historical);
-        body.effective_release_heads = Some(effective);
-        Ok(core)
+        )
     }
 }
