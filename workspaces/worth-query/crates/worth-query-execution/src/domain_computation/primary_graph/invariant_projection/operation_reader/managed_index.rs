@@ -37,17 +37,58 @@ pub(in crate::domain_computation::primary_graph) fn native_index_decision_cause<
     }
 }
 
-fn unavailable() -> HandlerExecutionDenial {
-    HandlerExecutionDenial::new(IndexDecisionStop::ContextUnavailable)
+mod failure;
+use failure::IndexDecisionFailure as Failure;
+pub use failure::{
+    WorthQueryComputationManagedIndexDenial, WorthQueryComputationManagedIndexDenialKind,
+};
+
+const fn unavailable() -> Failure {
+    Failure::ContextUnavailable
 }
 
 impl<Schema: ApplicationSchema, Operation>
     WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>
 {
+    /// The handler's door: each refusal keeps the exact boxed cause it had.
     pub(in crate::domain_computation::primary_graph) fn index_query<B>(
         &mut self,
         intent: B::Input,
     ) -> Result<Vec<Value<Schema, B>>, HandlerExecutionDenial>
+    where
+        B: ApplicationQueryBinding<Schema>,
+        B::Input: ApplicationQueryIntent<Schema, Binding = B>,
+        B::ScopeBinding: ApplicationQueryScopeResolution<Schema, B::PrincipalIdentity>,
+        Value<Schema, B>: application_query::WorthQueryApplicationProjection<Schema, B::Query>,
+    {
+        self.decision_index_query::<B>(intent)
+            .map_err(Failure::into_handler)
+    }
+
+    /// A partitioned computation's owner call makes the same issued decision
+    /// read. The read's facts are recorded with that call, and its refusal is
+    /// retained as a typed, comparable computation read denial.
+    pub(in crate::domain_computation::primary_graph) fn computation_index_query<B>(
+        &mut self,
+        intent: B::Input,
+    ) -> Result<Vec<Value<Schema, B>>, WorthQueryComputationManagedIndexDenial>
+    where
+        B: ApplicationQueryBinding<Schema>,
+        B::Input: ApplicationQueryIntent<Schema, Binding = B>,
+        B::ScopeBinding: ApplicationQueryScopeResolution<Schema, B::PrincipalIdentity>,
+        Value<Schema, B>: application_query::WorthQueryApplicationProjection<Schema, B::Query>,
+    {
+        if let Some(context) = self.source_context_use {
+            context.set(context.get().source_query_permission());
+        }
+        self.decision_index_query::<B>(intent)
+            .map_err(Failure::into_computation)
+    }
+
+    fn decision_index_query<B>(
+        &mut self,
+        intent: B::Input,
+    ) -> Result<Vec<Value<Schema, B>>, Failure>
     where
         B: ApplicationQueryBinding<Schema>,
         B::Input: ApplicationQueryIntent<Schema, Binding = B>,
@@ -65,7 +106,7 @@ impl<Schema: ApplicationSchema, Operation>
                 .clone();
             self.admit_decision_target(&worth_query_installation::facade::ApplicationOperationDecisionReadTarget::ManagedIndex {
                 parent: worth_query_declaration::facade::application_query::ApplicationQueryBindingReference::of::<Schema, B>(),
-            }).map_err(HandlerExecutionDenial::new)?;
+            }).map_err(Failure::Undeclared)?;
             let scope = self
                 .operation_scope
                 .as_ref()
@@ -75,14 +116,14 @@ impl<Schema: ApplicationSchema, Operation>
                 .application
                 .installed_schema()
                 .installed_query_binding::<B>()
-                .map_err(HandlerExecutionDenial::new)?;
+                .map_err(Failure::Installation)?;
             // A named Query is not permission to read its fields as this operation.
             // Admit the actual installed Parent projection under its normal read
             // targets; the independent Source query still performs its own READ.
             for field in installed.query().read_graph().projections() {
                 self.admit_decision_target(&worth_query_installation::facade::ApplicationOperationDecisionReadTarget::Field {
                     entity: field.entity().to_owned(), aspect: field.aspect().to_owned(), field: field.field().to_owned(),
-                }).map_err(HandlerExecutionDenial::new)?;
+                }).map_err(Failure::Undeclared)?;
             }
             let selected = access.shared.selected();
             let original = self
@@ -92,7 +133,7 @@ impl<Schema: ApplicationSchema, Operation>
                 .ok_or_else(unavailable)?
                 .read_truth()
                 .positioned_snapshot(self.reader.snapshot)
-                .map_err(|_| HandlerExecutionDenial::new(IndexDecisionStop::ForeignProjection))?;
+                .map_err(|_| Failure::ForeignProjection)?;
             let borrowed = self
                 .reader
                 .native
@@ -100,7 +141,7 @@ impl<Schema: ApplicationSchema, Operation>
                 .ok_or_else(unavailable)?
                 .read_truth()
                 .positioned_snapshot(selected.application_basis().snapshot_handle())
-                .map_err(|_| HandlerExecutionDenial::new(IndexDecisionStop::ForeignProjection))?;
+                .map_err(|_| Failure::ForeignProjection)?;
             if original != borrowed
                 || self.reader.selected_product_occurrence
                     != Some(selected.product().observation().lifecycle_incarnation())
@@ -113,9 +154,7 @@ impl<Schema: ApplicationSchema, Operation>
                             .get(),
                     )
             {
-                return Err(HandlerExecutionDenial::new(
-                    IndexDecisionStop::ForeignProjection,
-                ));
+                return Err(Failure::ForeignProjection);
             }
             let execution = self.reader.execution;
             let graph = access
@@ -130,7 +169,7 @@ impl<Schema: ApplicationSchema, Operation>
                     .committed_runtime()
                     .ok_or_else(unavailable)?,
             )
-            .map_err(HandlerExecutionDenial::new)?;
+            .map_err(Failure::NativeAccess)?;
             let (rows, observation) = application_query::managed_index::read_decision::<Schema, B>(
                 execution,
                 access,
@@ -139,7 +178,7 @@ impl<Schema: ApplicationSchema, Operation>
                 &scope,
                 &mut native,
             )
-            .map_err(HandlerExecutionDenial::new)?;
+            .map_err(Failure::ManagedIndex)?;
             self.decision_facts
                 .record_managed_source(
                     &observation,
@@ -148,7 +187,7 @@ impl<Schema: ApplicationSchema, Operation>
                     self.reader.snapshot,
                     execution,
                 )
-                .map_err(|cause| HandlerExecutionDenial::new(IndexDecisionStop::Native(cause)))?;
+                .map_err(Failure::Native)?;
             Ok(rows)
         })();
         if result.is_err() {
