@@ -260,8 +260,8 @@
    batch id=4 rank=0 ready=[6]
    prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    quiescence
-   batch id=5 rank=1 ready=[12]
-   prepare task=12 subject=captured-input.r3.late-owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=5 rank=1 ready=[9]
+   prepare task=9 subject=captured-input.r3.late-owed family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(15), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    reopen task=6 owed=0
    batch id=6 rank=0 ready=[6]
    prepare task=6 subject=captured-input.seed-parent family=captured-input source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(12), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared

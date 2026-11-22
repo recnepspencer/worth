@@ -14,6 +14,17 @@ pub(super) struct Round<'m> {
     pub(super) pin: &'m Candidate,
 }
 impl Round<'_> {
+    /// Whether this round runs one commit per stage at or after the authored
+    /// stage appended at `stage`: that stage or a later one, or a producer
+    /// round owed at or after it (a root selection's stage window, #238).
+    pub(super) fn runs_from_stage(&self, stage: usize) -> bool {
+        match &self.member.kind {
+            CoupledApplicationMemberKind::AuthoredStage { .. } => self.position >= stage,
+            CoupledApplicationMemberKind::Producer { .. } => {
+                self.owed.is_some_and(|owed| owed >= stage)
+            }
+        }
+    }
     /// Whether this round runs after `reader` one commit per stage: a later
     /// authored stage, or a producer round owed at or after the reader.
     pub(super) fn settles_after(&self, reader: usize) -> bool {

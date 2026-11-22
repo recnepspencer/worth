@@ -7,7 +7,8 @@ pub use worth_query_execution_lineage::facade::domain_computation::execution_obs
     is_installed, owned_control_scope, register_cleanup,
 };
 pub(crate) use worth_query_execution_lineage::facade::domain_computation::execution_observation::{
-    record_retained_reads_visited, record_wave_charged, record_wave_event,
+    record_outgoing_rows_revisited, record_retained_reads_visited, record_wave_charged,
+    record_wave_event,
 };
 
 /// Records this thread's Query work while an owned listener exists.

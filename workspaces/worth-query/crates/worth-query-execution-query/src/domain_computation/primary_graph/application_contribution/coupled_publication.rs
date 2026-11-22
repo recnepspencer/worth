@@ -203,14 +203,18 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             )
             .map_err(execution::denial::candidate_support_denied)
     }
+    /// The wave tasks whose outgoing support is equal at `current` (PR C §4).
     pub fn refresh_outgoing_support(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), WorthQueryOutputDemandDenial> {
+        current: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) -> Result<Vec<usize>, WorthQueryOutputDemandDenial> {
         self.application
             .runtime
             .primary_provider
-            .refresh_outgoing_read_support(execution, &self.root_session)
+            .refresh_outgoing_read_support(execution, &self.root_session, self.before, current)
             .map_err(execution::denial::candidate_support_denied)
     }
     pub fn take_denial(&self) -> Option<WorthQueryOutputDemandDenial> {

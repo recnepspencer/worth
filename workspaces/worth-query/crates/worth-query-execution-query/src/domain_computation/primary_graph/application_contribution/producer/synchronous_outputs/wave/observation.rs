@@ -13,6 +13,11 @@ pub(in crate::domain_computation::primary_graph) fn visited_retained_reads(entri
     crate::domain_computation::execution_observation::record_retained_reads_visited(entries);
 }
 
+/// Counts completed rows a quiescent outgoing reclosure ran again (PR C §4).
+pub(super) fn record_outgoing_rows_revisited(rows: u64) {
+    crate::domain_computation::execution_observation::record_outgoing_rows_revisited(rows);
+}
+
 /// Records one event, formatted only while observed.
 pub(super) fn record(event: impl FnOnce() -> String) {
     crate::domain_computation::execution_observation::record_wave_event(event);
