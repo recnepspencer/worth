@@ -15,6 +15,7 @@ pub mod guarded_presence;
 pub mod guarded_current;
 pub mod guarded_first;
 pub mod decision_write_n;
+pub mod self_relation;
 pub mod saturated_consumer;
 pub mod saturated_input;
 pub mod self_write;
@@ -37,7 +38,8 @@ pub fn contracts(
     guarded_presence::contracts(contracts)?;
     guarded_current::contracts(contracts)?;
     guarded_first::contracts(contracts)?;
-    decision_write_n::contracts(contracts)
+    decision_write_n::contracts(contracts)?;
+    self_relation::contracts(contracts)
 }
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
@@ -57,5 +59,6 @@ pub fn install(
     guarded_presence::install(setup)?;
     guarded_current::install(setup)?;
     guarded_first::install(setup)?;
-    decision_write_n::install(setup)
+    decision_write_n::install(setup)?;
+    self_relation::install(setup)
 }

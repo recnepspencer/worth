@@ -71,6 +71,24 @@ impl<'run, S: ApplicationSchema> CoupledApplicationAssembly<'_, 'run, '_, S> {
         }
     }
 
+    /// A successor round's prepare failed after a read its own-output view
+    /// served found a record the chain created absent at the head pre-pin.
+    /// The view is entity-only (#277): the round reached that record by a
+    /// read served at the current image, so its failure is the chain's
+    /// effect, not C, and it stops typed (`PriorEffectRead`) on the record.
+    /// Any other failure, or one with a coherent view, is unchanged.
+    pub(super) fn successor_prepare_stop(
+        &self,
+        candidate: &RelationalAuthoredCoupledCandidate<'_>,
+        chain: Option<&ContinuedChain>,
+        stop: super::super::producer::execution::ProducerExecutionStop,
+    ) -> CoupledSourceReadStop {
+        match chain.and_then(|chain| Some((chain.index, chain.own.incoherent()?))) {
+            Some((index, record)) => candidate.prior_effect_read(index, Some(record)).into(),
+            None => stop.into(),
+        }
+    }
+
     /// The successor's original idempotency record is the chain's record:
     /// its key binds the round's own dependency, so it is re-created under
     /// the head's local coordinate with the successor's values (§1.5

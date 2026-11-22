@@ -7,6 +7,7 @@ mod staged;
 mod alias;
 mod cross_write;
 mod outgoing;
+mod own_output_gap;
 mod prerequisite;
 mod pending_current;
 mod pending_presence;

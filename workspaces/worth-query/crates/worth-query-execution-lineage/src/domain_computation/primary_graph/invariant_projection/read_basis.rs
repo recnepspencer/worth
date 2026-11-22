@@ -145,9 +145,19 @@ impl NativeProjectionRead<'_> {
         let Some(view) = self.projection_of(snapshot, entity) else {
             return Ok(None);
         };
-        super::super::application_attempt::observe_field_from_view_admitted(
+        let observed = super::super::application_attempt::observe_field_from_view_admitted(
             &view, execution, entity, kind, locator, action,
-        )
+        )?;
+        // Served at the head pre-pin and absent there: the chain created it.
+        if observed.is_none()
+            && let Self::Applied {
+                own_outputs: Some(own),
+                ..
+            } = self
+        {
+            own.mark_incoherent(entity);
+        }
+        Ok(observed)
     }
     pub fn resolve_entity(
         &self,
