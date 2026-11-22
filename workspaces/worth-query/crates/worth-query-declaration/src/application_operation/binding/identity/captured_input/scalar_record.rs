@@ -120,6 +120,9 @@ impl<'a> Cursor<'a> {
                 self.take(length)?;
             }
             tag::NONE | tag::UNIT => {}
+            tag::NEWTYPE_STRUCT => {
+                self.float_members()?;
+            }
             tag::STRUCT => {
                 self.temporal_members()?;
             }

@@ -245,8 +245,12 @@ let body = Reschedule::reference().body()
 ```
 
 The selector recognizes exactly the carriers' serialized forms: the temporal
-structs by their struct and field names, `[u8; 16]` as a 16-byte tuple and
-`InlineBytes` as its byte sequence. A different struct name, extra member or
+structs by their struct and field names, `CanonicalF32`/`CanonicalF64`
+(`CanonicalF32ApplicationValueBinding`, `CanonicalF64ApplicationValueBinding`)
+by their newtype name and bits, `[u8; 16]` as a 16-byte tuple and
+`InlineBytes` as its byte sequence. Bare `f32`/`f64` members remain accepted
+for float fields. A float carrier whose bits native storage would normalize,
+such as a non-canonical NaN payload, is an invalid scalar. A different struct name, extra member or
 wrong integer sign is an unsupported shape; a day count outside `i32`, a time
 at or past midnight or a UTC offset of a day or more is an invalid scalar. Either
 refuses with `InputMismatch { member }` before any body effect, naming the

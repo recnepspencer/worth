@@ -1,14 +1,15 @@
 //! Foundational native carriers whose serde form is a fixed compound.
 //!
 //! The temporal carriers are recognized by their exact serialized struct and
-//! field names, `[u8; 16]` UUIDs by their 16-element tuple, and `InlineBytes`
-//! by its transparent byte sequence. Any other compound remains unsupported,
+//! field names, `CanonicalF32`/`CanonicalF64` by their newtype name and bits,
+//! `[u8; 16]` UUIDs by their 16-element tuple, and `InlineBytes` by its
+//! transparent byte sequence. Bare `f32`/`f64` keep their scalar form. Any other compound remains unsupported,
 //! and a carrier whose payload is not canonical refuses before effects.
 use super::super::{ApplicationCanonicalInputBytes, ApplicationCanonicalInputScalar};
 use super::{tag, Cursor, Denial};
 use worth_foundational::facade::{
-    AspectValue, CanonicalDate, CanonicalTime, CanonicalTimestamp, CanonicalTimestampTz,
-    InlineBytes, ScalarAspectType,
+    AspectValue, CanonicalDate, CanonicalF32, CanonicalF64, CanonicalTime, CanonicalTimestamp,
+    CanonicalTimestampTz, InlineBytes, ScalarAspectType,
 };
 
 /// Compound members are framed by these markers in the canonical grammar.
@@ -23,6 +24,17 @@ impl<'a> Cursor<'a> {
         family: ScalarAspectType,
     ) -> Result<Option<ApplicationCanonicalInputScalar<'a>>, Denial> {
         use ScalarAspectType as F;
+        if matches!(family, F::Float32 | F::Float64) {
+            if self.0.first() != Some(&tag::NEWTYPE_STRUCT) {
+                return Ok(None);
+            }
+            self.byte()?;
+            let value = self.float_carrier()?;
+            if value.value_family() != family {
+                return Err(Denial::InvalidScalar);
+            }
+            return Ok(Some(ApplicationCanonicalInputScalar::Inline(value)));
+        }
         let expected = match family {
             F::Date | F::Time | F::Timestamp | F::TimestampTz => tag::STRUCT,
             F::Uuid => tag::TUPLE,
@@ -94,6 +106,37 @@ impl<'a> Cursor<'a> {
         Ok(members)
     }
 
+    /// Reads and admits a canonical float carrier after its NEWTYPE_STRUCT
+    /// tag, refusing bits native storage would normalize.
+    fn float_carrier(&mut self) -> Result<AspectValue, Denial> {
+        let value = match self.float_members()? {
+            FloatMembers::F32(bits) => {
+                let bits = narrow(bits)?;
+                let value = CanonicalF32::from_bits(bits);
+                (value.bits() == bits).then_some(AspectValue::Float32(value))
+            }
+            FloatMembers::F64(bits) => {
+                let bits = narrow(bits)?;
+                let value = CanonicalF64::from_bits(bits);
+                (value.bits() == bits).then_some(AspectValue::Float64(value))
+            }
+        };
+        value.ok_or(Denial::InvalidScalar)
+    }
+
+    /// Reads a float carrier's grammar without admitting its bits.
+    pub(super) fn float_members(&mut self) -> Result<FloatMembers, Denial> {
+        let width = match self.text()? {
+            "CanonicalF32" => FloatMembers::F32,
+            "CanonicalF64" => FloatMembers::F64,
+            _ => return Err(Denial::UnsupportedShape),
+        };
+        if self.byte()? != tag::UNSIGNED {
+            return Err(Denial::InvalidScalar);
+        }
+        Ok(width(self.integer()?))
+    }
+
     /// Reads a `[u8; 16]` after its TUPLE tag.
     pub(super) fn uuid_carrier(&mut self) -> Result<[u8; UUID_BYTES], Denial> {
         let mut uuid = [0_u8; UUID_BYTES];
@@ -152,6 +195,12 @@ impl<'a> Cursor<'a> {
         }
         Ok(())
     }
+}
+
+/// A float carrier's bits as serialized, before narrowing.
+pub(super) enum FloatMembers {
+    F32(u128),
+    F64(u128),
 }
 
 /// A temporal carrier's members as serialized, before narrowing.

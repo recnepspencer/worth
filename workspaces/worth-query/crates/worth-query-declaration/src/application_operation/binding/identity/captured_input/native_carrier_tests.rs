@@ -260,3 +260,92 @@ fn skipping_a_member_checks_its_shape_and_only_selection_admits_its_value() {
         Err(ApplicationCanonicalInputDenial::InvalidScalar)
     ));
 }
+
+#[test]
+fn canonical_float_carriers_select_beside_bare_floats_and_refuse_normalizable_bits() {
+    use worth_foundational::facade::{CanonicalF32, CanonicalF64};
+    use ScalarAspectType as F;
+    #[derive(Serialize)]
+    struct Floats {
+        identity: &'static str,
+        width: CanonicalF32,
+        depth: Option<CanonicalF64>,
+        bare: f64,
+        negative_zero: CanonicalF64,
+    }
+    for depth in [
+        None,
+        Some(CanonicalF64::from_f64(f64::NAN)),
+        Some(CanonicalF64::from_f64(2.5)),
+    ] {
+        let fixture = Floats {
+            identity: "item",
+            width: CanonicalF32::from_f32(-1.5),
+            depth,
+            bare: 0.25,
+            negative_zero: CanonicalF64::from_f64(-0.0),
+        };
+        let input = capture(&fixture);
+        assert_eq!(
+            select(&input, "width", F::Float32),
+            AspectValue::Float32(fixture.width)
+        );
+        let optional = input
+            .optional_scalar_member("depth", F::Float64)
+            .unwrap()
+            .map(ApplicationCanonicalInputScalar::into_value);
+        assert_eq!(optional, depth.map(AspectValue::Float64));
+        assert_eq!(
+            select(&input, "bare", F::Float64),
+            AspectValue::Float64(CanonicalF64::from_f64(0.25))
+        );
+        assert_eq!(
+            select(&input, "negative_zero", F::Float64),
+            AspectValue::Float64(fixture.negative_zero)
+        );
+        assert_eq!(
+            select(&input, "identity", F::String),
+            AspectValue::String(InternedString::Raw("item".to_owned()))
+        );
+        for (member, family) in [("width", F::Float64), ("depth", F::Float32)] {
+            assert!(matches!(
+                input.scalar_member(member, family),
+                Err(ApplicationCanonicalInputDenial::InvalidScalar)
+            ));
+        }
+    }
+
+    // Public fields can hold a NaN payload native storage would normalize.
+    #[derive(Serialize)]
+    struct Payloads {
+        width: CanonicalF32,
+        depth: CanonicalF64,
+        kept: u64,
+    }
+    let input = capture(&Payloads {
+        width: CanonicalF32(f32::NAN.to_bits() ^ 1),
+        depth: CanonicalF64(f64::NAN.to_bits() ^ 1),
+        kept: 3,
+    });
+    for (member, family) in [("width", F::Float32), ("depth", F::Float64)] {
+        assert!(matches!(
+            input.scalar_member(member, family),
+            Err(ApplicationCanonicalInputDenial::InvalidScalar)
+        ));
+    }
+    assert_eq!(select(&input, "kept", F::UInt64), AspectValue::UInt64(3));
+
+    #[derive(Serialize)]
+    struct ForgedFloat(u64);
+    #[derive(Serialize)]
+    struct Holder {
+        depth: ForgedFloat,
+    }
+    assert!(matches!(
+        capture(&Holder {
+            depth: ForgedFloat(0)
+        })
+        .scalar_member("depth", F::Float64),
+        Err(ApplicationCanonicalInputDenial::UnsupportedShape)
+    ));
+}

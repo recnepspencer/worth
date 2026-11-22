@@ -17,8 +17,9 @@ worth_query_operation!(pub AssignSchedule for Schema: BodySchemaBinding, input S
 worth_query_operation!(pub AssignForgedSchedule for Schema: BodySchemaBinding, input ScheduleInputBinding<ForgedDay>);
 
 // Every fixture destination instantiates these entry points; the inline-const
-// gates keep the schedule machinery out of every destination but its own, so
-// the shared court binary does not grow per destination.
+// gates keep the schedule operations, bindings and query out of every
+// destination but its own. The `DocumentScheduleFacts` aspect itself is part of
+// every destination's `Document`, as optional aspects are declared per entity.
 pub fn declare<const MODE: u64>(
     schema: ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<MODE>>,
 ) -> ApplicationSchemaDeclarationBuilder<DocumentRetentionSchema<MODE>> {
