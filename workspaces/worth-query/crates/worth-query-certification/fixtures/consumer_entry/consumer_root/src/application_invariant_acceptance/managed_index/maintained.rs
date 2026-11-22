@@ -17,6 +17,7 @@ mod mutation;
 mod nested;
 mod ordered_refusing;
 mod prefix;
+mod probe;
 mod protected;
 mod query;
 mod refinement;

@@ -27,6 +27,9 @@ pub(in crate::domain_computation::primary_graph) use request_execution::{
 };
 mod setup;
 
+pub use super::invariant_projection::{
+    WorthQueryComputationManagedIndexDenial, WorthQueryComputationManagedIndexDenialKind,
+};
 pub use composition::{
     WorthQueryApplicationContribution, WorthQueryApplicationContributionTuple,
     WorthQueryConfiguredApplicationContributions,
