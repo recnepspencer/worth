@@ -1,8 +1,7 @@
 //! Full Phase 6 Host oracle under D14 derived-cache discard (graceful close & OS kill,
-//! same & changed builds): compares authored truth, history, World occurrences, nontrivial
-//! durable custody (settled release across graceful close; live unresolved across OS kill),
-//! post-reopen IntentDrift, once-only continuation, and exact receipts via
-//! DurableIdentityCorrespondence against MemoryOnly.
+//! same & changed builds): keeps one run-wide DurableIdentityCorrespondence against
+//! MemoryOnly across authored truth, history, World occurrences, nontrivial durable custody,
+//! post-reopen IntentDrift, direct continuation-to-original identity, and once-only retry.
 use super::super::{
     opening,
     protocol::{Disposition, Request},
@@ -32,16 +31,11 @@ const EXPECTED_CADENCE_KEYS: [&str; 5] = [
 
 #[test]
 fn host_oracle_discard_derived_graceful_close_preserves_truth_history_custody_and_receipts() {
-    for reopen_build in [FIRST_BUILD, SECOND_BUILD] {
-        run_discard_oracle(false, reopen_build);
-    }
+    for reopen_build in [FIRST_BUILD, SECOND_BUILD] { run_discard_oracle(false, reopen_build); }
 }
-
 #[test]
 fn host_oracle_discard_derived_process_kill_preserves_truth_history_custody_and_receipts() {
-    for reopen_build in [FIRST_BUILD, SECOND_BUILD] {
-        run_discard_oracle(true, reopen_build);
-    }
+    for reopen_build in [FIRST_BUILD, SECOND_BUILD] { run_discard_oracle(true, reopen_build); }
 }
 
 fn cadence_map(disposition: Option<Disposition>) -> BTreeMap<String, (u64, u64)> {
@@ -70,6 +64,29 @@ fn open_memory_ref(
     )
 }
 
+fn assert_semantic_state_parity(
+    home: &projection::StateProjection,
+    reference: &projection::StateProjection,
+) {
+    assert!(home.history_complete && !home.history_crossed_retired);
+    assert_eq!(home.head.branch, reference.head.branch);
+    assert_eq!(home.head.generation, reference.head.generation);
+    assert_eq!(home.occurrences.len(), (home.head.generation + 1) as usize);
+    assert_eq!(home.custody.len(), reference.custody.len());
+    assert_eq!(home.entities.len(), reference.entities.len());
+    for (h, r) in home.entities.iter().zip(&reference.entities) {
+        assert_eq!(h.kind_name, r.kind_name);
+        assert_eq!(h.lifecycle, r.lifecycle);
+        assert_eq!(h.authoritative_aspect_state, r.authoritative_aspect_state);
+    }
+    assert_eq!(home.relations.len(), reference.relations.len());
+    for (h, r) in home.relations.iter().zip(&reference.relations) {
+        assert_eq!(h.kind_name, r.kind_name);
+        assert_eq!(h.lifecycle, r.lifecycle);
+        assert_eq!(h.authoritative_aspect_state, r.authoritative_aspect_state);
+    }
+}
+
 fn run_discard_oracle(kill: bool, reopen_build: &str) {
     let root = tempfile::tempdir().unwrap();
     let path = root.path().join("home");
@@ -80,26 +97,23 @@ fn run_discard_oracle(kill: bool, reopen_build: &str) {
     let reference = open_memory_ref(initialized.clone(), contacts.clone(), &execution);
     let mut correspondence = comparison::HostOracleComparison::default();
     let mut reference_originals = std::collections::HashMap::new();
-    let continued_reference = kill.then(|| {
+    // Non-identity semantic reference for key 3 after Directory-only ContinueOriginal;
+    // the run keeps ONE DurableIdentityCorrespondence (`correspondence`) throughout.
+    let semantic_reference = kill.then(|| {
         open_memory_ref(
             Arc::new(AtomicUsize::new(0)),
             Arc::new(AtomicUsize::new(0)),
             &execution,
         )
     });
-    let mut continued_originals = std::collections::HashMap::new();
-    let mut continued_correspondence = comparison::HostOracleComparison::default();
+    let mut semantic_originals = std::collections::HashMap::new();
 
     let (mut session, opened) =
         Session::start_with_build(&path, &root.path().join("first"), 0, Some(FIRST_BUILD));
     assert_eq!(opened.initialized, 1);
     let mut reference_state = projection::observe(reference.runtime(), &execution);
-    let open_state = opened.state.as_ref().unwrap();
-    comparison::compare(&mut correspondence, open_state, &reference_state).unwrap();
-    if let Some(ref cont_ref) = continued_reference {
-        let cont_open = projection::observe(cont_ref.runtime(), &execution);
-        comparison::compare(&mut continued_correspondence, open_state, &cont_open).unwrap();
-    }
+    comparison::compare(&mut correspondence, opened.state.as_ref().unwrap(), &reference_state)
+        .unwrap();
 
     // 1. Committed writes (keys 1 and 2) + pre-discard IntentDrift on key 1.
     for (key, value, expected_fate, handler_calls) in [
@@ -111,9 +125,9 @@ fn run_discard_oracle(kill: bool, reopen_build: &str) {
         let cmd = HostCommand::Mutate { branch: BranchLabel::Main, key, value };
         let expected =
             super::super::execution::mutation(&reference, &cmd, &mut reference_originals).unwrap();
-        if let Some(ref cont_ref) = continued_reference {
+        if let Some(ref sem_ref) = semantic_reference {
             let _ =
-                super::super::execution::mutation(cont_ref, &cmd, &mut continued_originals).unwrap();
+                super::super::execution::mutation(sem_ref, &cmd, &mut semantic_originals).unwrap();
         }
         let actual = session.send(Request::Mutate { key, value });
         let actual_mutation = actual.mutation.as_ref().unwrap();
@@ -131,10 +145,6 @@ fn run_discard_oracle(kill: bool, reopen_build: &str) {
         )
         .unwrap();
         comparison::compare(&mut correspondence, actual_state, &reference_state).unwrap();
-        if let Some(ref cont_ref) = continued_reference {
-            let cont_state = projection::observe(cont_ref.runtime(), &execution);
-            comparison::compare(&mut continued_correspondence, actual_state, &cont_state).unwrap();
-        }
     }
 
     // 2. Seed nontrivial durable World/Query unpublished custody (key 3, value 33).
@@ -229,9 +239,7 @@ fn run_discard_oracle(kill: bool, reopen_build: &str) {
 
     let recovered_state = recovered.state.as_ref().unwrap();
     if kill {
-        // Immediate kill-reopen parity BEFORE continuation: full authored truth, history,
-        // occurrences, idempotency, head, and custody match MemoryOnly under
-        // DurableIdentityCorrespondence, with explicit recovered posture and allowed actions.
+        // Immediate kill-reopen parity BEFORE continuation using the run's single bijection.
         comparison::compare(&mut correspondence, recovered_state, &reference_state).unwrap();
         assert_eq!(recovered_state.custody.len(), 1);
         let custody = &recovered_state.custody[0];
@@ -255,7 +263,6 @@ fn run_discard_oracle(kill: bool, reopen_build: &str) {
         assert_eq!(custody.original_effect, original_custody.original_effect);
         assert_eq!(recovered_state.head, abandoned_state.head);
     } else {
-        // Exact settled released custody record survives discard + graceful close.
         assert!(recovered_state.custody.is_empty());
         let observed = session.send(Request::ObserveReleased { key: 3, value: 33 });
         assert_eq!(
@@ -271,16 +278,9 @@ fn run_discard_oracle(kill: bool, reopen_build: &str) {
         (2_u64, 22_u64, receipts::MutationFate::Committed),
         (1_u64, 999_u64, receipts::MutationFate::IntentDrift),
     ] {
-        let expected = super::super::execution::mutation(
-            &reference,
-            &HostCommand::Mutate {
-                branch: BranchLabel::Main,
-                key,
-                value,
-            },
-            &mut reference_originals,
-        )
-        .unwrap();
+        let cmd = HostCommand::Mutate { branch: BranchLabel::Main, key, value };
+        let expected =
+            super::super::execution::mutation(&reference, &cmd, &mut reference_originals).unwrap();
         let replayed = session.send(Request::Mutate { key, value });
         assert_eq!(replayed.contacts, 0, "replaying or drifting key invokes no handler");
         let actual_mutation = replayed.mutation.as_ref().unwrap();
@@ -301,18 +301,15 @@ fn run_discard_oracle(kill: bool, reopen_build: &str) {
         comparison::compare(&mut correspondence, replayed_state, &reference_state).unwrap();
     }
 
-    // 6. Under OS kill, continue the live recovered custody (key 3, value 33) -> completes once,
-    // matching an independent MemoryOnly reference across full truth, history, occurrences,
-    // receipt, and empty custody, and retrying continuation cannot settle or advance again.
-    if let Some(cont_ref) = continued_reference {
-        let expected_continued = super::super::execution::mutation(
-            &cont_ref,
-            &HostCommand::Mutate {
-                branch: BranchLabel::Main,
-                key: 3,
-                value: 33,
-            },
-            &mut continued_originals,
+    // 6. Under OS kill, continue the live recovered custody (key 3, value 33) -> directly verify
+    // the continued receipt and new occurrence against the already observed Directory original's
+    // attempt, Native receipt, and pre-continuation head, check non-identity semantic parity
+    // against MemoryOnly, and verify retry cannot settle or advance a second time.
+    if let Some(sem_ref) = semantic_reference {
+        let expected_semantic = super::super::execution::mutation(
+            &sem_ref,
+            &HostCommand::Mutate { branch: BranchLabel::Main, key: 3, value: 33 },
+            &mut semantic_originals,
         )
         .unwrap();
         let continued = session.send(Request::ContinueOriginal {
@@ -325,25 +322,41 @@ fn run_discard_oracle(kill: bool, reopen_build: &str) {
             Some(Disposition::Continued(mutation)) => mutation,
             other => panic!("expected Continued disposition, got {other:?}"),
         };
-        let cont_ref_state = projection::observe(cont_ref.runtime(), &execution);
         let continued_state = continued.state.as_ref().unwrap();
         assert!(continued_state.custody.is_empty());
         assert_eq!(continued_state.head.generation, abandoned_state.head.generation + 1);
         assert_eq!(continued_state.occurrences.len(), abandoned_state.occurrences.len() + 1);
-        receipts::compare(
-            continued_correspondence.identities_mut(),
-            &continued_mutation,
-            &expected_continued,
-            continued_state,
-            &cont_ref_state,
-        )
-        .unwrap();
-        comparison::compare(
-            &mut continued_correspondence,
-            continued_state,
-            &cont_ref_state,
-        )
-        .unwrap();
+
+        let orig_effect = original_custody.original_effect.as_ref().unwrap();
+        let receipt = continued_mutation.receipt.as_ref().unwrap();
+        let expected_receipt = expected_semantic.receipt.as_ref().unwrap();
+        assert_eq!(receipt.attempt_owner, orig_effect.attempt_owner);
+        assert_eq!(receipt.attempt, orig_effect.attempt);
+        assert_eq!(&receipt.native, orig_effect.native.receipt());
+        assert_eq!(receipt.before, abandoned_state.head);
+        assert_eq!(receipt.after, continued_state.head);
+        assert_eq!(receipt.changed, expected_receipt.changed);
+        assert_eq!(receipt.emitted, expected_receipt.emitted);
+        assert_eq!(receipt.key, expected_receipt.key);
+        assert_eq!(receipt.intent, expected_receipt.intent);
+
+        let new_occ = continued_state
+            .occurrences
+            .iter()
+            .find(|occ| occ.commit == continued_state.head.commit)
+            .expect("continued head must appear in World occurrence ancestry");
+        assert_eq!(new_occ.owner, orig_effect.attempt_owner);
+        assert_eq!(new_occ.parent, Some(abandoned_state.head.commit));
+        assert_eq!(
+            new_occ.provenance,
+            projection::OccurrenceProvenance::Publication(orig_effect.attempt)
+        );
+        assert_eq!(
+            new_occ.relational_publication.as_ref().map(|p| p.commit_id()),
+            Some(orig_effect.native.receipt().commit_id)
+        );
+        let sem_ref_state = projection::observe(sem_ref.runtime(), &execution);
+        assert_semantic_state_parity(continued_state, &sem_ref_state);
 
         let retry_continue = session.send(Request::ContinueOriginal {
             key: 3,
@@ -360,25 +373,18 @@ fn run_discard_oracle(kill: bool, reopen_build: &str) {
             other => panic!("expected Continued retry disposition, got {other:?}"),
         };
         assert_eq!(retry_mutation, continued_mutation);
-        comparison::compare(&mut continued_correspondence, retry_state, &cont_ref_state).unwrap();
-        let refused_cont = cont_ref.close(&execution).err().unwrap();
-        drop(refused_cont.resume().unwrap());
+        assert_semantic_state_parity(retry_state, &sem_ref_state);
+        let refused_sem = sem_ref.close(&execution).err().unwrap();
+        drop(refused_sem.resume().unwrap());
     }
 
-    // 7. Graceful close succeeds with a fresh checkpoint at discard_generation + 1.
     let closed = session.send(Request::Close);
     assert!(closed.closed);
     assert_eq!(
         closed.disposition,
-        Some(Disposition::ClosedWithCheckpoint {
-            generation: Some(discard_generation + 1),
-        })
+        Some(Disposition::ClosedWithCheckpoint { generation: Some(discard_generation + 1) })
     );
     session.finish();
-
-    let refused = reference
-        .close(&execution)
-        .err()
-        .expect("MemoryOnly preserves lifecycle refusal");
+    let refused = reference.close(&execution).err().expect("MemoryOnly lifecycle refusal");
     drop(refused.resume().unwrap());
 }

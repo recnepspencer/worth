@@ -82,16 +82,26 @@ pub(crate) fn discard(
         execution,
         #[cfg(test)]
         false,
+        #[cfg(test)]
+        None,
     )
 }
 
 #[cfg(test)]
-pub(crate) fn discard_with_terminal_delivery_failure_for_test(
+pub(crate) fn discard_with_test_hooks_for_test(
     serving: &ServingPhysicalRuntime,
     owner: &HomeCheckpointOwner,
     execution: &ExecutionRequest<'_, '_>,
+    fail_terminal_delivery: bool,
+    on_stopped_settlement: Option<&(dyn Fn() + Send + Sync)>,
 ) -> Result<u64, Denial> {
-    discard_impl(serving, owner, execution, true)
+    discard_impl(
+        serving,
+        owner,
+        execution,
+        fail_terminal_delivery,
+        on_stopped_settlement,
+    )
 }
 
 fn discard_impl(
@@ -99,6 +109,7 @@ fn discard_impl(
     owner: &HomeCheckpointOwner,
     execution: &ExecutionRequest<'_, '_>,
     #[cfg(test)] fail_terminal_delivery: bool,
+    #[cfg(test)] on_stopped_settlement: Option<&(dyn Fn() + Send + Sync)>,
 ) -> Result<u64, Denial> {
     // Serialize against checkpoint installation, acknowledgement, and another discard.
     let guard = owner.begin_discard()?;
@@ -118,6 +129,8 @@ fn discard_impl(
                     lease,
                     #[cfg(test)]
                     fail_terminal_delivery,
+                    #[cfg(test)]
+                    on_stopped_settlement,
                 ));
             })
             .map(|_| ())
@@ -143,6 +156,7 @@ fn publish_discard_marker(
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
     #[cfg(test)] fail_terminal_delivery: bool,
+    #[cfg(test)] on_stopped_settlement: Option<&(dyn Fn() + Send + Sync)>,
 ) -> Result<u64, Denial> {
     let view = context
         .retain_interruption_view(lease)
@@ -180,6 +194,10 @@ fn publish_discard_marker(
         if let Err(stop) = context.poll() {
             let mut stopped = operation.stop();
             stopped.request_cancellation();
+            #[cfg(test)]
+            if let Some(notify) = on_stopped_settlement {
+                notify();
+            }
             loop {
                 match stopped.settle(&records) {
                     AnchoredRecordStoppedPoll::Pending(next) => {

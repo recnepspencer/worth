@@ -170,10 +170,20 @@ fn discard_accepted_pre_cutover_cancellation_allows_same_generation_retry() {
     let cancel_token = cancel.token();
     let serving = Arc::clone(&home.home.context.serving);
     let owner = Arc::clone(&home.home.context.checkpoint);
+    let (stopped_tx, stopped_rx) = std::sync::mpsc::sync_channel(1);
     let worker = std::thread::spawn(move || {
         let cancel_policy = serial_with_token(cancel_token);
         let cancel_exec = ExecutionRequest::serial(&cancel_policy);
-        match crate::checkpoint::discard_for_test::discard(&serving, &owner, &cancel_exec) {
+        let notify = move || {
+            let _ = stopped_tx.send(());
+        };
+        match crate::checkpoint::discard_for_test::discard_with_test_hooks_for_test(
+            &serving,
+            &owner,
+            &cancel_exec,
+            false,
+            Some(&notify),
+        ) {
             Err(ApplicationHomeCheckpointDenial::Publication(
                 AnchoredRecordPublicationFailure::OwnedPublication(custody),
             )) => {
@@ -193,7 +203,9 @@ fn discard_accepted_pre_cutover_cancellation_allows_same_generation_retry() {
     });
     assert!(gate.await_arrival(), "discard must reach BeforeEffectCutover");
     cancel.cancel();
-    std::thread::sleep(std::time::Duration::from_millis(20));
+    stopped_rx
+        .recv_timeout(std::time::Duration::from_secs(5))
+        .expect("owner must enter stopped.settle() before releasing BeforeEffectCutover");
     gate.release();
     worker.join().unwrap();
 
@@ -233,10 +245,20 @@ fn discard_selected_before_owner_settlement_cancellation_marks_owner_discarded()
     let cancel_token = cancel.token();
     let serving = Arc::clone(&home.home.context.serving);
     let owner = Arc::clone(&home.home.context.checkpoint);
+    let (stopped_tx, stopped_rx) = std::sync::mpsc::sync_channel(1);
     let worker = std::thread::spawn(move || {
         let cancel_policy = serial_with_token(cancel_token);
         let cancel_exec = ExecutionRequest::serial(&cancel_policy);
-        let outcome = crate::checkpoint::discard_for_test::discard(&serving, &owner, &cancel_exec);
+        let notify = move || {
+            let _ = stopped_tx.send(());
+        };
+        let outcome = crate::checkpoint::discard_for_test::discard_with_test_hooks_for_test(
+            &serving,
+            &owner,
+            &cancel_exec,
+            false,
+            Some(&notify),
+        );
         assert!(
             matches!(outcome, Err(ApplicationHomeCheckpointDenial::Execution(_))),
             "expected cancelled execution stop after selection, got {outcome:?}"
@@ -247,7 +269,9 @@ fn discard_selected_before_owner_settlement_cancellation_marks_owner_discarded()
         "discard must reach BeforeTerminalFinalization"
     );
     cancel.cancel();
-    std::thread::sleep(std::time::Duration::from_millis(20));
+    stopped_rx
+        .recv_timeout(std::time::Duration::from_secs(5))
+        .expect("owner must enter stopped.settle() before releasing BeforeTerminalFinalization");
     gate.release();
     worker.join().unwrap();
     assert_live_discarded_and_close(home, first.generation() + 1, &execution);
@@ -299,29 +323,38 @@ fn discard_selected_with_settlement_failure_reconciles_step_and_stopped_paths() 
             let cancel_token = cancel.token();
             let serving = Arc::clone(&home.home.context.serving);
             let owner = Arc::clone(&home.home.context.checkpoint);
+            let (stopped_tx, stopped_rx) = std::sync::mpsc::sync_channel(1);
             let worker = std::thread::spawn(move || {
                 let cancel_policy = serial_with_token(cancel_token);
                 let cancel_exec = ExecutionRequest::serial(&cancel_policy);
+                let notify = move || {
+                    let _ = stopped_tx.send(());
+                };
                 let outcome =
-                    crate::checkpoint::discard_for_test::discard_with_terminal_delivery_failure_for_test(
+                    crate::checkpoint::discard_for_test::discard_with_test_hooks_for_test(
                         &serving,
                         &owner,
                         &cancel_exec,
+                        true,
+                        Some(&notify),
                     );
                 assert_settlement_failure(outcome);
             });
             assert!(gate.await_arrival());
             cancel.cancel();
-            std::thread::sleep(std::time::Duration::from_millis(20));
+            stopped_rx
+                .recv_timeout(std::time::Duration::from_secs(5))
+                .expect("owner must enter stopped.settle() before releasing settlement failure");
             gate.release();
             worker.join().unwrap();
         } else {
-            let outcome =
-                crate::checkpoint::discard_for_test::discard_with_terminal_delivery_failure_for_test(
-                    &home.home.context.serving,
-                    &home.home.context.checkpoint,
-                    &execution,
-                );
+            let outcome = crate::checkpoint::discard_for_test::discard_with_test_hooks_for_test(
+                &home.home.context.serving,
+                &home.home.context.checkpoint,
+                &execution,
+                true,
+                None,
+            );
             assert_settlement_failure(outcome);
         }
         assert_live_discarded_and_close(home, first.generation() + 1, &execution);
