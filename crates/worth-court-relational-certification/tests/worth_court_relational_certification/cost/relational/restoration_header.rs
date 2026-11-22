@@ -53,6 +53,27 @@ fn restoration_header_is_validated_once_and_work_grows_linearly() {
 }
 
 #[test]
+fn missing_restoration_entity_mapping_is_refused_before_origin_lookup() {
+    let request = SerialRequest::from_memory(
+        SerialMemoryBudget::new(None),
+        CancellationToken::new(),
+        None,
+    );
+    let execution = &ExecutionRequest::serial(&request);
+    let journey = journey::run(execution, 2, 2, 4);
+    let denied = journey
+        .restored
+        .publication()
+        .envelope
+        .output_origin_header_with_missing_entity_for_test(execution)
+        .unwrap_err();
+    assert!(
+        denied.contains("restoration omits exact recorded members"),
+        "{denied}"
+    );
+}
+
+#[test]
 fn public_create_grow_retire_restore_relation_scale_report() {
     let request = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),

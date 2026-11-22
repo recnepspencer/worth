@@ -1263,10 +1263,44 @@ or gated and no count is adjusted to the latest observed value.
   three `control-callers.txt` rows only through the governing boundary ruling;
   no replacement caller was added at move-out. Ordinary validation retains its
   full indexed algorithm, original charging, outcomes and caller signature.
+  C4 ruling (2026-11-22): restores the 2 exact same-SHA (`669ac9fcd4`) C4
+  `control-callers.txt` rows (`relational/restoration_header/mod.rs` and
+  `relational/restoration_header/scope.rs`), preserving C2.7's `header_work.rs`
+  and `cost/relational/restoration_header.rs` row.
 
 Landing 2a adapter closure (lane P-A, merged at `e4d3b01c8d`) moved these Native durability roots out, each with its restore reference:
 
 #### C4 - Injected faults
+
+C4 ruling (2026-11-22): Purely public durable C4 courts go into
+`worth-court-relational-certification` (or the relevant owner court crate) over
+public `TestDurableMedium`. For C4 in-crate `#[cfg(test)]` fault courts in
+`crates/worth-relational/src/` whose `pub(crate)` / `#[cfg(test)]`
+fault-injection hooks (e.g. `corrupt_schema_root_for_test`,
+`envelope_mut_for_test`, `rebuild_lineage_basis_for_test`,
+`LifecycleSnapshotPause`, `publication_pause_for_test`,
+`checkpoint_transition/tests.rs`, `reuse_tests.rs`,
+`envelope_residency_tests.rs`, `cross_region_forgery_tests.rs`) are coupled to
+the same durable operation, C2's 2026-11-22 Option 1 ruling (recorded under C2.7
+and the performance-matrix ledger below) is extended to C4:
+`OwnedTestDurableMedium` (`crates/worth-relational/src/tests/support/durability.rs`
++ `durability/owned_medium.rs`) is authorized strictly as a thin `#[cfg(test)]`
+trait-identity adapter under all four binding guardrails of that ruling:
+(1) explicit case-owned handle only — zero runtime-discovery map, zero global
+registry, zero fixed-generation selection bypass, and zero fallback to `Memory`
+or retained-runtime `recovery_plan()`;
+(2) shared testkit byte primitives — delegates raw journal storage, member
+bytes, and immutable read-snapshot protection to
+`worth_testkit_relational::durable_medium::{ByteJournal, MemberBytes, OwnedNativeReadSnapshot, OwnedSnapshotDenial}`;
+(3) zero unauthorized baseline or caller expansion — keeps existing
+`src-court-baseline.json` rows (any restored `src/` court file not already
+listed at its restore SHA requires a separate coordinator ruling before adding a
+row) and adds zero `control-callers.txt` rows beyond the exact same-SHA
+ledger-listed rows explicitly pre-authorized by this `C4 ruling (2026-11-22)`
+(`restoration_header` 2 C4 rows from `669ac9fcd4`, `external_cold_pairing` from
+`89039fa735`, and `original_directory_receipt` from `89039fa735`); and
+(4) purely public durable C4 courts stay in court crates over
+`TestDurableMedium`.
 
 Integration protocol restoration refresh (same per-claim disposition; no retired campaign is remounted):
 - `22e638d638e724fc2ca3947a583f43c45b56990f:crates/worth-relational/src/durability/authority/runtime_rebuild/checkpoint_restore/reuse_tests.rs`

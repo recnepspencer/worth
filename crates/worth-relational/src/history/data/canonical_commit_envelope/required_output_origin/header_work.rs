@@ -21,6 +21,54 @@ impl Drop for Recording {
 }
 
 impl CanonicalCommitEnvelopeBody {
+    /// Corrupt only a copied restoration roster and run ordinary validation.
+    /// The copy cannot publish or yield an origin when that validation refuses.
+    #[doc(hidden)]
+    pub fn output_origin_header_with_missing_entity_for_test(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<(u64, u64), String> {
+        let event = self
+            .authored_cascade_restoration
+            .as_ref()
+            .ok_or("restoration absent")?;
+        let bytes = copied_roster_bytes(event)?;
+        let _copy_memory = execution
+            .reserve_retained_memory(bytes)
+            .map_err(|cause| format!("{cause:?}"))?;
+        let mut entities = event.entities.clone();
+        let (_, member) = entities
+            .iter_mut()
+            .find(|(_, id)| {
+                *id != event.anchor && !event.co_anchors.iter().any(|(_, anchor)| anchor == id)
+            })
+            .ok_or("restoration has no output member")?;
+        *member = EntityId::new(
+            member.partition_id,
+            member.local_slot_value(),
+            member
+                .generation_value()
+                .checked_add(1024)
+                .ok_or("corrupt generation overflows")?,
+        );
+        let event = CanonicalAuthoredRestoration {
+            _decoded_memory: event._decoded_memory.clone(),
+            owned_members: event.owned_members,
+            retirement: event.retirement,
+            original_anchor: event.original_anchor,
+            anchor: event.anchor,
+            co_anchors: event.co_anchors.clone(),
+            entities,
+            relations: event.relations.clone(),
+            publications: event.publications.clone(),
+        };
+        // This is the ordinary header validator with descriptive corruption,
+        // never a cloned body, Original frame, or newly issued publication.
+        self.observe_header_work(execution, |context| {
+            self.validate_authored_restoration_components(&event, false, context)
+        })
+    }
+
     /// Court door: exercise the same retained creation-frame view used by
     /// incidence, then every origin lookup family, without creating effects.
     /// Reports actual validator entries and its existing charged work meter.
@@ -102,4 +150,31 @@ pub(super) fn finish(
             o
         }));
     }
+}
+
+fn copied_roster_bytes(event: &CanonicalAuthoredRestoration) -> Result<u64, String> {
+    use crate::identity::data::RelationId;
+    let overflow = || "restoration observation copy layout overflow".to_owned();
+    let entities = event
+        .entities
+        .len()
+        .checked_add(event.co_anchors.len())
+        .ok_or_else(overflow)?;
+    let entity_bytes = std::alloc::Layout::array::<(EntityId, EntityId)>(entities)
+        .map_err(|_| overflow())?
+        .size();
+    let relation_bytes =
+        std::alloc::Layout::array::<(RelationId, RelationId)>(event.relations.len())
+            .map_err(|_| overflow())?
+            .size();
+    let publication_bytes = std::alloc::Layout::array::<
+        std::sync::Arc<CanonicalRequiredOutputOrigin>,
+    >(event.publications.len())
+    .map_err(|_| overflow())?
+    .size();
+    let bytes = entity_bytes
+        .checked_add(relation_bytes)
+        .and_then(|n| n.checked_add(publication_bytes))
+        .ok_or_else(overflow)?;
+    u64::try_from(bytes).map_err(|_| overflow())
 }

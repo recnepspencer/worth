@@ -201,6 +201,8 @@ crates/worth-relational/ crates/worth-court-relational-certification/tests/worth
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/current_read_publication/scoped_cutover/deadline.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/lifecycle_locality/mod.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/owner_lifecycle_observation/mod.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/mod.rs
+crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/restoration_header/scope.rs
 crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/support/relational_certification/ordinary_context/mvcc_owner_phase_locality_court/declarations.rs
 crates/worth-relational/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/guarded_cutover.rs
 crates/worth-relational/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/memory_handoff/deadline.rs
