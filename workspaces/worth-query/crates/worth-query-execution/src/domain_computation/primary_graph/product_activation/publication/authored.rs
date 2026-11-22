@@ -1,5 +1,6 @@
 //! Selected authored definitions open the same durable Signal-only World intent.
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
@@ -22,7 +23,7 @@ pub(super) fn publish<
 > {
     use WorthQueryProductConditionalPublicationDenial as D;
     let execution = phase
-        .execution_request_for(&application.inner.runtime.product_runtime)
+        .execution_request_for(application.inner.runtime.product_runtime_ref())
         .map_err(|cause| D::ExecutionRequest(cause.into()))?;
     let branch = worth_foundational::facade::DurableSignalBranchIdentity::from_recorded(
         bridge.signal_owner().binding().owner(),
@@ -35,7 +36,7 @@ pub(super) fn publish<
     let publication = application
         .inner
         .runtime
-        .product_runtime
+        .product_runtime_ref()
         .owner_ref()
         .publication_port();
     let mut pending = publication

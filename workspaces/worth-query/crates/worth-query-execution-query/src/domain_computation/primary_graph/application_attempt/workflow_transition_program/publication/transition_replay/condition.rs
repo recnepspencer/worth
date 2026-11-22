@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_attempt::facade::ports::WorkflowConditionInternalPort as _;
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
@@ -149,7 +150,7 @@ impl<Schema, Operation, Input, Scope>
             .bind_workflow_transition(&replay.identity_bytes)
             .bind_workflow_condition(
                 &crate::domain_computation::primary_graph::expression::supporting_identity(
-                    &required.condition.expression,
+                    &required.condition_ref().expression,
                     identities,
                 ),
             );

@@ -1,3 +1,4 @@
+pub(crate) mod internal_port;
 pub mod operation;
 pub use operation::{
     PreparedWorkflowOperation, RequiredWorkflowOperation, WorkflowOperationAuthority,

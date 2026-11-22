@@ -3,6 +3,7 @@ use super::super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::provider::managed_cleanup_control::{
     WorthQueryManagedCleanupRegistrationDenial, WorthQueryManagedCleanupScheduleForTest,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     /// Schedules one actual managed terminal cleanup on a foreign worker.
@@ -11,7 +12,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         &self,
     ) -> Result<WorthQueryManagedCleanupScheduleForTest, WorthQueryManagedCleanupRegistrationDenial>
     {
-        self.runtime.primary_provider.managed_cleanup_control.arm()
+        self.runtime
+            .primary_provider
+            .managed_cleanup_control_ref()
+            .arm()
     }
     /// Schedule this bounded number of actual native cleanups on foreign workers.
     pub fn schedule_managed_cleanups_on_worker_for_test(
@@ -21,7 +25,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         self.runtime
             .primary_provider
-            .managed_cleanup_control
+            .managed_cleanup_control_ref()
             .arm_count(count)
     }
 }

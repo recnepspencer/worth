@@ -1,6 +1,7 @@
 //! Receiver-owned interleavings and read-only caller-pass observations.
 
 use std::cell::RefCell;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 thread_local! {
     static PUBLICATIONS: RefCell<std::collections::BTreeMap<(u64, worth_relational::facade::identity::EntityId), u64>> = const { RefCell::new(std::collections::BTreeMap::new()) };
     static PUBLICATION_RECORDS: RefCell<std::collections::BTreeMap<(u64, worth_relational::facade::identity::EntityId), u64>> = const { RefCell::new(std::collections::BTreeMap::new()) };
@@ -72,7 +73,7 @@ impl<Schema>
     ) {
         self.runtime
             .primary_provider
-            .application_attempt_operation_control
+            .application_attempt_operation_control_ref()
             .caller_pass
             .arm_interleaving(action);
     }

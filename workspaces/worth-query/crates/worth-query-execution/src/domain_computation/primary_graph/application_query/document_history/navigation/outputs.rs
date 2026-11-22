@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedApplicationQueryControlsInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
@@ -31,7 +32,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     {
         use WorthQueryHistoryOutputReadDenial as ReadDenial;
         let execution = phase
-            .checked_execution_request_for(&self.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(|cause| ReadDenial::Authority(NavigationDenial::Stopped(cause)))?;
         profile
             .source_intent()

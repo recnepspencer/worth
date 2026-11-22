@@ -23,7 +23,7 @@ impl MutationProductBasis {
     pub(super) fn admits_replacement_authorization(
         &self,
         authorization: &WorthQueryGraphWorkBranchAffinity,
-        replacement: &Box<dyn crate::ports::PrimaryMutationLease>,
+        replacement: &dyn crate::ports::PrimaryMutationLease,
     ) -> bool {
         match &self.control {
             Some(control) => {

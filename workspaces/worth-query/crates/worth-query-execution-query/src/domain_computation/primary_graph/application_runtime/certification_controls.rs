@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -176,7 +177,7 @@ where
     ) -> Option<worth_runtime_bridge::facade::TruthSnapshotIdentity> {
         self.runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .current_truth_snapshot(&super::super::primary_truth_branch_identity())
     }
 
@@ -191,7 +192,7 @@ where
     ) {
         self.runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_runtime(request_execution, |runtime| {
                 let active = runtime.retention().active_snapshot_count();
                 let identity = runtime

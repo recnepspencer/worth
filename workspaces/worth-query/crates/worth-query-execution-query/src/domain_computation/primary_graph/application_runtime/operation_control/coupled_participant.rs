@@ -4,6 +4,7 @@ use std::sync::{
     atomic::{AtomicU8, Ordering},
     Arc,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 
 #[must_use = "retain the guard until the real coupled attempt finishes"]
 pub struct WorthQueryCoupledParticipantCorruptionForTest {
@@ -32,7 +33,7 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
             &self
                 .runtime
                 .primary_provider
-                .application_attempt_operation_control
+                .application_attempt_operation_control_ref()
                 .coupled_participant_fault,
         );
         assert_eq!(
@@ -51,7 +52,7 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
             &self
                 .runtime
                 .primary_provider
-                .application_attempt_operation_control
+                .application_attempt_operation_control_ref()
                 .coupled_participant_fault,
         );
         assert_eq!(
@@ -120,7 +121,7 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
             &self
                 .runtime
                 .primary_provider
-                .application_attempt_operation_control
+                .application_attempt_operation_control_ref()
                 .coupled_participant_fault,
         );
         assert_eq!(
@@ -141,7 +142,7 @@ impl<S> WorthQueryPrimaryGraphApplicationRuntime<S> {
             &self
                 .runtime
                 .primary_provider
-                .application_attempt_operation_control
+                .application_attempt_operation_control_ref()
                 .coupled_participant_fault,
         );
         assert_eq!(

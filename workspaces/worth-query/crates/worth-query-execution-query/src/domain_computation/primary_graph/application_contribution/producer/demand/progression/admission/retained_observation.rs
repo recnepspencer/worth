@@ -10,6 +10,7 @@
 
 use crate::domain_computation::primary_graph::OutputDemandSettlementReusedExt;
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
@@ -140,7 +141,7 @@ where
         let owner = &self
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .source_owner_ref()
             .invalidation_owner;
         // The selection and its verification share one meter, no larger than
@@ -150,7 +151,7 @@ where
         let outputs = self
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -200,7 +201,7 @@ where
             };
             let verified = self
                 .runtime.primary_provider
-                .graph
+                .graph_ref()
                 .with_runtime(execution, |relational| {
                     let unavailable =
                         || stop(WorthQueryOutputDemandDenialKind::RetainedBasisUnavailable);

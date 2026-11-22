@@ -1,5 +1,6 @@
 //! Reobservation may follow only this pass's still-selected own publication.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -15,7 +16,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         own_effect_observation::record(Stage::OwnPublicationContinuation);
         self.runtime
             .primary_provider
-            .application_attempt_operation_control
+            .application_attempt_operation_control_ref()
             .caller_pass
             .run_interleaving();
         let selected = self

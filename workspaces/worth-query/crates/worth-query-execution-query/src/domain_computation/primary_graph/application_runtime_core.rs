@@ -1,59 +1,62 @@
 //! State owned once by an application runtime, independent of its application types.
 use super::*;
+use crate::domain_computation::execution_runtime::QueryExecutionRuntimeInternalPort as _;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 
 pub struct WorthQueryApplicationRuntimeCore {
-    pub execution: Option<WorthQueryExecutionRuntime>,
-    pub application_readiness_schema_token: String,
-    pub publication: WorthQueryPrimaryGraphPublication,
-    pub checkpoint_restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
-    pub authorization: Arc<WorthQueryInstalledAuthorizationRegistry>,
-    pub authorization_clock: Arc<WorthQueryRuntimeClock>,
-    pub relational_branch_identity:
+    pub(crate) execution: Option<WorthQueryExecutionRuntime>,
+    pub(crate) application_readiness_schema_token: String,
+    pub(crate) publication: WorthQueryPrimaryGraphPublication,
+    pub(crate) checkpoint_restore_work:
+        Option<worth_relational::facade::durability::CheckpointRestoreWork>,
+    pub(crate) authorization: Arc<WorthQueryInstalledAuthorizationRegistry>,
+    pub(crate) authorization_clock: Arc<WorthQueryRuntimeClock>,
+    pub(crate) relational_branch_identity:
         worth_relational::facade::branch::RelationalBranchIdentity,
-    pub bridge: super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
-    pub product_runtime:
+    pub(crate) bridge: super::super::managed_bridge::WorthQueryInstalledApplicationBridge,
+    pub(crate) product_runtime:
         crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime,
-    pub recovered_program_source_delivery:
+    pub(crate) recovered_program_source_delivery:
         super::super::provider::recovered_program_source_delivery::RecoveredProgramSourceDeliveryRegistration,
-    pub basis_leases:
+    pub(crate) basis_leases:
         super::super::application_query::resource_lifecycle::WorthQueryApplicationBasisRegistry,
-    pub granular_invalidation: super::super::WorthQueryGranularInvalidationInstallation,
-    pub primary_provider: super::super::provider::PrimaryProviderCustody,
-    pub primary_graph_authority:
+    pub(crate) granular_invalidation: super::super::WorthQueryGranularInvalidationInstallation,
+    pub(crate) primary_provider: super::super::provider::PrimaryProviderCustody,
+    pub(crate) primary_graph_authority:
         Option<home_retirement::PrimaryGraphParticipationCustody>,
 
-    pub source_meanings:
+    pub(crate) source_meanings:
         Option<super::super::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry>,
-    pub next_external_dispatch_attempt: AtomicU64,
-    pub external_effect_transport:
+    pub(crate) next_external_dispatch_attempt: AtomicU64,
+    pub(crate) external_effect_transport:
         std::sync::OnceLock<std::sync::Arc<dyn WorthQueryExternalEffectTransport>>,
-    pub inbound_verifiers: std::sync::Mutex<
+    pub(crate) inbound_verifiers: std::sync::Mutex<
         std::collections::BTreeMap<
             String,
             std::sync::Arc<inbound_occurrence::WorthQueryInstalledInboundVerifier>,
         >,
     >,
-    pub inbound_custody: Arc<std::sync::Mutex<
+    pub(crate) inbound_custody: Arc<std::sync::Mutex<
         crate::domain_computation::application_aftermath::WorthQueryInboundCustody,
     >>,
-    pub transport_completion_custody: std::sync::Mutex<
+    pub(crate) transport_completion_custody: std::sync::Mutex<
         inbound_publication::InstalledTransportCompletionCustody,
     >,
-    pub inbound_maintenance_turn: AtomicU64,
-    pub dispatch_journal:
+    pub(crate) inbound_maintenance_turn: AtomicU64,
+    pub(crate) dispatch_journal:
         std::sync::Arc<crate::domain_computation::application_aftermath::dispatch_journal::WorthQueryDispatchJournal>,
-    pub recovery_handles: Arc<WorthQueryRecoveryHandleRegistry>,
-    pub output_producer_routes:
+    pub(crate) recovery_handles: Arc<WorthQueryRecoveryHandleRegistry>,
+    pub(crate) output_producer_routes:
         super::super::application_contribution::WorthQueryInstalledOutputProducerRoutes,
-    pub output_readiness_routes:
+    pub(crate) output_readiness_routes:
         super::super::application_contribution::WorthQueryInstalledOutputReadinessRoutes,
-    pub next_output_producer_attempt: AtomicU64,
-    pub mutation_partitions: mutation_partition::ApplicationMutationPartitions,
-    pub output_demands: super::super::application_output_demand::WorthQueryOutputDemandRegistry,
-    pub recovered_outputs: super::super::application_output_demand::WorthQueryRecoveredOutputs,
-    pub workflow_coverage:
+    pub(crate) next_output_producer_attempt: AtomicU64,
+    pub(crate) mutation_partitions: mutation_partition::ApplicationMutationPartitions,
+    pub(crate) output_demands: super::super::application_output_demand::WorthQueryOutputDemandRegistry,
+    pub(crate) recovered_outputs: super::super::application_output_demand::WorthQueryRecoveredOutputs,
+    pub(crate) workflow_coverage:
         super::super::workflow::adoption::WorkflowVocabularyCoverageRegistry,
-    pub installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
+    pub(crate) installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
 }
 
 impl WorthQueryApplicationRuntimeCore {
@@ -204,7 +207,7 @@ impl WorthQueryApplicationRuntimeCore {
 impl WorthQueryApplicationRuntimeCore {
     pub fn close_live_delivery(&self) -> WorthQueryApplicationLiveDeliveryCloseReceipt {
         WorthQueryApplicationLiveDeliveryCloseReceipt {
-            remaining_live_consumers: self.primary_provider.live_delivery.close(),
+            remaining_live_consumers: self.primary_provider.live_delivery_ref().close(),
         }
     }
 }
@@ -219,3 +222,5 @@ impl WorthQueryApplicationRuntimeCore {
 
 #[path = "application_runtime_core_court_doors_for_test.rs"]
 mod court_doors_for_test;
+#[path = "application_runtime_core_internal_port.rs"]
+pub(crate) mod internal_port;

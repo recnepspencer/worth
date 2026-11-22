@@ -6,6 +6,8 @@ use worth_query_declaration::facade::{
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_attempt::facade::ports::CompleteReadSetFactAppendInternalPort as _;
 use worth_query_execution_attempt::facade::ports::CompleteReadSetWorkflowInternalPort as _;
+use worth_query_execution_attempt::facade::ports::WorkflowOperationAuthorityInternalPort as _;
+use worth_query_execution_attempt::facade::ports::WorkflowOperationInternalPort as _;
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
@@ -294,7 +296,7 @@ where
             );
         let authority = match evidence {
             WorkflowOperationEvidence::Satisfied(approval_authority) => Some(
-                WorkflowOperationAuthority::new(
+                WorkflowOperationAuthority::from_parts(
                     operation.operation.clone(),
                     binding,
                     *admitted.identity_bytes(),
@@ -315,7 +317,7 @@ where
             WorkflowOperationEvidence::Unavailable => None,
         };
         let authority = authority.map(|mut authority| {
-            authority.captured_input = captured_contract.clone();
+            authority.set_captured_input(captured_contract.clone());
             authority
         });
         let mut required = RequiredWorkflowOperation::from_selected(
@@ -332,7 +334,7 @@ where
             input_identity,
             authority,
         );
-        required.captured_input = captured_contract;
+        required.set_captured_input(captured_contract);
         Ok(PreparedWorkflowAdvance::AwaitingOperation(
             PreparedWorkflowOperation {
                 admitted,

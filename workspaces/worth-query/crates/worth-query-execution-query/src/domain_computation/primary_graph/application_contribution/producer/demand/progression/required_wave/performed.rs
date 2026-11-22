@@ -8,6 +8,7 @@ use super::*;
 use crate::domain_computation::primary_graph::application_output_demand::WorthQueryOutputDemandKey;
 use crate::domain_computation::primary_graph::application_query::WorthQueryObservedSourceEpoch;
 use crate::domain_computation::primary_graph::output_lineage::AcceptedCurrentCandidate;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 pub struct PerformedMembers {
@@ -150,7 +151,12 @@ impl<Schema: ApplicationSchema + 'static> SelectedDecisionInput<'_, '_, Schema> 
         request_execution: &worth_execution::ExecutionRequest<'_, '_>,
         input: &AcceptedCurrentCandidate,
     ) -> Result<bool, ProducerExecutionStop> {
-        let graph = &self.runtime.runtime_inner().runtime.primary_provider.graph;
+        let graph = &self
+            .runtime
+            .runtime_inner()
+            .runtime
+            .primary_provider
+            .graph_ref();
         graph
             .with_runtime(request_execution, |runtime| {
                 input.decision_input_changed_at(

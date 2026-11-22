@@ -3,6 +3,7 @@ use super::WorthQueryPrimaryGraphApplicationRuntime;
 use crate::domain_computation::primary_graph::application_query::managed_index::certification::{
     WorthQueryCertificationManagedIndexPages, WorthQueryCertificationManagedIndexPagesDenial,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub trait WorthQueryCertificationManagedIndexRuntimeExt {
@@ -25,7 +26,11 @@ impl<S: ApplicationSchema> WorthQueryCertificationManagedIndexRuntimeExt
         Vec<WorthQueryCertificationManagedIndexPages>,
         WorthQueryCertificationManagedIndexPagesDenial,
     > {
-        let views = self.runtime.primary_provider.graph.managed_derived_views();
+        let views = self
+            .runtime
+            .primary_provider
+            .graph_ref()
+            .managed_derived_views();
         crate::domain_computation::primary_graph::downcast_managed_views(views.as_ref())
             .inspect_source_pages()
     }

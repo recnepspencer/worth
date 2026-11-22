@@ -12,6 +12,7 @@ use crate::domain_computation::primary_graph::invariant_projection::ConsumedOutp
 use crate::domain_computation::primary_graph::output_lineage::invalidation::SourceSettlementCurrentness;
 use crate::domain_computation::primary_graph::provider::FactlessCurrentness;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -54,7 +55,7 @@ where
     let candidate = runtime
         .runtime
         .primary_provider
-        .graph
+        .graph_ref()
         .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -76,7 +77,7 @@ where
     let posture = runtime
         .runtime
         .primary_provider
-        .graph
+        .graph_ref()
         .source_owner_ref()
         .invalidation_owner
         .currentness(&wave.positioned, candidate.recorded_identity())
@@ -93,7 +94,7 @@ where
         // that changed refreshes on this wave first, whether or not anything
         // else demands it.
         let snapshot = wave.shared.selected().application_basis().snapshot_handle();
-        let graph = &runtime.runtime.primary_provider.graph;
+        let graph = &runtime.runtime.primary_provider.graph_ref();
         let pending = graph.with_runtime(execution, |relational| {
             candidate.pending_consumed_output(
                 execution,

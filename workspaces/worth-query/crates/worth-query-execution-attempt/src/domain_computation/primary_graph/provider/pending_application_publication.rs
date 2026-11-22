@@ -1,4 +1,5 @@
 //! Move-only recovery state for Query publication after Relational movement.
+use worth_query_execution_runtime::facade::ports::ProductPublicationReceiptInternalPort as _;
 pub mod aggregate_projection;
 pub mod custody;
 use aggregate_projection::publish_aggregate_projection;

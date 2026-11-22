@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::provider::aftermath_causality::readmission as corrections;
 use crate::domain_computation::primary_graph::query_obligations::history::journal_readmission::QueryObligationHistoryJournalReadmissionExt;
 use worth_proof::CustodyReadmitted;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 #[derive(Debug)]
@@ -62,7 +63,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             .runtime()
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .owner_ref()
             .owner_identity();
         if owner.durable().map(|owner| owner.home()) != Some(obligations.home()) {
@@ -103,7 +104,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             .runtime()
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .owner_ref()
             .inspection_port()
             .observe_program_activation_history(execution)
@@ -134,7 +135,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             .runtime()
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .readmit_correction_material(std::sync::Arc::clone(&material), &originals, execution)
         {
             Ok(admission) => admission,
@@ -147,7 +148,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         };
         self.correction_material_admission = std::sync::OnceLock::from(material_admission);
         let admission =
-            match self.runtime.runtime().inner.runtime.primary_provider
+            match self.runtime.runtime().inner.runtime.primary_provider_ref()
                 .readmit_retained_program_support(support.lifecycle(), obligations, &originals, execution)
             {
                 Ok(admission) => admission,
@@ -168,7 +169,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let serving = &self.runtime.runtime().inner.runtime;
         if let Err(cause) = support
             .obligation_history()
-            .bind_live_receivers(&serving.primary_provider, serving.execution())
+            .bind_live_receivers(serving.primary_provider_ref(), serving.execution())
         {
             return Err(QueryHomeCustodyReadmissionRefused {
                 query: self,
@@ -252,7 +253,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
             .runtime()
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .readmit_correction_material(material, &originals, execution)
         {
             Ok(admission) => {
@@ -268,13 +269,13 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         // Cold terminal ACK settlement may advance the journal after its first
         // fold. Admit the final exact prefix before the service witness escapes.
         let application = self.runtime.runtime();
-        match application.inner.runtime.dispatch_journal.readmit(
+        match application.inner.runtime.dispatch_journal_ref().readmit(
             dispatch,
             execution,
             application
                 .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .dispatch_readmission_catalog(),
         ) {
             Ok(admission) => self.dispatch_custody_admission = std::sync::OnceLock::from(admission),

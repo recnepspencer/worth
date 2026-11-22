@@ -1,5 +1,6 @@
 //! Complete original trees share one receipt-derived endpoint and currentness owner.
 use super::*;
+use crate::discovery_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies;
 use crate::domain_computation::primary_graph::{
     structural_walk::memory, WorthQueryPrimaryGraphApplicationRuntime,
 };
@@ -7,7 +8,6 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryOutputDemandDenial, WorthQueryOutputDemandDenialKind,
     WorthQueryOutputDemandSettlement,
 };
-use crate::publication_boundary::discovery_currentness::WorthQueryRetainedQueryDependencies;
 use worth_execution::ExecutionRequest;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
 use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;

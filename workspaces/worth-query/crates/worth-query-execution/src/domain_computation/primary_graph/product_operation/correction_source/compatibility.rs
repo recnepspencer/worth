@@ -3,6 +3,7 @@ use super::disclosure::WorthQueryCorrectionDerivationDenial as Denial;
 use super::*;
 use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProgramSupportInterpretation;
 use worth_query_declaration::facade::application_aftermath::ApplicationInverseBinding;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -103,7 +104,7 @@ where
         worth_query_installation::facade::InstalledCorrectionMechanism::Compensation(_)
     ) {
         let execution = phase
-            .execution_request_for(&target.application().inner.runtime.product_runtime)
+            .execution_request_for(target.application().inner.runtime.product_runtime_ref())
             .map_err(|_| Denial::ForeignPhase)?;
         let facts = source
             .occurrence()

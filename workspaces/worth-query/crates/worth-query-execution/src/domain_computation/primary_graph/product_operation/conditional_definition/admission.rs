@@ -1,4 +1,5 @@
 //! One definition successor issuer for selected entries and admitted handlers.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use crate::domain_computation::primary_graph::product_operation::conditional_definition::application_change::WorthQueryAdmittedApplicationConditionalDefinitionRuntimeExt as _;
 use super::*;
@@ -56,7 +57,11 @@ pub(super) fn definition_request<Schema: ApplicationSchema, Node: 'static, Clock
 where
     Provider: WorthQueryAuthoredHostConditionalPredicateProvider<Node>,
 {
-    let bridge_root = application.inner.runtime.bridge.conditional_operations();
+    let bridge_root = application
+        .inner
+        .runtime
+        .bridge_ref()
+        .conditional_operations();
     let bridge = bridge_root
         .read()
         .unwrap_or_else(std::sync::PoisonError::into_inner);

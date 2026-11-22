@@ -1,5 +1,3 @@
-use std::ops::Deref;
-use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
 use worth_query_execution_runtime::facade::execution_runtime as rt;
 use worth_query_installation::facade::{
     WorthQueryAdmittedPortableDomainPackage, WorthQueryInstallationGeneration,
@@ -23,13 +21,29 @@ pub struct WorthQueryExecutionInstallationAuthority(
     pub(crate) rt::WorthQueryExecutionInstallationAuthority,
 );
 
-impl Deref for WorthQueryExecutionInstallationAuthority {
-    type Target = rt::WorthQueryExecutionInstallationAuthority;
+impl WorthQueryExecutionInstallationAuthority {
+    pub(crate) fn inner_ref(&self) -> &rt::WorthQueryExecutionInstallationAuthority {
+        &self.0
+    }
 
-    fn deref(&self) -> &Self::Target {
+    pub fn belongs_to(&self, runtime: &WorthQueryExecutionRuntime) -> bool {
+        self.0.belongs_to(runtime)
+    }
+
+    pub fn installation_runtime(&self) -> &WorthQueryInstallationRuntimeIdentity {
+        self.0.installation_runtime()
+    }
+}
+
+impl worth_query_execution_runtime::facade::ports::InstallationAuthorityRefSeal
+    for WorthQueryExecutionInstallationAuthority
+{
+    fn as_installation_authority(&self) -> &rt::WorthQueryExecutionInstallationAuthority {
         &self.0
     }
 }
+
+impl rt::WorthQueryExecutionInstallationAuthorityRef for WorthQueryExecutionInstallationAuthority {}
 
 /// Compiler-total result of installing one execution runtime.
 pub struct WorthQueryExecutionRuntimeInstallation {
@@ -93,7 +107,7 @@ impl WorthQueryExecutionRuntimeInstaller {
     ) -> Result<WorthQueryExecutionRuntimeInstallation, WorthQueryInstalledPackageIndexDenial> {
         let (runtime, authority) = self.0.install(generation, packages)?.into_parts();
         Ok(WorthQueryExecutionRuntimeInstallation {
-            runtime: WorthQueryExecutionRuntime::from_inner(runtime),
+            runtime,
             authority: WorthQueryExecutionInstallationAuthority(authority),
         })
     }

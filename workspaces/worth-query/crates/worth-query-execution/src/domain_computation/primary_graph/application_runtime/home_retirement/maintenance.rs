@@ -1,6 +1,7 @@
 //! Home maintenance custody access during primary-graph retirement.
 
 use std::sync::Arc;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -16,7 +17,7 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
         self.runtime
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_mut()
             .home_maintenance_slot_mut()
             .as_mut()
             .and_then(Arc::get_mut)
@@ -35,7 +36,7 @@ impl<Schema: ApplicationSchema> RetiringPrimaryGraphRuntime<Schema> {
             .runtime
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_mut()
             .home_maintenance_slot_mut()
             .take()?;
         let inner = taken

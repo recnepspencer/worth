@@ -1,6 +1,7 @@
 //! Selected queue tokens hold required roots for one advancement.
 //! Only a Current proof acknowledges a token; every unfinished token requeues.
 
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod acknowledgement;
@@ -122,7 +123,7 @@ impl QueuedRequiredRoots {
                     &runtime
                         .runtime
                         .primary_provider
-                        .graph
+                        .graph_ref()
                         .source_owner_ref()
                         .invalidation_owner,
                 )?;
@@ -137,7 +138,7 @@ impl QueuedRequiredRoots {
                 &runtime
                     .runtime
                     .primary_provider
-                    .graph
+                    .graph_ref()
                     .source_owner_ref()
                     .invalidation_owner,
             )?
@@ -312,7 +313,7 @@ fn head_is_selected<Schema>(
     match runtime
         .runtime
         .primary_provider
-        .graph
+        .graph_ref()
         .source_owner_ref()
         .invalidation_owner
         .selected_installed_discontinuity(&wave.positioned)

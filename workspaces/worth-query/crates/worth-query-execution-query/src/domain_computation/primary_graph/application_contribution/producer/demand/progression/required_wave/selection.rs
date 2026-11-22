@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -195,7 +196,7 @@ where
     let positioned = runtime
         .runtime
         .primary_provider
-        .graph
+        .graph_ref()
         .with_runtime(execution, |native| {
             native.read_truth().positioned_snapshot(snapshot)
         })
@@ -209,7 +210,7 @@ where
             &runtime
                 .runtime
                 .primary_provider
-                .graph
+                .graph_ref()
                 .source_owner_ref()
                 .invalidation_owner,
         )?;

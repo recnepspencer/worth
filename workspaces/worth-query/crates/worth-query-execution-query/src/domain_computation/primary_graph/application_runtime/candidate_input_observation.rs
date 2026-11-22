@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::RelationalSourceOwnerInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -12,7 +13,7 @@ impl<Schema: ApplicationSchema + 'static> super::WorthQueryPrimaryGraphApplicati
     ) -> worth_relational::facade::runtime::RelationalCandidateInputCounters {
         self.runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .source_owner_ref()
             .custom_invariant_candidate_input_counters()
     }

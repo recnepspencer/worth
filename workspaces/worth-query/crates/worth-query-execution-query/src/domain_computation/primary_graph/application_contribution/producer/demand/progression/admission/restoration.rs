@@ -1,3 +1,5 @@
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ApplicationOutputLineageInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
@@ -73,7 +75,7 @@ where
         let Some(settlement) = self
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -214,7 +216,7 @@ where
         })?;
         let recorded = self
             .runtime.primary_provider
-            .graph
+            .graph_ref()
             .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -246,7 +248,7 @@ where
             // Readmission is this output's one full comparison. Recording it
             // as marks lets the next clean demand read them instead; a stop
             // here leaves the output requiring verification.
-            let source_owner = self.runtime.primary_provider.graph.source_owner_ref();
+            let source_owner = self.runtime.primary_provider.graph_ref().source_owner_ref();
             if let Some(facts) = recorded.facts.for_comparison().filter(|_| {
 use crate::domain_computation::primary_graph::output_lineage::HeadCellRegistrationStop;
 use worth_relational::facade::mvcc::PublicationCompanionRegistrationStop as NativeStop;

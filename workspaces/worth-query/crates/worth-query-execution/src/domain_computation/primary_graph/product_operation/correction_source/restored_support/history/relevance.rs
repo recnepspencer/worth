@@ -10,6 +10,8 @@ use crate::domain_computation::primary_graph::{
     application_checkpoint::facts::FactPayload,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(in crate::domain_computation::primary_graph::product_operation::correction_source::restored_support) fn narrow<
@@ -42,8 +44,8 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
                 .application()
                 .inner
                 .runtime
-                .primary_provider
-                .graph
+                .primary_provider_ref()
+                .graph_ref()
                 .with_runtime(&execution, |runtime| {
                     observation.history_impact(runtime, &execution, occurrence)
                 })

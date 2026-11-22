@@ -1,5 +1,6 @@
 //! Application-scoped close of one Query product occurrence.
 
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchCloseReceiptInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
@@ -41,14 +42,14 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
     {
         let mut retirements = OwnerCleanupRetirements::default();
         let execution = phase
-            .execution_request_for(&self.application.inner.runtime.product_runtime)
+            .execution_request_for(self.application.inner.runtime.product_runtime_ref())
             .map_err(|_| WorthQueryApplicationProductBranchCloseDenial::ForeignPhase)?;
         let occurrence = self.branch.occurrence();
         let pending_correction = self
             .application
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .inspect_pending_application_idempotency(occurrence)
             .flatten()
             .filter(|binding| binding.correction_identity().is_some());
@@ -56,7 +57,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             self.application
                 .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .correction_commit_lane(binding)
         });
         let _command = command_lane.as_ref().map(|lane| lane.enter());
@@ -64,14 +65,14 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             .application
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .application_branch_commit_lane_for_occurrence(occurrence);
         let _coordination = commit_lane.enter();
         let current_correction = self
             .application
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .inspect_pending_application_idempotency(occurrence)
             .flatten()
             .filter(|binding| binding.correction_identity().is_some());
@@ -83,7 +84,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
         self.application
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .settle_before_product_retirement(&execution, occurrence)
             .map_err(|_| {
                 WorthQueryApplicationProductBranchCloseDenial::ApplicationSettlementPending
@@ -92,7 +93,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             .application
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .has_outstanding_dispatch_for_branch(occurrence)
         {
             return Err(WorthQueryApplicationProductBranchCloseDenial::OutstandingExternalEffect);
@@ -101,18 +102,18 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             .application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .begin_product_branch_close(self.branch, WorthQueryProductBranchCloseScope::Application)
             .map_err(WorthQueryApplicationProductBranchCloseDenial::Product)?;
         self.application
             .inner
             .runtime
-            .output_demands
+            .output_demands_ref()
             .release_product_occurrence(pending.occurrence().incarnation());
         self.application
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .release_product_occurrence_retention(
                 pending.occurrence().branch(),
                 pending.occurrence().incarnation(),
@@ -123,7 +124,7 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
             self.application
                 .inner
                 .runtime
-                .bridge
+                .bridge_ref()
                 .conditional_operations(),
         )
         .retry_with_retirements(&execution, &mut retirements)

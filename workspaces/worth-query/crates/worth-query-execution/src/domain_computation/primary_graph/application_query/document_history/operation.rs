@@ -8,7 +8,9 @@ use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationScopeBinding,
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 
@@ -94,19 +96,19 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let ownership = self
             .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .layout_ref()
             .history_ownership(&installed.definition().parts().identity)
             .ok_or(Denial::InstalledBindingMismatch)?;
         let execution = phase
-            .checked_execution_request_for(&self.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let owner = self
             .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(&execution, |native| {
                 native.observe_model_owner(
                     &execution,

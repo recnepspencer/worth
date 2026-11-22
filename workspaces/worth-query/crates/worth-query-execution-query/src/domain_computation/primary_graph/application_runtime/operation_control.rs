@@ -1,6 +1,7 @@
 //! Feature-only access to the installed World's real operation boundary.
 
 use super::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeOwnerCleanupInternalPort as _;
@@ -21,7 +22,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     ) -> WorthQueryManagedSourceRevalidationPauseForTest {
         self.runtime
             .primary_provider
-            .application_attempt_operation_control
+            .application_attempt_operation_control_ref()
             .pause_after_managed_source_revalidation(attempts)
     }
 
@@ -53,7 +54,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     ) -> WorthQueryApplicationCandidatePreparationPauseForTest {
         self.runtime
             .primary_provider
-            .application_attempt_operation_control
+            .application_attempt_operation_control_ref()
             .pause_after_candidate_preparation(attempts)
     }
 
@@ -65,7 +66,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     ) -> WorthQueryApplicationAttemptRegistrationPauseForTest {
         self.runtime
             .primary_provider
-            .application_attempt_operation_control
+            .application_attempt_operation_control_ref()
             .pause_after_registration(attempts)
     }
 
@@ -292,7 +293,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     ) -> WorthQuerySourcePublicationValidationPauseForTest {
         self.runtime
             .primary_provider
-            .application_attempt_operation_control
+            .application_attempt_operation_control_ref()
             .pause_after_source_publication_validation(attempts)
     }
     /// Parks immediately before an original source Query dependency comparison.
@@ -303,7 +304,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     ) -> WorthQuerySourceFactComparisonPauseForTest {
         self.runtime
             .primary_provider
-            .application_attempt_operation_control
+            .application_attempt_operation_control_ref()
             .pause_before_source_fact_comparison(attempts)
     }
 }

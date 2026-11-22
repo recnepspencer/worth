@@ -13,8 +13,10 @@ use worth_query_declaration::facade::{
     },
     application_query::ApplicationQueryBinding,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
@@ -74,8 +76,8 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     if application
         .inner
         .runtime
-        .primary_provider
-        .graph
+        .primary_provider_ref()
+        .graph_ref()
         .layout_ref()
         .is_live_control_entity_kind(model.kind())
     {
@@ -84,7 +86,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     application
         .inner
         .runtime
-        .product_runtime
+        .product_runtime_ref()
         .require_live_product_occurrence(
             source
                 .source()
@@ -159,7 +161,7 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
     };
     if let Some(profile) = outputs.filter(|profile| profile.is_output_forest()) {
         let execution = phase
-            .checked_execution_request_for(&application.inner.runtime.product_runtime)
+            .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let work = profile
             .tree_profiles()
@@ -211,22 +213,22 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
         }
     }
     let execution = phase
-        .checked_execution_request_for(&application.inner.runtime.product_runtime)
+        .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
         .map_err(Denial::Stopped)?;
     // This real admission on C catches medium/schema/source eligibility before
     // fork. Actual preparation later repeats admission on the new C-derived target.
     application
         .inner
         .runtime
-        .primary_provider
-        .graph
+        .primary_provider_ref()
+        .graph_ref()
         .with_runtime(&execution, |native| {
             if definition.model_domain == ApplicationHistoryModelDomain::OwnedModelGraph {
                 let layout = &application
                     .inner
                     .runtime
-                    .primary_provider
-                    .graph
+                    .primary_provider_ref()
+                    .graph_ref()
                     .layout_ref();
                 let ownership =
                     layout
@@ -256,8 +258,8 @@ pub(super) fn require<S: ApplicationSchema, H: ApplicationHistoryBinding<S>>(
                     application
                         .inner
                         .runtime
-                        .primary_provider
-                        .graph
+                        .primary_provider_ref()
+                        .graph_ref()
                         .application_publication_ref()
                         .map(std::sync::Arc::as_ref),
                     transaction,

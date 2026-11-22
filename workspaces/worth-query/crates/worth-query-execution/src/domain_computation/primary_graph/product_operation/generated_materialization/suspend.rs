@@ -4,8 +4,10 @@ use crate::domain_computation::execution_runtime::product_world::publication_den
     WorthQueryProductPublicationOutcome as PublicationOutcome,
 };
 use crate::domain_computation::primary_graph::application_contribution::advancement_denial;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
@@ -118,7 +120,7 @@ where
     {
         let (application, product, application_basis) = self.into_parts();
         let execution_request = phase
-            .execution_request_for(&application.inner.runtime.product_runtime)
+            .execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
             })?;
@@ -138,7 +140,7 @@ where
         let gate = application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .activations_ref()
             .gate(product.branch_identity())
             .map_err(|_| {
@@ -160,8 +162,8 @@ where
         let lineage = application
             .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .output_lineage_ref()
             .lock()
             .expect("application output lineage lock is available");
@@ -214,8 +216,8 @@ where
         let prepared = application
             .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(execution, |runtime| {
                 runtime
                     .owner_component_services()
@@ -266,7 +268,7 @@ PublicationDenial::Stopped(stop) => {
         };
         match prepared.execute(
             phase
-                .execution_request_for(&application.inner.runtime.product_runtime)
+                .execution_request_for(application.inner.runtime.product_runtime_ref())
                 .map_err(|cause| {
                     WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
                 })?,

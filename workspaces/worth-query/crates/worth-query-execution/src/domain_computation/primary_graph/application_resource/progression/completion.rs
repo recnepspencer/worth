@@ -4,6 +4,7 @@ use super::super::{
     WorthQueryResourceFrameKind,
 };
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub(super) enum Received {
@@ -64,7 +65,7 @@ where
         let admitted = runtime
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -141,7 +142,7 @@ where
                 runtime
                     .inner
                     .runtime
-                    .bridge
+                    .bridge_ref()
                     .conditional()
                     .with_view(
                         occurrence
@@ -163,7 +164,7 @@ where
             runtime
                 .inner
                 .runtime
-                .bridge
+                .bridge_ref()
                 .conditional()
                 .with_view(
                     occurrence
@@ -214,7 +215,7 @@ where
         let validated = runtime
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -229,7 +230,7 @@ where
         let admitted = runtime
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -251,7 +252,7 @@ where
         runtime
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -273,7 +274,7 @@ where
     let committed = runtime
         .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional()
         .with_view(
             occurrence

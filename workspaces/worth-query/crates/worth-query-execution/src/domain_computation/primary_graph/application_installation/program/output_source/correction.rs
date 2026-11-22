@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_declaration::facade::application_operation::{
     ApplicationMutationBinding, ApplicationMutationIdentities,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
@@ -62,7 +63,7 @@ where
             self.runtime()
                 .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .owner_ref()
                 .owner_identity(),
         ) {
@@ -110,7 +111,7 @@ where
             self.runtime()
                 .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .owner_ref()
                 .owner_identity(),
         ) {

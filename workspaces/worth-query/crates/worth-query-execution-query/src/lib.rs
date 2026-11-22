@@ -14,7 +14,7 @@
 pub(crate) mod domain_computation;
 pub(crate) mod ports;
 
-pub(crate) mod publication_boundary {
+pub(crate) mod discovery_boundary {
 
     pub mod discovery_currentness {
         pub use crate::domain_computation::primary_graph::application_query::{

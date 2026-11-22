@@ -4,6 +4,7 @@ use super::super::{
     WorthQueryResourceCleanupPosture,
 };
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph::application_resource) fn drain_candidate<Schema>(
@@ -26,7 +27,7 @@ where
         runtime
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -46,7 +47,7 @@ where
         let drained = runtime
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -119,7 +120,7 @@ where
         runtime
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -138,7 +139,7 @@ where
         runtime
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -155,7 +156,7 @@ where
         runtime
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -173,7 +174,7 @@ where
         runtime
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .with_view(
                 occurrence
@@ -197,7 +198,7 @@ where
     runtime
         .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional()
         .with_view(basis, |bridge| {
             let prior = std::mem::replace(lifecycle, ResourceLifecycle::Reserved { clock: None });

@@ -117,7 +117,7 @@ pub struct BoundaryContract029;
 /// struct SecondOperation;
 ///
 /// fn cannot_cross_operation_projection<'a, Schema: ApplicationSchema, Input, Scope>(
-///     phase: &worth_query_execution::facade::primary_graph::WorthQueryAdvancementPhase<'a>,
+///     phase: &worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase<'a>,
 ///     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
 ///     admission: WorthQueryAdmittedApplicationOperation<
 ///         Schema, FirstOperation, Input, Scope,

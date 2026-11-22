@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::product_operation::current_read::C
 use crate::domain_computation::primary_graph::product_operation::current_read::{
     CurrentReadControl, CurrentReadDenial,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 pub
@@ -100,7 +101,7 @@ impl<'a, S: ApplicationSchema> SourceQueryReaderAccess<'a, S> {
                     .application
                     .runtime
                     .primary_provider
-                    .graph
+                    .graph_ref()
                     .with_runtime(execution, |native| {
                         control.proof.confirm_in_coordinated(
                             execution,

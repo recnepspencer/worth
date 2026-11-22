@@ -5,7 +5,7 @@ impl WorthQueryExecutionRuntime {
     #[doc(hidden)]
     pub fn bind_standalone_test_domain_operation_for_test<L: BasisOperationLane>(
         &self,
-        installation_authority: &WorthQueryExecutionInstallationAuthority,
+        installation_authority: &impl WorthQueryExecutionInstallationAuthorityRef,
         operation: &WorthQueryInstalledDomainOperationAuthority,
         basis: &AdmittedBasisCapability<L>,
         graph_authorities: &[&WorthQueryInstalledGraphParticipationAuthority],
@@ -16,7 +16,7 @@ impl WorthQueryExecutionRuntime {
     {
         Self::bind_standalone_test_domain_operation::<L>(
             self,
-            installation_authority,
+            installation_authority.as_installation_authority(),
             operation,
             basis,
             graph_authorities,

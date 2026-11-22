@@ -8,6 +8,7 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationScalarValueBinding,
 };
 use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl WorthQueryPreparedCorrectionSource {
@@ -46,7 +47,7 @@ impl WorthQueryPreparedCorrectionSource {
         use WorthQueryCorrectionDerivationDenial as D;
         let target = checked.target();
         let execution = phase
-            .execution_request_for(&target.application().inner.runtime.product_runtime)
+            .execution_request_for(target.application().inner.runtime.product_runtime_ref())
             .map_err(|_| D::ForeignPhase)?;
         let (_, source, _, program, _) = checked.borrow_parts();
         let material = source
@@ -57,7 +58,7 @@ impl WorthQueryPreparedCorrectionSource {
             .application()
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .recover_correction_command(material.capture.original, key.identity())
             .map_err(D::Material)?
             .ok_or(D::SemanticMaterialUnavailable)?;

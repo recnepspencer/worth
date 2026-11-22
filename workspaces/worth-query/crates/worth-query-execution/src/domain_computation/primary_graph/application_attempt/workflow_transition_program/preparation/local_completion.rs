@@ -10,6 +10,8 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     workflow::instance::SelectedWorkflowOperation, WorthQueryApplicationCommitReceipt,
 };
+use worth_query_execution_attempt::facade::ports::WorkflowOperationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 #[path = "local_completion/replay.rs"]
 mod replay;
@@ -73,7 +75,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
         .map_err(D::Attempt)?;
         let receipt_identity = performed.identity();
         let execution = phase
-            .execution_request_for(&runtime.inner.runtime.product_runtime)
+            .execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(|_| D::Attempt(local_mismatch("foreign local completion phase")))?;
         let binding = idempotency.bind_local_workflow_settlement(
             required.transition_identity_bytes(),
@@ -142,8 +144,7 @@ where
 {
     use WorkflowTransitionPreparationDenial as D;
     let origin = required
-        .local_action
-        .as_ref()
+        .local_action_ref()
         .ok_or_else(|| D::Attempt(local_mismatch("not an issued local action")))?;
     if required.original_runtime()
         != selected

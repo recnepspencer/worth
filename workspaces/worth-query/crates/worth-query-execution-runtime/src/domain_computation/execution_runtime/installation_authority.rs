@@ -32,6 +32,24 @@ impl WorthQueryExecutionInstallationAuthority {
     }
 }
 
+/// Sealed crate-boundary trait enabling `WorthQueryExecutionRuntime` operation
+/// binding to accept either the lower runtime authority or the top-level
+/// `worth-query-execution` wrapper without exposing `Deref` or allowing external
+/// implementations.
+pub trait InstallationAuthorityRefSeal {
+    fn as_installation_authority(&self) -> &WorthQueryExecutionInstallationAuthority;
+}
+
+pub trait WorthQueryExecutionInstallationAuthorityRef: InstallationAuthorityRefSeal {}
+
+impl InstallationAuthorityRefSeal for WorthQueryExecutionInstallationAuthority {
+    fn as_installation_authority(&self) -> &WorthQueryExecutionInstallationAuthority {
+        self
+    }
+}
+
+impl WorthQueryExecutionInstallationAuthorityRef for WorthQueryExecutionInstallationAuthority {}
+
 /// Compiler-total result of installing one execution runtime.
 pub struct WorthQueryExecutionRuntimeInstallation {
     runtime: WorthQueryExecutionRuntime,

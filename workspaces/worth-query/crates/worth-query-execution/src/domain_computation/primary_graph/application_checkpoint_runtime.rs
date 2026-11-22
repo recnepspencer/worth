@@ -1,5 +1,7 @@
 //! Runtime restoration of an interim checkpoint registry on an installed application.
 
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_lineage::facade::ports::{ApplicationCheckpointInternalPort as _, InterimCheckpointOriginInternalPort as _};
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
@@ -28,15 +30,15 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
         let receiver = self
             .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(request, |runtime| {
                 runtime
                     .durability_authority()
                     .admit_interim_receiver(origin.native(), request)
             })
             .map_err(|cause| native_refusal(cause).into_installation_denial())?;
-        let product = &self.inner.runtime.product_runtime;
+        let product = &self.inner.runtime.product_runtime_ref();
         let lease = product
             .admit_product_occurrence(product.default_occurrence())
             .map_err(|cause| {

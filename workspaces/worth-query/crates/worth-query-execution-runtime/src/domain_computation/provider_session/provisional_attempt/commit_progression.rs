@@ -144,7 +144,7 @@ impl<'run> WorthQueryInvariantApprovedProposedState<'run> {
         )
     }
 
-    pub fn compare_and_commit_with(
+    pub(crate) fn compare_and_commit_with(
         self,
         commit: impl FnOnce(
             crate::domain_computation::provider_session::WorthQuerySessionPrepareOutcome<'run>,
@@ -163,7 +163,7 @@ impl<'run> WorthQueryInvariantApprovedProposedState<'run> {
         }
     }
 
-    pub fn compare_and_prepare(
+    pub(crate) fn compare_and_prepare(
         mut self,
         compare: impl FnOnce(
             &crate::domain_computation::provider_session::WorthQuerySessionReadAuthority<'_>,

@@ -13,6 +13,7 @@ use crate::domain_computation::{
 };
 use worth_query_admission::facade::graph_obligation::WorthQueryGraphWorkPlanIdentity;
 use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledApplicationQuery};
 
 pub(in super::super) struct RichReportScope {
@@ -131,7 +132,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             self.runtime
                 .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .inspection_materialization_prepared();
         }
         drop(self.check(execution)?);

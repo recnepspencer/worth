@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::output_reuse::{
     first_moved_fact_in, RetainedFactVerification,
 };
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
@@ -68,7 +69,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .application()
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .source_owner_ref()
             .invalidation_owner;
         for source in sources {
@@ -80,7 +81,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 self.application()
                     .runtime
                     .primary_provider
-                    .graph
+                    .graph_ref()
                     .layout_ref(),
                 &source.query_identifier(),
                 SourceFactExpansionControl::in_request(*execution, None),

@@ -5,6 +5,7 @@ use crate::domain_computation::execution_runtime::product_world::{
 use std::sync::Arc;
 use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
+use worth_query_execution_runtime::facade::ports::ProductPublicationReceiptInternalPort as _;
 
 /// Query projection or history retirement. Missing parts remain owned and
 /// refuse promotion; a partial transfer never drops an already-taken witness.

@@ -23,7 +23,7 @@ impl std::fmt::Debug for WorthQuerySessionPrepareOutcome<'_> {
 }
 
 impl<'run> WorthQuerySessionBoundReadsAndEffects<'run> {
-    pub fn prepare_for_commit(
+    pub(crate) fn prepare_for_commit(
         mut self,
     ) -> Result<WorthQuerySessionPrepareOutcome<'run>, WorthQueryProviderSessionFailure> {
         self.counters.called_provider();
@@ -80,7 +80,7 @@ impl WorthQuerySessionPrepareOutcome<'_> {
         self.counters
     }
 
-    pub fn commit(
+    pub(crate) fn commit(
         self,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
     ) -> WorthQuerySessionCommitOutcome {
@@ -89,7 +89,7 @@ impl WorthQuerySessionPrepareOutcome<'_> {
 
     /// Only the physical invocation varies; this owner still closes the exact
     /// session and interprets its actual terminal or recovery disposition.
-    pub fn commit_using(
+    pub(crate) fn commit_using(
         mut self,
         physical: impl FnOnce(
             &super::super::super::super::WorthQueryGraphProviderAnchor,
@@ -175,6 +175,66 @@ impl WorthQuerySessionPrepareOutcome<'_> {
                 .with_recovery_posture(WorthQueryProviderSessionRecoveryPosture::RecoveryRequired),
             ),
         }
+    }
+}
+
+/// Crate-boundary internal port for `WorthQuerySessionBoundReadsAndEffects` commit
+/// preparation. Never exported on `worth-query-execution::facade` or Host.
+pub trait SessionBoundReadsCommitInternalPort<'run>: Sized {
+    fn prepare_for_commit(
+        self,
+    ) -> Result<WorthQuerySessionPrepareOutcome<'run>, WorthQueryProviderSessionFailure>;
+}
+
+impl<'run> SessionBoundReadsCommitInternalPort<'run>
+    for WorthQuerySessionBoundReadsAndEffects<'run>
+{
+    fn prepare_for_commit(
+        self,
+    ) -> Result<WorthQuerySessionPrepareOutcome<'run>, WorthQueryProviderSessionFailure> {
+        Self::prepare_for_commit(self)
+    }
+}
+
+/// Crate-boundary internal port for `WorthQuerySessionPrepareOutcome` commit
+/// dispatch. Never exported on `worth-query-execution::facade` or Host.
+pub trait SessionPrepareOutcomeInternalPort: Sized {
+    fn commit(
+        self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQuerySessionCommitOutcome;
+
+    fn commit_using(
+        self,
+        physical: impl FnOnce(
+            &super::super::super::super::WorthQueryGraphProviderAnchor,
+            super::super::super::super::WorthQueryProviderSessionView<'_>,
+        ) -> Result<
+            super::super::super::super::WorthQueryProviderCommitCompletion,
+            super::super::super::super::WorthQueryProviderSessionCommitStop,
+        >,
+    ) -> WorthQuerySessionCommitOutcome;
+}
+
+impl SessionPrepareOutcomeInternalPort for WorthQuerySessionPrepareOutcome<'_> {
+    fn commit(
+        self,
+        allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+    ) -> WorthQuerySessionCommitOutcome {
+        Self::commit(self, allocation_policy)
+    }
+
+    fn commit_using(
+        self,
+        physical: impl FnOnce(
+            &super::super::super::super::WorthQueryGraphProviderAnchor,
+            super::super::super::super::WorthQueryProviderSessionView<'_>,
+        ) -> Result<
+            super::super::super::super::WorthQueryProviderCommitCompletion,
+            super::super::super::super::WorthQueryProviderSessionCommitStop,
+        >,
+    ) -> WorthQuerySessionCommitOutcome {
+        Self::commit_using(self, physical)
     }
 }
 

@@ -227,7 +227,8 @@ impl<Schema> Drop for WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     fn drop(&mut self) {
         // The local owner drops first even if cleanup unwinds. Move later
         // custody into its original field positions before cleanup can panic.
-        let execution = self.inner.runtime.execution.take();
+        use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+        let execution = self.inner.runtime.execution_option_mut().take();
         self.inner
             .post_conditional_teardown
             .take_from(&mut self.inner.runtime);

@@ -1,6 +1,7 @@
 //! Rejoin stopped DATA to fresh World-issued branch selectors at Home service.
 use super::*;
 use crate::domain_computation::primary_graph::query_obligations::QueryObligationDenial;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -11,7 +12,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
     {
         use WorthQueryBranchSetAdoptionResumeDenial as Denial;
         let execution = phase
-            .checked_execution_request_for(&self.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 Denial::Preparation(
                     WorthQueryBranchSetAdoptionPreparationDenial::ExecutionDenied(cause),
@@ -23,7 +24,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let observed = self
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .owner_ref()
             .observation_port()
             .observe_installed_product_branches(&execution)
@@ -70,7 +71,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 owner: self
                     .inner
                     .runtime
-                    .product_runtime
+                    .product_runtime_ref()
                     .owner_ref()
                     .owner_identity(),
                 durable: Some(row.attempt),

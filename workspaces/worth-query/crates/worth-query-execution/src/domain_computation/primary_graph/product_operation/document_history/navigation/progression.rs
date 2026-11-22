@@ -5,8 +5,10 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryExpectedProductBranch,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
@@ -36,7 +38,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             self.application
                 .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .require_live_product_occurrence(
                     source
                         .source()
@@ -150,7 +152,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
     > {
         use WorthQueryHistoryNavigationDenial as Denial;
         let execution = phase
-            .checked_execution_request_for(&self.application.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let current = self
             .application
@@ -165,7 +167,12 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .application
             .select_application_read_observation(phase, &source.source())
             .map_err(Denial::ProductAdmission)?;
-        let graph = &self.application.inner.runtime.primary_provider.graph;
+        let graph = &self
+            .application
+            .inner
+            .runtime
+            .primary_provider_ref()
+            .graph_ref();
         let publisher = graph
             .application_publication_ref()
             .map(std::sync::Arc::as_ref);

@@ -6,6 +6,7 @@ use crate::domain_computation::application_aftermath::{
     WorthQueryCorrectionSourceCoordinates, WorthQueryRecordedCorrectionSource,
 };
 use crate::domain_computation::primary_graph::retained_correction::RetainedCorrectionMaterial;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -25,9 +26,9 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         use WorthQueryCorrectionSelectionDenial as D;
         let application = self.application();
         let execution = phase
-            .execution_request_for(&application.inner.runtime.product_runtime)
+            .execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(|_| D::ForeignPhase)?;
-        let owner = &application.inner.runtime.product_runtime.owner_ref();
+        let owner = &application.inner.runtime.product_runtime_ref().owner_ref();
         if owner
             .owner_identity()
             .durable()
@@ -39,7 +40,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         let material = application
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .observe_correction_material(coordinates.relational())
             .map_err(D::Material)?;
         let originals = owner
@@ -78,7 +79,7 @@ impl<'runtime, S: ApplicationSchema> WorthQuerySelectedProductOperation<'runtime
         let fact = application
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .observe_correction_original_fact(&execution, &original, &material.ready.commit)
             .map_err(D::Material)?;
         let causality = fact
@@ -127,7 +128,7 @@ impl<'runtime, S: ApplicationSchema> ApplicationCorrectionVisitor<S>
         let application = self.target.application();
         let execution = self
             .phase
-            .execution_request_for(&application.inner.runtime.product_runtime)
+            .execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(|_| WorthQueryCorrectionSelectionDenial::ForeignPhase)?;
         let original = self
             .originals
@@ -170,7 +171,7 @@ pub(super) fn read_lineage<S: ApplicationSchema>(
         .application()
         .inner
         .runtime
-        .product_runtime
+        .product_runtime_ref()
         .owner_ref()
         .observation_port();
     let resolve = |coordinate: &WorthQueryCorrectionSourceCoordinates| {

@@ -3,6 +3,7 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
 use worth_query_execution_attempt::facade::ports::RecoveredProgramOutputSourceInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use worth_query_declaration::facade::application_operation::ApplicationMutationBinding;
@@ -139,7 +140,7 @@ where
     > {
         let retained = (|| {
             let execution = phase
-                .execution_request_for(&self.runtime().inner.runtime.product_runtime)
+                .execution_request_for(self.runtime().inner.runtime.product_runtime_ref())
                 .map_err(|cause| {
                     WorthQueryOutputDemandDenial::new(
                         WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()),

@@ -1,5 +1,6 @@
 //! Contributor installation keeps every advanced original in its refusal owner.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
@@ -106,7 +107,7 @@ impl<S: ApplicationSchemaComposition, P> HomeProgramInstallationCustody<S, P> {
         let services = self.services.as_ref().expect("same prepared services");
         let cursor = services
             .provider
-            .graph
+            .graph_ref()
             .source_owner_ref()
             .invalidation_owner
             .latest_position();

@@ -1,4 +1,5 @@
 //! A pending exact model capture leaves only after ordinary query completion.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 mod context;
 mod metadata;
@@ -155,7 +156,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         }
         let expected = pending.identity();
         let execution =
-            match phase.checked_execution_request_for(&self.inner.runtime.product_runtime) {
+            match phase.checked_execution_request_for(self.inner.runtime.product_runtime_ref()) {
                 Ok(execution) => execution,
                 Err(cause) => {
                     return Err(WorthQueryDocumentHistoryAttachmentFailure {

@@ -1,6 +1,7 @@
 //! One original advancement owns success, refusal and every nested temporary.
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 pub(super) fn open<T, Schema: ApplicationSchema>(
     runtime: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     request: &WorthQueryRequestScope,
@@ -11,7 +12,9 @@ pub(super) fn open<T, Schema: ApplicationSchema>(
     let handoff =
         runtime.with_funded_application_advancement(request, allocation_policy, |phase| {
             completed = Some(
-                match phase.checked_execution_request_for(&runtime.inner.runtime.product_runtime) {
+                match phase
+                    .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
+                {
                     Ok(execution) => body(&execution),
                     Err(cause) => Err(InspectionCause::Advancement(cause)),
                 },

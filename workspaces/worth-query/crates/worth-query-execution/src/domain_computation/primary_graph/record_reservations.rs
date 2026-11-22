@@ -1,5 +1,7 @@
 //! Bounded host observation of actual Native reservations, including refusals.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 pub use worth_relational::facade::inspection::{
     RecordReservationObservation as WorthQueryRecordReservationObservation,
@@ -29,12 +31,12 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static>
     ) -> Result<WorthQueryRecordReservationObservation, WorthQueryRecordReservationObservationDenial>
     {
         let execution = phase
-            .execution_request_for(&self.inner.runtime.product_runtime)
+            .execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(WorthQueryRecordReservationObservationDenial::ForeignPhase)?;
         self.inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(&execution, |runtime| {
                 runtime
                     .inspect_what_happened()

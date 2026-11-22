@@ -8,6 +8,7 @@ use worth_query_admission::facade::graph_obligation::{
     admit_application_inspection_graph_work, WorthQueryAdmittedGraphWorkPlan,
     WorthQueryGraphWorkAdmissionDenial, WorthQueryGraphWorkCapacityAdmissionStop,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationInspectionContract,
 };
@@ -47,7 +48,7 @@ pub(super) fn admit<Schema: ApplicationSchema>(
             runtime
                 .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .application_resource_support_ref(),
             &mut admit,
         )

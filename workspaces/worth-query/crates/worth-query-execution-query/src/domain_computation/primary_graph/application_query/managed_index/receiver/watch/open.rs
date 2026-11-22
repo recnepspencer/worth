@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::application_query::derived_view::PredicateWorld;
 use crate::domain_computation::primary_graph::live_delivery::WorthQueryLiveAdmissionDenial;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -61,7 +62,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 graph.managed_derived_views(),
             );
             let observation = context.selected.product().observation().clone();
-            let source = &self.runtime.primary_provider.live_delivery;
+            let source = &self.runtime.primary_provider.live_delivery_ref();
             let subscription = source
                 .open_predicate(&execution, &observation)
                 .map_err(live_denial)?;

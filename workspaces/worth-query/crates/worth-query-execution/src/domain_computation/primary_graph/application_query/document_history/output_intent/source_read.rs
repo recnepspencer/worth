@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryScopeBinding;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
@@ -98,7 +99,7 @@ impl WorthQueryHistoryOutputIntent {
             ));
         }
         let execution = phase
-            .checked_execution_request_for(&runtime.inner.runtime.product_runtime)
+            .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(|cause| Stop::Authority(WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         let current = runtime
             .on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(

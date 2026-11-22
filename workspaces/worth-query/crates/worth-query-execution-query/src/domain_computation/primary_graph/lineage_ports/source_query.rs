@@ -2,6 +2,7 @@
 
 use std::any::Any;
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 
 use worth_query_execution_lineage::facade::ports::{
     AppliedOutputsSelection, SourceQueryReaderPort,
@@ -63,7 +64,7 @@ impl<S: ApplicationSchema + 'static> SourceQueryReaderPort for SourceQueryReader
         self.application
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_runtime(execution, |native| visit(native));
     }
 

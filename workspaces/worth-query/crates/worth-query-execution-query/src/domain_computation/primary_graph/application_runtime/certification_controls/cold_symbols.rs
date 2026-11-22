@@ -1,5 +1,6 @@
 //! Closed D1634 forwarding entry: real Native symbol residency placement only.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     #[doc(hidden)]
@@ -14,7 +15,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         Ok(self
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_runtime(&execution, |runtime| {
                 runtime.place_symbol_pages_cold_for_test(&execution)
             }))

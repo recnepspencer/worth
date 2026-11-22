@@ -1,5 +1,6 @@
 //! Borrow the producer's actual C computation record under this request.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -21,7 +22,7 @@ where
     if !edition.retains_computation() {
         return Ok(None);
     }
-    let handle = &runtime.runtime.primary_provider.graph;
+    let handle = &runtime.runtime.primary_provider.graph_ref();
     let mut prior = handle
         .output_lineage_ref()
         .lock()

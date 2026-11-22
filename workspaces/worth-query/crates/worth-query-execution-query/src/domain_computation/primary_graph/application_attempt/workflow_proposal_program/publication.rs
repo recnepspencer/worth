@@ -2,6 +2,7 @@ use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
 use worth_foundational::facade::{AspectFieldLocator, AspectValue, InternedString};
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::identity::EntityId;
@@ -186,7 +187,7 @@ where
             let _ = self
                 .runtime
                 .primary_provider
-                .graph
+                .graph_ref()
                 .with_workflow_instance_progress_mut(progress_key, |retention| {
                     progress_update.apply(
                         retention,

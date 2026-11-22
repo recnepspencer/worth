@@ -16,6 +16,7 @@ use worth_relational::facade::indexes::BoundedIndexParityMode;
 use worth_relational::facade::runtime::RelationalRuntime;
 use worth_relational::facade::snapshots::SnapshotHandle;
 
+use crate::domain_computation::execution_runtime::QueryExecutionRuntimeInternalPort as _;
 use crate::domain_computation::execution_runtime::WorthQueryExecutionRuntime;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
 

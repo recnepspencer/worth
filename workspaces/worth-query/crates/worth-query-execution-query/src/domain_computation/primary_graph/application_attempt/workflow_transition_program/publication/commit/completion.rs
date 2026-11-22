@@ -1,6 +1,7 @@
 //! Finish projection only after the authoritative commit frame has returned.
 use super::*;
 use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 
 pub struct WorkflowAdvanceCompletion {
     pub transition_identity: String,
@@ -33,7 +34,7 @@ impl WorkflowAdvanceCompletion {
         let projected = match outcome.landed() {
             Ok(crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationLandedCommit::Live { receipt }) => {
                 application.runtime.primary_provider
-                    .graph
+                    .graph_ref()
                     .with_runtime(execution, |runtime| {
                         project(
                             execution,
@@ -61,7 +62,7 @@ impl WorkflowAdvanceCompletion {
             let _ = application
                 .runtime
                 .primary_provider
-                .graph
+                .graph_ref()
                 .with_workflow_instance_progress_mut(progress_key, |retention| {
                     progress_update.apply(
                         retention,

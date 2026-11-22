@@ -1,3 +1,4 @@
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use super::{
@@ -48,7 +49,7 @@ where
             super::super::signal_decision_reentry::WorthQueryConditionalTruthBasis::from_selected(
                 self.into_inner(),
             );
-        let bridge_root = runtime.inner.runtime.bridge.conditional_operations();
+        let bridge_root = runtime.inner.runtime.bridge_ref().conditional_operations();
         let bridge = bridge_root
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);

@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::application_attempt::workflow_inst
 use crate::domain_computation::primary_graph::application_attempt::WorthQueryWorkflowInstanceDiscoveryIntent;
 use crate::domain_computation::primary_graph::application_installation::WorthQueryWorkflowVocabulary;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
@@ -74,7 +75,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             });
         };
         let execution = phase
-            .execution_request_for(&self.application().inner.runtime.product_runtime)
+            .execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Phase)?;
         let graph = self
             .application()

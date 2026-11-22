@@ -16,6 +16,7 @@ use worth_query_declaration::facade::application_program::ApplicationWorkflowSpe
 use worth_query_execution_attempt::facade::ports::WorkflowReadBasisInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedCapabilityAccessInspectionPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -101,7 +102,7 @@ impl WorthQueryWorkflowReadTarget {
             return Err(Denial::PolicyMismatch);
         }
         let execution = phase
-            .execution_request_for(&current.application().inner.runtime.product_runtime)
+            .execution_request_for(current.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Phase)?;
         let graph = current
             .application()

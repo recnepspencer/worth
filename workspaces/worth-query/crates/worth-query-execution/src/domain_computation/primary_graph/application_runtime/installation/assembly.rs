@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationR
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenial;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphInstallationDenialKind;
 use crate::equality_type_id::EqualityTypeId as TypeId;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductWorldResourcesInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationSchema;
 pub(super) fn assemble_application_runtime<Schema>(
@@ -34,7 +35,7 @@ where
     let execution = phase.execution_request();
     let mutation_partitions = graph
         .primary_provider
-        .graph
+        .graph_ref()
         .with_runtime(&execution, |native| {
             ApplicationMutationPartitions::readmit(native, &execution)
         })
@@ -49,7 +50,7 @@ where
         ));
     }
     let product_runtime = crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime::install(
-        graph.primary_provider.graph.prepare_product_source(&phase.execution_request(), &graph.relational_branch_identity)
+        graph.primary_provider.graph_ref().prepare_product_source(&phase.execution_request(), &graph.relational_branch_identity)
             .map_err(|denial| WorthQueryPrimaryGraphInstallationDenial::new(
                 WorthQueryPrimaryGraphInstallationDenialKind::RelationalSchemaRejected,
                 format!("Product source admission: {denial:?}"),
@@ -114,8 +115,8 @@ where
         schema_binding.package_identity().render_hex(),
         schema_binding.schema_identity().render_hex(),
     );
-    let granular_invalidation = crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation::new(schema_binding.clone(), graph.primary_provider.graph.clone(), crate::domain_computation::execution_runtime::product_world::WorthQueryProductSharedRoot::new(
-            (*product_runtime).clone(),
+    let granular_invalidation = crate::domain_computation::primary_graph::WorthQueryGranularInvalidationInstallation::new(schema_binding.clone(), graph.primary_provider.graph_ref().clone(), crate::domain_computation::execution_runtime::product_world::WorthQueryProductSharedRoot::new(
+            product_runtime.clone(),
             graph.bridge.conditional_operations(),
         ));
     let program_required_bindings = installed_schema
@@ -178,41 +179,43 @@ where
             installed_conditionals: Default::default(),
             managed_indexes: Default::default(),
             signing_owners: Default::default(),
-            runtime: super::super::WorthQueryApplicationRuntimeCore {
-                execution: Some(graph.runtime),
-                application_readiness_schema_token,
-                publication: graph.publication,
-                checkpoint_restore_work: graph.checkpoint_restore_work,
-                authorization: std::sync::Arc::new(authorization),
-                authorization_clock,
-                relational_branch_identity: graph.relational_branch_identity,
-                bridge: graph.bridge,
-                product_runtime,
-                granular_invalidation,
-                primary_provider: super::super::super::provider::PrimaryProviderCustody::new(graph.primary_provider),
-                primary_graph_authority: Some(worth_query_execution_query::facade::domain_computation::primary_graph::application_runtime::home_retirement::PrimaryGraphParticipationCustody::new(graph.primary_graph_authority)),
-
-                source_meanings: Some(crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(
-                    runtime_authority,
-                )),
-                recovered_program_source_delivery: Default::default(),
-                basis_leases: Default::default(),
-                next_external_dispatch_attempt: std::sync::atomic::AtomicU64::new(1),
-                external_effect_transport: std::sync::OnceLock::new(),
-                inbound_verifiers: std::sync::Mutex::new(std::collections::BTreeMap::new()),
-                inbound_custody: std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
-                transport_completion_custody: std::sync::Mutex::new(Default::default()),
-                inbound_maintenance_turn: std::sync::atomic::AtomicU64::new(0),
-                dispatch_journal,
-                recovery_handles,
-                output_producer_routes,
-                output_readiness_routes,
-                next_output_producer_attempt: std::sync::atomic::AtomicU64::new(1),
-                mutation_partitions,
-                output_demands: super::super::super::application_output_demand::WorthQueryOutputDemandRegistry::default(),
-                recovered_outputs: Default::default(),
-                workflow_coverage: Default::default(),
-                installed_operations,
+            runtime: {
+                use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+                super::super::WorthQueryApplicationRuntimeCore::from_parts(
+                    Some(graph.runtime),
+                    application_readiness_schema_token,
+                    graph.publication,
+                    graph.checkpoint_restore_work,
+                    std::sync::Arc::new(authorization),
+                    authorization_clock,
+                    graph.relational_branch_identity,
+                    graph.bridge,
+                    product_runtime,
+                    Default::default(),
+                    Default::default(),
+                    granular_invalidation,
+                    super::super::super::provider::PrimaryProviderCustody::new(graph.primary_provider),
+                    Some(worth_query_execution_query::facade::domain_computation::primary_graph::application_runtime::home_retirement::PrimaryGraphParticipationCustody::new(graph.primary_graph_authority)),
+                    Some(crate::domain_computation::primary_graph::application_query::observed_source::source_identity::WorthQueryObservedSourceMeaningRegistry::new(
+                        runtime_authority,
+                    )),
+                    std::sync::atomic::AtomicU64::new(1),
+                    std::sync::OnceLock::new(),
+                    std::sync::Mutex::new(std::collections::BTreeMap::new()),
+                    std::sync::Arc::new(std::sync::Mutex::new(Default::default())),
+                    std::sync::Mutex::new(Default::default()),
+                    std::sync::atomic::AtomicU64::new(0),
+                    dispatch_journal,
+                    recovery_handles,
+                    output_producer_routes,
+                    output_readiness_routes,
+                    std::sync::atomic::AtomicU64::new(1),
+                    mutation_partitions,
+                    super::super::super::application_output_demand::WorthQueryOutputDemandRegistry::default(),
+                    Default::default(),
+                    Default::default(),
+                    installed_operations,
+                )
             },
         },
     }

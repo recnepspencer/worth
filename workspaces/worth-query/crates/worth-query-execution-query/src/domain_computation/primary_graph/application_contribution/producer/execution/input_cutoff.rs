@@ -1,6 +1,7 @@
 //! Producer input preparation consumed by fresh execution or stable publication.
 
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -110,7 +111,7 @@ where
             )
         })?;
     let observation = selected.product().observation();
-    let handle = &runtime.runtime.primary_provider.graph;
+    let handle = runtime.runtime.primary_provider.graph_ref();
     let source_owner = &handle.source_owner_ref().invalidation_owner;
     if edition.retains_computation() {
         observation::reach(Gate::ComputationPrior);

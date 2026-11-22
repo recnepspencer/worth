@@ -1,5 +1,6 @@
 //! Thin forwarding shims for `court_doors_for_test` methods onto `worth-query-execution-query`.
 
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 #[allow(unused_imports, dead_code)]
 mod domain_computation_primary_graph_application_runtime_inbound_occurrence_cleanup_court_doors_for_test_doors {
@@ -223,6 +224,8 @@ mod domain_computation_primary_graph_application_runtime_inbound_publication_cus
 mod domain_computation_primary_graph_provider_history_retirement_doors {
     use crate::domain_computation::primary_graph::application_runtime::WorthQueryPrimaryGraphApplicationRuntime;
     use crate::domain_computation::primary_graph::product_operation::context::WorthQuerySelectedProductOperation;
+    use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+    use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
     use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
     impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         #[doc(hidden)]
@@ -233,7 +236,7 @@ mod domain_computation_primary_graph_provider_history_retirement_doors {
             let world = self
                 .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .owner_ref()
                 .inspection_port();
             let history = world
@@ -248,8 +251,8 @@ mod domain_computation_primary_graph_provider_history_retirement_doors {
                 retention.unique_pins(),
                 self.inner
                     .runtime
-                    .primary_provider
-                    .graph
+                    .primary_provider_ref()
+                    .graph_ref()
                     .with_runtime(request_execution, |runtime| {
                         runtime.retired_branch_root_count()
                     }),
@@ -259,7 +262,7 @@ mod domain_computation_primary_graph_provider_history_retirement_doors {
         pub fn completed_evidence_retained_for_test(&self) -> usize {
             self.inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .completed_evidence_retained()
         }
     }

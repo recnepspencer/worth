@@ -42,6 +42,7 @@ pub mod ports {
         ApplicationInvariantProjectionSnapshotInternalPort,
     };
     pub use crate::domain_computation::primary_graph::invariant_projection::operation_reader::current_output::CurrentOutputDenialInternalPort;
+    pub use crate::domain_computation::primary_graph::output_lineage::internal_port::ApplicationOutputLineageInternalPort;
     pub use crate::domain_computation::primary_graph::root::integration_handle_port::PrimaryGraphIntegrationHandleInternalPort;
     pub use crate::domain_computation::primary_graph::root::internal_port::PrimaryGraphInternalPort;
     pub use crate::domain_computation::product_publication::unpublished_internal_port::ProductUnpublishedApplicationInternalPort;

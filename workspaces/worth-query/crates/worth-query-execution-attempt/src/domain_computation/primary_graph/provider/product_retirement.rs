@@ -1,6 +1,7 @@
 //! Release Query-owned retention for one retired product occurrence.
 
 use std::collections::BTreeSet;
+use worth_query_execution_lineage::facade::ports::ApplicationOutputLineageInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 use worth_runtime_world::facade::{CompositeCommitIdentity, RuntimeWorldRecoveryPort};

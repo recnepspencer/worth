@@ -387,6 +387,7 @@ impl Eq for OpaquePrerequisiteDenialKind {}
 pub trait SessionBoundAttemptBasisPort: Sized {
     type Affinity;
 
+    #[allow(clippy::result_unit_err)]
     fn bind_to_session_bound_reads(
         self,
         reads: &crate::domain_computation::provider_session::WorthQuerySessionBoundReadsAndEffects<

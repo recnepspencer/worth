@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
 };
 use worth_query_declaration::facade::application_history::ApplicationHistoryBinding;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -133,7 +134,7 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'runtim
             .validate_current_authority()
             .map_err(Denial::Authorization)?;
         let execution = phase
-            .checked_execution_request_for(&progress.application.inner.runtime.product_runtime)
+            .checked_execution_request_for(progress.application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         execution.check_live().map_err(|cause| Denial::Stopped(crate::domain_computation::primary_graph::application_contribution::advancement_denial(worth_execution::WorkCeilingDenial::Stopped(cause))))?;
         Ok(Some(completed))
@@ -153,7 +154,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             .as_ref()
             .expect("pending navigation owns its retained source");
         let execution = phase
-            .checked_execution_request_for(&self.application.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let restoration = selected
             .journal

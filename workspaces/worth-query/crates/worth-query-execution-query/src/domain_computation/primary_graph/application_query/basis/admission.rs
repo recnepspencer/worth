@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::application_query::{
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 
 pub fn admit_application_query_basis<Schema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -82,7 +83,7 @@ pub fn register_basis<Schema>(
 where
     Schema: ApplicationSchema,
 {
-    let graph = application.runtime.primary_provider.graph.clone();
+    let graph = application.runtime.primary_provider.graph_ref().clone();
     application
         .runtime
         .basis_leases

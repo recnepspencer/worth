@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrincipalResolutionMode,
 };
 use worth_execution::MapKernelFailure;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
@@ -112,7 +113,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                             execution,
                             relational,
                             snapshot,
-                            self.runtime.inner.runtime.authorization.bridge(),
+                            self.runtime.inner.runtime.authorization_ref().bridge(),
                         )
                         .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
                     if let Some(source) = &self.source {
@@ -123,7 +124,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                                 execution,
                                 relational,
                                 snapshot,
-                                self.runtime.inner.runtime.authorization.bridge(),
+                                self.runtime.inner.runtime.authorization_ref().bridge(),
                             )
                             .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
                     }
@@ -139,7 +140,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                                     execution,
                                     relational,
                                     snapshot,
-                                    self.runtime.inner.runtime.authorization.bridge(),
+                                    self.runtime.inner.runtime.authorization_ref().bridge(),
                                 )
                                 .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
                         }

@@ -1,5 +1,6 @@
 //! Suspend an admitted selected row until canonical owner application.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
@@ -233,7 +234,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             &self
                 .runtime
                 .primary_provider
-                .graph
+                .graph_ref()
                 .source_owner_ref()
                 .invalidation_owner,
         ) {

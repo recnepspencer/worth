@@ -50,7 +50,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         .finish_recovered_release(&handle, original);
                 }
                 let identity = reservation.install_unpublished(cleanup);
-                return Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::from_runtime_identity(self.runtime.product_runtime.0.clone(), identity));
+                return Ok(crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup::from_runtime_identity(self.runtime.product_runtime.clone(), identity));
             }
             Outcome::AdmissionRefused { cause, custody } => {
                 drop(custody);

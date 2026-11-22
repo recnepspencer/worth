@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::program_occurrence::WorthQueryProg
 use crate::domain_computation::primary_graph::retained_correction::record::{
     PreparedCorrectionSnapshot, RecordedCorrectionTarget, RecordedLocation, RecordedScope,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 pub(super) fn prepare<S, B>(
@@ -80,7 +81,7 @@ where
         .application()
         .inner
         .runtime
-        .primary_provider
+        .primary_provider_ref()
         .prepare_correction_command(material.capture.original, snapshot, request)
         .map_err(D::Material)?;
     Ok(PreparedCorrectionCustody::Home {

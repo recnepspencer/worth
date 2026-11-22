@@ -16,6 +16,7 @@ use worth_query_declaration::facade::{
     application_history::ApplicationHistoryBinding, application_schema::ApplicationSchema,
 };
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
@@ -122,7 +123,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::ForeignModel);
         }
         admitted
-            .validate_installed_operation(&self.inner.runtime.installed_operations)
+            .validate_installed_operation(&self.inner.runtime.installed_operations_ref())
             .map_err(Denial::OperationAdmission)?;
         admitted
             .validate_current_authority()
@@ -144,7 +145,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         let current = self
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .admit_product_occurrence(restriction.original_source().occurrence())
             .map_err(Denial::CandidateSelection)?;
         if current.observation() != restriction.source.observation() {

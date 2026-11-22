@@ -80,6 +80,3 @@ where
 }
 
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::committed_dispatch_outbox::record_read;
-
-#[cfg(test)]
-pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::provider::committed_dispatch_outbox::restoration_tests;

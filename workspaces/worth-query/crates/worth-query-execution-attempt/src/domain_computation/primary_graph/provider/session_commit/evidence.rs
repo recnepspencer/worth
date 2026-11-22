@@ -1,6 +1,7 @@
 //! Immutable exact-commit evidence retained for equivalent receipt resolution.
 
 use std::collections::{BTreeMap, BTreeSet};
+use worth_query_execution_runtime::facade::ports::ProductPublicationReceiptInternalPort as _;
 use worth_relational::facade::history::{CommitId, RelationalCommitReceipt};
 use worth_runtime_world::facade::CompositeCommitIdentity;
 

@@ -1,7 +1,9 @@
 use std::collections::BTreeMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -126,8 +128,8 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let request = match phase.request_for_source(
             self.inner
                 .runtime
-                .primary_provider
-                .graph
+                .primary_provider_ref()
+                .graph_ref()
                 .relational_runtime_instance_id(),
         ) {
             Ok(request) => request,
@@ -141,7 +143,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let execution = &request;
         if !Arc::ptr_eq(
             &suspended.publication.root_identity(),
-            &self.inner.runtime.product_runtime.root_identity(),
+            &self.inner.runtime.product_runtime_ref().root_identity(),
         ) || !suspended.matches_runtime(self)
         {
             return Err(reconstruction_failure(
@@ -173,13 +175,13 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 WorthQueryGeneratedOutputReconstructionDenial::StaleOutputLineage,
             ));
         }
-        let retained_entities = match self.inner.runtime.primary_provider.graph.with_runtime(execution, |runtime| {
+        let retained_entities = match self.inner.runtime.primary_provider_ref().graph_ref().with_runtime(execution, |runtime| {
             let port = runtime.owner_component_services().materialization_port();
             suspended.correspondence().checkpoint_roles().into_iter()
                 .filter(|role| role.posture ==
                     crate::domain_computation::primary_graph::WorthQueryApplicationOutputPosture::Preserve)
                 .map(|role| {
-                    let expected = self.inner.runtime.primary_provider.graph.layout_ref().entity_kind(&role.entity_name)
+                    let expected = self.inner.runtime.primary_provider_ref().graph_ref().layout_ref().entity_kind(&role.entity_name)
                         .ok_or(WorthQueryGeneratedOutputReconstructionDenial::RetainedEntityKindMismatch)?;
                     let actual = port.retained_entity_kind(
                         execution,
@@ -199,7 +201,12 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             Err(denial) => return Err(reconstruction_failure(suspended, denial)),
         };
         Ok(WorthQueryGeneratedOutputReconstruction::new(
-            &self.inner.runtime.primary_provider.graph.layout_ref(),
+            &self
+                .inner
+                .runtime
+                .primary_provider_ref()
+                .graph_ref()
+                .layout_ref(),
             suspended,
             retained_entities,
         ))

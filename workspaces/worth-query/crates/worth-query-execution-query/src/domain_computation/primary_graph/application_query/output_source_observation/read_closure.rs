@@ -1,5 +1,6 @@
 //! Original Query session and authorization custody through publication.
 
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use crate::domain_computation::primary_graph::application_attempt::fact::source_read_authorization::applied_query::SourceReadAuthorizationAppliedQueryExt;
 use super::*;
@@ -60,7 +61,7 @@ impl SourceQueryReadClosure {
             control: application
                 .runtime
                 .primary_provider
-                .application_attempt_operation_control
+                .application_attempt_operation_control_ref()
                 .clone(),
             authority: SourceQueryReadAuthority::Committed { receipt, support },
             facts,

@@ -45,14 +45,14 @@ impl WorthQueryDecisionReadSetCounters {
 }
 
 pub struct WorthQueryCompleteDecisionReadSetReceipt {
-    pub identity: Arc<str>,
-    pub session_binding_identity: Arc<str>,
+    pub(crate) identity: Arc<str>,
+    pub(crate) session_binding_identity: Arc<str>,
     evidence: Arc<ExecutionArray<WorthQueryDecisionFactEvidence>>,
-    pub counters: WorthQueryDecisionReadSetCounters,
+    pub(crate) counters: WorthQueryDecisionReadSetCounters,
     request: Option<WorthQueryRequestScope>,
-    pub primary: Option<std::sync::Arc<dyn crate::ports::PrimaryReadCustody>>,
-    pub _primary_custody: Option<std::sync::Arc<dyn crate::ports::PrimaryReadCustody>>,
-    pub _primary_memory: Option<worth_execution::ExecutionMemoryReservation>,
+    pub(crate) primary: Option<std::sync::Arc<dyn crate::ports::PrimaryReadCustody>>,
+    pub(crate) _primary_custody: Option<std::sync::Arc<dyn crate::ports::PrimaryReadCustody>>,
+    pub(crate) _primary_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl WorthQueryCompleteDecisionReadSetReceipt {
@@ -75,8 +75,8 @@ pub enum WorthQueryDecisionReadSetFreshnessOutcome {
 }
 
 pub struct WorthQueryFreshDecisionReadSet {
-    pub receipt: WorthQueryCompleteDecisionReadSetReceipt,
-    pub counters: WorthQueryDecisionReadSetCounters,
+    pub(crate) receipt: WorthQueryCompleteDecisionReadSetReceipt,
+    pub(crate) counters: WorthQueryDecisionReadSetCounters,
 }
 
 impl WorthQueryFreshDecisionReadSet {

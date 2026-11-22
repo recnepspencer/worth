@@ -15,6 +15,7 @@ use worth_query_admission::facade::authenticated_principal::WorthQueryRequestSco
 use worth_query_declaration::facade::application_program::{
     ApplicationOutputGraphShape, ApplicationProgramDefinition,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::CompletedOriginalReadOutputsInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -63,7 +64,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         use WorthQueryOriginalReadOutputDenial as Denial;
         let runtime = self.runtime();
         let execution = phase
-            .checked_execution_request_for(&runtime.inner.runtime.product_runtime)
+            .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 Denial::Output(WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),

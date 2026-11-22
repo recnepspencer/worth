@@ -2,9 +2,12 @@
 //! by `worth-query-execution`. Never exported on `worth-query-execution::facade`
 //! or Host.
 
+use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
+
 use super::{
-    WorthQueryHomeMaintenance, WorthQueryProductRelationalInstallation, WorthQueryProductRuntime,
-    WorthQueryProductRuntimeInstallationDenial, WorthQueryProductWorldResources,
+    HomeMaintenanceAdapter, WorthQueryHomeMaintenance, WorthQueryProductRelationalInstallation,
+    WorthQueryProductRuntime, WorthQueryProductRuntimeInstallationDenial,
+    WorthQueryProductWorldResources,
 };
 
 pub trait QueryProductRuntimeInternalPort: Sized {
@@ -40,7 +43,7 @@ impl QueryProductRuntimeInternalPort for WorthQueryProductRuntime {
         branch_program_source_owner: std::sync::Arc<worth_proof::InstalledBranchProgramSourceOwner>,
         branches: &worth_runtime_world::facade::ObservedProductBranches,
     ) -> Result<Self, WorthQueryProductRuntimeInstallationDenial> {
-        Self::attach_home_world_ports(
+        <Self as worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort>::attach_home_world_ports(
             relational,
             bridge,
             resources,
@@ -50,7 +53,7 @@ impl QueryProductRuntimeInternalPort for WorthQueryProductRuntime {
             inspection,
             recovery,
             root,
-            maintenance,
+            HomeMaintenanceAdapter::wrap(maintenance),
             branch_program_source_owner,
             branches,
         )

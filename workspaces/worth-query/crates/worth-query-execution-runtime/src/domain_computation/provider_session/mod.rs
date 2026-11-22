@@ -1,5 +1,5 @@
 mod attempt_evidence;
-mod decision_read_set;
+pub(crate) mod decision_read_set;
 mod direct_attempt;
 pub mod execution_attempt_identity;
 pub mod graph_obligation;
@@ -13,7 +13,7 @@ pub use graph_obligation::{
 };
 pub mod graph_provider;
 pub mod protocol;
-mod provisional_attempt;
+pub(crate) mod provisional_attempt;
 pub mod readmission;
 pub mod session_identity;
 mod workflow_attempt;

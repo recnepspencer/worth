@@ -25,7 +25,8 @@ pub mod record_read;
 pub mod recovered;
 pub mod recovery;
 pub mod restoration;
-pub mod restoration_tests;
+#[cfg(test)]
+mod restoration_tests;
 
 use record_read::CommittedOutboxRead;
 fn map_retained_snapshot_denial(

@@ -1,6 +1,6 @@
 mod application_query_resources;
 mod branch_coordination_resources;
-mod installation_authority;
+pub(crate) mod installation_authority;
 mod output_demand_resources;
 pub mod product_world;
 mod runtime_identity;
@@ -10,6 +10,7 @@ pub mod source_invalidation;
 pub use application_query_resources::WorthQueryApplicationQueryResourceProfile;
 pub use branch_coordination_resources::WorthQueryBranchCoordinationResourceProfile;
 pub use installation_authority::WorthQueryExecutionInstallationAuthority;
+pub use installation_authority::WorthQueryExecutionInstallationAuthorityRef;
 pub use installation_authority::WorthQueryExecutionRuntimeInstallation;
 pub use output_demand_resources::WorthQueryOutputDemandLimits;
 pub use output_demand_resources::WorthQueryOutputDemandResourceProfile;

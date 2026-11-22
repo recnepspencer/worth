@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -27,19 +28,20 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
     > {
         use WorthQueryPerformedRelationalProductChangeDeliveryDenialKind as Kind;
 
-        let request_execution =
-            match phase.execution_request_for(&self.application().inner.runtime.product_runtime) {
-                Ok(request) => request,
-                Err(cause) => {
-                    return Err(
-                        WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
-                            Kind::ExecutionRequest(cause.into()),
-                            "delivery phase belongs to another installed runtime",
-                            change,
-                        ),
-                    );
-                }
-            };
+        let request_execution = match phase
+            .execution_request_for(self.application().inner.runtime.product_runtime_ref())
+        {
+            Ok(request) => request,
+            Err(cause) => {
+                return Err(
+                    WorthQueryPerformedRelationalProductChangeDeliveryDenial::new(
+                        Kind::ExecutionRequest(cause.into()),
+                        "delivery phase belongs to another installed runtime",
+                        change,
+                    ),
+                );
+            }
+        };
         let execution = &request_execution;
         if change.product_branch_identity() != self.product().branch_identity()
             || change.product_commit() != self.product().selected_commit()
@@ -83,7 +85,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
             .application()
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional_operations();
         let bridge = bridge_root
             .read()

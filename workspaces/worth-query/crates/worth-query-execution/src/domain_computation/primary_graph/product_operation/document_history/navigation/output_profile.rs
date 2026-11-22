@@ -1,4 +1,5 @@
 //! Installed rebuild correspondence; an index addresses immutable owner metadata.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 mod forest;
 use super::super::{HistoryModelIdentity, WorthQueryDocumentHistory};
 use super::*;
@@ -193,7 +194,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             ));
         }
         phase
-            .check_live_for(&application.inner.runtime.product_runtime)
+            .check_live_for(application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let history = application
             .installed_schema()

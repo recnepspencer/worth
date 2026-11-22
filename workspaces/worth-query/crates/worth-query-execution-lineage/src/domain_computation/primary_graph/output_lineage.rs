@@ -57,6 +57,7 @@ pub mod retained_computation;
 pub use retained_computation::PriorComputationRecord;
 pub mod fork_origin;
 pub mod historical_transport;
+pub(crate) mod internal_port;
 pub use historical_transport::{
     HistoricalAcceptedOrigin, WorthQueryHistoryPublicationCorrespondenceMismatch,
 };
@@ -184,7 +185,7 @@ pub struct WorthQueryCurrentOutputFamilyResolution {
 }
 
 impl WorthQueryApplicationOutputLineage {
-    pub fn install_output_families(
+    pub(crate) fn install_output_families(
         &mut self,
         families: BTreeMap<OutputFamilyIdentity, Vec<(TypeId, String)>>,
     ) {

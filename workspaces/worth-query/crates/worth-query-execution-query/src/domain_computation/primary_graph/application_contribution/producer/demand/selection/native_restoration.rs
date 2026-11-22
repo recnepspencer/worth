@@ -1,5 +1,6 @@
 //! The actual Native correction supplies prior custody for a recreated owning scope.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -35,7 +36,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         let publisher = self
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .application_publication_ref()
             .ok_or_else(foreign)?;
         let graph = self.runtime.primary_graph().ok_or_else(foreign)?;
@@ -67,7 +68,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
         if let Some(prior) = restored {
             self.runtime
                 .primary_provider
-                .graph
+                .graph_ref()
                 .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)

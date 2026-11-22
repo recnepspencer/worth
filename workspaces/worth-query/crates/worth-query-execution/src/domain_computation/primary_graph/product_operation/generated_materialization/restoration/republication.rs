@@ -1,7 +1,10 @@
 //! The lineage and mark rows of a restored generated output.
 
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ApplicationOutputLineageInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::ProductBranchObservation;
@@ -32,7 +35,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
         producer: ProducerQualification,
     ) {
-        let graph = &self.inner.runtime.primary_provider.graph;
+        let graph = &self.inner.runtime.primary_provider_ref().graph_ref();
         let owner = &graph.source_owner_ref().invalidation_owner;
 
         let sealed = graph.with_runtime(execution, |runtime| {

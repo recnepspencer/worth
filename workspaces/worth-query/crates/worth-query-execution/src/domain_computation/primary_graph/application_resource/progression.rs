@@ -1,4 +1,5 @@
 //! Actual Native/provider progression writes custody before each fallible handoff.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeBranchLifecycleInternalPort as _;
 mod advance;
@@ -43,7 +44,7 @@ where
     let clock = runtime
         .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional()
         .with_view(
             row.occurrence()
@@ -55,7 +56,7 @@ where
                 runtime
                     .inner
                     .runtime
-                    .product_runtime
+                    .product_runtime_ref()
                     .advance_owned_async_source_clock(
                         &bridge,
                         &slot.declaration,
@@ -71,7 +72,7 @@ where
     let owner = runtime
         .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional()
         .with_view(
             row.occurrence()
@@ -83,7 +84,7 @@ where
                 runtime
                     .inner
                     .runtime
-                    .product_runtime
+                    .product_runtime_ref()
                     .admit_managed_owned_async_request(
                         &bridge,
                         &slot.declaration,

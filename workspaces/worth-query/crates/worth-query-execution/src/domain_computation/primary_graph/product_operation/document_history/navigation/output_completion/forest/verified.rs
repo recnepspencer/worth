@@ -2,6 +2,8 @@
 use super::*;
 use crate::domain_computation::primary_graph::OutputDemandSettlementRuntimeExt;
 use crate::domain_computation::primary_graph::WorthQueryVerifiedHistoryParent;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 pub(super) struct VerifiedHistoryOutputTree {
     pub(super) dependents: Vec<Arc<WorthQueryOutputDemandSettlement>>,
@@ -165,8 +167,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     ) -> Result<(), ReadDenial> {
         self.inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(execution, |native| {
                 let evidence = authority
                     .selected_output_read(execution, native)

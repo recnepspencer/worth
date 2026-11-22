@@ -17,6 +17,7 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryBinding,
     application_schema::{ApplicationSchema, ApplicationStructuredValueBinding},
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
@@ -107,7 +108,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             .operation_label::<M>()
             .expect("membership was admitted");
         let execution = phase
-            .checked_execution_request_for(&runtime.inner.runtime.product_runtime)
+            .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let record = selected.journal.reserve(&execution, meaning, label)?;
         Ok(WorthQueryDocumentHistoryRecordPreparation::Reserved(

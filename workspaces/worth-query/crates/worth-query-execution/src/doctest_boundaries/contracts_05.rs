@@ -35,7 +35,7 @@ pub struct BoundaryContract093;
 /// ```compile_fail,E0599
 /// use worth_query_execution::facade::primary_graph::WorthQuerySelectedProductOperation;
 /// use worth_query_installation::facade::ApplicationSchema;
-/// use worth_query_execution::facade::primary_graph::WorthQueryAdvancementPhase;
+/// use worth_query_execution::facade::application_contribution::WorthQueryAdvancementPhase;
 /// use worth_query_declaration::facade::application_program::ApplicationProgramRevision;
 /// use worth_query_installation::facade::WorthQueryProgramAdoptionRequirements;
 /// fn advanced_cannot_disclose<S: ApplicationSchema>(selected: &WorthQuerySelectedProductOperation<'_, S>,

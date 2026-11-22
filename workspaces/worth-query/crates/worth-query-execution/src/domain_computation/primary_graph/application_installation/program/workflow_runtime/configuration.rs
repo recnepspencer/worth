@@ -1,6 +1,7 @@
 //! One installed workflow configuration shared by Memory and Home owners.
 use super::*;
 use crate::domain_computation::execution_runtime::WorthQueryRuntimeAuthorityIdentity;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::RuntimeWorldOwnerIdentity;
 mod affinity;
@@ -55,7 +56,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
                 .runtime()
                 .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .owner_ref()
                 .owner_identity(),
             authority: self.runtime().inner.runtime.authority_identity(),
@@ -99,7 +100,7 @@ where
                 .runtime()
                 .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .owner_ref()
                 .owner_identity(),
             runtime.runtime().inner.runtime.authority_identity(),

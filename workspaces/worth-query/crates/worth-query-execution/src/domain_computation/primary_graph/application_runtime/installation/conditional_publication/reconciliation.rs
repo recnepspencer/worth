@@ -1,6 +1,7 @@
 //! Reconcile the assembled service without retaining its producer frames.
 use super::*;
 use crate::domain_computation::primary_graph::conditional_operation::WorthQueryConditionalRuntimeInstallationDenialKind;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 #[inline(never)]
 pub(super) fn complete<S: ApplicationSchema + 'static>(
@@ -19,7 +20,7 @@ pub(super) fn complete<S: ApplicationSchema + 'static>(
     let mut owner = application
         .inner
         .runtime
-        .bridge
+        .bridge_ref()
         .conditional_lifecycle()
         .map_err(|cause| {
             WorthQueryConditionalRuntimeInstallationDenial::from_kind_and_subject(

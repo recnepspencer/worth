@@ -4,6 +4,7 @@ use super::{
     WorthQueryPrimaryGraphInstallationDenial, WorthQueryPrimaryGraphInstallationDenialKind,
 };
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_query::facade::ports::QueryExecutionRuntimeInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphBootstrap<Schema> {
     pub(super) fn validate_publication_target(

@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CommitReceiptInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
@@ -45,7 +46,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         runtime
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_runtime(&execution, |relational| {
                 self.require_current_settlements_in(execution, relational, settlements)
             })
@@ -71,7 +72,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         runtime
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_runtime(&execution, |relational| {
                 for receipt in receipts {
                     if receipt.runtime_authority() != runtime.runtime.authority_identity()
@@ -84,7 +85,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                     let lineage = runtime
                         .runtime
                         .primary_provider
-                        .graph
+                        .graph_ref()
                         .output_lineage_ref()
                         .lock()
                         .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -155,7 +156,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
             .application()
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .source_owner_ref()
             .invalidation_owner;
         let snapshot = self.application_basis().snapshot_handle();

@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationProductBranchCloseDenial, WorthQueryPrimaryGraphApplicationRuntime,
 };
 use std::collections::btree_map::IntoValues;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 /// Actual session-owned head completions; other holders retain their own rights.
@@ -97,8 +98,8 @@ impl<'runtime, S: ApplicationSchema> WorthQueryDocumentHistoryClosing<'runtime, 
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryDocumentHistoryCloseReceipt, Self> {
-        if let Err(cause) =
-            phase.checked_execution_request_for(&self.application.inner.runtime.product_runtime)
+        if let Err(cause) = phase
+            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
         {
             self.opening_denial = Some(cause);
             return Err(self);

@@ -1,4 +1,5 @@
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as AuthorizationRefusal;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 mod basis_interruption;
@@ -168,7 +169,7 @@ where
             };
             let expected_scope = &self.scope_identity;
             self.queue.fill(
-                &self.runtime.runtime.primary_provider.live_delivery,
+                &self.runtime.runtime.primary_provider.live_delivery_ref(),
                 basis,
                 Binding::effect(),
                 self.controls.buffer_capacity(),

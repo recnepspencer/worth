@@ -2,6 +2,7 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryOperationAuthorizationDenial, WorthQueryPrincipalResolutionMode,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema, Scope> ResourceActionRead<'_, Schema, Scope> {
@@ -62,7 +63,7 @@ impl<Schema: ApplicationSchema, Scope> ResourceActionRead<'_, Schema, Scope> {
                         execution,
                         relational,
                         snapshot,
-                        self.runtime.inner.runtime.authorization.bridge(),
+                        self.runtime.inner.runtime.authorization_ref().bridge(),
                     )
                     .map_err(|kind| {
                         ResourceAdmissionDenial::Authorization(
@@ -75,7 +76,7 @@ impl<Schema: ApplicationSchema, Scope> ResourceActionRead<'_, Schema, Scope> {
                             execution,
                             relational,
                             snapshot,
-                            self.runtime.inner.runtime.authorization.bridge(),
+                            self.runtime.inner.runtime.authorization_ref().bridge(),
                         )
                         .map_err(|kind| {
                             ResourceAdmissionDenial::DisclosureAuthorization(

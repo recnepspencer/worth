@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 
 use super::super::historical_authority::{
     WorthQueryApplicationHistoricalBasis, WorthQueryApplicationHistoricalRead,
@@ -86,12 +87,12 @@ where
                 let basis = self
                     .runtime
                     .primary_provider
-                    .graph
+                    .graph_ref()
                     .with_runtime(request_execution, |runtime| {
                         runtime.readmit_retained_branch_basis(&descriptor, retention.lease())
                     })
                     .map_err(super::super::map_basis_denial)?;
-                let selected_commit = self.runtime.primary_provider.graph.with_runtime(
+                let selected_commit = self.runtime.primary_provider.graph_ref().with_runtime(
                     request_execution,
                     |runtime| {
                         runtime

@@ -9,6 +9,7 @@ use worth_query_admission::facade::graph_obligation::{
 use worth_query_declaration::facade::{
     application_resource::ApplicationResourceBinding, application_schema::ApplicationSchema,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::{
     WorthQueryInstalledApplicationResource, WorthQueryResourceAccessPurpose,
 };
@@ -58,7 +59,7 @@ pub(super) fn admit<Schema: ApplicationSchema, Binding: ApplicationResourceBindi
     let support = runtime
         .inner
         .runtime
-        .primary_provider
+        .primary_provider_ref()
         .application_resource_support_ref();
     let (capture, memory) =
         run_stage(execution, 0, |context, mut memory| {

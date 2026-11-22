@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHistoryOutputReadDenial,
 };
 use worth_query_declaration::facade::application_query::ApplicationQueryIntent;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
 type Discovery<S, C> =
@@ -74,7 +75,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         {
             return Err(Denial::Demand(foreign_source()));
         }
-        let execution = phase.checked_execution_request_for(&runtime.inner.runtime.product_runtime)
+        let execution = phase.checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         let retained = self
             .select_dependent_output_basis(&execution, &parent.settled, basis, minimum)

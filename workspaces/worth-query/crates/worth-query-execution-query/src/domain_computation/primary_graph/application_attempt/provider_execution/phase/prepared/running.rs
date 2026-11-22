@@ -17,7 +17,7 @@ use crate::domain_computation::primary_graph::application_attempt::{
 };
 use crate::domain_computation::primary_graph::application_attempt::provider_execution::provider_denial::{denied, denied_with_detail};
 use super::{LocalWorkflowSettlementPublication, WorthQueryPreparedApplicationCommit};
-use crate::domain_computation::operation_binding::WorthQueryApplicationOperationBindingInput;
+use worth_query_execution_runtime::facade::ports::ApplicationOperationBindingInternalPort as _;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryPrimaryGraphApplicationRuntime,
 };
@@ -221,29 +221,27 @@ where
         .map_err(|_| denied(DenialStage::BasisAdmission))?
         .admit()
         .map_err(|_| denied(DenialStage::BasisAdmission))?;
-    WorthQueryExecutionBoundOperationAuthority::bind_application(
-        WorthQueryApplicationOperationBindingInput {
-            runtime: application.runtime.execution(),
-            owner: application.installed_schema.owner(),
-            installed_operation_fingerprint: admission.retain_installed_operation_fingerprint(),
-            operation_slot: admission.operation().into(),
-            resource_binding_identity: admission.retain_resource_binding_identity(),
-            basis: &basis,
-            contracts: admission.allowed_graph_contract(),
-            graph: application.runtime.primary_graph_authority(),
-            support: application
-                .runtime
-                .primary_provider
-                .application_resource_support(),
-            graph_work_session: admission.graph_work_session_identity(),
-            graph_work_managed_run: admission.graph_work_managed_run_identity(),
-            operation_attempt: admission.admission_identity(),
-            schema_binding: admission.binding_identity(),
-            snapshot,
-            product: lease.product(),
-            effect_posture,
-            native_reference_invariants,
-        },
+    WorthQueryExecutionBoundOperationAuthority::bind_application_parts(
+        application.runtime.execution(),
+        application.installed_schema.owner(),
+        admission.retain_installed_operation_fingerprint(),
+        admission.operation().into(),
+        admission.retain_resource_binding_identity(),
+        &basis,
+        admission.allowed_graph_contract(),
+        application.runtime.primary_graph_authority(),
+        application
+            .runtime
+            .primary_provider
+            .application_resource_support(),
+        admission.graph_work_session_identity(),
+        admission.graph_work_managed_run_identity(),
+        admission.admission_identity(),
+        admission.binding_identity(),
+        snapshot,
+        lease.product(),
+        effect_posture,
+        native_reference_invariants,
     )
     .map_err(|detail| denied_with_detail(DenialStage::InvariantExecution, detail))
 }

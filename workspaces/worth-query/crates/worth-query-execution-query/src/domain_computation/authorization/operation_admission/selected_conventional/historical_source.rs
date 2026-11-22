@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     product_operation::document_history::HistoryProducerInvocation,
     WorthQueryApplicationEntityIdentity, WorthQueryApplicationQueryAdmissionDenialKind as Query,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 
 pub fn require_source<S: ApplicationSchema, E>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -18,7 +19,7 @@ pub fn require_source<S: ApplicationSchema, E>(
         WorthQueryOperationAuthorizationDenialKind as Kind,
         WorthQueryOperationAuthorizationRefusalKind as Refusal,
     };
-    runtime.runtime.primary_provider.graph.with_runtime(execution, |native| {
+    runtime.runtime.primary_provider.graph_ref().with_runtime(execution, |native| {
         history.require_historical_source(execution, native, scope, truth, runtime, subject).map_err(|cause| {
             let kind = match cause.kind() {
                 Query::ExecutionRequest(kind) => Kind::Stopped(Ok(kind)),

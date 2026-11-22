@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::application_aftermath::WorthQueryCorrectionSourceCoordinates;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::WorldOwnerCoordinate;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::{
@@ -77,7 +78,7 @@ pub(super) fn performed<S: ApplicationSchema>(
         .application()
         .inner
         .runtime
-        .product_runtime
+        .product_runtime_ref()
         .owner_ref();
     let originals = owner
         .inspection_port()

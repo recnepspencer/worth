@@ -152,7 +152,7 @@ impl WorthQueryProductPublicationReceipt {
     }
 
     /// Takes this copy's World history protection, leaving it detached.
-    pub fn take_history(&mut self) -> Option<WorthQueryCommitHistoryHold> {
+    pub(crate) fn take_history(&mut self) -> Option<WorthQueryCommitHistoryHold> {
         self.history.take()
     }
 
@@ -164,7 +164,7 @@ impl WorthQueryProductPublicationReceipt {
         self.terminal().conditional_definition_generation
     }
 
-    pub fn take_fresh_delivery(&self) -> Option<WorthQueryPerformedRelationalProductChange> {
+    pub(crate) fn take_fresh_delivery(&self) -> Option<WorthQueryPerformedRelationalProductChange> {
         let mut available = self
             .custody
             .fresh_delivery_available
@@ -182,7 +182,7 @@ impl WorthQueryProductPublicationReceipt {
     /// Discharges the one-shot direct witness without creating a witness to
     /// be dropped. Conditional operations observe the performed commit through
     /// the canonical Relational subscription, whichever writer produced it.
-    pub fn discharge_fresh_delivery(&self) -> bool {
+    pub(crate) fn discharge_fresh_delivery(&self) -> bool {
         let mut available = self
             .custody
             .fresh_delivery_available
@@ -195,7 +195,7 @@ impl WorthQueryProductPublicationReceipt {
         true
     }
 
-    pub fn take_live_successor_observation(
+    pub(crate) fn take_live_successor_observation(
         &self,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         self.custody
@@ -205,7 +205,7 @@ impl WorthQueryProductPublicationReceipt {
             .take()
     }
 
-    pub fn take_output_demand_observation(
+    pub(crate) fn take_output_demand_observation(
         &self,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         self.custody
@@ -215,7 +215,7 @@ impl WorthQueryProductPublicationReceipt {
             .take()
     }
 
-    pub fn take_client_observation(
+    pub(crate) fn take_client_observation(
         &self,
     ) -> Option<worth_runtime_world::facade::ProductBranchObservation> {
         self.custody

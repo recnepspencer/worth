@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryOutputSourceEvidence,
 };
 use worth_query_execution_query::facade::ports::AdmittedOutputDemandInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 impl<Schema, Program, Demand> WorthQueryAdmittedProgramOutput<Schema, Program, Demand>
 where
@@ -29,7 +30,7 @@ where
     {
         let runtime = program.backing.runtime();
         let execution = phase
-            .execution_request_for(&runtime.inner.runtime.product_runtime)
+            .execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(Kind::ExecutionRequest(cause.into()), "")
             })?;
@@ -37,7 +38,7 @@ where
             <RootConnectionRef<Schema, Root> as ApplicationConnectionShape<Schema>>::TargetFeature>() {
             return Err(WorthQueryOutputDemandDenial::new(Kind::ForeignDemand, ""));
         }
-        runtime.inner.runtime.output_demands.validate_owned_root_kind(prepared,
+        runtime.inner.runtime.output_demands_ref().validate_owned_root_kind(prepared,
             crate::domain_computation::primary_graph::application_output_demand::PreparedOutputRootKind::Required(TypeId::of::<Root>()))?;
         self.admitted.retain_fulfilled_root(
             runtime.inner(),

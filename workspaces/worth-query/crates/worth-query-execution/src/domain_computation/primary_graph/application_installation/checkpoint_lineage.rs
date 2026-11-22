@@ -4,7 +4,10 @@ use super::super::{
     application_query::WorthQueryCheckpointSourceIdentity, output_lineage::RecordedSourceIdentity,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphInstallationDenial,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_lineage::facade::ports::ApplicationOutputLineageInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
@@ -15,7 +18,7 @@ pub(super) fn restore<Schema: ApplicationSchema>(
     let checkpoint_observation = application
         .inner
         .runtime
-        .product_runtime
+        .product_runtime_ref()
         .recovered_root_authority_ref()
         .as_ref()
         .map(|authority| authority.product_branch());
@@ -26,14 +29,14 @@ pub(super) fn restore<Schema: ApplicationSchema>(
     let mut lineage = application
         .inner
         .runtime
-        .primary_provider
-        .graph
+        .primary_provider_ref()
+        .graph_ref()
         .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner);
     // This is one pass over bounded, installed-producer-readmitted checkpoint records.
     // Current-output reads stay indexed and check these facts at their selected basis.
-    for recovered in application.inner.runtime.recovered_outputs.iter() {
+    for recovered in application.inner.runtime.recovered_outputs_ref().iter() {
         let Some(observation) = recovered.observation.as_ref().or(checkpoint_observation) else {
             continue;
         };
@@ -95,7 +98,7 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
     let branches = application
         .inner
         .runtime
-        .product_runtime
+        .product_runtime_ref()
         .owner_ref()
         .observation_port()
         .observe_installed_product_branches(execution)
@@ -165,7 +168,7 @@ pub(in crate::domain_computation::primary_graph) fn readmit_journal<
     application
         .inner
         .runtime
-        .recovered_outputs
+        .recovered_outputs_ref()
         .readmit_journal(accepted, execution)
         .map_err(|_| Denial::MalformedFrame)?;
     restore(application, execution).map_err(|_| Denial::ObligationSubjectMismatch)

@@ -1,5 +1,6 @@
 //! Closed passive observations of the actual installed owners for the Host court.
 use super::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::{
@@ -46,7 +47,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
     > {
         self.runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_runtime(execution, |runtime| {
                 let branch = runtime
                     .branch_identity(self.runtime.relational_branch_identity.branch_id())

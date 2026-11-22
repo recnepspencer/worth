@@ -231,7 +231,7 @@ pub enum WorthQueryHistoryOutputReadDenial {
     Resource(worth_relational::facade::mvcc::CompanionPreflightStop),
     Preparation(worth_relational::facade::transactions::RelationalExecutionDenialCause),
     Dependencies(
-        crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial,
+        crate::discovery_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial,
     ),
 }
 

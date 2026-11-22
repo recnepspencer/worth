@@ -3,7 +3,9 @@ use super::*;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationUncommitted,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 #[allow(clippy::too_many_arguments)]
 pub fn resolve<S, O, I, Scope>(
@@ -27,8 +29,8 @@ where
     let locator = runtime
         .inner
         .runtime
-        .primary_provider
-        .graph
+        .primary_provider_ref()
+        .graph_ref()
         .layout_ref()
         .workflow()
         .transition
@@ -51,8 +53,8 @@ where
         runtime
             .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(execution, |relational| {
                 publication::project(
                     execution,

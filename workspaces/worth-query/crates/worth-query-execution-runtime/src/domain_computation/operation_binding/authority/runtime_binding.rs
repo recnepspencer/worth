@@ -11,7 +11,8 @@ use super::topology::{resource_topology, touched_roles};
 use super::{WorthQueryExecutionBoundOperationAuthority, WorthQueryWorkflowStageResourceAuthority};
 use crate::domain_computation::artifact_owner::compile_workflow_artifact_contracts;
 use crate::domain_computation::execution_runtime::{
-    WorthQueryExecutionInstallationAuthority, WorthQueryExecutionRuntime,
+    WorthQueryExecutionInstallationAuthority, WorthQueryExecutionInstallationAuthorityRef,
+    WorthQueryExecutionRuntime,
 };
 use crate::domain_computation::operation_binding::{
     WorthQueryExecutionCommitPosture, WorthQueryExecutionOperationBindingDenial,
@@ -26,7 +27,7 @@ use validation::validate_operation_and_dependencies;
 impl WorthQueryExecutionRuntime {
     pub fn bind_domain_operation<L: BasisOperationLane>(
         &self,
-        installation_authority: &WorthQueryExecutionInstallationAuthority,
+        installation_authority: &impl WorthQueryExecutionInstallationAuthorityRef,
         operation: &WorthQueryInstalledDomainOperationAuthority,
         basis: &AdmittedBasisCapability<L>,
         product: &crate::basis::WorthQueryProductBranchLease,
@@ -36,6 +37,7 @@ impl WorthQueryExecutionRuntime {
         installed_support: WorthQueryInstalledOperationExecutionSupport,
     ) -> Result<WorthQueryExecutionBoundOperationAuthority, WorthQueryExecutionOperationBindingDenial>
     {
+        let installation_authority = installation_authority.as_installation_authority();
         let workflow_artifact_contracts = match &operation.definition().semantics().workflow {
             WorthQueryOperationWorkflowContract::Declared(workflow) => {
                 compile_workflow_artifact_contracts(

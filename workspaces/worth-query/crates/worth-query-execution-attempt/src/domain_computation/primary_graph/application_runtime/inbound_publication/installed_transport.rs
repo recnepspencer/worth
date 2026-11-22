@@ -2,6 +2,7 @@
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
+use worth_query_execution_runtime::facade::ports::ProductPublicationReceiptInternalPort as _;
 
 use crate::domain_computation::application_aftermath::WorthQueryExternalEffectDispatch;
 use crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationReceipt;

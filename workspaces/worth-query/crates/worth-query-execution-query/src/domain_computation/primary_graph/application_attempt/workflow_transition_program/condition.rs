@@ -1,5 +1,6 @@
 use worth_query_declaration::facade::application_program::ApplicationWorkflowControlOutcome;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::WorkflowConditionInternalPort as _;
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
@@ -102,7 +103,7 @@ where
             &currentness_facts,
             &node_path,
         )?;
-        let expression = &self.required.condition.expression;
+        let expression = &self.required.condition_ref().expression;
         let condition_identity = supporting_identity(
             expression,
             declared

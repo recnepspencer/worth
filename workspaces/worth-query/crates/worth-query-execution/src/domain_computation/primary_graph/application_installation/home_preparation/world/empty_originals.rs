@@ -1,5 +1,6 @@
 //! World alone releases recovered opens that retain no Native owner effect.
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchOwnerCleanupInternalPort;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeOwnerCleanupInternalPort as _;
@@ -20,13 +21,13 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let reservation = application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .reserve_owner_cleanup_for_application()
             .map_err(|_| Denial::OriginalMemoryAdmission)?;
         let recovery = application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .owner_ref()
             .recovery_port();
         match crate::domain_computation::primary_graph::home_original_progression::release_original(
@@ -40,7 +41,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                 );
                 drop(original);
                 let identity = reservation.install_unpublished(cleanup);
-                let cleanup = <crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup as ProductBranchOwnerCleanupInternalPort>::from_runtime_identity((*application.inner.runtime.product_runtime).clone(), identity);
+                let cleanup = <crate::domain_computation::execution_runtime::product_world::WorthQueryProductBranchOwnerCleanup as ProductBranchOwnerCleanupInternalPort>::from_runtime_identity((*application.inner.runtime.product_runtime_ref()).clone(), identity);
                 let mut retirements = crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements::default();
                 cleanup
                     .retry_in_request_with_retirements(execution, &mut retirements)

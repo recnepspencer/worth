@@ -16,7 +16,7 @@ use crate::domain_computation::operation_binding::{
 use crate::domain_computation::provider_session::WorthQueryGraphProviderCallKind;
 use crate::domain_computation::WorthQueryInstalledOperationExecutionSupport;
 
-mod application_binding;
+pub(crate) mod application_binding;
 mod provider_plan;
 mod runtime_binding;
 pub mod topology;

@@ -40,63 +40,57 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowOperation<Schema, Operatio
 /// authority slot that lets exactly one matching effect run.
 #[derive(Clone, Debug)]
 pub struct RequiredWorkflowOperation {
-    pub local_action: Option<super::super::local_actions::LocalActionDescriptor>,
-    pub captured_input:
+    pub(crate) local_action: Option<super::super::local_actions::LocalActionDescriptor>,
+    pub(crate) captured_input:
         Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
-    pub branch: crate::basis::WorthQueryProductBranch,
-    pub instance: worth_relational::facade::identity::EntityId,
-    pub original_instance: super::super::super::PublishedWorkflowInstanceRef,
-    pub original_runtime: u64,
-    pub original_program_revision: ApplicationProgramRevision,
-    pub original_sources: Option<super::super::actor_context::OriginalActorSources>,
-    pub node_path: String,
-    pub transition_identity: String,
-    pub transition_identity_bytes: [u8; 32],
-    pub occurrence: u64,
-    pub operation: String,
-    pub input_type: String,
-    pub binding: Option<String>,
-    pub input_identity: [u8; 32],
-    pub workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
-    pub authority: Arc<WorkflowOperationAuthoritySlot>,
+    pub(crate) branch: crate::basis::WorthQueryProductBranch,
+    pub(crate) instance: worth_relational::facade::identity::EntityId,
+    pub(crate) original_instance: super::super::super::PublishedWorkflowInstanceRef,
+    pub(crate) original_runtime: u64,
+    pub(crate) original_program_revision: ApplicationProgramRevision,
+    pub(crate) original_sources: Option<super::super::actor_context::OriginalActorSources>,
+    pub(crate) node_path: String,
+    pub(crate) transition_identity: String,
+    pub(crate) transition_identity_bytes: [u8; 32],
+    pub(crate) occurrence: u64,
+    pub(crate) operation: String,
+    pub(crate) input_type: String,
+    pub(crate) binding: Option<String>,
+    pub(crate) input_identity: [u8; 32],
+    pub(crate) workflow_execution_requirements: worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
+    pub(crate) authority: Arc<WorkflowOperationAuthoritySlot>,
 }
 
 #[derive(Debug)]
 pub struct WorkflowOperationAuthoritySlot {
-    pub authority: Mutex<Option<WorkflowOperationAuthority>>,
-    pub issued: bool,
+    pub(crate) authority: Mutex<Option<WorkflowOperationAuthority>>,
+    pub(crate) issued: bool,
 }
 
 pub struct WorkflowOperationAuthority {
-    pub captured_input:
+    pub(crate) captured_input:
         Option<crate::domain_computation::primary_graph::WorkflowCapturedInputContract>,
-    pub operation:
-        String,
-    pub binding:
-        String,
-    pub transition_identity:
-        [u8; 32],
-    pub input_identity:
-        [u8; 32],
-    pub runtime_authority:
-        u64,
-    pub session_identity:
+    pub(crate) operation: String,
+    pub(crate) binding: String,
+    pub(crate) transition_identity: [u8; 32],
+    pub(crate) input_identity: [u8; 32],
+    pub(crate) runtime_authority: u64,
+    pub(crate) session_identity:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-    pub observation:
-        WorthQueryProductBranchReadIdentity,
-    pub facts: Arc<[WorthQueryApplicationObservedFact]>,
+    pub(crate) observation: WorthQueryProductBranchReadIdentity,
+    pub(crate) facts: Arc<[WorthQueryApplicationObservedFact]>,
     /// The instance's deadline; the operation commits only before it.
-    pub deadline: Option<u64>,
-    pub settlement_basis:
+    pub(crate) deadline: Option<u64>,
+    pub(crate) settlement_basis:
         crate::domain_computation::primary_graph::workflow::instance::WorkflowOperationSettlementBasis,
-    pub workflow_layout:
+    pub(crate) workflow_layout:
         crate::domain_computation::primary_graph::workflow::schema::WorthQueryWorkflowLayout,
-    pub approval_authority:
+    pub(crate) approval_authority:
         Option<crate::domain_computation::authorization::WorthQueryWorkflowApprovalAuthorityBasis>,
-    pub workflow_execution_requirements:
+    pub(crate) workflow_execution_requirements:
         worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements,
-    pub handle: WorthQueryPrimaryGraphIntegrationHandle,
-    pub layout:
+    pub(crate) handle: WorthQueryPrimaryGraphIntegrationHandle,
+    pub(crate) layout:
         Arc<crate::domain_computation::primary_graph::schema_layout::WorthQueryPrimaryGraphLayout>,
 }
 
@@ -136,7 +130,7 @@ impl RequiredWorkflowOperation {
     pub fn workflow_execution_requirements(&self) -> &worth_query_declaration::facade::application_operation::ApplicationWorkflowExecutionRequirements{
         &self.workflow_execution_requirements
     }
-    pub fn from_selected(
+    pub(crate) fn from_selected(
         branch: crate::basis::WorthQueryProductBranch,
         original_runtime: u64,
         original_program_revision: ApplicationProgramRevision,
@@ -226,7 +220,7 @@ impl RequiredWorkflowOperation {
 }
 
 impl WorkflowOperationAuthority {
-    pub fn new(
+    pub(crate) fn new(
         operation: String,
         binding: String,
         transition_identity: [u8; 32],
@@ -270,7 +264,7 @@ impl WorkflowOperationAuthority {
         }
     }
 
-    pub fn with_deadline(mut self, deadline: Option<u64>) -> Self {
+    pub(crate) fn with_deadline(mut self, deadline: Option<u64>) -> Self {
         self.deadline = deadline;
         self
     }

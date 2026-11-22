@@ -2,6 +2,7 @@
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryHistoryOutputReadDenial;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
 impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
@@ -31,7 +32,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
             return Err((value, Denial::ForeignDocument));
         }
         let execution = match phase
-            .checked_execution_request_for(&self.runtime().inner.runtime.product_runtime)
+            .checked_execution_request_for(self.runtime().inner.runtime.product_runtime_ref())
         {
             Ok(execution) => execution,
             Err(stop) => return Err((value, Denial::Stopped(stop))),
@@ -89,7 +90,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
                 WorthQueryHistoryOutputAdvanceDenial::Demand(stop) => Denial::Demand(stop),
             })?;
         let runtime = self.runtime();
-        let execution = phase.checked_execution_request_for(&runtime.inner.runtime.product_runtime)
+        let execution = phase.checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(|cause| Denial::Authority(crate::domain_computation::primary_graph::WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
         // No retained E lookup or currentness requirement. Recovery may still
         // own partial Native work whose original World settlement is unfinished.

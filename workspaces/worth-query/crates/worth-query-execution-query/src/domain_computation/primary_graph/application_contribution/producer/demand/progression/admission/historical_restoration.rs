@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     application_query::WorthQueryApplicationBasisSelectionIdentity,
 };
 use crate::equality_type_id::EqualityTypeId;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -40,7 +41,7 @@ impl<Schema: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRunti
             return Ok(None);
         }
         let scope = crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(observed_source.source_root());
-        let graph = &self.runtime.primary_provider.graph;
+        let graph = &self.runtime.primary_provider.graph_ref();
         let (candidate, origin) = {
             let lineage = graph
                 .output_lineage_ref()

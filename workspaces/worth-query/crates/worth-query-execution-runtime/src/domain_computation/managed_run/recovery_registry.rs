@@ -134,6 +134,7 @@ impl WorthQueryRecoveryHandleRegistry {
     }
 
     /// Test fixture registry with a freshly minted runtime authority identity.
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self::for_runtime(
             WorthQueryRuntimeAuthorityIdentity::mint_for_test(),

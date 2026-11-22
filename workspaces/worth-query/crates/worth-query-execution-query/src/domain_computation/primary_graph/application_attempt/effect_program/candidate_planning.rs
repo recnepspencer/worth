@@ -1,4 +1,5 @@
 //! Conservative support of one finished existing-record scalar candidate.
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
@@ -365,7 +366,7 @@ impl<S, O, I, E> EffectProgramCandidatePlanningExt<S, O, I, E>
         application
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_runtime(execution, |runtime| {
                 for fact in self.read_set().facts().iter() {
                     if !fact.remains_equal_in_image(

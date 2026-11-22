@@ -2,6 +2,7 @@
 use super::CurrentReadDenial as Denial;
 use crate::basis::WorthQueryProductObservationLease;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -56,7 +57,7 @@ pub fn confirm_in_execution_with_effect<S: ApplicationSchema, Value>(
     runtime
         .runtime
         .primary_provider
-        .graph
+        .graph_ref()
         .with_runtime(execution, |native| {
             confirm_in_native_with_effect(
                 runtime,

@@ -2,6 +2,7 @@
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedApplicationQueryControlsInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 mod owned_scope;
 mod recording;
@@ -228,7 +229,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             ));
         }
         let execution = phase
-            .checked_execution_request_for(&self.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 ReadDenial::Authority(WorthQueryHistoryNavigationDenial::Stopped(cause))
             })?;

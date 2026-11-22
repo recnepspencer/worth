@@ -1,4 +1,5 @@
 //! Fresh disclosure and selected native ordered pages at the retained data basis.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
@@ -115,7 +116,7 @@ impl<S: ApplicationSchema> WorthQuerySelectedProductOperation<'_, S> {
             return Err(Denial::ContinuationMismatch);
         }
         let execution = phase
-            .execution_request_for(&self.application().inner.runtime.product_runtime)
+            .execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Phase)?;
         let graph = self
             .application()

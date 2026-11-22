@@ -12,11 +12,11 @@ use super::{
     WorthQueryExecutionResourceAttemptEvidence,
 };
 pub struct WorthQueryWorkflowExecutionResourceAttempt {
-    pub reserved: WorthQueryCapacityReservedWorkflowResourcePlan,
-    pub attempt_identity: WorthQueryExecutionAttemptIdentity,
-    pub provider_session: WorthQueryExecutionProviderSession,
-    pub evidence: WorthQueryExecutionResourceAttemptEvidence,
-    pub artifact_run: Mutex<WorthQueryWorkflowArtifactRunState>,
+    pub(crate) reserved: WorthQueryCapacityReservedWorkflowResourcePlan,
+    pub(crate) attempt_identity: WorthQueryExecutionAttemptIdentity,
+    pub(crate) provider_session: WorthQueryExecutionProviderSession,
+    pub(crate) evidence: WorthQueryExecutionResourceAttemptEvidence,
+    pub(crate) artifact_run: Mutex<WorthQueryWorkflowArtifactRunState>,
 }
 
 pub struct WorthQueryWorkflowArtifactRunState {
@@ -26,7 +26,7 @@ pub struct WorthQueryWorkflowArtifactRunState {
 }
 
 impl WorthQueryWorkflowExecutionResourceAttempt {
-    pub fn start(
+    pub(crate) fn start(
         mut reserved: WorthQueryCapacityReservedWorkflowResourcePlan,
         binding_authority: &crate::domain_computation::operation_binding::WorthQueryExecutionBoundOperationAuthority,
     ) -> Self {
@@ -87,7 +87,7 @@ impl WorthQueryWorkflowExecutionResourceAttempt {
         self.bind_workflow_artifacts_owned()
     }
 
-    pub fn bind_workflow_artifacts_for_managed_run(
+    pub(crate) fn bind_workflow_artifacts_for_managed_run(
         &self,
         _owner: &crate::domain_computation::managed_run::WorthQueryWorkflowRunTransitionPermit,
     ) -> Result<
@@ -139,7 +139,7 @@ impl WorthQueryWorkflowExecutionResourceAttempt {
         Ok(authority)
     }
 
-    pub fn stage_resources_and_evidence_for_managed_run(
+    pub(crate) fn stage_resources_and_evidence_for_managed_run(
         &self,
         stage_identity: &str,
         _owner: &crate::domain_computation::managed_run::WorthQueryWorkflowRunTransitionPermit,
@@ -170,7 +170,7 @@ impl WorthQueryWorkflowExecutionResourceAttempt {
         self.provider_session.binding_authority()
     }
 
-    pub fn release(self) -> WorthQueryWorkflowExecutionAttemptReleaseReceipt {
+    pub(crate) fn release(self) -> WorthQueryWorkflowExecutionAttemptReleaseReceipt {
         let provider_session_identity = self.provider_session.identity().to_owned();
         drop(self.provider_session);
         WorthQueryWorkflowExecutionAttemptReleaseReceipt {

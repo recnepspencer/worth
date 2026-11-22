@@ -121,34 +121,35 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 pub struct WorthQueryPrimaryGraphProvider {
-    pub managed_cleanup_control: Arc<managed_cleanup_control::ManagedCleanupControl>,
-    pub graph: WorthQueryPrimaryGraphIntegrationHandle,
-    pub installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
-    pub resource_support: resource_support::WorthQueryPrimaryGraphResourceSupport,
-    pub branch_commit_coordination:
+    pub(crate) managed_cleanup_control: Arc<managed_cleanup_control::ManagedCleanupControl>,
+    pub(crate) graph: WorthQueryPrimaryGraphIntegrationHandle,
+    pub(crate) installed_operations: Arc<worth_query_installation::facade::InstalledOperationCatalog>,
+    pub(crate) resource_support: resource_support::WorthQueryPrimaryGraphResourceSupport,
+    pub(crate) branch_commit_coordination:
         branch_commit_coordination::WorthQueryApplicationBranchCommitCoordinator,
-    pub live_delivery: super::live_delivery::WorthQueryLiveDeliverySource,
-    pub attempts: Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>>,
-    pub application_attempt_operation_control:
+    pub(crate) live_delivery: super::live_delivery::WorthQueryLiveDeliverySource,
+    pub(crate) attempts: Arc<Mutex<application_attempt_state::WorthQueryPrimaryGraphApplicationAttemptStore>>,
+    pub(crate) application_attempt_operation_control:
         super::application_runtime::WorthQueryApplicationAttemptOperationControl,
-    pub application_attempt_work: application_attempt_work::WorthQueryApplicationAttemptWorkLedger,
-    pub completed_commit_evidence: Mutex<session_commit::WorthQueryCompletedCommitEvidenceStore>,
-    pub unpublished_idempotency:
+    pub(crate) application_attempt_work: application_attempt_work::WorthQueryApplicationAttemptWorkLedger,
+    pub(crate) completed_commit_evidence: Mutex<session_commit::WorthQueryCompletedCommitEvidenceStore>,
+    pub(crate) unpublished_idempotency:
         Arc<Mutex<unpublished_idempotency::WorthQueryUnpublishedIdempotencyStore>>,
-    pub receipt_basis_retention: Arc<Mutex<session_commit::WorthQueryReceiptBasisRetentionStore>>,
-    pub outstanding_dispatch: outstanding_dispatch::OutstandingDispatchOwner,
-    pub inbound_terminal_index: inbound_terminal_index::WorthQueryInboundTerminalIndex,
-    pub pending_application_publications:
+    pub(crate) receipt_basis_retention: Arc<Mutex<session_commit::WorthQueryReceiptBasisRetentionStore>>,
+    pub(crate) outstanding_dispatch: outstanding_dispatch::OutstandingDispatchOwner,
+    pub(crate) inbound_terminal_index: inbound_terminal_index::WorthQueryInboundTerminalIndex,
+    pub(crate) pending_application_publications:
         pending_application_publication::registry::WorthQueryPendingApplicationPublicationRegistryOwner,
-    pub fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
-    pub publication_fault_control: Arc<publication_fault_control::PublicationFaultControl>,
-    pub correction_material: std::sync::OnceLock<super::retained_correction::CorrectionMaterialOwner>,
-    pub original_meaning_support: std::sync::OnceLock<std::sync::Weak<super::query_obligations::history::QueryObligationHistory>>,
-    pub world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldRecoveryPort>,
-    pub managed_views_execution: std::sync::OnceLock<Arc<dyn crate::ports::ManagedDerivedViewExecutionPort>>,
-    pub teardown_sentinel: Mutex<Option<Box<dyn std::any::Any + Send + Sync>>>,
+    pub(crate) fault_port: Arc<dyn fault_port::WorthQueryPrimaryGraphFaultPort>,
+    pub(crate) publication_fault_control: Arc<publication_fault_control::PublicationFaultControl>,
+    pub(crate) correction_material: std::sync::OnceLock<super::retained_correction::CorrectionMaterialOwner>,
+    pub(crate) original_meaning_support: std::sync::OnceLock<std::sync::Weak<super::query_obligations::history::QueryObligationHistory>>,
+    pub(crate) world_history: std::sync::OnceLock<worth_runtime_world::facade::RuntimeWorldRecoveryPort>,
+    pub(crate) managed_views_execution: std::sync::OnceLock<Arc<dyn crate::ports::ManagedDerivedViewExecutionPort>>,
+    pub(crate) teardown_sentinel: Mutex<Option<Box<dyn std::any::Any + Send + Sync>>>,
 }
 
+pub(crate) mod internal_port;
 pub use branch_commit_coordination::WorthQueryApplicationBranchCommitContentionForTest;
 
 pub use branch_commit_coordination::WorthQueryApplicationBranchCommitCoordination;

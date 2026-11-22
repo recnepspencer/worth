@@ -1,5 +1,6 @@
 //! Reacquire a committed output at the live product head or its retained lineage.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -28,7 +29,7 @@ where
     let retained_output_is_current = runtime
         .runtime
         .primary_provider
-        .graph
+        .graph_ref()
         .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)

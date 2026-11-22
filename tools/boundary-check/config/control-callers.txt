@@ -159,8 +159,6 @@ crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution-line
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/primary_graph/application_attempt/fact/consult_observation.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/primary_graph/application_contribution/computation/wave_dispatch.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution-lineage/src/test_read_stops.rs
-crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/authorization/decision_facts/authorization/durable_dependencies/cancellation_tests.rs
-crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/authorization/operation_admission/retained_activation_read_tests.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution-runtime/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-execution-runtime/src/domain_computation/primary_graph/application_contribution/request_execution/test_placement/native_certification.rs
 crates/worth-execution/ workspaces/worth-query/crates/worth-query-testkit-certification-canonical/src/certification/application_graph/canonical_admission/request_funding.rs
@@ -1246,8 +1244,6 @@ workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-qu
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-execution-attempt/src/domain_computation/primary_graph/provider/application_decision_fact.rs
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/primary_graph/application_contribution/mod.rs
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/primary_graph/application_contribution/partitioned_computation.rs
-workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/authorization/decision_facts/authorization/durable_dependencies/cancellation_tests.rs
-workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/authorization/operation_admission/retained_activation_read_tests.rs
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/primary_graph/application_contribution/mod.rs
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/primary_graph/application_contribution/partitioned_computation.rs
 workspaces/worth-query/crates/worth-query-execution-lineage/ workspaces/worth-query/crates/worth-query-execution-query/src/domain_computation/primary_graph/application_contribution/partitioned_computation/compute.rs

@@ -3,6 +3,7 @@
 
 use std::any::Any;
 use std::sync::{Arc, Mutex};
+use worth_query_execution_lineage::facade::ports::ApplicationOutputLineageInternalPort as _;
 
 use worth_query_execution_runtime::facade::execution_runtime::product_world::WorthQueryProductRuntime;
 use worth_query_execution_runtime::facade::ports::{
@@ -42,7 +43,7 @@ impl<Schema: ApplicationSchema> ProductRuntimeRef
     for WorthQueryPrimaryGraphApplicationRuntime<Schema>
 {
     fn product_runtime(&self) -> &WorthQueryProductRuntime {
-        &self.runtime.product_runtime.0
+        &self.runtime.product_runtime
     }
 }
 

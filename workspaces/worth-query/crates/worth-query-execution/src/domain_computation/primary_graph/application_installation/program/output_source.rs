@@ -7,6 +7,7 @@ use worth_query_declaration::facade::application_program::{
     ApplicationConnectionShape, ApplicationOutputGraphShape, ApplicationProgramDefinition,
     ApplicationProgramOutputsShape,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 
@@ -55,7 +56,7 @@ where
         };
         let receipt = source.into();
         let execution = phase
-            .execution_request_for(&self.runtime().inner.runtime.product_runtime)
+            .execution_request_for(self.runtime().inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     Kind::ExecutionRequest(cause.into()),
@@ -181,7 +182,7 @@ where
             .runtime()
             .inner
             .runtime
-            .output_demands
+            .output_demands_ref()
             .begin_source_preparation(program.product_branch().occurrence());
         let branch = program.product_branch();
         let selected_program = presented.rendering().clone();

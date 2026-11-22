@@ -12,6 +12,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -27,7 +29,7 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
 ) -> Result<(), Denial> {
     let application = target.application();
     let execution = phase
-        .execution_request_for(&application.inner.runtime.product_runtime)
+        .execution_request_for(application.inner.runtime.product_runtime_ref())
         .map_err(|_| Denial::ForeignPhase)?;
     // Direct-head correction preserves its existing strict comparison for ALL
     // fact classes. Equality is the actual World occurrence AND admitted basis,
@@ -38,8 +40,8 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
         return application
             .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(&execution, |runtime| {
                 let snapshot =
                     open_exact_basis_snapshot(runtime, target.product().relational_basis())
@@ -59,8 +61,8 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
     let selection = application
         .inner
         .runtime
-        .primary_provider
-        .graph
+        .primary_provider_ref()
+        .graph_ref()
         .with_runtime(&execution, |runtime| {
             with_support_snapshots(
                 runtime,
@@ -84,8 +86,8 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
     let occurrences = application
         .inner
         .runtime
-        .primary_provider
-        .graph
+        .primary_provider_ref()
+        .graph_ref()
         .with_runtime(&execution, |runtime| {
             history::collect(
                 runtime,
@@ -111,8 +113,8 @@ pub(in crate::domain_computation::primary_graph::product_operation::correction_s
     application
         .inner
         .runtime
-        .primary_provider
-        .graph
+        .primary_provider_ref()
+        .graph_ref()
         .with_runtime(&execution, |runtime| {
             with_support_snapshots(
                 runtime,

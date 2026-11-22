@@ -3,7 +3,7 @@ use super::{
 };
 
 impl WorthQueryApplicationOutputLineage {
-    pub fn release_occurrence(
+    pub(crate) fn release_occurrence(
         &mut self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) {

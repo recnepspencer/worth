@@ -5,7 +5,7 @@ use super::super::{
 };
 use super::{WorthQueryProviderSessionGrant, WorthQueryProviderSessionReceiver};
 
-mod staged;
+pub(crate) mod staged;
 
 pub use staged::{
     WorthQuerySessionBoundReadsAndEffects, WorthQuerySessionEffectAuthority,

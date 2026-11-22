@@ -1,5 +1,6 @@
 //! An ordinary resumed row uses the same advance's publication permission.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 
 /// Both forms compare captured input through its actual selected owner.
@@ -54,7 +55,7 @@ impl PerformedMembers {
             let candidate = runtime
                 .runtime
                 .primary_provider
-                .graph
+                .graph_ref()
                 .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)

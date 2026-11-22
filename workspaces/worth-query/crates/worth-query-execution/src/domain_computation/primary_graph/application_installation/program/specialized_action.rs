@@ -1,4 +1,5 @@
 use crate::domain_computation::primary_graph::WorthQueryAdvancementDenialCommitExt as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 mod capability_advancement;
 mod elevation_advancement;
@@ -103,9 +104,7 @@ where
             .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(
-                        &self.runtime.backing.runtime().inner.runtime.product_runtime,
-                    )
+                    .execution_request_for(self.product_runtime())
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
@@ -154,9 +153,7 @@ where
             .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(
-                        &self.runtime.backing.runtime().inner.runtime.product_runtime,
-                    )
+                    .execution_request_for(self.product_runtime())
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
@@ -206,9 +203,7 @@ where
             .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(
-                        &self.runtime.backing.runtime().inner.runtime.product_runtime,
-                    )
+                    .execution_request_for(self.product_runtime())
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
@@ -258,9 +253,7 @@ where
             .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(
-                        &self.runtime.backing.runtime().inner.runtime.product_runtime,
-                    )
+                    .execution_request_for(self.product_runtime())
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
@@ -284,6 +277,18 @@ where
                 Some(candidate) => candidate.refuse_advancement(denial),
                 None => WorthQueryMandatoryReviewOutcome::Indeterminate,
             })
+    }
+
+    fn product_runtime(
+        &self,
+    ) -> &crate::domain_computation::execution_runtime::product_world::WorthQueryProductRuntime
+    {
+        self.runtime
+            .backing
+            .runtime()
+            .inner
+            .runtime
+            .product_runtime_ref()
     }
 
     pub fn compare_and_commit_capability_delegation<Input, Scope>(
@@ -310,9 +315,7 @@ where
             .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(
-                        &self.runtime.backing.runtime().inner.runtime.product_runtime,
-                    )
+                    .execution_request_for(self.product_runtime())
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;
@@ -358,9 +361,7 @@ where
             .runtime()
             .with_application_advancement(&request, |active_phase| {
                 let execution = active_phase
-                    .execution_request_for(
-                        &self.runtime.backing.runtime().inner.runtime.product_runtime,
-                    )
+                    .execution_request_for(self.product_runtime())
                     .map_err(
                         crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::from,
                     )?;

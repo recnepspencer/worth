@@ -6,6 +6,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolution as Resolution, WorthQueryApplicationUncommitted,
     WorthQuerySelectedProductOperation,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
@@ -39,7 +40,7 @@ impl CoupledAdoption {
     {
         // Completion comes from this actual performed coupled writer, not
         // source ownership. Independent routes carry the same sealed receipt.
-        let handle = &runtime.runtime.primary_provider.graph;
+        let handle = &runtime.runtime.primary_provider.graph_ref();
         let candidate = handle
             .output_lineage_ref()
             .lock()
@@ -213,7 +214,7 @@ impl CoupledAdoption {
         let owner = &runtime
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .source_owner_ref()
             .invalidation_owner;
         let mut claims =
@@ -228,7 +229,11 @@ impl CoupledAdoption {
             })?;
         claims.record_durable_prerequisites(
             &execution,
-            runtime.runtime.primary_provider.graph.output_lineage_ref(),
+            runtime
+                .runtime
+                .primary_provider
+                .graph_ref()
+                .output_lineage_ref(),
         )?;
         claims.reserve_identity(self.candidate.settlement_identity())?;
         claims

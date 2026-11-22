@@ -714,7 +714,6 @@ exclude_paths = [
   "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/tests/fixture/correction_source/mod.rs",
   "workspaces/worth-query/crates/worth-query-testkit-execution-primary-graph-application-contribution/src/domain_computation/primary_graph/tests/fixture/correction_source/preparation/mod.rs",
   "workspaces/worth-query/crates/worth-query-publication",
-  "workspaces/worth-query/crates/worth-query-execution-query",
   "workspaces/worth-query/crates/worth-query-testkit-certification-application-graph/src/certification/application_graph/workflow_approval/commit_boundary.rs",
   "workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/commit_boundary/advancement_identity/mod.rs",
   "workspaces/worth-query/crates/worth-query-court-decl-host-package-archive-replay-workflow-approval/tests/worth_query_court_decl_host_package_archive_replay_workflow_approval/certification/application_graph/workflow_approval/commit_boundary/mod.rs",

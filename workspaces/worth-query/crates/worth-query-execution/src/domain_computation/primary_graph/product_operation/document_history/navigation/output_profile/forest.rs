@@ -1,6 +1,7 @@
 //! Immutable original tree correspondence, never output or navigation authority.
 use super::*;
 use crate::domain_computation::primary_graph::structural_walk::memory;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_relational::facade::transactions::RelationalExecutionDenialCause as Cause;
 
 pub(super) struct HistoryOutputForest {
@@ -71,7 +72,7 @@ impl<S: ApplicationSchema, H: ApplicationHistoryBinding<S>> WorthQueryDocumentHi
         }
         let first = profiles.first().ok_or(Denial::IntentDrift)?;
         let execution = phase
-            .checked_execution_request_for(&self.application().inner.runtime.product_runtime)
+            .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let resource = |cause| {
             Denial::Document(

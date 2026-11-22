@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdmittedApplicationOperation, WorthQueryApplicationIdempotencyBinding,
     WorthQueryApplicationIdempotencyResolution, WorthQueryCommittedProductPublication,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_attempt::facade::ports::RecoveryHandleBindingInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
@@ -137,7 +138,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let mut binding = WorthQueryRecoveryHandleBinding::from_readmitted(
             self.runtime
                 .primary_provider
-                .graph
+                .graph_ref()
                 .relational_runtime_instance_id(),
             admission,
             publication,

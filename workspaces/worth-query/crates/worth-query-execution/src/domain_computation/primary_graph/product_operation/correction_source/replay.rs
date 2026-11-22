@@ -9,6 +9,7 @@ use worth_query_declaration::facade::{
 use worth_query_execution_lineage::facade::ports::{
     CommitAuthorityBindingInternalPort as _, RetainedGovernedInputInternalPort as _,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -59,13 +60,13 @@ pub(super) fn select_input<Schema: ApplicationSchema, C: ApplicationCorrectionBi
         maximum_results,
     )?;
     let execution = phase
-        .execution_request_for(&target.application().inner.runtime.product_runtime)
+        .execution_request_for(target.application().inner.runtime.product_runtime_ref())
         .map_err(|_| WorthQueryCorrectionDerivationDenial::ForeignPhase)?;
     let observed = target
         .application()
         .inner
         .runtime
-        .primary_provider
+        .primary_provider_ref()
         .observe_correction_command(
             &execution,
             &target.product().publication_binding(),
@@ -102,7 +103,7 @@ pub(super) fn select_input<Schema: ApplicationSchema, C: ApplicationCorrectionBi
         target, source, key, &lineage,
     );
     select_action::<Schema, ApplicationInverseBinding<Schema, C>>(
-        &target.application().inner.runtime.primary_provider,
+        &target.application().inner.runtime.primary_provider_ref(),
         observed,
         intent,
         key,
@@ -138,13 +139,13 @@ pub(super) fn select_reapplication_input<
     )?;
     target.select_alternative_ancestry(phase, &alternative.selected, maximum_history)?;
     let execution = phase
-        .execution_request_for(&target.application().inner.runtime.product_runtime)
+        .execution_request_for(target.application().inner.runtime.product_runtime_ref())
         .map_err(|_| WorthQueryCorrectionDerivationDenial::ForeignPhase)?;
     let observed = target
         .application()
         .inner
         .runtime
-        .primary_provider
+        .primary_provider_ref()
         .observe_correction_command(
             &execution,
             &target.product().publication_binding(),
@@ -191,7 +192,7 @@ pub(super) fn select_reapplication_input<
         &lineage,
     );
     select_action::<Schema, C::Source>(
-        &target.application().inner.runtime.primary_provider,
+        &target.application().inner.runtime.primary_provider_ref(),
         observed,
         intent,
         key,

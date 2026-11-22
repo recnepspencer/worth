@@ -1,12 +1,12 @@
 //! Whole-tree qualification at the original tree's canonically linked endpoint.
 mod collection;
 use super::WorthQueryOutputSettlementPosture;
+use crate::discovery_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial;
 use crate::domain_computation::primary_graph::application_installation::WorthQuerySelectedProgramOwnerDenial;
 use crate::domain_computation::primary_graph::{
     WorthQueryApplicationReadObservation, WorthQueryOutputDemandDenial,
     WorthQueryProductBranchAdmissionDenial,
 };
-use crate::publication_boundary::discovery_currentness::WorthQueryRequiredSetCurrentnessDenial;
 pub use collection::{qualify_output_collection, OriginalOutputTree};
 use std::sync::Arc;
 use worth_runtime_world::facade::CompositeCommitIdentity;

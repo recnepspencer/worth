@@ -11,6 +11,7 @@ use crate::domain_computation::primary_graph::workflow::instance::visit_workflow
 use crate::domain_computation::primary_graph::PrimaryGraphHandleWorkflowExt;
 use crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationOperation;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 
 pub struct LocalWorkflowSettlementPublication {
     progress_update:
@@ -37,7 +38,7 @@ impl LocalWorkflowSettlementPublication {
         let _ = application
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_workflow_instance_progress_mut(key, |retention| {
                 self.progress_update
                     .apply(retention, committed_revision, transition, None)

@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::application_aftermath::dispatch_journal::{
     QueryDispatchJournalDenial as Denial, QueryDispatchMedium,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
 impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Program: 'static>
@@ -20,19 +21,19 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         if application
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .readmit_dispatch_outboxes(
                 execution,
                 &application
                     .inner
                     .runtime
-                    .product_runtime
+                    .product_runtime_ref()
                     .owner_ref()
                     .observation_port(),
                 &application
                     .inner
                     .runtime
-                    .product_runtime
+                    .product_runtime_ref()
                     .owner_ref()
                     .inspection_port(),
             )
@@ -56,7 +57,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         let owner = application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .owner_ref()
             .owner_identity();
         if owner.durable().map(|owner| owner.home()) != Some(dispatch.home()) {
@@ -66,13 +67,13 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
         if fence.admit(dispatch.incarnation().fence()).is_err() {
             return Err(Denial::StaleIncarnation);
         }
-        let admission = application.inner.runtime.dispatch_journal.readmit(
+        let admission = application.inner.runtime.dispatch_journal_ref().readmit(
             dispatch,
             execution,
             application
                 .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .dispatch_readmission_catalog(),
         )?;
         match self.dispatch_custody_admission.get() {

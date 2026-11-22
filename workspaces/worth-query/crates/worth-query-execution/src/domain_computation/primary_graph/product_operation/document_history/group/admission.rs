@@ -2,6 +2,7 @@
 use super::*;
 use sha2::{Digest, Sha256};
 use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
@@ -103,7 +104,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             intent_hash.finalize().into(),
         );
         let execution = phase
-            .checked_execution_request_for(&self.application().inner.runtime.product_runtime)
+            .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let mut selected = self.selection.lock();
         match selected.journal.lookup(meaning) {

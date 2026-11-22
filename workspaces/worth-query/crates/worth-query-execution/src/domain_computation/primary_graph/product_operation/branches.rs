@@ -2,6 +2,7 @@
 
 use std::num::NonZeroUsize;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -49,12 +50,15 @@ pub struct WorthQueryApplicationProductBranches<'runtime, Schema> {
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
     pub fn current_world(&self) -> WorthQueryProductBranch {
-        self.inner.runtime.product_runtime.root_product_branch()
+        self.inner
+            .runtime
+            .product_runtime_ref()
+            .root_product_branch()
     }
 
     pub fn branches(&self) -> WorthQueryApplicationProductBranches<'_, Schema> {
         WorthQueryApplicationProductBranches {
-            branches: self.inner.runtime.product_runtime.product_branches(),
+            branches: self.inner.runtime.product_runtime_ref().product_branches(),
             application: self,
         }
     }
@@ -93,7 +97,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
             .application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .activations_ref()
             .first_unadmitted_live_occurrence(
                 coverage.branches().iter().map(|branch| branch.occurrence()),
@@ -127,21 +131,25 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
     }
 
     pub fn fork(self, source: WorthQueryProductBranch) -> WorthQueryProductBranchFork<'runtime> {
+        use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
         self.branches.fork(source).with_application_lifecycle(
             std::sync::Arc::new(
                 crate::domain_computation::runtime_ports::OutputLineageForkAdapter(
                     std::sync::Arc::clone(
-                        &self
-                            .application
+                        self.application
                             .inner
                             .runtime
-                            .primary_provider
-                            .graph
+                            .primary_provider_ref()
+                            .graph_ref()
                             .output_lineage_ref(),
                     ),
                 ),
             ),
-            self.application.inner.runtime.primary_provider.as_ref(),
+            self.application
+                .inner
+                .runtime
+                .primary_provider_ref()
+                .as_ref(),
             self.application,
         )
     }
@@ -170,18 +178,18 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
             .application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .pending_application_retired_product_occurrences()
         {
             self.application
                 .inner
                 .runtime
-                .output_demands
+                .output_demands_ref()
                 .release_product_occurrence(occurrence.incarnation());
             self.application
                 .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .release_product_occurrence_retention(
                     occurrence.branch(),
                     occurrence.incarnation(),
@@ -191,12 +199,12 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryApplicationProductBranches<'
             .application
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional_operations();
         self.application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .pending_owner_cleanup()
             .into_iter()
             .map(|cleanup| {

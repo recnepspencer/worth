@@ -1,5 +1,7 @@
 //! Replace an application head only while the candidate's exact source is current.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -91,7 +93,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         WorthQueryExpectedProductBranchAdoptionFailure<'runtime, Schema>,
     > {
         let execution = match phase
-            .execution_request_for(&self.application.inner.runtime.product_runtime)
+            .execution_request_for(self.application.inner.runtime.product_runtime_ref())
         {
             Ok(execution) => execution,
             Err(_) => {
@@ -117,7 +119,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
             application
                 .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .application_branch_commit_lane_for_occurrence(occurrence)
         });
         let _first = lanes[0].enter();
@@ -125,7 +127,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         let candidate = match application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .admit_product_occurrence(self.branch.occurrence())
         {
             Ok(candidate) => candidate,
@@ -146,8 +148,8 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
         let result = application
             .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(&execution, |native| {
                 let basis = native.owner_component_services().basis_port();
                 if let Err(denial) = basis.compare_current_exact(self.source.relational_basis()) {
@@ -192,7 +194,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQueryExpectedProductBranch<'runti
             .application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .owner_ref()
             .observation_port();
         match world.while_product_branches_current(

@@ -20,31 +20,32 @@ use crate::domain_computation::provider_session::{
 };
 
 pub struct WorthQueryApplicationOperationBindingInput<'a> {
-    pub runtime: &'a WorthQueryExecutionRuntime,
-    pub owner: &'a str,
-    pub installed_operation_fingerprint: Arc<str>,
-    pub operation_slot: Arc<str>,
-    pub resource_binding_identity: Arc<str>,
-    pub basis: &'a AdmittedBasisCapability<MutationPreparationLaneWitness>,
-    pub contracts: &'a WorthQueryCompiledApplicationOperationContracts,
-    pub graph: &'a WorthQueryInstalledGraphParticipationAuthority,
-    pub support: WorthQueryExecutionResourceSupportSnapshot,
-    pub graph_work_session:
+    pub(crate) runtime: &'a WorthQueryExecutionRuntime,
+    pub(crate) owner: &'a str,
+    pub(crate) installed_operation_fingerprint: Arc<str>,
+    pub(crate) operation_slot: Arc<str>,
+    pub(crate) resource_binding_identity: Arc<str>,
+    pub(crate) basis: &'a AdmittedBasisCapability<MutationPreparationLaneWitness>,
+    pub(crate) contracts: &'a WorthQueryCompiledApplicationOperationContracts,
+    pub(crate) graph: &'a WorthQueryInstalledGraphParticipationAuthority,
+    pub(crate) support: WorthQueryExecutionResourceSupportSnapshot,
+    pub(crate) graph_work_session:
         crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
-    pub graph_work_managed_run:
+    pub(crate) graph_work_managed_run:
         crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity,
-    pub operation_attempt:
+    pub(crate) operation_attempt:
         crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
-    pub schema_binding: &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
-    pub snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,
-    pub product: &'a crate::basis::WorthQueryProductBranchLease,
-    pub effect_posture: WorthQueryApplicationEffectPosture,
-    pub native_reference_invariants:
+    pub(crate) schema_binding:
+        &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+    pub(crate) snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,
+    pub(crate) product: &'a crate::basis::WorthQueryProductBranchLease,
+    pub(crate) effect_posture: WorthQueryApplicationEffectPosture,
+    pub(crate) native_reference_invariants:
         &'a worth_query_installation::facade::WorthQueryInvariantExecutionContract,
 }
 
 impl WorthQueryExecutionBoundOperationAuthority {
-    pub fn bind_application(
+    pub(crate) fn bind_application(
         input: WorthQueryApplicationOperationBindingInput<'_>,
     ) -> Result<Self, &'static str> {
         let commit_posture = WorthQueryExecutionCommitPosture::Atomic;
@@ -98,6 +99,73 @@ impl WorthQueryExecutionBoundOperationAuthority {
             application_schema_binding: Some(input.schema_binding.clone()),
             application_snapshot: Some(input.snapshot.clone()),
             application_product_observation: Some(input.product.observation().clone()),
+        })
+    }
+}
+
+/// Crate-boundary internal port for application operation binding.
+/// Never exported on `worth-query-execution::facade` or Host.
+pub trait ApplicationOperationBindingInternalPort: Sized {
+    #[allow(clippy::too_many_arguments)]
+    fn bind_application_parts<'a>(
+        runtime: &'a WorthQueryExecutionRuntime,
+        owner: &'a str,
+        installed_operation_fingerprint: Arc<str>,
+        operation_slot: Arc<str>,
+        resource_binding_identity: Arc<str>,
+        basis: &'a AdmittedBasisCapability<MutationPreparationLaneWitness>,
+        contracts: &'a WorthQueryCompiledApplicationOperationContracts,
+        graph: &'a WorthQueryInstalledGraphParticipationAuthority,
+        support: WorthQueryExecutionResourceSupportSnapshot,
+        graph_work_session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        graph_work_managed_run: crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity,
+        operation_attempt: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        schema_binding: &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+        snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,
+        product: &'a crate::basis::WorthQueryProductBranchLease,
+        effect_posture: WorthQueryApplicationEffectPosture,
+        native_reference_invariants: &'a worth_query_installation::facade::WorthQueryInvariantExecutionContract,
+    ) -> Result<Self, &'static str>;
+}
+
+impl ApplicationOperationBindingInternalPort for WorthQueryExecutionBoundOperationAuthority {
+    fn bind_application_parts<'a>(
+        runtime: &'a WorthQueryExecutionRuntime,
+        owner: &'a str,
+        installed_operation_fingerprint: Arc<str>,
+        operation_slot: Arc<str>,
+        resource_binding_identity: Arc<str>,
+        basis: &'a AdmittedBasisCapability<MutationPreparationLaneWitness>,
+        contracts: &'a WorthQueryCompiledApplicationOperationContracts,
+        graph: &'a WorthQueryInstalledGraphParticipationAuthority,
+        support: WorthQueryExecutionResourceSupportSnapshot,
+        graph_work_session: crate::domain_computation::provider_session::WorthQueryGraphWorkSessionIdentity,
+        graph_work_managed_run: crate::domain_computation::provider_session::WorthQueryGraphWorkManagedRunIdentity,
+        operation_attempt: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        schema_binding: &'a worth_query_installation::facade::ApplicationSchemaBindingIdentity,
+        snapshot: &'a worth_relational::facade::snapshots::SnapshotHandle,
+        product: &'a crate::basis::WorthQueryProductBranchLease,
+        effect_posture: WorthQueryApplicationEffectPosture,
+        native_reference_invariants: &'a worth_query_installation::facade::WorthQueryInvariantExecutionContract,
+    ) -> Result<Self, &'static str> {
+        Self::bind_application(WorthQueryApplicationOperationBindingInput {
+            runtime,
+            owner,
+            installed_operation_fingerprint,
+            operation_slot,
+            resource_binding_identity,
+            basis,
+            contracts,
+            graph,
+            support,
+            graph_work_session,
+            graph_work_managed_run,
+            operation_attempt,
+            schema_binding,
+            snapshot,
+            product,
+            effect_posture,
+            native_reference_invariants,
         })
     }
 }

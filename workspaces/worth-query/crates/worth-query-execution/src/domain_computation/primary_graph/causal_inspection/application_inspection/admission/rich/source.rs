@@ -5,7 +5,9 @@ use super::super::super::{
 };
 use super::*;
 use crate::domain_computation::primary_graph::admitted_capture::run_retained_stage;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
     pub(in super::super::super) fn materialize_source_rich<Q, P, R, S>(
         &mut self,
@@ -48,8 +50,8 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
                     .runtime
                     .inner
                     .runtime
-                    .primary_provider
-                    .graph
+                    .primary_provider_ref()
+                    .graph_ref()
                     .layout_ref(),
                 self.runtime.installed_schema().native_contracts(),
             )?
@@ -86,7 +88,7 @@ impl<Schema: ApplicationSchema, Scope> InspectionRead<'_, '_, Schema, Scope> {
             self.runtime
                 .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .inspection_materialization_prepared();
         }
         drop(self.check(execution)?);

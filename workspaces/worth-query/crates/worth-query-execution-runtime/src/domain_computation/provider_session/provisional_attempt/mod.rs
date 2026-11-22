@@ -1,5 +1,6 @@
 mod attempt;
 mod commit_progression;
+pub(crate) mod commit_progression_internal_port;
 mod denial;
 mod discard;
 mod effect_program;

@@ -18,6 +18,7 @@ use worth_query_declaration::facade::application_history::{
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, ApplicationSchemaBindingIdentity, WorthQueryInstalledDocumentHistory,
@@ -96,7 +97,7 @@ impl WorthQueryHistoryOutputAuthority<'_, '_> {
             return Err(Denial::ForeignDocument);
         }
         phase
-            .check_live_for(&runtime.inner.runtime.product_runtime)
+            .check_live_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         if let Some(lapse) = self.request.lapse() {
             return Err(Denial::Authorization(
@@ -227,7 +228,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
             return Err(Denial::ForeignDocument);
         }
         let execution = phase
-            .checked_execution_request_for(&self.application().inner.runtime.product_runtime)
+            .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let selection = {
             let mut selected = self.selection.lock();

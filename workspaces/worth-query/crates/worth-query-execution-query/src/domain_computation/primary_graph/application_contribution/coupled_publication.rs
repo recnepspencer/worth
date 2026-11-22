@@ -4,6 +4,7 @@ use super::producer::{
     execution, registry, synchronous_outputs, WorthQueryOutputDemandDenial,
     WorthQueryOutputDemandDenialKind,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CleanupRequiredInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -311,7 +312,7 @@ impl<S: ApplicationSchema> RelationalAuthoredCoupledProducerAssembly
             .application
             .runtime
             .primary_provider
-            .application_attempt_operation_control
+            .application_attempt_operation_control_ref()
             .take_break_without_subject()
         {
             self.broke.set(true);

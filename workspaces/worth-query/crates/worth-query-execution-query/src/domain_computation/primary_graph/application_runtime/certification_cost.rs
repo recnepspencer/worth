@@ -1,6 +1,7 @@
 //! Read-only cost evidence for the certification audience.
 
 use std::sync::atomic::Ordering;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -129,7 +130,7 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
         let execution = phase.execution_request_for(&self.runtime.product_runtime)?;
         self.runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_runtime(&execution, |runtime| runtime.observe_retained_storage())
             .map_err(WorthQueryCertificationCostDenial::RetainedStorage)
     }
@@ -149,7 +150,7 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
         let relational = self
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_runtime(&execution, |runtime| {
                 RelationalMvccCostScope::capture(runtime, vec![relational_identity])
             });
@@ -177,7 +178,7 @@ impl<Schema: ApplicationSchema> WorthQueryCertificationCostRuntimeExt<Schema>
         let relational = self
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_runtime(&execution, |runtime| {
                 runtime.observe_mvcc_cost(&execution, &scope.relational)
             })?;

@@ -4,7 +4,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryPrimaryGraphInstallationDenialKind,
 };
 use worth_execution::ExecutionRequest;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 mod source;
 pub(in crate::domain_computation::primary_graph) use source::BranchActivationSource;
@@ -53,7 +55,7 @@ pub(in crate::domain_computation::primary_graph) fn verify<Schema: ApplicationSc
         .activation()
         .published()
         .ok_or(Denial::SupportUnavailable)?;
-    let owner = &application.inner.runtime.product_runtime.owner_ref();
+    let owner = &application.inner.runtime.product_runtime_ref().owner_ref();
     let observation = owner.observation_port();
     let inventory = observation
         .observe_installed_product_branches(execution)
@@ -62,7 +64,7 @@ pub(in crate::domain_computation::primary_graph) fn verify<Schema: ApplicationSc
         .inspection_port()
         .observe_program_activation_history(execution)
         .map_err(Denial::Source)?;
-    let graph = &application.inner.runtime.primary_provider.graph;
+    let graph = &application.inner.runtime.primary_provider_ref().graph_ref();
     graph.with_runtime(execution, |native| {
         let source = BranchActivationSource::new(native, &graph.layout_ref(), published);
         for branch in inventory.branches() {

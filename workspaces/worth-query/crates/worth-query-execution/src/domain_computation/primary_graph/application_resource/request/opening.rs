@@ -2,6 +2,7 @@
 use super::super::stop::WorthQueryResourceActionDenial;
 use super::*;
 use crate::domain_computation::primary_graph::application_contribution::WorthQueryAdvancementDenial;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_, Schema> {
     pub(super) fn open<T>(
@@ -13,9 +14,9 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationResourcesRequest<'_, '_, '_
             .runtime
             .with_application_advancement(self.request, |phase| {
                 completed = Some(
-                    match phase
-                        .checked_execution_request_for(&self.runtime.inner.runtime.product_runtime)
-                    {
+                    match phase.checked_execution_request_for(
+                        self.runtime.inner.runtime.product_runtime_ref(),
+                    ) {
                         Ok(execution) => body(&execution),
                         Err(cause) => Err(ResourceCause::Advancement(cause)),
                     },

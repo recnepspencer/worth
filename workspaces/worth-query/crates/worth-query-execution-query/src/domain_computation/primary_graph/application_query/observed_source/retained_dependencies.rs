@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind;
 use crate::domain_computation::primary_graph::WorthQuerySelectedProductOperation;
 use worth_execution::ExecutionArray;
 use worth_execution::ExecutionArrayBuilder;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_contracts::facade::WorthQueryProgramPublicationAccess;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::SourceExpectationDenialInternalPort as _;
@@ -121,7 +122,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         self.application()
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .with_runtime(&execution, |relational| {
                 self.retain_original_dependencies(
                     &execution,

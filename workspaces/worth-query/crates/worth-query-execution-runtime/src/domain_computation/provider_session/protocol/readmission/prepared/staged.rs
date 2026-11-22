@@ -11,7 +11,7 @@ use super::super::super::{
 };
 use super::WorthQueryPreparedProviderSession;
 
-mod prepare_outcome;
+pub(crate) mod prepare_outcome;
 
 pub use prepare_outcome::WorthQuerySessionPrepareOutcome;
 

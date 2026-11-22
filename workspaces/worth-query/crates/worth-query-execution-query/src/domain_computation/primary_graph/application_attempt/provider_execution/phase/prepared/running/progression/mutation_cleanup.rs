@@ -4,6 +4,7 @@ use crate::domain_computation::{
     WorthQueryMutationRunBinding, WorthQueryProviderSessionBoundMutationRun,
     WorthQueryRunningDirectRun,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 
 /// Private cleanup owner for the managed mutation run.
 ///
@@ -26,7 +27,7 @@ impl WorthQueryApplicationMutationCleanupOwner {
         WorthQueryMutationGraphWorkCompletion,
         crate::domain_computation::WorthQueryMutationCleanupFailure,
     > {
-        let on_worker = provider.managed_cleanup_control.take();
+        let on_worker = provider.managed_cleanup_control_ref().take();
         match self {
             Self::Unbound(run) => run.finish(running, terminal, snapshot_release, on_worker),
             Self::ProviderBound(run) => run.finish(running, terminal, snapshot_release, on_worker),

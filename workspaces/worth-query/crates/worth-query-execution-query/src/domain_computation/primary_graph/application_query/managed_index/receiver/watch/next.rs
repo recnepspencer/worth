@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     application_query::derived_view::PredicateNoticeDisposition,
     live_delivery::WorthQueryLivePredicatePoll,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -42,7 +43,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             let Some(state) = watch.state.as_mut() else {
                 return Ok(WorthQueryManagedIndexWatchOutcome::Closed);
             };
-            let source = &self.runtime.primary_provider.live_delivery;
+            let source = &self.runtime.primary_provider.live_delivery_ref();
             if !source.admits_predicate_occurrence(
                 state.queue.subscription(),
                 context.selected.product().observation(),

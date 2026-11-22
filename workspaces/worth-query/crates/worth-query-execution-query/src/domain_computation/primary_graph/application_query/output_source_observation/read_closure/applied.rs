@@ -1,4 +1,5 @@
 //! A successful applied query read stays unpositioned until its actual publication.
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use crate::domain_computation::primary_graph::application_attempt::fact::source_read_authorization::applied_query::SourceReadAuthorizationAppliedQueryExt;
 use super::*;
 use crate::domain_computation::primary_graph::{
@@ -49,7 +50,7 @@ impl SourceQueryReadClosure {
             control: application
                 .runtime
                 .primary_provider
-                .application_attempt_operation_control
+                .application_attempt_operation_control_ref()
                 .clone(),
             facts: FactPayload::from(Arc::<[Fact]>::from(facts)),
             authority: SourceQueryReadAuthority::Applied(AppliedSourceQueryRead {

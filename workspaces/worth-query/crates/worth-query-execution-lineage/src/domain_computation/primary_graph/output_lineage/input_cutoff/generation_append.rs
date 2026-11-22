@@ -67,7 +67,7 @@ impl WorthQueryApplicationOutputLineage {
         })
     }
 
-    pub fn publish_stable_generation(
+    pub(crate) fn publish_stable_generation(
         &mut self,
         source: &SemanticSource,
         coordinate: ProductCoordinate,

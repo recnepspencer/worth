@@ -1,5 +1,6 @@
 //! Verify data at D while origin control remains at exact C.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 pub fn holds<S: ApplicationSchema>(
     application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
@@ -10,7 +11,7 @@ pub fn holds<S: ApplicationSchema>(
     facts: &FactPayload,
     family: &'static str,
 ) -> Result<bool, WorthQueryOutputDemandDenial> {
-    application.runtime.primary_provider.graph.with_runtime(execution, |runtime| {
+    application.runtime.primary_provider.graph_ref().with_runtime(execution, |runtime| {
         let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
             runtime, before.relational_basis(),
         ).map_err(|cause| WorthQueryOutputDemandDenial::new(

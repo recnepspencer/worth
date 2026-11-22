@@ -1,5 +1,6 @@
 //! One currentness owner verifies both sealed current routes and selected historical routes.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
@@ -10,7 +11,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         route: &worth_relational::facade::mvcc::RequiredOutputPublicationMeaning,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let runtime = self.application();
-        let graph = &runtime.runtime.primary_provider.graph;
+        let graph = &runtime.runtime.primary_provider.graph_ref();
         let read = lineage_read(|| {
             graph
                 .output_lineage_ref()
@@ -34,7 +35,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
         route: &worth_relational::facade::branch::RelationalOwnedModelPublishedRoute<'_>,
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let runtime = self.application();
-        let graph = &runtime.runtime.primary_provider.graph;
+        let graph = &runtime.runtime.primary_provider.graph_ref();
         let read = lineage_read(|| {
             graph
                 .output_lineage_ref()

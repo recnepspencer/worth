@@ -4,9 +4,11 @@ use crate::domain_computation::primary_graph::application_contribution::{
     ProducerOutputEvaluation, ProducerOutputEvaluationState,
 };
 use worth_execution::MapKernelContext;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_query::facade::ports::ApplicationQueryObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph::causal_inspection::application_inspection) fn require_compared(
     state: &ProducerOutputEvaluationState,
@@ -140,7 +142,12 @@ pub(super) fn evaluate<Schema: worth_query_installation::facade::ApplicationSche
 ) -> Result<WorthQueryApplicationProducerEvaluation, CaptureStop<ConnectionRefusal>> {
     evaluate_installed(
         InstalledEvaluationFields {
-            layout: &runtime.inner.runtime.primary_provider.graph.layout_ref(),
+            layout: &runtime
+                .inner
+                .runtime
+                .primary_provider_ref()
+                .graph_ref()
+                .layout_ref(),
             contracts: runtime.installed_schema().native_contracts(),
         },
         execution,

@@ -16,6 +16,8 @@ use worth_foundational::facade::{
     CanonicalDigestId, DurableCompositeCommitIdentity, DurableCompositePublicationAttemptIdentity,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -67,7 +69,12 @@ impl PreparedAdoptionPublication {
             .publication()
             .query_publication_home_binding(binding.observation())
             .map_err(Failure::Opening)?;
-        let graph = &selected.application().inner.runtime.primary_provider.graph;
+        let graph = &selected
+            .application()
+            .inner
+            .runtime
+            .primary_provider_ref()
+            .graph_ref();
         if home.is_none() {
             let candidate = graph
                 .with_runtime(execution, |native| {

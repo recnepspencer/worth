@@ -1,3 +1,4 @@
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod initial_read;
@@ -329,7 +330,7 @@ where
         )?;
         let buffer_capacity = request.controls.buffer_capacity();
         let queue = WorthQueryLiveCauseQueue::open(
-            &self.runtime.primary_provider.live_delivery,
+            &self.runtime.primary_provider.live_delivery_ref(),
             retained_product.observation(),
             buffer_capacity,
         )

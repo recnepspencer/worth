@@ -1,6 +1,8 @@
 use crate::equality_type_id::EqualityTypeId as TypeId;
 use std::sync::Arc;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::branch::{
@@ -138,8 +140,8 @@ impl WorthQuerySuspendedGeneratedOutput {
         runtime
             .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .output_lineage_ref()
             .lock()
             .expect("application output lineage lock is available")

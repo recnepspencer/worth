@@ -22,6 +22,7 @@ pub mod ports {
     pub use crate::domain_computation::primary_graph::application_resource::stop::{
         ResourceActionDenialInternalPort, ResourceRecoveryCloseStopInternalPort,
     };
+    pub use crate::domain_computation::primary_graph::application_runtime::runtime_core::internal_port::ApplicationRuntimeCoreInternalPort;
     pub use crate::domain_computation::primary_graph::causal_inspection::application_observation::declared_query::ApplicationQueryObservationInternalPort;
     pub use crate::domain_computation::primary_graph::conditional_operation::installation::clock_handle::ConditionalClockHandleInternalPort;
     pub use crate::domain_computation::primary_graph::conditional_operation::installation::denial::ConditionalRuntimeInstallationDenialInternalPort;

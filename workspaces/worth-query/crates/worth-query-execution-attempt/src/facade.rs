@@ -12,5 +12,10 @@ pub use crate::lineage_ports::{
     WorkflowRetentionStore,
 };
 pub mod ports {
+    pub use crate::domain_computation::primary_graph::application_attempt::workflow_transition_program::publication::internal_port::{
+        WorkflowConditionInternalPort, WorkflowOperationAuthorityInternalPort,
+        WorkflowOperationInternalPort,
+    };
+    pub use crate::domain_computation::primary_graph::provider::internal_port::PrimaryGraphProviderInternalPort;
     pub use crate::ports::*;
 }

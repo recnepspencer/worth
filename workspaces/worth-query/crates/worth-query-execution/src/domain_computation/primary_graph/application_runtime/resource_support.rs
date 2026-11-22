@@ -1,5 +1,6 @@
 //! resource support.
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
 where
@@ -11,7 +12,7 @@ where
     {
         self.inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .application_resource_support()
     }
 
@@ -21,7 +22,7 @@ where
 {
         self.inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .application_resource_support_ref()
     }
 

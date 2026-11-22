@@ -8,6 +8,7 @@ use crate::domain_computation::{
     },
     WorthQueryProductUnpublishedRecovery, WorthQueryProductUnpublishedRecoveryReleaseFailure,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 pub(super) struct NavigationCleanup<'runtime, S> {
@@ -133,7 +134,7 @@ impl<S: ApplicationSchema> NavigationCleanup<'_, S> {
     ) -> Result<usize, WorthQueryHistoryNavigationDenial> {
         use WorthQueryHistoryNavigationDenial as Denial;
         let _execution = phase
-            .checked_execution_request_for(&application.inner.runtime.product_runtime)
+            .checked_execution_request_for(application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         if let Some(fork) = self.fork.take()
             && let Err(fork) = fork.release(phase)
@@ -250,7 +251,9 @@ impl<S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'_, S> {
         let key = {
             let progress = self.attempt.progress.try_lock().map_err(|_| Denial::Busy)?;
             phase
-                .checked_execution_request_for(&progress.application.inner.runtime.product_runtime)
+                .checked_execution_request_for(
+                    progress.application.inner.runtime.product_runtime_ref(),
+                )
                 .map_err(Denial::Stopped)?;
             if matches!(progress.phase, NavigationPhase::Selected(_)) {
                 return Err(Denial::AlreadySelected);
@@ -276,7 +279,7 @@ impl<S: ApplicationSchema> WorthQueryDocumentHistoryNavigation<'_, S> {
             Err(std::sync::TryLockError::Poisoned(poison)) => poison.into_inner(),
         };
         let _execution = phase
-            .checked_execution_request_for(&progress.application.inner.runtime.product_runtime)
+            .checked_execution_request_for(progress.application.inner.runtime.product_runtime_ref())
             .map_err(WorthQueryHistoryNavigationDenial::Stopped)?;
         if matches!(progress.phase, NavigationPhase::Selected(_)) {
             return Err(WorthQueryHistoryNavigationDenial::AlreadySelected);

@@ -2,6 +2,7 @@
 use super::*;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 mod changed_fields;
@@ -144,7 +145,7 @@ impl WorthQueryPreparedCorrectionSource {
             .cloned()
             .ok_or(Denial::MissingTargetParent)?;
         let execution = phase
-            .execution_request_for(&target.application().inner.runtime.product_runtime)
+            .execution_request_for(target.application().inner.runtime.product_runtime_ref())
             .map_err(|_| Denial::ForeignPhase)?;
         let authored_identity = if lineage.role() == WorthQueryAftermathCausalRole::RecordedReverse
         {

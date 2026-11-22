@@ -145,8 +145,7 @@ impl DeclaredManagedIndexSelection {
                 // has the same meaning. A hash or a matching roster is not proof.
                 match (&self.dependencies.applied, &other.dependencies.applied) {
                     (None, None) => {}
-                    (Some(left), Some(right))
-                        if std::ptr::addr_eq(Arc::as_ptr(left), Arc::as_ptr(right)) => {}
+                    (Some(left), Some(right)) if Arc::ptr_eq(left, right) => {}
                     _ => return Ok(false),
                 }
             }
@@ -209,9 +208,7 @@ impl PartialEq for DeclaredManagedIndexSelection {
             && self.dependencies.maintained() == other.dependencies.maintained()
             && match (&self.dependencies.applied, &other.dependencies.applied) {
                 (None, None) => true,
-                (Some(left), Some(right)) => {
-                    std::ptr::addr_eq(Arc::as_ptr(left), Arc::as_ptr(right))
-                }
+                (Some(left), Some(right)) => Arc::ptr_eq(left, right),
                 _ => false,
             }
             && self.dependencies.identity == other.dependencies.identity

@@ -17,9 +17,11 @@ use crate::domain_computation::{
     WorthQueryProductUnpublishedApplication, WorthQueryProductUnpublishedRecovery,
 };
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -51,7 +53,7 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         publication: WorthQueryPreparedProductPublication,
     ) -> Result<(), WorthQueryHistoryNavigationDenial> {
         let execution = match phase
-            .checked_execution_request_for(&self.application.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
         {
             Ok(execution) => execution,
             Err(cause) => {
@@ -109,8 +111,8 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             self.application
                 .inner
                 .runtime
-                .primary_provider
-                .graph
+                .primary_provider_ref()
+                .graph_ref()
                 .output_lineage_ref()
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -169,13 +171,13 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
             self.application
                 .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .owner_ref()
                 .recovery_port(),
             self.application
                 .inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .unpublished_idempotency_disposition(),
         )
         .into_recovery()
@@ -191,13 +193,13 @@ impl<'runtime, S: ApplicationSchema> NavigationProgress<'runtime, S> {
         use WorthQueryHistoryNavigationDenial as Denial;
         let prepared = (|| {
             let execution = phase
-                .checked_execution_request_for(&self.application.inner.runtime.product_runtime)
+                .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
                 .map_err(Denial::Stopped)?;
             let product = self
                 .application
                 .inner
                 .runtime
-                .product_runtime
+                .product_runtime_ref()
                 .admit_product_occurrence(candidate.branch().occurrence())
                 .map_err(Denial::ProductAdmission)?;
             let selected = self
@@ -239,7 +241,7 @@ PublicationDenial::Stopped(cause) => Denial::Stopped(advancement_denial(cause)),
             }
         };
         let execution = match phase
-            .checked_execution_request_for(&self.application.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
         {
             Ok(execution) => execution,
             Err(cause) => {

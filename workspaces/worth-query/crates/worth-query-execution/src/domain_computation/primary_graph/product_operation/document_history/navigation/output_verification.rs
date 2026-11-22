@@ -4,7 +4,9 @@ use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementPhase, WorthQueryHistoryOutputQualificationDenial as Denial,
     WorthQueryPrimaryGraphApplicationRuntime, WorthQuerySelectedProductOperation,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_relational::facade::runtime::{RelationalHistoricalSelectionRead, RelationalRuntime};
@@ -33,15 +35,15 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
                 return Ok(false);
             }
             let execution = phase
-                .checked_execution_request_for(&self.inner.runtime.product_runtime)
+                .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
                 .map_err(|cause| control(WorthQueryHistoryNavigationDenial::Stopped(cause)))?;
             let selected = self.on_branch(crate::basis::WorthQueryProductBranch::from_occurrence(
                 authority.original().product_observation().lifecycle_incarnation(),
             )).select(phase).map_err(|cause| Denial::Original(crate::domain_computation::primary_graph::WorthQueryOriginalReadOutputDenial::Observation(cause)))?;
             self.inner
                 .runtime
-                .primary_provider
-                .graph
+                .primary_provider_ref()
+                .graph_ref()
                 .with_runtime(&execution, |native| {
                     let evidence = authority
                         .selected_output_read(&execution, native)

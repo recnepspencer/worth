@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationQueryBatchAdmission, WorthQueryApplicationQueryBatchResourceDenial,
 };
 use worth_query_execution_query::facade::ports::AdmittedQueryPlanInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::BatchAdmissionInternalPort as _;
 use worth_query_execution_query::facade::ports::ProductQueryControlsInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
@@ -66,7 +67,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         >,
         WorthQueryRetainedBatchQueryAdmissionDenial,
     > {
-        let request = match phase.execution_request_for(&self.application().inner.runtime.product_runtime) {
+        let request = match phase.execution_request_for(self.application().inner.runtime.product_runtime_ref()) {
             Ok(request) => request,
             Err(_) => return Err(WorthQueryRetainedBatchQueryAdmissionDenial::Admission(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenial::new(crate::domain_computation::primary_graph::WorthQueryApplicationQueryAdmissionDenialKind::Authorization(crate::domain_computation::authorization::WorthQueryOperationAuthorizationDenialKind::Refused(AuthorizationRefusal::ForeignPhase)), query.name()))),
         };
@@ -88,7 +89,7 @@ impl<'runtime, Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'ru
         let security = application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .security_observation_for(execution, self.product())
             .map_err(|stop| Admission(super::selection_denial(stop, query.name())))?;
         let planned_item = batch

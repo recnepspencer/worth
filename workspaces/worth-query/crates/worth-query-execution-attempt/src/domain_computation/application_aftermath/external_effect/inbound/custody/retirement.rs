@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHomeRetirementDenial as Denial, WorthQueryHomeRetirementOwner as Owner,
     WorthQueryOperationHomeRetirementProgress as Progress,
 };
+use worth_query_execution_runtime::facade::ports::ProductPublicationReceiptInternalPort as _;
 
 impl WorthQueryInboundCustody {
     pub fn terminal_sources_for_home_retirement(

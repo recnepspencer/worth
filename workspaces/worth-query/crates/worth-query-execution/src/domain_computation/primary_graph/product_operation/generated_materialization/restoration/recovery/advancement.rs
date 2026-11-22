@@ -1,6 +1,7 @@
 //! Admission and custody progression under one runtime-issued advancement.
 use super::super::WorthQueryRestoredGeneratedOutput;
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -21,7 +22,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         let result = self.with_application_advancement(request, |phase| {
             attempted = Some((|| {
                 let execution =
-                    match phase.execution_request_for(&self.inner.runtime.product_runtime) {
+                    match phase.execution_request_for(self.inner.runtime.product_runtime_ref()) {
                         Ok(execution) => execution,
                         Err(cause) => {
                             return Err(failure(

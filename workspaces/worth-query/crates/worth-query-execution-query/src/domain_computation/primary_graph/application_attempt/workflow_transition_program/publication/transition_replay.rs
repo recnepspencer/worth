@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyResolution, WorthQueryApplicationIdempotencyResolutionDenial,
     WorthQueryApplicationUncommitted, WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
@@ -314,7 +315,7 @@ impl<Schema, Operation, Input, Scope>
             runtime
                 .runtime
                 .primary_provider
-                .graph
+                .graph_ref()
                 .with_runtime(execution, |relational| {
                     super::project(
                         execution,

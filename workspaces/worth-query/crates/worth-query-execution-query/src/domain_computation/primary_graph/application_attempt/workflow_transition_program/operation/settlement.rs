@@ -1,5 +1,6 @@
 //! Settlement consumes a validated performed receipt, never a proposed input.
 use super::*;
+use worth_query_execution_attempt::facade::ports::WorkflowOperationInternalPort as _;
 use worth_query_execution_attempt::facade::ports::{
     CompleteReadSetInternalPort as _, EffectProgramInternalPort as _,
 };
@@ -100,7 +101,7 @@ where
     > {
         let receipt_identity = performed.identity();
         let local_origin =
-            self.required.local_action.is_some().then(|| {
+            self.required.local_action_ref().is_some().then(|| {
                 super::LocalActionSettlementProof::from_performed(&self.required, &performed)
             });
         let executor = crate::domain_computation::primary_graph::workflow::actor::record::WorkflowAdmittedActor::from_performed_receipt(&performed);

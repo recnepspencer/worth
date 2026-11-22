@@ -1,4 +1,5 @@
 use super::*;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program>
@@ -26,7 +27,7 @@ where
         SourceValue<Schema, Demand>: 'static,
         SourceQuery<Schema, Demand>: 'static,
     {
-        let phase_request = match phase.execution_request_for(&self.backing.runtime().inner.runtime.product_runtime) {
+        let phase_request = match phase.execution_request_for(self.backing.runtime().inner.runtime.product_runtime_ref()) {
             Ok(request) => request,
             Err(cause) => return Err(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial::new(crate::domain_computation::primary_graph::WorthQueryOutputDemandDenialKind::ExecutionRequest(cause.into()), "output-demand-phase")),
         };

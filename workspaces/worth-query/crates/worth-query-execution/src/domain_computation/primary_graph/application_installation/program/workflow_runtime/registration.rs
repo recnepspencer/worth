@@ -5,6 +5,7 @@ use super::{
     WorthQueryInstalledApplicationWorkflowSpec, WorthQueryProgramApplicationRuntime,
     WorthQueryWorkflowRuntimeBindingDenial,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
     pub(super) fn install_workflow_registration<Spec: ApplicationWorkflowSpec<Schema = Schema>>(
@@ -27,7 +28,7 @@ impl<Schema: ApplicationSchema, Program> WorthQueryProgramApplicationRuntime<Sch
         let coverage = runtime
             .inner
             .runtime
-            .workflow_coverage
+            .workflow_coverage_mut()
             .admit(workflow.adoption_coverage())
             .map_err(|_| WorthQueryWorkflowRuntimeBindingDenial::ConflictingVocabularyCoverage)?;
         signing.install();

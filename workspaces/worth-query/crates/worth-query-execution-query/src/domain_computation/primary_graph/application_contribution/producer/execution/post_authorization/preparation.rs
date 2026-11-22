@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationCommitOutcome;
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
@@ -340,7 +341,7 @@ where
                     .map_err(|_| denial(WorthQueryOutputDemandDenialKind::PublicationStale, "original producer occurrence unavailable")
                         .with_recovered_publication(receipt.clone())
                         .with_recovery_posture(crate::domain_computation::primary_graph::WorthQueryOutputDemandRecoveryPosture::Retryable))?;
-                let stable = runtime.runtime.primary_provider.graph.output_lineage_ref().lock()
+                let stable = runtime.runtime.primary_provider.graph_ref().output_lineage_ref().lock()
                     .unwrap_or_else(std::sync::PoisonError::into_inner)
                     .resolve_original_publication::<Operation<Schema, Binding>>(
                         &execution, &publication_scope, &current, idempotency, &receipt,

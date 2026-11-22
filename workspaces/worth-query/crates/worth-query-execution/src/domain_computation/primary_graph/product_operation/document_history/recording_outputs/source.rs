@@ -9,6 +9,7 @@ use worth_query_declaration::facade::application_program::ApplicationConnectionS
 use worth_query_declaration::facade::application_query::ApplicationQueryBinding;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 type Connection<S,R> = <<R as ApplicationOutputGraphShape<S>>::RootConnection as ApplicationConnectionShape<S>>::Binding;
@@ -79,7 +80,9 @@ impl WorthQueryHistoryRecordingOutputOrigin {
             return Err(mismatch());
         }
         let execution = phase
-            .checked_execution_request_for(&application.runtime().inner.runtime.product_runtime)
+            .checked_execution_request_for(
+                application.runtime().inner.runtime.product_runtime_ref(),
+            )
             .map_err(|cause| {
                 WorthQueryOutputDemandDenial::new(
                     WorthQueryOutputDemandDenialKind::ExecutionRequest(cause),

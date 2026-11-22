@@ -11,6 +11,7 @@ use crate::equality_type_id::EqualityTypeId as TypeId;
 use worth_query_declaration::facade::application_program::{
     ApplicationProgramDefinition, ApplicationProgramOutputsShape, ValidatedApplicationProgram,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::{
     install_rostered_application_program, WorthQueryInstalledApplicationProgram,
@@ -113,7 +114,12 @@ where
             );
         }
     }
-    if !runtime.inner.runtime.product_runtime.is_directory_home() {
+    if !runtime
+        .inner
+        .runtime
+        .product_runtime_ref()
+        .is_directory_home()
+    {
         retain_on_refusal!(super::conditional::validate_conditional_actions(
             installed.actions(),
             runtime.inner.installed_conditionals.operation_types()

@@ -1,4 +1,5 @@
 use std::marker::PhantomData;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryClockCoordinate};
 
@@ -295,7 +296,7 @@ where
                 let granular_invalidation_installation =
                     self.runtime.granular_invalidation_installation();
                 let granular_source_read_basis = self.truth.granular_source_read_basis();
-                let bridge_root = self.runtime.inner.runtime.bridge.conditional_operations();
+                let bridge_root = self.runtime.inner.runtime.bridge_ref().conditional_operations();
                 let bridge = bridge_root
                     .read()
                     .unwrap_or_else(std::sync::PoisonError::into_inner);

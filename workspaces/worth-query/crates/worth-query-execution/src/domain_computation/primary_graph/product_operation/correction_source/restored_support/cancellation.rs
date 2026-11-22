@@ -9,6 +9,7 @@ use crate::domain_computation::primary_graph::provider::{
 };
 use std::sync::Arc;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -25,7 +26,7 @@ pub(super) fn require<Schema: ApplicationSchema>(
     execution: ExecutionRequest<'_, '_>,
     occurrences: &Occurrences,
 ) -> Result<(), Denial> {
-    let provider = &target.application().inner.runtime.primary_provider;
+    let provider = &target.application().inner.runtime.primary_provider_ref();
     let mut witnesses = Witnesses::default();
     let mut covered = ExecutionOrderedMap::<CommitId, ()>::default();
     super::admit_work(execution, occurrences.len() as u64).map_err(Denial::RestoredSupport)?;
@@ -123,7 +124,7 @@ fn require_pair<Schema: ApplicationSchema>(
     if !application
         .inner
         .runtime
-        .primary_provider
+        .primary_provider_ref()
         .validate_correction_witness(execution, target.product().relational_basis(), sealed)
         .map_err(witness_denial)?
     {
@@ -135,7 +136,7 @@ fn require_pair<Schema: ApplicationSchema>(
         let ancestor = application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .owner_ref()
             .observation_port()
             .select_retained_product_branch_ancestor(

@@ -5,6 +5,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationIdempotencyBinding, WorthQueryApplicationIdempotencyResolution,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
@@ -30,7 +31,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     .recorded_claim_state(
                         self.runtime
                             .primary_provider
-                            .graph
+                            .graph_ref()
                             .relational_runtime_instance_id(),
                         original.new_product_head(),
                     )

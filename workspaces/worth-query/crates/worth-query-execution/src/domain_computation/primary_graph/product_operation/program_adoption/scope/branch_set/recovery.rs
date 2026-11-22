@@ -1,6 +1,7 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use crate::domain_computation::execution_runtime::product_world::OwnerCleanupRetirements;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 use worth_runtime_world::facade::NoEffectCompositePublication;
@@ -268,19 +269,20 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         WorthQueryBranchSetAdoptionRecoveryOutcome,
         WorthQueryBranchSetAdoptionRecoveryFailure,
     > {
-        let phase_request = match phase.execution_request_for(&self.inner.runtime.product_runtime) {
-            Ok(request) => request,
-            Err(_) => {
-                return Err(
-                    WorthQueryBranchSetAdoptionRecoveryFailure::ProductSelection {
-                        denial: WorthQueryProductBranchAdmissionDenial::Refused(
-                            AdmissionRefusal::ForeignPhase,
-                        ),
-                        recovery,
-                    },
-                )
-            }
-        };
+        let phase_request =
+            match phase.execution_request_for(self.inner.runtime.product_runtime_ref()) {
+                Ok(request) => request,
+                Err(_) => {
+                    return Err(
+                        WorthQueryBranchSetAdoptionRecoveryFailure::ProductSelection {
+                            denial: WorthQueryProductBranchAdmissionDenial::Refused(
+                                AdmissionRefusal::ForeignPhase,
+                            ),
+                            recovery,
+                        },
+                    )
+                }
+            };
         let execution = &phase_request;
         let (branch, mut adoption, recovery) = recovery.into_parts();
         let selected = match self.on_branch(branch).select_with_request(execution) {

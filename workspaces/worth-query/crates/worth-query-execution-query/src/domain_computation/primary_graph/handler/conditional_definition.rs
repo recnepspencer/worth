@@ -76,7 +76,7 @@ impl<Schema: ApplicationSchema, Binding: ApplicationMutationBinding<Schema>>
             })
             .ok_or_else(|| {
                 HandlerExecutionDenial::new(AdmissionDenial::ConditionalBindingUnavailable {
-                    identity: std::any::type_name::<Conditional>(),
+                    identity: "uninstalled-conditional-binding",
                 })
             })?;
         let port = context

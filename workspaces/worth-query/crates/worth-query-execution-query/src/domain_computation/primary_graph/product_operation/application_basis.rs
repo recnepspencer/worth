@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     application_query::resource_lifecycle::WorthQueryApplicationBasisLease,
     WorthQueryPrimaryGraphApplicationRuntime,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 use worth_runtime_world::facade::ProductBranchObservation;
 
@@ -25,7 +26,7 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
             .register(
                 execution,
                 observation.basis().relational_basis().clone(),
-                self.runtime.primary_provider.graph.clone(),
+                self.runtime.primary_provider.graph_ref().clone(),
             )
             .map_err(map_registration_denial)?;
         lease.bind_product_observation(observation);

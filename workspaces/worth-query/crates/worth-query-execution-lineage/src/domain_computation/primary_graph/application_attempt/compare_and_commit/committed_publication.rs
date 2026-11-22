@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_query_execution_runtime::facade::ports::ProductPublicationReceiptInternalPort as _;
 
 use worth_relational::facade::history::RelationalCommitReceipt;
 use worth_runtime_world::facade::{

@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::ConditionalRuntimeInstallationDenialInternalPort as _;
 
 use worth_query_installation::facade::{
@@ -135,7 +136,7 @@ where
         let mut bridge_candidate = self
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .memory()
             .and_then(|owner| owner.prepare_conditional_reconstitution(truth.signal_basis()))
@@ -168,7 +169,7 @@ where
         let lower_runtime_reconstitution = self
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional_lifecycle()
             .and_then(|mut owner| owner.activate_conditional_reconstitution(bridge_candidate))
             .map_err(|denial| {
@@ -182,7 +183,7 @@ where
         registry.apply_derived_runtime_reinstallation(prepared);
         self.inner
             .runtime
-            .granular_invalidation
+            .granular_invalidation_ref()
             .advance_runtime_generation();
         let work = registry.reconstruction_work();
         Ok(WorthQueryConditionalRuntimeReinstallationReceipt {
@@ -193,7 +194,11 @@ where
             projected_record_count: work.projected_records,
             projected_field_count: work.projected_fields,
             total_work_units: work.total_work_units,
-            successor_invalidation_installation: self.inner.runtime.granular_invalidation.current(),
+            successor_invalidation_installation: self
+                .inner
+                .runtime
+                .granular_invalidation_ref()
+                .current(),
         })
     }
 }

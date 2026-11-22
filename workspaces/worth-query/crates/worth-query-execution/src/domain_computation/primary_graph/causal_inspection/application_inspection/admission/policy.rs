@@ -18,6 +18,7 @@ use worth_query_declaration::facade::application_query::{
     ApplicationQueryScopeBinding,
 };
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryInstalledApplicationQueryBinding,
@@ -108,7 +109,7 @@ where
                     execution,
                     relational,
                     snapshot,
-                    runtime.inner.runtime.authorization.bridge(),
+                    runtime.inner.runtime.authorization_ref().bridge(),
                 )
                 .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
             if let Some(capability) = metadata.authorization_mut() {
@@ -117,7 +118,7 @@ where
                         execution,
                         relational,
                         snapshot,
-                        runtime.inner.runtime.authorization.bridge(),
+                        runtime.inner.runtime.authorization_ref().bridge(),
                     )
                     .map_err(InspectionAdmissionDenial::CurrentAuthorization)?;
             }
@@ -179,7 +180,7 @@ where
                                 execution,
                                 relational,
                                 security.snapshot_handle(),
-                                runtime.inner.runtime.authorization.bridge(),
+                                runtime.inner.runtime.authorization_ref().bridge(),
                             )
                             .map_err(InspectionAdmissionDenial::CurrentAuthorization)
                     })?;

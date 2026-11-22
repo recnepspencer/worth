@@ -1,5 +1,7 @@
 //! Original tree evidence is retained separately from collection qualification.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::CompletedOriginalReadOutputsInternalPort as _;
 mod verified;
 use crate::domain_computation::primary_graph::{
@@ -54,7 +56,7 @@ impl<S: ApplicationSchema + 'static, P: ApplicationProgramDefinition<S>>
         self.validate_selected_output_root::<R>(phase, access, &source.source)
             .map_err(Original::Program)?;
         let execution = phase
-            .checked_execution_request_for(&self.runtime().inner.runtime.product_runtime)
+            .checked_execution_request_for(self.runtime().inner.runtime.product_runtime_ref())
             .map_err(stopped)?;
         let original = OriginalOutputTree::retain(
             &execution,
@@ -104,7 +106,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(foreign());
         }
         let execution = phase
-            .checked_execution_request_for(&self.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(stopped)?;
         if trees.is_empty() {
             return Err(ReadDenial::Incomplete {
@@ -171,8 +173,8 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
     ) -> Result<(), ReadDenial> {
         self.inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(execution, |native| {
                 let evidence = authority
                     .selected_output_read(execution, native)

@@ -20,6 +20,7 @@ use worth_query_declaration::facade::{
     application_schema::ApplicationSchema,
 };
 use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::CompletedRequiredOutputsInternalPort as _;
 use worth_query_execution_runtime::facade::ports::{
     ProductBranchInternalPort as _, ProductBranchLeaseInternalPort as _,
@@ -55,7 +56,7 @@ impl<'runtime, S: ApplicationSchema, H: ApplicationHistoryBinding<S>>
         _access: &WorthQueryProgramPublicationAccess,
     ) -> Result<(), Denial> {
         let execution = phase
-            .checked_execution_request_for(&self.application().inner.runtime.product_runtime)
+            .checked_execution_request_for(self.application().inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         execution.check_live().map_err(|stop| {
             Denial::Stopped(

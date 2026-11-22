@@ -14,11 +14,11 @@ pub enum CompiledWorkflowConditionExpression {
 /// published result supplies the value.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorkflowConditionOperand {
-    pub name: String,
-    pub query: String,
-    pub parameter_type: String,
-    pub result_type: String,
-    pub binding: String,
+    pub(crate) name: String,
+    pub(crate) query: String,
+    pub(crate) parameter_type: String,
+    pub(crate) result_type: String,
+    pub(crate) binding: String,
 }
 
 impl WorkflowConditionOperand {

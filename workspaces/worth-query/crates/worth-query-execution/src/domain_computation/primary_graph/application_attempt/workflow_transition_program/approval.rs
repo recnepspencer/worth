@@ -2,6 +2,7 @@
 use super::*;
 use worth_query_execution_attempt::facade::ports::CompleteReadSetWorkflowInternalPort as _;
 use worth_query_execution_attempt::facade::ports::ProjectedReadSetInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
 impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
@@ -95,7 +96,7 @@ impl<Schema: ApplicationSchema> WorthQuerySelectedProductOperation<'_, Schema> {
                 required,
                 proposal,
                 decision,
-                &self.application().inner.runtime.authorization_clock,
+                &self.application().inner.runtime.authorization_clock_ref(),
             )
             .map_err(WorkflowTransitionPreparationDenial::Attempt)
     }

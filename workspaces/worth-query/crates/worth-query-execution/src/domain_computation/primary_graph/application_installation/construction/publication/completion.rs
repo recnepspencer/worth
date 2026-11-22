@@ -1,6 +1,8 @@
 //! Finalize lineage and recovery only after service publication has returned.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 #[inline(never)]
 pub(super) fn complete<S: ApplicationSchemaComposition>(
@@ -28,8 +30,8 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
     application
         .inner
         .runtime
-        .primary_provider
-        .graph
+        .primary_provider_ref()
+        .graph_ref()
         .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -38,7 +40,7 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
         application
             .inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .activations_ref()
             .require_program_coordination();
         application.inner.program_support = Some(
@@ -55,7 +57,7 @@ pub(super) fn complete<S: ApplicationSchemaComposition>(
         application
             .restore_interim_registry(origin, interim_continuation.as_ref(), &execution)
             .map_err(Denial::Graph)?;
-        application.inner.runtime.recovered_outputs =
+        *application.inner.runtime.recovered_outputs_mut() =
             crate::domain_computation::primary_graph::application_output_demand::WorthQueryRecoveredOutputs::from_checkpoint(
                 checkpoint,
                 &execution,

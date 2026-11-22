@@ -84,7 +84,7 @@ fn finish_application_commit_with_delivery<Schema: ApplicationSchema>(
             let mut retained = original_completion.cleanup_envelope().fill(
                 evidence,
                 failure,
-                application.runtime.product_runtime.0.clone(),
+                application.runtime.product_runtime.clone(),
                 original,
                 Box::new(application.runtime.bridge.conditional_operations()),
             );

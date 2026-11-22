@@ -16,8 +16,9 @@ use worth_runtime_world::facade::{
 
 use super::WorthQueryProductRuntime;
 pub use follower::WorthQueryProductRetentionFollower;
+pub(super) use registry::CleanupScope;
+pub use registry::WorthQueryProductBranchOwnerCleanupRegistry;
 pub use registry::WorthQueryProductBranchOwnerCleanupReservation;
-pub(super) use registry::{CleanupScope, WorthQueryProductBranchOwnerCleanupRegistry};
 
 #[derive(Clone)]
 pub struct WorthQueryRetiredProductOccurrence {

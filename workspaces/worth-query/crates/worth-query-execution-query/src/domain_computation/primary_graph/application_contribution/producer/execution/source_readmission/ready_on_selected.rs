@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::product_operation::SelectedQueryBa
 use crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation;
 use crate::domain_computation::primary_graph::OutputDemandSettlementCurrentExt;
 use worth_query_declaration::facade::application_schema::ApplicationStructuredValueBinding;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ObservedSourceInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -146,7 +147,7 @@ where
                 else {
                     return on_disclosure(permission, None);
                 };
-                let handle = &runtime.runtime.primary_provider.graph;
+                let handle = &runtime.runtime.primary_provider.graph_ref();
                 let current = handle
                     .with_runtime(execution, |relational| {
                         candidate.certify_current(execution,

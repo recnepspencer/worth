@@ -1,5 +1,6 @@
 //! Stable publication occurs only when the canonical owner cursor applies it.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 
@@ -17,7 +18,7 @@ where
     Binding: WorthQueryApplicationProducerBinding<Schema>,
 {
     let scope = operation.operation_scope_binding();
-    let handle = &runtime.runtime.primary_provider.graph;
+    let handle = &runtime.runtime.primary_provider.graph_ref();
     let source_owner = &handle.source_owner_ref().invalidation_owner;
     let lane = runtime
         .runtime

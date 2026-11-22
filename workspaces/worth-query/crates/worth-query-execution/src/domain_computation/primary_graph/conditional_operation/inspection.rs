@@ -1,3 +1,4 @@
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
 
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
@@ -134,7 +135,7 @@ where
         let bridge = self
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .conditional_lifecycle_probe();
         WorthQueryConditionalRuntimeInspection::from_live_resources(
@@ -157,7 +158,7 @@ where
         let bridge = self
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .conditional()
             .conditional_lifecycle_probe();
         let registry = self

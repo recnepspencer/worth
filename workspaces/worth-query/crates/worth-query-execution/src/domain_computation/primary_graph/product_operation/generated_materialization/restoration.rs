@@ -1,4 +1,5 @@
 use worth_query_execution_lineage::facade::ports::ProductUnpublishedApplicationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductPublicationBindingInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
@@ -154,7 +155,7 @@ where
     ) -> WorthQueryProductPublicationBinding {
         self.inner
             .runtime
-            .product_runtime
+            .product_runtime_ref()
             .publication_binding(observation)
     }
 
@@ -176,7 +177,7 @@ where
             publication.recovery(),
             self.inner
                 .runtime
-                .primary_provider
+                .primary_provider_ref()
                 .unpublished_idempotency_disposition(),
         )
     }

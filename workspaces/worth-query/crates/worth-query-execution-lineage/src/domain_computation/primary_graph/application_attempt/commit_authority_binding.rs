@@ -209,7 +209,7 @@ impl PartialEq for WorthQueryApplicationCommitAuthorityBinding {
             && self.retained_governed_input == other.retained_governed_input
             && match (&self.original_program, &other.original_program) {
                 (None, None) => true,
-                (Some(a), Some(b)) => std::ptr::addr_eq(Arc::as_ptr(a), Arc::as_ptr(b)),
+                (Some(a), Some(b)) => Arc::ptr_eq(a, b),
                 _ => false,
             }
             && self.original_inspection_disclosure == other.original_inspection_disclosure

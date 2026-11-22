@@ -10,6 +10,7 @@ use worth_query_declaration::facade::{
     application_query::ApplicationQueryBinding,
     application_schema::ApplicationStructuredValueBinding,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding;
 
 type Rows<S, B> =
@@ -83,7 +84,7 @@ impl<S: ApplicationSchema>
             ));
         }
         let execution = phase
-            .checked_execution_request_for(&self.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(|cause| {
                 Denial::Authority(WorthQueryHistoryNavigationDenial::Stopped(cause))
             })?;

@@ -123,3 +123,36 @@
 //!     let _ = unpublished.prepare_settled_relational_adoption(cancellation, None);
 //! }
 //! ```
+//!
+//! Runtime wrappers do not expose transparent `Deref` to lower runtime crates,
+//! and sibling-crate provider-session modules/ports are absent from Host:
+//!
+//! ```compile_fail,E0277
+//! use std::ops::Deref;
+//! use worth_query_host::facade::runtime::WorthQueryExecutionRuntime;
+//! fn require_deref<T: Deref>(_: &T) {}
+//! fn no_runtime_deref(runtime: &WorthQueryExecutionRuntime) {
+//!     require_deref(runtime);
+//! }
+//! ```
+//!
+//! ```compile_fail,E0277
+//! use std::ops::Deref;
+//! use worth_query_host::facade::runtime::WorthQueryExecutionInstallationAuthority;
+//! fn require_deref<T: Deref>(_: &T) {}
+//! fn no_authority_deref(authority: &WorthQueryExecutionInstallationAuthority) {
+//!     require_deref(authority);
+//! }
+//! ```
+//!
+//! ```compile_fail,E0432
+//! use worth_query_host::facade::installed::provider_session::graph_obligation;
+//! ```
+//!
+//! ```compile_fail,E0432
+//! use worth_query_host::facade::installed::provider_session::protocol;
+//! ```
+//!
+//! ```compile_fail,E0432
+//! use worth_query_host::facade::installed::domain_computation::WorthQueryApplicationOperationBindingInput;
+//! ```

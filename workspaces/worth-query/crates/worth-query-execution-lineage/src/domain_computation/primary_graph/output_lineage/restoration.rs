@@ -63,7 +63,7 @@ impl WorthQueryApplicationOutputLineage {
     }
 
     #[allow(clippy::too_many_arguments)]
-    pub fn record_restoration(
+    pub(crate) fn record_restoration(
         &mut self,
         output_binding: TypeId,
         runtime_authority: u64,

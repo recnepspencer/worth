@@ -25,7 +25,7 @@ impl WorthQueryManagedGraphWorkSession {
             || current.product().observation().lifecycle_incarnation()
                 != expected.observation().lifecycle_incarnation()
             || !self.branch.admits_snapshot(current.snapshot())
-            || !basis.admits_replacement_authorization(&self.authorization_branch, &current)
+            || !basis.admits_replacement_authorization(&self.authorization_branch, current.as_ref())
         {
             return Err(current);
         }

@@ -1,5 +1,6 @@
 use crate::basis::WorthQueryProductBranchAdmissionRefusalKind as AdmissionRefusal;
 use worth_query_declaration::facade::application_program::ApplicationProgramDefinition;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::ApplicationSchema;
@@ -117,7 +118,7 @@ impl WorthQueryApplicationPreviewSession {
         Program: ApplicationProgramDefinition<Schema>,
     {
         let execution = phase
-            .execution_request_for(&runtime.runtime().inner.runtime.product_runtime)
+            .execution_request_for(runtime.runtime().inner.runtime.product_runtime_ref())
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
         if runtime
             .runtime()
@@ -202,7 +203,7 @@ where
     ) -> Result<WorthQueryApplicationPreviewSession, WorthQueryApplicationPreviewReadmissionDenial>
     {
         let phase_request = phase
-            .execution_request_for(&self.runtime().inner.runtime.product_runtime)
+            .execution_request_for(self.runtime().inner.runtime.product_runtime_ref())
             .map_err(|_| WorthQueryApplicationPreviewReadmissionDenial::ForeignPhase)?;
         let execution = &phase_request;
         let selected = self
@@ -249,7 +250,7 @@ where
             .runtime()
             .inner
             .runtime
-            .bridge
+            .bridge_ref()
             .ordinary()
             .speculate(BridgeSpeculativeSessionRequest::new(
                 BridgePreviewSessionIdentity::from_stable_name(format!("{identity}:session")),

@@ -1,7 +1,9 @@
 //! Healthy owned publications need no source disclosure or original SDK tree.
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryAdvancementPhase;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::HistoryPreviewInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -89,15 +91,15 @@ impl<S: ApplicationSchema> NavigationProgress<'_, S> {
             };
         }
         let execution = phase
-            .checked_execution_request_for(&self.application.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.application.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let historical = self.source.as_ref().ok_or(Denial::IntentDrift)?;
         let current = self
             .application
             .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(&execution, |native| {
                 let evidence = restored
                     .native(&execution, native)

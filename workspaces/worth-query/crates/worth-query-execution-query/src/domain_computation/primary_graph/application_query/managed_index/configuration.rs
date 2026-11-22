@@ -56,11 +56,29 @@ impl<S> Clone for ManagedIndexProviderCatalog<S> {
     }
 }
 
+#[doc(hidden)]
+pub struct ConfiguredManagedIndexInstanceForTest<S>(std::sync::Weak<dyn ErasedIndexExecutor<S>>);
+
+impl<S> PartialEq for ConfiguredManagedIndexInstanceForTest<S> {
+    fn eq(&self, other: &Self) -> bool {
+        std::sync::Weak::ptr_eq(&self.0, &other.0)
+    }
+}
+
+impl<S> Eq for ConfiguredManagedIndexInstanceForTest<S> {}
+
+impl<S> std::fmt::Debug for ConfiguredManagedIndexInstanceForTest<S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConfiguredManagedIndexInstanceForTest")
+            .finish_non_exhaustive()
+    }
+}
+
 impl<S: ApplicationSchema> ManagedIndexProviderCatalog<S> {
     #[doc(hidden)]
-    pub fn configured_instances_for_test(&self) -> Vec<*const ()> {
+    pub fn configured_instances_for_test(&self) -> Vec<ConfiguredManagedIndexInstanceForTest<S>> {
         self.in_registration_order()
-            .map(|entry| Arc::as_ptr(&entry.executor).cast::<()>())
+            .map(|entry| ConfiguredManagedIndexInstanceForTest(Arc::downgrade(&entry.executor)))
             .collect()
     }
 

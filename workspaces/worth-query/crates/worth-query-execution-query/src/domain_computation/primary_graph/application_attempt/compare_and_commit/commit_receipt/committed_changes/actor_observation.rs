@@ -1,5 +1,6 @@
 //! Runtime port implementation for closed certification inspection of committed actor evidence.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::CommittedProductPublicationInternalPort as _;
 
 impl<Schema: worth_query_installation::facade::ApplicationSchema>
@@ -38,7 +39,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
                 "committed approval request field is missing or not a Symbol",
             ));
         };
-        self.runtime.primary_provider.graph.with_runtime(execution, |native| {
+        self.runtime.primary_provider.graph_ref().with_runtime(execution, |native| {
             use worth_relational::facade::runtime::RelationalPinnedReadAdmissionDenial as PinStop;
             if native.runtime_instance_id() != receipt.provider_runtime_instance_id() {
                 return Err(invalid(

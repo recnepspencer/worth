@@ -1,6 +1,9 @@
 //! Fresh session admission of the primary owner's completed original prefix.
 use std::sync::Arc;
-use worth_query_execution_runtime::facade::ports::PrimaryReadCustody;
+use worth_query_execution_runtime::facade::ports::{
+    DecisionReadSetReceiptInternalPort as _, FreshDecisionReadSetInternalPort as _,
+    PrimaryReadCustody,
+};
 use worth_query_execution_runtime::facade::provider_session::{
     WorthQueryCompleteDecisionReadSetReceipt, WorthQueryDecisionReadSetDenialKind,
     WorthQueryDecisionReadSetFailure, WorthQueryDecisionReadSetFreshnessOutcome,
@@ -82,8 +85,7 @@ fn capture_primary_full(
         control.policy(),
         control.request(),
     )?;
-    receipt._primary_custody = Some(Arc::new(read));
-    receipt._primary_memory = memory;
+    receipt.attach_primary_full(Arc::new(read), memory);
     Ok(receipt)
 }
 
@@ -113,14 +115,11 @@ impl PrimaryReadSetCaptureExt for WorthQuerySessionReadAuthority<'_> {
             control.policy(),
             control.request(),
         )?;
-        receipt.counters.requested_facts = receipt
-            .counters
-            .requested_facts
-            .checked_add(table.grouped_count())
-            .ok_or_else(|| denial(WorthQueryDecisionReadSetDenialKind::FactCountOverflow))?;
+        let grouped_count = table.grouped_count();
         let shared: Arc<dyn PrimaryReadCustody> = Arc::new(read);
-        receipt._primary_custody = Some(Arc::clone(&shared));
-        receipt.primary = Some(shared);
+        receipt
+            .attach_primary_prefix(grouped_count, shared)
+            .map_err(|()| denial(WorthQueryDecisionReadSetDenialKind::FactCountOverflow))?;
         Ok(receipt)
     }
 
@@ -132,9 +131,9 @@ impl PrimaryReadSetCaptureExt for WorthQuerySessionReadAuthority<'_> {
         control: StorageControl<'_, '_>,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
         self.validate_decision_read_set_receipt(&receipt)?;
-        let binding = receipt._primary_custody.as_ref().map(downcast_read);
+        let binding = receipt.primary_custody().map(downcast_read);
         comparison.validate_registration(self.session(), binding.as_ref(), control)?;
-        let primary = receipt.primary.take();
+        let primary = receipt.take_primary();
         let primary_read = primary.as_ref().map(downcast_read);
         if let Some(table) = &primary_read
             && !comparison.closes_original(execution, self.session(), table, control)?
@@ -157,7 +156,7 @@ impl PrimaryReadSetCaptureExt for WorthQuerySessionReadAuthority<'_> {
                     WorthQueryDecisionReadSetDenialKind::EvidenceSubstitution,
                 ));
             }
-            fresh.receipt.primary = primary;
+            fresh.set_primary(primary);
         }
         comparison.validate_registration(self.session(), binding.as_ref(), control)?;
         Ok(outcome)
@@ -170,8 +169,8 @@ impl PrimaryReadSetCaptureExt for WorthQuerySessionReadAuthority<'_> {
         comparison: &mut PrimaryDecisionReadSetComparison<'_>,
         control: StorageControl<'_, '_>,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
-        if fresh.receipt.primary.is_none() {
-            let binding = fresh.receipt._primary_custody.as_ref().map(downcast_read);
+        if !fresh.has_primary() {
+            let binding = fresh.primary_custody().map(downcast_read);
             comparison.validate_registration(self.session(), binding.as_ref(), control)?;
             let outcome =
                 self.recompare_fresh_decision_read_set_with(fresh, |evidence, admission| {
@@ -180,7 +179,7 @@ impl PrimaryReadSetCaptureExt for WorthQuerySessionReadAuthority<'_> {
             comparison.validate_registration(self.session(), binding.as_ref(), control)?;
             Ok(outcome)
         } else {
-            self.compare_primary_read_set(execution, fresh.receipt, comparison, control)
+            self.compare_primary_read_set(execution, fresh.into_receipt(), comparison, control)
         }
     }
 }

@@ -1,4 +1,5 @@
 //! Principal-first capability admission, before any workflow existence lookup.
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use crate::domain_computation::authorization::operation_admission::capability_admission::preparation::observation::admitted_access::AdmittedCapabilityAccessRuntimeExt as _;
 use crate::domain_computation::authorization::WorthQueryAdmittedApplicationCapabilityAccess;
@@ -43,7 +44,7 @@ where
         return Err(Denial::PolicyMismatch);
     }
     let execution = phase
-        .execution_request_for(&selected.application().inner.runtime.product_runtime)
+        .execution_request_for(selected.application().inner.runtime.product_runtime_ref())
         .map_err(Denial::Phase)?;
     // The selected native principal owner prepares only its installed identity index.
     let principal = selected

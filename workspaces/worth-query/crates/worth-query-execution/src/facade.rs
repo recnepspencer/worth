@@ -76,26 +76,7 @@ pub mod resource_custody {
     };
 }
 
-pub mod domain_computation {
-    pub use super::primary_graph::*;
-    pub use crate::domain_computation::artifact_owner::*;
-    pub use crate::domain_computation::convergence_epoch::*;
-    pub use crate::domain_computation::execution_runtime::{
-        WorthQueryApplicationQueryResourceProfile, WorthQueryBranchCoordinationResourceProfile,
-        WorthQueryExecutionInstallationAuthority, WorthQueryExecutionInstallationCommitDenial,
-        WorthQueryExecutionRuntime, WorthQueryExecutionRuntimeInstallation,
-        WorthQueryExecutionRuntimeInstaller, WorthQueryInvalidationResources,
-        WorthQueryOutputDemandLimits, WorthQueryOutputDemandResourceProfile,
-        WorthQueryRuntimeAuthorityIdentity,
-    };
-    pub use crate::domain_computation::managed_run::*;
-    pub use crate::domain_computation::operation_binding::*;
-    pub use crate::domain_computation::provider_session::*;
-    pub use crate::domain_computation::{
-        canonical_indexed_operation_material, canonical_operation_material,
-        WorthQueryConvergenceDomainEvidenceBindingDenial,
-    };
-}
+pub mod domain_computation;
 
 /// The execution runtime: product world and branch setup, performed-change
 /// delivery, direct and workflow runs with their cleanup, and Runtime World
@@ -177,18 +158,14 @@ pub mod application_installation;
 pub mod application_invariants;
 pub mod product;
 
-pub mod provider_session {
-    pub use crate::domain_computation::provider_session::*;
-}
+pub mod provider_session;
 
 pub mod primary_graph;
 
 /// Convergence epochs: bounded iteration of a run toward a stable result, with
 /// domain providers that compare, measure progress, and detect repeated
 /// states, plus terminal reports.
-pub mod convergence_epoch {
-    pub use crate::domain_computation::convergence_epoch::*;
-}
+pub mod convergence_epoch;
 
 /// The installed-runtime surface in one place: `runtime`, `domain_computation`,
 /// `provider_session`, and `convergence_epoch`.

@@ -3,6 +3,7 @@ use super::*;
 use crate::domain_computation::primary_graph::bootstrap::{
     BootstrapPublicationReservation, BootstrapPublicationStorage,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 pub(super) struct PublishedNativeGraph {
@@ -121,11 +122,11 @@ pub(super) fn install_bridge<S: ApplicationSchema>(
     );
     primary_provider.install_managed_views_execution(
         crate::domain_computation::primary_graph::lineage_ports::downcast_managed_views_arc(
-            std::sync::Arc::clone(&primary_provider.graph.managed_derived_views()),
+            std::sync::Arc::clone(&primary_provider.graph_ref().managed_derived_views()),
         ),
     );
     primary_provider
-        .graph
+        .graph_ref()
         .output_lineage_ref()
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -135,7 +136,7 @@ pub(super) fn install_bridge<S: ApplicationSchema>(
                 .map(|binding| (TypeId::from(binding.binding_type()), binding.identity())),
         );
     let primary_graph_authority = super::super::graph_participation::install(
-        &authority,
+        authority.inner_ref(),
         truth_partition_role,
         provider_anchor,
     )?;

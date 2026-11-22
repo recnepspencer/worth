@@ -10,6 +10,7 @@ use crate::domain_computation::primary_graph::{
     application_query::AppliedQuerySource,
     WorthQueryApplicationObservedFact as Fact,
 };
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::{
@@ -100,7 +101,7 @@ impl<S: ApplicationSchema + 'static> WorthQueryPrimaryGraphApplicationRuntime<S>
                 F::IDENTITY,
             ));
         }
-        let graph = &self.runtime.primary_provider.graph;
+        let graph = &self.runtime.primary_provider.graph_ref();
         let bindings = self.installed_producers.family_output_bindings::<F>();
         let observation = before.observation();
         let read_identity =

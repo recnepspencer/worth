@@ -32,16 +32,16 @@ impl<Schema, Operation, Input, Scope> PreparedWorkflowCondition<Schema, Operatio
 /// True selects the satisfied successor and false the unsatisfied one.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RequiredWorkflowCondition {
-    pub instance: worth_relational::facade::identity::EntityId,
-    pub node_path: String,
-    pub transition_identity: String,
-    pub occurrence: u64,
-    pub condition:
+    pub(crate) instance: worth_relational::facade::identity::EntityId,
+    pub(crate) node_path: String,
+    pub(crate) transition_identity: String,
+    pub(crate) occurrence: u64,
+    pub(crate) condition:
         crate::domain_computation::primary_graph::workflow::definition::CompiledWorkflowCondition,
 }
 
 impl RequiredWorkflowCondition {
-    pub fn from_selected(
+    pub(crate) fn from_selected(
         instance: worth_relational::facade::identity::EntityId,
         node_path: String,
         transition_identity: String,

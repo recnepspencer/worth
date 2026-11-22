@@ -1,7 +1,9 @@
 //! The canonical collection owner seals one endpoint; the journal adopts it atomically.
 use super::*;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::ReadObservationInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_query::facade::ports::CompletedRequiredOutputsInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
@@ -18,7 +20,7 @@ impl<S: ApplicationSchema>
     ) -> Result<WorthQueryCompletedRecordingOutputs, WorthQueryRecordingOutputQualificationDenial>
     {
         let execution = phase
-            .checked_execution_request_for(&self.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(stopped)?;
         if trees.len() != origin.profile.tree_profiles().len() {
             return Err(foreign().into());
@@ -105,7 +107,7 @@ impl<S: ApplicationSchema>
                 }
             }
         }
-        let graph = &self.inner.runtime.primary_provider.graph;
+        let graph = &self.inner.runtime.primary_provider_ref().graph_ref();
         if let Some(publisher) = graph
             .application_publication_ref()
             .as_ref()
@@ -234,7 +236,7 @@ fn graph_current_parent<S: ApplicationSchema>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     profile: &WorthQueryHistoryOutputProfile,
 ) -> Result<bool, WorthQueryRecordingOutputQualificationDenial> {
-    runtime.inner.runtime.primary_provider.graph.with_runtime(execution,|native|
+    runtime.inner.runtime.primary_provider_ref().graph_ref().with_runtime(execution,|native|
         selected.current_owned_route_is_current(execution,native,profile.recording_model().entity(),profile.source_intent().source_subject(),profile.recording_family(),profile.source_intent().source_partition())
             .map_err(|cause|match cause {
                 crate::domain_computation::primary_graph::application_output_demand::CurrentOwnedRouteDenial::Ownership(cause)=>WorthQueryRecordingOutputQualificationDenial::Ownership(Box::new(cause)),

@@ -13,6 +13,7 @@ use worth_query_declaration::facade::{
         ApplicationMutationScopeResolution,
     },
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 
 pub(in crate::domain_computation::primary_graph) fn derive_correction_inverse<Schema, C>(
@@ -62,7 +63,7 @@ where
             .application()
             .inner
             .runtime
-            .primary_provider
+            .primary_provider_ref()
             .recover_correction_command(material.capture.original, key.identity())
             .map_err(Denial::Material)?
             .is_some()
@@ -89,7 +90,7 @@ where
     let input =
         super::material::recorded_input::recover_bytes(bytes, identity, C::recover_source_input)?;
     let execution = phase
-        .execution_request_for(&target.application().inner.runtime.product_runtime)
+        .execution_request_for(target.application().inner.runtime.product_runtime_ref())
         .map_err(|_| Denial::ForeignPhase)?;
     let inverse = super::material::derive::<Schema, C>(source, execution, input.input())?;
     let input = target.application().capture_operation_input_in_advancement::<<ApplicationInverseBinding<Schema, C> as ApplicationMutationBinding<Schema>>::InputBinding>(

@@ -1,4 +1,5 @@
 //! Original typed command locators. This carries neither an actor nor a grant.
+use worth_query_execution_attempt::facade::ports::WorkflowOperationInternalPort as _;
 pub use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_attempt::workflow_transition_program::actor_context::*;
 use super::*;
 use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial;
@@ -31,7 +32,7 @@ impl WorthQueryWorkflowAdvanceAdapter {
             required.original_instance(),
             Command::Operation {
                 required: OperationActorCommand {
-                    captured_input: required.captured_input.clone(),
+                    captured_input: required.captured_input_ref().cloned(),
                     instance: required.instance(),
                     branch: required.branch(),
                     node_path: required.node_path().to_owned(),

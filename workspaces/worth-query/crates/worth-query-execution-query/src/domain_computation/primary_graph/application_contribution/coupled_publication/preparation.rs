@@ -1,6 +1,7 @@
 //! Read proposed sources and retain actual writers before final group validation.
 use super::*;
 use crate::domain_computation::primary_graph::application_attempt::coupled_outputs::DeclaredCoupledOutputDemand;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 enum PendingOutputDemand<'a> {
@@ -31,7 +32,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
         if let Some(cause) = self.demands.take_failure() {
             return Err(CoupledSourceReadStop::capture(cause));
         }
-        let graph = &self.application.runtime.primary_provider.graph;
+        let graph = &self.application.runtime.primary_provider.graph_ref();
         let before_pin = graph.with_runtime(execution, |runtime| {
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
                 runtime, self.before.relational_basis(),
@@ -340,7 +341,7 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             .application
             .runtime
             .primary_provider
-            .application_attempt_operation_control
+            .application_attempt_operation_control_ref()
             .take_coupled_participant_corruption(self.writers.borrow().len())
         {
             fault @ (1..=9) => candidate.append_corrupt_participant_for_test(

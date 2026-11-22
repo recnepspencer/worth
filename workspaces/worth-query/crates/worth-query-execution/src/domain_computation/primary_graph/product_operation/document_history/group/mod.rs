@@ -14,6 +14,7 @@ use worth_query_declaration::facade::{
     application_operation::{ApplicationMutationBinding, NoApplicationMutationSource},
     application_schema::ApplicationSchema,
 };
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_installation::facade::WorthQueryInstalledDocumentHistory;
 
 mod admission;
@@ -75,7 +76,7 @@ impl WorthQueryDocumentHistoryGroupAborting {
         branch: crate::basis::WorthQueryProductBranch,
     ) -> Result<(), WorthQueryDocumentHistoryDenial> {
         phase
-            .checked_execution_request_for(&runtime.inner.runtime.product_runtime)
+            .checked_execution_request_for(runtime.inner.runtime.product_runtime_ref())
             .map_err(WorthQueryDocumentHistoryDenial::Stopped)?;
         if self.runtime_authority != runtime.inner.runtime.authority_identity().as_u64()
             || self.candidate != Some(branch)

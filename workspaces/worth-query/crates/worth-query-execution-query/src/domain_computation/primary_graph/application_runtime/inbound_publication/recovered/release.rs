@@ -43,7 +43,7 @@ impl RecordedCompletionContinuationReleaseExt for RecordedCompletionContinuation
                         let identity = reservation.install_unpublished(cleanup);
                         self.state = OriginalCompletionState::Cleanup(
                             WorthQueryProductBranchOwnerCleanup::from_runtime_identity(
-                                runtime.runtime.product_runtime.0.clone(),
+                                runtime.runtime.product_runtime.clone(),
                                 identity,
                             ),
                         );

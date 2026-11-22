@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
 use worth_query_execution_attempt::facade::ports::AdmittedOperationExecutionPort as _;
 use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternalPort as _;
 use worth_query_execution_attempt::facade::ports::EffectProgramMethodsInternalPort as _;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::IdempotencyBindingInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
@@ -90,7 +91,7 @@ where
         let mut lineage = runtime
             .runtime
             .primary_provider
-            .graph
+            .graph_ref()
             .output_lineage_ref()
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -126,7 +127,7 @@ where
     runtime
         .runtime
         .primary_provider
-        .graph
+        .graph_ref()
         .source_owner_ref()
         .mint_mark_cell_at_head(&execution, selected_publication.branch_id())
         .map_err(|stop| match stop {

@@ -170,7 +170,7 @@ impl WorthQueryGraphProviderAnchor {
         &self.resource_support
     }
 
-    pub fn begin(
+    pub(crate) fn begin(
         &self,
         call: &WorthQueryGraphProviderCall,
         start: &mut WorthQueryGraphProviderExecutionStart,
@@ -231,7 +231,7 @@ impl WorthQueryGraphProviderAnchor {
         )
     }
 
-    pub fn stage_provisional_overlay(
+    pub(crate) fn stage_provisional_overlay(
         &self,
         session: WorthQueryProviderSessionView<'_>,
         program: WorthQueryProvisionalEffectProgramView<'_>,
@@ -245,7 +245,7 @@ impl WorthQueryGraphProviderAnchor {
         )
     }
 
-    pub fn discard_provisional_overlay(
+    pub(crate) fn discard_provisional_overlay(
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         evidence: WorthQueryProvisionalOverlayEvidenceView<'_>,
@@ -257,7 +257,7 @@ impl WorthQueryGraphProviderAnchor {
         )
     }
 
-    pub fn load_invariant_state(
+    pub(crate) fn load_invariant_state(
         &self,
         session: WorthQueryProviderSessionView<'_>,
         request: WorthQueryInvariantStateLoadRequestView<'_>,
@@ -271,7 +271,7 @@ impl WorthQueryGraphProviderAnchor {
         )
     }
 
-    pub fn execute_invariant(
+    pub(crate) fn execute_invariant(
         &self,
         session: WorthQueryProviderSessionView<'_>,
         execution: WorthQueryBoundInvariantExecutionView<'_>,
@@ -306,7 +306,7 @@ impl WorthQueryGraphProviderAnchor {
             .prepare(session)
     }
 
-    pub fn prepare_staged_session(
+    pub(crate) fn prepare_staged_session(
         &self,
         session: &WorthQueryProviderSessionView<'_>,
     ) -> Result<(), WorthQueryProviderSessionFailure> {

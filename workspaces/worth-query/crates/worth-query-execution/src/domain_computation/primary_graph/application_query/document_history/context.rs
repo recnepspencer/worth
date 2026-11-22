@@ -5,6 +5,8 @@ use crate::domain_computation::primary_graph::{
     WorthQueryHistoryContextRefreshDenial, WorthQueryHistoryContextRefreshLimits,
 };
 use worth_query_declaration::facade::application_history::ApplicationHistoryModelDomain;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductObservationLeaseInternalPort as _;
 
 impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
@@ -49,14 +51,14 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             return Err(Denial::UnsupportedContextRefresh);
         }
         let execution = phase
-            .checked_execution_request_for(&self.inner.runtime.product_runtime)
+            .checked_execution_request_for(self.inner.runtime.product_runtime_ref())
             .map_err(Denial::Stopped)?;
         let record = document.model.record();
         let proof = self
             .inner
             .runtime
-            .primary_provider
-            .graph
+            .primary_provider_ref()
+            .graph_ref()
             .with_runtime(&execution, |native| {
                 native.observe_untouched_record_advance(
                     &execution,

@@ -8,6 +8,7 @@ use crate::domain_computation::primary_graph::output_lineage::{
     ComparableSourceFacts, HistoricalSelectionCoordinate, SealedNativeOutputWitness,
 };
 use crate::domain_computation::primary_graph::WorthQueryOutputDemandDenial;
+use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphIntegrationHandleInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 
@@ -60,7 +61,7 @@ impl<'a> HistoricalOutputRead<'a> {
     ) -> Result<bool, WorthQueryOutputDemandDenial> {
         let snapshot = selected.application_basis().snapshot_handle();
         let basis = selected.product().relational_basis();
-        let graph = &selected.application().runtime.primary_provider.graph;
+        let graph = &selected.application().runtime.primary_provider.graph_ref();
         let (Some(publication), Some(publisher)) =
             (self.publication, graph.application_publication_ref())
         else {

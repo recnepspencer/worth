@@ -4,6 +4,7 @@ use crate::domain_computation::authorization::WorthQueryOperationAuthorizationDe
 use crate::domain_computation::authorization::WorthQueryOperationAuthorizationRefusalKind as Refusal;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_execution_query::facade::ports::AdmittedCapabilityAccessInspectionPort as _;
+use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
 use worth_query_execution_runtime::facade::ports::AdvancementPhaseInternalPort as _;
 use worth_query_execution_runtime::facade::ports::ProductRuntimeInternalPort as _;
 /// Only evaluated permission outcomes may withhold audit. Technical causes remain errors.
@@ -80,7 +81,7 @@ where
         .application()
         .inner
         .runtime
-        .product_runtime
+        .product_runtime_ref()
         .owner_ref()
         .owner_identity();
     let subject_runtime = subject
@@ -160,7 +161,7 @@ where
         return Ok(WorthQueryWorkflowAudit::Withheld);
     };
     let execution = phase
-        .execution_request_for(&current.application().inner.runtime.product_runtime)
+        .execution_request_for(current.application().inner.runtime.product_runtime_ref())
         .map_err(WorkflowReadAdmissionDenial::Phase)?;
     let graph = current
         .application()
