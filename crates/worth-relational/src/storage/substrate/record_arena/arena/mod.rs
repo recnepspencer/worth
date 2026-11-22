@@ -1,4 +1,6 @@
 mod allocation;
+#[cfg(test)]
+pub(crate) use allocation::RecordArenaAllocationInventory;
 mod entity_lineage;
 mod extra_allocations;
 pub(crate) use entity_lineage::ExtraLineageDenial;
@@ -237,7 +239,9 @@ impl<K: RecordKind> RecordArena<K> {
     /// counters, and allocator bookkeeping have independent lifecycle lanes.
     #[cfg(test)]
     pub(crate) fn authoritative_allocation_bytes(&self) -> u64 {
-        self.allocation_inventory().authoritative_bytes
+        self.allocation_inventory()
+            .expect("test arena allocation inventory fits u64")
+            .authoritative_bytes
     }
 }
 

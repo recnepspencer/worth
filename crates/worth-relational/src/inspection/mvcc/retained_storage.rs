@@ -116,7 +116,7 @@ fn inventory(
     let reclaimable_roots = seen_roots.len() - current_roots - held_roots;
     let root_bytes = accounting.unique_bytes()?;
     for artifact in catalog.values() {
-        accounting.observe_commit_allocation(runtime.runtime_instance_id(), artifact, 0);
+        accounting.observe_commit_allocation(runtime.runtime_instance_id(), artifact, 0)?;
     }
     let total = accounting.unique_bytes()?;
     Ok(RelationalRetainedStorageObservation {

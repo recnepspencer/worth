@@ -31,9 +31,13 @@ impl RelationalRootAllocationVisitor for UnionWalk {
     }
     fn region(
         &mut self,
-        _: RelationalRootRegionObservation,
+        region: Result<
+            RelationalRootRegionObservation,
+            crate::storage::substrate::StorageAllocationOverflow,
+        >,
         partition: Result<&PartitionState, RelationalStorageUnavailable>,
     ) -> Result<(), ()> {
+        region.map_err(|_| ())?;
         partition.map_err(|_| ())?;
         Ok(())
     }

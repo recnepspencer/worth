@@ -25,6 +25,16 @@ impl StorageAllocationVisitor for AllocationUnion<'_> {
     }
 }
 
+struct SeenVisitor<'a> {
+    seen: &'a mut BTreeSet<u64>,
+    visitor: &'a mut dyn StorageAllocationVisitor,
+}
+impl StorageAllocationVisitor for SeenVisitor<'_> {
+    fn visit(&mut self, allocation: StorageAllocationObservation) -> bool {
+        self.seen.insert(allocation.id) && self.visitor.visit(allocation)
+    }
+}
+
 fn previously_retained<K: RecordKind>(
     arena: &RecordArena<K>,
     physical: usize,
@@ -47,19 +57,35 @@ fn previously_retained<K: RecordKind>(
     // only that seeked run, never every earlier commit's record history.
     (start..end).any(|index| K::metadata_extra(&history[index]).id() == extra.id())
 }
+
+fn prior_slot_extra<K: RecordKind>(
+    arena: &RecordArena<K>,
+    physical: usize,
+) -> Option<StorageAllocation<K::Extra>> {
+    if let Some(extra) = arena.extra.retained_value(physical) {
+        return Some(extra);
+    }
+    arena.metadata_history.get(physical).and_then(|history| {
+        history
+            .len()
+            .checked_sub(1)
+            .and_then(|index| history.get(index))
+            .map(|meta| K::metadata_extra(meta).clone())
+    })
+}
+
 fn visit_extra<K: RecordKind>(
     extra: &StorageAllocation<K::Extra>,
+    previous_extra: Option<&K::Extra>,
     seen: &mut BTreeSet<u64>,
     visitor: &mut dyn StorageAllocationVisitor,
 ) {
-    if seen.insert(extra.id()) {
-        // Each distinct carrier reports its own declared bound, including
-        // aspect backing it shares with another carrier: a deliberate overbound.
-        let mut allocation = extra.observation(false);
-        allocation.add_checked_nested_bound(K::extra_reachable_bound_bytes(extra));
-        visitor.visit(allocation);
+    let mut union = SeenVisitor { seen, visitor };
+    if union.visit(extra.observation(false)) {
+        K::visit_new_extra_allocations(extra, previous_extra, &mut union);
     }
 }
+
 impl<K: RecordKind> RecordArena<K> {
     pub(super) fn visit_new_extra_allocations(
         &self,
@@ -89,7 +115,8 @@ impl<K: RecordKind> RecordArena<K> {
                     .filter(|meta| K::metadata_extra(meta).id() == extra.id())
                     .map(HistoricalMetadata::effective_at);
                 if !previously_retained(previous, physical, &extra, version) {
-                    visit_extra::<K>(&extra, &mut seen, visitor);
+                    let prior_extra = prior_slot_extra(previous, physical);
+                    visit_extra::<K>(&extra, prior_extra.as_deref(), &mut seen, visitor);
                 }
             });
         self.metadata_history.visit_changed_values(
@@ -99,13 +126,14 @@ impl<K: RecordKind> RecordArena<K> {
                     return;
                 };
                 let empty = SharedColumn::default();
+                let prior_extra = prior_slot_extra(previous, physical);
                 history.visit_changed_values(prior.unwrap_or(&empty), &mut |_, meta, _| {
                     let Some(meta) = meta else {
                         return;
                     };
                     let extra = K::metadata_extra(meta);
                     if !previously_retained(previous, physical, extra, Some(meta.effective_at())) {
-                        visit_extra::<K>(extra, &mut seen, visitor);
+                        visit_extra::<K>(extra, prior_extra.as_deref(), &mut seen, visitor);
                     }
                 });
             },

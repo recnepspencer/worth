@@ -41,9 +41,10 @@ impl<K: RecordKind> RecordArena<K> {
             },
         );
         self.extra
-            .visit_allocations(unique, visitor, &mut |extra, mut allocation, visitor| {
-                allocation.add_checked_nested_bound(K::extra_reachable_bound_bytes(extra));
-                allocation.visit(visitor);
+            .visit_allocations(unique, visitor, &mut |extra, allocation, visitor| {
+                if allocation.visit(visitor) {
+                    K::visit_extra_allocations(extra, allocation.unique, visitor);
+                }
             });
         self.aspect_versions.visit_allocations(
             unique,

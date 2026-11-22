@@ -57,7 +57,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         derived_cache_bytes: u64,
     ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
         self.observe_root(runtime_instance_id, root)?;
-        self.observe_commit_allocation(runtime_instance_id, artifact, derived_cache_bytes);
+        self.observe_commit_allocation(runtime_instance_id, artifact, derived_cache_bytes)?;
         Ok(())
     }
 
@@ -70,7 +70,7 @@ impl RelationalAuthoritativeAllocationAccounting {
             work.roots += 1;
         }
         self.observe_partition_allocations(runtime_instance_id, root)?;
-        self.observe_root_allocations(runtime_instance_id, root);
+        self.observe_root_allocations(runtime_instance_id, root)?;
         Ok(())
     }
 
@@ -164,18 +164,21 @@ impl RelationalAuthoritativeAllocationAccounting {
     ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
         let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
         for region in root.storage_regions() {
+            let region = region.map_err(|_| {
+                crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow
+            })?;
             if let Some(work) = self.census_work.as_mut() {
                 work.region_entries += 1;
             }
-            // This lane carries the per-carrier declared bounds once per branch.
             self.logical_partition_bytes = self
                 .logical_partition_bytes
                 .checked_add(region.authoritative_bytes)
                 .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)?;
             self.logical_region_object_bytes = self
                 .logical_region_object_bytes
-                .saturating_add(region.root_region_bytes)
-                .saturating_add(region.partition_state_bytes);
+                .checked_add(region.root_region_bytes)
+                .and_then(|bytes| bytes.checked_add(region.partition_state_bytes))
+                .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)?;
             let partition = root
                 .partition_state(region.partition_id).map_err(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::StorageUnavailable)?
                 .ok_or(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::RootUnavailable)?;
@@ -249,7 +252,12 @@ impl RelationalAuthoritativeAllocationAccounting {
         Ok(())
     }
 
-    fn observe_root_allocations(&mut self, runtime_instance_id: u64, root: &RelationalBranchRoot) {
+    fn observe_root_allocations(
+        &mut self,
+        runtime_instance_id: u64,
+        root: &RelationalBranchRoot,
+    ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
+        use crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow;
         let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
         if let Some(work) = self.census_work.as_mut() {
             work.schema_inventory_computations += 1;
@@ -262,37 +270,43 @@ impl RelationalAuthoritativeAllocationAccounting {
                 RelationalRootAuthoritativeAllocationKind::RootMetadata => {
                     self.logical_root_metadata_bytes = self
                         .logical_root_metadata_bytes
-                        .saturating_add(allocation.authoritative_bytes);
+                        .checked_add(allocation.authoritative_bytes)
+                        .ok_or(AuthoritativeByteBoundOverflow)?;
                     RelationalAuthoritativeAllocationKind::RootMetadata
                 }
                 RelationalRootAuthoritativeAllocationKind::SchemaAuthority => {
                     self.logical_root_metadata_bytes = self
                         .logical_root_metadata_bytes
-                        .saturating_add(allocation.authoritative_bytes);
+                        .checked_add(allocation.authoritative_bytes)
+                        .ok_or(AuthoritativeByteBoundOverflow)?;
                     RelationalAuthoritativeAllocationKind::RootSchemaAuthority
                 }
                 RelationalRootAuthoritativeAllocationKind::PersistentRegionMapNodeObject => {
                     self.logical_root_reachability_bytes = self
                         .logical_root_reachability_bytes
-                        .saturating_add(allocation.authoritative_bytes);
+                        .checked_add(allocation.authoritative_bytes)
+                        .ok_or(AuthoritativeByteBoundOverflow)?;
                     RelationalAuthoritativeAllocationKind::RootReachabilityStructure
                 }
                 RelationalRootAuthoritativeAllocationKind::PersistentRegionSetObject => {
                     self.logical_root_reachability_bytes = self
                         .logical_root_reachability_bytes
-                        .saturating_add(allocation.authoritative_bytes);
+                        .checked_add(allocation.authoritative_bytes)
+                        .ok_or(AuthoritativeByteBoundOverflow)?;
                     RelationalAuthoritativeAllocationKind::RootReachabilitySetObject
                 }
                 RelationalRootAuthoritativeAllocationKind::PersistentRegionReplacementStorage => {
                     self.logical_root_reachability_bytes = self
                         .logical_root_reachability_bytes
-                        .saturating_add(allocation.authoritative_bytes);
+                        .checked_add(allocation.authoritative_bytes)
+                        .ok_or(AuthoritativeByteBoundOverflow)?;
                     RelationalAuthoritativeAllocationKind::RootReplacementStorage
                 }
                 RelationalRootAuthoritativeAllocationKind::PersistentRegionRemovalStorage => {
                     self.logical_root_reachability_bytes = self
                         .logical_root_reachability_bytes
-                        .saturating_add(allocation.authoritative_bytes);
+                        .checked_add(allocation.authoritative_bytes)
+                        .ok_or(AuthoritativeByteBoundOverflow)?;
                     RelationalAuthoritativeAllocationKind::RootRemovalStorage
                 }
             };
@@ -310,6 +324,7 @@ impl RelationalAuthoritativeAllocationAccounting {
         if let Some(work) = self.census_work.as_mut() {
             work.root_inventory_us += start.unwrap().elapsed().as_micros();
         }
+        Ok(())
     }
 
     pub(in crate::inspection::mvcc) fn observe_commit_allocation(
@@ -317,7 +332,8 @@ impl RelationalAuthoritativeAllocationAccounting {
         runtime_instance_id: u64,
         artifact: &RelationalCommitArtifact,
         derived_cache_bytes: u64,
-    ) {
+    ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
+        use crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow;
         let start = self.census_work.as_ref().map(|_| std::time::Instant::now());
         for allocation in artifact.authoritative_allocation_observations() {
             let kind = match allocation.kind {
@@ -336,7 +352,8 @@ impl RelationalAuthoritativeAllocationAccounting {
             };
             self.logical_canonical_commit_bytes = self
                 .logical_canonical_commit_bytes
-                .saturating_add(allocation.authoritative_bytes);
+                .checked_add(allocation.authoritative_bytes)
+                .ok_or(AuthoritativeByteBoundOverflow)?;
             self.insert(
                 RelationalAuthoritativeAllocationLocator::new(
                     runtime_instance_id,
@@ -365,6 +382,7 @@ impl RelationalAuthoritativeAllocationAccounting {
             work.catalog_artifacts += 1;
             work.catalog_inventory_us += start.unwrap().elapsed().as_micros();
         }
+        Ok(())
     }
 
     fn insert(&mut self, locator: RelationalAuthoritativeAllocationLocator, bytes: u64) {

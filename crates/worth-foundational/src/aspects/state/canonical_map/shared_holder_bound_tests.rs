@@ -1,6 +1,7 @@
-//! Each sharing holder's declared bound covers the observed shared backing.
+//! Per-holder declared bounds and exact deduplicated allocation-visitor unions.
 use crate::aspects::*;
-use crate::values::{AspectValue, ScalarAspectType};
+use crate::values::{AspectValue, InternedString, ScalarAspectType};
+use std::collections::BTreeMap;
 use worth_proof::TransitionOutcome;
 
 fn admitted(key: String) -> ContractValidatedAspectValue {
@@ -19,6 +20,22 @@ fn admitted(key: String) -> ContractValidatedAspectValue {
     value.into_parts().into_parts().0
 }
 
+#[derive(Default)]
+struct UnionVisitor {
+    allocations: BTreeMap<u64, u64>,
+}
+
+impl FoundationalAllocationVisitor for UnionVisitor {
+    fn visit(&mut self, allocation: FoundationalAllocationObservation) -> bool {
+        if let Some(previous) = self.allocations.insert(allocation.id, allocation.bytes) {
+            assert_eq!(previous, allocation.bytes);
+            false
+        } else {
+            true
+        }
+    }
+}
+
 #[test]
 fn per_holder_bound_covers_backing_shared_by_two_holders_and_counts_it_twice() {
     for count in [0, 1, 31, 65, 127] {
@@ -34,15 +51,116 @@ fn per_holder_bound_covers_backing_shared_by_two_holders_and_counts_it_twice() {
         });
         let bound = first.aspects().retained_storage_bytes().unwrap();
         assert_eq!(second.aspects().retained_storage_bytes(), Some(bound));
-        assert!(live > 0, "even an empty state owns persistent roots");
-        // One holder's declared bound already covers everything both reach.
-        assert!(
-            live <= bound,
-            "count={count}, observed shared backing={live}, holder bound={bound}"
+        if count == 0 {
+            assert_eq!(live, 0);
+            assert_eq!(bound, 0);
+        } else {
+            assert!(live > 0);
+            assert!(
+                live <= bound,
+                "count={count}, observed shared backing={live}, holder bound={bound}"
+            );
+            assert!(live < bound.checked_mul(2).unwrap());
+        }
+        let mut union = UnionVisitor::default();
+        first.visit_allocations(false, &mut union);
+        second.visit_allocations(false, &mut union);
+        let visited_union: u64 = union.allocations.values().sum();
+        assert_eq!(
+            visited_union, live as u64,
+            "count={count}: visitor union must equal allocator-observed live bytes"
         );
-        // Summing per holder therefore overbounds; it never undercounts.
-        assert!(live < bound.checked_mul(2).unwrap());
         drop(first);
         assert_eq!(second.aspects().len(), count);
     }
+}
+
+#[test]
+fn visitor_union_and_delta_match_allocator_observed_live_bytes_across_nested_structs() {
+    let ((before, after, live_union), _) = crate::allocation_observation::peak(|| {
+        let field = |name: &str| FieldKey::new(name).unwrap();
+        let struct_contract = AspectContract::struct_aspect(
+            AspectKey::new("profile").unwrap(),
+            AspectIdentity(2),
+            AspectContractRevision(1),
+            StructAspectShape::new(["name", "bio", "tag"].map(|name| {
+                FieldDeclaration::new(
+                    field(name),
+                    ScalarAspectType::String,
+                    FieldRequirement::Optional,
+                    AbsenceLaw::Optional,
+                    AspectEvolutionPolicy::AdditiveFieldsAllowed,
+                )
+                .unwrap()
+            }))
+            .unwrap(),
+        );
+        let initial_struct = StructAspectValue::new([
+            (
+                field("name"),
+                AspectValue::String(InternedString::Raw("alice".into())),
+            ),
+            (
+                field("bio"),
+                AspectValue::String(InternedString::Stored(
+                    crate::facade::StoredValueText::new("persisted bio text".into()),
+                )),
+            ),
+            (
+                field("tag"),
+                AspectValue::String(InternedString::Raw("v1".into())),
+            ),
+        ])
+        .unwrap();
+        let TransitionOutcome::Success(struct_val) = validate_aspect_value(
+            &struct_contract,
+            ContractValidationInput::Struct(initial_struct),
+        ) else {
+            panic!("valid struct")
+        };
+        let mut entries: Vec<_> = (0..16).map(|n| admitted(format!("s-{n:02}"))).collect();
+        entries.push(struct_val.into_parts().into_parts().0);
+        let before = AuthoritativeRecordAspectState::from_validated_entries(entries).unwrap();
+        let mask = AspectMask::new([CanonicalFieldPath::single(field("tag"))]);
+        let TransitionOutcome::Success(patch) = AuthoritativeRecordAspectPatch::field_level(
+            &struct_contract,
+            &mask,
+            [(
+                field("tag"),
+                AspectValue::String(InternedString::Raw("v2-updated".into())),
+            )],
+            [],
+        ) else {
+            panic!("valid field patch")
+        };
+        let TransitionOutcome::Success(after) = patch.apply_to(&before) else {
+            panic!("patch applies")
+        };
+        let after = after.into_parts().into_parts().0;
+        drop(patch);
+        drop(mask);
+        drop(struct_contract);
+        let live_union = crate::allocation_observation::live_bytes();
+        (before, after, live_union)
+    });
+
+    let mut combined = UnionVisitor::default();
+    before.visit_allocations(false, &mut combined);
+    after.visit_allocations(false, &mut combined);
+    assert_eq!(
+        combined.allocations.values().sum::<u64>(),
+        live_union as u64,
+        "exact physical visitor union must equal allocator-observed bytes across shared persistent trees"
+    );
+
+    let mut before_set = UnionVisitor::default();
+    before.visit_allocations(false, &mut before_set);
+    let mut after_set = UnionVisitor::default();
+    after.visit_allocations(false, &mut after_set);
+    let mut expected_new = after_set.allocations.clone();
+    expected_new.retain(|id, _| !before_set.allocations.contains_key(id));
+
+    let mut delta = UnionVisitor::default();
+    after.visit_new_allocations(Some(&before), &mut delta);
+    assert_eq!(delta.allocations, expected_new);
 }

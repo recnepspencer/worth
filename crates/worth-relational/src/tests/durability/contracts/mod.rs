@@ -5,11 +5,13 @@ mod canonical_commit_artifact;
 mod checkpoint_recovery;
 mod derived_index_checkpoint;
 mod descriptor_continuity;
+mod global_generation_reclamation;
 mod managed_field_text;
 mod merge_replay_continuity;
 mod native_checkpoint;
 mod record_allocation_recovery;
 mod rejected_and_parent_closure;
+mod retention_inspection_store;
 mod schema_transition_continuity;
 mod semantic_result;
 

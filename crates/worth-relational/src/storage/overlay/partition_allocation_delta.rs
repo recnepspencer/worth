@@ -36,20 +36,24 @@ impl PartitionState {
         &self,
         previous: &Self,
     ) -> Result<RelationalPartitionAllocationInventory, super::PartitionContentDigestError> {
-        let mut diagnostic = Bytes::default();
+        let mut diagnostic = CheckedBytes::new();
         self.entity_arena
             .visit_new_diagnostic_allocations(&previous.entity_arena, &mut diagnostic);
         self.relation_arena
             .visit_new_diagnostic_allocations(&previous.relation_arena, &mut diagnostic);
-        let mut cache = Bytes::default();
+        let mut cache = CheckedBytes::new();
         self.adjacency
             .visit_new_cache_allocations(&previous.adjacency, &mut cache);
         self.reverse_adjacency
             .visit_new_cache_allocations(&previous.reverse_adjacency, &mut cache);
         Ok(RelationalPartitionAllocationInventory {
             authoritative_bytes: self.new_authoritative_allocation_bytes_since(previous)?,
-            diagnostic_bytes: diagnostic.0,
-            optional_cache_bytes: cache.0,
+            diagnostic_bytes: diagnostic
+                .finish()
+                .ok_or(super::PartitionContentDigestError::AllocationAccountingOverflow)?,
+            optional_cache_bytes: cache
+                .finish()
+                .ok_or(super::PartitionContentDigestError::AllocationAccountingOverflow)?,
             ..Default::default()
         })
     }
@@ -66,12 +70,24 @@ fn update(
         .ok_or(super::PartitionContentDigestError::AllocationAccountingOverflow)
 }
 
-#[derive(Default)]
-struct Bytes(u64);
-impl StorageAllocationVisitor for Bytes {
+struct CheckedBytes(Option<u64>);
+impl CheckedBytes {
+    const fn new() -> Self {
+        Self(Some(0))
+    }
+    const fn finish(self) -> Option<u64> {
+        self.0
+    }
+}
+impl StorageAllocationVisitor for CheckedBytes {
     fn visit(&mut self, allocation: StorageAllocationObservation) -> bool {
-        self.0 = self.0.saturating_add(allocation.bytes);
-        true
+        self.0 = match allocation.extent {
+            crate::storage::substrate::StorageAllocationExtent::Checked => {
+                self.0.and_then(|bytes| bytes.checked_add(allocation.bytes))
+            }
+            crate::storage::substrate::StorageAllocationExtent::Overflow => None,
+        };
+        self.0.is_some()
     }
 }
 

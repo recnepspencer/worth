@@ -21,10 +21,14 @@ impl PartitionState {
         new.bytes
             .ok_or(super::PartitionContentDigestError::AllocationAccountingOverflow)
     }
-    pub(crate) fn reclaimable_unique_authoritative_bytes(&self) -> u64 {
-        let mut reclaimable = ReclaimableAllocations::default();
+    pub(crate) fn reclaimable_unique_authoritative_bytes(
+        &self,
+    ) -> Result<u64, crate::storage::substrate::StorageAllocationOverflow> {
+        let mut reclaimable = ReclaimableAllocations { bytes: Some(0) };
         self.visit_authoritative_allocations(true, &mut reclaimable);
-        reclaimable.bytes
+        reclaimable
+            .bytes
+            .ok_or(crate::storage::substrate::StorageAllocationOverflow)
     }
     pub(crate) fn visit_authoritative_allocations(
         &self,
@@ -80,9 +84,8 @@ impl StorageAllocationVisitor for NewAllocations {
     }
 }
 
-#[derive(Default)]
 struct ReclaimableAllocations {
-    bytes: u64,
+    bytes: Option<u64>,
 }
 
 impl StorageAllocationVisitor for ReclaimableAllocations {
@@ -93,8 +96,13 @@ impl StorageAllocationVisitor for ReclaimableAllocations {
         if !allocation.unique {
             return false;
         }
-        self.bytes = self.bytes.saturating_add(allocation.bytes);
-        true
+        self.bytes = match allocation.extent {
+            StorageAllocationExtent::Checked => self
+                .bytes
+                .and_then(|bytes| bytes.checked_add(allocation.bytes)),
+            StorageAllocationExtent::Overflow => None,
+        };
+        self.bytes.is_some()
     }
 }
 

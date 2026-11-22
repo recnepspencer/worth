@@ -55,10 +55,11 @@ fn check<K: RecordKind>(
         let original = source.get(&id).unwrap().retained_extra();
         assert_ne!(installed.id(), original.id());
         assert_eq!(installed.as_ref(), original.as_ref());
-        assert_eq!(
-            K::extra_reachable_bound_bytes(&installed),
-            K::extra_reachable_bound_bytes(&original)
-        );
+        let mut installed_backing = Observed::default();
+        K::visit_extra_allocations(&installed, false, &mut installed_backing);
+        let mut original_backing = Observed::default();
+        K::visit_extra_allocations(&original, false, &mut original_backing);
+        assert_eq!(installed_backing.0, original_backing.0);
         let history = target.metadata_history_at(0).unwrap();
         assert_eq!(
             K::metadata_extra(&history[history.len() - 1]).id(),

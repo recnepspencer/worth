@@ -154,8 +154,7 @@ fn visit_records(
     mut visit: impl FnMut(RecordRef) -> Result<(), TransactionCommitError>,
 ) -> Result<(), TransactionCommitError> {
     let view = InvariantStateView::new(selected, selected.version_id());
-    for region in selected.selected().state().root().storage_regions() {
-        let partition = region.partition_id;
+    for partition in selected.selected().state().root().partition_ids() {
         // Native's occupied-slot iterators have fixed inline stacks and quote
         // zero heap bytes. Visit occupied slots, never the allocation frontier.
         for slot in view.try_entity_slots(partition, |work, _| charge(request, work))? {

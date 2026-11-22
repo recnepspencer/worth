@@ -2,15 +2,32 @@
 #[cfg(test)]
 mod tests;
 
+use worth_foundational::facade::{
+    AuthoritativeRecordAspectState, FoundationalAllocationKind, FoundationalAllocationObservation,
+    FoundationalAllocationVisitor,
+};
+
+/// Typed overflow when an allocation inventory, fork-materialized total, or
+/// reclamation byte total cannot be represented in `u64`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StorageAllocationOverflow;
+
+impl std::fmt::Display for StorageAllocationOverflow {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("storage allocation accounting total exceeds u64")
+    }
+}
+
+impl std::error::Error for StorageAllocationOverflow {}
+
 /// Whether an observation's `bytes` is a representable checked extent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum StorageAllocationExtent {
-    /// The owner's exact layout plus any checked declared nested upper bound.
+    /// The owner's exact layout plus any checked owned extent.
     Checked,
-    /// A declared nested bound, or its sum with the layout, did not fit `u64`.
-    /// `bytes` is saturated. Owners that admit observations refuse it typed:
-    /// the publication delta and the inspection lanes. Full region inventories
-    /// and reclamation counters stay descriptive and keep saturating.
+    /// A bound or layout sum did not fit `u64`. Every inventory, publication
+    /// delta, inspection, fork-materialized total, and reclamation counter
+    /// refuses this typed instead of saturating.
     Overflow,
 }
 
@@ -23,9 +40,9 @@ pub(crate) struct StorageAllocationObservation {
 }
 
 impl StorageAllocationObservation {
-    /// Adds the checked declared upper bound of the backing nested in this
-    /// owner. The bound may count backing shared with another owner again; it
-    /// is never an exact deduplicated measurement. `None` is unrepresentable.
+    /// Adds a checked nested extent to this owner's observation. `None` or
+    /// `u64` overflow marks the observation as `Overflow` so callers refuse it.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub(crate) fn add_checked_nested_bound(&mut self, bound: Option<u64>) {
         match bound.and_then(|bound| self.bytes.checked_add(bound)) {
             Some(bytes) => self.bytes = bytes,
@@ -40,6 +57,45 @@ impl StorageAllocationObservation {
 pub(crate) trait StorageAllocationVisitor {
     /// Return true to visit allocations owned by this allocation as well.
     fn visit(&mut self, allocation: StorageAllocationObservation) -> bool;
+}
+
+/// Bridges `worth-foundational`'s physical allocation visitor into `worth-relational`,
+/// admitting `ValueBacking` allocations and skipping `SchemaContract` allocations
+/// (which are already owned and accounted by `RelationalBranchRootSchemaAuthority`).
+struct FoundationalValueBackingAdapter<'a> {
+    visitor: &'a mut dyn StorageAllocationVisitor,
+}
+
+impl FoundationalAllocationVisitor for FoundationalValueBackingAdapter<'_> {
+    fn visit(&mut self, allocation: FoundationalAllocationObservation) -> bool {
+        if allocation.kind != FoundationalAllocationKind::ValueBacking {
+            return false;
+        }
+        self.visitor.visit(StorageAllocationObservation {
+            id: allocation.id,
+            bytes: allocation.bytes,
+            unique: allocation.unique,
+            extent: StorageAllocationExtent::Checked,
+        })
+    }
+}
+
+pub(crate) fn visit_foundational_value_backing(
+    state: &AuthoritativeRecordAspectState,
+    ancestor_unique: bool,
+    visitor: &mut dyn StorageAllocationVisitor,
+) {
+    let mut adapter = FoundationalValueBackingAdapter { visitor };
+    state.visit_allocations(ancestor_unique, &mut adapter);
+}
+
+pub(crate) fn visit_new_foundational_value_backing(
+    state: &AuthoritativeRecordAspectState,
+    previous: Option<&AuthoritativeRecordAspectState>,
+    visitor: &mut dyn StorageAllocationVisitor,
+) {
+    let mut adapter = FoundationalValueBackingAdapter { visitor };
+    state.visit_new_allocations(previous, &mut adapter);
 }
 
 pub(crate) fn visit_inline_value<T>(

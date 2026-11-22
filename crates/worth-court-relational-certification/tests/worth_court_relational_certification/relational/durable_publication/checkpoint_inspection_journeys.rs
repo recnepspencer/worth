@@ -49,6 +49,11 @@ fn durability_contract_recovery_rebuilds_branch_head_root_obligations() {
         .recover(execution, plan)
         .unwrap();
 
+    let retention = recovered.retention().inspect_plan(execution).unwrap();
+    assert_eq!(retention.active_snapshot_count, 0);
+    assert_eq!(retention.branch_pinned_entities, 0);
+    assert_eq!(retention.branch_pinned_relations, 0);
+
     let feature = recovered
         .branch_identity(&BranchId("feature".to_owned()))
         .unwrap();

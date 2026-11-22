@@ -214,6 +214,33 @@ impl AspectValue {
             _ => 0,
         }
     }
+
+    /// Exclusively owned heap capacity directly attached to this value,
+    /// excluding separately shared `Arc` children such as `StoredValueText`'s seal.
+    pub(crate) fn direct_owned_allocation_capacity_bytes(&self) -> usize {
+        match self {
+            Self::Decimal(value) => value.0.capacity(),
+            Self::BigInt(value) => value.0.capacity(),
+            Self::Rational(value) => value
+                .numerator
+                .0
+                .capacity()
+                .saturating_add(value.denominator.0.capacity()),
+            Self::String(value) => value.direct_owned_allocation_capacity_bytes(),
+            Self::InlineBytes(value) => value.owned_allocation_capacity_bytes(),
+            _ => 0,
+        }
+    }
+
+    pub(crate) fn visit_shared_allocations(
+        &self,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        if let Self::String(value) = self {
+            value.visit_shared_allocations(ancestor_unique, visitor);
+        }
+    }
 }
 
 #[cfg(test)]

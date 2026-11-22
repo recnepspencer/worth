@@ -1,18 +1,18 @@
-use im::OrdMap;
+mod entry_tree;
 mod storage_geometry;
 
 use super::AuthoritativeStateAdmissionDenial;
+use crate::aspects::allocation_visitor::FoundationalAllocationVisitor;
 use crate::aspects::keys::AspectKey;
 use crate::aspects::validation::ContractValidatedAspectValue;
+use entry_tree::AspectEntryTree;
 use serde::Serialize;
 
 #[derive(Clone, Serialize)]
 pub struct CanonicalAspectStateMap {
-    pub(super) entries: OrdMap<AspectKey, ContractValidatedAspectValue>,
+    pub(super) entries: AspectEntryTree,
     #[serde(skip)]
     allocation_bytes: u128,
-    #[serde(skip)]
-    key_width_counts: OrdMap<usize, usize>,
 }
 
 impl CanonicalAspectStateMap {
@@ -23,31 +23,37 @@ impl CanonicalAspectStateMap {
     pub(crate) fn from_validated_entries(
         entries: impl IntoIterator<Item = ContractValidatedAspectValue>,
     ) -> Result<Self, AuthoritativeStateAdmissionDenial> {
-        let mut map = Self::from_canonical_entries(std::iter::empty());
+        let mut map = Self::empty();
         for entry in entries {
-            let key = entry.key().clone();
-            if map.entries.contains_key(&key) {
-                return Err(AuthoritativeStateAdmissionDenial::DuplicateAspectKey(key));
+            if map.entries.contains_key(entry.key()) {
+                return Err(AuthoritativeStateAdmissionDenial::DuplicateAspectKey(
+                    entry.key().clone(),
+                ));
             }
-            map.insert(key, entry);
+            map.insert_value(entry);
         }
         Ok(map)
     }
 
-    pub(crate) fn from_canonical_entries(
-        entries: impl IntoIterator<Item = (AspectKey, ContractValidatedAspectValue)>,
+    pub(crate) fn from_sorted_values(
+        values: impl ExactSizeIterator<Item = ContractValidatedAspectValue>,
     ) -> Self {
-        let mut map = Self {
-            entries: OrdMap::new(),
-            allocation_bytes: 0,
-            key_width_counts: OrdMap::new(),
-        };
-        // Maintain these existing extents while consuming the input. Scanning a
-        // completed im map would allocate two iterator paths for each pass.
-        for (key, value) in entries {
-            map.insert(key, value);
+        let mut allocation_bytes = 0_u128;
+        let entries = AspectEntryTree::from_sorted_values(values.map(|value| {
+            allocation_bytes += entry_bytes(&value);
+            value
+        }));
+        Self {
+            entries,
+            allocation_bytes,
         }
-        map
+    }
+
+    fn empty() -> Self {
+        Self {
+            entries: AspectEntryTree::new(),
+            allocation_bytes: 0,
+        }
     }
 
     pub fn entries(&self) -> impl Iterator<Item = (&AspectKey, &ContractValidatedAspectValue)> {
@@ -58,11 +64,6 @@ impl CanonicalAspectStateMap {
         self.entries.get(key)
     }
 
-    #[cfg(test)]
-    pub(crate) fn cloned_entries(&self) -> OrdMap<AspectKey, ContractValidatedAspectValue> {
-        self.entries.clone()
-    }
-
     pub fn len(&self) -> usize {
         self.entries.len()
     }
@@ -71,51 +72,67 @@ impl CanonicalAspectStateMap {
         self.entries.is_empty()
     }
 
-    /// Cached reachable payload, including shared keys, contracts and values.
-    /// Allocator/tree bookkeeping is excluded; this is not a clone quote.
+    /// Cached reachable payload, including shared keys, contracts and values,
+    /// plus exact persistent AVL node backing. Not a physical clone quote.
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
-        self.allocation_bytes.min(usize::MAX as u128) as usize
+        let nodes = (self.len() as u128) * (AspectEntryTree::node_allocation_bytes() as u128);
+        self.allocation_bytes
+            .saturating_add(nodes)
+            .min(usize::MAX as u128) as usize
+    }
+
+    /// Visits every distinct physical heap allocation reachable from this map.
+    pub fn visit_allocations(
+        &self,
+        ancestor_unique: bool,
+        visitor: &mut dyn FoundationalAllocationVisitor,
+    ) {
+        self.entries.visit_allocations(ancestor_unique, visitor);
+    }
+
+    /// Visits physical heap allocations reachable from `self` that were not
+    /// already present in `previous`.
+    pub fn visit_new_allocations(
+        &self,
+        previous: Option<&Self>,
+        visitor: &mut dyn FoundationalAllocationVisitor,
+    ) {
+        match previous {
+            Some(previous) => self
+                .entries
+                .visit_new_allocations(&previous.entries, visitor),
+            None => self.entries.visit_allocations(false, visitor),
+        }
     }
 }
 
 impl CanonicalAspectStateMap {
     pub(crate) fn remove(&mut self, key: &AspectKey) {
-        if let Some((key, value)) = self.entries.get_key_value(key) {
-            self.allocation_bytes -= entry_bytes(key, value);
-            let width = key.as_str().len();
-            let count = self
-                .key_width_counts
-                .get(&width)
-                .copied()
-                .expect("each actual entry contributes its current key width");
-            if count == 1 {
-                self.key_width_counts.remove(&width);
-            } else {
-                self.key_width_counts.insert(width, count - 1);
-            }
+        if let Some(removed) = self.entries.remove(key) {
+            self.allocation_bytes -= entry_bytes(&removed);
         }
-        self.entries.remove(key);
     }
-    pub(crate) fn insert(&mut self, key: AspectKey, value: ContractValidatedAspectValue) {
-        self.remove(&key);
-        self.allocation_bytes += entry_bytes(&key, &value);
-        let width = key.as_str().len();
-        let count = self.key_width_counts.get(&width).copied().unwrap_or(0usize);
-        self.key_width_counts.insert(width, count + 1);
-        self.entries.insert(key, value);
+
+    pub(crate) fn insert_value(&mut self, value: ContractValidatedAspectValue) {
+        let added = entry_bytes(&value);
+        if let Some(previous) = self.entries.insert(value) {
+            self.allocation_bytes -= entry_bytes(&previous);
+        }
+        self.allocation_bytes += added;
     }
 }
-fn entry_bytes(key: &AspectKey, value: &ContractValidatedAspectValue) -> u128 {
-    std::mem::size_of::<(AspectKey, ContractValidatedAspectValue)>() as u128
-        + key.owned_allocation_capacity_bytes() as u128
-        + value.owned_allocation_capacity_bytes() as u128
+
+fn entry_bytes(value: &ContractValidatedAspectValue) -> u128 {
+    value.owned_allocation_capacity_bytes() as u128
 }
+
 impl PartialEq for CanonicalAspectStateMap {
     fn eq(&self, other: &Self) -> bool {
         self.entries == other.entries
     }
 }
 impl Eq for CanonicalAspectStateMap {}
+
 impl std::fmt::Debug for CanonicalAspectStateMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CanonicalAspectStateMap")
@@ -126,103 +143,40 @@ impl std::fmt::Debug for CanonicalAspectStateMap {
 
 impl CanonicalAspectStateMap {
     /// Checked declared upper bound of the backing reachable from one holder:
-    /// persistent tree nodes, the key-width index, keys, values and contracts.
-    /// Backing shared with another holder is included in full for each holder.
-    /// That is a deliberate overbound: it is neither a physical Clone bill nor
-    /// an exact deduplicated inventory, and summing it across sharing holders
-    /// counts their shared backing once per holder. Every step is checked. A
-    /// saturated nested extent cannot pass, because the nonzero node backing
-    /// added last overflows it: `None` means the bound is unrepresentable.
+    /// persistent AVL nodes, keys, values and contracts. Backing shared with
+    /// another holder is included in full for each holder. Every step is
+    /// checked: `None` means the bound is unrepresentable.
     pub fn retained_storage_bytes(&self) -> Option<usize> {
-        let inline = std::mem::size_of::<(AspectKey, ContractValidatedAspectValue)>() as u128;
-        let payload = self
-            .allocation_bytes
-            .checked_sub(inline.checked_mul(self.len() as u128)?)?;
-        usize::try_from(payload)
+        usize::try_from(self.allocation_bytes)
             .ok()?
-            .checked_add(storage_geometry::retained_nodes::<
-                AspectKey,
-                ContractValidatedAspectValue,
-            >(self.len())?)?
-            .checked_add(storage_geometry::retained_nodes::<usize, usize>(
-                self.key_width_counts.len(),
-            )?)
+            .checked_add(storage_geometry::retained_nodes(self.len())?)
     }
 
-    /// Current persistent-tree backing, excluding nested keys/values.
-    /// Includes an allocated empty root and the derived key-width index.
+    /// Exact persistent-tree node backing for `entries` aspects, excluding
+    /// nested keys/values. An empty map allocates zero nodes.
     pub fn construction_storage_bytes(entries: usize) -> Option<usize> {
-        storage_geometry::retained_nodes::<AspectKey, ContractValidatedAspectValue>(entries)?
-            .checked_add(storage_geometry::retained_nodes::<usize, usize>(entries)?)
+        storage_geometry::retained_nodes(entries)
     }
 
-    /// Peak incremental construction backing above independently retained input.
-    /// Construction consumes a unique stream into fresh roots, so no node is ever
-    /// copied on write: up to 64 entries both trees stay unique leaves, and a
-    /// larger build needs at most one remove-then-insert path beside its final
-    /// nodes. Includes both empty roots.
-    pub fn construction_scratch_bytes(entries: usize, maximum_key_width: usize) -> Option<usize> {
-        if entries <= 64 {
-            return Self::construction_storage_bytes(0);
+    /// Peak incremental construction scratch above independently retained input
+    /// and the final persistent nodes when inserting an arbitrary unsorted
+    /// stream one entry at a time.
+    pub fn construction_scratch_bytes(entries: usize, _maximum_key_width: usize) -> Option<usize> {
+        if entries == 0 {
+            return Some(0);
         }
-        Self::empty_edit_storage_bytes(2, entries, maximum_key_width)
+        storage_geometry::edit_paths(entries, 1)
     }
 
-    pub(crate) fn maximum_key_width(&self) -> usize {
-        self.key_width_counts
-            .get_max()
-            .map_or(0, |(width, _)| *width)
-    }
-
-    /// Conservative copy-path scratch for this actual ordered edit batch.
-    /// Extra metadata covers remove-then-insert and the width index's own edits.
+    /// Conservative copy-path scratch for this ordered edit batch.
     pub(crate) fn edit_storage_bytes(
         &self,
         operations: usize,
         additional_entries: usize,
-        new_key_width: usize,
+        _new_key_width: usize,
     ) -> Option<usize> {
         let entries = self.len().checked_add(additional_entries)?;
-        let widths = self
-            .key_width_counts
-            .len()
-            .checked_add(additional_entries)?;
-        let maximum_key_width = self.maximum_key_width().max(new_key_width);
-        if self.len() <= 62 && self.key_width_counts.len() <= 62 && entries <= 64 && widths <= 64 {
-            // A retained tree can still have children at63/64 entries. At62
-            // it is a leaf; this batch never fills beyond its64 inline cells.
-            // Each shared root is detached at most once across the whole batch.
-            return if operations == 0 {
-                Some(0)
-            } else {
-                Self::construction_storage_bytes(0)?
-                    .checked_add(self.len().checked_mul(maximum_key_width)?)
-            };
-        }
-        let key_bytes = maximum_key_width.checked_mul(64)?;
-        storage_geometry::edit_paths::<AspectKey, ContractValidatedAspectValue>(
-            entries, operations, key_bytes,
-        )?
-        .checked_add(storage_geometry::edit_paths::<usize, usize>(
-            widths, operations, 0,
-        )?)
-    }
-
-    pub(crate) fn empty_edit_storage_bytes(
-        operations: usize,
-        entries: usize,
-        key_width: usize,
-    ) -> Option<usize> {
-        Self::construction_storage_bytes(0)?
-            .checked_add(storage_geometry::edit_paths::<
-                AspectKey,
-                ContractValidatedAspectValue,
-            >(
-                entries, operations, key_width.checked_mul(64)?
-            )?)?
-            .checked_add(storage_geometry::edit_paths::<usize, usize>(
-                entries, operations, 0,
-            )?)
+        storage_geometry::edit_paths(entries, operations)
     }
 }
 

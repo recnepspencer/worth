@@ -35,10 +35,20 @@ pub(crate) trait RecordKind: Clone + Debug + 'static {
     fn metadata_extra(
         metadata: &Self::Meta,
     ) -> &crate::storage::substrate::StorageAllocation<Self::Extra>;
-    /// Checked declared upper bound of the backing reachable from this extra
-    /// beyond its carrier layout. Each holder counts shared backing again, so
-    /// this is never an exact physical inventory. `None` is unrepresentable.
-    fn extra_reachable_bound_bytes(extra: &Self::Extra) -> Option<u64>;
+    /// Visit every physical persistent-aspect value-backing allocation
+    /// reachable from this extra carrier, at node and value granularity.
+    fn visit_extra_allocations(
+        extra: &Self::Extra,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    );
+    /// Visit persistent-aspect value-backing allocations reachable from `extra`
+    /// that were not already present in `previous`.
+    fn visit_new_extra_allocations(
+        extra: &Self::Extra,
+        previous: Option<&Self::Extra>,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    );
 }
 
 pub(crate) trait HistoricalMetadata: Sized {
@@ -110,8 +120,32 @@ impl RecordKind for EntityRecordKind {
         &metadata.extra
     }
 
-    fn extra_reachable_bound_bytes(extra: &Self::Extra) -> Option<u64> {
-        extra.reachable_bound_bytes()
+    fn visit_extra_allocations(
+        extra: &Self::Extra,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    ) {
+        if let Some(state) = extra.authoritative_aspect_state() {
+            crate::storage::substrate::visit_foundational_value_backing(
+                state,
+                ancestor_unique,
+                visitor,
+            );
+        }
+    }
+
+    fn visit_new_extra_allocations(
+        extra: &Self::Extra,
+        previous: Option<&Self::Extra>,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    ) {
+        if let Some(state) = extra.authoritative_aspect_state() {
+            crate::storage::substrate::visit_new_foundational_value_backing(
+                state,
+                previous.and_then(EntityExtra::authoritative_aspect_state),
+                visitor,
+            );
+        }
     }
 }
 
@@ -194,8 +228,32 @@ impl RecordKind for RelationRecordKind {
         &metadata.extra
     }
 
-    fn extra_reachable_bound_bytes(extra: &Self::Extra) -> Option<u64> {
-        extra.reachable_bound_bytes()
+    fn visit_extra_allocations(
+        extra: &Self::Extra,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    ) {
+        if let Some(state) = extra.authoritative_aspect_state() {
+            crate::storage::substrate::visit_foundational_value_backing(
+                state,
+                ancestor_unique,
+                visitor,
+            );
+        }
+    }
+
+    fn visit_new_extra_allocations(
+        extra: &Self::Extra,
+        previous: Option<&Self::Extra>,
+        visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
+    ) {
+        if let Some(state) = extra.authoritative_aspect_state() {
+            crate::storage::substrate::visit_new_foundational_value_backing(
+                state,
+                previous.and_then(RelationExtra::authoritative_aspect_state),
+                visitor,
+            );
+        }
     }
 }
 

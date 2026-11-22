@@ -44,6 +44,26 @@ impl AuthoritativeRecordAspectState {
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
         self.aspects.owned_allocation_capacity_bytes()
     }
+
+    /// Visits every distinct physical heap allocation reachable from this state.
+    pub fn visit_allocations(
+        &self,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        self.aspects.visit_allocations(ancestor_unique, visitor);
+    }
+
+    /// Visits physical heap allocations reachable from `self` that were not
+    /// already present in `previous`.
+    pub fn visit_new_allocations(
+        &self,
+        previous: Option<&Self>,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        self.aspects
+            .visit_new_allocations(previous.map(Self::aspects), visitor);
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -7,9 +7,12 @@ fn owned_patch_storage_bounds_cover_actual_backings_and_checked_overflow() {
         PortableRecordAspectPatch::new([]).readmission_storage_bounds(),
         Some(AspectPatchStorageBounds::default())
     );
-    // c65d042399: an empty persistent map and its derived width index
-    // each own a root. An absent optional state still allocates neither.
-    assert!(CanonicalAspectStateMap::construction_storage_bytes(0).unwrap() > 0);
+    // An empty owned persistent AVL map has no root allocation.
+    assert_eq!(
+        CanonicalAspectStateMap::construction_storage_bytes(0),
+        Some(0)
+    );
+    assert!(CanonicalAspectStateMap::construction_storage_bytes(1).unwrap() > 0);
     for count in [1, 2, 3, 4, 7, 8, 9, 65] {
         let bounds =
             AuthoritativeRecordAspectPatch::construction_storage_bounds(count, 0, 0).unwrap();

@@ -127,6 +127,24 @@ impl InternedString {
         }
     }
 
+    pub(crate) fn direct_owned_allocation_capacity_bytes(&self) -> usize {
+        match self {
+            Self::Raw(value) => value.capacity(),
+            Self::Stored(value) => value.direct_owned_allocation_capacity_bytes(),
+            Self::Symbol(_) => 0,
+        }
+    }
+
+    pub(crate) fn visit_shared_allocations(
+        &self,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        if let Self::Stored(value) = self {
+            value.visit_shared_allocations(ancestor_unique, visitor);
+        }
+    }
+
     pub fn as_symbol(&self) -> Option<Symbol> {
         match self {
             Self::Raw(_) | Self::Stored(_) => None,

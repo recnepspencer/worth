@@ -14,9 +14,9 @@ use super::sharing::{
 /// Owner inventory used to cross-examine the derived sharing summary.
 ///
 /// Entries come directly from root, partition, and canonical-artifact owners;
-/// this artifact does not call or reuse `observe_branch_sharing`. A payload
-/// carrier's entry includes its checked declared upper bound for nested
-/// persistent aspect backing, counted once per carrier even when shared.
+/// this artifact does not call or reuse `observe_branch_sharing`. Nested
+/// persistent aspect nodes and admitted values are reported as distinct
+/// physical allocations so sharing across carriers deduplicates identically.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RelationalOwnerAllocationLedgerObservation {
     authoritative_allocations: Vec<RelationalAuthoritativeAllocationObservation>,
@@ -165,6 +165,9 @@ fn inventory_root(
     excluded: &mut Vec<RelationalOwnerExcludedAllocationObservation>,
 ) -> Result<(), crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial> {
     for region in root.storage_regions() {
+        let region = region.map_err(|_| {
+            crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow
+        })?;
         let partition = root
             .partition_state(region.partition_id).map_err(crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial::StorageUnavailable)?
             .expect(/* Proof: The physical inventory row is generated while traversing this retained root partition; its locator is constructed as a partition locator from that same traversal. */ "observed region owns its partition");

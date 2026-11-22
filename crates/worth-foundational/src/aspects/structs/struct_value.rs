@@ -167,6 +167,21 @@ impl StructAspectValue {
     pub(crate) fn semantic_byte_width(&self) -> usize {
         self.semantic_bytes.min(usize::MAX as u128) as usize
     }
+    pub(crate) fn visit_allocations(
+        &self,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        self.fields.visit_allocations(ancestor_unique, visitor);
+    }
+    pub(crate) fn visit_new_allocations(
+        &self,
+        previous: &Self,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        self.fields
+            .visit_new_allocations(&previous.fields, visitor);
+    }
     /// Cost: changed fields and persistent tree paths. Untouched values retain identity.
     pub(crate) fn patched<'a>(
         &self,

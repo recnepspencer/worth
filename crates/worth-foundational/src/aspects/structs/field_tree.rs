@@ -322,5 +322,7 @@ impl Serialize for StructFields {
     }
 }
 
+mod allocation;
+
 #[cfg(test)]
 mod tests;

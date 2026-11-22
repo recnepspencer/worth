@@ -74,7 +74,7 @@ fn an_owned_head_promotes_without_a_checkpoint_and_keeps_its_old_observation() {
             retention: &prior,
             directory: &directory,
             kind_commitment: fixture.cold.kind_authority,
-            inventory: original.partition.allocation_inventory(),
+            inventory: original.partition.allocation_inventory().unwrap(),
             unavailable_records: original
                 .partition
                 .entity_arena
@@ -275,7 +275,13 @@ fn head_content_inspection_hashes_its_suffix_without_loading_the_base_or_trustin
             .authoritative_content_digest(&fixture.cold.symbols.interner_snapshot())
             .unwrap()
     );
-    assert!(owned.cell().reclaimable_unique_resident_payload_bytes() > 0);
+    assert!(
+        owned
+            .cell()
+            .reclaimable_unique_resident_payload_bytes()
+            .unwrap()
+            > 0
+    );
 }
 
 #[path = "resident_history_tests/symbol_inheritance.rs"]

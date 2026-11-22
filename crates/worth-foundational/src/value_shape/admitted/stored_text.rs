@@ -39,9 +39,25 @@ impl StoredValueText {
         &self.0.text
     }
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
-        std::mem::size_of::<StoredText>()
-            .saturating_add(self.0.text.capacity())
+        self.direct_owned_allocation_capacity_bytes()
             .saturating_add(Self::proof_capacity_bytes())
+    }
+
+    pub(crate) fn direct_owned_allocation_capacity_bytes(&self) -> usize {
+        std::mem::size_of::<StoredText>().saturating_add(self.0.text.capacity())
+    }
+
+    pub(crate) fn visit_shared_allocations(
+        &self,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        visitor.visit(crate::aspects::FoundationalAllocationObservation {
+            id: Arc::as_ptr(&self.0.seal) as usize as u64,
+            bytes: Self::proof_capacity_bytes() as u64,
+            unique: ancestor_unique && Arc::strong_count(&self.0.seal) == 1,
+            kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
+        });
     }
 
     /// A copy allocates its box and length-sized text. Its proof cell is shared,

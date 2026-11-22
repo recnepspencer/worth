@@ -102,9 +102,14 @@ impl RelationalRootRegion {
 
     pub(super) fn allocation_inventory(
         &self,
-    ) -> crate::storage::overlay::RelationalPartitionAllocationInventory {
-        self.allocation_inventory
-            .unwrap_or_else(|| self.partition.cell().resident_inventory())
+    ) -> Result<
+        crate::storage::overlay::RelationalPartitionAllocationInventory,
+        crate::storage::substrate::StorageAllocationOverflow,
+    > {
+        match self.allocation_inventory {
+            Some(inventory) => Ok(inventory),
+            None => self.partition.cell().resident_inventory(),
+        }
     }
 
     pub(super) fn materialization_unavailable_records(&self) -> usize {
@@ -123,9 +128,16 @@ impl RelationalRootRegion {
         )
     }
 
-    pub(super) fn observation(&self) -> RelationalRootRegionObservation {
-        let inventory = self.allocation_inventory();
-        RelationalRootRegionObservation {
+    pub(super) fn observation(
+        &self,
+    ) -> Result<RelationalRootRegionObservation, crate::storage::substrate::StorageAllocationOverflow>
+    {
+        let inventory = self.allocation_inventory()?;
+        let optional_cache_bytes = inventory
+            .optional_cache_bytes
+            .checked_add(self.partition.cell().resident_commitment_bytes())
+            .ok_or(crate::storage::substrate::StorageAllocationOverflow)?;
+        Ok(RelationalRootRegionObservation {
             creation_root_id: self.creation_root_id,
             region_id: self.id,
             partition_id: self.partition_id,
@@ -135,22 +147,28 @@ impl RelationalRootRegion {
             diagnostic_bytes: inventory.diagnostic_bytes,
             retention_metadata_bytes: inventory.retention_metadata_bytes,
             allocator_bookkeeping_bytes: inventory.allocator_bookkeeping_bytes,
-            optional_cache_bytes: inventory.optional_cache_bytes
-                + self.partition.cell().resident_commitment_bytes(),
-        }
+            optional_cache_bytes,
+        })
     }
 
-    pub(super) fn reclaimable_unique_authoritative_bytes(&self) -> u64 {
+    pub(super) fn reclaimable_unique_authoritative_bytes(
+        &self,
+    ) -> Result<u64, crate::storage::substrate::StorageAllocationOverflow> {
+        use crate::storage::substrate::StorageAllocationOverflow;
         let mut bytes = std::mem::size_of::<Self>() as u64;
         if self.partition.is_uniquely_owned() {
-            bytes = bytes.saturating_add(self.partition.cell().residency_allocation_bytes());
-            bytes = bytes.saturating_add(
-                self.partition
-                    .cell()
-                    .reclaimable_unique_resident_payload_bytes(),
-            );
+            bytes = bytes
+                .checked_add(self.partition.cell().residency_allocation_bytes())
+                .ok_or(StorageAllocationOverflow)?;
+            bytes = bytes
+                .checked_add(
+                    self.partition
+                        .cell()
+                        .reclaimable_unique_resident_payload_bytes()?,
+                )
+                .ok_or(StorageAllocationOverflow)?;
         }
-        bytes
+        Ok(bytes)
     }
 }
 

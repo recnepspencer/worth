@@ -146,8 +146,91 @@ impl ContractValidatedAspectValue {
             .owned_allocation_capacity_bytes()
             .saturating_add(self.value.contract.owned_allocation_capacity_bytes())
             .saturating_add(value_bytes)
-            .saturating_add(std::mem::size_of::<ValidatedAspect>())
-            .saturating_add(2 * std::mem::size_of::<usize>())
+            .saturating_add(
+                Self::admission_cell_storage_bytes()
+                    .expect("the fixed validated aspect Arc layout fits the address space"),
+            )
+    }
+
+    pub(crate) fn shares_allocation(&self, other: &Self) -> bool {
+        std::sync::Arc::ptr_eq(&self.value, &other.value)
+    }
+
+    fn direct_allocation_bytes(&self) -> u64 {
+        let scalar_direct = match &self.value.kind {
+            ContractValidatedAspectValueKind::Scalar(value) => {
+                value.direct_owned_allocation_capacity_bytes()
+            }
+            ContractValidatedAspectValueKind::Struct(_) => 0,
+        };
+        (Self::admission_cell_storage_bytes()
+            .expect("the fixed validated aspect Arc layout fits the address space")
+            + self.value.key.owned_allocation_capacity_bytes()
+            + scalar_direct) as u64
+    }
+
+    pub(crate) fn visit_allocations(
+        &self,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        let unique = ancestor_unique && std::sync::Arc::strong_count(&self.value) == 1;
+        let observation = crate::aspects::FoundationalAllocationObservation {
+            id: crate::aspects::allocation_visitor::arc_id(&self.value),
+            bytes: self.direct_allocation_bytes(),
+            unique,
+            kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
+        };
+        if !visitor.visit(observation) {
+            return;
+        }
+        self.value.contract.visit_allocations(unique, visitor);
+        match &self.value.kind {
+            ContractValidatedAspectValueKind::Scalar(value) => {
+                value.visit_shared_allocations(unique, visitor);
+            }
+            ContractValidatedAspectValueKind::Struct(value) => {
+                value.visit_allocations(unique, visitor);
+            }
+        }
+    }
+
+    pub(crate) fn visit_new_allocations(
+        &self,
+        previous: Option<&Self>,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        let Some(previous) = previous else {
+            self.visit_allocations(false, visitor);
+            return;
+        };
+        if self.shares_allocation(previous) {
+            return;
+        }
+        let observation = crate::aspects::FoundationalAllocationObservation {
+            id: crate::aspects::allocation_visitor::arc_id(&self.value),
+            bytes: self.direct_allocation_bytes(),
+            unique: false,
+            kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
+        };
+        if !visitor.visit(observation) {
+            return;
+        }
+        if !self.value.contract.shares_definition(&previous.value.contract) {
+            self.value.contract.visit_allocations(false, visitor);
+        }
+        match (&self.value.kind, &previous.value.kind) {
+            (
+                ContractValidatedAspectValueKind::Struct(current),
+                ContractValidatedAspectValueKind::Struct(prior),
+            ) => current.visit_new_allocations(prior, visitor),
+            (ContractValidatedAspectValueKind::Struct(current), _) => {
+                current.visit_allocations(false, visitor);
+            }
+            (ContractValidatedAspectValueKind::Scalar(value), _) => {
+                value.visit_shared_allocations(false, visitor);
+            }
+        }
     }
 }
 

@@ -77,8 +77,9 @@ fn check_delta(current: &RecordArena<EntityRecordKind>, prior: &RecordArena<Enti
     prior.visit_new_authoritative_allocations(current, &mut removed);
     let sum = |observed: &Observed| observed.0.iter().map(|entry| entry.bytes).sum::<u64>();
     assert_eq!(
-        prior.allocation_inventory().authoritative_bytes - sum(&removed) + sum(&introduced),
-        current.allocation_inventory().authoritative_bytes
+        prior.allocation_inventory().unwrap().authoritative_bytes - sum(&removed)
+            + sum(&introduced),
+        current.allocation_inventory().unwrap().authoritative_bytes
     );
 }
 #[test]
