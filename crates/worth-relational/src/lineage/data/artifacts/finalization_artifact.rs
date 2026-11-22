@@ -118,6 +118,11 @@ impl PreparedLineageFinalization {
         &self.new_relation_lineages
     }
 
+    #[cfg(test)]
+    pub(crate) fn new_nodes(&self) -> &[crate::lineage::data::LineageNode] {
+        &self.new_nodes
+    }
+
     pub(crate) fn into_parts(
         self,
     ) -> (

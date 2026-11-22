@@ -19,11 +19,10 @@
 
 pub use worth_query_declaration::facade::{
     application_aftermath, application_capability, application_history, application_identity,
-    application_naming,
-    application_operation, application_program, application_query, application_resource,
-    application_schema, authentication, authoring, binding, branch, canonicalization, collection,
-    diagnostics, identity, identity_authority, portable_identity, schema_view, typed, validation,
-    view_declaration,
+    application_naming, application_operation, application_program, application_query,
+    application_resource, application_schema, authentication, authoring, binding, branch,
+    canonicalization, collection, diagnostics, identity, identity_authority, portable_identity,
+    schema_view, typed, validation, view_declaration,
 };
 pub use worth_query_declaration::{
     worth_query_ability, worth_query_application_query, worth_query_capability,
@@ -102,5 +101,45 @@ pub use worth_query_declaration::{
 ///     scheme.erased().continuity_rule(),
 ///     ApplicationGroupContinuityRule::Boundary
 /// );
+/// ```
+///
+/// Held names resolve through one closed selection and outcome vocabulary.
+/// Erased carrier names cannot be forged from raw bytes:
+///
+/// ```compile_fail,E0599
+/// use worth_query_decl::facade::application_naming::ErasedWorthQueryName;
+/// let _forged = ErasedWorthQueryName::from_bytes([0u8; 32]);
+/// ```
+///
+/// A side selection never accepts raw, unencoded bytes:
+///
+/// ```compile_fail,E0308
+/// use worth_query_decl::facade::application_naming::NameSelection;
+/// let _forged = NameSelection::KeepSide { discriminator: b"left".to_vec() };
+/// ```
+///
+/// ```
+/// use worth_query_decl::facade::application_naming::{
+///     NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
+/// };
+/// struct Face;
+/// fn plan(cutter: WorthQueryName<Face>) -> [NameSelection; 3] {
+///     [
+///         NameSelection::Exact,
+///         NameSelection::AllDescendants,
+///         NameSelection::bounded_by_carriers([cutter.erased()]),
+///     ]
+/// }
+/// fn report(outcome: Result<ResolvedName<u32>, NameResolutionDenial<Face>>) -> usize {
+///     match outcome {
+///         Ok(ResolvedName::Exact(_)) => 1,
+///         Ok(ResolvedName::Plural(faces)) => faces.len(),
+///         Ok(ResolvedName::Retired { .. }) => 0,
+///         Err(NameResolutionDenial::Ambiguous { candidates }) => candidates.len(),
+///         Err(_) => 0,
+///     }
+/// }
+/// let _plan: fn(WorthQueryName<Face>) -> [NameSelection; 3] = plan;
+/// assert_eq!(report(Ok(ResolvedName::Plural(vec![1, 2]))), 2);
 /// ```
 pub use worth_query_declaration::facade::canonicalization::CanonicalQueryArtifact;

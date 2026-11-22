@@ -7,5 +7,6 @@ mod cost;
 pub mod domain_computation;
 mod naming_discriminator_agreement;
 mod naming_posture_agreement;
+mod naming_resolution_agreement;
 
 mod query_obligations;

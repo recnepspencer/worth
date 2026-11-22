@@ -3,6 +3,7 @@ mod events;
 mod graph;
 mod invariants;
 mod metrics;
+mod name_resolution;
 mod naming;
 mod naming_denial;
 mod postures;
@@ -22,6 +23,11 @@ pub use graph::{
 };
 pub use invariants::LineageInvariant;
 pub use metrics::LineageFinalizationCounters;
+pub use name_resolution::{
+    PersistentNameKey, PersistentNameResolution, PersistentNameResolutionDenial,
+    PersistentNameResolutionMetrics, PersistentNameResolutionOutcome, PersistentNameSelection,
+    PersistentNameTarget,
+};
 pub use naming::{
     InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry, PersistentNameBirthParts,
     PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameDiscriminatorReference,

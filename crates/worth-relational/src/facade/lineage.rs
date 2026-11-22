@@ -15,6 +15,11 @@ pub use crate::lineage::data::{
     LineageMergeKeeper, LineageNameDenial, LineageNode, LineagePostureClaim, LineagePostureKind,
     LineageRecordTarget, LineageSplitChild, LineageSubject, PersistentNameBirthParts,
     PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameDiscriminatorReference,
-    PersistentNameHolder, PersistentNameIdentity, PersistentNameReferenceBasis,
-    PersistentNameSubjectKind, RecordHistoryRequest,
+    PersistentNameHolder, PersistentNameIdentity, PersistentNameKey, PersistentNameReferenceBasis,
+    PersistentNameResolution, PersistentNameResolutionDenial, PersistentNameResolutionMetrics,
+    PersistentNameResolutionOutcome, PersistentNameSelection, PersistentNameSubjectKind,
+    PersistentNameTarget, RecordHistoryRequest,
+};
+pub use crate::lineage::index::{
+    PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
