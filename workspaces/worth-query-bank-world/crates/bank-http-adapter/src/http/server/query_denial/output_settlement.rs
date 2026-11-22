@@ -78,6 +78,7 @@ pub(super) fn output_settlement(kind: BankApplicationOutputSettlementDenialKind)
         | Settlement::NoEffect => unavailable(),
         Settlement::ProductSelection(kind) => product_selection(kind),
         Settlement::CyclicRequiredOutputOccurrences { .. }
+        | Settlement::SupersededSelectionDropped { .. }
         | Settlement::RequiredOutputParentUnavailable { .. }
         | Settlement::RequiredSuccessorStateUnavailable
         | Settlement::DuplicatePerformedSource

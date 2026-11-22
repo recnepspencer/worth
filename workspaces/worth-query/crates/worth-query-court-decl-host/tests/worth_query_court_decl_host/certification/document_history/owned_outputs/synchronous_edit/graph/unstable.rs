@@ -1,4 +1,5 @@
-//! Discovery support changed by a later child must refuse before publication.
+//! Discovery support changed by a later child must refuse before publication:
+//! the parent selects again and drops the child it derived (#238, PR C C4).
 use super::*;
 pub(super) mod program;
 pub mod query;
@@ -37,28 +38,25 @@ fn exercise(worker: bool) {
     else {
         panic!("changed discovery support must refuse the whole edit")
     };
-    let failure = cause
-        .invariant_execution_failure()
-        .expect("the existing candidate-support owner refuses");
-    assert_eq!(failure.kind(),worth_query_host::facade::primary_graph::WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged);
-    assert!(
-        failure.detail().contains("discovery support")
-            && failure
-                .detail()
-                .contains("owned-outputs.unstable-discovery-binding.v1"),
-        "{failure:?}"
-    );
+    // The child's member empties the parent's discovery, which selected it:
+    // the parent selects again (#238), drops the child it already derived,
+    // and the wave refuses that before any publication.
     let source = request
         .query(super::super::super::query::model::Read("a".into()))
         .execute()
         .unwrap()
         .rows()[0]
         .native_id;
-    assert_eq!(
-        failure.affected_records(),
-        [worth_relational::facade::transactions::RecordRef::Entity(
-            source
-        )]
+    let denial = cause
+        .coupled_producer_denial()
+        .unwrap_or_else(|| panic!("the wave refuses the dropped selection: {cause:?}"));
+    assert!(
+        matches!(
+            denial.kind(),
+            WorthQueryOutputDemandDenialKind::SupersededSelectionDropped { source: dropped }
+                if dropped == source
+        ),
+        "{denial:?}"
     );
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),

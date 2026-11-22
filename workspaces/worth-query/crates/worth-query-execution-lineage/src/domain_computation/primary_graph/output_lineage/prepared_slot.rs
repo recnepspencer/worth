@@ -159,12 +159,6 @@ impl PreparedOutputLineageSlot {
     pub fn retain_coupled_completion(&mut self, completion: super::CoupledOutputCompletion) {
         assert!(self.coupled_completion.replace(completion).is_none());
     }
-    /// The coupled producer completion this slot records, if any.
-    pub fn coupled_completion(
-        &self,
-    ) -> Option<&super::CoupledOutputCompletion> {
-        self.coupled_completion.as_ref()
-    }
     pub fn seal_published_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

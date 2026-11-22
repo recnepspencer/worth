@@ -48,12 +48,9 @@ pub(in crate::domain_computation::primary_graph::provider) fn rank_consumption(
         .collect::<Vec<_>>();
     let mut done = vec![false; members.len()];
     for rank in 0..members.len() {
-        let ready = |index: usize| {
-            !done[index]
-                && parents[index]
-                    .iter()
-                    .all(|&parent| parent == index || done[parent])
-        };
+        // No consumption settles against its own member's completion.
+        let ready =
+            |index: usize| !done[index] && parents[index].iter().all(|&parent| done[parent]);
         let Some(next) = (0..members.len()).find(|&index| ready(index)) else {
             return Err((0..members.len()).filter(|&index| !done[index]).collect());
         };
