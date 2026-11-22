@@ -28,7 +28,7 @@ const FORMER_SEMANTIC_IDENTITY_OWNERS: &[(&str, &str)] = &[
     (
         "execution projected tree",
         include_str!(
-            "../../../../worth-query-execution/src/domain_computation/primary_graph/application_query/projection/projected_tree.rs"
+            "../../../../worth-query-execution-lineage/src/domain_computation/primary_graph/application_query/projection/projected_tree.rs"
         ),
     ),
 ];
@@ -81,7 +81,7 @@ fn phase_six_semantic_families_share_the_foundational_digest_slot() {
         "/../../../../crates/worth-runtime-bridge/src/authorization/runtime.rs"
     ));
     let live_open = include_str!(
-        "../../../../worth-query-execution/src/domain_computation/primary_graph/application_query/live/lease/open.rs"
+        "../../../../worth-query-execution-query/src/domain_computation/primary_graph/application_query/live/lease/open.rs"
     );
     let query_definition = include_str!(
         "../../../../worth-query-declaration/src/application_query/canonical_basis/definition.rs"
@@ -94,7 +94,7 @@ fn phase_six_semantic_families_share_the_foundational_digest_slot() {
         "../../../../worth-query-admission/src/application_query/parameter_canonical_basis.rs"
     );
     let preconditions = include_str!(
-        "../../../../worth-query-execution/src/domain_computation/primary_graph/application_attempt/precondition_binding/canonical_identity.rs"
+        "../../../../worth-query-execution-attempt/src/domain_computation/primary_graph/application_attempt/precondition_binding/canonical_identity.rs"
     );
     let evidence_slot = include_str!(
         "../../../../worth-query-execution-diagnostics/src/evidence_identity/foundational.rs"
@@ -155,24 +155,33 @@ fn warm_consumers_cannot_hide_hashing_behind_a_helper() {
     let manifest = Path::new(env!("CARGO_MANIFEST_DIR"));
     for relative in [
         "../worth-query-execution/src/domain_computation/primary_graph/application_query",
-        "../worth-query-execution/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission/restoration.rs",
-        "../worth-query-execution/src/domain_computation/authorization",
-        "../worth-query-execution/src/domain_computation/primary_graph/application_attempt/idempotency_resolution.rs",
-        "../worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_recomparison.rs",
-        "../worth-query-execution/src/domain_computation/primary_graph/application_attempt/provider_execution",
-        "../worth-query-execution/src/domain_computation/operation_binding/authority/application_binding.rs",
-        "../worth-query-execution/src/domain_computation/provider_session/execution_attempt_identity.rs",
-        "../worth-query-execution/src/domain_computation/provider_session/session_identity.rs",
-        "../worth-query-execution/src/domain_computation/provider_session/graph_obligation",
-        "../worth-query-execution/src/domain_computation/provider_session/attempt_evidence.rs",
+        "../worth-query-execution-query/src/domain_computation/primary_graph/application_query",
+        "../worth-query-execution-attempt/src/domain_computation/primary_graph/application_query",
+        "../worth-query-execution-lineage/src/domain_computation/primary_graph/application_query",
+        "../worth-query-execution-query/src/domain_computation/primary_graph/application_contribution/producer/demand/progression/admission/restoration.rs",
+        "../worth-query-execution-query/src/domain_computation/authorization",
+        "../worth-query-execution-attempt/src/domain_computation/authorization",
+        "../worth-query-execution-lineage/src/domain_computation/authorization",
+        "../worth-query-execution-runtime/src/domain_computation/authorization",
+        "../worth-query-execution-query/src/domain_computation/primary_graph/application_attempt/idempotency_resolution.rs",
+        "../worth-query-execution-attempt/src/domain_computation/primary_graph/application_attempt/provider_recomparison.rs",
+        "../worth-query-execution-lineage/src/domain_computation/primary_graph/application_attempt/provider_recomparison.rs",
+        "../worth-query-execution-query/src/domain_computation/primary_graph/application_attempt/provider_execution",
+        "../worth-query-execution-attempt/src/domain_computation/primary_graph/application_attempt/provider_execution",
+        "../worth-query-execution-lineage/src/domain_computation/primary_graph/application_attempt/provider_execution",
+        "../worth-query-execution-runtime/src/domain_computation/operation_binding/authority/application_binding.rs",
+        "../worth-query-execution-runtime/src/domain_computation/provider_session/execution_attempt_identity.rs",
+        "../worth-query-execution-runtime/src/domain_computation/provider_session/session_identity.rs",
+        "../worth-query-execution-runtime/src/domain_computation/provider_session/graph_obligation",
+        "../worth-query-execution-runtime/src/domain_computation/provider_session/attempt_evidence.rs",
         "../worth-query-admission/src/graph_obligation",
-        "../worth-query-execution/src/domain_computation/managed_run/run_affinity",
-        "../worth-query-execution/src/domain_computation/provider_session/protocol/plan_contract.rs",
-        "../worth-query-execution/src/domain_computation/provider_session/protocol/provider_port.rs",
-        "../worth-query-execution/src/domain_computation/provider_session/protocol/session_binding.rs",
-        "../worth-query-execution/src/domain_computation/provider_session/decision_read_set/capture.rs",
-        "../worth-query-execution/src/domain_computation/provider_session/decision_read_set/fact.rs",
-        "../worth-query-execution/src/domain_computation/provider_session/provisional_attempt",
+        "../worth-query-execution-runtime/src/domain_computation/managed_run/run_affinity",
+        "../worth-query-execution-runtime/src/domain_computation/provider_session/protocol/plan_contract.rs",
+        "../worth-query-execution-runtime/src/domain_computation/provider_session/protocol/provider_port.rs",
+        "../worth-query-execution-runtime/src/domain_computation/provider_session/protocol/session_binding.rs",
+        "../worth-query-execution-runtime/src/domain_computation/provider_session/decision_read_set/capture.rs",
+        "../worth-query-execution-runtime/src/domain_computation/provider_session/decision_read_set/fact.rs",
+        "../worth-query-execution-runtime/src/domain_computation/provider_session/provisional_attempt",
         "../../../../crates/worth-runtime-bridge/src/authorization",
         "../../../../crates/worth-relational/src/content",
         "../../../worth-query-bank-world/crates/bank-server/src/application_query",
