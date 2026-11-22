@@ -206,7 +206,79 @@ impl ApplicationProgramDefinition<Schema> for Program {
     }
 }
 
+/// The same graph without the watch, which selects nothing in every state:
+/// committing the stage through it builds the world the edit must equal.
+pub type BareTree =
+    ApplicationOutputGraph<program::Connection, ApplicationOutputOccurrences<Watched>>;
+pub struct BareDelivery;
+impl ApplicationActionDelivery<Schema, edit::Binding> for BareDelivery {
+    type Mode = ApplicationFixedDeliveryMode<BareTree, ApplicationNoProjection>;
+    const IDENTITY: &'static str = "owned-outputs.late-parent.superseded-window-bare-delivery";
+}
+impl ApplicationFixedActionDelivery<Schema, edit::Binding> for BareDelivery {
+    type Root = BareTree;
+    type Projection = ApplicationNoProjection;
+}
+pub struct BareProgram;
+impl ApplicationProgramDefinition<Schema> for BareProgram {
+    type Contributions = (Contribution,);
+    type Outputs = ApplicationProgramOutputs<BareTree>;
+    type Rules = ApplicationRuleLeaf;
+    const IDENTITY: ApplicationProgramIdentity =
+        ApplicationProgramIdentity::new("owned-outputs.late-parent.superseded-window-bare-program");
+    fn feature_specs() -> Vec<ApplicationFeatureSpec> {
+        let mut specs = super::super::hierarchy::Program::feature_specs();
+        specs[0] = super::super::super::super::program::entry_spec::<BareDelivery>();
+        specs
+    }
+}
+
 use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
+
+/// first:a and second:a as committed.
+fn committed(request: &family::Request<'_, '_, '_>) -> (u64, u64) {
+    let first = request
+        .query(query::first_output::Read("first:a".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .value;
+    let second = request
+        .query(query::second_output::Read("second:a".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .value;
+    (first, second)
+}
+
+/// The stage `b = 8` committed through the graph without the watch.
+fn sequential() -> (u64, u64) {
+    let host = world::install_program_with_other_model::<BareProgram>(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        2,
+        Some(7),
+    );
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let mut edit = request
+        .edit_envelope()
+        .idempotency("late-parent-superseded-window-bare".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    edit.push_stage::<BareTree, _>(edit::Intent {
+        key: "b".into(),
+        value: 8,
+    })
+    .unwrap();
+    let outcome = edit
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
+    committed(&request)
+}
 
 /// One stage (`b = 8`) enters `decision-input(a)` (first:a = 2 + 5 at 1).
 /// At 1 its occurrence component discovers `second(a)`, its prerequisite
@@ -220,7 +292,8 @@ use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome a
 /// reopening the parent, which derives first:a = 2 + 9 = 11 and selects
 /// again; `second(a)` reopens with it and derives 1002 again. Every read is
 /// checked over its window, so the edit commits the single-stage fixed point:
-/// first:a = 11, second:a = 1002. (Before C4 this refused at final support:
+/// first:a = 11, second:a = 1002, the world the same stage commits through
+/// the graph without the watch. (Before C4 this refused at final support:
 /// the window over the superseded round at 2 saw the change, and discovery
 /// support had no owner to select again.)
 #[test]
@@ -254,31 +327,8 @@ fn a_superseded_round_changing_a_watched_selection_selects_again() {
         events.iter().any(|event| event.starts_with("reselect children task=0")),
         "the changed watch selects again: {events:#?}"
     );
-    let value = |rows: Vec<u64>| rows[0];
-    assert_eq!(
-        value(
-            request
-                .query(query::first_output::Read("first:a".into()))
-                .execute()
-                .unwrap()
-                .rows()
-                .iter()
-                .map(|row| row.value)
-                .collect()
-        ),
-        11
-    );
-    assert_eq!(
-        value(
-            request
-                .query(query::second_output::Read("second:a".into()))
-                .execute()
-                .unwrap()
-                .rows()
-                .iter()
-                .map(|row| row.value)
-                .collect()
-        ),
-        1002
-    );
+    // The watch selects nothing in every state, so the world equals the
+    // stage committed without it: first:a = 2 + 9, second:a = 2 + 1000.
+    assert_eq!(committed(&request), (11, 1002));
+    assert_eq!(sequential(), (11, 1002));
 }
