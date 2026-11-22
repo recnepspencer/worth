@@ -53,3 +53,16 @@ pub(crate) fn retained_byte_owner_bill(bytes: &[u8]) -> u64 {
     assert_eq!(budget.charged_memory_bytes(), 0);
     total
 }
+
+/// Measure counted work charged to `execution` during `operation`.
+pub(crate) fn measure_counted_work<T>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    operation: impl FnOnce() -> T,
+) -> (T, u64) {
+    let (value, report) = execution
+        .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
+            operation()
+        })
+        .expect("unbounded counted work measurement completes");
+    (value, report.charged_work())
+}

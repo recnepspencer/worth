@@ -112,6 +112,10 @@ impl PerfMetricValue {
             _ => None,
         }
     }
+
+    pub(super) fn is_null(&self) -> bool {
+        matches!(self, Self::Null)
+    }
 }
 
 impl Index<&str> for PerfMetricValue {

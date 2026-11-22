@@ -8,6 +8,7 @@ mod descriptor_continuity;
 mod managed_field_text;
 mod merge_replay_continuity;
 mod native_checkpoint;
+mod native_checkpoint_restore_benchmark;
 mod record_allocation_recovery;
 mod rejected_and_parent_closure;
 mod schema_transition_continuity;
