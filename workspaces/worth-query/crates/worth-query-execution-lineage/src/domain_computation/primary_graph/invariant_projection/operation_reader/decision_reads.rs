@@ -61,15 +61,27 @@ pub struct DecisionReads {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RefusalProofs {
     pub keys: Vec<WorthQueryApplicationFactKey>,
+    /// The touch keys of the decision's source facts (indexed selections,
+    /// optional resolutions, source revisions), which carry no fact key.
+    pub touches: Vec<crate::domain_computation::primary_graph::application_attempt::fact::touch_key::FactTouchKey>,
     pub conservative: bool,
 }
 
 impl DecisionReads {
     /// The proofs of a decision that refused (PR C §1.7).
+    /// A partitioned computation's reads are its keys too; a computation
+    /// run's carried or native reads have none, so any run is conservative.
     pub fn refusal_proofs(&self) -> RefusalProofs {
         RefusalProofs {
-            keys: self.handler.iter().cloned().collect(),
-            conservative: self.failed.is_some()
+            keys: self
+                .handler
+                .iter()
+                .chain(self.computation.keys())
+                .cloned()
+                .collect(),
+            touches: Vec::new(),
+            conservative: !matches!(self.runs, ComputationRuns::None)
+                || self.failed.is_some()
                 || self.failed_walk
                 || self.failed_component
                 || self.failed_managed_source
