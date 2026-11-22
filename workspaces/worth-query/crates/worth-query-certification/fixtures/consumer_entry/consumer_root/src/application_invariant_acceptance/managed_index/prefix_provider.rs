@@ -192,6 +192,10 @@ impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> WorthQueryManagedIndexProvid
         for slot in sources.slots() {
             root = Some(insert_prefix_source(root, slot?, &mut storage)?);
         }
+        #[cfg(test)]
+        {
+            *self.0.observed_root.lock().unwrap() = root;
+        }
         Ok(root)
     }
     fn update(
@@ -204,6 +208,10 @@ impl<S: ApplicationSchema, I: PrefixSourceIndex<S>> WorthQueryManagedIndexProvid
         control: &WorthQueryManagedIndexControl<'_>,
     ) -> Result<Option<WorthQueryManagedIndexNodeId>, Stop> {
         self.0.updates.fetch_add(1, Ordering::SeqCst);
+        #[cfg(test)]
+        if let Some(foreign) = *self.0.foreign_node.lock().unwrap() {
+            nodes.get(foreign)?;
+        }
         #[cfg(test)]
         I::observe_update(&self.0, before, after, changes)?;
         #[cfg(test)]
