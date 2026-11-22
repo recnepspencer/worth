@@ -147,7 +147,11 @@ pub(super) fn require_read_support(
                 support.changed_fact(execution, runtime, before, earlier, image)
             })
         };
-        if let Some(invalidator) = retained.window_end {
+        // A root selection's stage window (#238) ends at the next authored
+        // stage by owed order: a producer its own stage owes stays inside it
+        // even when it physically appends after that stage.
+        let stage_window = retained.window_end.filter(|_| retained.stage_window);
+        if let (Some(invalidator), None) = (retained.window_end, stage_window) {
             superseded_window(*source, *position, support, invalidator, members, compare)?;
             continue;
         }
@@ -159,7 +163,10 @@ pub(super) fn require_read_support(
                 *position,
                 members,
                 support.pin(),
-                |writer| settles_read_support(attempt, support, *position, members, writer),
+                |writer| match stage_window {
+                    Some(stage) => writer.runs_from_stage(stage),
+                    None => settles_read_support(attempt, support, *position, members, writer),
+                },
                 |writer| read_support_hold(attempt, support, members, writer),
                 |earlier, image| {
                     compare(earlier, image).map(|fact| fact.map(|fact| fact.locator_identity()))

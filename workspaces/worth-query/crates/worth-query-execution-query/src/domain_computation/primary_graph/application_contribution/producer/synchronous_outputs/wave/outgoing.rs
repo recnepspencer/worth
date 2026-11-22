@@ -1,4 +1,7 @@
 //! Re-close pure outgoing discovery at the candidate actually leaving a wave.
+//! Touch-filtered (PR C §4): only completed rows whose outgoing support changed
+//! since it was retained, or that hold none, run their selectors again. A row
+//! skipped owns at least one compared entry, so the scan is charged there.
 use super::*;
 
 impl<S: ApplicationSchema> SynchronousOutputWave<S> {
@@ -11,16 +14,21 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         // Only the wave's replaceable outgoing evidence is removed. Every
         // consumed Parent, incoming query and static selector stays strict.
         // Failure anywhere below stops this whole attempt before publication.
-        context
-            .owner
-            .refresh_outgoing_support(context.execution)
-            .map_err(CoupledSourceReadStop::from)?;
         let pin = candidate
             .pin_source(context.execution)
             .map_err(CoupledSourceReadStop::from)?;
+        let kept = context
+            .owner
+            .refresh_outgoing_support(context.execution, &pin)
+            .map_err(CoupledSourceReadStop::from)?;
         let mut next = Self::new();
         let mut selections = Vec::new();
+        let mut revisited = 0;
         for (&i, ()) in self.done_components.iter() {
+            if kept.binary_search(&i).is_ok() {
+                continue;
+            }
+            revisited += 1;
             let owed = self.tasks[i].owed.clone();
             let task = &mut self.tasks[i];
             checkpoint(context.execution, task.subject, 1)?;
@@ -40,6 +48,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 selections.push((i, start..next.tasks.len()));
             }
         }
+        observation::record_outgoing_rows_revisited(revisited);
         // Refreshed selections join what each row selected, so a reopen
         // checks a child first linked at quiescence too.
         self.adopt_discovered(context, next, selections, Selection::Accumulate)?;

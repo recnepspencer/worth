@@ -27,6 +27,10 @@ pub struct RetainedCandidateRead {
     pub incoming: bool,
     pub support: CandidateReadSupport,
     pub window_end: Option<usize>,
+    /// `window_end` is the next authored stage's append that ended a root
+    /// selection's stage (#238), judged by owed order, not physically: only
+    /// rounds that sequentially run after that stage are outside it.
+    pub stage_window: bool,
 }
 /// The answer of requalifying a retained verified parent at the current image.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]

@@ -109,16 +109,35 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .reset_candidate_read_support();
         Ok(())
     }
+    /// Touch-filtered outgoing reclosure (PR C §4): the wave tasks whose
+    /// outgoing support is equal at `current` keep it; the wave re-closes the
+    /// rest.
     pub fn refresh_outgoing_read_support(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: &WorthQueryProviderSessionTerminalBinding,
-    ) -> Result<(), Denial> {
-        self.attempts
-            .lock()
-            .unwrap_or_else(|p| p.into_inner())
-            .query_support_root(root)?
-            .refresh_outgoing_read_support(execution)
+        before: &crate::basis::WorthQueryProductBranchLease,
+        current: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) -> Result<Vec<usize>, Denial> {
+        self.graph.with_runtime(execution, |runtime| {
+            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
+                runtime,
+                before.relational_basis(),
+            )
+            .map_err(|_| Denial::new(Kind::StorageUnavailable, "outgoing discovery support refresh"))?;
+            let answer = self
+                .attempts
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .query_support_root(root)
+                .and_then(|attempt| {
+                    attempt.refresh_outgoing_read_support(execution, runtime, &snapshot, current)
+                });
+            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+            answer
+        })
     }
     /// Requalify the verified parent the root retained as `read` (PR C R2):
     /// compare it exactly at `current` against the edit's C basis.

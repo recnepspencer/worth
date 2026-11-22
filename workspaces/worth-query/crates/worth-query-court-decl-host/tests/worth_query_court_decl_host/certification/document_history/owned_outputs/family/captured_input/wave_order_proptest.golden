@@ -95,8 +95,8 @@
    batch id=0 rank=1 ready=[3]
    prepare task=3 subject=component-carriage.static family=from-first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(45), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    quiescence
-   batch id=1 rank=0 ready=[14]
-   prepare task=14 subject=component-carriage.previous family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
+   batch id=1 rank=0 ready=[10]
+   prepare task=10 subject=component-carriage.previous family=first source=Some(RecordId { partition_id: PartitionId(0), local_slot: LocalSlot(22), generation: Generation(1), _marker: PhantomData<worth_relational::identity::data::record_ids::EntityDomain> }) prepared
    quiescence
    first:a = 20
    first:carriage:b = 620

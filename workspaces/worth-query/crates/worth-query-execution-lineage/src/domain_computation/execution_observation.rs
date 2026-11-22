@@ -11,6 +11,7 @@ thread_local! {
     static WAVE_EVENTS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
     static WAVE_UNITS: Cell<u64> = const { Cell::new(0) };
     static WAVE_VISITED: Cell<u64> = const { Cell::new(0) };
+    static WAVE_RECLOSED: Cell<u64> = const { Cell::new(0) };
     static WAVE_CLEANUP_REGISTERED: Cell<bool> = const { Cell::new(false) };
 }
 
@@ -29,6 +30,7 @@ fn clear_wave() {
     WAVE_EVENTS.with(|events| events.borrow_mut().clear());
     WAVE_UNITS.with(|units| units.set(0));
     WAVE_VISITED.with(|visited| visited.set(0));
+    WAVE_RECLOSED.with(|rows| rows.set(0));
 }
 
 /// Adds work the synchronous output wave charged, only while observed.
@@ -43,6 +45,14 @@ pub fn record_wave_charged(units: u64) {
 pub fn record_retained_reads_visited(entries: u64) {
     if observing_wave() {
         WAVE_VISITED.with(|total| total.set(total.get().saturating_add(entries)));
+    }
+}
+
+/// Counts completed rows a quiescent outgoing reclosure ran again, only while
+/// observed (PR C §4: touched rows and new rows, not every completed row).
+pub fn record_outgoing_rows_revisited(rows: u64) {
+    if observing_wave() {
+        WAVE_RECLOSED.with(|total| total.set(total.get().saturating_add(rows)));
     }
 }
 
@@ -86,5 +96,10 @@ impl WorthQueryExecutionObservation {
     /// Retained candidate reads qualified use visited since the last call.
     pub fn retained_reads_visited_for_test(&self) -> u64 {
         WAVE_VISITED.with(|visited| visited.replace(0))
+    }
+
+    /// Completed rows quiescent outgoing reclosure ran again since the last call.
+    pub fn outgoing_rows_revisited_for_test(&self) -> u64 {
+        WAVE_RECLOSED.with(|rows| rows.replace(0))
     }
 }

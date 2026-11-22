@@ -7,6 +7,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryApplicationAttemptDenial as Denial, WorthQueryApplicationAttemptDenialKind as Kind,
 };
 use worth_relational::facade::identity::EntityId;
+mod outgoing;
 #[derive(Default)]
 pub(super) struct CandidateReadSupports {
     values: Vec<RetainedCandidateRead>,
@@ -89,6 +90,7 @@ impl CandidateReadSupports {
             incoming,
             support,
             window_end: None,
+            stage_window: false,
         });
         Ok(())
     }
@@ -188,42 +190,6 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     pub fn reset_candidate_read_support(&mut self) {
         self.candidate_read_support = CandidateReadSupports::default();
     }
-    /// The wave must replace these by a complete pure outgoing pass before returning.
-    pub fn refresh_outgoing_read_support(
-        &mut self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), Denial> {
-        let subject = "outgoing discovery support refresh";
-        let work = u64::try_from(self.candidate_read_support.values.len())
-            .map_err(|_| Denial::new(Kind::CandidateCapacityExceeded, subject))?;
-        execution
-            .run_native_with_checkpoint(|context| {
-                crate::domain_computation::primary_graph::admitted_capture::checkpoint(
-                    context, work,
-                )
-            })
-            .map_err(|cause| Denial::relational_read_stopped(cause.into(), subject))?
-            .0
-            .map_err(|cause| {
-                Denial::relational_read_stopped(
-                    worth_execution::WorkCeilingDenial::Stopped(cause).into(),
-                    subject,
-                )
-            })?;
-        let supports = &mut self.candidate_read_support;
-        supports
-            .values
-            .retain(|entry| !matches!(entry.support, CandidateReadSupport::Outgoing(_)));
-        // Slots moved: index the kept entries again.
-        supports.by_read = worth_execution::ExecutionOrderedMap::default();
-        supports.by_owner = worth_execution::ExecutionOrderedMap::default();
-        let kept = std::mem::take(&mut supports.values);
-        for (slot, entry) in kept.iter().enumerate() {
-            supports.index(execution, slot, entry.owner, &entry.support, subject)?;
-        }
-        supports.values = kept;
-        Ok(())
-    }
     pub fn candidate_read_support(&self) -> &[RetainedCandidateRead] {
         &self.candidate_read_support.values
     }
@@ -318,6 +284,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             }
             charge_scan(execution, "root selection window", 1)?;
             entry.window_end = Some(at);
+            entry.stage_window = true;
         }
         Ok(())
     }
