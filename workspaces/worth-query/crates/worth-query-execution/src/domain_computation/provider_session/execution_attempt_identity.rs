@@ -3,6 +3,10 @@ use std::sync::Arc;
 
 static NEXT_EXECUTION_ATTEMPT: AtomicU64 = AtomicU64::new(1);
 
+pub(crate) fn prime_execution_attempt_plateau_for_test() {
+    let _ = NEXT_EXECUTION_ATTEMPT.fetch_max(100_000, Ordering::Relaxed);
+}
+
 #[derive(Debug, Eq, PartialEq)]
 pub struct WorthQueryExecutionAttemptIdentity(Arc<str>);
 

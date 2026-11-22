@@ -86,23 +86,23 @@ where
     }
 
     fn reset_retained_wakes_for_replay_for_test(&mut self) {
-        use super::super::signal_decision_reentry::WorthQueryRetainedConditionalDecision as D;
-        for wake in &mut self.retained_wakes {
-            let prev = std::mem::replace(&mut wake.decision, D::InterruptedDuringReentry);
-            wake.decision = match prev {
-                D::Eligible(e) | D::OperationRetryable(e, _) | D::OperationCommitRetryable(e, _)
-                | D::OperationExecutionControlRetryable(e, _) | D::OperationBackpressured(e, _)
-                | D::OperationControlStopped(e, _) | D::OperationTerminalFailure(e, _)
-                | D::OperationNoEffect(e, _) | D::OperationProductStale(e, _)
-                | D::OperationPreparationPending(e, _) | D::OperationPreparationRefused(e, _)
-                | D::OperationIndeterminate(e, _) => D::Eligible(e),
-                other => other,
-            };
-            wake.attempt = 0;
-            wake.application_attempted = false;
-            wake.continuation_identity = None;
+        due_wake_retention::reset_retained_wakes_for_replay_for_test(&mut self.retained_wakes, &mut self.operation_totals);
+    }
+
+    fn reenter_retained_wakes_continuation_for_test(
+        &mut self, phase: &WorthQueryAdvancementPhase<'_>, bridge: &BridgeConditionalExecutionView<'_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>, truth: &WorthQueryConditionalTruthBasis,
+    ) -> ErasedClockObservationOutcome {
+        let execution = match phase.execution_request_for(&runtime.runtime.product_runtime) {
+            Ok(execution) => execution,
+            Err(cause) => return ErasedClockObservationOutcome::Failed { kind: super::WorthQueryConditionalClockObservationFailureKind::ExecutionRequest(cause.into()), detail: "foreign conditional advancement phase".to_string() },
+        };
+        let managed_clock = self.managed_clock.as_ref().expect("selected conditional operation retains a managed clock");
+        let operation = self.definition.binding.clocked_node().provider().node().operation().application_operation();
+        match super::super::application_operation_reentry::reenter_retained_wakes(&execution, phase, runtime, truth.product(), bridge, managed_clock, operation, &self.definition.reconstruction, &self.definition.execution, &mut self.reconstructed_intents, &mut self.retained_wakes, &self.runtime_canonical_identity) {
+            Ok(counts) => ErasedClockObservationOutcome::Accepted(due_wake_retention::complete_continuation_receipt_for_test(counts, &mut self.retained_wakes, &mut self.operation_totals)),
+            Err(cause) => ErasedClockObservationOutcome::Failed { detail: format!("conditional continuation publication refused: {cause:?}"), kind: super::WorthQueryConditionalClockObservationFailureKind::Obligation(cause) },
         }
-        self.operation_totals = Default::default();
     }
     fn binding_identity(&self) -> &str {
         self.definition.binding_identity.support_identity()

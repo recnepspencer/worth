@@ -88,6 +88,9 @@ const RESOURCE_LABEL: &str = "worth-query-application-admission:";
 pub struct WorthQueryOperationAdmissionIdentity(u64);
 
 impl WorthQueryOperationAdmissionIdentity {
+    pub(crate) fn prime_plateau_for_test() {
+        let _ = NEXT_OPERATION_ADMISSION_IDENTITY.fetch_max(100_000, Ordering::Relaxed);
+    }
     pub(in crate::domain_computation::authorization) fn mint() -> Option<Self> {
         Self::mint_from(&NEXT_OPERATION_ADMISSION_IDENTITY)
     }

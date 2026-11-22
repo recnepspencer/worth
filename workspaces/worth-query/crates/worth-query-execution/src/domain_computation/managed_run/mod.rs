@@ -31,6 +31,7 @@ pub(crate) mod recovery_registry;
 pub(crate) mod relational_observation;
 mod retained_graph_execution;
 mod run_affinity;
+pub(crate) use run_affinity::prime_managed_logical_run_plateau_for_test;
 pub(in crate::domain_computation) use direct_graph_execution::WorthQueryCompletedDirectEvidenceOwner;
 pub(in crate::domain_computation) use readmission::WorthQueryDirectReadmissionTransitionPermit;
 pub(in crate::domain_computation) use relational_observation::WorthQueryManagedRelationalObservation;

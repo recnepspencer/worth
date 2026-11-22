@@ -14,6 +14,7 @@ mod native_access;
 mod occurrence_ledger;
 mod owner;
 mod production;
+pub(crate) use production::prime_artifact_occurrence_plateau_for_test;
 mod production_admission;
 pub(crate) mod production_authority;
 mod production_freeze;
