@@ -38,6 +38,7 @@ fn run_replayable_sequence() -> Vec<LineageEventRecord> {
             scheme_registry: registry.clone(),
             live_holders: BTreeMap::new(),
             live_lineages: BTreeMap::new(),
+            retired_lineages: BTreeMap::new(),
             postures: vec![
                 LineagePostureClaim::Create {
                     target: LineageRecordTarget::Entity(f1),
@@ -105,6 +106,7 @@ fn run_replayable_sequence() -> Vec<LineageEventRecord> {
                 (PersistentNameHolder::Entity(f2), f2_lin),
                 (PersistentNameHolder::Relation(s1), s1_lin),
             ]),
+            retired_lineages: BTreeMap::new(),
             postures: vec![
                 LineagePostureClaim::Merge {
                     parents: vec![
@@ -328,6 +330,7 @@ fn unpostured_replace_routes_to_free_entity_and_never_hijacks_posture_claimed_en
             scheme_registry: registry,
             live_holders: BTreeMap::new(),
             live_lineages: BTreeMap::from([(PersistentNameHolder::Entity(e0), e0_lin)]),
+            retired_lineages: BTreeMap::new(),
             postures: vec![LineagePostureClaim::Create {
                 target: LineageRecordTarget::Entity(e_claimed),
                 birth: face_birth("occ.r3", "authored", vec![], "claimed", e_claimed),

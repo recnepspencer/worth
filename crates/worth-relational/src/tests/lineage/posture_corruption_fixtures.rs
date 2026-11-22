@@ -40,6 +40,7 @@ impl CorruptionBaseModel {
             scheme_registry: cad_scheme_registry(),
             live_holders: self.live_holders.clone(),
             live_lineages: self.live_lineages.clone(),
+            retired_lineages: BTreeMap::new(),
             postures,
         }
     }
@@ -58,6 +59,7 @@ pub(super) fn setup_corruption_base(allocator: &LineageIdentityAllocator) -> Cor
         scheme_registry: cad_scheme_registry(),
         live_holders: BTreeMap::new(),
         live_lineages: BTreeMap::new(),
+        retired_lineages: BTreeMap::new(),
         postures: vec![
             LineagePostureClaim::Create {
                 target: LineageRecordTarget::Entity(f1),

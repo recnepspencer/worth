@@ -26,14 +26,22 @@ pub(super) enum PostureEventDraft {
         existing_lineage_id: Option<LineageId>,
         kept_name: Option<PersistentNameIdentity>,
     },
+    Restore {
+        target: LineageRecordTarget,
+        source_lineage: LineageId,
+        name: PersistentNameIdentity,
+        existing_lineage_id: Option<LineageId>,
+    },
     Retire {
         subject: LineageSubject,
         lineage_id: LineageId,
     },
     Replace {
+        subject: LineageSubject,
         source_lineage_id: LineageId,
-        target_entity_id: EntityId,
+        target: LineageRecordTarget,
         target_lineage_id: Option<LineageId>,
+        kept_name: Option<PersistentNameIdentity>,
     },
     Split {
         subject: LineageSubject,
@@ -75,19 +83,35 @@ pub(super) fn build_posture_drafts(
             create_targets.insert(target, None);
         }
     }
+    let mut restore_targets: BTreeMap<LineageRecordTarget, (LineageId, PersistentNameIdentity)> =
+        BTreeMap::new();
     for posture in &validated.postures {
         match posture {
             ValidatedPosture::Create { target } => {
                 create_targets.insert(*target, None);
             }
+            ValidatedPosture::Regenerate { target, name, .. } => {
+                create_targets.insert(*target, Some(*name));
+            }
+            ValidatedPosture::Restore {
+                target,
+                source_lineage,
+                name,
+            } => {
+                restore_targets.insert(*target, (*source_lineage, *name));
+            }
             ValidatedPosture::Split { children, .. } => {
                 for &child in children {
-                    create_targets.insert(child, None);
+                    if !validated.restored_created_targets.contains(&child) {
+                        create_targets.insert(child, None);
+                    }
                 }
             }
             ValidatedPosture::Merge { target, .. } => match target {
                 ValidatedMergeTarget::MintedNew { target } => {
-                    create_targets.insert(*target, None);
+                    if !validated.restored_created_targets.contains(target) {
+                        create_targets.insert(*target, None);
+                    }
                 }
                 ValidatedMergeTarget::RecreatedKeeper { target, kept_name } => {
                     create_targets.insert(*target, Some(*kept_name));
@@ -112,16 +136,44 @@ pub(super) fn build_posture_drafts(
             kept_name,
         });
     }
+    for (target, (source_lineage, name)) in restore_targets {
+        let existing_lineage_id = match target {
+            LineageRecordTarget::Entity(entity_id) => {
+                created_entity_lineage_slot(staged, entity_id, commit.version_id).flatten()
+            }
+            LineageRecordTarget::Relation(_) => None,
+        };
+        required_lineage_ids += usize::from(existing_lineage_id.is_none());
+        drafts.push(PostureEventDraft::Restore {
+            target,
+            source_lineage,
+            name,
+            existing_lineage_id,
+        });
+    }
 
-    // 2. Emit validated posture transitions (Retire, Split, Merge).
+    // 2. Emit validated posture transitions (Retire, Regenerate->Replace, Split, Merge).
     for posture in &validated.postures {
         match posture {
             ValidatedPosture::Retire {
                 subject,
                 source_lineage,
+                ..
             } => drafts.push(PostureEventDraft::Retire {
                 subject: *subject,
                 lineage_id: *source_lineage,
+            }),
+            ValidatedPosture::Regenerate {
+                subject,
+                source_lineage,
+                target,
+                name,
+            } => drafts.push(PostureEventDraft::Replace {
+                subject: *subject,
+                source_lineage_id: *source_lineage,
+                target: *target,
+                target_lineage_id: None,
+                kept_name: Some(*name),
             }),
             ValidatedPosture::Split {
                 subject,
@@ -158,7 +210,9 @@ pub(super) fn build_posture_drafts(
                     }
                 },
             }),
-            ValidatedPosture::Create { .. } | ValidatedPosture::Preserve => {}
+            ValidatedPosture::Create { .. }
+            | ValidatedPosture::Restore { .. }
+            | ValidatedPosture::Preserve => {}
         }
     }
 
@@ -234,9 +288,11 @@ pub(super) fn build_posture_drafts(
                     continue;
                 };
                 drafts.push(PostureEventDraft::Replace {
+                    subject: LineageSubject::Entity,
                     source_lineage_id,
-                    target_entity_id,
+                    target: LineageRecordTarget::Entity(target_entity_id),
                     target_lineage_id: entity_lineage(staged, target_entity_id),
+                    kept_name: None,
                 });
             }
             MutationIntent::Relation(RelationMutationIntent::Delete(spec)) => {
@@ -279,8 +335,16 @@ fn claiming_posture_kind(
     let target = LineageRecordTarget::Entity(entity_id);
     for posture in &validated.postures {
         match posture {
-            ValidatedPosture::Create { target: claimed } if *claimed == target => {
+            ValidatedPosture::Create { target: claimed }
+            | ValidatedPosture::Regenerate {
+                target: claimed, ..
+            } if *claimed == target => {
                 return LineagePostureKind::Create;
+            }
+            ValidatedPosture::Restore {
+                target: claimed, ..
+            } if *claimed == target => {
+                return LineagePostureKind::Restore;
             }
             ValidatedPosture::Split { children, .. } if children.contains(&target) => {
                 return LineagePostureKind::Split;
@@ -296,6 +360,8 @@ fn claiming_posture_kind(
                 return LineagePostureKind::Merge;
             }
             ValidatedPosture::Create { .. }
+            | ValidatedPosture::Regenerate { .. }
+            | ValidatedPosture::Restore { .. }
             | ValidatedPosture::Preserve
             | ValidatedPosture::Retire { .. }
             | ValidatedPosture::Split { .. }

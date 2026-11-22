@@ -204,6 +204,7 @@ pub(super) fn seed_two_faces_and_parallel_seams() -> (
         scheme_registry: cad_scheme_registry(),
         live_holders: BTreeMap::new(),
         live_lineages: BTreeMap::new(),
+        retired_lineages: BTreeMap::new(),
         postures: vec![
             LineagePostureClaim::Create {
                 target: LineageRecordTarget::Entity(f1),

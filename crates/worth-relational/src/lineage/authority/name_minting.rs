@@ -45,6 +45,23 @@ impl PersistentNameMintingAuthority {
         retired_in_commit: &BTreeSet<PersistentNameIdentity>,
         requests: &[PersistentNameBirthRequest],
     ) -> Result<Vec<PersistentNameBirthRecord>, LineageNameDenial> {
+        let no_previously_retired = BTreeSet::new();
+        Self::mint_commit_births_with_retired(
+            registry,
+            live_holders,
+            retired_in_commit,
+            &no_previously_retired,
+            requests,
+        )
+    }
+
+    pub(super) fn mint_commit_births_with_retired(
+        registry: &InstalledPersistentNameSchemeRegistry,
+        live_holders: &BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
+        retired_in_commit: &BTreeSet<PersistentNameIdentity>,
+        previously_retired: &BTreeSet<PersistentNameIdentity>,
+        requests: &[PersistentNameBirthRequest],
+    ) -> Result<Vec<PersistentNameBirthRecord>, LineageNameDenial> {
         let mut records = Vec::with_capacity(requests.len());
         let mut commit_holders = BTreeMap::<PersistentNameIdentity, PersistentNameHolder>::new();
         // Tracks `(occurrence_key, role_path) -> set of minted identities`
@@ -106,6 +123,7 @@ impl PersistentNameMintingAuthority {
             for &parent in &sorted_parents {
                 let exists = live_holders.contains_key(&parent)
                     || retired_in_commit.contains(&parent)
+                    || previously_retired.contains(&parent)
                     || commit_holders.contains_key(&parent);
                 if !exists {
                     return Err(LineageNameDenial::UnknownParentIdentity {
@@ -281,6 +299,7 @@ pub(super) fn mint_target_births(
     scheme_registry: &InstalledPersistentNameSchemeRegistry,
     live_holders: &BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
     retired_in_commit: &BTreeSet<PersistentNameIdentity>,
+    previously_retired: &BTreeSet<PersistentNameIdentity>,
     created_targets: &BTreeSet<crate::lineage::data::LineageRecordTarget>,
     named_births: &BTreeMap<crate::lineage::data::LineageRecordTarget, PersistentNameBirthRequest>,
 ) -> Result<
@@ -336,10 +355,11 @@ pub(super) fn mint_target_births(
     });
     let targets: Vec<_> = ordered.iter().map(|(id, _)| *id).collect();
     let requests: Vec<_> = ordered.into_iter().map(|(_, req)| req.clone()).collect();
-    let records = PersistentNameMintingAuthority::mint_commit_births(
+    let records = PersistentNameMintingAuthority::mint_commit_births_with_retired(
         scheme_registry,
         live_holders,
         retired_in_commit,
+        previously_retired,
         &requests,
     )?;
     Ok(targets.into_iter().zip(records).collect())

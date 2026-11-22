@@ -78,13 +78,18 @@ impl PersistentNameBranchIndex {
         }
         // Bindings first, so transitions in the same commit see their targets.
         for event in &batch.lineage_events {
-            if event.kind() == LineageEventKind::Create {
-                self.ingest_create(batch.commit, event, journal)?;
+            match event.kind() {
+                LineageEventKind::Create => self.ingest_create(batch.commit, event, journal)?,
+                LineageEventKind::Restore => self.ingest_restore(batch.commit, event, journal)?,
+                LineageEventKind::Retire
+                | LineageEventKind::Replace
+                | LineageEventKind::Split
+                | LineageEventKind::Merge => {}
             }
         }
         for event in &batch.lineage_events {
             match event.kind() {
-                LineageEventKind::Create => {}
+                LineageEventKind::Create | LineageEventKind::Restore => {}
                 LineageEventKind::Retire
                 | LineageEventKind::Replace
                 | LineageEventKind::Split
@@ -93,6 +98,100 @@ impl PersistentNameBranchIndex {
                 }
             }
         }
+        Ok(())
+    }
+
+    fn ingest_restore(
+        &mut self,
+        commit: CommitId,
+        event: &LineageEventRecord,
+        journal: &mut IngestionJournal,
+    ) -> Result<(), PersistentNameIndexDenial> {
+        let fallback_key = event
+            .kept_name()
+            .map(|name| subject_key(event.subject(), name))
+            .or_else(|| {
+                event
+                    .sources()
+                    .first()
+                    .and_then(|src| self.lineage_names.get(src).copied())
+            })
+            .unwrap_or_else(|| {
+                subject_key(
+                    event.subject(),
+                    PersistentNameIdentity::from_minted_digest([0u8; 32]),
+                )
+            });
+        let Some(name) = event.kept_name() else {
+            return Err(invalid(fallback_key, "a Restore must carry kept_name"));
+        };
+        let key = subject_key(event.subject(), name);
+        if event.name_birth().is_some() {
+            return Err(invalid(key, "a Restore cannot carry a name_birth"));
+        }
+        let (&[source], &[target]) = (event.sources(), event.targets()) else {
+            return Err(invalid(
+                key,
+                "a Restore must have exactly one source and one target lineage",
+            ));
+        };
+        if source == target {
+            return Err(invalid(
+                key,
+                "a Restore target lineage must differ from its retired source lineage",
+            ));
+        }
+        let Some(entry) = self.names.get(&key) else {
+            let opposite = match event.subject() {
+                LineageSubject::Entity => PersistentNameKey::Relation(name),
+                LineageSubject::Relation => PersistentNameKey::Entity(name),
+            };
+            if self.names.contains_key(&opposite) {
+                return Err(invalid(
+                    key,
+                    "a restored name's subject differs from its event subject",
+                ));
+            }
+            return Err(invalid(
+                key,
+                "a restored name does not exist in this branch",
+            ));
+        };
+        match entry.last_state() {
+            (_, NameState::Live(_)) => {
+                return Err(invalid(key, "a live name cannot be restored"));
+            }
+            (ended_at, NameState::Ended) if ended_at >= commit => {
+                return Err(invalid(
+                    key,
+                    "a restored name must have retired at an earlier commit",
+                ));
+            }
+            (_, NameState::Ended) => {}
+        }
+        if self.lineage_names.get(&source) != Some(&key) {
+            return Err(invalid(
+                key,
+                "a Restore source lineage does not match the restored name",
+            ));
+        }
+        if entry.last_live_lineage() != Some(source) {
+            return Err(invalid(
+                key,
+                "a Restore source lineage is not the name's most recent retired lineage",
+            ));
+        }
+        let holder = *self
+            .lineage_holders
+            .get(&target)
+            .ok_or(PersistentNameIndexDenial::MissingHolder { lineage: target })?;
+        let live = LiveName {
+            target: target_for(key, name, holder, target)?,
+            carriers: BTreeSet::new(),
+        };
+        self.bind_lineage_name(target, key, journal)?;
+        self.entry_mut(key, journal)
+            .set_state(commit, NameState::Live(live));
         Ok(())
     }
 
@@ -186,11 +285,13 @@ impl PersistentNameBranchIndex {
             if successors.binary_search(&key).is_ok() {
                 continue;
             }
-            let held_by_source = self
-                .names
-                .get(&key)
-                .and_then(NameEntry::current_live)
-                .is_some_and(|live| live_lineage(&live.target) == Some(*source));
+            let held_by_source = self.names.get(&key).is_some_and(|entry| {
+                matches!(
+                    entry.last_state(),
+                    (since, NameState::Live(live))
+                        if since < commit && live_lineage(&live.target) == Some(*source)
+                )
+            });
             if !held_by_source {
                 return Err(invalid(
                     key,

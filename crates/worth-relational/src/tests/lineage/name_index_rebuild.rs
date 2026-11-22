@@ -13,57 +13,9 @@ use crate::facade::lineage::{
     PersistentNameIndexDenial, PersistentNameKey, PersistentNameSelection,
 };
 
-use super::name_group_world::{member, GroupWorld};
-use super::name_index_fixtures::{all, bounded, exact, main_branch, rebuild, side};
+use super::name_group_world::member;
+use super::name_index_fixtures::{all, bounded, exact, main_branch, mixed_history, rebuild, side};
 use super::name_world::{Keep, LineageWorld, Name, Subject};
-
-/// A branch mixing entity, relation, and group naming in shared commits.
-pub(super) fn mixed_history() -> (
-    Vec<PersistentNameCommittedBatch>,
-    PersistentNameBranchIndex,
-    Vec<Name>,
-) {
-    let mut world = LineageWorld::new();
-    let mut groups = GroupWorld::new();
-    let mut incremental = PersistentNameBranchIndex::new(main_branch(), None);
-    let mut log = Vec::new();
-    let mut push = |batch: PersistentNameCommittedBatch, log: &mut Vec<_>| {
-        incremental.apply(&batch).expect("committed batch ingests");
-        log.push(batch);
-    };
-    push(world.log()[0].clone(), &mut log);
-    let face = world.create(Subject::Entity, "face");
-    let seam = world.create(Subject::Relation, "seam");
-    let cutter = world.create(Subject::Entity, "cutter");
-    let batch = world.commit();
-    let born = groups.step(&[&[1, 2, 3, 4]]).unwrap();
-    push(batch.with_group_transition(&born), &mut log);
-    let cutter_name = world.name_of(&cutter);
-    let face_pieces = world.split(world.name_of(&face), &["left", "right"]);
-    world.bind_carriers(&face_pieces[0], &[cutter_name]);
-    let seam_pieces = world.split(world.name_of(&seam), &["top", "bottom"]);
-    let batch = world.commit();
-    let split = groups.step(&[&[2], &[3, 4]]).unwrap();
-    push(batch.with_group_transition(&split), &mut log);
-    world.retire(world.name_of(&face_pieces[1]));
-    world.merge(
-        &[
-            world.name_of(&seam_pieces[0]),
-            world.name_of(&seam_pieces[1]),
-        ],
-        Keep::Recreated,
-    );
-    let batch = world.commit();
-    let revived = groups.step(&[&[1], &[2, 3, 4]]).unwrap();
-    push(batch.with_group_transition(&revived), &mut log);
-    world.merge(
-        &[world.name_of(&face_pieces[0]), cutter_name],
-        Keep::MintNew,
-    );
-    let batch = world.commit();
-    push(batch, &mut log);
-    (log, incremental, vec![cutter_name, member(2), member(3)])
-}
 
 fn selections(carriers: &[Name]) -> Vec<PersistentNameSelection> {
     let mut selections = vec![exact(), all(), side("left"), side("top"), side("absent")];
@@ -373,4 +325,75 @@ fn corrupt_lineage_creates_and_subjects_refuse_atomically() {
     }
     assert!(refuses(&mut index, &foreign_subject).contains("event subject"));
     index.apply(&merge).expect("the canonical merge ingests");
+}
+
+#[test]
+fn corrupt_restore_batches_refuse_atomically_leaving_index_unchanged() {
+    use super::name_event_fixtures::synthetic_name;
+    let mut world = LineageWorld::new();
+    let a = world.create(Subject::Entity, "a");
+    let b = world.create(Subject::Entity, "b");
+    world.commit(); // 2
+    let (a_name, b_name) = (world.name_of(&a), world.name_of(&b));
+    world.retire(a_name);
+    world.commit(); // 3
+    world.restore(a_name, false);
+    let restore_batch = world.commit(); // 4
+    let mut index = rebuild(&world.log()[..3]);
+    let birth = world.log()[1].lineage_events[0].name_birth().cloned();
+    let b_lin = world.log()[1]
+        .lineage_events
+        .iter()
+        .find(|e| e.name_birth().is_some_and(|n| n.identity() == b_name))
+        .unwrap()
+        .targets()[0];
+    let mut check = |expected: &str, f: fn(&mut crate::facade::lineage::LineageEventRecord)| {
+        let mut bad = restore_batch.clone();
+        f(&mut bad.lineage_events[0]);
+        let detail = refuses(&mut index, &bad);
+        assert!(
+            detail.contains(expected),
+            "expected `{expected}`, got `{detail}`"
+        );
+    };
+    check("kept_name", |e| e.kept_name = None);
+    check("event subject", |e| e.subject = LineageSubject::Relation);
+    check("one source", |e| e.sources.clear());
+    check("one target", |e| e.targets.clear());
+    check("differ", |e| e.targets = vec![e.sources[0]]);
+    for (expected, mut bad) in [
+        ("live name", restore_batch.clone()),
+        ("does not exist", restore_batch.clone()),
+        ("name_birth", restore_batch.clone()),
+        ("second name", restore_batch.clone()),
+        ("source lineage", restore_batch.clone()),
+    ] {
+        let ev = &mut bad.lineage_events[0];
+        match expected {
+            "live name" => {
+                ev.kept_name = Some(b_name);
+                ev.sources = vec![b_lin];
+            }
+            "does not exist" => ev.kept_name = Some(synthetic_name(0xee, 99)),
+            "name_birth" => ev.name_birth = birth.clone(),
+            "second name" => ev.targets = vec![b_lin],
+            _ => ev.sources = vec![b_lin],
+        }
+        let detail = refuses(&mut index, &bad);
+        assert!(
+            detail.contains(expected),
+            "expected `{expected}`, got `{detail}`"
+        );
+    }
+    // Canonical restore ingests cleanly; a second retire + stale-source restore refuses.
+    index.apply(&restore_batch).expect("canonical restore");
+    world.retire(a_name);
+    let retire2 = world.commit(); // 5
+    index.apply(&retire2).expect("second retire");
+    world.restore(a_name, false);
+    let restore2 = world.commit(); // 6
+    let mut stale = restore2.clone();
+    stale.lineage_events[0].sources = restore_batch.lineage_events[0].sources.clone();
+    assert!(refuses(&mut index, &stale).contains("most recent retired"));
+    index.apply(&restore2).expect("second canonical restore");
 }

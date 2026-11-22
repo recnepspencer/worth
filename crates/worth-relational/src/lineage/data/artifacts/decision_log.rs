@@ -44,5 +44,6 @@ fn canonical_decision_kind_rank(kind: LineageDecisionKind) -> u8 {
         LineageDecisionKind::RetireAccepted => 2,
         LineageDecisionKind::SplitAccepted => 3,
         LineageDecisionKind::MergeAccepted => 4,
+        LineageDecisionKind::RestoreAccepted => 5,
     }
 }

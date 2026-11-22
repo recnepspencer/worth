@@ -9,6 +9,7 @@ pub enum LineagePostureKind {
     Create,
     Preserve,
     Retire,
+    Restore,
     Split,
     Merge,
 }

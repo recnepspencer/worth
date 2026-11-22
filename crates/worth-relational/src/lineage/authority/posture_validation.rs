@@ -12,7 +12,9 @@ use crate::lineage::data::{
 use crate::runtime::WorkingState;
 use crate::transactions::data::RecordRef;
 
+use super::posture_continuity::{classify_minted_births, validate_explicit_restores};
 use super::posture_merge_validation::validate_merge_claim;
+use super::posture_split_validation::validate_split_claim;
 use super::staged_effects::{
     basis_lineage_id, existed_at_basis, is_created_in_commit, is_live_after_commit,
     is_retired_in_commit,
@@ -37,9 +39,21 @@ pub(super) enum ValidatedPosture {
         target: LineageRecordTarget,
     },
     Preserve,
+    Regenerate {
+        subject: LineageSubject,
+        source_lineage: LineageId,
+        target: LineageRecordTarget,
+        name: PersistentNameIdentity,
+    },
+    Restore {
+        target: LineageRecordTarget,
+        source_lineage: LineageId,
+        name: PersistentNameIdentity,
+    },
     Retire {
         subject: LineageSubject,
         source_lineage: LineageId,
+        name: PersistentNameIdentity,
     },
     Split {
         subject: LineageSubject,
@@ -57,6 +71,7 @@ pub(super) struct ValidatedPostureBatch {
     pub(super) postures: Vec<ValidatedPosture>,
     pub(super) minted_births: BTreeMap<LineageRecordTarget, PersistentNameBirthRecord>,
     pub(super) claimed_created_targets: BTreeSet<LineageRecordTarget>,
+    pub(super) restored_created_targets: BTreeSet<LineageRecordTarget>,
     pub(super) claimed_basis_targets: BTreeSet<LineageRecordTarget>,
 }
 
@@ -77,6 +92,7 @@ pub(super) fn validate_commit_postures(
             postures: Vec::new(),
             minted_births: BTreeMap::new(),
             claimed_created_targets: BTreeSet::new(),
+            restored_created_targets: BTreeSet::new(),
             claimed_basis_targets: BTreeSet::new(),
         });
     }
@@ -97,8 +113,11 @@ pub(super) fn validate_commit_postures(
         .collect();
 
     let mut claimed_created_targets = BTreeSet::new();
+    let mut create_claimed_targets = BTreeSet::new();
     let mut claimed_basis_targets = BTreeSet::new();
     let mut retired_names_in_commit = BTreeSet::new();
+    let mut explicit_retires = BTreeMap::new();
+    let mut explicit_restores = Vec::new();
     let mut kept_names_in_commit = BTreeSet::new();
     let mut births_to_mint = BTreeMap::new();
     let mut validated = Vec::with_capacity(input.postures.len());
@@ -126,6 +145,7 @@ pub(super) fn validate_commit_postures(
                     birth,
                     input,
                 )?;
+                create_claimed_targets.insert(*target);
                 births_to_mint.insert(*target, birth.clone());
                 validated.push(ValidatedPosture::Create { target: *target });
             }
@@ -181,110 +201,49 @@ pub(super) fn validate_commit_postures(
                     *name,
                 )?;
                 retired_names_in_commit.insert(*name);
+                explicit_retires.insert(*name, (*target, source_lineage));
                 validated.push(ValidatedPosture::Retire {
                     subject: target.subject(),
                     source_lineage,
+                    name: *name,
                 });
+            }
+            LineagePostureClaim::Restore { target, name } => {
+                if !created_targets.contains(target) {
+                    return Err(mismatch(
+                        LineagePostureKind::Restore,
+                        *target,
+                        "Restore posture targets a record not created and live in this commit",
+                    ));
+                }
+                if !claimed_created_targets.insert(*target) {
+                    return Err(mismatch(
+                        LineagePostureKind::Restore,
+                        *target,
+                        "record is already claimed by another posture in this commit",
+                    ));
+                }
+                explicit_restores.push((*target, *name));
             }
             LineagePostureClaim::Split {
                 parent_target,
                 parent_name,
                 children,
             } => {
-                if children.is_empty() {
-                    return Err(mismatch(
-                        LineagePostureKind::Split,
-                        *parent_target,
-                        "Split posture requires at least one created successor",
-                    ));
-                }
-                if !existed_at_basis(staged, *parent_target, version_id)
-                    || !is_retired_in_commit(staged, *parent_target, version_id)
-                {
-                    return Err(mismatch(
-                        LineagePostureKind::Split,
-                        *parent_target,
-                        "Split posture requires its parent to exist at basis and be retired in this commit",
-                    ));
-                }
-                if !claimed_basis_targets.insert(*parent_target) {
-                    return Err(mismatch(
-                        LineagePostureKind::Split,
-                        *parent_target,
-                        "Split parent is already claimed by another posture in this commit",
-                    ));
-                }
-                let parent_lineage = require_live_holder_and_lineage(
-                    LineagePostureKind::Split,
+                let validated_split = validate_split_claim(
                     staged,
+                    version_id,
                     input,
+                    &created_targets,
                     *parent_target,
                     *parent_name,
+                    children,
+                    &mut claimed_created_targets,
+                    &mut claimed_basis_targets,
+                    &mut retired_names_in_commit,
+                    &mut births_to_mint,
                 )?;
-                retired_names_in_commit.insert(*parent_name);
-
-                let mut child_targets = Vec::with_capacity(children.len());
-                for child in children {
-                    if child.target.subject() != parent_target.subject() {
-                        return Err(mismatch(
-                            LineagePostureKind::Split,
-                            child.target,
-                            "Split child subject kind must match its parent subject kind",
-                        ));
-                    }
-                    if !created_targets.contains(&child.target) {
-                        return Err(mismatch(
-                            LineagePostureKind::Split,
-                            child.target,
-                            "Split child must be newly created and live in this commit",
-                        ));
-                    }
-                    if !claimed_created_targets.insert(child.target) {
-                        return Err(mismatch(
-                            LineagePostureKind::Split,
-                            child.target,
-                            "Split child is already claimed by another posture in this commit",
-                        ));
-                    }
-                    validate_birth_holder_and_subject(
-                        LineagePostureKind::Split,
-                        child.target,
-                        &child.birth,
-                        input,
-                    )?;
-                    if let Some(scheme) = input.scheme_registry.get(&child.birth.scheme_id)
-                        && !scheme.split_capable()
-                    {
-                        return Err(mismatch(
-                            LineagePostureKind::Split,
-                            child.target,
-                            "Split child scheme is not declared split-capable",
-                        ));
-                    }
-                    let mut normalized_birth = child.birth.clone();
-                    if normalized_birth.parent_identities.is_empty() {
-                        normalized_birth.parent_identities = vec![*parent_name];
-                    } else if normalized_birth.parent_identities != vec![*parent_name] {
-                        return Err(mismatch(
-                            LineagePostureKind::Split,
-                            child.target,
-                            "Split child birth parent_identities must match the split parent",
-                        ));
-                    }
-                    if normalized_birth.canonical_discriminator.is_empty() {
-                        return Err(LineageNameDenial::MissingSplitDiscriminator {
-                            scheme_id: normalized_birth.scheme_id,
-                            role_path: normalized_birth.role_path,
-                        });
-                    }
-                    births_to_mint.insert(child.target, normalized_birth);
-                    child_targets.push(child.target);
-                }
-                validated.push(ValidatedPosture::Split {
-                    subject: parent_target.subject(),
-                    parent_lineage,
-                    children: child_targets,
-                });
+                validated.push(validated_split);
             }
             LineagePostureClaim::Merge {
                 parents,
@@ -310,18 +269,35 @@ pub(super) fn validate_commit_postures(
         }
     }
 
-    let minted_births = super::name_minting::mint_target_births(
+    let (explicit_restore_postures, restored_names_in_commit, restored_created_targets) =
+        validate_explicit_restores(input, &retired_names_in_commit, &explicit_restores)?;
+    let previously_retired: BTreeSet<PersistentNameIdentity> =
+        input.retired_lineages.keys().copied().collect();
+    let mut minted_births = super::name_minting::mint_target_births(
         &input.scheme_registry,
         &input.live_holders,
         &retired_names_in_commit,
+        &previously_retired,
         &created_targets,
         &births_to_mint,
     )?;
+    let classified = classify_minted_births(
+        input,
+        validated,
+        &explicit_retires,
+        &retired_names_in_commit,
+        &create_claimed_targets,
+        explicit_restore_postures,
+        restored_names_in_commit,
+        restored_created_targets,
+        &mut minted_births,
+    )?;
 
     Ok(ValidatedPostureBatch {
-        postures: validated,
+        postures: classified.postures,
         minted_births,
         claimed_created_targets,
+        restored_created_targets: classified.restored_created_targets,
         claimed_basis_targets,
     })
 }

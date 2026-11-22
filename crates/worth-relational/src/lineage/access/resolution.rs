@@ -117,6 +117,7 @@ impl<'runtime> LineageAccess<'runtime> {
         mut traversal_scope: HistoricalTraversalScope,
     ) -> HistoricalLineageResolution {
         let mut current = BTreeSet::from([request.lineage_id]);
+        let mut reached = BTreeSet::from([request.lineage_id]);
         let (scheduled_event_positions, mut reachable_event_index_probe_count) =
             self.event_positions_for_sources(&request.branch_id, &current, &mut traversal_scope);
         let mut scheduled_event_positions =
@@ -136,21 +137,31 @@ impl<'runtime> LineageAccess<'runtime> {
                 .lineage
                 .event(position)
                 .expect(/* Proof: Historical event demand pins the selected event pages before traversal; event-index entries are installed together with their published events. */ "lineage index references a published event");
-            if !event
-                .sources()
-                .iter()
-                .any(|source| current.contains(source))
-            {
+            let source_matches = match event.kind() {
+                LineageEventKind::Restore => event
+                    .sources()
+                    .iter()
+                    .any(|source| reached.contains(source)),
+                _ => event
+                    .sources()
+                    .iter()
+                    .any(|source| current.contains(source)),
+            };
+            if !source_matches {
                 continue;
             }
             match event.kind() {
-                LineageEventKind::Replace | LineageEventKind::Split | LineageEventKind::Merge => {
+                LineageEventKind::Replace
+                | LineageEventKind::Split
+                | LineageEventKind::Merge
+                | LineageEventKind::Restore => {
                     traversed_event_ids.push(event.event_id());
                     for source in event.sources() {
                         current.remove(source);
                     }
                     let new_targets = event.targets().iter().copied().collect::<BTreeSet<_>>();
                     current.extend(new_targets.iter().copied());
+                    reached.extend(new_targets.iter().copied());
                     let (new_positions, index_probe_count) = self.event_positions_for_sources(
                         &request.branch_id,
                         &new_targets,

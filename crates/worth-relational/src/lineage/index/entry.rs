@@ -4,6 +4,7 @@
 use std::collections::BTreeSet;
 
 use crate::history::data::CommitId;
+use crate::identity::data::LineageId;
 use crate::lineage::data::{PersistentNameIdentity, PersistentNameKey, PersistentNameTarget};
 
 /// What a name designates from one commit until its next timeline entry.
@@ -57,13 +58,18 @@ impl NameEntry {
         Some((*commit, state))
     }
 
-    /// The latest state, as of the newest ingested commit.
-    pub(crate) fn current(&self) -> &NameState {
-        &self
+    /// The latest state and commit, as of the newest ingested commit.
+    pub(crate) fn last_state(&self) -> (CommitId, &NameState) {
+        let (commit, state) = self
             .timeline
             .last()
-            .expect("a name entry always holds its birth state")
-            .1
+            .expect("a name entry always holds its birth state");
+        (*commit, state)
+    }
+
+    /// The latest state, as of the newest ingested commit.
+    pub(crate) fn current(&self) -> &NameState {
+        self.last_state().1
     }
 
     pub(crate) fn current_live(&self) -> Option<&LiveName> {
@@ -71,6 +77,22 @@ impl NameEntry {
             NameState::Live(live) => Some(live),
             NameState::Ended => None,
         }
+    }
+
+    /// The most recent `LineageId` held by this name across its live epochs,
+    /// or `None` for groups.
+    pub(crate) fn last_live_lineage(&self) -> Option<LineageId> {
+        self.timeline
+            .iter()
+            .rev()
+            .find_map(|(_, state)| match state {
+                NameState::Live(live) => match live.target {
+                    PersistentNameTarget::Entity { lineage, .. }
+                    | PersistentNameTarget::Relation { lineage, .. } => Some(lineage),
+                    PersistentNameTarget::Group { .. } => None,
+                },
+                NameState::Ended => None,
+            })
     }
 
     /// Forward lineage edges recorded at exactly `commit`.
