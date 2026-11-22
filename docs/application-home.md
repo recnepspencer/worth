@@ -241,6 +241,17 @@ fixed owner order before the Home serves anything.
   opening refuses in phase `host::WorthQueryHomeProgramTransitionOpenPhase::Transition`
   with `TransitionPlanDrift` and extends nothing; a different successor refuses
   with `TransitionPending`.
+- **An interrupted branch adoption, stopped branch-set adoption, or support
+  retirement:** a kill after support custody is retained and before any Native
+  effect discharges the empty adoption on reopen; a kill after Native's effect
+  leaves the original in World's recovery catalogue so `readmit_branch_adoption`
+  and `recover` finish it once without re-preparing; a kill after World
+  publication discharges the adoption custody on reopen. A killed stopped
+  branch-set adoption retains its ordered prefix and remainder for
+  `readmit_stopped_branch_set_adoptions` and `programs().resume(..)`, refusing
+  widened coverage so the completed prefix is never re-prepared. A completed
+  `retire_program_support` survives a process kill and keeps refusing
+  interpretation and commits under the retired revision.
 - **A kill while graceful close was publishing its checkpoint:** reopen recovers
   the state committed before that close.
 - **Still refused (D18):** an external dispatch attempt with no recorded

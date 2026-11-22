@@ -746,9 +746,15 @@ not a retirement receipt.
 Use the Home's ordinary `close(&execution)` and retain any close refusal for
 retry; after successful close call `reclaim()`. Reopen the same location with
 fresh authority. The initializer is not rerun, and retiring an unused revision
-does not retire the main program. This status journey is qualified across
-graceful reopen and in a fresh process. Adoption recovery and stopped branch
-sets separately retain their mandatory program custody in `query.obligations`.
+does not retire the main program. This status journey is qualified across graceful reopen and real process kills
+in a fresh process: a killed Home after `retire_program_support` still reports
+`AlreadyRetired` and refuses interpretation and commits under the retired
+revision (`ProgramSupportRetired`). Single-branch adoption killed at each
+durable stage (support custody retained, Native-bearing adoption recovery
+recorded, World publication durable, completed) and two-branch stopped-prefix
+adoptions killed at each branch resume cleanly without re-preparing completed
+prefixes. Adoption recovery and stopped branch sets separately retain their
+mandatory program custody in `query.obligations`.
 
 Producer execution in a Directory Home uses the actual readmitted Signal
 branch's allocation registry. Accepted output data retains canonical role/entity

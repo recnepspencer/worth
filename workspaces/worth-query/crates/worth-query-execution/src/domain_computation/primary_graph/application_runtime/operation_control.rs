@@ -30,6 +30,16 @@ impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
         self.installed_program_support()?.activation().published()
     }
 
+    /// Observes the cold-readmitted adoption state recorded before service.
+    #[doc(hidden)]
+    pub fn cold_adoption_readmission_summary_for_test(
+        &self,
+    ) -> super::super::query_obligations::history::QueryColdAdoptionReadmissionSummary {
+        self.installed_program_support()
+            .map(|support| support.lifecycle().cold_adoption_summary())
+            .unwrap_or_default()
+    }
+
     /// Records actual contention on this runtime's existing branch commit lane.
     /// This closed recorder cannot pause, unlock or authorize a transition.
     #[doc(hidden)]

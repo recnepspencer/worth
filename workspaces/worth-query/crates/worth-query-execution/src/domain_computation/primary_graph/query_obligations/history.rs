@@ -43,6 +43,18 @@ impl WorthQueryProgramSupportRetirementReceipt {
     }
 }
 
+/// Read-only cold adoption readmission counts observed before Home service.
+/// Grants no adoption, publication or recovery authority.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct QueryColdAdoptionReadmissionSummary {
+    pub pre_open_retained: usize,
+    pub empty_open_released: usize,
+    pub native_recovery_retained: usize,
+    pub published_discharged: usize,
+    pub already_completed: usize,
+    pub stopped_sets_retained: usize,
+}
+
 #[derive(Clone, Copy)]
 struct SupportEntryState {
     status: ProgramSupportStatus,
@@ -55,6 +67,7 @@ struct QueryObligationState {
     pending_output_discharges: std::collections::BTreeSet<std::num::NonZeroU64>,
     entries: BTreeMap<ApplicationProgramRevision, SupportEntryState>,
     journal: Option<QueryObligationJournalState>,
+    cold_adoption_summary: QueryColdAdoptionReadmissionSummary,
 }
 
 pub struct QueryObligationHistory {
@@ -87,10 +100,29 @@ impl QueryObligationHistory {
                 pending_output_discharges: Default::default(),
                 entries,
                 journal: None,
+                cold_adoption_summary: QueryColdAdoptionReadmissionSummary::default(),
             })),
             medium: std::sync::OnceLock::new(),
             publication_driver: Mutex::new(()),
         }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn record_cold_adoption_original(
+        &self,
+        native_present: bool,
+    ) {
+        let mut state = self.state();
+        if native_present {
+            state.cold_adoption_summary.native_recovery_retained += 1;
+        } else {
+            state.cold_adoption_summary.empty_open_released += 1;
+        }
+    }
+
+    pub(in crate::domain_computation::primary_graph) fn cold_adoption_summary(
+        &self,
+    ) -> QueryColdAdoptionReadmissionSummary {
+        self.state().cold_adoption_summary
     }
 
     fn state(&self) -> std::sync::MutexGuard<'_, QueryObligationState> {

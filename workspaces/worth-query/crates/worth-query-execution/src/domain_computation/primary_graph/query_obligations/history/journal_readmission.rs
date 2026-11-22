@@ -82,19 +82,34 @@ impl QueryObligationHistory {
         // prefix. A pre-effect acquire with no World open has no owner effect;
         // terminal original fates no longer carry adoption custody.
         let finished_adoptions = {
-            let state = self.state();
+            let mut state = self.state();
             let fold =
                 ledger_inspect::adoption(&state.journal.as_ref().expect("admitted journal").ledger);
-            fold.branches
+            let mut summary = QueryColdAdoptionReadmissionSummary {
+                already_completed: fold.completed.len(),
+                stopped_sets_retained: fold.stopped.len(),
+                ..QueryColdAdoptionReadmissionSummary::default()
+            };
+            let mut finished = Vec::new();
+            for &attempt in fold
+                .branches
                 .keys()
-                .copied()
                 .filter(|attempt| !fold.completed.contains(attempt))
-                .filter(|attempt| {
-                    originals.original_state(*attempt).is_none_or(|original| {
-                        original.fate() != worth_foundational::facade::WorldOriginalFate::Open
-                    })
-                })
-                .collect::<Vec<_>>()
+            {
+                match originals.original_state(attempt).map(|o| o.fate()) {
+                    None => {
+                        summary.pre_open_retained += 1;
+                        finished.push(attempt);
+                    }
+                    Some(worth_foundational::facade::WorldOriginalFate::Open) => {}
+                    Some(_) => {
+                        summary.published_discharged += 1;
+                        finished.push(attempt);
+                    }
+                }
+            }
+            state.cold_adoption_summary = summary;
+            finished
         };
         for attempt in finished_adoptions {
             driver.publish(

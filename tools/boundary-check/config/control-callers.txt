@@ -1680,6 +1680,9 @@ workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/wo
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/interrupted_close/killed_checkpoint.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_seams.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_seams.rs
+workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/adoption_seams.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/adoption_seams.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/adoption_seams/stopped_and_retirement.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/workflow_transition_seams.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/workflow_transition_seams.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-testkit-application-oracle/src/host_observation/opening.rs
@@ -1912,6 +1915,7 @@ workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/cr
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_planning.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_request.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/unresolved.rs
+workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/adoption_seams.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/workflow_transition_seams.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/query_readmission/bootstrap_publication.rs
 workspaces/worth-store/crates/worth-store-application/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/world_durable_release/child.rs
