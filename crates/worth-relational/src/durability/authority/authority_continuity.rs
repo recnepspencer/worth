@@ -1,4 +1,6 @@
 mod checkpoint_lineage;
+#[cfg(test)]
+mod checkpoint_lineage_restore_tests;
 mod registry_mismatch;
 mod schema_continuity;
 

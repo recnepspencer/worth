@@ -1,3 +1,6 @@
+//! Recovery lineage allocator frontiers advance across every lineage-allocating
+//! `Create` and `Restore` event, so replay never reuses a recorded lineage id.
+use super::super::lineage_allocation::{allocated_lineage, maximum_allocated_lineage};
 use crate::durability::data::{DurabilityError, RecoveryFailureClass};
 use crate::runtime::RelationalRuntime;
 
@@ -15,16 +18,11 @@ pub(super) fn prepare_recovery_lineage_sequence(
             .lineage
             .set_identity_frontiers(next_lineage_id, first_event_id);
     }
-    if let Some(first_created_lineage_id) = envelope
-        .lineage_events()
-        .iter()
-        .find(|event| event.kind() == crate::lineage::data::LineageEventKind::Create)
-        .and_then(|event| event.targets().first())
-    {
+    if let Some(first_allocated_lineage_id) = first_allocated_lineage(envelope.lineage_events()) {
         let next_event_id = restored.lineage.identity_frontiers().1;
         restored
             .lineage
-            .set_identity_frontiers(first_created_lineage_id.0, next_event_id);
+            .set_identity_frontiers(first_allocated_lineage_id.0, next_event_id);
     }
 }
 
@@ -42,19 +40,35 @@ pub(super) fn validate_tail_lineage_allocator_capacity<'a>(
             "recovery tail lineage event id exhausted the allocator",
         ));
     }
-    if envelopes
-        .iter()
-        .flat_map(|commit| commit.lineage_events())
-        .filter(|event| event.kind() == crate::lineage::data::LineageEventKind::Create)
-        .flat_map(|event| event.targets())
-        .any(|lineage_id| lineage_id.0 >= u64::MAX - 1)
-    {
+    if allocations_exhaust_allocator(envelopes.iter().flat_map(|commit| commit.lineage_events())) {
         return Err(DurabilityError::new(
             RecoveryFailureClass::CorruptCanonicalArtifact,
             "recovery tail lineage id exhausted the allocator",
         ));
     }
     Ok(())
+}
+
+/// The first lineage a commit allocates, in event order: replay must
+/// reallocate exactly it, whether a `Create` or a `Restore` allocated it.
+pub(super) fn first_allocated_lineage(
+    events: &[crate::lineage::data::LineageEventRecord],
+) -> Option<crate::identity::data::LineageId> {
+    events
+        .iter()
+        .find_map(|event| allocated_lineage(event).ok().flatten())
+        .map(|allocation| allocation.lineage)
+}
+
+/// Whether any `Create` or `Restore` allocation leaves the lineage-id
+/// allocator no safe successor.
+pub(super) fn allocations_exhaust_allocator<'a>(
+    events: impl IntoIterator<Item = &'a crate::lineage::data::LineageEventRecord>,
+) -> bool {
+    events
+        .into_iter()
+        .filter_map(|event| allocated_lineage(event).ok().flatten())
+        .any(|allocation| allocation.lineage.0 >= u64::MAX - 1)
 }
 
 pub(super) fn refresh_checkpoint_counters(
@@ -88,9 +102,22 @@ pub(super) fn refresh_checkpoint_counters(
             .max()
             .copied()
     });
-    let next_lineage_id = checked_checkpoint_successor(
-        restored.lineage.maximum_node_id().max(cold_node_max),
-        "lineage id",
+    let cold_event_lineage_max = directory.as_ref().and_then(|directory| {
+        directory
+            .manifest
+            .lineage_events
+            .iter()
+            .map(|page| page.last_node)
+            .max()
+    });
+    let resident_events = restored.lineage.shared_events();
+    let next_lineage_id = recovered_lineage_frontier(
+        restored
+            .lineage
+            .maximum_node_id()
+            .max(cold_node_max)
+            .max(cold_event_lineage_max),
+        resident_events.iter().map(std::sync::Arc::as_ref),
     )?;
     let next_event_id = checked_checkpoint_successor(
         restored.lineage.maximum_event_id().max(cold_event_max),
@@ -103,6 +130,19 @@ pub(super) fn refresh_checkpoint_counters(
         .lineage
         .set_identity_frontiers(next_lineage_id, next_event_id);
     Ok(())
+}
+
+/// The recovered lineage-id frontier: strictly past every recorded entity
+/// node and cold event page (`recorded_maximum`) and past every resident
+/// `Create` or `Restore` allocation of either subject, refusing exhaustion.
+pub(super) fn recovered_lineage_frontier<'event>(
+    recorded_maximum: Option<u64>,
+    resident_events: impl IntoIterator<Item = &'event crate::lineage::data::LineageEventRecord>,
+) -> Result<u64, DurabilityError> {
+    checked_checkpoint_successor(
+        recorded_maximum.max(maximum_allocated_lineage(resident_events)),
+        "lineage id",
+    )
 }
 
 fn checked_checkpoint_successor(

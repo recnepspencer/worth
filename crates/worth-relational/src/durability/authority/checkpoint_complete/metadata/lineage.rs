@@ -1,6 +1,10 @@
 //! Full original canonical inputs supply published nodes, events and digest totals.
+//! Entity nodes come from every entity-allocating `Create` and `Restore` event.
 use super::super::source::OriginalCanonicalCommit;
 use super::{array_stop, map_stop, overflow};
+use crate::durability::authority::lineage_allocation::{
+    entity_allocation_bindings, CommitAllocationView,
+};
 use crate::durability::data::{
     CheckpointLineageBasis, RelationalNativeCheckpointCaptureDenial as Denial,
     RelationalRecoveryStop,
@@ -9,9 +13,7 @@ use crate::durability::log::native_checkpoint_codec::member_frame::{self, Member
 use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, LineageId};
-use crate::lineage::data::{LineageEventKind, LineageEventRecord, LineageNode};
-use crate::publication::patch::data::RecordStructuralChange;
-use crate::transactions::data::RecordRef;
+use crate::lineage::data::{LineageEventRecord, LineageNode};
 use serde::Serialize;
 use worth_execution::{
     ExecutionArray, ExecutionImmutableBytes, ExecutionOrderedMap, ExecutionRequest,
@@ -75,25 +77,9 @@ pub(in crate::durability::authority::checkpoint_complete) fn capture_lineage<'a>
         id_count = id_count
             .checked_add(basis.canonical_event_ids().len())
             .ok_or_else(overflow)?;
-        let mut creates = envelope
-            .lineage_events()
-            .iter()
-            .filter(|e| e.kind() == LineageEventKind::Create);
-        for patch in &envelope.patch.authoritative_record_patches {
-            let RecordRef::Entity(entity) = patch.target else {
-                continue;
-            };
-            if patch.structural_change != RecordStructuralChange::Created {
-                continue;
-            }
-            let event = creates.next().ok_or(Denial::OriginalAuthorityUnavailable)?;
-            if event.commit() != &envelope.commit
-                || event.targets().len() != 1
-                || !event.sources().is_empty()
-            {
-                return Err(Denial::OriginalAuthorityUnavailable);
-            }
-            let lineage = event.targets()[0];
+        let bindings = entity_allocation_bindings(&CommitAllocationView::of_envelope(envelope))
+            .map_err(|_| Denial::OriginalAuthorityUnavailable)?;
+        for (lineage, entity) in bindings {
             if covered_nodes.contains_key(&lineage) {
                 continue;
             }
@@ -106,9 +92,6 @@ pub(in crate::durability::authority::checkpoint_complete) fn capture_lineage<'a>
                     .insert_cloned_native_for_request(&lineage, &entity, *request)
                     .map_err(map_stop)?;
             }
-        }
-        if creates.next().is_some() {
-            return Err(Denial::OriginalAuthorityUnavailable);
         }
         for event in envelope.lineage_events() {
             let row = OriginalLineageEvent {

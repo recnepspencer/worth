@@ -1,39 +1,36 @@
+//! Recovered lineage artifacts must agree with their canonical basis, never
+//! reuse an event id, and allocate every `Create` and `Restore` lineage once,
+//! in ascending order within each commit.
 use std::collections::{btree_map::Entry, BTreeMap, BTreeSet};
 
+use super::super::lineage_allocation::{allocated_lineage, maximum_allocated_lineage};
 use crate::durability::data::{DurabilityError, DurableCheckpoint, RecoveryFailureClass};
-use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
+use crate::history::data::{
+    BranchId, CanonicalCommitEnvelope, PositionedCanonicalCommit, RelationalCommitReceipt,
+};
+use crate::identity::data::LineageId;
+use crate::lineage::data::LineageEventRecord;
 use crate::runtime::RelationalRuntime;
 
 pub(super) fn validate_recovered_lineage_artifacts<'a>(
     checkpoint: Option<&DurableCheckpoint>,
     tail_log: impl IntoIterator<Item = &'a CanonicalCommitEnvelope>,
 ) -> Result<(), DurabilityError> {
-    let mut seen_event_ids = BTreeSet::new();
-    let mut seen_created_lineage_ids = BTreeSet::new();
+    let mut ledger = RecoveredLineageIdentityLedger::default();
     if let Some(checkpoint) = checkpoint {
         for envelope in &checkpoint.envelopes {
-            let mut previous_event_id = Some(0);
-            let mut previous_created_lineage_id = Some(crate::identity::data::LineageId(0));
             validate_envelope_lineage(
                 envelope.envelope(),
                 RecoveryFailureClass::CorruptCheckpoint,
-                &mut seen_event_ids,
-                &mut seen_created_lineage_ids,
-                &mut previous_event_id,
-                &mut previous_created_lineage_id,
+                &mut ledger,
             )?;
         }
     }
     for envelope in tail_log {
-        let mut previous_event_id = Some(0);
-        let mut previous_created_lineage_id = Some(crate::identity::data::LineageId(0));
         validate_envelope_lineage(
             envelope,
             RecoveryFailureClass::CorruptCanonicalArtifact,
-            &mut seen_event_ids,
-            &mut seen_created_lineage_ids,
-            &mut previous_event_id,
-            &mut previous_created_lineage_id,
+            &mut ledger,
         )?;
     }
     Ok(())
@@ -42,10 +39,7 @@ pub(super) fn validate_recovered_lineage_artifacts<'a>(
 fn validate_envelope_lineage(
     envelope: &CanonicalCommitEnvelope,
     failure_class: RecoveryFailureClass,
-    seen_event_ids: &mut BTreeSet<u64>,
-    seen_created_lineage_ids: &mut BTreeSet<crate::identity::data::LineageId>,
-    previous_event_id: &mut Option<u64>,
-    previous_created_lineage_id: &mut Option<crate::identity::data::LineageId>,
+    ledger: &mut RecoveredLineageIdentityLedger,
 ) -> Result<(), DurabilityError> {
     let observed = crate::lineage::data::LineageFinalizationArtifact::new(
         envelope.branch_context.clone(),
@@ -62,67 +56,83 @@ fn validate_envelope_lineage(
             ),
         ));
     }
-    for event in envelope.lineage_events() {
-        let commit_axes_match = event.commit() == &envelope.commit;
-        if !commit_axes_match || event.branch_id() != &envelope.branch_context {
-            return Err(DurabilityError::new(
-                failure_class,
-                format!(
+    ledger.admit_commit_events(
+        &envelope.commit,
+        &envelope.branch_context,
+        envelope.lineage_events(),
+        failure_class,
+    )
+}
+
+/// Event ids and allocated lineage ids already admitted by recovery.
+#[derive(Default)]
+pub(super) struct RecoveredLineageIdentityLedger {
+    seen_event_ids: BTreeSet<u64>,
+    seen_allocated_lineage_ids: BTreeSet<LineageId>,
+}
+
+impl RecoveredLineageIdentityLedger {
+    /// Admits one commit's events: each belongs to its commit and branch,
+    /// event ids are fresh and ascending, and every `Create` or `Restore`
+    /// lineage of either subject is fresh and ascending within the commit.
+    ///
+    /// Complexity: O(events log admitted).
+    pub(super) fn admit_commit_events(
+        &mut self,
+        commit: &RelationalCommitReceipt,
+        branch: &BranchId,
+        events: &[LineageEventRecord],
+        failure_class: RecoveryFailureClass,
+    ) -> Result<(), DurabilityError> {
+        let refuse = |detail: String| Err(DurabilityError::new(failure_class.clone(), detail));
+        let mut previous_event_id = 0;
+        let mut previous_allocated = LineageId(0);
+        for event in events {
+            if event.commit() != commit || event.branch_id() != branch {
+                return refuse(format!(
                     "recovered lineage event {} is cross-spliced from its containing commit envelope {}",
                     event.event_id(),
-                    envelope.commit.commit_id.0
-                ),
-            ));
-        }
-        if !seen_event_ids.insert(event.event_id()) {
-            return Err(DurabilityError::new(
-                failure_class,
-                format!(
+                    commit.commit_id.0
+                ));
+            }
+            if !self.seen_event_ids.insert(event.event_id()) {
+                return refuse(format!(
                     "recovered lineage event id {} is reused by multiple canonical artifacts",
                     event.event_id()
-                ),
-            ));
-        }
-        if let Some(previous) = *previous_event_id
-            && event.event_id() <= previous
-        {
-            return Err(DurabilityError::new(
-                failure_class,
-                format!(
+                ));
+            }
+            if event.event_id() <= previous_event_id {
+                return refuse(format!(
                     "recovered lineage event id {} does not advance within its canonical batch after {}",
                     event.event_id(),
-                    previous
-                ),
-            ));
-        }
-        if event.kind() == crate::lineage::data::LineageEventKind::Create {
-            for lineage_id in event.targets() {
-                if !seen_created_lineage_ids.insert(*lineage_id) {
-                    return Err(DurabilityError::new(
-                        failure_class,
-                        format!(
-                            "recovered create lineage id {} is reused by multiple canonical artifacts",
-                            lineage_id.0
-                        ),
-                    ));
-                }
-                if let Some(previous) = *previous_created_lineage_id
-                    && lineage_id.0 <= previous.0
-                {
-                    return Err(DurabilityError::new(
-                        failure_class,
-                        format!(
-                            "recovered create lineage id {} does not advance after {}",
-                            lineage_id.0, previous.0
-                        ),
-                    ));
-                }
-                *previous_created_lineage_id = Some(*lineage_id);
+                    previous_event_id
+                ));
             }
+            previous_event_id = event.event_id();
+            let allocation = match allocated_lineage(event) {
+                Ok(allocation) => allocation,
+                Err(refusal) => return refuse(refusal.describe(commit.commit_id.0)),
+            };
+            let Some(allocation) = allocation else {
+                continue;
+            };
+            let lineage_id = allocation.lineage;
+            if !self.seen_allocated_lineage_ids.insert(lineage_id) {
+                return refuse(format!(
+                    "recovered allocated lineage id {} is reused by multiple canonical artifacts",
+                    lineage_id.0
+                ));
+            }
+            if lineage_id.0 <= previous_allocated.0 {
+                return refuse(format!(
+                    "recovered allocated lineage id {} does not advance after {}",
+                    lineage_id.0, previous_allocated.0
+                ));
+            }
+            previous_allocated = lineage_id;
         }
-        *previous_event_id = Some(event.event_id());
+        Ok(())
     }
-    Ok(())
 }
 
 pub(super) fn reconcile_recovered_lineage_artifacts(
@@ -174,6 +184,9 @@ pub(super) fn reconcile_recovered_lineage_artifacts(
     let next_lineage_id = restored
         .lineage
         .maximum_node_id()
+        .max(maximum_allocated_lineage(
+            events_by_id.values().map(|(event, _)| event),
+        ))
         .and_then(|lineage_id| lineage_id.checked_add(1));
     restored
         .lineage
