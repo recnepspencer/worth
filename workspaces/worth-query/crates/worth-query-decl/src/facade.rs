@@ -109,4 +109,49 @@ pub use worth_query_macros::{
 ///     ApplicationGroupContinuityRule::Boundary
 /// );
 /// ```
+///
+/// Held names resolve through one closed selection and outcome vocabulary.
+/// Erased carrier names cannot be forged from raw bytes:
+///
+/// ```compile_fail,E0599
+/// use worth_query_decl::facade::application_naming::ErasedWorthQueryName;
+/// let _forged = ErasedWorthQueryName::from_bytes([0u8; 32]);
+/// ```
+///
+/// A side selection never accepts raw, unencoded bytes:
+///
+/// ```compile_fail,E0308
+/// use worth_query_decl::facade::application_naming::NameSelection;
+/// let _forged = NameSelection::KeepSide { discriminator: b"left".to_vec() };
+/// ```
+///
+/// ```
+/// use worth_query_decl::facade::application_naming::{
+///     NameResolutionDenial, NameSelection, NameSelectionDenial, ResolvedName, WorthQueryName,
+/// };
+/// struct Face;
+/// fn plan(cutter: WorthQueryName<Face>) -> Result<[NameSelection; 3], NameSelectionDenial> {
+///     Ok([
+///         NameSelection::Exact,
+///         NameSelection::AllDescendants,
+///         NameSelection::bounded_by_carriers([cutter.erased()])?,
+///     ])
+/// }
+/// fn report(outcome: Result<ResolvedName<u32>, NameResolutionDenial<Face>>) -> usize {
+///     match outcome {
+///         Ok(ResolvedName::Exact(_)) => 1,
+///         Ok(ResolvedName::Plural(faces)) => faces.len(),
+///         Ok(ResolvedName::Retired { .. }) => 0,
+///         Err(NameResolutionDenial::Ambiguous { candidates }) => candidates.len(),
+///         Err(_) => 0,
+///     }
+/// }
+/// let _plan: fn(WorthQueryName<Face>) -> Result<[NameSelection; 3], NameSelectionDenial> = plan;
+/// assert_eq!(report(Ok(ResolvedName::Plural(vec![1, 2]))), 2);
+/// // An empty carrier filter is refused rather than matching every candidate.
+/// assert_eq!(
+///     NameSelection::bounded_by_carriers([]),
+///     Err(NameSelectionDenial::EmptyCarrierSet)
+/// );
+/// ```
 pub use worth_query_declaration::facade::canonicalization::CanonicalQueryArtifact;

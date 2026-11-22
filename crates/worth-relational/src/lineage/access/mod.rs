@@ -9,6 +9,7 @@ mod divergence;
 mod event_demand;
 #[cfg(test)]
 mod graph;
+mod name_resolution;
 mod records;
 mod resolution;
 mod selected_root_resolution;

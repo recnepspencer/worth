@@ -117,6 +117,13 @@ impl<K> WorthQueryName<K> {
         &self.bytes
     }
 
+    /// Kind-erased copy of this admitted name, used where one selection names
+    /// carriers of several kinds (for example [`super::NameSelection`]).
+    #[inline]
+    pub const fn erased(self) -> super::ErasedWorthQueryName {
+        super::ErasedWorthQueryName::from_admitted_name_bytes(self.bytes)
+    }
+
     /// Lowercase hexadecimal representation for diagnostics and logs.
     pub fn render_hex(&self) -> String {
         const HEX: &[u8; 16] = b"0123456789abcdef";
