@@ -19,7 +19,7 @@ impl PreparedPhysicalMutation {
     ) -> Option<DurableExtentRecordPlacement> {
         match self.rewrite_anchor {
             Some(PreparedRewriteAnchor::ExtentCopy(source)) => Some(source),
-            _ => match &self.data {
+            _ => match self.data.as_ref() {
                 PreparedPhysicalMutationData::Planned { data, .. } => {
                     data.source_copy().map(|copy| copy.intent().source())
                 }
@@ -37,7 +37,7 @@ impl PreparedPhysicalMutation {
             self.idempotency_identity().bytes(),
             copy.intent().operation()
         );
-        let PreparedPhysicalMutationData::Unplanned { copy: slot, .. } = &mut self.data else {
+        let PreparedPhysicalMutationData::Unplanned { copy: slot, .. } = self.data.as_mut() else {
             unreachable!("completed copy attaches before final publication planning")
         };
         assert!(slot.is_none());
@@ -48,7 +48,7 @@ impl PreparedPhysicalMutation {
     pub(in crate::physical_runtime::record_serving) fn take_completed_extent_copy(
         &mut self,
     ) -> Option<CompletedExtentCopy> {
-        match &mut self.data {
+        match self.data.as_mut() {
             PreparedPhysicalMutationData::Unplanned { copy, .. } => copy.take(),
             PreparedPhysicalMutationData::Planned { .. } => None,
         }
@@ -68,7 +68,7 @@ impl PreparedPhysicalMutation {
         &mut self,
         current_root: worth_store_physical_format::DurablePhysicalRootManifest,
     ) -> Result<bool, ()> {
-        let PreparedPhysicalMutationData::Planned { data, root, .. } = &mut self.data else {
+        let PreparedPhysicalMutationData::Planned { data, root, .. } = self.data.as_mut() else {
             return Ok(false);
         };
         let Some(copy) = data.source_copy() else {

@@ -117,6 +117,9 @@ impl PhysicalRecoveryConstructionPort {
         tier: Option<VerifiedSelectedTierEpochCustody>,
         pause_before_final_reread: impl FnOnce(),
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
+        let pending = Box::new(pending);
+        let effective = Box::new(effective);
+        let tier = tier.map(Box::new);
         if cleanup.live_media_handle_delta() != 0
             || coordination
                 .require_selected_checkpoint(pending.checkpoint())
@@ -149,7 +152,7 @@ impl PhysicalRecoveryConstructionPort {
                 &pending,
                 recovery_allocation,
                 &effective,
-                tier.as_ref(),
+                tier.as_deref(),
                 pause_before_final_reread,
             ) {
                 Ok(value) => value,
@@ -167,9 +170,10 @@ impl PhysicalRecoveryConstructionPort {
             Some(selected_wal),
             Some(selected_controls),
         )?;
-        core.pending_wal_release_custody = Some(pending);
-        core.effective_release_heads = Some(effective);
-        core.tier_custody = tier;
+        let body = core.body_mut();
+        body.pending_wal_release_custody = Some(pending);
+        body.effective_release_heads = Some(effective);
+        body.tier_custody = tier;
         Ok(core)
     }
 }

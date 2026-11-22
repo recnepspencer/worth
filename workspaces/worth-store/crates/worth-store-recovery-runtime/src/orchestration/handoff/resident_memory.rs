@@ -40,10 +40,14 @@ pub(super) fn retained_bytes(
         bytes = bytes.checked_add(fresh.owned_heap_bytes()?)?;
     }
     match &state.custody {
-        crate::progression::CustodyState::NoCheckpoint
-        | crate::progression::CustodyState::NoRelease(_) => {}
+        crate::progression::CustodyState::NoCheckpoint => {}
+        crate::progression::CustodyState::NoRelease(no_release) => {
+            bytes = bytes.checked_add(u64::try_from(std::mem::size_of_val(&**no_release)).ok()?)?;
+        }
         crate::progression::CustodyState::SourceHeads(claim) => {
-            bytes = bytes.checked_add(claim.owned_heap_bytes()?)?;
+            bytes = bytes
+                .checked_add(u64::try_from(std::mem::size_of_val(&**claim)).ok()?)?
+                .checked_add(claim.owned_heap_bytes()?)?;
         }
         crate::progression::CustodyState::Pending {
             claim,
@@ -51,6 +55,9 @@ pub(super) fn retained_bytes(
             effective_heads,
         } => {
             bytes = bytes
+                .checked_add(u64::try_from(std::mem::size_of_val(&**claim)).ok()?)?
+                .checked_add(u64::try_from(std::mem::size_of_val(&**replay)).ok()?)?
+                .checked_add(u64::try_from(std::mem::size_of_val(&**effective_heads)).ok()?)?
                 .checked_add(claim.owned_heap_bytes()?)?
                 .checked_add(replay.owned_heap_bytes()?)?
                 .checked_add(effective_heads.owned_heap_bytes()?)?;
@@ -60,6 +67,8 @@ pub(super) fn retained_bytes(
             effective_heads,
         } => {
             bytes = bytes
+                .checked_add(u64::try_from(std::mem::size_of_val(&**claim)).ok()?)?
+                .checked_add(u64::try_from(std::mem::size_of_val(&**effective_heads)).ok()?)?
                 .checked_add(claim.owned_heap_bytes()?)?
                 .checked_add(effective_heads.owned_heap_bytes()?)?;
         }

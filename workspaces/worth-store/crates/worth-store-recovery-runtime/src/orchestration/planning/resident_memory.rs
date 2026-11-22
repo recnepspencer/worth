@@ -7,6 +7,7 @@ use std::sync::Arc;
 pub(super) fn live_bytes(context: &PlanningContext, basis: &ResolvedPlanningState) -> Option<u64> {
     let mut bytes = u64::try_from(std::mem::size_of::<PlanningContext>())
         .ok()?
+        .checked_add(u64::try_from(std::mem::size_of_val(&**context)).ok()?)?
         .checked_add(u64::try_from(std::mem::size_of::<ResolvedPlanningState>()).ok()?)?
         .checked_add(basis.unused_backing_bytes())?
         .checked_add(std::mem::size_of::<super::resolved_basis::ResolvedPlanningBasis>() as u64)?
@@ -36,11 +37,31 @@ pub(super) fn live_bytes(context: &PlanningContext, basis: &ResolvedPlanningStat
     if let Some(consumed) = &basis.historical_consumed {
         bytes = bytes.checked_add(consumed.owned_heap_bytes()?)?;
     }
-    if let crate::progression::PlanningCustody::SourceHeads(heads) = &basis.custody {
-        bytes = bytes.checked_add(heads.owned_heap_bytes()?)?;
-    }
-    if let crate::progression::PlanningCustody::PendingPrepared { replay, .. } = &basis.custody {
-        bytes = bytes.checked_add(replay.owned_heap_bytes()?)?;
+    match &basis.custody {
+        crate::progression::PlanningCustody::Unresolved
+        | crate::progression::PlanningCustody::NoCheckpoint => {}
+        crate::progression::PlanningCustody::NoRelease(no_release) => {
+            bytes = bytes.checked_add(u64::try_from(std::mem::size_of_val(&**no_release)).ok()?)?;
+        }
+        crate::progression::PlanningCustody::SourceHeads(heads) => {
+            bytes = bytes
+                .checked_add(u64::try_from(std::mem::size_of_val(&**heads)).ok()?)?
+                .checked_add(heads.owned_heap_bytes()?)?;
+        }
+        crate::progression::PlanningCustody::PendingPrepared { claim, replay } => {
+            bytes = bytes
+                .checked_add(u64::try_from(std::mem::size_of_val(&**claim)).ok()?)?
+                .checked_add(u64::try_from(std::mem::size_of_val(&**replay)).ok()?)?
+                .checked_add(replay.owned_heap_bytes()?)?;
+        }
+        crate::progression::PlanningCustody::OrderedCompleted {
+            claim,
+            effective_heads,
+        } => {
+            bytes = bytes
+                .checked_add(u64::try_from(std::mem::size_of_val(&**claim)).ok()?)?
+                .checked_add(u64::try_from(std::mem::size_of_val(&**effective_heads)).ok()?)?;
+        }
     }
     for (index, drop) in basis.observed_pages.historical_drops.iter().enumerate() {
         bytes = bytes

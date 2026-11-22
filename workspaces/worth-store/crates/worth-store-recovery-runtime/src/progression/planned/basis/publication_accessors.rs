@@ -8,49 +8,49 @@ impl RecoveryPublicationPlan {
     pub const fn store_identity(
         &self,
     ) -> worth_store_physical_format::store_namespace::StableStoreIdentity {
-        self.store
+        self.body().store
     }
     pub const fn checkpoint_identity(
         &self,
     ) -> Option<worth_store_physical_format::PhysicalCheckpointIdentity> {
-        self.checkpoint
+        self.body().checkpoint
     }
     pub const fn source_generation(&self) -> u64 {
-        self.source_generation
+        self.body().source_generation
     }
     pub const fn staging_generation(&self) -> u64 {
-        self.staging_generation
+        self.body().staging_generation
     }
     pub fn actions(&self) -> &[RecoveryPublicationAction] {
-        &self.actions
+        &self.body().actions
     }
     pub fn expected_effects(&self) -> u64 {
-        self.actions.len() as u64
+        self.body().actions.len() as u64
     }
     pub const fn plan_identity(&self) -> [u8; 32] {
-        self.plan_identity
+        self.body().plan_identity
     }
     pub const fn root_protocol(
         &self,
     ) -> worth_store::physical_runtime::RecoveryRootProtocolPublicationPlan {
-        self.root_protocol
+        self.body().root_protocol
     }
     pub const fn current_selector(&self) -> worth_store_physical_format::DurableRootSelector {
-        self.current_selector
+        self.body().current_selector
     }
     pub const fn recovered_root(
         &self,
     ) -> &worth_store_physical_format::DurablePhysicalRootManifest {
-        &self.recovered_root
+        &self.body().recovered_root
     }
     pub fn candidates(&self) -> &[RecoveryPublicationCandidateArtifact] {
-        &self.candidates
+        &self.body().candidates
     }
     pub fn referenced_artifacts(&self) -> &[RecordArtifactFile] {
-        &self.referenced_artifacts
+        &self.body().referenced_artifacts
     }
     pub fn created_artifacts(&self) -> &[RecordArtifactFile] {
-        &self.created_artifacts
+        &self.body().created_artifacts
     }
 
     pub(crate) fn into_command_parts(
@@ -59,21 +59,22 @@ impl RecoveryPublicationPlan {
         RecoveryPublicationExpectation,
         Box<[RecoveryPublicationCandidateArtifact]>,
     ) {
+        let body = self.into_body();
         (
-            self.expectation_backing.finish(ExpectationPayload {
-                store: self.store,
-                checkpoint: self.checkpoint,
-                source_generation: self.source_generation,
-                staging_generation: self.staging_generation,
-                plan_identity: self.plan_identity,
-                root_protocol: self.root_protocol,
-                current_selector: self.current_selector,
-                recovered_root: self.recovered_root,
-                referenced_artifacts: self.referenced_artifacts,
-                created_artifacts: self.created_artifacts,
-                release_topology: self.release_topology,
+            body.expectation_backing.finish(ExpectationPayload {
+                store: body.store,
+                checkpoint: body.checkpoint,
+                source_generation: body.source_generation,
+                staging_generation: body.staging_generation,
+                plan_identity: body.plan_identity,
+                root_protocol: body.root_protocol,
+                current_selector: body.current_selector,
+                recovered_root: body.recovered_root,
+                referenced_artifacts: body.referenced_artifacts,
+                created_artifacts: body.created_artifacts,
+                release_topology: body.release_topology,
             }),
-            self.candidates,
+            body.candidates,
         )
     }
 }

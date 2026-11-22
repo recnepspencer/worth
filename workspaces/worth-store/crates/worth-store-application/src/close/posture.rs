@@ -14,9 +14,9 @@ mod physical_retirement;
 
 enum PhysicalCloseCustody {
     Retained(Arc<ServingPhysicalRuntime>),
-    Running(PhysicalStoreCloseTask),
-    InspectionRequired(PhysicalStoreCloseOutcome),
-    Failed(PhysicalStoreCloseFailure),
+    Running(Box<PhysicalStoreCloseTask>),
+    InspectionRequired(Box<PhysicalStoreCloseOutcome>),
+    Failed(Box<PhysicalStoreCloseFailure>),
 }
 enum NativeCloseCustody {
     Serving(worth_store_relational::RelationalStoreSection),
@@ -26,10 +26,14 @@ enum NativeCloseCustody {
 }
 
 pub struct ApplicationHomeRecoveryCustody {
+    inner: Box<ApplicationHomeRecoveryCustodyBody>,
+}
+
+struct ApplicationHomeRecoveryCustodyBody {
     location: std::path::PathBuf,
     descriptor: crate::descriptor::HomeDescriptor,
     checkpoint: super::checkpoint_result::HomeCloseCheckpointResult,
-    physical: PhysicalCloseCustody,
+    physical: Option<PhysicalCloseCustody>,
     signal_medium: Option<std::sync::Weak<crate::signal_medium::StoreSignalMedium>>,
     signal_owner_retirement:
         Option<worth_signal::facade::durability::SignalRetainedAuthoredHomeAllocation>,
@@ -62,22 +66,24 @@ impl ApplicationHomeRecoveryCustody {
             crate::ApplicationHomeCheckpointDenial::NativeSectionNeverAttached,
         ));
         Self {
-            location: context.location,
-            descriptor: context.descriptor,
-            checkpoint,
-            signal_medium: context
-                .signal_close_probe
-                .into_inner()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-            signal_owner_retirement: context.signal_owner_retirement,
-            physical: PhysicalCloseCustody::Retained(context.serving),
-            native: NativeCloseCustody::NeverAttached,
-            world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
-            world_origin_retirement: context.world_origin_retirement,
-            world_close_report: None,
-            world_composition: None,
-            checkpoint_owner: context.checkpoint,
-            world_publications: context.world_publications,
+            inner: Box::new(ApplicationHomeRecoveryCustodyBody {
+                location: context.location,
+                descriptor: context.descriptor,
+                checkpoint,
+                signal_medium: context
+                    .signal_close_probe
+                    .into_inner()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner),
+                signal_owner_retirement: context.signal_owner_retirement,
+                physical: Some(PhysicalCloseCustody::Retained(context.serving)),
+                native: NativeCloseCustody::NeverAttached,
+                world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
+                world_origin_retirement: context.world_origin_retirement,
+                world_close_report: None,
+                world_composition: None,
+                checkpoint_owner: context.checkpoint,
+                world_publications: context.world_publications,
+            }),
         }
     }
 
@@ -95,22 +101,24 @@ impl ApplicationHomeRecoveryCustody {
             .unwrap_or_else(|error| error.into_inner());
         stored.store(checkpoint);
         Self {
-            location: context.location,
-            descriptor: context.descriptor,
-            checkpoint: stored,
-            signal_medium: context
-                .signal_close_probe
-                .into_inner()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-            signal_owner_retirement: context.signal_owner_retirement,
-            physical: PhysicalCloseCustody::Retained(context.serving),
-            native: NativeCloseCustody::Prepared(native),
-            world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
-            world_origin_retirement: context.world_origin_retirement,
-            world_close_report: context.world_close_report,
-            world_composition: None,
-            checkpoint_owner: context.checkpoint,
-            world_publications: context.world_publications,
+            inner: Box::new(ApplicationHomeRecoveryCustodyBody {
+                location: context.location,
+                descriptor: context.descriptor,
+                checkpoint: stored,
+                signal_medium: context
+                    .signal_close_probe
+                    .into_inner()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner),
+                signal_owner_retirement: context.signal_owner_retirement,
+                physical: Some(PhysicalCloseCustody::Retained(context.serving)),
+                native: NativeCloseCustody::Prepared(native),
+                world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
+                world_origin_retirement: context.world_origin_retirement,
+                world_close_report: context.world_close_report,
+                world_composition: None,
+                checkpoint_owner: context.checkpoint,
+                world_publications: context.world_publications,
+            }),
         }
     }
 
@@ -130,41 +138,43 @@ impl ApplicationHomeRecoveryCustody {
         // teardown; only this SAME prepaid backing moves into recovery custody.
         let _ = checkpoint.result();
         Self {
-            location: context.location,
-            descriptor: context.descriptor,
-            checkpoint,
-            signal_medium: context
-                .signal_close_probe
-                .into_inner()
-                .unwrap_or_else(std::sync::PoisonError::into_inner),
-            signal_owner_retirement: context.signal_owner_retirement,
-            physical: PhysicalCloseCustody::Retained(context.serving),
-            native: NativeCloseCustody::Serving(relational),
-            world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
-            world_origin_retirement: context.world_origin_retirement,
-            world_close_report: context.world_close_report,
-            world_composition: world_composition
-                .map(crate::world_section::HomeBridgeCloseCustody::Serving),
-            checkpoint_owner: context.checkpoint,
-            world_publications: context.world_publications,
+            inner: Box::new(ApplicationHomeRecoveryCustodyBody {
+                location: context.location,
+                descriptor: context.descriptor,
+                checkpoint,
+                signal_medium: context
+                    .signal_close_probe
+                    .into_inner()
+                    .unwrap_or_else(std::sync::PoisonError::into_inner),
+                signal_owner_retirement: context.signal_owner_retirement,
+                physical: Some(PhysicalCloseCustody::Retained(context.serving)),
+                native: NativeCloseCustody::Serving(relational),
+                world_owner: WorldOwnerCloseCustody::from_original(context.world_owner_retirement),
+                world_origin_retirement: context.world_origin_retirement,
+                world_close_report: context.world_close_report,
+                world_composition: world_composition
+                    .map(crate::world_section::HomeBridgeCloseCustody::Serving),
+                checkpoint_owner: context.checkpoint,
+                world_publications: context.world_publications,
+            }),
         }
     }
 
     pub fn world_close_report(
         &self,
     ) -> Option<&worth_runtime_world::facade::RuntimeWorldCloseReport> {
-        self.world_close_report.as_ref()
+        self.inner.world_close_report.as_ref()
     }
     pub fn world_publication_posture(
         &self,
     ) -> worth_runtime_world::facade::WorldPublicationTaskPosture {
-        self.world_publications.posture()
+        self.inner.world_publications.posture()
     }
 
     /// Actual Native registry observation while the retained section is
     /// Serving. None means this phase does not expose that observation.
     pub fn native_active_snapshot_count(&self) -> Option<usize> {
-        match &self.native {
+        match &self.inner.native {
             NativeCloseCustody::Serving(native) => {
                 Some(native.runtime().retention().active_snapshot_count())
             }
@@ -175,25 +185,25 @@ impl ApplicationHomeRecoveryCustody {
     }
 
     pub fn location(&self) -> &std::path::Path {
-        &self.location
+        &self.inner.location
     }
     pub fn home_identity(&self) -> crate::HomeIdentity {
-        self.descriptor.identity
+        self.inner.descriptor.identity
     }
     pub fn checkpoint_result(
         &self,
     ) -> &Result<crate::ApplicationHomeCheckpoint, crate::ApplicationHomeCheckpointDenial> {
-        self.checkpoint.result()
+        self.inner.checkpoint.result()
     }
     pub fn physical_close_observation(&self) -> Option<PhysicalStoreCloseObservation> {
-        match &self.physical {
+        match self.inner.physical.as_ref().expect("live physical custody") {
             PhysicalCloseCustody::Retained(_) | PhysicalCloseCustody::InspectionRequired(_) => None,
             PhysicalCloseCustody::Running(task) => task.observation().cloned(),
             PhysicalCloseCustody::Failed(failure) => failure.observation().cloned(),
         }
     }
     pub fn inspection(&self) -> Option<&PhysicalStoreCloseOutcome> {
-        match &self.physical {
+        match self.inner.physical.as_ref().expect("live physical custody") {
             PhysicalCloseCustody::InspectionRequired(outcome) => Some(outcome),
             PhysicalCloseCustody::Failed(failure) => failure.actual_outcome(),
             PhysicalCloseCustody::Retained(_) | PhysicalCloseCustody::Running(_) => None,
@@ -201,17 +211,18 @@ impl ApplicationHomeRecoveryCustody {
     }
     /// Consume the explicit inspection posture into Store's actual outcome and
     /// any recovery handoff it owns. Other postures are returned unchanged.
-    pub fn into_physical_close_outcome(self) -> Result<PhysicalStoreCloseOutcome, Self> {
-        match self.physical {
-            PhysicalCloseCustody::InspectionRequired(outcome) => Ok(outcome),
-            physical @ (PhysicalCloseCustody::Retained(_)
-            | PhysicalCloseCustody::Running(_)
-            | PhysicalCloseCustody::Failed(_)) => Err(Self { physical, ..self }),
+    pub fn into_physical_close_outcome(mut self) -> Result<PhysicalStoreCloseOutcome, Self> {
+        match self.inner.physical.take().expect("live physical custody") {
+            PhysicalCloseCustody::InspectionRequired(outcome) => Ok(*outcome),
+            physical => {
+                self.inner.physical = Some(physical);
+                Err(self)
+            }
         }
     }
 
     pub fn physical_close_failure(&self) -> Option<&PhysicalStoreCloseFailure> {
-        match &self.physical {
+        match self.inner.physical.as_ref().expect("live physical custody") {
             PhysicalCloseCustody::Failed(failure) => Some(failure),
             PhysicalCloseCustody::Retained(_)
             | PhysicalCloseCustody::Running(_)
@@ -220,12 +231,13 @@ impl ApplicationHomeRecoveryCustody {
     }
 
     /// Move the actual failed task evidence to its caller for inspection.
-    pub fn into_physical_close_failure(self) -> Result<PhysicalStoreCloseFailure, Self> {
-        match self.physical {
-            PhysicalCloseCustody::Failed(failure) => Ok(failure),
-            physical @ (PhysicalCloseCustody::Retained(_)
-            | PhysicalCloseCustody::Running(_)
-            | PhysicalCloseCustody::InspectionRequired(_)) => Err(Self { physical, ..self }),
+    pub fn into_physical_close_failure(mut self) -> Result<PhysicalStoreCloseFailure, Self> {
+        match self.inner.physical.take().expect("live physical custody") {
+            PhysicalCloseCustody::Failed(failure) => Ok(*failure),
+            physical => {
+                self.inner.physical = Some(physical);
+                Err(self)
+            }
         }
     }
 
@@ -244,23 +256,23 @@ impl ApplicationHomeRecoveryCustody {
             return self.refused(ApplicationHomeCloseDenial::Execution(cause));
         }
         loop {
-            let Some(composition) = self.world_composition.take() else {
+            let Some(composition) = self.inner.world_composition.take() else {
                 break;
             };
             if matches!(
                 composition,
                 crate::world_section::HomeBridgeCloseCustody::Retired(_)
             ) {
-                self.world_composition = Some(composition);
+                self.inner.world_composition = Some(composition);
                 break;
             }
-            let NativeCloseCustody::Serving(native) = &self.native else {
-                self.world_composition = Some(composition);
+            let NativeCloseCustody::Serving(native) = &self.inner.native else {
+                self.inner.world_composition = Some(composition);
                 return self.refused(ApplicationHomeCloseDenial::WorldCompositionRetained);
             };
             match composition.advance(execution, native.runtime()) {
                 Ok((composition, progress)) => {
-                    self.world_composition = Some(composition);
+                    self.inner.world_composition = Some(composition);
                     if progress
                         == worth_runtime_bridge::facade::BridgeHomeRetirementProgress::Complete
                     {
@@ -268,7 +280,7 @@ impl ApplicationHomeRecoveryCustody {
                     }
                 }
                 Err((composition, cause)) => {
-                    self.world_composition = Some(composition);
+                    self.inner.world_composition = Some(composition);
                     return self.refused(cause);
                 }
             }
@@ -287,14 +299,17 @@ impl ApplicationHomeRecoveryCustody {
         &mut self,
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<(), ApplicationHomeCloseDenial> {
-        let PhysicalCloseCustody::Retained(serving) = &self.physical else {
+        let Some(PhysicalCloseCustody::Retained(serving)) = &self.inner.physical else {
             return Err(ApplicationHomeCloseDenial::PhysicalCustodyPhaseMismatch);
         };
-        if let Some(checkpoint) =
-            crate::checkpoint::close_settlement::settle(serving, &self.checkpoint_owner, execution)
-                .map_err(super::checkpoint_settlement_denial)?
+        if let Some(checkpoint) = crate::checkpoint::close_settlement::settle(
+            serving,
+            &self.inner.checkpoint_owner,
+            execution,
+        )
+        .map_err(super::checkpoint_settlement_denial)?
         {
-            self.checkpoint.store(checkpoint);
+            self.inner.checkpoint.store(checkpoint);
         }
         Ok(())
     }

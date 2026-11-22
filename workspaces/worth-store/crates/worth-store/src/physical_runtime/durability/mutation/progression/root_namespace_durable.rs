@@ -9,8 +9,8 @@ use crate::physical_runtime::{
 
 pub struct RootNamespaceDurablePhysicalMutationMembers {
     core: RootPublicationPreparedCore,
-    replacement: SettledPhysicalWork,
-    namespace_synchronization: SettledPhysicalWork,
+    replacement: Box<SettledPhysicalWork>,
+    namespace_synchronization: Box<SettledPhysicalWork>,
 }
 
 impl RootNamespaceDurablePhysicalMutationMembers {
@@ -20,8 +20,8 @@ impl RootNamespaceDurablePhysicalMutationMembers {
 
     pub(in crate::physical_runtime) fn new(
         core: RootPublicationPreparedCore,
-        replacement: SettledPhysicalWork,
-        namespace_synchronization: SettledPhysicalWork,
+        replacement: Box<SettledPhysicalWork>,
+        namespace_synchronization: Box<SettledPhysicalWork>,
     ) -> Self {
         Self {
             core,
@@ -88,8 +88,8 @@ impl RootNamespaceDurablePhysicalMutationMembers {
         self,
     ) -> (
         RootPublicationPreparedCore,
-        SettledPhysicalWork,
-        SettledPhysicalWork,
+        Box<SettledPhysicalWork>,
+        Box<SettledPhysicalWork>,
     ) {
         (self.core, self.replacement, self.namespace_synchronization)
     }

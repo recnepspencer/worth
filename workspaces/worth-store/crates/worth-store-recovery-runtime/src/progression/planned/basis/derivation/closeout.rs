@@ -116,25 +116,27 @@ pub(super) fn seal(
     let expectation_backing = ExpectationBacking::prepare(allowance)?;
     let backing = ExecutionBasisBacking::prepare(allowance)?;
     let publication = RecoveryPublicationPlan {
-        expectation_backing,
-        store,
-        checkpoint,
-        source_generation,
-        staging_generation,
-        actions,
-        plan_identity,
-        root_protocol: worth_store::physical_runtime::RecoveryRootProtocolPublicationPlan::from_catalog_candidate(
-            RecordArtifactFile::CatalogCandidate {
-                publication: publication_identity,
-            },
-        )
-        .expect("the Phase 4 publication identity always names a catalog candidate"),
-        current_selector,
-        recovered_root: candidate.root,
-        referenced_artifacts: candidate.referenced_artifacts,
-        candidates: candidate.artifacts,
-        created_artifacts,
-        release_topology: candidate.release_topology,
+        inner: vec![RecoveryPublicationPlanBody {
+            expectation_backing,
+            store,
+            checkpoint,
+            source_generation,
+            staging_generation,
+            actions,
+            plan_identity,
+            root_protocol: worth_store::physical_runtime::RecoveryRootProtocolPublicationPlan::from_catalog_candidate(
+                RecordArtifactFile::CatalogCandidate {
+                    publication: publication_identity,
+                },
+            )
+            .expect("the Phase 4 publication identity always names a catalog candidate"),
+            current_selector,
+            recovered_root: candidate.root,
+            referenced_artifacts: candidate.referenced_artifacts,
+            candidates: candidate.artifacts,
+            created_artifacts,
+            release_topology: candidate.release_topology,
+        }],
     };
     let quiescence = RecoveryQuiescencePlan {
         staging_commands,

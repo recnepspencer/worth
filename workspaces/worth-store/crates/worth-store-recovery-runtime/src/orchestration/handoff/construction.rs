@@ -33,11 +33,11 @@ impl RejoinConstruction {
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         match custody {
             crate::progression::CustodyState::SourceHeads(claim) => {
-                self.source_heads(claim, tier, allocation, selection)
+                self.source_heads(*claim, tier, allocation, selection)
             }
             crate::progression::CustodyState::NoRelease(claim) => match tier {
-                Some(tier) => self.tier_no_release(claim, tier),
-                None => self.no_release(claim),
+                Some(tier) => self.tier_no_release(*claim, tier),
+                None => self.no_release(*claim),
             },
             crate::progression::CustodyState::Pending {
                 claim,
@@ -47,19 +47,19 @@ impl RejoinConstruction {
                 drop(replay);
                 match tier {
                     Some(tier) => self.tier_pending_release(
-                        claim,
-                        effective_heads,
+                        *claim,
+                        *effective_heads,
                         tier,
                         allocation,
                         selection,
                     ),
-                    None => self.pending_release(claim, effective_heads, allocation, selection),
+                    None => self.pending_release(*claim, *effective_heads, allocation, selection),
                 }
             }
             crate::progression::CustodyState::OrderedCompleted {
                 claim,
                 effective_heads,
-            } => self.ordered_release(claim, effective_heads, tier, allocation),
+            } => self.ordered_release(*claim, *effective_heads, tier, allocation),
             crate::progression::CustodyState::NoCheckpoint => match tier {
                 None => self.no_checkpoint(absent, durability),
                 Some(_tier) => {

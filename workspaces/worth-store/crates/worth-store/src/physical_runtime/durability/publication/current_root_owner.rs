@@ -109,13 +109,17 @@ pub(super) struct PhysicalCurrentRootState {
     release_ledger: release_capacity::ReleaseLedgerState,
 }
 
+struct CompletedPublicationRoots {
+    current_root: DurablePhysicalRootManifest,
+    retained_root: RetainedPhysicalRoot,
+}
+
 pub struct CompletedPhysicalRootPublication {
     group: PhysicalDurabilityGroupBasis,
     member_identities: Box<[PhysicalRootPublicationMemberIdentity]>,
     members: NonEmpty<RootPublicationPhysicalMutationMember>,
-    current_root: DurablePhysicalRootManifest,
+    roots: Vec<CompletedPublicationRoots>,
     current_artifacts: Box<[RecordArtifactFile]>,
-    retained_root: RetainedPhysicalRoot,
     root_planning_observation: crate::physical_runtime::RecordRootPlanningObservation,
 }
 
@@ -273,9 +277,11 @@ impl PhysicalCurrentRootOwner {
             group,
             member_identities,
             members,
-            current_root,
+            roots: vec![CompletedPublicationRoots {
+                current_root,
+                retained_root,
+            }],
             current_artifacts,
-            retained_root,
             root_planning_observation,
         })
     }
@@ -343,7 +349,7 @@ impl CompletedPhysicalRootPublication {
     }
 
     pub const fn current_root(&self) -> &DurablePhysicalRootManifest {
-        &self.current_root
+        &self.roots.as_slice()[0].current_root
     }
 
     pub fn current_artifacts(&self) -> &[RecordArtifactFile] {
@@ -351,7 +357,7 @@ impl CompletedPhysicalRootPublication {
     }
 
     pub const fn retained_root(&self) -> &RetainedPhysicalRoot {
-        &self.retained_root
+        &self.roots.as_slice()[0].retained_root
     }
 
     pub const fn root_planning_observation(

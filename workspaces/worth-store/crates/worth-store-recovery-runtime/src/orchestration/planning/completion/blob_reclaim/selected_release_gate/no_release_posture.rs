@@ -35,6 +35,6 @@ pub(super) fn verify(
     if !matches!(&basis.custody, PlanningCustody::Unresolved) {
         return Err(context.redo_block(basis.planning_counters(), None));
     }
-    basis.custody = PlanningCustody::NoRelease(claim);
+    basis.custody = PlanningCustody::NoRelease(Box::new(claim));
     Ok(context)
 }

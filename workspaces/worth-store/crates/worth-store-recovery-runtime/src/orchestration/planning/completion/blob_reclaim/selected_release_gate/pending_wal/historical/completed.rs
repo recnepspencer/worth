@@ -49,7 +49,7 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         basis,
         1,
         None,
-        selected_head_v2.as_ref(),
+        selected_head_v2.as_deref(),
         &mut resident,
     );
     basis.custody = match selected_head_v2 {
@@ -80,7 +80,7 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         VerifiedOrderedHistoricalReleaseCustody::admit_head_v2(
             &context.selection,
             &basis.observed_pages.selected_source.free_space,
-            base,
+            *base,
             history,
             batches,
             context.limits.staging_bytes,
@@ -161,8 +161,8 @@ pub(in crate::orchestration::planning::completion::blob_reclaim::selected_releas
         .historical_publication_peak_scratch_bytes
         .max(resident.peak());
     basis.custody = PlanningCustody::OrderedCompleted {
-        claim,
-        effective_heads: effective,
+        claim: Box::new(claim),
+        effective_heads: Box::new(effective),
     };
     Ok(context)
 }

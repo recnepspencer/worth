@@ -29,8 +29,8 @@ pub(in crate::orchestration::reopen) fn complete(
         (PlanningCustody::PendingPrepared { claim, replay }, Some(effective_heads)) => {
             CustodyState::Pending {
                 claim,
-                replay: replay.into_head(),
-                effective_heads,
+                replay: Box::new(replay.into_head()),
+                effective_heads: Box::new(effective_heads),
             }
         }
         (

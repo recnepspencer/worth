@@ -66,6 +66,7 @@ impl PhysicalRecoveryConstructionPort {
         tier: Option<VerifiedSelectedTierEpochCustody>,
         pause_before_final_reread: impl FnOnce(),
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
+        let claim = Box::new(claim);
         if cleanup.live_media_handle_delta() != 0
             || coordination
                 .require_selected_checkpoint(claim.checkpoint())
@@ -121,7 +122,7 @@ impl PhysicalRecoveryConstructionPort {
             Some(selected_wal),
             Some(selected_controls),
         )?;
-        core.head_v2_custody = Some(claim);
+        core.body_mut().head_v2_custody = Some(claim);
         Ok(core)
     }
 }

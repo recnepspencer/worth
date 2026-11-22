@@ -26,6 +26,8 @@ impl PhysicalRecoveryConstructionPort {
         effective: VerifiedEffectiveReleaseHeadRosterV14,
         tier: Option<VerifiedSelectedTierEpochCustody>,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
+        let historical = Box::new(historical);
+        let effective = Box::new(effective);
         if cleanup.live_media_handle_delta() != 0
             || coordination
                 .require_selected_checkpoint(historical.checkpoint())
@@ -78,8 +80,9 @@ impl PhysicalRecoveryConstructionPort {
             Some(selected_wal),
             Some(selected_controls),
         )?;
-        core.historical_release_custody = Some(historical);
-        core.effective_release_heads = Some(effective);
+        let body = core.body_mut();
+        body.historical_release_custody = Some(historical);
+        body.effective_release_heads = Some(effective);
         Ok(core)
     }
 }

@@ -12,15 +12,15 @@ use worth_store_recovery_physics::{
 pub(crate) enum PlanningCustody {
     Unresolved,
     NoCheckpoint,
-    NoRelease(VerifiedSelectedNoReleaseCustody),
-    SourceHeads(VerifiedSelectedReleaseHeadCustodyV2),
+    NoRelease(Box<VerifiedSelectedNoReleaseCustody>),
+    SourceHeads(Box<VerifiedSelectedReleaseHeadCustodyV2>),
     PendingPrepared {
-        claim: VerifiedPendingWalReleaseCustody,
-        replay: PendingReleaseReplay,
+        claim: Box<VerifiedPendingWalReleaseCustody>,
+        replay: Box<PendingReleaseReplay>,
     },
     OrderedCompleted {
-        claim: VerifiedOrderedHistoricalReleaseCustody,
-        effective_heads: VerifiedEffectiveReleaseHeadRosterV14,
+        claim: Box<VerifiedOrderedHistoricalReleaseCustody>,
+        effective_heads: Box<VerifiedEffectiveReleaseHeadRosterV14>,
     },
 }
 
@@ -83,15 +83,15 @@ impl PendingReleaseReplay {
 /// Only complete custody states cross into Store's post-reopen construction.
 pub(crate) enum CustodyState {
     NoCheckpoint,
-    NoRelease(VerifiedSelectedNoReleaseCustody),
-    SourceHeads(VerifiedSelectedReleaseHeadCustodyV2),
+    NoRelease(Box<VerifiedSelectedNoReleaseCustody>),
+    SourceHeads(Box<VerifiedSelectedReleaseHeadCustodyV2>),
     Pending {
-        claim: VerifiedPendingWalReleaseCustody,
-        replay: VerifiedSelectedReleaseHeadReplayV14,
-        effective_heads: VerifiedEffectiveReleaseHeadRosterV14,
+        claim: Box<VerifiedPendingWalReleaseCustody>,
+        replay: Box<VerifiedSelectedReleaseHeadReplayV14>,
+        effective_heads: Box<VerifiedEffectiveReleaseHeadRosterV14>,
     },
     OrderedCompleted {
-        claim: VerifiedOrderedHistoricalReleaseCustody,
-        effective_heads: VerifiedEffectiveReleaseHeadRosterV14,
+        claim: Box<VerifiedOrderedHistoricalReleaseCustody>,
+        effective_heads: Box<VerifiedEffectiveReleaseHeadRosterV14>,
     },
 }

@@ -253,25 +253,27 @@ impl PhysicalRecoveryConstructionPort {
                 crate::physical_runtime::PhysicalRecoveryRejoinResidentDenial::MissingResidentAdmission,
             ),
         )?;
-        Ok(RecoveredPhysicalRuntimeCore {
-            serving_custody_backing,
-            residency,
-            checkpoint_ownership,
-            store: media.store_identity(),
-            recovery_allocation,
-            runtime,
-            recovery_runtime,
-            root: reopen.root().clone(),
-            media,
-            reopen,
-            head_v2_custody: None,
-            no_release_custody,
-            pending_wal_release_custody: None,
-            effective_release_heads: None,
-            historical_release_custody: None,
-            tier_custody,
-            selected_wal,
-            selected_controls,
-        })
+        Ok(RecoveredPhysicalRuntimeCore::from_body(
+            super::handoff::RecoveredPhysicalRuntimeCoreBody {
+                serving_custody_backing,
+                residency,
+                checkpoint_ownership,
+                store: media.store_identity(),
+                recovery_allocation,
+                runtime,
+                recovery_runtime,
+                root: reopen.root().clone(),
+                media,
+                reopen,
+                head_v2_custody: None,
+                no_release_custody: no_release_custody.map(Box::new),
+                pending_wal_release_custody: None,
+                effective_release_heads: None,
+                historical_release_custody: None,
+                tier_custody: tier_custody.map(Box::new),
+                selected_wal,
+                selected_controls,
+            },
+        ))
     }
 }

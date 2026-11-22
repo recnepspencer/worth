@@ -95,7 +95,7 @@ pub(super) fn admit(
     if !matches!(&basis.custody, PlanningCustody::Unresolved) {
         return Err(block(context, basis, Denial::DuplicateClaim, None));
     }
-    basis.custody = PlanningCustody::SourceHeads(claim);
+    basis.custody = PlanningCustody::SourceHeads(Box::new(claim));
     Ok(context)
 }
 

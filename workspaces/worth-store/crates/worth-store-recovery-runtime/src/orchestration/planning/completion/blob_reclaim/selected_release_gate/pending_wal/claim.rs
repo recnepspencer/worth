@@ -50,7 +50,7 @@ pub(super) fn admit(
         PlanningCustody::SourceHeads(selected_head) => {
             VerifiedPendingWalReleaseCustody::admit_from_head_v2(
                 &context.selection,
-                selected_head,
+                *selected_head,
                 head_replay.clone(),
                 basis.observed_pages.tier_custody.as_ref(),
                 projection,
@@ -143,6 +143,9 @@ pub(super) fn admit(
         .observed_pages
         .historical_publication_peak_scratch_bytes
         .max(resident.peak());
-    basis.custody = PlanningCustody::PendingPrepared { claim, replay };
+    basis.custody = PlanningCustody::PendingPrepared {
+        claim: Box::new(claim),
+        replay: Box::new(replay),
+    };
     Ok(context)
 }

@@ -6,7 +6,7 @@ impl ApplicationHomeRecoveryCustody {
         execution: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, (Self, ApplicationHomeCloseDenial)> {
         if matches!(
-            self.native,
+            self.inner.native,
             NativeCloseCustody::NeverAttached | NativeCloseCustody::Retired(_)
         ) {
             return Ok(self);
@@ -14,20 +14,16 @@ impl ApplicationHomeRecoveryCustody {
         if let Err(cause) = self.settle_retained_checkpoint(execution) {
             return Err((self, cause));
         }
-        let mut native = match self.native {
+        let native = std::mem::replace(&mut self.inner.native, NativeCloseCustody::NeverAttached);
+        let mut native = match native {
             NativeCloseCustody::Serving(native) => {
-                let preparation = self.checkpoint.take_native_retirement();
+                let preparation = self.inner.checkpoint.take_native_retirement();
                 match native.prepare_close(preparation, execution) {
                     Ok(native) => native,
                     Err((native, preparation, cause)) => {
-                        self.checkpoint.restore_native_retirement(preparation);
-                        return Err((
-                            Self {
-                                native: NativeCloseCustody::Serving(native),
-                                ..self
-                            },
-                            ApplicationHomeCloseDenial::Relational(cause),
-                        ));
+                        self.inner.checkpoint.restore_native_retirement(preparation);
+                        self.inner.native = NativeCloseCustody::Serving(native);
+                        return Err((self, ApplicationHomeCloseDenial::Relational(cause)));
                     }
                 }
             }
@@ -36,24 +32,17 @@ impl ApplicationHomeRecoveryCustody {
                 unreachable!("terminal Native posture returned before advancement")
             }
         };
-        let PhysicalCloseCustody::Retained(actual) = &self.physical else {
+        let Some(PhysicalCloseCustody::Retained(actual)) = &self.inner.physical else {
+            self.inner.native = NativeCloseCustody::Prepared(native);
             return Err((
-                Self {
-                    native: NativeCloseCustody::Prepared(native),
-                    ..self
-                },
+                self,
                 ApplicationHomeCloseDenial::PhysicalCustodyPhaseMismatch,
             ));
         };
         loop {
             if let Err(cause) = interrupted(execution) {
-                return Err((
-                    Self {
-                        native: NativeCloseCustody::Prepared(native),
-                        ..self
-                    },
-                    ApplicationHomeCloseDenial::Execution(cause),
-                ));
+                self.inner.native = NativeCloseCustody::Prepared(native);
+                return Err((self, ApplicationHomeCloseDenial::Execution(cause)));
             }
             match native.advance(execution, actual) {
                 Ok(worth_relational::facade::runtime::RelationalSourceCloseProgress::Advanced) => {}
@@ -61,19 +50,12 @@ impl ApplicationHomeRecoveryCustody {
                     let original = native
                         .into_retired()
                         .unwrap_or_else(|_| unreachable!("same complete original section"));
-                    return Ok(Self {
-                        native: NativeCloseCustody::Retired(original),
-                        ..self
-                    });
+                    self.inner.native = NativeCloseCustody::Retired(original);
+                    return Ok(self);
                 }
                 Err(cause) => {
-                    return Err((
-                        Self {
-                            native: NativeCloseCustody::Prepared(native),
-                            ..self
-                        },
-                        ApplicationHomeCloseDenial::Relational(cause),
-                    ))
+                    self.inner.native = NativeCloseCustody::Prepared(native);
+                    return Err((self, ApplicationHomeCloseDenial::Relational(cause)));
                 }
             }
         }

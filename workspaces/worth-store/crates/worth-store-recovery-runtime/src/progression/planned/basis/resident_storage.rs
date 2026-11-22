@@ -14,19 +14,21 @@ fn boxed_bytes<T>(entries: &[T]) -> Option<u64> {
 
 impl RecoveryBaseImagePlan {
     pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
-        let mut bytes = boxed_bytes(&self.selected_root_topology)?
-            .checked_add(boxed_bytes(&self.actions)?)?
-            .checked_add(boxed_bytes(&self.segment_updates)?)?
-            .checked_add(boxed_bytes(&self.manifests)?)?
-            .checked_add(boxed_bytes(&self.root_states)?)?
-            .checked_add(boxed_bytes(&self.source_artifacts)?)?;
-        for (_, block) in self.selected_root_topology.iter() {
+        let body = self.body();
+        let mut bytes = boxed_bytes(&self.inner)?
+            .checked_add(boxed_bytes(&body.selected_root_topology)?)?
+            .checked_add(boxed_bytes(&body.actions)?)?
+            .checked_add(boxed_bytes(&body.segment_updates)?)?
+            .checked_add(boxed_bytes(&body.manifests)?)?
+            .checked_add(boxed_bytes(&body.root_states)?)?
+            .checked_add(boxed_bytes(&body.source_artifacts)?)?;
+        for (_, block) in body.selected_root_topology.iter() {
             bytes = bytes.checked_add(block.owned_heap_bytes()?)?;
         }
-        for state in self.root_states.iter() {
+        for state in body.root_states.iter() {
             bytes = bytes.checked_add(state.owned_heap_bytes()?)?;
         }
-        if let Some(replay) = &self.release_head_replay {
+        if let Some(replay) = &body.release_head_replay {
             bytes = bytes.checked_add(replay.owned_heap_bytes()?)?;
         }
         Some(bytes)
@@ -61,17 +63,17 @@ impl RecoveryReleaseTopologyProof {
 
 impl RecoveryPublicationPlan {
     pub(crate) fn owned_heap_bytes(&self) -> Option<u64> {
-        let mut bytes = self
-            .expectation_backing
-            .backing_bytes()?
-            .checked_add(boxed_bytes(&self.actions)?)?
-            .checked_add(boxed_bytes(&self.referenced_artifacts)?)?
-            .checked_add(boxed_bytes(&self.candidates)?)?
-            .checked_add(boxed_bytes(&self.created_artifacts)?)?;
-        for candidate in self.candidates.iter() {
+        let body = self.body();
+        let mut bytes = boxed_bytes(&self.inner)?
+            .checked_add(body.expectation_backing.backing_bytes()?)?
+            .checked_add(boxed_bytes(&body.actions)?)?
+            .checked_add(boxed_bytes(&body.referenced_artifacts)?)?
+            .checked_add(boxed_bytes(&body.candidates)?)?
+            .checked_add(boxed_bytes(&body.created_artifacts)?)?;
+        for candidate in body.candidates.iter() {
             bytes = bytes.checked_add(boxed_bytes(&candidate.bytes)?)?;
         }
-        if let Some(release) = &self.release_topology {
+        if let Some(release) = &body.release_topology {
             bytes = bytes.checked_add(release.owned_heap_bytes()?)?;
         }
         Some(bytes)
