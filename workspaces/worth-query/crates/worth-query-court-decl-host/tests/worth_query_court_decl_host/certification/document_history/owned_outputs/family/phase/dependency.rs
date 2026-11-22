@@ -81,6 +81,20 @@ macro_rules! producer_decision_dependency {
     (OrdinaryInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (OrdinaryInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (DecisionInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (SelfRelationInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@self_relation $reader, $source) };
+    (SelfRelationPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@self_relation $reader, $source) };
+    // Member `m`, and every output the source model owns (`FirstOf`, read
+    // at the current image), each of which must have its value.
+    (@self_relation $reader:ident, $source:ident) => {{
+        let m = producer_decision_dependency!(@member_read $reader);
+        for link in $reader.relations_to(FirstOf::reference(), &$source).map_err(HandlerExecutionDenial::new)? {
+            if $reader.field(link.from(), FirstValue::at("FirstValue"))?.is_none() {
+                // A reached output without its value: a required record is missing.
+                $reader.resolve_entity(FirstKey::at("FirstKey"), "self-relation:missing".to_owned())?;
+            }
+        }
+        m
+    }};
     (DecisionInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (ParityInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (ParityInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };

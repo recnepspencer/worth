@@ -290,7 +290,8 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             source,
             producer.edition,
             captured,
-        )?;
+        )
+        .map_err(|stop| self.successor_prepare_stop(candidate, chain.as_ref(), stop))?;
         let PreparedCoupledWriter {
             writer,
             publication,

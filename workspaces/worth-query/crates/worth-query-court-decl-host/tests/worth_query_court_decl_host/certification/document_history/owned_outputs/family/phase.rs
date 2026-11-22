@@ -33,6 +33,8 @@ macro_rules! producer_operation {
     (OrdinaryInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read OrdinaryInputInitial, $entity, $key, $value, $of); };
     (OrdinaryInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read OrdinaryInputPreserve, $entity, $key, $value, $of); };
     (DecisionInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputInitial, $entity, $key, $value, $of); };
+    (SelfRelationInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SelfRelationInitial, $entity, $key, $value, $of); };
+    (SelfRelationPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SelfRelationPreserve, $entity, $key, $value, $of); };
     (DecisionInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputPreserve, $entity, $key, $value, $of); };
     (ParityInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputInitial, $entity, $key, $value, $of); };
     (ParityInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputPreserve, $entity, $key, $value, $of); };

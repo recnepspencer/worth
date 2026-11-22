@@ -115,6 +115,30 @@ impl WorthQueryApplicationSnapshotLease {
     ) {
         self.own_outputs = own_outputs.cloned();
     }
+    /// Observe `key` at the applied image, when the lease has one. Only a
+    /// field read is served by a successor's own-output view; a covered
+    /// record absent there was created by the chain, and the view is
+    /// incoherent (#277).
+    pub fn observe_applied(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        key: &super::WorthQueryApplicationFactKey,
+    ) -> Option<Result<super::WorthQueryApplicationObservedFact, super::WorthQueryApplicationAttemptDenial>>
+    {
+        let entity = match key {
+            super::WorthQueryApplicationFactKey::Field { entity_id, .. } => Some(*entity_id),
+            _ => None,
+        };
+        let pin = self.applied_projection_of(entity)?;
+        let observed =
+            super::read_set::fact_observation::observe_applied_fact(execution, &self.layout, key, pin);
+        if let (Err(denial), Some(entity), Some(own)) = (&observed, entity, &self.own_outputs)
+            && denial.kind() == super::WorthQueryApplicationAttemptDenialKind::MissingAuthoritativeFact
+        {
+            own.mark_incoherent(entity);
+        }
+        Some(observed)
+    }
     /// The applied image a single-record fact of `entity` is observed at.
     pub fn applied_projection_of(
         &self,

@@ -334,22 +334,15 @@ fn observe_scoped_dependency<Schema, Operation, Input, Scope>(
         ));
     }
     lease.handle().with_runtime(execution, |runtime| {
-        // Only a field read is served by a successor's own-output view.
-        match lease.applied_projection_of(match key {
-            WorthQueryApplicationFactKey::Field { entity_id, .. } => Some(*entity_id),
-            _ => None,
-        }) {
-            Some(pin) => {
-                super::fact_observation::observe_applied_fact(execution, &lease.layout, key, pin)
-            }
-            None => super::fact_observation::observe_fact(
+        lease.observe_applied(execution, key).unwrap_or_else(|| {
+            super::fact_observation::observe_fact(
                 execution,
                 runtime,
                 lease.snapshot(),
                 &lease.layout,
                 key,
-            ),
-        }
+            )
+        })
     })
 }
 
