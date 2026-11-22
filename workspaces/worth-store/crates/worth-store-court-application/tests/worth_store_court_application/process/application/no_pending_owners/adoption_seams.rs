@@ -1,7 +1,10 @@
-//! C3.4 / Phase 6: real process kills across every durable adoption stage and
-//! support retirement surviving a real process kill.
+//! C3.4 / Phase 6: real process kills at the first durable barrier of each
+//! adoption stage, stopped branch-set kills, and support retirement across kills.
+mod retirement;
+mod single_branch;
 mod stopped_and_retirement;
 
+use std::num::NonZeroU64;
 use std::path::Path;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -12,7 +15,6 @@ use worth_query_host::facade::{
     application_contribution::with_bootstrap_advancement_from_request,
     application_entry::{
         WorthQueryApplicationRequestExt, WorthQueryBranchAdoptionPublicationOutcome,
-        WorthQueryBranchAdoptionRecoveryOutcome,
     },
     application_installation::{
         ApplicationBuildIdentity, WorthQueryApplicationProgramRoster, WorthQueryProgramOwner,
@@ -41,7 +43,9 @@ use worth_query_testkit_document_retention::facade::document_retention_model::{
     settled_verdict::{settle, RetentionVerdict},
 };
 use worth_query_testkit_host::facade::host::checkpoint_capture;
-use worth_store::physical_runtime::certification::{MediaFaultDirective, MediaOperationRole};
+use worth_store::physical_runtime::certification::{
+    CertificationMediaFaultActivation, MediaFaultDirective, MediaOperationRole,
+};
 use worth_store_application::ApplicationHomeOpeningControlForTest;
 
 const LOCATION: &str = "WORTH_ADOPTION_SEAM_HOME";
@@ -132,27 +136,34 @@ pub(super) fn predecessor(location: &Path, with_fork: bool) {
         .reclaim();
 }
 
-pub(super) fn run_child(location: &Path, mode: &str) -> crate::killed_child::ChildEnd {
+pub(super) fn run_child(location: &Path, mode: &str) -> (crate::killed_child::ChildEnd, String) {
     let markers_dir = tempfile::tempdir().unwrap();
     let mode_path = std::path::PathBuf::from(mode);
-    crate::killed_child::run_and_kill(
+    let ready = markers_dir.path().join("ready");
+    let finished = markers_dir.path().join("finished");
+    let end = crate::killed_child::run_and_kill(
         CHILD,
         &[
             (LOCATION, location),
             (MARKERS, markers_dir.path()),
             (MODE, mode_path.as_path()),
         ],
-        &markers_dir.path().join("ready"),
-        &markers_dir.path().join("finished"),
-    )
+        &ready,
+        &finished,
+    );
+    let detail = std::fs::read_to_string(&ready)
+        .or_else(|_| std::fs::read_to_string(&finished))
+        .unwrap_or_default();
+    (end, detail)
 }
 
-fn barrier_control(
-    ordinal: u64,
+fn activation_barrier_control(
+    nth: NonZeroU64,
     markers: &Path,
     done: &Arc<AtomicBool>,
 ) -> (
     ApplicationHomeOpeningControlForTest,
+    CertificationMediaFaultActivation,
     std::thread::JoinHandle<()>,
 ) {
     use worth_store_testkit_application_oracle::facade::host_interruption::opening::control;
@@ -160,19 +171,32 @@ fn barrier_control(
         worth_store::physical_runtime::FilesystemAccessPosture::CoordinatedServiceAccount,
     );
     let authority = media.fault_schedule_authority();
+    let activation = authority.one_shot_activation();
     let gate = authority.pause_gate();
     let schedule = authority
-        .schedule(vec![authority.rule(
-            MediaOperationRole::SynchronizeFileState,
-            ordinal,
-            MediaFaultDirective::PauseAfter(gate.clone()),
-        )])
+        .schedule(vec![authority
+            .rule(
+                MediaOperationRole::SynchronizeFileState,
+                1,
+                MediaFaultDirective::PauseAfter(gate.clone()),
+            )
+            .for_nth_identified_operation_after_activation(activation.clone(), nth)])
         .unwrap();
     let (done, ready) = (done.clone(), markers.join("ready"));
     let watcher = std::thread::spawn(move || {
         while !done.load(Ordering::SeqCst) {
-            if gate.reached_context().is_some() {
-                crate::killed_child::announce(&ready, b"adoption barrier held");
+            if let Some(ctx) = gate.reached_context() {
+                let note = format!(
+                    "nth={} role={:?} owner={:?} path={:?} op={:?} id_ord={:?} role_ord={}",
+                    nth,
+                    ctx.role(),
+                    ctx.owner(),
+                    ctx.path_role(),
+                    ctx.operation(),
+                    ctx.identified_operation_ordinal(),
+                    ctx.role_ordinal()
+                );
+                crate::killed_child::announce(&ready, note.as_bytes());
                 crate::killed_child::park();
             }
             std::thread::sleep(std::time::Duration::from_millis(1));
@@ -180,7 +204,34 @@ fn barrier_control(
     });
     (
         control(|_| {}, Some(media.with_fault_schedule(schedule)), None),
+        activation,
         watcher,
+    )
+}
+
+fn counting_sync_control() -> (
+    ApplicationHomeOpeningControlForTest,
+    CertificationMediaFaultActivation,
+) {
+    use worth_store_testkit_application_oracle::facade::host_interruption::opening::control;
+    let media = worth_store::physical_runtime::FilesystemMediaAdmission::certification(
+        worth_store::physical_runtime::FilesystemAccessPosture::CoordinatedServiceAccount,
+    );
+    let authority = media.fault_schedule_authority();
+    let activation = authority.one_shot_activation();
+    let gate = authority.pause_gate();
+    let schedule = authority
+        .schedule(vec![authority
+            .rule(
+                MediaOperationRole::SynchronizeFileState,
+                1,
+                MediaFaultDirective::PauseAfter(gate),
+            )
+            .for_nth_identified_operation_after_activation(activation.clone(), NonZeroU64::MAX)])
+        .unwrap();
+    (
+        control(|_| {}, Some(media.with_fault_schedule(schedule)), None),
+        activation,
     )
 }
 
@@ -222,139 +273,6 @@ pub(super) fn verify_p1_and_close(
     reopened.close(&execution).unwrap_or_else(|cause| panic!("{label}: final close: {cause:?}")).reclaim();
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-enum SingleBranchSeam {
-    PreOpenRetained,
-    EmptyOpenReleased,
-    NativeRecoveryRetained,
-    PublishedDischarged,
-    AlreadyCompleted,
-}
-
-/// Early-interior durable barrier of each distinct single-branch adoption state
-/// (measured plateaus in c3-run-88-c34-probe3.log / c3-run-88-c34-bisect.log:
-/// pre_open [27..=47], empty_open [48..=76], native_recovery [77..=100],
-/// published [101..=132], completed [133..]).
-const SINGLE_BRANCH_STATES: [(u64, &str, SingleBranchSeam); 5] = [
-    (32, "support custody retained", SingleBranchSeam::PreOpenRetained),
-    (55, "empty World open released", SingleBranchSeam::EmptyOpenReleased),
-    (84, "adoption recovery recorded", SingleBranchSeam::NativeRecoveryRetained),
-    (108, "World publication durable", SingleBranchSeam::PublishedDischarged),
-    (140, "completed adoption", SingleBranchSeam::AlreadyCompleted),
-];
-
-fn resume_native_recovery_adoption(home: &Home, execution: &worth_execution::ExecutionRequest<'_, '_>, label: &str) {
-    let host = home.runtime();
-    let p1 = *host
-        .supported_program::<RetentionProgramP1>()
-        .unwrap()
-        .owned_revision();
-    assert!(
-        matches!(
-            host.retire_program_support(execution, &p1),
-            Err(WorthQueryProgramSupportRetirementFailure::Policy(
-                WorthQueryProgramSupportRetirementDenial::MandatoryCustody(ref inv)
-            )) if inv.mandatory_custody() >= 1
-        ),
-        "{label}: retained adoption recovery must protect target program support"
-    );
-    let page = host
-        .runtime()
-        .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
-        .unwrap();
-    assert_eq!(page.rows().len(), 1, "{label}: one adoption recovery row");
-    let recovery = host
-        .runtime()
-        .readmit_branch_adoption(page.rows()[0].handle())
-        .unwrap_or_else(|cause| panic!("{label}: readmit branch adoption: {cause:?}"));
-    assert_eq!(recovery.target(), &p1, "{label}: exact target revision");
-    drop(page);
-    let scope = request_scope();
-    let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
-    let WorthQueryBranchAdoptionRecoveryOutcome::Performed { adoption, cleanup } = host
-        .runtime()
-        .request(&principal, &scope)
-        .on_branch(host.current_world())
-        .programs()
-        .recover(recovery)
-        .unwrap_or_else(|_| panic!("{label}: recover branch adoption"))
-    else {
-        panic!("{label}: recovered adoption must publish");
-    };
-    assert_eq!(adoption.target(), &p1);
-    cleanup.unwrap_or_else(|cause| panic!("{label}: cleanup recovered adoption: {cause:?}"));
-    drop(adoption);
-    assert!(
-        host.runtime()
-            .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
-            .unwrap()
-            .rows()
-            .is_empty(),
-        "{label}: recovery catalogue cleared after resume"
-    );
-}
-
-#[test]
-fn single_branch_adoption_killed_in_each_durable_state_resumes_once() {
-    let lease = checkpoint_capture::lease(256 << 20);
-    let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let control_dir = tempfile::tempdir().unwrap();
-    let control_loc = control_dir.path().join("control");
-    predecessor(&control_loc, false);
-    assert_eq!(
-        run_child(&control_loc, "single-uninterrupted"),
-        crate::killed_child::ChildEnd::Finished
-    );
-    let control_home = open_home(&control_loc, false, execution, None);
-    let control_commits = control_home
-        .runtime()
-        .runtime()
-        .world_history_snapshot_for_test()
-        .installed_commits();
-    verify_p1_and_close(control_home, execution, &control_loc, control_commits, "control");
-
-    for (ordinal, label, state) in SINGLE_BRANCH_STATES {
-        let dir = tempfile::tempdir().unwrap();
-        let loc = dir.path().join("home");
-        predecessor(&loc, false);
-        assert_eq!(
-            run_child(&loc, &format!("single:{ordinal}")),
-            crate::killed_child::ChildEnd::KilledAtPark,
-            "{label} (barrier {ordinal})"
-        );
-        let home = open_home(&loc, false, execution, None);
-        let summary = home.runtime().runtime().cold_adoption_readmission_summary_for_test();
-        let recovery_rows = home
-            .runtime()
-            .runtime()
-            .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
-            .unwrap()
-            .rows()
-            .len();
-        match state {
-            SingleBranchSeam::PreOpenRetained => {
-                assert_eq!((summary.pre_open_retained, recovery_rows), (1, 0), "{label}");
-                adopt_branch_to_p1(&home);
-            }
-            SingleBranchSeam::EmptyOpenReleased => {
-                assert_eq!((summary.empty_open_released, recovery_rows), (1, 0), "{label}");
-                adopt_branch_to_p1(&home);
-            }
-            SingleBranchSeam::NativeRecoveryRetained => {
-                assert_eq!((summary.native_recovery_retained, recovery_rows), (1, 1), "{label}");
-                resume_native_recovery_adoption(&home, &execution, label);
-            }
-            SingleBranchSeam::PublishedDischarged => {
-                assert_eq!((summary.published_discharged, recovery_rows), (1, 0), "{label}");
-            }
-            SingleBranchSeam::AlreadyCompleted => {
-                assert_eq!((summary.already_completed, recovery_rows), (1, 0), "{label}");
-            }
-        }
-        verify_p1_and_close(home, execution, &loc, control_commits, label);
-    }
-}
-
 #[test]
 fn adoption_seam_child() {
     let Some(location) = std::env::var_os(LOCATION) else {
@@ -365,27 +283,53 @@ fn adoption_seam_child() {
     let mode = std::env::var(MODE).unwrap();
     let lease = checkpoint_capture::lease(256 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    if let Some(ordinal) = mode.strip_prefix("single:") {
+    if let Some(nth) = mode.strip_prefix("single:") {
         let done = Arc::new(AtomicBool::new(false));
-        let (control, watcher) = barrier_control(ordinal.parse().unwrap(), &markers, &done);
+        let (control, activation, watcher) =
+            activation_barrier_control(NonZeroU64::new(nth.parse().unwrap()).unwrap(), &markers, &done);
         let home = open_home(&location, false, execution, Some(control));
+        activation.arm().expect("arm adoption barrier after Home open");
         adopt_branch_to_p1(&home);
         done.store(true, Ordering::SeqCst);
         let _ = watcher.join();
         crate::killed_child::announce(&markers.join("finished"), b"single adoption finished");
         std::process::exit(0);
     }
+    if let Some(nth) = mode.strip_prefix("reopen-kill:") {
+        let done = Arc::new(AtomicBool::new(false));
+        let (control, activation, watcher) =
+            activation_barrier_control(NonZeroU64::new(nth.parse().unwrap()).unwrap(), &markers, &done);
+        activation.arm().expect("arm reopen barrier before Home open");
+        let home = open_home(&location, false, execution, Some(control));
+        done.store(true, Ordering::SeqCst);
+        let _ = watcher.join();
+        home.close(&execution).unwrap().reclaim();
+        crate::killed_child::announce(&markers.join("finished"), b"reopen finished");
+        std::process::exit(0);
+    }
     match mode.as_str() {
         "single-uninterrupted" => {
-            let home = open_home(&location, false, execution, None);
+            let (control, activation) = counting_sync_control();
+            let home = open_home(&location, false, execution, Some(control));
+            activation.arm().expect("arm adoption sync counter after open");
             adopt_branch_to_p1(&home);
+            let total = activation.matching_operation_count();
             home.close(&execution).unwrap().reclaim();
-            crate::killed_child::announce(&markers.join("finished"), b"uninterrupted");
+            crate::killed_child::announce(&markers.join("finished"), total.to_string().as_bytes());
+            std::process::exit(0);
+        }
+        "reopen-count" => {
+            let (control, activation) = counting_sync_control();
+            activation.arm().expect("arm reopen sync counter before open");
+            let home = open_home(&location, false, execution, Some(control));
+            let total = activation.matching_operation_count();
+            home.close(&execution).unwrap().reclaim();
+            crate::killed_child::announce(&markers.join("finished"), total.to_string().as_bytes());
             std::process::exit(0);
         }
         "stopped-branch-0" => stopped_and_retirement::child_stopped_prefix(&location, &markers, execution, false),
         "stopped-branch-1" => stopped_and_retirement::child_stopped_prefix(&location, &markers, execution, true),
-        "retire-and-kill" => stopped_and_retirement::child_retire_and_kill(&location, &markers, execution),
+        "retire-and-kill" => retirement::child_retire_and_kill(&location, &markers, execution),
         other => panic!("unknown adoption seam mode: {other}"),
     }
 }

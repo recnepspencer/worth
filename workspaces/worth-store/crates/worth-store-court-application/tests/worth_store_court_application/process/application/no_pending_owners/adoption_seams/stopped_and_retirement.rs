@@ -1,17 +1,10 @@
-//! Two-branch stopped-prefix kills and Phase 6 support retirement across a real kill.
+//! Two-branch stopped-prefix kills with per-branch parity and non-reprepare proofs.
 use super::*;
-use worth_query_host::facade::{
-    application_entry::{
-        WorthQueryApplicationMutationOutcome, WorthQueryBranchSetAdoptionProgress as Progress,
-        WorthQueryBranchSetAdoptionResumeDenial,
-    },
-    primary_graph::{WorthQueryApplicationCommitDenialKind, WorthQueryApplicationUncommitted},
+use worth_foundational::facade::CanonicalDigestId;
+use worth_query_host::facade::application_entry::{
+    WorthQueryBranchSetAdoptionProgress as Progress, WorthQueryBranchSetAdoptionResumeDenial,
 };
-use worth_query_testkit_document_retention::facade::document_retention_model::{
-    host::SEED_RETENTION,
-    programs::RemovedOperationRetentionProgram,
-    readback::observe_head,
-};
+use worth_query_testkit_document_retention::facade::document_retention_model::host::SEED_RETENTION;
 
 fn two_branches(home: &Home) -> (WorthQueryProductBranch, WorthQueryProductBranch) {
     let host = home.runtime();
@@ -84,40 +77,16 @@ pub(super) fn child_stopped_prefix(
     crate::killed_child::park();
 }
 
-pub(super) fn child_retire_and_kill(
-    location: &Path,
-    markers: &Path,
-    execution: worth_execution::ExecutionRequest<'_, '_>,
-) -> ! {
-    let home = open_home(location, false, execution, None);
-    let host = home.runtime();
-    let p0 = *host.owned_revision();
-    let removal = *host
-        .supported_program::<RemovedOperationRetentionProgram>()
-        .unwrap()
-        .owned_revision();
-    let scope = request_scope();
-    let principal = authenticate_operator(host.runtime().installed_schema(), &scope);
-    let programs = host
-        .runtime()
-        .request(&principal, &scope)
-        .on_branch(host.current_world())
-        .programs();
-    let requirements = programs.compare(&removal).unwrap();
-    let prepared = programs.adopt(&requirements).unwrap().prepare(64).unwrap();
-    assert!(matches!(
-        prepared.publish(host.runtime(), &principal, &scope),
-        WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
-    ));
-    host.retire_program_support(&execution, &p0)
-        .expect("P0 retires after root adopts removal program");
-    crate::killed_child::announce(&markers.join("ready"), b"retirement durable");
-    crate::killed_child::park();
+struct ControlReference {
+    installed_commits: usize,
+    prep_work_units: usize,
+    retentions: [u64; 2],
 }
 
 fn uninterrupted_two_branch_control(
     execution: worth_execution::ExecutionRequest<'_, '_>,
-) -> usize {
+    edit_second_branch: bool,
+) -> ControlReference {
     let dir = tempfile::tempdir().unwrap();
     let loc = dir.path().join("control");
     predecessor(&loc, true);
@@ -130,6 +99,12 @@ fn uninterrupted_two_branch_control(
         .supported_program::<RetentionProgramP1>()
         .unwrap()
         .owned_revision();
+    // Apply the exact same seed edit as the killed case before preparing.
+    let edited = if edit_second_branch { b } else { a };
+    assert_eq!(
+        settle(set_retention(host, edited, 8, 0xB501)),
+        RetentionVerdict::Performed(8)
+    );
     let coverage = host
         .runtime()
         .branches()
@@ -145,32 +120,64 @@ fn uninterrupted_two_branch_control(
         .unwrap()
         .prepare(64)
         .unwrap();
+    let prep_work_units = set.total_selection_work_units();
+    assert!(prep_work_units > 0, "preparing two branches consumes selection work");
     for expected in [a, b] {
         assert!(matches!(
             set.advance(host.runtime(), &principal, &scope).unwrap(),
             Some(Progress::Performed { branch, .. }) if *branch == expected
         ));
     }
+    assert!(set.advance(host.runtime(), &principal, &scope).unwrap().is_none());
     drop(set.close().unwrap_or_else(|_| panic!("control set closes")));
-    let commits = host
+    let installed_commits = host
         .runtime()
         .world_history_snapshot_for_test()
         .installed_commits();
+    let retentions = [
+        read_retention(host.runtime(), a),
+        read_retention(host.runtime(), b),
+    ];
     home.close(&execution).unwrap().reclaim();
-    commits
+    ControlReference {
+        installed_commits,
+        prep_work_units,
+        retentions,
+    }
+}
+
+fn assert_branch_revision(
+    home: &Home,
+    branch: WorthQueryProductBranch,
+    expected: &worth_query_host::facade::declaration::application_program::ApplicationProgramRevision,
+    label: &str,
+) {
+    let host = home.runtime();
+    host.with_host_advancement(|phase| {
+        let selected = host.runtime().on_branch(branch).select(&phase).unwrap();
+        assert_eq!(selected.inspect_selected_program().unwrap().revision(), expected, "{label}");
+    })
+    .unwrap();
 }
 
 #[test]
 fn two_branch_set_stopped_prefix_killed_at_each_branch_resumes_suffix_once() {
     let lease = checkpoint_capture::lease(256 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let control_commits = uninterrupted_two_branch_control(execution);
 
     for (mode, performed_before_stop) in [("stopped-branch-0", 0_usize), ("stopped-branch-1", 1)] {
+        let control = uninterrupted_two_branch_control(execution, performed_before_stop == 1);
+        let expected_retentions = if performed_before_stop == 0 {
+            [8, SEED_RETENTION]
+        } else {
+            [SEED_RETENTION, 8]
+        };
+        assert_eq!(control.retentions, expected_retentions, "{mode}: control seed parity");
+
         let dir = tempfile::tempdir().unwrap();
         let loc = dir.path().join("home");
         predecessor(&loc, true);
-        let end = run_child(&loc, mode);
+        let (end, _) = run_child(&loc, mode);
         assert_eq!(end, crate::killed_child::ChildEnd::KilledAtPark, "{mode}");
 
         let home = open_home(&loc, false, execution, None);
@@ -179,12 +186,22 @@ fn two_branch_set_stopped_prefix_killed_at_each_branch_resumes_suffix_once() {
             .runtime()
             .cold_adoption_readmission_summary_for_test();
         assert_eq!(summary.stopped_sets_retained, 1, "{mode}");
+        assert_eq!(summary.published_discharged, 0, "{mode}");
         let (a, b) = two_branches(&home);
         let host = home.runtime();
+        let p0 = *host.owned_revision();
         let p1 = *host
             .supported_program::<RetentionProgramP1>()
             .unwrap()
             .owned_revision();
+        let p0_digest = CanonicalDigestId::new(*p0.as_bytes());
+        let p1_digest = CanonicalDigestId::new(*p1.as_bytes());
+        let expected_remaining: Vec<WorthQueryProductBranch> = if performed_before_stop == 0 {
+            vec![a, b]
+        } else {
+            vec![b]
+        };
+
         let retire_refusal = host.retire_program_support(&execution, &p1);
         if performed_before_stop == 0 {
             assert!(
@@ -196,6 +213,8 @@ fn two_branch_set_stopped_prefix_killed_at_each_branch_resumes_suffix_once() {
                 ),
                 "{mode}: stopped set must block P1 retirement via MandatoryCustody: {retire_refusal:?}"
             );
+            assert_branch_revision(&home, a, &p0, mode);
+            assert_branch_revision(&home, b, &p0, mode);
         } else {
             assert!(
                 matches!(
@@ -206,6 +225,8 @@ fn two_branch_set_stopped_prefix_killed_at_each_branch_resumes_suffix_once() {
                 ),
                 "{mode}: adopted prefix + stopped suffix must block P1 retirement: {retire_refusal:?}"
             );
+            assert_branch_revision(&home, a, &p1, mode);
+            assert_branch_revision(&home, b, &p0, mode);
         }
 
         let scope = request_scope();
@@ -219,12 +240,19 @@ fn two_branch_set_stopped_prefix_killed_at_each_branch_resumes_suffix_once() {
             .unwrap();
         assert_eq!(stopped_list.len(), 1, "{mode}");
         let mut stopped = stopped_list.pop().unwrap();
+        assert_eq!(stopped.target(), &p1, "{mode}: exact recorded target");
+        assert_eq!(
+            stopped.remaining_branches(),
+            expected_remaining.as_slice(),
+            "{mode}: ordered remaining branches must match independently known suffix"
+        );
         let prefix_commit = if performed_before_stop == 1 {
-            let [Progress::RecordedPerformed { commit, .. }, Progress::RecordedNoEffect { .. }] =
+            let [Progress::RecordedPerformed { branch: br0, commit, source, target }, Progress::RecordedNoEffect { branch: br1, .. }] =
                 stopped.progress()
             else {
                 panic!("{mode}: expected recorded prefix + stop");
             };
+            assert_eq!((*br0, *br1, *source, *target), (a, b, p0_digest, p1_digest), "{mode}");
             let prefix = *commit;
             let widened = host
                 .runtime()
@@ -247,60 +275,109 @@ fn two_branch_set_stopped_prefix_killed_at_each_branch_resumes_suffix_once() {
             stopped = failure.into_adoption();
             Some(prefix)
         } else {
-            assert!(matches!(stopped.progress(), [Progress::RecordedNoEffect { .. }]));
+            let [Progress::RecordedNoEffect { branch: br0, .. }] = stopped.progress() else {
+                panic!("{mode}: expected single recorded stop on branch 0");
+            };
+            assert_eq!(*br0, a, "{mode}: stopped selector must be branch a");
             None
         };
 
-        let remaining = stopped.remaining_branches().to_vec();
-        assert_eq!(remaining.len(), 2 - performed_before_stop, "{mode}");
+        let work_before_resume = stopped.total_selection_work_units();
         let coverage = host
             .runtime()
             .branches()
             .program_adoption_coverage(
-                &remaining,
-                std::num::NonZeroUsize::new(remaining.len()).unwrap(),
+                &expected_remaining,
+                std::num::NonZeroUsize::new(expected_remaining.len()).unwrap(),
             )
             .unwrap();
         let mut set = host
             .runtime()
             .request(&principal, &scope)
-            .on_branches(coverage, &remaining)
+            .on_branches(coverage, &expected_remaining)
             .unwrap()
             .programs()
             .resume(stopped, 64)
             .unwrap_or_else(|failure| panic!("{mode}: resume suffix: {:?}", failure.denial()));
-        for expected in &remaining {
+        // Prove non-entry of the completed prefix at preparation time:
+        // pending branches equal the exact suffix and selection work scales only by suffix length.
+        let pending: Vec<_> = set.pending_branches().collect();
+        assert_eq!(pending, expected_remaining, "{mode}: only suffix is prepared");
+        let resumed_work = set.total_selection_work_units() - work_before_resume;
+        assert_eq!(
+            resumed_work * 2,
+            control.prep_work_units * expected_remaining.len(),
+            "{mode}: resume preparation must run selection work for suffix branches only"
+        );
+
+        for &expected in &expected_remaining {
             assert!(matches!(
                 set.advance(host.runtime(), &principal, &scope).unwrap(),
-                Some(Progress::Performed { branch, .. }) if branch == expected
+                Some(Progress::Performed { branch, .. }) if *branch == expected
             ));
         }
+        assert!(set.advance(host.runtime(), &principal, &scope).unwrap().is_none());
         let closed = set.close().unwrap_or_else(|_| panic!("{mode}: close set"));
         assert_eq!(closed.progress().len(), 2, "{mode}");
+        assert_eq!(
+            [closed.progress()[0].branch(), closed.progress()[1].branch()],
+            [a, b],
+            "{mode}: exact ordered branch attribution"
+        );
         if let Some(prefix) = prefix_commit {
             assert!(matches!(
                 &closed.progress()[0],
-                Progress::RecordedPerformed { commit, .. } if *commit == prefix
+                Progress::RecordedPerformed { branch, commit, source, target }
+                    if *branch == a && *commit == prefix && *source == p0_digest && *target == p1_digest
             ));
         }
         drop(closed);
-        // 1 extra commit is the intentional source edit that moved the branch head.
+
+        // Compare exact per-branch data, activation and commit total BEFORE mutating probes.
         assert_eq!(
             host.runtime()
                 .world_history_snapshot_for_test()
                 .installed_commits(),
-            control_commits + 1,
-            "{mode}: each branch adopted once; stopped prefix never re-prepared"
+            control.installed_commits,
+            "{mode}: exact commit parity with uninterrupted control"
         );
+        assert_eq!(
+            [read_retention(host.runtime(), a), read_retention(host.runtime(), b)],
+            control.retentions,
+            "{mode}: exact per-branch data parity before probes"
+        );
+        assert_branch_revision(&home, a, &p1, mode);
+        assert_branch_revision(&home, b, &p1, mode);
+        assert!(
+            host.retire_program_support(&execution, &p0).is_ok(),
+            "{mode}: P0 retires once both branches adopt P1"
+        );
+
+        // P1-discriminating probe per branch (3 is valid on P0, violated on P1), then distinct values.
         for (idx, branch) in [a, b].into_iter().enumerate() {
             assert_eq!(
-                settle(set_retention(host, branch, 15, 0xB600 + idx as u64)),
-                RetentionVerdict::Performed(15),
-                "{mode}: branch {idx} enforces P1"
+                settle(set_retention(host, branch, 3, 0xB600 + idx as u64)),
+                RetentionVerdict::violated("document-retention-v2"),
+                "{mode}: branch {idx} enforces P1 floor"
+            );
+            let target_val = 15 + idx as u64;
+            assert_eq!(
+                settle(set_retention(host, branch, target_val, 0xB700 + idx as u64)),
+                RetentionVerdict::Performed(target_val),
+                "{mode}: branch {idx} commits P1 write"
             );
         }
         home.close(&execution).unwrap().reclaim();
+
         let reopened = open_home(&loc, false, execution, None);
+        assert_eq!(
+            [
+                read_retention(reopened.runtime().runtime(), two_branches(&reopened).0),
+                read_retention(reopened.runtime().runtime(), two_branches(&reopened).1),
+            ],
+            [15, 16],
+            "{mode}: per-branch P1 values persist across reopen"
+        );
         assert!(reopened
             .runtime()
             .with_host_advancement(|phase| reopened
@@ -312,55 +389,4 @@ fn two_branch_set_stopped_prefix_killed_at_each_branch_resumes_suffix_once() {
             .is_empty());
         reopened.close(&execution).unwrap().reclaim();
     }
-}
-
-#[test]
-fn program_support_retirement_survives_process_kill_and_refuses_interpretation() {
-    let dir = tempfile::tempdir().unwrap();
-    let loc = dir.path().join("home");
-    predecessor(&loc, false);
-    let end = run_child(&loc, "retire-and-kill");
-    assert_eq!(end, crate::killed_child::ChildEnd::KilledAtPark);
-
-    let lease = checkpoint_capture::lease(256 << 20);
-    let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let home = open_home(&loc, false, execution, None);
-    {
-        let host = home.runtime();
-        let p0 = *host.owned_revision();
-        assert!(matches!(
-            host.retire_program_support(&execution, &p0),
-            Err(WorthQueryProgramSupportRetirementFailure::Policy(
-                WorthQueryProgramSupportRetirementDenial::AlreadyRetired { revision }
-            )) if revision == p0
-        ));
-        let branch = host.current_world();
-        let before = observe_head(host.runtime(), branch);
-        let WorthQueryApplicationMutationOutcome::Commit(
-            WorthQueryApplicationUncommitted::Denied(denial),
-        ) = set_retention(host, branch, SEED_RETENTION + 1, 0x9176_5331)
-            .expect("retired P0 request reaches the commit gate")
-        else {
-            panic!("retired P0 action must be refused at the commit gate after kill");
-        };
-        assert_eq!(
-            denial.kind(),
-            WorthQueryApplicationCommitDenialKind::ProgramSupportRetired
-        );
-        assert_eq!(read_retention(host.runtime(), branch), SEED_RETENTION);
-        assert_eq!(
-            before.selected_commit(),
-            observe_head(host.runtime(), branch).selected_commit()
-        );
-    }
-    home.close(&execution).unwrap().reclaim();
-    let reopened = open_home(&loc, false, execution, None);
-    let p0 = *reopened.runtime().owned_revision();
-    assert!(matches!(
-        reopened.runtime().retire_program_support(&execution, &p0),
-        Err(WorthQueryProgramSupportRetirementFailure::Policy(
-            WorthQueryProgramSupportRetirementDenial::AlreadyRetired { revision }
-        )) if revision == p0
-    ));
-    reopened.close(&execution).unwrap().reclaim();
 }

@@ -82,14 +82,22 @@ impl QueryObligationHistory {
         // prefix. A pre-effect acquire with no World open has no owner effect;
         // terminal original fates no longer carry adoption custody.
         let finished_adoptions = {
+            use worth_foundational::facade::WorldOriginalFate as Fate;
             let mut state = self.state();
             let fold =
                 ledger_inspect::adoption(&state.journal.as_ref().expect("admitted journal").ledger);
             let mut summary = QueryColdAdoptionReadmissionSummary {
-                already_completed: fold.completed.len(),
                 stopped_sets_retained: fold.stopped.len(),
                 ..QueryColdAdoptionReadmissionSummary::default()
             };
+            for &attempt in &fold.completed {
+                match originals.original_state(attempt).map(|o| o.fate()) {
+                    Some(Fate::Published) => summary.already_completed += 1,
+                    None | Some(Fate::Released | Fate::Open | Fate::Continued) => {
+                        summary.already_released += 1;
+                    }
+                }
+            }
             let mut finished = Vec::new();
             for &attempt in fold
                 .branches
@@ -101,9 +109,17 @@ impl QueryObligationHistory {
                         summary.pre_open_retained += 1;
                         finished.push(attempt);
                     }
-                    Some(worth_foundational::facade::WorldOriginalFate::Open) => {}
-                    Some(_) => {
+                    Some(Fate::Open) => {}
+                    Some(Fate::Published) => {
                         summary.published_discharged += 1;
+                        finished.push(attempt);
+                    }
+                    Some(Fate::Released) => {
+                        summary.released_discharged += 1;
+                        finished.push(attempt);
+                    }
+                    Some(Fate::Continued) => {
+                        summary.continued_discharged += 1;
                         finished.push(attempt);
                     }
                 }

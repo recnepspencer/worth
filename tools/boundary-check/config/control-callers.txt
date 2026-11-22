@@ -1682,6 +1682,7 @@ workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/wo
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/transition_seams.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/adoption_seams.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/adoption_seams.rs
+workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/adoption_seams/single_branch.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/adoption_seams/stopped_and_retirement.rs
 workspaces/worth-query/crates/worth-query-host/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/workflow_transition_seams.rs
 workspaces/worth-query/crates/worth-query-execution/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/workflow_transition_seams.rs

@@ -51,7 +51,10 @@ pub struct QueryColdAdoptionReadmissionSummary {
     pub empty_open_released: usize,
     pub native_recovery_retained: usize,
     pub published_discharged: usize,
+    pub released_discharged: usize,
+    pub continued_discharged: usize,
     pub already_completed: usize,
+    pub already_released: usize,
     pub stopped_sets_retained: usize,
 }
 
