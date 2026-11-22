@@ -3,15 +3,16 @@
 use super::*;
 
 impl<S: ApplicationSchema> SynchronousOutputWave<S> {
-    /// Record what `row` selected before a reopen at `invalidator`. A row
-    /// already reopened keeps what it selected before its first reopen: the
-    /// checks merge (earliest invalidator, every prior child and parent), so
-    /// a second reopen in the same edit never forgets a selection to verify.
-    pub(super) fn merge_reopen_check(
+    /// Record what `row` selected before a reopen at `invalidator` (none for
+    /// a cleared capture). A row already reopened keeps what it selected
+    /// before its first reopen: the checks merge (earliest invalidator, every
+    /// prior child and parent), so a second reopen in the same edit never
+    /// forgets a selection to verify.
+    pub(in super::super) fn merge_reopen_check(
         &mut self,
         context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
         row: usize,
-        invalidator: usize,
+        invalidator: Option<usize>,
         prior_children: Vec<SelectedRoute>,
         prior_prerequisites: Vec<usize>,
     ) -> Result<(), SynchronousOutputFailure> {
@@ -28,7 +29,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 prior_prerequisites,
             },
             Some(mut check) => {
-                check.invalidator = check.invalidator.min(invalidator);
+                check.invalidator = match (check.invalidator, invalidator) {
+                    (Some(earlier), Some(later)) => Some(earlier.min(later)),
+                    (earlier, later) => earlier.or(later),
+                };
                 for child in prior_children {
                     if !check.prior_children.contains(&child) {
                         check.prior_children.push(child);
@@ -72,7 +76,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
     }
 
     /// The canonical prerequisites of `i`, sorted.
-    pub(super) fn canonical_set(&self, i: usize) -> Vec<usize> {
+    pub(in super::super) fn canonical_set(&self, i: usize) -> Vec<usize> {
         let mut set = self.tasks[i]
             .prerequisites
             .iter()

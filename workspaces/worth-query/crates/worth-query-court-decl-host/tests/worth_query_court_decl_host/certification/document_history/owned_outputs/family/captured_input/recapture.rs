@@ -13,6 +13,51 @@ fn recapture_replaces_an_unconsumed_parent_with_the_new_actual_choice() {
 fn recapture_keeps_a_parent_still_required_by_another_input() {
     switch_after_parent(true);
 }
+
+/// A captured choice that drops a parent already derived in this edit (PR C
+/// C4 r4, blocker 1, path B). `choice` (weight 1) drains on the seed port
+/// before the control `a`, so its first choice `late` derives while the
+/// child still waits on `a`. `a`'s append flips the choice to `d`: the
+/// refresh clears the child's capture before any reselection runs. The
+/// derived `late` is a selection it made, so its re-derivation, which no
+/// longer selects `late`, refuses `SupersededSelectionDropped`. Red before
+/// the fix: clearing forgot `late`, and the edit committed it as an orphan.
+#[test]
+fn a_recapture_that_drops_a_derived_parent_refuses() {
+    super::program::CHOICE_FIRST.store(true, std::sync::atomic::Ordering::SeqCst);
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+    let host: WorthQueryProgramApplicationRuntime<Schema, program::Program> = world::install_configured(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,
+        world::Configuration { envelope_records: true, interleaved_records: true, captured_inputs: true, captured_parent_switch: Some(false), ..Default::default() });
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let mut edit = request
+        .edit_envelope()
+        .idempotency("capture-derived-switch".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    edit.push_stage::<program::Tree, _>(fixture::model::Intent {
+        key: "capture:child".into(),
+        value: 3,
+        key_derived_target: false,
+    })
+    .unwrap();
+    let outcome = edit
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    let events = _execution.wave_events_for_test();
+    let detail = format!("{outcome:?}");
+    assert!(
+        detail.contains("SupersededSelectionDropped"),
+        "the derived first choice was dropped: {detail}; {events:#?}"
+    );
+    assert!(request
+        .query(query::first_output::Read("first:carriage:late".into()))
+        .execute()
+        .is_err());
+}
 fn switch_after_parent(retain_old: bool) {
     let host: WorthQueryProgramApplicationRuntime<Schema, program::Program> = world::install_configured(
         host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()), 1, None,

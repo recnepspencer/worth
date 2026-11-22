@@ -91,22 +91,49 @@ impl CandidateReadSupport {
     }
 }
 
-/// Whether a mid-envelope comparison's failure must stop the edit: a
-/// physical stop, an allocation refusal, a deadline, or an exhausted work or
-/// capacity budget. Any other failure (a comparison unavailable at an
-/// intermediate candidate image) is unknown: qualified use keeps the
+/// Whether a mid-envelope comparison's failure must stop the edit. Only an
+/// answer the intermediate candidate image cannot give is unknown: an
+/// authored `MissingAuthoritativeFact` with no native execution, allocation
+/// or query-read cause behind it (a source, field, selection or aggregate
+/// comparison unavailable at that image). Qualified use then keeps the
 /// derivation and final support, which compares every writer fact and
-/// retained read strictly against the complete candidate, decides.
+/// retained read strictly against the complete candidate, decides. Every
+/// other failure stops: cancellation, the deadline, work, fact and capacity
+/// budgets, allocation, storage, native execution, authority, and any
+/// managed-index stop other than its controlled unavailability.
 pub fn is_hard_comparison_stop(
     cause: &crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
 ) -> bool {
+    !is_unavailable_comparison(cause)
+}
+
+/// The one failure class a mid-envelope comparison treats as unknown: an
+/// unavailable answer, plain or from a managed index's controlled
+/// unavailability. A managed-index request, storage, capacity, provider or
+/// coverage stop is hard.
+pub fn is_unavailable_comparison(
+    cause: &crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenial,
+) -> bool {
     use crate::domain_computation::primary_graph::WorthQueryApplicationAttemptDenialKind as Kind;
-    cause.relational_execution_cause().is_some()
+    use worth_query_execution_contracts::facade::managed_index_denial::{
+        WorthQueryManagedIndexStop as Stop, WorthQueryManagedIndexWorkDenial as Work,
+    };
+    let native = cause.relational_execution_cause().is_some()
         || cause.allocation_denial().is_some()
-        || matches!(
-            cause.kind(),
-            Kind::DeadlineExceeded
-                | Kind::DecisionFactBudgetExceeded
-                | Kind::CandidateCapacityExceeded
-        )
+        || cause.native_query_read_stop().is_some();
+    match cause.kind() {
+        Kind::MissingAuthoritativeFact => !native,
+        Kind::ManagedIndexSourceDenied => matches!(
+            cause.managed_index_denial(),
+            Some(Work::Controlled(
+                Stop::MembershipUnavailable
+                    | Stop::RefinementUnavailable
+                    | Stop::SummaryUnavailable
+                    | Stop::SourceSlotUnavailable
+                    | Stop::IncrementalUnavailable
+                    | Stop::SourceStructureUnavailable
+            ))
+        ),
+        _ => false,
+    }
 }
