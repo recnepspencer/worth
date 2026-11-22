@@ -149,10 +149,10 @@ Err(PublicationDenial::Stopped(stop)) => {
                         bound,
                         definition_identity,
                         delivery,
+                        command_coordination,
+                        coordination,
                         guard,
                         producer_memory,
-                        coordination,
-                        command_coordination,
                         publication,
                         definition_generation,
                     )
@@ -173,10 +173,13 @@ Err(PublicationDenial::Stopped(stop)) => {
         bound: WorthQueryApplicationIdempotencyBinding,
         definition_identity: Option<[u8; 32]>,
         mut delivery: RecoveredPublicationDelivery<'_>,
+        // Parameter order matches acquisition order so unwind drops
+        // `producer_memory`, then `guard` (repairing recovery state under both
+        // locks), then `coordination`, then `command_coordination`.
+        command_coordination: Option<std::sync::MutexGuard<'_, ()>>,
+        coordination: super::super::WorthQueryApplicationBranchCommitCoordination<'_>,
         mut guard: crate::domain_computation::primary_graph::provider::unpublished_idempotency::ManagedUnpublishedRecoveryGuard,
         producer_memory: Option<Option<worth_execution::ExecutionMemoryReservation>>,
-        coordination: super::super::WorthQueryApplicationBranchCommitCoordination<'_>,
-        command_coordination: Option<std::sync::MutexGuard<'_, ()>>,
         publication: worth_runtime_world::facade::PerformedCompositePublication,
         definition_generation: Option<u64>,
     ) -> Result<

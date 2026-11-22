@@ -52,7 +52,7 @@ impl WorthQueryApprovedElevation {
         self.approval_commit.emitted_effect_count()
     }
 
-    pub fn approval_product_publication(
+    pub const fn approval_product_publication(
         &self,
     ) -> &super::WorthQueryCommittedProductPublication {
         self.approval_commit.committed_product_publication()

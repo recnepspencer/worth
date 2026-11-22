@@ -83,7 +83,7 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
         WorthQueryApplicationHomeOpeningClosed,
         WorthQueryApplicationHomeOpeningCloseRefused<Schema, Program>,
     > {
-        retirement_plan::prepare(self).execute(request)
+        retirement_plan::prepare(Box::new(self)).execute(request)
     }
 }
 

@@ -118,8 +118,8 @@ where
             Err(cause) => {
                 return Err(Refused::successor(
                     WorthQueryApplicationHomeOpenRefused::Binding {
-                        query: Box::new(after),
-                        cause: Box::new(cause),
+                        query: after,
+                        cause,
                     },
                 ))
             }
@@ -129,8 +129,8 @@ where
             Err(cause) => {
                 return Err(Refused::predecessor(
                     WorthQueryApplicationHomeOpenRefused::Binding {
-                        query: Box::new(before),
-                        cause: Box::new(cause),
+                        query: before,
+                        cause,
                     },
                     after,
                 ))
@@ -158,7 +158,7 @@ where
                 Err(cause) => {
                     return Err(Refused::successor(
                         WorthQueryApplicationHomeOpenRefused::Physical {
-                            query: Box::new(after),
+                            query: after,
                             cause,
                         },
                     ))

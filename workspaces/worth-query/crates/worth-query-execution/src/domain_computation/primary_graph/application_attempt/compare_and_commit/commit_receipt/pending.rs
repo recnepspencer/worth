@@ -119,37 +119,38 @@ impl WorthQueryPendingApplicationCommitReceipt {
             Some(self.provider.take_fresh_product_change()?)
         };
         let receipt = WorthQueryApplicationCommitReceipt {
+            outcome_identity: self.provider.application_outcome_identity(),
+            provider_runtime_instance_id: self.provider.runtime_instance_id(),
+            commit: self.provider.commit_reference().clone(),
+            committed_product_publication: self
+                .provider
+                .committed_product_publication()
+                .clone(),
+            basis_descriptor: self.provider.basis_descriptor().clone(),
             changed_record_count: self.provider.changed_record_count(),
             emitted_effect_count: self.provider.emitted_effect_count(),
+            precondition_comparison: self.precondition_comparison,
             canonical_work: self.canonical_work,
-            inner: Box::new(super::CommitReceiptBody {
+            terminal: WorthQueryApplicationCommitTerminalEvidence::executed(
+                completion.relational_branch().clone(),
+                completion.attempt_resources_released(),
+            ),
+            external_dispatch: None,
+            external_dispatch_preparation_denial: None,
+            authority_binding: self.authority_binding,
+            has_retained_preimage: self.retained_preimage.is_some(),
+            aftermath_causality: self.aftermath_causality,
+            committed_changes: self.provider.commit_evidence().committed_changes().clone(),
+            inner: Box::new(super::CommitReceiptExtras {
                 authoritative_provider_session: self
                     .provider
                     .commit_evidence()
                     .provider_session_binding()
                     .clone(),
-                outcome_identity: self.provider.application_outcome_identity(),
-                provider_runtime_instance_id: self.provider.runtime_instance_id(),
-                commit: self.provider.commit_reference().clone(),
-                committed_product_publication: self
-                    .provider
-                    .committed_product_publication()
-                    .clone(),
-                basis_descriptor: self.provider.basis_descriptor().clone(),
                 mutation_work: Some(mutation_work),
-                precondition_comparison: self.precondition_comparison,
-                terminal: WorthQueryApplicationCommitTerminalEvidence::executed(
-                    completion.relational_branch().clone(),
-                    completion.attempt_resources_released(),
-                ),
                 committed_dispatch_outbox: self.committed_dispatch_outbox,
-                external_dispatch: None,
-                external_dispatch_preparation_denial: None,
-                authority_binding: self.authority_binding,
                 retained_preimage: self.retained_preimage,
-                aftermath_causality: self.aftermath_causality,
                 performed_product_change,
-                committed_changes: self.provider.commit_evidence().committed_changes().clone(),
                 performed_output_fields: self
                     .provider
                     .commit_evidence()

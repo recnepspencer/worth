@@ -43,12 +43,7 @@ where
     .map_err(Refused::Preparation)?;
     let binding = match query.admitted_home_binding() {
         Ok(binding) => binding,
-        Err(cause) => {
-            return Err(Refused::Binding {
-                query: Box::new(query),
-                cause: Box::new(cause),
-            })
-        }
+        Err(cause) => return Err(Refused::Binding { query, cause }),
     };
     let request = phase.execution_request();
     let mut physical = ApplicationHomeRequest::new(
@@ -67,12 +62,7 @@ where
     }
     let home = match recover_home(physical, &request).and_then(|home| admit_home(home, &request)) {
         Ok(home) => home,
-        Err(cause) => {
-            return Err(Refused::Physical {
-                query: Box::new(query),
-                cause,
-            })
-        }
+        Err(cause) => return Err(Refused::Physical { query, cause }),
     };
     observation.arrive_for_test(
         ApplicationHomeOpeningStage::NativeReadmission,
@@ -115,12 +105,7 @@ where
     let request = phase.execution_request();
     let mut home = match attach_relational(home, &request) {
         Ok(home) => home,
-        Err(home) => {
-            return Err(Refused::RelationalAttachment {
-                query: Box::new(query),
-                home: Box::new(home),
-            })
-        }
+        Err(home) => return Err(Refused::RelationalAttachment { query, home }),
     };
     // Store chooses the identity bound for the open it admitted.
     let installed = match home.prepare_native_schema_for_home(&request) {
@@ -141,31 +126,15 @@ where
             identities.maximum_aspect(),
             installation,
         ),
-        Err(cause) => {
-            return Err(Refused::NativePreparation {
-                query: Box::new(query),
-                home: Box::new(home),
-                cause: Box::new(cause),
-            })
-        }
+        Err(cause) => return Err(Refused::NativePreparation { query, home, cause }),
     };
     let query = match installed {
         Ok(query) => query,
-        Err(query) => {
-            return Err(Refused::NativeInstallation {
-                query: Box::new(query),
-                home: Box::new(home),
-            })
-        }
+        Err(query) => return Err(Refused::NativeInstallation { query, home }),
     };
     let home = match home.readmit(query.home_initial_schema_receipt(), &request) {
         Ok(home) => home.consume(|home| home),
-        Err(home) => {
-            return Err(Refused::NativeReadmission {
-                query: Box::new(query),
-                home: Box::new(home),
-            })
-        }
+        Err(home) => return Err(Refused::NativeReadmission { query, home }),
     };
     Ok((query, home))
 }

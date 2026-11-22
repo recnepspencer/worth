@@ -67,9 +67,9 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
         Err(cause) => {
             return Err(Refused::predecessor(
                 OldRefused::ExistingBridgeDefinition {
-                    query: Box::new(before),
-                    home: Box::new(home),
-                    cause: Box::new(cause),
+                    query: before,
+                    home,
+                    cause,
                 },
                 after,
             ))
@@ -85,8 +85,8 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
         Err(home) => {
             return Err(Refused::predecessor(
                 OldRefused::ExistingWorldSourcePreparation {
-                    query: Box::new(before),
-                    home: Box::new(home),
+                    query: before,
+                    home,
                 },
                 after,
             ))
@@ -99,7 +99,7 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
             Err(query) => {
                 return Err(Refused::predecessor(
                     OldRefused::SignalProgramPreparation {
-                        home: Box::new(source),
+                        home: source,
                         query: Box::new(query),
                     },
                     after,
@@ -111,9 +111,9 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
         Err(home) => {
             return Err(Refused::predecessor(
                 OldRefused::ExistingWorldReadmission {
-                    query: Box::new(before),
-                    home: Box::new(home),
-                    _bindings: Box::new(bindings),
+                    query: before,
+                    home,
+                    _bindings: bindings,
                 },
                 after,
             ))
@@ -124,9 +124,9 @@ pub(super) fn prepare<A: ApplicationSchemaComposition, AP, B: ApplicationSchemaC
         Err(home) => {
             return Err(Refused::predecessor(
                 OldRefused::ExistingWorldReadmission {
-                    query: Box::new(before),
-                    home: Box::new(home),
-                    _bindings: Box::new(bindings),
+                    query: before,
+                    home,
+                    _bindings: bindings,
                 },
                 after,
             ))

@@ -4,14 +4,14 @@ use super::*;
 impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
     pub fn authority_binding_for_test(&self) -> &WorthQueryApplicationCommitAuthorityBinding {
-        &self.inner.authority_binding
+        &self.authority_binding
     }
 }
 
 impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
     pub fn provider_runtime_instance_id_for_test(&self) -> &u64 {
-        &self.inner.provider_runtime_instance_id
+        &self.provider_runtime_instance_id
     }
 }
 
@@ -31,7 +31,7 @@ impl WorthQueryApplicationCommitReceipt {
 impl WorthQueryApplicationCommitReceipt {
     #[doc(hidden)]
     pub fn provider_runtime_instance_id_mut_for_test(&mut self) -> &mut u64 {
-        &mut self.inner.provider_runtime_instance_id
+        &mut self.provider_runtime_instance_id
     }
 }
 
@@ -53,7 +53,7 @@ impl WorthQueryApplicationCommitReceipt {
     pub fn authority_binding_mut_for_test(
         &mut self,
     ) -> &mut WorthQueryApplicationCommitAuthorityBinding {
-        &mut self.inner.authority_binding
+        &mut self.authority_binding
     }
 }
 

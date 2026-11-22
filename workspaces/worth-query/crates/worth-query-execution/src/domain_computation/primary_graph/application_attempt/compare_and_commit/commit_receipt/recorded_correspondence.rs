@@ -31,7 +31,6 @@ impl WorthQueryApplicationCommitReceipt {
         };
         same_head
             && self
-                .inner
                 .committed_changes
                 .matches_recorded_semantic_result(recorded.semantic_result())
             && original.publication_attempt().ordinal() == recorded.attempt_identity().ordinal()

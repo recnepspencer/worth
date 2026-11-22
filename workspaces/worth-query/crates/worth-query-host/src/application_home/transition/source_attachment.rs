@@ -36,9 +36,9 @@ where
             Ok(parts) => parts,
             Err(cause) => {
                 return Err(OldRefused::TransitionComposition {
-                    query: Box::new(after),
-                    home: Box::new(home),
-                    cause: Box::new(cause),
+                    query: after,
+                    home,
+                    cause,
                 })
             }
         };
@@ -47,7 +47,7 @@ where
                 Ok(parts) => parts,
                 Err(query) => {
                     return Err(OldRefused::TransitionSignalProgramPreparation {
-                        home: Box::new(home),
+                        home,
                         query: Box::new(query),
                     })
                 }
@@ -56,21 +56,16 @@ where
             Ok(conditional) => conditional,
             Err(handoff) => {
                 return Err(OldRefused::TransitionProgrammeHandoff {
-                    query: Box::new(after),
-                    home: Box::new(home),
-                    handoff: Box::new(handoff),
-                    _bindings: Box::new(bindings),
+                    query: after,
+                    home,
+                    handoff,
+                    _bindings: bindings,
                 })
             }
         };
         let after = match after.attach_existing_home_authored_signal(conditional) {
             Ok(after) => after,
-            Err(query) => {
-                return Err(OldRefused::ExistingSourceAttachment {
-                    query: Box::new(query),
-                    home: Box::new(home),
-                })
-            }
+            Err(query) => return Err(OldRefused::ExistingSourceAttachment { query, home }),
         };
         drop(bindings);
         let (query, home) = opening::existing::attach_world(phase, home, after, checkpoint_limits)?;
