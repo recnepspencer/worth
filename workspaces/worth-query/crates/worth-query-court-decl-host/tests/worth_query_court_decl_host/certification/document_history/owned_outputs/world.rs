@@ -20,8 +20,9 @@ pub struct Configuration {
     pub captured_composed: Option<(usize, bool)>,
     pub captured_chains: Option<(usize, usize)>,
     pub wrong_inverse_member: bool,
-    /// Member `n` (5) of model `a` and model `c` (9) (PR C C4 r2 blocker 1).
-    pub second_member: bool,
+    /// Member `n` (this value) of model `a` and model `c` (9) (PR C C4 r2
+    /// blocker 1, r3).
+    pub second_member: Option<u64>,
 }
 impl WorthQueryApplicationContribution<Schema> for Contribution {
     type Configuration = Configuration;
@@ -231,17 +232,18 @@ where
             if configuration.reconciliation_peer_caps {
                 synchronous_edit::reconciliation::peer_caps::seed(graph)?;
             }
-            if configuration.second_member {
-                seed_second_member(graph)?;
+            if let Some(value) = configuration.second_member {
+                seed_second_member(graph, value)?;
             }
             Ok(())
         },
     )
     .unwrap()
 }
-/// Member `n` (5) owned by model `a`, and model `c` (9).
+/// Member `n` (`value`) owned by model `a`, and model `c` (9).
 fn seed_second_member(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
+    value: u64,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     graph.bind_entity(
         WorthQueryApplicationEntitySeed::new(
@@ -249,7 +251,7 @@ fn seed_second_member(
             WorthQueryApplicationEntityKey::new("n").unwrap(),
         )
         .field(MemberKey::at("MemberKey"), "n".to_owned())
-        .field(MemberValue::at("MemberValue"), 5),
+        .field(MemberValue::at("MemberValue"), value),
     )?;
     graph.bind_relation(WorthQueryApplicationRelationSeed::new(
         ModelMember::reference(),
