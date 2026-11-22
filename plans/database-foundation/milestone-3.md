@@ -507,7 +507,7 @@ reduced and no limit raised to make a campaign fit.
 | Evidence | Acceptance |
 |---|---|
 | Installation at scale | Neither large installation's outcome can depend on elapsed time or on the size of the unrelated population. The component-island installation's `CanonicalArtifactEncoding(SizeLimit)` refusal is fixed by bounding the installation artifact to the installed delta, not by a raised limit. The logical-rule installation's `CandidateLifetimeExpired` refusal is fixed by bounding that candidate with counted work instead of the 30-second wall-clock lifetime, not by a longer lifetime. |
-| Restored ledger entries | The component-island growth campaign; the logical-rule acquisition growth campaign; `restoration_header_is_validated_once_and_work_grows_linearly` and `public_create_grow_retire_restore_relation_scale_report`; the root final-partition growth courts (`fixed_kind_read_is_flat_in_unrelated_regions_and_history`, both lazy-pin courts' C2 parts, `equal_payload_jumps_charge_the_same_receiving_owner_work_at_near_and_distant_history_nodes`, both `count_only_read_*`, both `renewed_cell_symbol_admission_*`, `a_fixed_edit_does_not_pay_the_previous_large_edit_again`); `embedded_restore_allocation_grows_linearly_in_relation_bearing_regions`; `synthetic_native_restore_and_image_digest_benchmark`; the twelve adapter-dependent performance matrices and their campaign fixtures, each timing predicate converted under the wall-clock rule above. C2 ruling (2026-11-22): `restoration_header` restores only the same-SHA (`669ac9fcd4`) `#[doc(hidden)]` door `CanonicalCommitEnvelopeBody::output_origin_header_work_for_test` (`header_work.rs`, its parent mount, and the `header_work::{begin,finish}` wrapper in `required_output_origin/restoration_header.rs`) and its 1 exact `control-callers.txt` row (`crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/restoration_header.rs`), leaving C4's `output_origin_header_with_missing_entity_for_test`, `header_corruption.rs`, `corruption_court`, and its two caller rows untouched. |
+| Restored ledger entries | The component-island growth campaign; the logical-rule acquisition growth campaign; `restoration_header_is_validated_once_and_work_grows_linearly` and `public_create_grow_retire_restore_relation_scale_report`; the root final-partition growth courts (`fixed_kind_read_is_flat_in_unrelated_regions_and_history`, both lazy-pin courts' C2 parts, `equal_payload_jumps_charge_the_same_receiving_owner_work_at_near_and_distant_history_nodes`, both `count_only_read_*`, both `renewed_cell_symbol_admission_*`, `a_fixed_edit_does_not_pay_the_previous_large_edit_again`); `embedded_restore_allocation_grows_linearly_in_relation_bearing_regions`; `synthetic_native_restore_and_image_digest_benchmark`; the twelve adapter-dependent performance matrices and their campaign fixtures, each timing predicate converted under the wall-clock rule above. C2 ruling (2026-11-22): `restoration_header` restores only the same-SHA (`669ac9fcd4`) `#[doc(hidden)]` door `CanonicalCommitEnvelopeBody::output_origin_header_work_for_test` (`header_work.rs`, its parent mount, and the `header_work::{begin,finish}` wrapper in `required_output_origin/restoration_header.rs`) and its 1 exact `control-callers.txt` row (`crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/restoration_header.rs`), leaving C4's `output_origin_header_with_missing_entity_for_test`, `header_corruption.rs`, `corruption_court`, and its two caller rows untouched. C2 ruling (2026-11-22, Option 1 — in-crate durable performance matrices): authorizes the case-owned `OwnedTestDurableMedium` (`crates/worth-relational/src/tests/support/durability.rs` + `durability/owned_medium.rs`) strictly as a thin `#[cfg(test)]` trait-identity adapter for the 11 in-crate `worth-relational` performance matrices whose `pub(crate)`/`#[cfg(test)]` observations (`performance_access().counters()`, `configure_diagnostics_for_test`, `digest_diagnostics_surface`, `execute_query_plan_with_index_parity`, `runtime.indexes.corrupt_latest_generation`) are coupled to the same durable operation (because Rust's dual crate compilation identity prevents importing `worth_testkit_relational::TestDurableMedium`'s trait impls into `worth-relational`'s unit-test crate without leaking private test internals or adding caller rows), subject to four binding guardrails: (1) explicit case-owned handle only — zero runtime-discovery map, zero global registry, zero fixed-generation selection bypass, zero fallback to `Memory` or retained-runtime `recovery_plan()`; (2) shared testkit byte primitives — delegates raw journal storage, member bytes, and immutable read-snapshot protection to `worth_testkit_relational::durable_medium::{ByteJournal, MemberBytes, OwnedNativeReadSnapshot, OwnedSnapshotDenial}`; (3) zero baseline/caller expansion — adds zero new `src-court-baseline.json` rows and zero new `control-callers.txt` rows beyond the separately ruled `restoration_header` row; and (4) purely public durable matrices (`durability_append_matrix.rs`) remain in `worth-court-relational-certification` over `TestDurableMedium`. |
 
 #### C2.8 — Durable World history and branch retirement
 
@@ -1598,7 +1598,28 @@ in `tests/performance_metrics.rs`, the ten performance adapters/exports in
 `crates/worth-relational/src/`). Remaining shared fixtures and all ordinary
 Fintech scenarios remain. C2 must restore these claims with actual owned durable
 media through the public testkit, preserving the claims without reviving the
-retired runtime-discovery adapters.
+retired runtime-discovery adapters. C2 ruling (2026-11-22, Option 1): for the 11
+in-crate `worth-relational` performance matrices below whose
+`pub(crate)`/`#[cfg(test)]` observations (`performance_access().counters()`,
+`configure_diagnostics_for_test`, `digest_diagnostics_surface`,
+`execute_query_plan_with_index_parity`, `runtime.indexes.corrupt_latest_generation`)
+are coupled to the same durable operation — where Rust's dual crate compilation
+identity (`crate` vs external `worth_relational`) prevents importing
+`worth_testkit_relational::TestDurableMedium`'s trait impls into `worth-relational`
+unit tests without leaking private test internals or adding caller rows — the
+case-owned `OwnedTestDurableMedium` (`crates/worth-relational/src/tests/support/durability.rs`
++ `durability/owned_medium.rs`) is authorized strictly as a thin `#[cfg(test)]`
+trait-identity adapter under four binding guardrails: (1) explicit case-owned
+handle only (zero runtime-discovery map, zero global registry, zero
+fixed-generation selection bypass, zero fallback to `Memory` or retained-runtime
+`recovery_plan()`); (2) shared testkit byte primitives (delegates raw journal
+storage, member bytes, and immutable read-snapshot protection to
+`worth_testkit_relational::durable_medium::{ByteJournal, MemberBytes, OwnedNativeReadSnapshot, OwnedSnapshotDenial}`);
+(3) zero baseline/caller expansion (adds zero new `src-court-baseline.json` rows
+and zero new `control-callers.txt` rows beyond the separately ruled
+`restoration_header` row); and (4) purely public durable matrices
+(`durability_append_matrix.rs`) remain in `worth-court-relational-certification`
+over `TestDurableMedium`.
 
 - `perf_artifact_recoverability_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/artifact_recoverability_matrix.rs`.
 - `perf_chip_simulator_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/chip_simulator_matrix/mod.rs`.
