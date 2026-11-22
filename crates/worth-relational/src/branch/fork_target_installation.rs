@@ -7,7 +7,7 @@ use crate::history::data::BranchId;
 /// A prepared target whose head retention and optional basis are already
 /// acquired. Dropping it releases both and installs nothing, so the fork's
 /// durable step can still refuse.
-pub(super) struct InstallableForkTarget {
+pub(in crate::branch) struct InstallableForkTarget {
     prepared: PreparedForkTarget,
     materialization_cost: crate::runtime::RelationalForkMaterializationCost,
     basis: Option<AdmittedRelationalBranchBasis>,
@@ -23,7 +23,7 @@ impl RelationalForkPort {
     /// Acquire everything the installation needs and can fail on: the
     /// target's head retention and, when asked, its admitted basis. Both are
     /// held by the uninstalled target cell.
-    pub(super) fn prepare_installation(
+    pub(in crate::branch) fn prepare_installation(
         &self,
         mut target: PreparedForkTarget,
         return_basis: bool,

@@ -1,4 +1,4 @@
-mod allocation_visitor;
+pub(crate) mod allocation_visitor;
 mod binding;
 mod contracts;
 mod evolution;

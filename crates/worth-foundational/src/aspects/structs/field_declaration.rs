@@ -25,6 +25,14 @@ impl FieldKey {
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
         self.0.capacity()
     }
+
+    pub(crate) fn visit_allocations(
+        &self,
+        unique: bool,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        crate::aspects::allocation_visitor::visit_string_buffer(&self.0, unique, visitor);
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

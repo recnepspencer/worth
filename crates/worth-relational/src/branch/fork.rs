@@ -134,4 +134,4 @@ impl RelationalForkOutcome {
 }
 
 use source_validation::ValidatedForkSource;
-use target_preparation::PreparedForkTarget;
+pub(in crate::branch) use target_preparation::PreparedForkTarget;

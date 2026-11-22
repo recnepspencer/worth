@@ -27,12 +27,13 @@ impl AspectEntryTree {
     pub(in super::super) fn visit_new_allocations(
         &self,
         previous: &Self,
+        ancestor_unique: bool,
         visitor: &mut dyn FoundationalAllocationVisitor,
     ) {
         if option_arc_ptr_eq(&self.root, &previous.root) {
             return;
         }
-        visit_new_link(&self.root, &previous.root, visitor);
+        visit_new_link(&self.root, &previous.root, ancestor_unique, visitor);
     }
 }
 
@@ -60,6 +61,7 @@ fn visit_link(
 fn visit_new_link(
     link: &Link,
     previous_root: &Link,
+    ancestor_unique: bool,
     visitor: &mut dyn FoundationalAllocationVisitor,
 ) {
     let Some(node) = link else { return };
@@ -67,10 +69,11 @@ fn visit_new_link(
     if previous.is_some_and(|prior| Arc::ptr_eq(node, prior)) {
         return;
     }
+    let unique = ancestor_unique && Arc::strong_count(node) == 1;
     let observation = FoundationalAllocationObservation {
         id: arc_id(node),
         bytes: AspectEntryTree::node_allocation_bytes() as u64,
-        unique: false,
+        unique,
         kind: FoundationalAllocationKind::ValueBacking,
     };
     if !visitor.visit(observation) {
@@ -78,9 +81,11 @@ fn visit_new_link(
     }
     match previous {
         Some(prior) if node.value.shares_allocation(&prior.value) => {}
-        Some(prior) => node.value.visit_new_allocations(Some(&prior.value), visitor),
-        None => node.value.visit_allocations(false, visitor),
+        Some(prior) => node
+            .value
+            .visit_new_allocations(Some(&prior.value), unique, visitor),
+        None => node.value.visit_allocations(unique, visitor),
     }
-    visit_new_link(&node.left, previous_root, visitor);
-    visit_new_link(&node.right, previous_root, visitor);
+    visit_new_link(&node.left, previous_root, unique, visitor);
+    visit_new_link(&node.right, previous_root, unique, visitor);
 }

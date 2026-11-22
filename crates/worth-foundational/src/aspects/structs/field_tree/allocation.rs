@@ -20,12 +20,13 @@ impl StructFields {
     pub(in crate::aspects::structs) fn visit_new_allocations(
         &self,
         previous: &Self,
+        ancestor_unique: bool,
         visitor: &mut dyn FoundationalAllocationVisitor,
     ) {
         if option_arc_ptr_eq(&self.root, &previous.root) {
             return;
         }
-        visit_new_link(&self.root, &previous.root, visitor);
+        visit_new_link(&self.root, &previous.root, ancestor_unique, visitor);
     }
 }
 
@@ -53,14 +54,12 @@ fn node_bytes() -> u64 {
     arc_storage::<Node>().expect("struct field node layout fits") as u64
 }
 
-fn key_bytes(key: &FieldKey) -> u64 {
-    (arc_storage::<FieldKey>().expect("field key arc layout fits")
-        + key.owned_allocation_capacity_bytes()) as u64
+fn key_arc_bytes() -> u64 {
+    arc_storage::<FieldKey>().expect("field key arc layout fits") as u64
 }
 
-fn value_bytes(value: &AspectValue) -> u64 {
-    (arc_storage::<AspectValue>().expect("field value arc layout fits")
-        + value.direct_owned_allocation_capacity_bytes()) as u64
+fn value_arc_bytes() -> u64 {
+    arc_storage::<AspectValue>().expect("field value arc layout fits") as u64
 }
 
 fn visit_link(
@@ -79,21 +78,23 @@ fn visit_link(
     if !visitor.visit(node_obs) {
         return;
     }
-    visitor.visit(FoundationalAllocationObservation {
+    let key_unique = node_unique && Arc::strong_count(&node.key) == 1;
+    if visitor.visit(FoundationalAllocationObservation {
         id: arc_id(&node.key),
-        bytes: key_bytes(&node.key),
-        unique: node_unique && Arc::strong_count(&node.key) == 1,
+        bytes: key_arc_bytes(),
+        unique: key_unique,
         kind: FoundationalAllocationKind::ValueBacking,
-    });
+    }) {
+        node.key.visit_allocations(key_unique, visitor);
+    }
     let value_unique = node_unique && Arc::strong_count(&node.value) == 1;
-    let value_obs = FoundationalAllocationObservation {
+    if visitor.visit(FoundationalAllocationObservation {
         id: arc_id(&node.value),
-        bytes: value_bytes(&node.value),
+        bytes: value_arc_bytes(),
         unique: value_unique,
         kind: FoundationalAllocationKind::ValueBacking,
-    };
-    if visitor.visit(value_obs) {
-        node.value.visit_shared_allocations(value_unique, visitor);
+    }) {
+        node.value.visit_allocations(value_unique, visitor);
     }
     visit_link(&node.left, node_unique, visitor);
     visit_link(&node.right, node_unique, visitor);
@@ -102,6 +103,7 @@ fn visit_link(
 fn visit_new_link(
     link: &Link,
     previous_root: &Link,
+    ancestor_unique: bool,
     visitor: &mut dyn FoundationalAllocationVisitor,
 ) {
     let Some(node) = link else { return };
@@ -109,34 +111,42 @@ fn visit_new_link(
     if previous.is_some_and(|prior| Arc::ptr_eq(node, prior)) {
         return;
     }
+    let node_unique = ancestor_unique && Arc::strong_count(node) == 1;
     let node_obs = FoundationalAllocationObservation {
         id: arc_id(node),
         bytes: node_bytes(),
-        unique: false,
+        unique: node_unique,
         kind: FoundationalAllocationKind::ValueBacking,
     };
     if !visitor.visit(node_obs) {
         return;
     }
     if !previous.is_some_and(|prior| Arc::ptr_eq(&node.key, &prior.key)) {
-        visitor.visit(FoundationalAllocationObservation {
+        let key_unique = node_unique && Arc::strong_count(&node.key) == 1;
+        if visitor.visit(FoundationalAllocationObservation {
             id: arc_id(&node.key),
-            bytes: key_bytes(&node.key),
-            unique: false,
+            bytes: key_arc_bytes(),
+            unique: key_unique,
             kind: FoundationalAllocationKind::ValueBacking,
-        });
-    }
-    if !previous.is_some_and(|prior| Arc::ptr_eq(&node.value, &prior.value)) {
-        let value_obs = FoundationalAllocationObservation {
-            id: arc_id(&node.value),
-            bytes: value_bytes(&node.value),
-            unique: false,
-            kind: FoundationalAllocationKind::ValueBacking,
-        };
-        if visitor.visit(value_obs) {
-            node.value.visit_shared_allocations(false, visitor);
+        }) {
+            node.key.visit_allocations(key_unique, visitor);
         }
     }
-    visit_new_link(&node.left, previous_root, visitor);
-    visit_new_link(&node.right, previous_root, visitor);
+    if !previous.is_some_and(|prior| Arc::ptr_eq(&node.value, &prior.value)) {
+        let value_unique = node_unique && Arc::strong_count(&node.value) == 1;
+        if visitor.visit(FoundationalAllocationObservation {
+            id: arc_id(&node.value),
+            bytes: value_arc_bytes(),
+            unique: value_unique,
+            kind: FoundationalAllocationKind::ValueBacking,
+        }) {
+            node.value.visit_new_allocations(
+                previous.map(|prior| prior.value.as_ref()),
+                value_unique,
+                visitor,
+            );
+        }
+    }
+    visit_new_link(&node.left, previous_root, node_unique, visitor);
+    visit_new_link(&node.right, previous_root, node_unique, visitor);
 }

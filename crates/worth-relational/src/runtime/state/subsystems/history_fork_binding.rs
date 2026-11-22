@@ -168,11 +168,8 @@ impl RelationalForkOwnerBinding {
     ) {
         self.costs.record_reference_allocation();
         self.costs.record_branch_cell_contact();
-        cell.publication_cell().record_sharing_cost(|costs| {
+        cell.publication_cell().record_sharing_cost_checked(|costs| {
             costs.shared_root_acquisitions = costs.shared_root_acquisitions.saturating_add(1);
-            costs.copied_truth_bytes = costs
-                .copied_truth_bytes
-                .saturating_add(cost.authoritative_bytes);
             costs.copied_commit_envelopes = costs
                 .copied_commit_envelopes
                 .saturating_add(cost.copied_commit_envelopes);
@@ -182,9 +179,15 @@ impl RelationalForkOwnerBinding {
             costs.fork_materialized_relation_count = costs
                 .fork_materialized_relation_count
                 .saturating_add(cost.relation_count);
-            costs.fork_materialized_authoritative_bytes = costs
+            let next_copied_truth = costs
+                .copied_truth_bytes
+                .checked_add(cost.authoritative_bytes)?;
+            let next_fork_bytes = costs
                 .fork_materialized_authoritative_bytes
-                .saturating_add(cost.authoritative_bytes);
+                .checked_add(cost.authoritative_bytes)?;
+            costs.copied_truth_bytes = next_copied_truth;
+            costs.fork_materialized_authoritative_bytes = next_fork_bytes;
+            Some(())
         });
         self.head_versions.move_head(None, cell.root().as_deref());
         if let (Some(visibility), Some(version_id)) = (&self.visibility, head_version)

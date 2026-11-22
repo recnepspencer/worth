@@ -136,7 +136,7 @@ impl HistorySubsystem {
         // Preparation already accounted `canonical.payload_storage_bytes()`.
         // Add only the real original Memory frame admitted at position binding.
         let new_authoritative_bytes = new_authoritative_bytes
-            .saturating_add(artifact.envelope_residency().original_frame_storage_bytes());
+            .checked_add(artifact.envelope_residency().original_frame_storage_bytes());
         self.with_ledger_mut(|ledger| {
             ledger.install_published_commit(
                 commit_id,

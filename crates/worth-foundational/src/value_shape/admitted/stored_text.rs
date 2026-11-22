@@ -39,25 +39,61 @@ impl StoredValueText {
         &self.0.text
     }
     pub fn owned_allocation_capacity_bytes(&self) -> usize {
-        self.direct_owned_allocation_capacity_bytes()
+        std::mem::size_of::<StoredText>()
+            .saturating_add(self.0.text.capacity())
             .saturating_add(Self::proof_capacity_bytes())
     }
 
-    pub(crate) fn direct_owned_allocation_capacity_bytes(&self) -> usize {
-        std::mem::size_of::<StoredText>().saturating_add(self.0.text.capacity())
-    }
-
-    pub(crate) fn visit_shared_allocations(
+    pub(crate) fn visit_allocations(
         &self,
         ancestor_unique: bool,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
+        self.visit_box_and_text(ancestor_unique, visitor);
         visitor.visit(crate::aspects::FoundationalAllocationObservation {
-            id: Arc::as_ptr(&self.0.seal) as usize as u64,
+            id: crate::aspects::allocation_visitor::arc_id(&self.0.seal),
             bytes: Self::proof_capacity_bytes() as u64,
             unique: ancestor_unique && Arc::strong_count(&self.0.seal) == 1,
             kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
         });
+    }
+
+    pub(crate) fn visit_new_allocations(
+        &self,
+        previous: Option<&Self>,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        self.visit_box_and_text(ancestor_unique, visitor);
+        if previous.is_some_and(|prior| Arc::ptr_eq(&self.0.seal, &prior.0.seal)) {
+            return;
+        }
+        visitor.visit(crate::aspects::FoundationalAllocationObservation {
+            id: crate::aspects::allocation_visitor::arc_id(&self.0.seal),
+            bytes: Self::proof_capacity_bytes() as u64,
+            unique: ancestor_unique && Arc::strong_count(&self.0.seal) == 1,
+            kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
+        });
+    }
+
+    fn visit_box_and_text(
+        &self,
+        unique: bool,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        let box_bytes = std::mem::size_of::<StoredText>() as u64;
+        if box_bytes > 0 {
+            let box_obs = crate::aspects::FoundationalAllocationObservation {
+                id: crate::aspects::allocation_visitor::ptr_id(&*self.0),
+                bytes: box_bytes,
+                unique,
+                kind: crate::aspects::FoundationalAllocationKind::ValueBacking,
+            };
+            if !visitor.visit(box_obs) {
+                return;
+            }
+        }
+        crate::aspects::allocation_visitor::visit_string_buffer(&self.0.text, unique, visitor);
     }
 
     /// A copy allocates its box and length-sized text. Its proof cell is shared,

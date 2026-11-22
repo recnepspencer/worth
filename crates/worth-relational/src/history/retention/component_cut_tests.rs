@@ -192,3 +192,137 @@ pub(crate) fn assert_controlled_component_capture_winner(
         runtime.release_component_basis(lease_b).unwrap();
     });
 }
+
+#[test]
+fn owner_reclamation_overflow_preserves_prior_removals_and_requeues_overflowing_root() {
+    use crate::storage::substrate::StorageAllocationOverflow;
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let mut config = runtime_with_test_schema().config();
+    config.storage.retention.reclaim_batch_size = 0;
+    let runtime = crate::runtime::RelationalRuntime::new(config).unwrap();
+
+    // Two commits retire the initial root and commit 1's root while automatic reclamation is 0.
+    create_entity(execution, &runtime, "reclaim-overflow-root-1");
+    create_entity(execution, &runtime, "reclaim-overflow-root-2");
+    assert_eq!(runtime.retired_branch_root_count(), 2);
+
+    let owner = runtime.history.retention_binding().owner.upgrade().unwrap();
+    let mut queued_bytes: Vec<u64> = owner
+        .read_retired_roots()
+        .values()
+        .map(|entry| entry.root.reclaimable_unique_authoritative_bytes().unwrap())
+        .collect();
+    assert_eq!(queued_bytes.len(), 2);
+    let min_bytes = *queued_bytes.iter().min().unwrap();
+    let max_bytes = *queued_bytes.iter().max().unwrap();
+    assert!(min_bytes > 0);
+    // Prime maintenance counters so the first retired root fits (regardless of
+    // queue pop order) and the second retired root overflows by >= 1 byte.
+    let prime_bytes = u64::MAX - max_bytes;
+    {
+        let mut counters = super::owner::lock_maintenance_counters(&owner);
+        counters.reclamation_unique_authoritative_bytes = prime_bytes;
+    }
+
+    // Strict pass: reclaims root 1, commits root 1 into maintenance counters,
+    // refuses root 2 with StorageAllocationOverflow, and restores root 2 to the queue.
+    let err = runtime.history.try_reclaim_retired_branch_roots(4);
+    assert_eq!(err, Err(StorageAllocationOverflow));
+    assert_eq!(
+        runtime.retired_branch_root_count(),
+        1,
+        "root 1 was reclaimed while overflowing root 2 remained retained"
+    );
+    let after_first_pass = runtime.retention_cost_counters();
+    assert_eq!(after_first_pass.reclamation_roots_examined, 1);
+    assert_eq!(after_first_pass.reclamation_roots_reclaimed, 1);
+    assert!(
+        after_first_pass.reclamation_unique_authoritative_bytes > prime_bytes,
+        "root 1's reclaimed bytes were committed before root 2 overflowed"
+    );
+
+    // Legacy pass on the still-overflowing root 2 preserves accurate retained count,
+    // reports overflow through the checked accessor, and keeps root 2 queued.
+    let legacy = runtime.history.reclaim_retired_branch_roots(4);
+    assert_eq!(legacy.roots_examined(), 0);
+    assert_eq!(legacy.roots_reclaimed(), 0);
+    assert_eq!(legacy.roots_still_retained(), 1);
+    assert_eq!(
+        legacy.checked_unique_authoritative_bytes_reclaimed(),
+        Err(StorageAllocationOverflow)
+    );
+    assert_eq!(runtime.retired_branch_root_count(), 1);
+
+    // Clearing the counter ceiling proves root 2 was NOT stranded: the next pass
+    // pops it from retired_root_order and reclaims it cleanly.
+    {
+        let mut counters = super::owner::lock_maintenance_counters(&owner);
+        counters.reclamation_unique_authoritative_bytes = 0;
+    }
+    let final_pass = runtime.history.try_reclaim_retired_branch_roots(4).unwrap();
+    assert_eq!(final_pass.roots_examined(), 1);
+    assert_eq!(final_pass.roots_reclaimed(), 1);
+    assert_eq!(final_pass.roots_still_retained(), 0);
+    assert!(final_pass.unique_authoritative_bytes_reclaimed() >= min_bytes);
+    assert_eq!(runtime.retired_branch_root_count(), 0);
+    queued_bytes.clear();
+}
+
+#[test]
+fn cumulative_fork_and_publication_byte_overflow_refuses_inspection_without_saturating() {
+    use crate::facade::inspection::{
+        RelationalBranchSharingInspectionDenial as Denial, RelationalMvccCostScope,
+    };
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let runtime = runtime_with_test_schema();
+    create_entity(execution, &runtime, "fork-byte-overflow-seed");
+    let main_id = runtime.main_branch_identity();
+    let fork_branch = create_branch_from_main(&runtime, "fork-byte-overflow-target");
+    let fork_id = runtime.branch_identity(&fork_branch).unwrap();
+    let scope = RelationalMvccCostScope::capture(&runtime, vec![main_id.clone(), fork_id.clone()]);
+
+    // Each branch's individual fork byte counter fits u64, but their sum overflows.
+    runtime
+        .history
+        .branch_cell(main_id.branch_id())
+        .unwrap()
+        .publication_cell()
+        .record_sharing_cost(|costs| {
+            costs.fork_materialized_authoritative_bytes = u64::MAX - 32;
+        });
+    runtime
+        .history
+        .branch_cell(&fork_branch)
+        .unwrap()
+        .publication_cell()
+        .record_sharing_cost(|costs| {
+            costs.fork_materialized_authoritative_bytes = 64;
+        });
+    assert_eq!(
+        runtime.observe_branch_sharing(execution, &[main_id.clone(), fork_id.clone()]),
+        Err(Denial::AuthoritativeByteBoundOverflow)
+    );
+    assert_eq!(
+        runtime.observe_mvcc_counters(&scope),
+        Err(Denial::AuthoritativeByteBoundOverflow)
+    );
+
+    // Single-branch cumulative overflow via checked recording also refuses instead of saturating.
+    runtime
+        .history
+        .branch_cell(&fork_branch)
+        .unwrap()
+        .publication_cell()
+        .record_sharing_cost_checked(|costs| {
+            costs.fork_materialized_authoritative_bytes = costs
+                .fork_materialized_authoritative_bytes
+                .checked_add(u64::MAX)?;
+            Some(())
+        });
+    assert_eq!(
+        runtime.observe_branch_sharing(execution, &[fork_id]),
+        Err(Denial::AuthoritativeByteBoundOverflow)
+    );
+}

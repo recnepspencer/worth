@@ -161,6 +161,99 @@ fn visitor_union_and_delta_match_allocator_observed_live_bytes_across_nested_str
     expected_new.retain(|id, _| !before_set.allocations.contains_key(id));
 
     let mut delta = UnionVisitor::default();
-    after.visit_new_allocations(Some(&before), &mut delta);
+    after.visit_new_allocations(Some(&before), false, &mut delta);
     assert_eq!(delta.allocations, expected_new);
+    // Distinct heap allocations (key String buffers, Arcs, value buffers) must
+    // each have their own physical identity rather than folding into one Arc row.
+    assert!(
+        combined.allocations.len() > before.aspects().len() + after.aspects().len(),
+        "each independently allocated buffer/Arc must emit its own physical row"
+    );
+}
+
+#[test]
+fn stored_text_clone_replacement_and_rational_emit_distinct_physical_ids_and_skip_shared_seal() {
+    use crate::value_shape::StoredValueText;
+    use crate::values::{CanonicalBigInt, CanonicalRational};
+
+    let text_field = FieldKey::new("note").unwrap();
+    let ratio_field = FieldKey::new("ratio").unwrap();
+    let contract = AspectContract::struct_aspect(
+        AspectKey::new("doc").unwrap(),
+        AspectIdentity(3),
+        AspectContractRevision(1),
+        StructAspectShape::new([
+            FieldDeclaration::new(
+                text_field.clone(),
+                ScalarAspectType::String,
+                FieldRequirement::Optional,
+                AbsenceLaw::Optional,
+                AspectEvolutionPolicy::AdditiveFieldsAllowed,
+            )
+            .unwrap(),
+            FieldDeclaration::new(
+                ratio_field.clone(),
+                ScalarAspectType::Rational,
+                FieldRequirement::Optional,
+                AbsenceLaw::Optional,
+                AspectEvolutionPolicy::AdditiveFieldsAllowed,
+            )
+            .unwrap(),
+        ])
+        .unwrap(),
+    );
+    let original_stored = StoredValueText::new("shared-seal-text".to_owned());
+    let cloned_stored = original_stored.clone();
+    let ratio = CanonicalRational::new(
+        CanonicalBigInt::new("12345678901234567890"),
+        CanonicalBigInt::new("98765432109876543210"),
+    )
+    .unwrap();
+    let initial = StructAspectValue::new([
+        (
+            text_field.clone(),
+            AspectValue::String(InternedString::Stored(original_stored)),
+        ),
+        (ratio_field, AspectValue::Rational(ratio)),
+    ])
+    .unwrap();
+    let TransitionOutcome::Success(validated) =
+        validate_aspect_value(&contract, ContractValidationInput::Struct(initial))
+    else {
+        panic!("valid struct")
+    };
+    let before = AuthoritativeRecordAspectState::from_validated_entries([
+        validated.into_parts().into_parts().0,
+    ])
+    .unwrap();
+    let mask = AspectMask::new([CanonicalFieldPath::single(text_field.clone())]);
+    let TransitionOutcome::Success(patch) = AuthoritativeRecordAspectPatch::field_level(
+        &contract,
+        &mask,
+        [(
+            text_field,
+            AspectValue::String(InternedString::Stored(cloned_stored)),
+        )],
+        [],
+    ) else {
+        panic!("valid patch")
+    };
+    let TransitionOutcome::Success(after) = patch.apply_to(&before) else {
+        panic!("patch applies")
+    };
+    let after = after.into_parts().into_parts().0;
+
+    let mut before_set = UnionVisitor::default();
+    before.visit_allocations(false, &mut before_set);
+    let mut after_set = UnionVisitor::default();
+    after.visit_allocations(false, &mut after_set);
+    let mut expected_new = after_set.allocations.clone();
+    expected_new.retain(|id, _| !before_set.allocations.contains_key(id));
+
+    let mut delta = UnionVisitor::default();
+    after.visit_new_allocations(Some(&before), false, &mut delta);
+    assert_eq!(
+        delta.allocations, expected_new,
+        "cloned StoredValueText replacement must skip the already-retained proof Arc"
+    );
 }

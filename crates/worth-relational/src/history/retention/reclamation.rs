@@ -35,10 +35,16 @@ pub struct RelationalBranchRootReclamationOutcome {
 }
 
 impl super::RelationalBranchRetentionOwner {
-    pub(crate) fn try_reclaim_retired_roots(
+    fn reclaim_retired_roots_checked(
         &self,
         maximum_roots: usize,
-    ) -> Result<RelationalBranchRootReclamationOutcome, StorageAllocationOverflow> {
+    ) -> Result<
+        RelationalBranchRootReclamationOutcome,
+        (
+            RelationalBranchRootReclamationOutcome,
+            StorageAllocationOverflow,
+        ),
+    > {
         let mut examined = 0_u64;
         let mut reclaimed = 0_u64;
         let mut unique_bytes = 0_u64;
@@ -47,65 +53,116 @@ impl super::RelationalBranchRetentionOwner {
             let Some((root_key, generation)) = self.inner.retired_root_order.pop() else {
                 break;
             };
-            let next_examined = examined.checked_add(1).ok_or(StorageAllocationOverflow)?;
-            let reclaimable = {
+            enum StepOutcome {
+                Reclaimed {
+                    retired: super::owner::RelationalRetiredBranchRoot,
+                    next_examined: u64,
+                    next_reclaimed: u64,
+                    next_unique_bytes: u64,
+                },
+                Retained {
+                    next_examined: u64,
+                },
+                Overflow,
+            }
+            let step = {
                 let mut roots = self.inner.write_retired_roots();
-                let removable = roots.get(&root_key).is_some_and(|retired| {
-                    retired.generation == generation
-                        && retired.retired
-                        && retired.reservations == 0
-                        && Arc::strong_count(&retired.root) == 1
-                });
+                let mut counters = super::owner::lock_maintenance_counters(&self.inner);
+                let entry = roots.get(&root_key);
+                let still_retired =
+                    entry.is_some_and(|retired| retired.generation == generation && retired.retired);
+                let removable = still_retired
+                    && entry.is_some_and(|retired| {
+                        retired.reservations == 0 && Arc::strong_count(&retired.root) == 1
+                    });
                 if removable {
                     let root_bytes = roots[&root_key]
                         .root
-                        .reclaimable_unique_authoritative_bytes()?;
-                    let next_unique_bytes = unique_bytes
-                        .checked_add(root_bytes)
-                        .ok_or(StorageAllocationOverflow)?;
-                    let next_reclaimed =
-                        reclaimed.checked_add(1).ok_or(StorageAllocationOverflow)?;
-                    let counters = super::owner::lock_maintenance_counters(&self.inner);
-                    counters
-                        .reclamation_roots_examined
-                        .checked_add(next_examined)
-                        .ok_or(StorageAllocationOverflow)?;
-                    counters
-                        .reclamation_roots_reclaimed
-                        .checked_add(next_reclaimed)
-                        .ok_or(StorageAllocationOverflow)?;
-                    counters
-                        .reclamation_unique_authoritative_bytes
-                        .checked_add(next_unique_bytes)
-                        .ok_or(StorageAllocationOverflow)?;
-                    drop(counters);
-                    roots.remove(&root_key).map(|retired| (retired, root_bytes))
+                        .reclaimable_unique_authoritative_bytes();
+                    let next = root_bytes.ok().and_then(|bytes| {
+                        Some((
+                            bytes,
+                            examined.checked_add(1)?,
+                            reclaimed.checked_add(1)?,
+                            unique_bytes.checked_add(bytes)?,
+                        ))
+                    });
+                    if let Some((bytes, next_examined, next_reclaimed, next_unique_bytes)) = next
+                        && super::cost_counters::try_record_reclamation(
+                            &mut counters,
+                            1,
+                            1,
+                            bytes,
+                        )
+                        .is_ok()
+                    {
+                        let retired = roots
+                            .remove(&root_key)
+                            .expect(/* Proof: `removable` verified `root_key` is present while holding the exclusive `roots` write lock. */ "removable retired root remains present");
+                        StepOutcome::Reclaimed {
+                            retired,
+                            next_examined,
+                            next_reclaimed,
+                            next_unique_bytes,
+                        }
+                    } else {
+                        self.inner.retired_root_order.push((root_key, generation));
+                        StepOutcome::Overflow
+                    }
+                } else if let Some(next_examined) = examined.checked_add(1)
+                    && super::cost_counters::try_record_reclamation(&mut counters, 1, 0, 0).is_ok()
+                {
+                    if still_retired {
+                        self.inner.retired_root_order.push((root_key, generation));
+                    }
+                    StepOutcome::Retained { next_examined }
                 } else {
-                    None
+                    if still_retired {
+                        self.inner.retired_root_order.push((root_key, generation));
+                    }
+                    StepOutcome::Overflow
                 }
             };
-            examined = next_examined;
-            if let Some((retired, root_bytes)) = reclaimable {
-                let root = retired.root;
-                self.inner
-                    .retired_root_locators
-                    .remove(&root, root_key, generation);
-                super::owner::release_retirement_slot(&self.inner);
-                self.inner
-                    .retired_root_count
-                    .fetch_sub(1, std::sync::atomic::Ordering::Release);
-                unique_bytes = unique_bytes
-                    .checked_add(root_bytes)
-                    .ok_or(StorageAllocationOverflow)?;
-                reclaimed = reclaimed.checked_add(1).ok_or(StorageAllocationOverflow)?;
-                drop(root);
-            } else if self
-                .inner
-                .read_retired_roots()
-                .get(&root_key)
-                .is_some_and(|entry| entry.generation == generation && entry.retired)
-            {
-                self.inner.retired_root_order.push((root_key, generation));
+            match step {
+                StepOutcome::Reclaimed {
+                    retired,
+                    next_examined,
+                    next_reclaimed,
+                    next_unique_bytes,
+                } => {
+                    let root = retired.root;
+                    self.inner
+                        .retired_root_locators
+                        .remove(&root, root_key, generation);
+                    super::owner::release_retirement_slot(&self.inner);
+                    self.inner
+                        .retired_root_count
+                        .fetch_sub(1, std::sync::atomic::Ordering::Release);
+                    examined = next_examined;
+                    reclaimed = next_reclaimed;
+                    unique_bytes = next_unique_bytes;
+                    drop(root);
+                }
+                StepOutcome::Retained { next_examined } => {
+                    examined = next_examined;
+                }
+                StepOutcome::Overflow => {
+                    let roots_still_retained = self
+                        .inner
+                        .retired_root_count
+                        .load(std::sync::atomic::Ordering::Acquire)
+                        as u64;
+                    return Err((
+                        RelationalBranchRootReclamationOutcome {
+                            roots_examined: examined,
+                            roots_reclaimed: reclaimed,
+                            roots_still_retained,
+                            unique_authoritative_bytes_reclaimed: unique_bytes,
+                            accounting_overflow: true,
+                        },
+                        StorageAllocationOverflow,
+                    ));
+                }
             }
         }
 
@@ -113,12 +170,6 @@ impl super::RelationalBranchRetentionOwner {
             .inner
             .retired_root_count
             .load(std::sync::atomic::Ordering::Acquire) as u64;
-        super::cost_counters::try_record_reclamation(
-            &mut super::owner::lock_maintenance_counters(&self.inner),
-            examined,
-            reclaimed,
-            unique_bytes,
-        )?;
         Ok(RelationalBranchRootReclamationOutcome::new(
             examined,
             reclaimed,
@@ -127,21 +178,21 @@ impl super::RelationalBranchRetentionOwner {
         ))
     }
 
+    pub(crate) fn try_reclaim_retired_roots(
+        &self,
+        maximum_roots: usize,
+    ) -> Result<RelationalBranchRootReclamationOutcome, StorageAllocationOverflow> {
+        self.reclaim_retired_roots_checked(maximum_roots)
+            .map_err(|(_, overflow)| overflow)
+    }
+
     pub(crate) fn reclaim_retired_roots(
         &self,
         maximum_roots: usize,
     ) -> RelationalBranchRootReclamationOutcome {
-        match self.try_reclaim_retired_roots(maximum_roots) {
+        match self.reclaim_retired_roots_checked(maximum_roots) {
             Ok(outcome) => outcome,
-            Err(StorageAllocationOverflow) => RelationalBranchRootReclamationOutcome {
-                roots_still_retained: self
-                    .inner
-                    .retired_root_count
-                    .load(std::sync::atomic::Ordering::Acquire)
-                    as u64,
-                accounting_overflow: true,
-                ..RelationalBranchRootReclamationOutcome::default()
-            },
+            Err((partial, StorageAllocationOverflow)) => partial,
         }
     }
 }

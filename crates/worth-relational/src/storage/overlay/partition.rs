@@ -80,14 +80,7 @@ impl PartitionState {
         crate::storage::substrate::StorageAllocationOverflow,
     > {
         use crate::storage::substrate::StorageAllocationOverflow;
-        let adjacency_bytes = self
-            .adjacency
-            .iter()
-            .chain(self.reverse_adjacency.iter())
-            .try_fold(0_u64, |total, (_, set)| {
-                total.checked_add(set.authoritative_allocation_bytes())
-            })
-            .ok_or(StorageAllocationOverflow)?;
+        let authoritative_bytes = self.unique_authoritative_allocation_bytes()?;
         let adjacency_cache_bytes = self
             .adjacency
             .iter()
@@ -96,18 +89,11 @@ impl PartitionState {
                 total.checked_add(set.optional_cache_allocation_bytes())
             })
             .ok_or(StorageAllocationOverflow)?;
-        let arenas = self
-            .entity_arena
-            .allocation_inventory()?
-            .checked_add(self.relation_arena.allocation_inventory()?)?;
-        let authoritative_bytes = [
-            self.adjacency.allocation_bytes(),
-            self.reverse_adjacency.allocation_bytes(),
-            adjacency_bytes,
-        ]
-        .into_iter()
-        .try_fold(arenas.authoritative_bytes, u64::checked_add)
-        .ok_or(StorageAllocationOverflow)?;
+        let mut entity_inv = self.entity_arena.allocation_inventory()?;
+        let mut relation_inv = self.relation_arena.allocation_inventory()?;
+        entity_inv.authoritative_bytes = 0;
+        relation_inv.authoritative_bytes = 0;
+        let arenas = entity_inv.checked_add(relation_inv)?;
         Ok(RelationalPartitionAllocationInventory {
             authoritative_bytes,
             diagnostic_bytes: arenas.diagnostic_bytes,

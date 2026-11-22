@@ -1,6 +1,7 @@
 mod allocation;
 #[cfg(test)]
 pub(crate) use allocation::RecordArenaAllocationInventory;
+pub(crate) use extra_allocations::ExtraDeltaCollector;
 mod entity_lineage;
 mod extra_allocations;
 pub(crate) use entity_lineage::ExtraLineageDenial;

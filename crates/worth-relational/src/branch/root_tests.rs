@@ -308,3 +308,85 @@ fn production_visibility(
     )
     .digest()
 }
+
+#[test]
+fn fork_target_materialization_overflow_refuses_before_installing_target() {
+    use crate::identity::data::PartitionId;
+    use crate::storage::overlay::RelationalPartitionAllocationInventory as Inv;
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+    let (runtime, source_root, _) = committed_root_and_envelope(execution);
+    let target_branch = BranchId("overflow-refused-fork".to_owned());
+
+    let mut overflowing_root = source_root.as_ref().clone();
+    let base_region = source_root.regions.values().next().unwrap();
+    let mut regions = std::collections::BTreeMap::new();
+    regions.insert(
+        PartitionId(101),
+        Arc::new(base_region.clone_with_inventory_for_test(
+            99_001,
+            PartitionId(101),
+            Inv { authoritative_bytes: u64::MAX - 8, ..Default::default() },
+        )),
+    );
+    regions.insert(
+        PartitionId(102),
+        Arc::new(base_region.clone_with_inventory_for_test(
+            99_002,
+            PartitionId(102),
+            Inv { authoritative_bytes: 16, ..Default::default() },
+        )),
+    );
+    overflowing_root.regions = super::RelationalPersistentRegionSet::initial(
+        &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
+        77_001,
+        regions,
+        &super::RelationalBranchRootIdentityIssuer::default(),
+    )
+    .unwrap();
+    let overflowing_root = Arc::new(overflowing_root);
+    assert!(!overflowing_root.shares_authoritative_regions_with(&source_root));
+    assert_eq!(
+        overflowing_root.logical_partition_payload_bytes(),
+        Err(crate::storage::substrate::StorageAllocationOverflow)
+    );
+
+    let fork_port = runtime.owner_component_services().fork_port();
+    let reservation = runtime
+        .history
+        .fork_binding()
+        .reserve_target(target_branch.clone())
+        .expect("target reservation succeeds");
+    let source_cell = runtime.history.branch_cell(&BranchId("main".to_owned())).unwrap();
+    let mut target_cell = source_cell.publication_cell().enter_state().snapshot_cell();
+    target_cell.install_root(overflowing_root);
+    let prepared = crate::branch::fork::PreparedForkTarget {
+        target_cell,
+        source_root,
+        target_observation: source_cell.observation(),
+        fork_provenance: source_cell.observation(),
+        target_truth_version: source_cell.truth_version(),
+        shared_commit_id: None,
+        source_head_version: None,
+        reservation,
+        indexes: None,
+        managed_source: None,
+    };
+    let head_installs_before = runtime.retention_cost_counters().head_installs;
+    let denial = fork_port
+        .prepare_installation(prepared, true)
+        .err()
+        .expect("overflowing materialized fork must refuse before installation");
+    assert_eq!(denial, crate::branch::RelationalForkDenial::AllocationAccountingOverflow);
+    assert!(runtime.history.branch_cell(&target_branch).is_none());
+    assert_eq!(
+        runtime.retention_cost_counters().head_installs,
+        head_installs_before,
+        "refused fork must not install a head retention obligation"
+    );
+    runtime
+        .history_authority()
+        .fork_branch_from(execution, target_branch.clone(), &BranchId("main".to_owned()))
+        .expect("dropped reservation allows a clean subsequent fork");
+    assert!(runtime.history.branch_cell(&target_branch).is_some());
+}

@@ -92,10 +92,11 @@ pub(crate) fn visit_foundational_value_backing(
 pub(crate) fn visit_new_foundational_value_backing(
     state: &AuthoritativeRecordAspectState,
     previous: Option<&AuthoritativeRecordAspectState>,
+    ancestor_unique: bool,
     visitor: &mut dyn StorageAllocationVisitor,
 ) {
     let mut adapter = FoundationalValueBackingAdapter { visitor };
-    state.visit_new_allocations(previous, &mut adapter);
+    state.visit_new_allocations(previous, ancestor_unique, &mut adapter);
 }
 
 pub(crate) fn visit_inline_value<T>(

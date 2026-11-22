@@ -1,10 +1,12 @@
 //! Physical extra ownership across current and historical edges, never authority.
+//! Delta membership proves exact set difference `A(self) \ A(previous)` across
+//! changed slots, unchanged slots, historical metadata, and sibling arenas.
 use super::{RecordArena, RecordKind};
 use crate::storage::substrate::{
     HistoricalMetadata, SharedColumn, StorageAllocation, StorageAllocationObservation,
     StorageAllocationVisitor,
 };
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Scratch of the existing descriptive allocation walk; not a preallocation quote.
 pub(super) struct AllocationUnion<'a> {
@@ -25,13 +27,66 @@ impl StorageAllocationVisitor for AllocationUnion<'_> {
     }
 }
 
-struct SeenVisitor<'a> {
-    seen: &'a mut BTreeSet<u64>,
-    visitor: &'a mut dyn StorageAllocationVisitor,
+/// Exact set-difference collector for Extra carriers and nested persistent
+/// aspect allocations across one or both arenas of a partition.
+#[derive(Default)]
+pub(crate) struct ExtraDeltaCollector {
+    candidates: BTreeMap<u64, StorageAllocationObservation>,
+    unresolved: BTreeSet<u64>,
+    in_previous: BTreeSet<u64>,
 }
-impl StorageAllocationVisitor for SeenVisitor<'_> {
+
+impl ExtraDeltaCollector {
+    pub(crate) fn has_unresolved(&self) -> bool {
+        !self.unresolved.is_empty()
+    }
+
+    pub(crate) fn emit(self, visitor: &mut dyn StorageAllocationVisitor) {
+        for (id, observation) in self.candidates {
+            if !self.in_previous.contains(&id) {
+                visitor.visit(observation);
+            }
+        }
+    }
+
+    fn record(&mut self, allocation: StorageAllocationObservation) -> bool {
+        let is_new = match self.candidates.entry(allocation.id) {
+            std::collections::btree_map::Entry::Vacant(entry) => {
+                entry.insert(allocation);
+                true
+            }
+            std::collections::btree_map::Entry::Occupied(_) => false,
+        };
+        if is_new && !allocation.unique {
+            self.unresolved.insert(allocation.id);
+        }
+        is_new
+    }
+}
+
+struct CandidateVisitor<'a>(&'a mut ExtraDeltaCollector);
+impl StorageAllocationVisitor for CandidateVisitor<'_> {
     fn visit(&mut self, allocation: StorageAllocationObservation) -> bool {
-        self.seen.insert(allocation.id) && self.visitor.visit(allocation)
+        self.0.record(allocation)
+    }
+}
+
+struct MembershipResolver<'a> {
+    seen: &'a mut BTreeSet<u64>,
+    collector: &'a mut ExtraDeltaCollector,
+}
+impl StorageAllocationVisitor for MembershipResolver<'_> {
+    fn visit(&mut self, allocation: StorageAllocationObservation) -> bool {
+        if self.collector.unresolved.is_empty() {
+            return false;
+        }
+        if !self.seen.insert(allocation.id) {
+            return false;
+        }
+        if self.collector.unresolved.remove(&allocation.id) {
+            self.collector.in_previous.insert(allocation.id);
+        }
+        !self.collector.unresolved.is_empty()
     }
 }
 
@@ -74,25 +129,19 @@ fn prior_slot_extra<K: RecordKind>(
     })
 }
 
-fn visit_extra<K: RecordKind>(
-    extra: &StorageAllocation<K::Extra>,
-    previous_extra: Option<&K::Extra>,
-    seen: &mut BTreeSet<u64>,
-    visitor: &mut dyn StorageAllocationVisitor,
-) {
-    let mut union = SeenVisitor { seen, visitor };
-    if union.visit(extra.observation(false)) {
-        K::visit_new_extra_allocations(extra, previous_extra, &mut union);
-    }
+struct ChangedCarrier<K: RecordKind> {
+    extra: StorageAllocation<K::Extra>,
+    prior_hint: Option<StorageAllocation<K::Extra>>,
+    changed_refs: usize,
 }
 
 impl<K: RecordKind> RecordArena<K> {
-    pub(super) fn visit_new_extra_allocations(
+    pub(crate) fn collect_changed_extra_allocations(
         &self,
         previous: &Self,
-        visitor: &mut dyn StorageAllocationVisitor,
+        collector: &mut ExtraDeltaCollector,
     ) {
-        let mut seen = BTreeSet::new();
+        let mut carriers: BTreeMap<u64, ChangedCarrier<K>> = BTreeMap::new();
         self.extra
             .visit_changed_values(&previous.extra, &mut |physical, current, _| {
                 if current.is_none() {
@@ -115,8 +164,13 @@ impl<K: RecordKind> RecordArena<K> {
                     .filter(|meta| K::metadata_extra(meta).id() == extra.id())
                     .map(HistoricalMetadata::effective_at);
                 if !previously_retained(previous, physical, &extra, version) {
-                    let prior_extra = prior_slot_extra(previous, physical);
-                    visit_extra::<K>(&extra, prior_extra.as_deref(), &mut seen, visitor);
+                    let id = extra.id();
+                    let entry = carriers.entry(id).or_insert_with(|| ChangedCarrier {
+                        prior_hint: prior_slot_extra(previous, physical),
+                        extra,
+                        changed_refs: 0,
+                    });
+                    entry.changed_refs += 1;
                 }
             });
         self.metadata_history.visit_changed_values(
@@ -126,17 +180,105 @@ impl<K: RecordKind> RecordArena<K> {
                     return;
                 };
                 let empty = SharedColumn::default();
-                let prior_extra = prior_slot_extra(previous, physical);
                 history.visit_changed_values(prior.unwrap_or(&empty), &mut |_, meta, _| {
                     let Some(meta) = meta else {
                         return;
                     };
                     let extra = K::metadata_extra(meta);
                     if !previously_retained(previous, physical, extra, Some(meta.effective_at())) {
-                        visit_extra::<K>(extra, prior_extra.as_deref(), &mut seen, visitor);
+                        let id = extra.id();
+                        let entry = carriers.entry(id).or_insert_with(|| ChangedCarrier {
+                            prior_hint: prior_slot_extra(previous, physical),
+                            extra: extra.clone(),
+                            changed_refs: 0,
+                        });
+                        entry.changed_refs += 1;
                     }
                 });
             },
         );
+        for carrier in carriers.into_values() {
+            // If every strong handle to this Extra carrier lives in changed slots
+            // of `self` (plus this local handle), neither `previous` nor any
+            // external holder can own it.
+            let all_in_self = carrier.extra.strong_count() == carrier.changed_refs + 1;
+            let mut candidate_visitor = CandidateVisitor(collector);
+            if candidate_visitor.visit(carrier.extra.observation(all_in_self)) {
+                K::visit_new_extra_allocations(
+                    &carrier.extra,
+                    carrier.prior_hint.as_deref(),
+                    all_in_self,
+                    &mut candidate_visitor,
+                );
+            }
+        }
+    }
+
+    pub(crate) fn resolve_extra_allocations(
+        &self,
+        seen: &mut BTreeSet<u64>,
+        collector: &mut ExtraDeltaCollector,
+    ) {
+        if !collector.has_unresolved() {
+            return;
+        }
+        let mut resolver = MembershipResolver { seen, collector };
+        self.extra.visit_allocations(
+            false,
+            &mut IgnoreColumns,
+            &mut |extra, allocation, _| {
+                if !resolver.collector.has_unresolved() {
+                    return;
+                }
+                if allocation.visit(&mut resolver) {
+                    K::visit_extra_allocations(extra, false, &mut resolver);
+                }
+            },
+        );
+        if !resolver.collector.has_unresolved() {
+            return;
+        }
+        self.metadata_history.visit_allocations(
+            false,
+            &mut IgnoreColumns,
+            &mut |history, _, _| {
+                if !resolver.collector.has_unresolved() {
+                    return;
+                }
+                history.visit_allocations(false, &mut IgnoreColumns, &mut |meta, _, _| {
+                    if !resolver.collector.has_unresolved() {
+                        return;
+                    }
+                    let extra = K::metadata_extra(meta);
+                    if resolver.visit(extra.observation(false)) {
+                        K::visit_extra_allocations(extra, false, &mut resolver);
+                    }
+                });
+            },
+        );
+    }
+
+    #[cfg(test)]
+    pub(super) fn visit_new_extra_allocations(
+        &self,
+        previous: &Self,
+        visitor: &mut dyn StorageAllocationVisitor,
+    ) {
+        let mut collector = ExtraDeltaCollector::default();
+        self.collect_changed_extra_allocations(previous, &mut collector);
+        if collector.has_unresolved() {
+            let mut seen = BTreeSet::new();
+            previous.resolve_extra_allocations(&mut seen, &mut collector);
+        }
+        collector.emit(visitor);
+    }
+}
+
+/// Descends through `SharedColumn` pages without recording page IDs so
+/// `resolve_extra_allocations` visits only `Extra` carriers and nested values.
+struct IgnoreColumns;
+impl StorageAllocationVisitor for IgnoreColumns {
+    fn visit(&mut self, _: StorageAllocationObservation) -> bool {
+        true
     }
 }

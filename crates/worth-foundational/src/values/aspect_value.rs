@@ -215,30 +215,41 @@ impl AspectValue {
         }
     }
 
-    /// Exclusively owned heap capacity directly attached to this value,
-    /// excluding separately shared `Arc` children such as `StoredValueText`'s seal.
-    pub(crate) fn direct_owned_allocation_capacity_bytes(&self) -> usize {
-        match self {
-            Self::Decimal(value) => value.0.capacity(),
-            Self::BigInt(value) => value.0.capacity(),
-            Self::Rational(value) => value
-                .numerator
-                .0
-                .capacity()
-                .saturating_add(value.denominator.0.capacity()),
-            Self::String(value) => value.direct_owned_allocation_capacity_bytes(),
-            Self::InlineBytes(value) => value.owned_allocation_capacity_bytes(),
-            _ => 0,
-        }
-    }
-
-    pub(crate) fn visit_shared_allocations(
+    pub(crate) fn visit_allocations(
         &self,
         ancestor_unique: bool,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
-        if let Self::String(value) = self {
-            value.visit_shared_allocations(ancestor_unique, visitor);
+        use crate::aspects::allocation_visitor::{visit_bytes_buffer, visit_string_buffer};
+        match self {
+            Self::Decimal(value) => visit_string_buffer(&value.0, ancestor_unique, visitor),
+            Self::BigInt(value) => visit_string_buffer(&value.0, ancestor_unique, visitor),
+            Self::Rational(value) => {
+                visit_string_buffer(&value.numerator.0, ancestor_unique, visitor);
+                visit_string_buffer(&value.denominator.0, ancestor_unique, visitor);
+            }
+            Self::String(value) => value.visit_allocations(ancestor_unique, visitor),
+            Self::InlineBytes(value) => visit_bytes_buffer(
+                value.as_bytes(),
+                value.owned_allocation_capacity_bytes(),
+                ancestor_unique,
+                visitor,
+            ),
+            _ => {}
+        }
+    }
+
+    pub(crate) fn visit_new_allocations(
+        &self,
+        previous: Option<&Self>,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        match (self, previous) {
+            (Self::String(current), Some(Self::String(prior))) => {
+                current.visit_new_allocations(Some(prior), ancestor_unique, visitor);
+            }
+            _ => self.visit_allocations(ancestor_unique, visitor),
         }
     }
 }

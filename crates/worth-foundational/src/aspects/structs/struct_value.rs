@@ -177,10 +177,11 @@ impl StructAspectValue {
     pub(crate) fn visit_new_allocations(
         &self,
         previous: &Self,
+        ancestor_unique: bool,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
         self.fields
-            .visit_new_allocations(&previous.fields, visitor);
+            .visit_new_allocations(&previous.fields, ancestor_unique, visitor);
     }
     /// Cost: changed fields and persistent tree paths. Untouched values retain identity.
     pub(crate) fn patched<'a>(

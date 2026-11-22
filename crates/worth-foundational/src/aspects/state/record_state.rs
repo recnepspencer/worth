@@ -59,10 +59,14 @@ impl AuthoritativeRecordAspectState {
     pub fn visit_new_allocations(
         &self,
         previous: Option<&Self>,
+        ancestor_unique: bool,
         visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
     ) {
-        self.aspects
-            .visit_new_allocations(previous.map(Self::aspects), visitor);
+        self.aspects.visit_new_allocations(
+            previous.map(Self::aspects),
+            ancestor_unique,
+            visitor,
+        );
     }
 }
 

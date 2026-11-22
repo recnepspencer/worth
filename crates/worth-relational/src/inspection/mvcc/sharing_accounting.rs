@@ -83,8 +83,8 @@ impl RelationalAuthoritativeAllocationAccounting {
             .collect()
     }
 
-    /// Checked total over every distinct allocation. Declared per-carrier
-    /// bounds may exceed the physical bytes, so overflow is a typed refusal.
+    /// Checked total over every distinct authoritative allocation row; any
+    /// unrepresentable total is refused rather than saturated.
     pub(in crate::inspection::mvcc) fn unique_bytes(
         &self,
     ) -> Result<u64, crate::inspection::mvcc::sharing::RelationalBranchSharingInspectionDenial>

@@ -95,13 +95,14 @@ impl CanonicalAspectStateMap {
     pub fn visit_new_allocations(
         &self,
         previous: Option<&Self>,
+        ancestor_unique: bool,
         visitor: &mut dyn FoundationalAllocationVisitor,
     ) {
         match previous {
             Some(previous) => self
                 .entries
-                .visit_new_allocations(&previous.entries, visitor),
-            None => self.entries.visit_allocations(false, visitor),
+                .visit_new_allocations(&previous.entries, ancestor_unique, visitor),
+            None => self.entries.visit_allocations(ancestor_unique, visitor),
         }
     }
 }

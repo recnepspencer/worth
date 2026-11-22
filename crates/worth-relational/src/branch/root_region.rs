@@ -100,6 +100,31 @@ impl RelationalRootRegion {
         Ok(std::sync::Arc::new(region))
     }
 
+    #[cfg(test)]
+    pub(super) fn clone_with_inventory_for_test(
+        &self,
+        id: u64,
+        partition_id: PartitionId,
+        inventory: crate::storage::overlay::RelationalPartitionAllocationInventory,
+    ) -> Self {
+        Self {
+            creation_root_id: self.creation_root_id,
+            id,
+            partition_id,
+            partition: self.partition.clone(),
+            allocation_inventory: Some(inventory),
+            content_digest: self.content_digest,
+            kind_commitment: self.kind_commitment.clone(),
+            directory: std::sync::Arc::clone(&self.directory),
+            live_counts: self.live_counts,
+            entity_slots: self.entity_slots,
+            relation_slots: self.relation_slots,
+            content_values_hashed: self.content_values_hashed,
+            materialization_unavailable_records: self.materialization_unavailable_records,
+            _memory: None,
+        }
+    }
+
     pub(super) fn allocation_inventory(
         &self,
     ) -> Result<

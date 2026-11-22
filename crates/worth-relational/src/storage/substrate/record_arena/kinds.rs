@@ -47,6 +47,7 @@ pub(crate) trait RecordKind: Clone + Debug + 'static {
     fn visit_new_extra_allocations(
         extra: &Self::Extra,
         previous: Option<&Self::Extra>,
+        ancestor_unique: bool,
         visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
     );
 }
@@ -137,12 +138,14 @@ impl RecordKind for EntityRecordKind {
     fn visit_new_extra_allocations(
         extra: &Self::Extra,
         previous: Option<&Self::Extra>,
+        ancestor_unique: bool,
         visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
     ) {
         if let Some(state) = extra.authoritative_aspect_state() {
             crate::storage::substrate::visit_new_foundational_value_backing(
                 state,
                 previous.and_then(EntityExtra::authoritative_aspect_state),
+                ancestor_unique,
                 visitor,
             );
         }
@@ -245,12 +248,14 @@ impl RecordKind for RelationRecordKind {
     fn visit_new_extra_allocations(
         extra: &Self::Extra,
         previous: Option<&Self::Extra>,
+        ancestor_unique: bool,
         visitor: &mut dyn crate::storage::substrate::StorageAllocationVisitor,
     ) {
         if let Some(state) = extra.authoritative_aspect_state() {
             crate::storage::substrate::visit_new_foundational_value_backing(
                 state,
                 previous.and_then(RelationExtra::authoritative_aspect_state),
+                ancestor_unique,
                 visitor,
             );
         }

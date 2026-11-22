@@ -47,3 +47,40 @@ pub(crate) fn arc_allocation_bytes<T>() -> Option<usize> {
 pub(crate) fn arc_id<T>(arc: &Arc<T>) -> u64 {
     Arc::as_ptr(arc) as usize as u64
 }
+
+pub(crate) fn ptr_id<T: ?Sized>(ptr: *const T) -> u64 {
+    ptr as *const () as usize as u64
+}
+
+pub(crate) fn visit_string_buffer(
+    text: &String,
+    unique: bool,
+    visitor: &mut dyn FoundationalAllocationVisitor,
+) {
+    if text.capacity() == 0 {
+        return;
+    }
+    visitor.visit(FoundationalAllocationObservation {
+        id: ptr_id(text.as_ptr()),
+        bytes: text.capacity() as u64,
+        unique,
+        kind: FoundationalAllocationKind::ValueBacking,
+    });
+}
+
+pub(crate) fn visit_bytes_buffer(
+    bytes: &[u8],
+    capacity: usize,
+    unique: bool,
+    visitor: &mut dyn FoundationalAllocationVisitor,
+) {
+    if capacity == 0 {
+        return;
+    }
+    visitor.visit(FoundationalAllocationObservation {
+        id: ptr_id(bytes.as_ptr()),
+        bytes: capacity as u64,
+        unique,
+        kind: FoundationalAllocationKind::ValueBacking,
+    });
+}

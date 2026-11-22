@@ -102,8 +102,24 @@ impl RelationalBranchPublicationCell {
         self.sharing_costs.record(update);
     }
 
+    pub(crate) fn record_sharing_cost_checked(
+        &self,
+        update: impl FnOnce(&mut crate::runtime::RelationalBranchSharingCostCounters) -> Option<()>,
+    ) {
+        self.sharing_costs.record_checked_bytes(update);
+    }
+
     pub(crate) fn sharing_costs(&self) -> crate::runtime::RelationalBranchSharingCostCounters {
         self.sharing_costs.snapshot()
+    }
+
+    pub(crate) fn try_sharing_costs(
+        &self,
+    ) -> Result<
+        crate::runtime::RelationalBranchSharingCostCounters,
+        crate::storage::substrate::StorageAllocationOverflow,
+    > {
+        self.sharing_costs.try_snapshot()
     }
 }
 
