@@ -58,8 +58,15 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) enum Wor
         BridgeConditionalDecisionEvidence,
         super::super::WorthQueryConditionalReentryFailure,
     ),
-    OperationCommitted(BridgeConditionalDecisionEvidence),
-    OperationAlreadyCommitted(BridgeConditionalDecisionEvidence),
+    OperationCommitted(
+        BridgeConditionalDecisionEvidence,
+        Option<worth_foundational::facade::DurableCompositeCommitIdentity>,
+    ),
+    OperationAlreadyCommitted(
+        BridgeConditionalDecisionEvidence,
+        Option<worth_foundational::facade::DurableCompositeCommitIdentity>,
+    ),
+    OperationRetiredNoEffect(BridgeConditionalDecisionEvidence),
     Failed(worth_runtime_bridge::facade::BridgeConditionalDenial),
     InterruptedDuringReentry,
 }

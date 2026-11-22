@@ -113,6 +113,7 @@ pub struct TemporalContributionConfiguration {
     pub contacts: ContactCounters,
     pub install_route: bool,
     pub definition_only: bool,
+    pub multi_intent_targets: bool,
 }
 
 pub struct InstalledTemporalConditional {
@@ -171,9 +172,6 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
         let operation = schema
             .installed_operation(ExecuteTemporal::reference())
             .unwrap();
-        let query = schema
-            .installed_query_binding::<TemporalIntentCurrentReadBinding>()
-            .unwrap();
         let node = installation
             .installed_packages()
             .bind_conditional_application_operation(operation, &contract::conditional_binding())
@@ -198,14 +196,6 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
                 invariant,
             }));
         }
-        let conditional = clocked
-            .bind_temporal_intent_projection(
-                query.into_query(),
-                ApplicationQueryParameterSet::new(),
-                IntentProjector,
-                domain::WorthQueryTemporalIntentBounds::new(8, 13, 8).unwrap(),
-            )
-            .unwrap();
         let invariant = Arc::new(installation.retain_invariant_projection_authority());
         let (invoker, preconditions_panic) = Invoker::controlled(configuration.contacts.clone());
         let execution = primary_graph::WorthQueryTemporalOperationExecution::with_authorization(
@@ -227,7 +217,33 @@ impl WorthQueryApplicationConditionalBinding<TemporalHostSchema> for TemporalCon
             "intent-1".to_string(),
         )
         .unwrap();
-        let clock = installation.bind_temporal_operation(conditional, execution, reconstruction)?;
+        let clock = if configuration.multi_intent_targets {
+            let query = schema
+                .installed_query_binding::<TemporalIntentTargetsReadBinding>()
+                .unwrap();
+            let conditional = clocked
+                .bind_temporal_intent_projection(
+                    query.into_query(),
+                    ApplicationQueryParameterSet::new(),
+                    IntentProjector,
+                    domain::WorthQueryTemporalIntentBounds::new(8, 13, 8).unwrap(),
+                )
+                .unwrap();
+            installation.bind_temporal_operation(conditional, execution, reconstruction)?
+        } else {
+            let query = schema
+                .installed_query_binding::<TemporalIntentCurrentReadBinding>()
+                .unwrap();
+            let conditional = clocked
+                .bind_temporal_intent_projection(
+                    query.into_query(),
+                    ApplicationQueryParameterSet::new(),
+                    IntentProjector,
+                    domain::WorthQueryTemporalIntentBounds::new(8, 13, 8).unwrap(),
+                )
+                .unwrap();
+            installation.bind_temporal_operation(conditional, execution, reconstruction)?
+        };
         Ok(Some(InstalledTemporalConditional {
             clock,
             preconditions_panic: Some(preconditions_panic),
@@ -277,6 +293,7 @@ pub fn zero_route_installation_is_denied() {
             contacts,
             install_route: false,
             definition_only: false,
+            multi_intent_targets: false,
         },),
         ApplicationBuildIdentity::parse("11111111-1111-1111-1111-111111111111").unwrap(),
         WorthQueryApplicationLimits::new(

@@ -24,7 +24,8 @@ through `managed_run_obligations()`. Abandoned work remains Failed after reopen.
 Release the original live resources before graceful close. A refused release
 keeps close refused; an empty fresh arena cannot settle it. After reopen,
 `discharge_managed_run(&phase, identity)` uses fresh advancement and discharges
-only a logical obligation whose actual resource release was recorded. Failed
+only a logical obligation whose actual resource release was recorded, or whose
+`cold_release` was recorded. Failed
 mutation cleanup uses the corresponding `managed_cleanup_obligations()` and
 `discharge_managed_cleanup` doors. Neither discharge changes the original
 business result.
@@ -32,8 +33,20 @@ business result.
 Home installation currently exposes the Relational primary, without generic
 managed providers or raw workflow computations. Their yield, suspension,
 restore and artifact postures have owner DATA courts; these do not add a Home
-installation route or serialize checkpoints. A quiescent kill with no recorded
-live release retains typed pending custody for the later owner crash work.
+installation route or serialize checkpoints.
+
+When the process holding managed work dies (or its Home is dropped without
+close), its process-local resources ended with that Home incarnation. Before
+service, the reopened Home records a cold release for each such pending run,
+cleanup obligation and application-resource request. The proof is the
+incarnation fence, never an empty fresh receiver: only the fold that reads the
+ended incarnation's rows can mint the witness, and a row retained later refuses
+the cold route. The row keeps its original, recovery cause and recorded posture;
+`cold_release` reports `Abandoned` (running work, or a request with no result)
+or `ReleaseOutstanding`, never a completion. Cold-released rows do not refuse
+close and discharge through the doors above. Rows with inconsistent business
+evidence and owner-held custody, such as a mandatory owned-async request, stay
+pending.
 
 ## What This Feature Is
 

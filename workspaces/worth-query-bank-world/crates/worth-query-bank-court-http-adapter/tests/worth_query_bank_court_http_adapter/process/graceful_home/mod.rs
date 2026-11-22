@@ -2,6 +2,7 @@
 mod callback_capture;
 mod completion;
 mod fixture;
+mod kill_seams;
 mod operation;
 mod program;
 mod rejection;

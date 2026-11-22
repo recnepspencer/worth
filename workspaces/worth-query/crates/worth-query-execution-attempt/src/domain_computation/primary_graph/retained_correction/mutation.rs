@@ -31,6 +31,36 @@ impl CorrectionMaterialOwner {
         for original in released {
             self.publish(MaterialRecord::Abandon { original }, request)?;
         }
+        let released_pins = {
+            let state = self.state();
+            state
+                .catalog
+                .pins
+                .iter()
+                .filter_map(|(identity, row)| match row.owner {
+                    worth_foundational::facade::CorrectionMaterialPinOwner::Publication {
+                        original,
+                    } if !state.catalog.material.contains_key(&original)
+                        && originals.original_state(original).is_some_and(|state| {
+                            state.fate() == worth_foundational::facade::WorldOriginalFate::Released
+                        }) =>
+                    {
+                        Some((*identity, original))
+                    }
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        };
+        for (identity, original) in released_pins {
+            self.publish(
+                MaterialRecord::AbandonPublicationPin {
+                    identity,
+                    original,
+                    class: worth_foundational::facade::RetentionClass::OptionalRetainedMaterial,
+                },
+                request,
+            )?;
+        }
         Ok(())
     }
     pub fn ensure_capture(

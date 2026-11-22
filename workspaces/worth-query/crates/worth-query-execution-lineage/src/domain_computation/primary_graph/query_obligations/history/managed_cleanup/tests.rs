@@ -15,6 +15,7 @@ fn managed_cleanup_acknowledgment_survives_a_later_release_no_effect() {
             crate::domain_computation::WorthQueryManagedRunCleanupFailureKind::ProviderMemoryRetained),
         original: None,
         release: None,
+        cold_release: None,
     }), &mut generations).unwrap();
     ledger.readmit(frame).unwrap();
     let mut journal = QueryObligationJournalState::from_ledger(ledger);
@@ -30,6 +31,7 @@ fn managed_cleanup_acknowledgment_survives_a_later_release_no_effect() {
             pending_output_discharges: Default::default(),
             entries: BTreeMap::new(),
             journal: Some(journal),
+            cold_adoption_summary: QueryColdAdoptionReadmissionSummary::default(),
         })),
         // This value test fabricates no publication/resource authority.
         medium: Default::default(),
@@ -70,6 +72,7 @@ fn unacknowledged_retention_no_effect_refuses_acknowledgment() {
             journal: Some(QueryObligationJournalState::from_ledger(
                 QueryObligationLedger::empty(home),
             )),
+            cold_adoption_summary: QueryColdAdoptionReadmissionSummary::default(),
         })),
         medium: Default::default(),
         publication_driver: Mutex::new(()),

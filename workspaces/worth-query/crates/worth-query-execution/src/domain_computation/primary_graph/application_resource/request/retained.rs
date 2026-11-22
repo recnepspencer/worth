@@ -17,6 +17,7 @@ use worth_query_execution_attempt::facade::ports::AuthenticatedPrincipalInternal
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_query_installation::facade::WorthQueryResourceAccessPurpose as Purpose;
 
+pub use crate::domain_computation::primary_graph::query_obligations::QueryColdReleaseTerminal as WorthQueryResourceColdRelease;
 pub use crate::domain_computation::primary_graph::query_obligations::QueryOwnedAsyncTerminal as WorthQueryResourceTerminal;
 /// Descriptive original identity and actual recorded release posture only.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -24,6 +25,9 @@ pub struct WorthQueryRetainedResourceState {
     pub identity: OwnedAsyncObligationIdentity,
     pub released: bool,
     pub terminal: Option<WorthQueryResourceTerminal>,
+    /// Recorded before service when the incarnation holding the request
+    /// ended; `released` and `terminal` describe only a live owner's release.
+    pub cold_release: Option<WorthQueryResourceColdRelease>,
 }
 type ResultValue<S, B> =
     <<B as ApplicationResourceBinding<S>>::ResultBinding as ApplicationScalarValueBinding>::Value;
@@ -285,6 +289,7 @@ fn state(row: &QueryResourceObligation) -> WorthQueryRetainedResourceState {
     WorthQueryRetainedResourceState {
         identity: row.identity,
         released: row.handoff.release.is_some(),
+        cold_release: row.cold_release,
         terminal: row.handoff.release.as_ref().and_then(|release| {
             release
                 .terminal

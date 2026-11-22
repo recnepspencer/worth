@@ -6,6 +6,7 @@ use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,
 };
+mod discard_derived;
 mod script;
 mod signal;
 

@@ -5,6 +5,9 @@ pub struct QueryObligationJournalState {
     generations: QueryObligationPublicationGenerations,
     pub pending: Option<QueryObligationFrame>,
     pub interpretation_transfer: Option<super::original_transfer::PendingInterpretationTransfer>,
+    /// Held from the cold fold until every row the ended incarnation retained
+    /// is cold-released; never present during service.
+    pub ended_incarnation: Option<QueryEndedIncarnation>,
 }
 impl QueryObligationJournalState {
     pub fn from_ledger(ledger: QueryObligationLedger) -> Self {
@@ -14,6 +17,16 @@ impl QueryObligationJournalState {
             generations,
             pending: None,
             interpretation_transfer: None,
+            ended_incarnation: None,
+        }
+    }
+    pub fn from_cold_fold(
+        ledger: QueryObligationLedger,
+        ended: QueryEndedIncarnation,
+    ) -> Self {
+        Self {
+            ended_incarnation: Some(ended),
+            ..Self::from_ledger(ledger)
         }
     }
     pub fn prepare_pending(

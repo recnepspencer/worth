@@ -107,8 +107,9 @@ pub(super) fn complete_clock_receipt(
         wake.continuation_identity.is_some()
             || !matches!(
                 wake.decision,
-                WorthQueryRetainedConditionalDecision::OperationCommitted(_)
-                    | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_)
+                WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
+                    | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
+                    | WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_)
             )
     });
     let decisions = retained_decision_counts(retained_wakes);

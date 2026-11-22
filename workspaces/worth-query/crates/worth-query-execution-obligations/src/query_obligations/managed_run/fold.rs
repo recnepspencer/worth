@@ -27,6 +27,7 @@ impl QueryObligationLedger {
                     || row.posture != QueryManagedRunPosture::Active
                     || row.original.is_some()
                     || row.recovery.is_some()
+                    || row.cold_release.is_some()
                     || row.original_attempt != row.attempt
                 {
                     return Err(Denial::ObligationSubjectMismatch);
@@ -34,9 +35,7 @@ impl QueryObligationLedger {
             }
             QueryManagedRunRecord::Handoff { posture, .. } => {
                 let known = self.runs.get(&identity).ok_or(Denial::UnknownObligation)?;
-                if known.posture.resources_released()
-                    || !known.posture.keeps_terminal_route(*posture)
-                {
+                if known.released() || !known.posture.keeps_terminal_route(*posture) {
                     return Err(Denial::ObligationSubjectMismatch);
                 }
             }
@@ -57,7 +56,7 @@ impl QueryObligationLedger {
             }
             QueryManagedRunRecord::Discharge { .. } => {
                 let known = self.runs.get(&identity).ok_or(Denial::UnknownObligation)?;
-                if !known.posture.resources_released() {
+                if !known.released() {
                     return Err(Denial::ManagedRunPending { identity });
                 }
             }

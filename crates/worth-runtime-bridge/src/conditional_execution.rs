@@ -6,9 +6,10 @@ pub use authored_section::{
     BridgeAuthoredInstallationBindings, BridgeAuthoredReadmissionDenial, BridgeAuthoredSection,
     BridgeAuthoredSectionDenial, BridgeDurableDefinitionCompletion,
     BridgeDurableDefinitionCompletionDenial, BridgeDurableDefinitionPublicationDenial,
-    BridgeDurableForkPublicationDenial, BridgePreparedAuthoredDefinitionPublication,
-    BridgeReadmittedAuthoredAssembly, BRIDGE_AUTHORED_SECTION_PROTOCOL,
-    BRIDGE_AUTHORED_SECTION_VERSION,
+    BridgeDurableForkPublicationDenial, BridgePlannedDefinitionLeg,
+    BridgePreparedAuthoredDefinitionPublication, BridgeReadmittedAuthoredAssembly,
+    BRIDGE_AUTHORED_SECTION_PROTOCOL, BRIDGE_AUTHORED_SECTION_VERSION,
+    BRIDGE_PLANNED_DEFINITION_LEG_VERSION,
 };
 mod authored_declaration;
 mod authored_provider;

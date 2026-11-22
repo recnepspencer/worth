@@ -1,9 +1,12 @@
 //! Signal is a separate owner dimension of the graceful public Home oracle.
 mod derived;
+mod derived_discard;
 mod derived_quiescent;
+mod mixed_kill;
 mod opening;
 mod operations;
 mod protocol;
+mod readmission_refusals;
 mod session;
 use std::sync::{Arc,atomic::{AtomicUsize,Ordering}};
 use worth_query_host::facade::WorthQueryApplicationHomeLocation;

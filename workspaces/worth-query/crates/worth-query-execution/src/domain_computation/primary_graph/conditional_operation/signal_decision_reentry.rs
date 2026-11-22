@@ -16,6 +16,13 @@ pub(super) use retained_decision::{
     WorthQueryOperationBackpressureCause, WorthQueryRetainedConditionalDecision,
 };
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub(super) struct WorthQueryConditionalContinuationIdentity {
+    pub(super) key: [u8; 32],
+    pub(super) intent: [u8; 32],
+    pub(super) product: Option<worth_foundational::facade::DurableProductBranchIncarnation>,
+}
+
 pub(super) struct WorthQueryRetainedConditionalWake {
     pub(super) lifecycle_token: std::sync::Arc<()>,
     pub(super) due: BridgeManagedDueWake,
@@ -23,7 +30,7 @@ pub(super) struct WorthQueryRetainedConditionalWake {
     pub(super) attempt: u64,
     pub(super) last_signal_decision: Option<super::WorthQueryConditionalSignalDecision>,
     pub(super) application_attempted: bool,
-    pub(super) continuation_identity: Option<([u8; 32], [u8; 32])>,
+    pub(super) continuation_identity: Option<WorthQueryConditionalContinuationIdentity>,
     pub(super) application_admission_canonical_work:
         worth_query_installation::facade::WorthQueryCanonicalWorkEvidence,
 }
@@ -124,8 +131,9 @@ pub(super) fn retained_decision_counts(
                 let _failure_cause = detail;
                 counts.failed += 1;
             }
-            WorthQueryRetainedConditionalDecision::OperationCommitted(_)
-            | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_) => {}
+            WorthQueryRetainedConditionalDecision::OperationCommitted(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationAlreadyCommitted(_, _)
+            | WorthQueryRetainedConditionalDecision::OperationRetiredNoEffect(_) => {}
             WorthQueryRetainedConditionalDecision::InterruptedDuringReentry => {
                 counts.failed += 1;
             }

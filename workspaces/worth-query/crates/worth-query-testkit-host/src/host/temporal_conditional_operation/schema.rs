@@ -119,6 +119,12 @@ worth_query_application_query!(
 #[path = "schema/current_read.rs"]
 pub mod current_read;
 pub use current_read::TemporalIntentCurrentReadBinding;
+#[path = "schema/targets_query.rs"]
+pub mod targets_query;
+pub use targets_query::{
+    temporal_intent_targets_query_definition, TemporalIntentTargetsQuery,
+    TemporalIntentTargetsReadBinding,
+};
 
 pub fn temporal_intent_query_definition() -> ApplicationQueryDefinitionBuilder<
     TemporalHostSchema,

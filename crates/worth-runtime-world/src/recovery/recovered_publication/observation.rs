@@ -3,7 +3,7 @@ use super::*;
 impl WorldRecoveredUnpublishedEffects {
     pub fn owner_effect_count(&self) -> usize {
         usize::from(self.record.native_identity.is_some())
-            + usize::from(self.record.signal.is_some())
+            + usize::from(self.record.signal_effect().is_some())
     }
     /// Recovery seat, expected observation, original component loans and any
     /// prepared continuation claims. Shared observer aliases mint no new claim.
@@ -19,7 +19,7 @@ impl WorldRecoveredUnpublishedEffects {
             RecoveredNativeCustody::Prepared(record) => usize::from(record.effect().is_some()),
             RecoveredNativeCustody::Working => usize::from(self.record.native_identity.is_some()),
         };
-        let components = native + usize::from(self.record.signal.is_some());
+        let components = native + usize::from(self.record.signal_effect().is_some());
         let base =
             crate::recovery::ProductUnpublishedLiveObligations::from_custody(components, false)
                 .with_observation(&self.record.expected)

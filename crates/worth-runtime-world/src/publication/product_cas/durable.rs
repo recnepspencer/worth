@@ -29,6 +29,11 @@ pub enum WorldDurablePublicationDenial {
     Indeterminate,
     CancelledAfterEffect,
     DeadlineAfterEffect,
+    /// The planned Signal leg is not durable, so no owner effect was begun.
+    PlannedSignalLeg(WorldDurableMediumDenial),
+    /// A mixed attempt's Signal leg is a closure no record can replay; on a
+    /// durable medium it refuses before any owner effect.
+    UnrecordableSignalLeg,
 }
 
 #[derive(Debug)]

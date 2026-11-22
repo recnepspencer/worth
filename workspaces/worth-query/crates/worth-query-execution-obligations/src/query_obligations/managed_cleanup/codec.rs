@@ -74,6 +74,7 @@ pub(in crate::query_obligations) fn decode(
                 failure,
                 original,
                 release: None,
+                cold_release: None,
             })
         }
         1 => QueryManagedCleanupRecord::Released {

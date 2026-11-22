@@ -76,6 +76,7 @@ impl WorldImageHead {
             WorldRecord::BranchCreated(created) => created.intent.destination.generation,
             WorldRecord::Owner { .. }
             | WorldRecord::OpenAttempt(_)
+            | WorldRecord::PlannedSignalLeg(_)
             | WorldRecord::Occurrence { .. }
             | WorldRecord::Released { .. }
             | WorldRecord::Continued { .. }
@@ -167,6 +168,7 @@ fn branch_fields(
             open.commit,
         ),
         WorldRecord::Owner { .. }
+        | WorldRecord::PlannedSignalLeg(_)
         | WorldRecord::Occurrence { .. }
         | WorldRecord::Released { .. }
         | WorldRecord::Continued { .. }
@@ -217,6 +219,10 @@ pub(crate) struct WorldCheckpointImage {
         ExecutionOrderedMap<DurableCompositePublicationAttemptIdentity, AdmittedWorldOpenAttempt>,
     pub(crate) dispositions:
         ExecutionOrderedMap<DurableCompositePublicationAttemptIdentity, AdmittedWorldDisposition>,
+    pub(crate) planned_legs: ExecutionOrderedMap<
+        DurableCompositePublicationAttemptIdentity,
+        crate::durability::AdmittedWorldPlannedSignalLeg,
+    >,
 }
 impl WorldCheckpointImage {
     pub(crate) fn empty(binding: &WorldDurableHomeBinding) -> Self {
@@ -237,6 +243,7 @@ impl WorldCheckpointImage {
             heads: Default::default(),
             opens: Default::default(),
             dispositions: Default::default(),
+            planned_legs: Default::default(),
         }
     }
 

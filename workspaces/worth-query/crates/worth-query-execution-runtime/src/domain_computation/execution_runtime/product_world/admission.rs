@@ -41,7 +41,7 @@ impl WorthQueryProductRuntime {
         gate.with_admission(|| self.lease_from_observation(observation))
     }
 
-    pub(crate) fn admit_product_occurrence(
+    pub fn admit_product_occurrence(
         &self,
         occurrence: worth_runtime_world::facade::ProductBranchIncarnation,
     ) -> Result<WorthQueryProductBranchLease, WorthQueryProductBranchAdmissionDenial> {

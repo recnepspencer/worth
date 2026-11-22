@@ -25,3 +25,6 @@ mod resource;
 
 #[path = "query_obligations/original_operation.rs"]
 mod original_operation;
+
+#[path = "query_obligations/cold_release.rs"]
+mod cold_release;

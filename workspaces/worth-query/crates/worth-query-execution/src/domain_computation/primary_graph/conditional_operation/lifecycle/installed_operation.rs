@@ -121,6 +121,18 @@ pub trait WorthQueryInstalledConditionalOperation<Schema>: Send {
     fn lifecycle_resources(
         &self,
     ) -> super::super::lifecycle_inventory::WorthQueryConditionalOperationLiveness;
+
+    fn temporal_original_key(
+        &self,
+        _product: &crate::basis::WorthQueryProductBranchLease,
+        _intent_identity: &str,
+        _revision: u64,
+        _host_idempotency: &str,
+        _input_identity: &str,
+    ) -> Option<Result<([u8; 32], [u8; 32]), worth_foundational::facade::CanonicalDigestDerivationDenial>>
+    {
+        None
+    }
 }
 
 #[derive(Clone, Copy, Default)]

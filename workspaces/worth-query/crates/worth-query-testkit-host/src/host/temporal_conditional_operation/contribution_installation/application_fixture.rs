@@ -17,6 +17,7 @@ pub fn installed_application() -> application_installation::WorthQueryProgramApp
         contacts: contacts.clone(),
         install_route: true,
         definition_only: false,
+        multi_intent_targets: false,
     };
     application_installation::in_memory_program(
         validated_program(),

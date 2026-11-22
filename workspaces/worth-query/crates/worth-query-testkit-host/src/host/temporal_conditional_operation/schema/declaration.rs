@@ -53,6 +53,8 @@ impl ApplicationSchemaContribution<TemporalHostSchema> for TemporalHostContribut
         (
             TemporalIntentQuery,
             TemporalIntentCurrentReadBinding,
+            TemporalIntentTargetsQuery,
+            TemporalIntentTargetsReadBinding,
             TemporalIntentLiveQuery,
         ),
     );
@@ -132,6 +134,26 @@ impl Registration<TemporalHostSchema> for TemporalIntentQuery {
     }
 }
 impl Registration<TemporalHostSchema> for TemporalIntentCurrentReadBinding {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<TemporalHostSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<TemporalHostSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(builder.application_query_binding::<Self>())
+    }
+}
+impl Registration<TemporalHostSchema> for TemporalIntentTargetsQuery {
+    fn register(
+        builder: ApplicationSchemaDeclarationBuilder<TemporalHostSchema>,
+    ) -> Result<
+        ApplicationSchemaDeclarationBuilder<TemporalHostSchema>,
+        ApplicationSchemaDeclarationDenial,
+    > {
+        Ok(builder.application_query(temporal_intent_targets_query_definition()))
+    }
+}
+impl Registration<TemporalHostSchema> for TemporalIntentTargetsReadBinding {
     fn register(
         builder: ApplicationSchemaDeclarationBuilder<TemporalHostSchema>,
     ) -> Result<

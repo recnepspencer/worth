@@ -61,11 +61,17 @@ impl
             domain::WorthQueryTemporalOperationInputIdentity::declare(row.input.clone())
                 .map_err(projection_failure)?;
         // Every part that makes the wake the same intent goes into the relation.
-        let idempotency = domain::WorthQueryTemporalIntentIdempotencyRelation::declare(&(
-            &row.identity,
-            row.revision,
-            &row.input,
-        ))
+        // Inputs prefixed with `"shared:"` intentionally collide host relations
+        // across distinct intents to exercise pre-invocation intent-drift fencing.
+        let idempotency = if row.input.starts_with("shared:") {
+            domain::WorthQueryTemporalIntentIdempotencyRelation::declare(&"shared-relation")
+        } else {
+            domain::WorthQueryTemporalIntentIdempotencyRelation::declare(&(
+                &row.identity,
+                row.revision,
+                &row.input,
+            ))
+        }
         .map_err(|denial| projection_failure(format!("{denial:?}")))?;
         let due = domain::WorthQueryClockCoordinate::from_nanoseconds(row.due);
         let input = TemporalInput(row.input.clone());

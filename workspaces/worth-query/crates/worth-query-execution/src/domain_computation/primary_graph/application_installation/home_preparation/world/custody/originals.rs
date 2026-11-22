@@ -58,7 +58,11 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
                         .is_adoption_original(&effects)
                         .map_err(|_| Denial::UnclassifiedWorldCustody)?
                 {
-                    if effects.native_receipt().is_none() {
+                    let native_present = effects.native_receipt().is_some();
+                    support
+                        .lifecycle()
+                        .record_cold_adoption_original(native_present);
+                    if !native_present {
                         let actual = effects.attempt_identity();
                         let attempt=worth_foundational::facade::DurableCompositePublicationAttemptIdentity::from_recorded(actual.owner_identity().durable().expect("Home original"),actual.ordinal());
                         self.release_empty_original(execution, effects)?;
@@ -147,7 +151,7 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema + 'static, Prog
     }
 }
 
-fn original_binding_denial(
+pub(super) fn original_binding_denial(
     cause: crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial,
 ) -> QueryHomeCustodyReadmissionDenial {
     use crate::domain_computation::primary_graph::provider::WorthQueryProviderIdempotencyResolutionDenial as Source;

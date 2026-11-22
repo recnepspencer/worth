@@ -45,7 +45,8 @@ impl LiveMaterialPins {
             MaterialRecord::Pin { .. } | MaterialRecord::RecoveryPin { .. } => Ok(()),
             MaterialRecord::Transfer { identity, .. }
             | MaterialRecord::Release { identity, .. }
-            | MaterialRecord::DischargePreparation { identity, .. } => {
+            | MaterialRecord::DischargePreparation { identity, .. }
+            | MaterialRecord::AbandonPublicationPin { identity, .. } => {
                 if self.0.contains_key(identity) {
                     Ok(())
                 } else {
@@ -98,6 +99,7 @@ impl MaterialPinChange {
             } => Self::Transfer(*identity, *after),
             MaterialRecord::Release { identity, .. } => Self::Release(*identity),
             MaterialRecord::DischargePreparation { identity, .. } => Self::Release(*identity),
+            MaterialRecord::AbandonPublicationPin { identity, .. } => Self::Release(*identity),
             MaterialRecord::Abandon { original } => catalog
                 .pins
                 .iter()

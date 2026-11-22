@@ -124,6 +124,7 @@ fn obligation_publication(
         | D::MissingOriginalInterpretationSource { .. }
         | D::OriginalInterpretationProgramMismatch { .. }
         | D::OwnerUnavailable
+        | D::IncarnationNotEnded
         | D::PublicationGenerationMismatch => operator(),
     }
 }

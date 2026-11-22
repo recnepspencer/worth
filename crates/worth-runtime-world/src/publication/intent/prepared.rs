@@ -112,6 +112,12 @@ impl PreparedCompositePublicationWithSignal {
         self.attempt.unpublished_recovery_handle()
     }
 
+    pub(crate) fn durable_open(
+        &self,
+    ) -> Option<std::sync::Arc<crate::durability::WorldDurableOpenCustody>> {
+        self.attempt.durable_open()
+    }
+
     /// Read-only view of the sealed reservation. Reading a plan cannot move
     /// the attempt into the other stage or execute it.
     #[cfg(test)]

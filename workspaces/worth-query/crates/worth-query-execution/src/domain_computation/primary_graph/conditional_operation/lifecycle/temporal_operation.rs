@@ -142,9 +142,7 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
 
     fn reconstruct(
         &mut self,
-        _runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        _runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
     ) -> Result<(), super::super::installation::WorthQueryConditionalRuntimeInstallationDenial> {
         Ok(())
     }
@@ -157,10 +155,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
 
     fn prepare_derived_runtime_reinstallation(
         &self,
-execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         bridge: &mut worth_runtime_bridge::facade::BridgePreparedConditionalReconstitution,
         product: &crate::basis::WorthQueryProductBranchLease,
     ) -> Result<
@@ -211,11 +207,8 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
     fn observe_clock(
         &mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
-
         bridge: &BridgeConditionalExecutionView<'_>,
-        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<
-            Schema,
-        >,
+        runtime: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
         truth: &WorthQueryConditionalTruthBasis,
     ) -> ErasedClockObservationOutcome {
         let execution = match phase.execution_request_for(runtime.inner.runtime.product_runtime_ref()) {
@@ -378,5 +371,26 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
         &self,
     ) -> super::super::lifecycle_inventory::WorthQueryConditionalOperationLiveness {
         resource_observation::lifecycle_resources(self)
+    }
+
+    fn temporal_original_key(
+        &self,
+        product: &crate::basis::WorthQueryProductBranchLease,
+        intent_identity: &str,
+        revision: u64,
+        host_idempotency: &str,
+        input_identity: &str,
+    ) -> Option<Result<([u8; 32], [u8; 32]), worth_foundational::facade::CanonicalDigestDerivationDenial>>
+    {
+        Some(
+            super::super::application_operation_reentry::temporal_idempotency::derive_for_product(
+                &self.runtime_canonical_identity,
+                product,
+                intent_identity,
+                revision,
+                host_idempotency,
+                input_identity,
+            ),
+        )
     }
 }

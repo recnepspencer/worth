@@ -38,6 +38,7 @@ pub mod query {
 pub use conditional_definition::{
     WorthQueryAdmittedApplicationConditionalDefinition,
     WorthQueryApplicationConditionalDefinitionAdmissionDenial,
+    WorthQueryCheckedApplicationConditionalDefinition,
 };
 pub use context::{
     SelectedQueryOrigin, WorthQueryProductEntry, WorthQuerySelectedProductOperation,

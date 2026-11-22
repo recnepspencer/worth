@@ -121,7 +121,7 @@ pub use crate::lifecycle::{
     RuntimeWorldResultSnapshotCleanup, RuntimeWorldResultSnapshotCleanupDenial,
     RuntimeWorldResultSnapshotCleanupProgress, RuntimeWorldResultSnapshotCleanupReport,
     RuntimeWorldRetainedRecordReport, RuntimeWorldServiceDenial, RuntimeWorldUnboundHomeBuilder,
-    WorldHomeProgramBindingDenial, WorldSignalForkPreparationDenial,
+    WorldHomeProgramBindingDenial, WorldSignalForkPreparationDenial, WorldSignalLegDenial,
 };
 
 pub use crate::publication::{

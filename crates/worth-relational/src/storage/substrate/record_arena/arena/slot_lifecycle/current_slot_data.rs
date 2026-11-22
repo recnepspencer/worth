@@ -4,6 +4,7 @@ use super::super::{
     SharedColumn, StorageAllocation, Symbol,
 };
 use super::*;
+use crate::storage::substrate::HistoricalMetadata;
 use std::collections::BTreeMap;
 mod generation_reuse;
 mod metadata_retirement;
@@ -126,12 +127,29 @@ impl<K: RecordKind> CurrentSlotData<'_, K> {
             return Ok(None);
         };
         let metadata = prepare(metadata)?;
-        let retired = self.prepare_retired_metadata(physical, version_id, prepare)?;
-        self.install_retired_metadata(physical, retired, request)?;
-        self.metadata_history
-            .carrier_mut_using(physical, request)?
-            .expect("existing metadata history")
-            .push_value_using(metadata, request)?;
+        // Coalesce repeated nonconflicting updates within the same commit
+        // version so live coupled execution and single-intent replay produce
+        // identical metadata_history (no zero-width [V, V) entry).
+        let same_version_index = {
+            let history = &self.metadata_history[physical];
+            history.len().checked_sub(1).filter(|&index| {
+                let last = &history[index];
+                last.effective_at() == version_id && last.retired_at().is_none()
+            })
+        };
+        if let Some(index) = same_version_index {
+            self.metadata_history
+                .carrier_mut_using(physical, request)?
+                .expect("existing metadata history")
+                .set_value_using(index, metadata, request)?;
+        } else {
+            let retired = self.prepare_retired_metadata(physical, version_id, prepare)?;
+            self.install_retired_metadata(physical, retired, request)?;
+            self.metadata_history
+                .carrier_mut_using(physical, request)?
+                .expect("existing metadata history")
+                .push_value_using(metadata, request)?;
+        }
         self.extra.set_shared_using(physical, extra, request)?;
         Ok(Some(()))
     }

@@ -26,18 +26,24 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
         Node: 'static,
         Provider: WorthQueryAuthoredHostConditionalPredicateProvider<Node>,
     {
-        let (anchor, request) = definition_request(self, product, handle, provider)
-            .map_err(|cause| match cause {
-                WorthQueryConditionalDefinitionPublicationDenial::ForeignConditionalOperation => WorthQueryApplicationConditionalDefinitionAdmissionDenial::ForeignConditionalOperation,
-                WorthQueryConditionalDefinitionPublicationDenial::BridgePreparation(cause) => WorthQueryApplicationConditionalDefinitionAdmissionDenial::BridgePreparation(cause),
-                _ => unreachable!("definition preparation does not publish"),
-            })?;
+        // The Bridge basis check belongs to the commit, after its key resolves.
+        let successor = match definition_request(self, product, handle, provider) {
+            Ok(successor) => Ok(successor),
+            Err(WorthQueryConditionalDefinitionPublicationDenial::BridgePreparation(cause)) => {
+                Err(cause)
+            }
+            Err(WorthQueryConditionalDefinitionPublicationDenial::ForeignConditionalOperation) => {
+                return Err(
+                    WorthQueryApplicationConditionalDefinitionAdmissionDenial::ForeignConditionalOperation,
+                )
+            }
+            Err(_) => unreachable!("definition preparation does not publish"),
+        };
         Ok(WorthQueryAdmittedApplicationConditionalDefinition::new(
             self.inner(),
             product,
             *handle.binding_identity_digest(),
-            anchor,
-            request,
+            successor,
         ))
     }
 }

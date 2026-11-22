@@ -52,7 +52,7 @@ impl WorthQueryPrimaryGraphProvider {
         if let Some(owner) = self.correction_material.get() {
             owner.admit_medium(medium.as_ref())?;
             owner.abandon_released(originals, request)?;
-            owner.discharge_unperformed(request)?;
+            owner.discharge_unperformed(Some(originals), request)?;
             return owner.admission();
         }
         let owner = self.graph.with_runtime(request, |native| {
@@ -68,7 +68,7 @@ impl WorthQueryPrimaryGraphProvider {
             .get()
             .expect("same installed material receiver");
         owner.abandon_released(originals, request)?;
-        owner.discharge_unperformed(request)?;
+        owner.discharge_unperformed(Some(originals), request)?;
         owner.admission()
     }
 }

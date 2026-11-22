@@ -8,7 +8,9 @@ use super::lifecycle::WorthQueryConditionalOperationCell;
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 
 pub(crate) mod erased;
+mod original_retry;
 mod product_admission;
+pub use original_retry::WorthQueryConditionalOriginalResolution;
 pub(in crate::domain_computation::primary_graph) use erased::{
     ErasedClockObservationOutcome, ErasedClockObservationReceipt,
 };

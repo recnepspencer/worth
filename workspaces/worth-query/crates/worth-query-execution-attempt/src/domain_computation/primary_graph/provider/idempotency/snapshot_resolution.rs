@@ -34,7 +34,39 @@ pub fn resolve_at_snapshot(
     candidates: &super::super::super::application_attempt::idempotency::envelope_candidates::EnvelopeCandidates<'_>,
 ) -> Result<WorthQueryProviderIdempotencyResolution, WorthQueryProviderIdempotencyResolutionDenial>
 {
-    let binding = candidates.first();
+    let Some(receipt) = original_at_snapshot(
+        execution,
+        provider,
+        runtime,
+        snapshot,
+        layout,
+        product,
+        candidates.first(),
+    )?
+    else {
+        return Ok(WorthQueryProviderIdempotencyResolution::Absent);
+    };
+    Ok(if candidates.match_performed(&receipt)? {
+        WorthQueryProviderIdempotencyResolution::Readmitted(receipt)
+    } else {
+        WorthQueryProviderIdempotencyResolution::Drift
+    })
+}
+
+/// The original recorded under the binding's key at this snapshot, before
+/// any intent comparison; the caller decides what the recorded intent means.
+pub(in crate::domain_computation::primary_graph::provider) fn original_at_snapshot(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    provider: &WorthQueryPrimaryGraphProvider,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+    snapshot: &worth_relational::facade::snapshots::SnapshotHandle,
+    layout: &WorthQueryProviderIdempotencyLayout,
+    product: &crate::domain_computation::execution_runtime::product_world::WorthQueryProductPublicationBinding,
+    binding: WorthQueryApplicationIdempotencyBinding,
+) -> Result<
+    Option<WorthQueryRecoveredApplicationCommitReceipt>,
+    WorthQueryProviderIdempotencyResolutionDenial,
+> {
     let context = WorthQueryIdempotencySnapshotContext {
         provider,
         runtime,
@@ -43,7 +75,7 @@ pub fn resolve_at_snapshot(
     };
     let key = AspectValue::String(InternedString::from(binding.key_text()));
     let Some(entity) = locate_idempotency_entity(execution, &context, &key)? else {
-        return Ok(WorthQueryProviderIdempotencyResolution::Absent);
+        return Ok(None);
     };
     // The current index and row locate the original artifact. They supply no
     // receipt fields; those are reread from the sealed creation patch.
@@ -60,11 +92,7 @@ pub fn resolve_at_snapshot(
     if receipt.idempotency_key_identity() != binding.key_identity() {
         return Err(WorthQueryProviderIdempotencyResolutionDenial::Unavailable);
     }
-    Ok(if candidates.match_performed(&receipt)? {
-        WorthQueryProviderIdempotencyResolution::Readmitted(receipt)
-    } else {
-        WorthQueryProviderIdempotencyResolution::Drift
-    })
+    Ok(Some(receipt))
 }
 
 /// The single-binding compiler court uses the same native candidate validation.

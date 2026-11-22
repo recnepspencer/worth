@@ -231,41 +231,18 @@ impl<'a> DefinitionView<'a> {
         let memory = execution
             .reserve_retained_memory(bytes)
             .map_err(D::Request)?;
-        let condition = match &definition.condition {
-            SignalConditionalCondition::Always => BridgeConditionalCondition::Always,
-            SignalConditionalCondition::AspectFilter(_) => {
-                BridgeConditionalCondition::AspectFiltered
-            }
-            SignalConditionalCondition::DeltaThreshold(value) => {
-                BridgeConditionalCondition::DeltaThreshold(value.clone())
-            }
-            SignalConditionalCondition::OnDemand => BridgeConditionalCondition::OnDemand,
-            SignalConditionalCondition::RuntimePredicate => {
-                BridgeConditionalCondition::RuntimePredicate
-            }
-            SignalConditionalCondition::TemporalWake => BridgeConditionalCondition::TemporalWake,
-        };
-        let contract = Arc::new(BridgeConditionalContract::new(
-            BridgeConditionalContractParts {
-                identity: Arc::from(self.identity),
-                dependency_count: self.dependencies,
-                condition_dependency_ordinals: self
-                    .ordinals
-                    .as_chunks::<8>()
-                    .0
-                    .iter()
-                    .map(|bytes| u64::from_le_bytes(*bytes) as usize)
-                    .collect(),
-                condition,
-                dependency_comparator: definition.dependency_comparator,
-                output_comparator: definition.output_comparator,
-                artifact_reuse: definition.artifact_reuse,
-            },
+        let contract = Arc::new(contract_from_signal(
+            self.identity,
+            self.dependencies,
+            self.ordinals
+                .as_chunks::<8>()
+                .0
+                .iter()
+                .map(|bytes| u64::from_le_bytes(*bytes) as usize)
+                .collect(),
+            definition,
         ));
-        let location = Arc::new(match self.stage {
-            Some(stage) => BridgeConditionalLocation::workflow_stage(stage, self.identity),
-            None => BridgeConditionalLocation::operation(self.identity),
-        });
+        let location = Arc::new(location(self.identity, self.stage));
         Ok(Arc::new(BridgeReadmittedDefinitionSource {
             contract,
             location,
@@ -309,5 +286,41 @@ impl<'a> DefinitionView<'a> {
             ])
         };
         quote().map_err(|_| D::SizeLimit)
+    }
+}
+
+/// Bridge's contract is its recorded row over Signal's full authored condition.
+pub(super) fn contract_from_signal(
+    identity: &str,
+    dependency_count: usize,
+    condition_dependency_ordinals: Vec<usize>,
+    definition: &SignalConditionalContractDefinition,
+) -> BridgeConditionalContract {
+    let condition = match &definition.condition {
+        SignalConditionalCondition::Always => BridgeConditionalCondition::Always,
+        SignalConditionalCondition::AspectFilter(_) => BridgeConditionalCondition::AspectFiltered,
+        SignalConditionalCondition::DeltaThreshold(value) => {
+            BridgeConditionalCondition::DeltaThreshold(value.clone())
+        }
+        SignalConditionalCondition::OnDemand => BridgeConditionalCondition::OnDemand,
+        SignalConditionalCondition::RuntimePredicate => {
+            BridgeConditionalCondition::RuntimePredicate
+        }
+        SignalConditionalCondition::TemporalWake => BridgeConditionalCondition::TemporalWake,
+    };
+    BridgeConditionalContract::new(BridgeConditionalContractParts {
+        identity: Arc::from(identity),
+        dependency_count,
+        condition_dependency_ordinals,
+        condition,
+        dependency_comparator: definition.dependency_comparator,
+        output_comparator: definition.output_comparator,
+        artifact_reuse: definition.artifact_reuse,
+    })
+}
+pub(super) fn location(identity: &str, stage: Option<&str>) -> BridgeConditionalLocation {
+    match stage {
+        Some(stage) => BridgeConditionalLocation::workflow_stage(stage, identity),
+        None => BridgeConditionalLocation::operation(identity),
     }
 }

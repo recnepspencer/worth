@@ -79,6 +79,18 @@ where
     I: ApplicationMutationIntent<S>,
     P: ApplicationProgramDefinition<S>,
 {
+    /// Durable original-operation identity recorded when this operation was
+    /// retained on a Directory Home. Descriptive only; grants no authority.
+    pub fn original_identity(
+        &self,
+    ) -> Option<worth_foundational::facade::ProgramSupportObligationIdentity> {
+        self.admission
+            .description
+            .original
+            .as_ref()
+            .map(|original| original.owner.identity())
+    }
+
     /// Relinquish process aliases while keeping the same durable original for fresh readmission.
     /// Unreleased partial publication must first progress through its native owner.
     pub fn handoff_for_reopen(

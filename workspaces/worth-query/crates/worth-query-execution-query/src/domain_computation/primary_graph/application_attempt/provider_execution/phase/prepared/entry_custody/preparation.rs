@@ -151,6 +151,18 @@ where
     {
         return terminal(outcome);
     }
+    // Only a fresh key reaches the Bridge basis of its conditional definition.
+    let conditional_definition = match conditional_definition
+        .map(crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition::check)
+        .transpose()
+    {
+        Ok(checked) => checked,
+        Err(cause) => {
+            return terminal(WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::conditional_definition_basis(&cause),
+            ))
+        }
+    };
     if let Some(denial) = new_commit_refusal {
         return terminal(WorthQueryApplicationCommitOutcome::Denied(
             WorthQueryApplicationCommitDenial::workflow_settlement_denied(&denial),

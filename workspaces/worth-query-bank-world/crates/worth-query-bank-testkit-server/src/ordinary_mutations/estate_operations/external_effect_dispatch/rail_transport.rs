@@ -18,8 +18,27 @@ pub use bank_external_rail::{
 };
 pub use worth_query_host::facade::primary_graph::{
     WorthQueryExternalDispatchRequest, WorthQueryExternalEffectTransport,
-    WorthQueryExternalTransportOutcome,
+    WorthQueryExternalTransportOutcome, WorthQueryRecoveryReconcileAdmission,
 };
+
+/// Result reported by Bank's read-only reconciliation inquiry after Query
+/// admits reconciliation for a recovered external-effect handle.
+///
+/// The correlation comes solely from the admitted durable outbox binding; the
+/// inquiry never calls `dispatch` and cannot cause a second remote effect.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum BankRailReconciliationDisposition {
+    /// The rail ledger and consequence store report the original effect completed.
+    Completed {
+        correlation: RailCorrelation,
+        notice: EstateDeathNotice,
+    },
+    /// The rail acknowledged the original correlation without completing it yet.
+    AcknowledgedPending { correlation: RailCorrelation },
+    /// The rail holds no record of the correlation (disappearance, rejection, or
+    /// R14 rail restart with lost state).
+    UnresolvedNoRecord { correlation: RailCorrelation },
+}
 
 /// Starts a rail in its own OS process, listening on an OS-assigned port.
 ///
@@ -178,6 +197,40 @@ impl BankEstateRailTransport {
                 Duration::from_secs(5),
             ))
             .expect("the rail should answer a completed-notice inquiry")
+    }
+
+    /// Executes Bank's read-only reconciliation inquiry for a Query-admitted
+    /// recovery handle, deriving the correlation strictly from the admitted
+    /// outbox binding and never redispatching.
+    pub fn reconcile_admitted_effect(
+        &self,
+        admission: &WorthQueryRecoveryReconcileAdmission,
+    ) -> BankRailReconciliationDisposition {
+        let outbox = admission
+            .binding()
+            .dispatch_outbox()
+            .expect("reconciled external-effect handle must carry its committed dispatch outbox");
+        let correlation = RailCorrelation::new(
+            outbox.correlation_family().as_str(),
+            outbox.correlation().bytes().to_vec(),
+        );
+        match self.ledger_status(&correlation) {
+            LedgerStatus::Completed => {
+                let notice = self
+                    .completed_notice(&correlation)
+                    .expect("a rail ledger reporting Completed must retain its completed notice");
+                BankRailReconciliationDisposition::Completed {
+                    correlation,
+                    notice,
+                }
+            }
+            LedgerStatus::Acknowledged => {
+                BankRailReconciliationDisposition::AcknowledgedPending { correlation }
+            }
+            LedgerStatus::NoRecord => {
+                BankRailReconciliationDisposition::UnresolvedNoRecord { correlation }
+            }
+        }
     }
 
     pub fn lock_control(&self) -> std::sync::MutexGuard<'_, RailControl> {

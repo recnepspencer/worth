@@ -44,10 +44,13 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             crate::domain_computation::primary_graph::conditional_operation::installation::clock_handle::ConditionalClockLease,
         >,
     ) -> Result<
-        (
-            Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
-            bool,
-        ),
+        Result<
+            (
+                Arc<worth_runtime_bridge::facade::BridgeInstalledConditionalLowering>,
+                bool,
+            ),
+            worth_runtime_bridge::facade::BridgeConditionalDenial,
+        >,
         crate::domain_computation::primary_graph::WorthQueryApplicationConditionalDefinitionAdmissionDenial,
     >{
         use crate::domain_computation::primary_graph::WorthQueryApplicationConditionalDefinitionAdmissionDenial as Denial;
@@ -59,13 +62,9 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         if let Some(route) = definitions.route(binding_identity, lease) {
-            return Ok((
-                route
-                    .admit_signal_basis(&bridge, product.signal_basis())
-                    .map_err(Denial::BridgePreparation)?
-                    .installed_lowering(),
-                true,
-            ));
+            return Ok(route
+                .admit_signal_basis(&bridge, product.signal_basis())
+                .map(|binding| (binding.installed_lowering(), true)));
         }
         drop(definitions);
         let operation = self
@@ -74,13 +73,13 @@ impl<Schema: worth_query_installation::facade::ApplicationSchema>
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .admit_clock(binding_identity, lease)
             .ok_or(Denial::ForeignConditionalOperation)?;
-        let (binding, authored) = bridge
-            .with_view(product.signal_basis(), |view| {
-                operation.admit_operation_binding(&view, product.signal_basis())
-            })
-            .map_err(Denial::BridgePreparation)?
-            .map_err(Denial::BridgePreparation)?;
-        Ok((binding.installed_lowering(), authored))
+        let resolved = match bridge.with_view(product.signal_basis(), |view| {
+            operation.admit_operation_binding(&view, product.signal_basis())
+        }) {
+            Ok(Ok((binding, authored))) => Ok((binding.installed_lowering(), authored)),
+            Ok(Err(cause)) | Err(cause) => Err(cause),
+        };
+        Ok(resolved)
     }
 }
 

@@ -81,9 +81,17 @@ fn changed_field_level_patch(
         };
         let field_sets: Vec<_> = field_patch
             .field_sets()
+            .filter(|(field, _)| field_changed(binding, field))
             .map(|(field, value)| (field.clone(), value.clone()))
             .collect();
-        let field_clears: Vec<_> = field_patch.field_clears().cloned().collect();
+        let field_clears: Vec<_> = field_patch
+            .field_clears()
+            .filter(|field| field_changed(binding, field))
+            .cloned()
+            .collect();
+        if field_sets.is_empty() && field_clears.is_empty() {
+            continue;
+        }
         let mutation_mask = mutation_mask_for_field_patch(&field_sets, &field_clears);
         let binding_patch =
             construct_field_patch(delta, binding, &mutation_mask, field_sets, field_clears)?;
@@ -91,6 +99,16 @@ fn changed_field_level_patch(
     }
 
     Ok(filtered_patch)
+}
+
+fn field_changed(
+    binding: &EvaluatedAspectBinding,
+    field: &worth_foundational::facade::FieldKey,
+) -> bool {
+    binding
+        .field_revision_changes
+        .as_ref()
+        .is_none_or(|changes| changes.iter().any(|(changed, _)| changed == field))
 }
 
 fn construct_whole_patch(

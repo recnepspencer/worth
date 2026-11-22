@@ -765,10 +765,16 @@ or at graceful close; until then the Home is not quiescent. Graceful close
 settles the journal before it retires any graph or Store owner, and refuses
 while a contact is still in flight.
 
-Process death before an observation is recorded is not yet certified. A Home
-whose journal ends in an attempt with no recorded observation refuses to open,
-and `unclean_recovery_unsupported()` names the `Dispatch` owner and that
-effect. Recovery claim readmission still requires fresh original-source admission.
+After a process kill while one or more external dispatches were in flight
+(their attempts durable, their observations not yet recorded), cold Home
+readmission admits every unobserved attempt — including concurrent attempts
+with later frames after them — and durably records each one's observation as
+`Unresolved(UnknownProviderOutcome)` before service, without contacting any
+transport. The recovered custody then reaches the existing recovery handles
+(`reconcile_recovery_handle`, `safe_retry_recovery_handle`,
+`compensate_recovery_handle`, `resolve_recovery_handle`) and authentic inbound
+completion callbacks. Recovery claim readmission still requires fresh
+original-source admission. Full crash certification belongs to C4/C5.
 
 ## Durable inbound custody on a Directory Home
 
@@ -799,9 +805,10 @@ recorded observation through World publication without another transport
 contact. An unpublished internal completion retains its actual original World
 recovery obligation and continues that occurrence.
 
-These are graceful-close and quiescent-reopen guarantees. Crash recovery remains
-uncertified, and Query makes no remote exactly-once claim beyond the external
-owner's admitted contract.
+Graceful close, quiescent reopen, and C3.5's recovered unobserved-dispatch
+readmission are covered on Directory Homes; broader crash-recovery
+certification remains deferred to C4–C5, and Query makes no remote exactly-once
+claim beyond the external owner's admitted contract.
 
 ## Recovery lifetime and scope
 
@@ -868,8 +875,9 @@ the newly opened Home; dropping an old incarnation's value cannot dispose the
 new incarnation's claim. An actual publication no-effect leaves the existing
 handle and claim retryable.
 
-These guarantees cover graceful close/reopen and the authorized quiescent
-ownership handoff. Crash recovery is not certified by this lane.
+These guarantees cover graceful close/reopen, authorized quiescent ownership
+handoff, and C3.5's unobserved-dispatch recovery cutover. Broader crash-recovery
+certification remains deferred to C4–C5.
 
 A recovered claim whose original external completion is already acknowledged
 uses `settle_recorded_recovery_completion(phase, handle, admission)`. It checks

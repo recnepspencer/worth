@@ -66,11 +66,12 @@ pub use crate::conditional_execution::{
     BridgeOwnedAsyncRetention, BridgeOwnedAsyncRetryAdmission, BridgeOwnedAsyncRetrySchedule,
     BridgeOwnedAsyncRevalidationAdmission, BridgeOwnedAsyncSupersessionAdmission,
     BridgeOwnedAsyncTimeoutAdmission, BridgeOwnedConditionalInstallationRequest,
-    BridgeOwnedSignalRuntime, BridgePreparedAuthoredDefinitionPublication,
-    BridgePreparedConditionalInstallationExtension, BridgePublishedInitialSource,
-    BridgeReadmittedAuthoredAssembly, BridgeRetainedConditionalDecisionSeed,
-    BridgeSealedRuntimeAssembly, BridgeSignalDenial, RetiringBridgeAuthoredAssembly,
-    BRIDGE_AUTHORED_SECTION_PROTOCOL, BRIDGE_AUTHORED_SECTION_VERSION,
+    BridgeOwnedSignalRuntime, BridgePlannedDefinitionLeg,
+    BridgePreparedAuthoredDefinitionPublication, BridgePreparedConditionalInstallationExtension,
+    BridgePublishedInitialSource, BridgeReadmittedAuthoredAssembly,
+    BridgeRetainedConditionalDecisionSeed, BridgeSealedRuntimeAssembly, BridgeSignalDenial,
+    RetiringBridgeAuthoredAssembly, BRIDGE_AUTHORED_SECTION_PROTOCOL,
+    BRIDGE_AUTHORED_SECTION_VERSION, BRIDGE_PLANNED_DEFINITION_LEG_VERSION,
 };
 pub use crate::continuity::{
     BridgeContinuityArtifact, BridgeContinuityAuthorityBasis, BridgeContinuityAuthorityKind,

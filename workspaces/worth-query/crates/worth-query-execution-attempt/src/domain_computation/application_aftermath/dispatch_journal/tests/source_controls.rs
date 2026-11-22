@@ -43,7 +43,7 @@ fn source_control_frames_preserve_each_source_and_refuse_revocation_downgrade() 
             .map(drop),
         Err(Denial::MalformedFrame)
     );
-    assert_eq!(ledger.first_unobserved(), None);
+    assert!(!ledger.has_unobserved());
     assert_eq!(
         ledger.custody(&effect(1)),
         None,

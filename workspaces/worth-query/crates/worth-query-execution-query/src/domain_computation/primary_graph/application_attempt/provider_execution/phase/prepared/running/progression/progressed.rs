@@ -99,6 +99,25 @@ fn finish_application_commit_with_delivery<Schema: ApplicationSchema>(
             "provider progression outcome could not complete commit receipt",
         ))
     });
+    // Park after World's commit resolved and before returning the answer.
+    application
+        .runtime
+        .primary_provider
+        .pause_before_commit_answer();
+    // The resolved outcome (and any receipt) is dropped unread: World keeps
+    // whatever it did, and only the answer is lost.
+    let committed = if application
+        .runtime
+        .primary_provider
+        .take_lost_commit_answer()
+    {
+        drop(committed);
+        WorthQueryApplicationCommitOutcome::Indeterminate(unknown_commit_recovery_evidence(
+            "application commit answer was lost before classification",
+        ))
+    } else {
+        committed
+    };
     if let WorthQueryApplicationCommitOutcome::Committed(receipt) = &committed {
         if delivers_product {
             crate::domain_computation::primary_graph::application_contribution::record_advancement_commit(receipt);

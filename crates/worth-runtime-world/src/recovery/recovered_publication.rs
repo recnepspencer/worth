@@ -16,6 +16,8 @@ use worth_relational::facade::durability::{
 
 pub(crate) mod continuation;
 mod observation;
+mod signal_leg;
+pub(crate) use signal_leg::{RecoveredSignalLeg, RecoveredSignalLegPhase};
 mod release;
 mod release_preparation;
 pub(crate) use continuation::PreparedRecoveredPublication;
@@ -63,6 +65,8 @@ pub(crate) struct RecoveredWorldPublicationRecord {
     pub(crate) continued: Option<crate::durability::AdmittedWorldDisposition>,
     pub(crate) native_identity: Option<worth_relational::facade::history::RelationalCommitIdentity>,
     pub(crate) signal: Option<Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>>,
+    /// Present exactly for a mixed original with Native durable and Signal not.
+    pub(crate) planned_signal: Option<RecoveredSignalLeg>,
     pub(crate) expected: ProductBranchObservation,
     pub(crate) binding: Arc<WorldDurableMediumBinding>,
     pub(crate) native: Mutex<RecoveredNativeCustody>,
@@ -131,6 +135,19 @@ impl WorldRecoveredUnpublishedEffects {
         if self.record.binding.publication_recovery_required() || lost_permit {
             return &[Action::Inspect, Action::ReopenRequired];
         }
+        // Once its planned Signal leg has begun, the original only continues.
+        match self
+            .record
+            .planned_signal
+            .as_ref()
+            .and_then(|leg| leg.release_refusal())
+        {
+            Some(crate::recovery::RuntimeWorldRecoveryDenial::ReopenRequired) => {
+                return &[Action::Inspect, Action::ReopenRequired]
+            }
+            Some(_) => return &[Action::Inspect, Action::ContinueOriginalPublication],
+            None => {}
+        }
         if self
             .record
             .release
@@ -139,7 +156,7 @@ impl WorldRecoveredUnpublishedEffects {
             .is_some()
         {
             &[Action::Inspect, Action::ReleaseObligations]
-        } else if self.native_effect().is_none() && self.record.signal.is_none() {
+        } else if self.native_effect().is_none() && self.record.signal_effect().is_none() {
             &[
                 Action::Inspect,
                 Action::ReleaseObligations,
@@ -263,6 +280,7 @@ pub(crate) struct RecoveredWorldPublicationInputs {
     pub(crate) continued: Option<crate::durability::AdmittedWorldDisposition>,
     pub(crate) native_identity: Option<worth_relational::facade::history::RelationalCommitIdentity>,
     pub(crate) signal: Option<Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>>,
+    pub(crate) planned_signal: Option<crate::durability::AdmittedWorldPlannedSignalLeg>,
     pub(crate) expected: ProductBranchObservation,
     pub(crate) binding: Arc<WorldDurableMediumBinding>,
     pub(crate) native:
@@ -270,6 +288,17 @@ pub(crate) struct RecoveredWorldPublicationInputs {
 }
 
 impl RecoveredWorldPublicationRecord {
+    /// Signal's durable effect: readmitted at reopen, or completed here from
+    /// the planned leg.
+    pub(crate) fn signal_effect(
+        &self,
+    ) -> Option<Arc<worth_signal::facade::durability::SignalReadmittedSourcePoint>> {
+        self.signal.clone().or_else(|| {
+            self.planned_signal
+                .as_ref()
+                .and_then(RecoveredSignalLeg::durable_effect)
+        })
+    }
     pub(crate) fn new(input: RecoveredWorldPublicationInputs, metadata_bytes: usize) -> Arc<Self> {
         Arc::new(Self {
             identity: input.identity,
@@ -279,6 +308,7 @@ impl RecoveredWorldPublicationRecord {
             continued: input.continued,
             native_identity: input.native_identity,
             signal: input.signal,
+            planned_signal: input.planned_signal.map(RecoveredSignalLeg::new),
             expected: input.expected,
             binding: input.binding,
             native: Mutex::new(

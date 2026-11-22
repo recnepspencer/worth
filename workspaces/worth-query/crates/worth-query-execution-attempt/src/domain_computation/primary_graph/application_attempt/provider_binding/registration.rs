@@ -27,7 +27,7 @@ pub struct WorthQueryApplicationAttemptRegistration<'a>
         crate::domain_computation::application_aftermath::WorthQueryPendingAftermathCausality,
     >,
     conditional_definition:
-        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+        Option<crate::domain_computation::primary_graph::product_operation::WorthQueryCheckedApplicationConditionalDefinition>,
     retain_output_demand_observation: bool,
     retain_client_observation: bool,
     producer_required_invariants:

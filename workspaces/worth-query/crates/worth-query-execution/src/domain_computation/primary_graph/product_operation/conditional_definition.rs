@@ -3,7 +3,10 @@ use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _
 
 mod admission;
 pub(in crate::domain_computation::primary_graph) use worth_query_execution_query::facade::domain_computation::primary_graph::product_operation::conditional_definition::application_change;
-pub use application_change::WorthQueryAdmittedApplicationConditionalDefinition;
+pub use application_change::{
+    WorthQueryAdmittedApplicationConditionalDefinition,
+    WorthQueryCheckedApplicationConditionalDefinition,
+};
 
 use worth_query_installation::facade::{
     ApplicationSchema, WorthQueryAuthoredHostConditionalPredicateProvider,

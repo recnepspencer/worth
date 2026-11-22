@@ -150,7 +150,7 @@ struct WorthQueryProviderAttemptPreparation {
     application_effect_count: usize,
     preimage_demand: Option<worth_query_installation::facade::InstalledPreImageDemand>,
     conditional_definition:
-        Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
+        Option<crate::domain_computation::primary_graph::product_operation::WorthQueryCheckedApplicationConditionalDefinition>,
     effect_posture: crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
     output_correspondence: super::super::super::effect_program::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
     retain_output_demand_observation: bool,

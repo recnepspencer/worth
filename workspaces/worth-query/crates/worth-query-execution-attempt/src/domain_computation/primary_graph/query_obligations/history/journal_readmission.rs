@@ -8,7 +8,10 @@ use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{
     CanonicalDigestId, ProgramSupportObligationIdentity, ProgramSupportObligationKind,
 };
-use worth_query_execution_obligations::facade::ledger_inspect;
+use worth_query_execution_obligations::facade::{
+    ledger_inspect,
+    query_obligations::{QueryColdObligationFold, QueryObligationDenial},
+};
 use worth_runtime_world::facade::WorldProgramActivationHistory;
 
 pub trait QueryObligationHistoryJournalReadmissionExt {
@@ -16,10 +19,7 @@ pub trait QueryObligationHistoryJournalReadmissionExt {
         self: &Arc<Self>,
         provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
         execution: &crate::domain_computation::WorthQueryExecutionRuntime,
-    ) -> Result<
-        (),
-        worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial,
-    >;
+    ) -> Result<(), QueryObligationDenial>;
 
     fn readmit_journal(
         &self,
@@ -29,13 +29,17 @@ pub trait QueryObligationHistoryJournalReadmissionExt {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<worth_proof::AdmittedHomeQueryObligations, WorthQueryCorrectionRetentionDenial>;
 
+    fn release_resolved_original_interpretations(
+        &self,
+        originals: &WorldProgramActivationHistory,
+        material: &MaterialPublication<'_>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), WorthQueryCorrectionRetentionDenial>;
+
     fn admit_current_prefix(
         &self,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<
-        worth_proof::AdmittedHomeQueryObligations,
-        worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial,
-    >;
+    ) -> Result<worth_proof::AdmittedHomeQueryObligations, QueryObligationDenial>;
 }
 
 impl QueryObligationHistoryJournalReadmissionExt for QueryObligationHistory {
@@ -43,10 +47,7 @@ impl QueryObligationHistoryJournalReadmissionExt for QueryObligationHistory {
         self: &Arc<Self>,
         provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
         execution: &crate::domain_computation::WorthQueryExecutionRuntime,
-    ) -> Result<
-        (),
-        worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial,
-    > {
+    ) -> Result<(), QueryObligationDenial> {
         provider.bind_original_meaning_support(self)?;
         use worth_query_execution_runtime::facade::ports::ExecutionRuntimeManagedRunCustodyPort as _;
         execution.managed_run_custody().bind(Arc::clone(self)
@@ -61,7 +62,7 @@ impl QueryObligationHistoryJournalReadmissionExt for QueryObligationHistory {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<worth_proof::AdmittedHomeQueryObligations, WorthQueryCorrectionRetentionDenial>
     {
-        use worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial as Denial;
+        use QueryObligationDenial as Denial;
         material.admit_obligation_scope(medium.as_ref())?;
         let driver = self.lock_publication()?;
         let medium = if let Some(installed) = self.medium.get() {
@@ -76,17 +77,21 @@ impl QueryObligationHistoryJournalReadmissionExt for QueryObligationHistory {
                 })?;
             Arc::clone(installed)
         } else {
-            let mut ledger = QueryObligationLedger::empty(medium.home());
+            let mut fold = QueryColdObligationFold::new(medium.home());
             while let Some(bytes) = medium.read_frame(
                 request,
-                ledger
+                fold.ledger()
                     .position()
                     .checked_add(1)
                     .ok_or(Denial::IdentityExhausted)?,
             )? {
                 request.consult().map_err(Denial::Execution)?;
-                ledger.readmit(QueryObligationFrame::readmit(&bytes)?)?;
+                fold.readmit(QueryObligationFrame::readmit(&bytes)?)?;
             }
+            // D7 fenced the incarnation that retained every folded row, so its
+            // process-local resources are gone. The journal keeps the witness
+            // until every such row is cold-released before service.
+            let (ledger, ended) = fold.finish();
             // Joined originals retain their durable counts. Adoption's owning
             // consumer remains a separate admission requirement.
             join_original_interpretations(self, &ledger, originals, material)?;
@@ -101,27 +106,59 @@ impl QueryObligationHistoryJournalReadmissionExt for QueryObligationHistory {
             self.medium
                 .set(Arc::clone(&medium))
                 .map_err(|_| Denial::SupportUnavailable)?;
-            state.journal = Some(QueryObligationJournalState::from_ledger(ledger));
+            state.journal = Some(QueryObligationJournalState::from_cold_fold(ledger, ended));
             medium
         };
         driver.finish_pending(medium.as_ref(), request)?;
+        driver.publish_cold_releases(medium.as_ref(), request)?;
         // The exclusive Home open has admitted the complete protected World
         // prefix. A pre-effect acquire with no World open has no owner effect;
         // terminal original fates no longer carry adoption custody.
         let finished_adoptions = {
-            let state = self.state();
+            use worth_foundational::facade::WorldOriginalFate as Fate;
+            let mut state = self.state();
             let fold =
                 ledger_inspect::adoption(&state.journal.as_ref().expect("admitted journal").ledger);
-            fold.branches
+            let mut summary = QueryColdAdoptionReadmissionSummary {
+                stopped_sets_retained: fold.stopped.len(),
+                ..QueryColdAdoptionReadmissionSummary::default()
+            };
+            for &attempt in &fold.completed {
+                match originals.original_state(attempt).map(|o| o.fate()) {
+                    Some(Fate::Published) => summary.already_completed += 1,
+                    None | Some(Fate::Released | Fate::Open | Fate::Continued) => {
+                        summary.already_released += 1;
+                    }
+                }
+            }
+            let mut finished = Vec::new();
+            for &attempt in fold
+                .branches
                 .keys()
-                .copied()
                 .filter(|attempt| !fold.completed.contains(attempt))
-                .filter(|attempt| {
-                    originals.original_state(*attempt).is_none_or(|original| {
-                        original.fate() != worth_foundational::facade::WorldOriginalFate::Open
-                    })
-                })
-                .collect::<Vec<_>>()
+            {
+                match originals.original_state(attempt).map(|o| o.fate()) {
+                    None => {
+                        summary.pre_open_retained += 1;
+                        finished.push(attempt);
+                    }
+                    Some(Fate::Open) => {}
+                    Some(Fate::Published) => {
+                        summary.published_discharged += 1;
+                        finished.push(attempt);
+                    }
+                    Some(Fate::Released) => {
+                        summary.released_discharged += 1;
+                        finished.push(attempt);
+                    }
+                    Some(Fate::Continued) => {
+                        summary.continued_discharged += 1;
+                        finished.push(attempt);
+                    }
+                }
+            }
+            state.cold_adoption_summary = summary;
+            finished
         };
         for attempt in finished_adoptions {
             driver.publish(
@@ -197,26 +234,58 @@ impl QueryObligationHistoryJournalReadmissionExt for QueryObligationHistory {
             ledger.payload_digest(),
         ))
     }
+    /// Release original-meaning interpretations whose World opens were released
+    /// during cold custody readmission, without overwriting adoption summary.
+    fn release_resolved_original_interpretations(
+        &self,
+        originals: &WorldProgramActivationHistory,
+        material: &MaterialPublication<'_>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), WorthQueryCorrectionRetentionDenial> {
+        let medium = self
+            .medium
+            .get()
+            .ok_or(QueryObligationDenial::SupportUnavailable)?;
+        material.admit_obligation_scope(medium.as_ref())?;
+        let driver = self.lock_publication()?;
+        driver.finish_pending(medium.as_ref(), request)?;
+        let released = {
+            let state = self.state();
+            let ledger = &state
+                .journal
+                .as_ref()
+                .ok_or(QueryObligationDenial::SupportUnavailable)?
+                .ledger;
+            join_original_interpretations_with_roster(ledger, &state.entries, originals, material)?
+        };
+        for identity in released {
+            driver.publish(
+                medium.as_ref(),
+                QueryProgramSupportRecord::Release { identity },
+                request,
+            )?;
+        }
+        Ok(())
+    }
+
     /// Finish cold cleanup's acknowledged records before the Home service
     /// witness escapes. This is the same publisher and admitted ledger.
     fn admit_current_prefix(
         &self,
         request: &ExecutionRequest<'_, '_>,
-    ) -> Result<
-        worth_proof::AdmittedHomeQueryObligations,
-        worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial,
-    > {
+    ) -> Result<worth_proof::AdmittedHomeQueryObligations, QueryObligationDenial> {
         let medium = self
             .medium
             .get()
-            .ok_or(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::SupportUnavailable)?;
+            .ok_or(QueryObligationDenial::SupportUnavailable)?;
         let driver = self.lock_publication()?;
         driver.finish_pending(medium.as_ref(), request)?;
+        driver.publish_cold_releases(medium.as_ref(), request)?;
         let state = self.state();
         let ledger = &state
             .journal
             .as_ref()
-            .ok_or(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::SupportUnavailable)?
+            .ok_or(QueryObligationDenial::SupportUnavailable)?
             .ledger;
         Ok(medium.authority().admit_query_obligation_prefix(
             ledger.position(),
@@ -231,10 +300,7 @@ fn join_original_interpretations(
     ledger: &QueryObligationLedger,
     originals: &WorldProgramActivationHistory,
     material: &MaterialPublication<'_>,
-) -> Result<
-    Vec<ProgramSupportObligationIdentity>,
-    worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial,
-> {
+) -> Result<Vec<ProgramSupportObligationIdentity>, QueryObligationDenial> {
     join_original_interpretations_with_roster(ledger, &history.state().entries, originals, material)
 }
 
@@ -243,10 +309,19 @@ fn join_original_interpretations_with_roster(
     entries: &BTreeMap<ApplicationProgramRevision, SupportEntryState>,
     originals: &WorldProgramActivationHistory,
     material: &MaterialPublication<'_>,
-) -> Result<
-    Vec<ProgramSupportObligationIdentity>,
-    worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial,
-> {
+) -> Result<Vec<ProgramSupportObligationIdentity>, QueryObligationDenial> {
+    let check_revision = |revision: CanonicalDigestId| -> Result<(), QueryObligationDenial> {
+        if !entries.keys().any(|known| known.as_bytes() == revision.bytes()) {
+            return Err(QueryObligationDenial::UnrosteredProgram(revision));
+        }
+        if !matches!(
+            ledger.status(&revision),
+            Some(ProgramSupportStatus::Active | ProgramSupportStatus::Retiring)
+        ) {
+            return Err(QueryObligationDenial::SupportUnavailable);
+        }
+        Ok(())
+    };
     let adoption = ledger_inspect::adoption(ledger);
     for row in adoption
         .branches
@@ -254,49 +329,27 @@ fn join_original_interpretations_with_roster(
         .filter(|row| !adoption.completed.contains(&row.attempt))
     {
         for revision in [row.source, row.target] {
-            if !entries
-                .keys()
-                .any(|known| known.as_bytes() == revision.bytes())
-            {
-                return Err(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::UnrosteredProgram(revision));
-            }
-            if !matches!(
-                ledger.status(&revision),
-                Some(ProgramSupportStatus::Active | ProgramSupportStatus::Retiring)
-            ) {
-                return Err(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::SupportUnavailable);
-            }
+            check_revision(revision)?;
         }
     }
     for row in adoption.stopped.values() {
         for revision in
             std::iter::once(row.target).chain(row.remaining.iter().map(|(_, _, source)| *source))
         {
-            if !entries
-                .keys()
-                .any(|known| known.as_bytes() == revision.bytes())
-            {
-                return Err(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::UnrosteredProgram(revision));
-            }
-            if !matches!(
-                ledger.status(&revision),
-                Some(ProgramSupportStatus::Active | ProgramSupportStatus::Retiring)
-            ) {
-                return Err(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::SupportUnavailable);
-            }
+            check_revision(revision)?;
         }
     }
     let output = ledger_inspect::output(ledger);
     for row in output.sources.values() {
         let original = originals
-                .recorded_entry(row.commit)
-                .ok_or(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::ObligationSubjectMismatch)?;
+            .recorded_entry(row.commit)
+            .ok_or(QueryObligationDenial::ObligationSubjectMismatch)?;
         if original.branch().name() != row.branch
             || original.incarnation().ordinal() != row.lifecycle
             || original.generation().get() != row.generation
             || &original.recorded_revision() != row.revision.bytes()
         {
-            return Err(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::ObligationSubjectMismatch);
+            return Err(QueryObligationDenial::ObligationSubjectMismatch);
         }
     }
     let revisions = output.sources.values().map(|row| row.revision).chain(
@@ -307,18 +360,7 @@ fn join_original_interpretations_with_roster(
             .map(|row| row.revision),
     );
     for revision in revisions {
-        if !entries
-            .keys()
-            .any(|known| known.as_bytes() == revision.bytes())
-        {
-            return Err(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::UnrosteredProgram(revision));
-        }
-        if !matches!(
-            ledger.status(&revision),
-            Some(ProgramSupportStatus::Active | ProgramSupportStatus::Retiring)
-        ) {
-            return Err(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::SupportUnavailable);
-        }
+        check_revision(revision)?;
     }
     let mut terminal = ledger
         .released_original_interpretations(originals)?
@@ -326,24 +368,24 @@ fn join_original_interpretations_with_roster(
         .collect::<std::collections::BTreeSet<_>>();
     for row in ledger.obligations() {
         match row.kind {
-                ProgramSupportObligationKind::BranchAdoption => {
-                    return Err(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::AdoptionReadmissionRequired)
+            ProgramSupportObligationKind::BranchAdoption => {
+                return Err(QueryObligationDenial::AdoptionReadmissionRequired)
+            }
+            ProgramSupportObligationKind::OriginalInterpretation => {
+                if row.source == row.target
+                    && material.expired_membership(row.original, row.source)
+                {
+                    terminal.insert(row.identity);
                 }
-                ProgramSupportObligationKind::OriginalInterpretation => {
-                    if row.source == row.target
-                        && material.expired_membership(row.original, row.source)
-                    {
-                        terminal.insert(row.identity);
-                    }
-                    if !terminal.contains(&row.identity)
-                        && !entries
-                            .keys()
-                            .any(|revision| revision.as_bytes() == row.source.bytes())
-                    {
-                        return Err(worth_query_execution_obligations::facade::query_obligations::QueryObligationDenial::UnrosteredProgram(row.source));
-                    }
+                if !terminal.contains(&row.identity)
+                    && !entries
+                        .keys()
+                        .any(|revision| revision.as_bytes() == row.source.bytes())
+                {
+                    return Err(QueryObligationDenial::UnrosteredProgram(row.source));
                 }
             }
+        }
     }
     Ok(terminal.into_iter().collect())
 }

@@ -45,6 +45,14 @@ pub enum ApplicationHomeCheckpointDenial {
         detail: String,
     },
     PhysicalCheckpointOutcome(worth_store::physical_runtime::PhysicalCheckpointOutcome),
+    /// Derived state was explicitly discarded via D14's sealed test door; close
+    /// leaves `home.checkpoint` discarded instead of re-capturing it.
+    DerivedStateDiscarded,
+    /// Another D14 discard operation is currently serialized on this Home's checkpoint slot.
+    DiscardInProgress,
+    /// A D14 discard failed with an unknown physical selection outcome;
+    /// the Home retains the failure custody instead of assuming no effect.
+    DiscardUnresolved,
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]

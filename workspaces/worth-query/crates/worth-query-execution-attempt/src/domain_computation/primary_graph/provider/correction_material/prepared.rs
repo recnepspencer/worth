@@ -8,6 +8,14 @@ use worth_foundational::facade::{
     CorrectionMaterialPinIdentity, DurableCompositePublicationAttemptIdentity,
 };
 impl WorthQueryPrimaryGraphProvider {
+    pub fn observe_next_correction_pin_transfer(
+        &self,
+        observer: Box<dyn FnOnce() + Send>,
+    ) {
+        if let Some(owner) = self.correction_material.get() {
+            owner.install_post_transfer_observer(observer);
+        }
+    }
     pub fn prepare_correction_command(
         &self,
         original: DurableCompositePublicationAttemptIdentity,

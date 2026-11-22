@@ -16,8 +16,10 @@ pub mod aftermath {
 pub mod query_obligations {
     pub use crate::query_obligations::{
         QueryAcceptedOutputRecord, QueryAdoptionPerformedDescription, QueryAdoptionRecord,
-        QueryBranchAdoptionObligation, QueryConditionalDecision, QueryConditionalDecisionRecord,
-        QueryConditionalPosture, QueryManagedCleanupObligation, QueryManagedCleanupOriginal,
+        QueryBranchAdoptionObligation, QueryColdObligationFold, QueryColdRelease,
+        QueryColdReleaseSubject, QueryColdReleaseTerminal, QueryConditionalDecision,
+        QueryConditionalDecisionRecord, QueryConditionalOriginal, QueryConditionalPosture,
+        QueryEndedIncarnation, QueryManagedCleanupObligation, QueryManagedCleanupOriginal,
         QueryManagedCleanupRecord, QueryManagedCleanupRelease, QueryManagedExecutionRelease,
         QueryManagedRunObligation, QueryManagedRunPosture, QueryManagedRunRecord,
         QueryManagedRunRecovery, QueryManagedRunResources, QueryManagedWorkflowCleanupRoute,

@@ -24,6 +24,7 @@ pub(super) fn open(
         contacts,
         install_route: true,
         definition_only: true,
+        multi_intent_targets: false,
     };
     let request = WorthQueryApplicationHomeRequest::new(
         location,

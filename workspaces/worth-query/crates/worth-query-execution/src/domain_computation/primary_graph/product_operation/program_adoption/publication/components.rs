@@ -146,6 +146,20 @@ Err(PublicationDenial::Stopped(stop)) => {
                 )
             }
         };
+        use worth_query_execution_attempt::facade::domain_computation::primary_graph::application_runtime::operation_control::attempt_registration::WorthQueryBranchAdoptionStageForTest as AdoptionStage;
+        use worth_query_execution_attempt::facade::ports::PrimaryGraphProviderInternalPort as _;
+        use worth_query_execution_query::facade::ports::ApplicationRuntimeCoreInternalPort as _;
+        let stage_control = application
+            .inner
+            .runtime
+            .primary_provider_ref()
+            .application_attempt_operation_control_ref();
+        if matches!(
+            &outcome,
+            WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
+        ) {
+            stage_control.reach_branch_adoption_stage(AdoptionStage::AfterWorldPublished);
+        }
         if !matches!(
             &outcome,
             WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(_)
@@ -161,6 +175,12 @@ Err(PublicationDenial::Stopped(stop)) => {
                     cause,
                     outcome: Box::new(outcome),
                 };
+            }
+            if matches!(
+                &outcome,
+                WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
+            ) {
+                stage_control.reach_branch_adoption_stage(AdoptionStage::AfterObligationReleased);
             }
         }
         outcome

@@ -15,6 +15,7 @@ mod assessment;
 mod captured_resume;
 mod definition;
 mod fixture;
+mod killed_resume;
 mod observation;
 mod output_world;
 mod requests;

@@ -69,6 +69,37 @@ impl Pending {
     ) -> &worth_signal::facade::InstalledSignalConditionalContract {
         self.predecessor.signal_contract()
     }
+    /// Capture the planned leg from the same prepared contract and sources.
+    pub(super) fn planned_leg(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        node: worth_foundational::facade::DurableSignalNodeIdentity,
+        definition: &worth_signal::facade::SignalConditionalContractDefinition,
+    ) -> Result<crate::conditional_execution::BridgePlannedDefinitionLeg, D> {
+        let section = |cause| D::Section(Box::new(cause));
+        let admission = self
+            .admission
+            .as_ref()
+            .expect("prepared, not yet published");
+        let signal = worth_signal::facade::durability::SignalPlannedConditionalDefinition::capture(
+            execution, node, definition,
+        )
+        .map_err(|cause| section(BridgeAuthoredSectionDenial::SignalImage(cause)))?;
+        let providers = self
+            .providers
+            .as_ref()
+            .expect("prepared, not yet published")
+            .authored_descriptions()
+            .map_err(|cause| section(BridgeAuthoredSectionDenial::Provider(cause)))?;
+        crate::conditional_execution::BridgePlannedDefinitionLeg::capture(
+            execution,
+            &signal,
+            admission.contract(),
+            self.location.as_ref().expect("prepared, not yet published"),
+            &providers,
+        )
+        .map_err(section)
+    }
     pub(super) fn claimant(&self) -> worth_signal::facade::SignalAspectLoweringOwner {
         self.program.bridge.signal_aspect_lowering_owner.clone()
     }
