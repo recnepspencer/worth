@@ -184,6 +184,16 @@ pub(crate) fn peeled(ty: &Type) -> &Type {
 
 /// `T` when `ty` is spelled `Option<T>` (any path ending in `Option`).
 pub(crate) fn option_inner(ty: &Type) -> Option<&Type> {
+    wrapped_inner(ty, "Option")
+}
+
+/// `T` when `ty` is spelled `Vec<T>` (any path ending in `Vec`).
+pub(crate) fn vec_inner(ty: &Type) -> Option<&Type> {
+    wrapped_inner(ty, "Vec")
+}
+
+/// `T` when `ty` is a path ending in `wrapper<T>`.
+fn wrapped_inner<'a>(ty: &'a Type, wrapper: &str) -> Option<&'a Type> {
     let Type::Path(path) = peeled(ty) else {
         return None;
     };
@@ -192,7 +202,7 @@ pub(crate) fn option_inner(ty: &Type) -> Option<&Type> {
         return None;
     };
     match (
-        path.qself.is_none() && last.ident == "Option",
+        path.qself.is_none() && last.ident == wrapper,
         arguments.args.first(),
     ) {
         (true, Some(GenericArgument::Type(inner))) if arguments.args.len() == 1 => Some(inner),
@@ -241,6 +251,8 @@ mod tests {
             syn::parse2(TokenStream::from(group)).unwrap()
         };
         assert!(option_inner(&grouped("Option<u64>")).is_some());
+        assert!(vec_inner(&grouped("Vec<(Row)>")).is_some());
+        assert!(vec_inner(&grouped("Option<Row>")).is_none());
         let column = selection_column(&grouped("Title"), None, Span::call_site()).unwrap();
         assert_eq!(column.value(), "Title");
     }

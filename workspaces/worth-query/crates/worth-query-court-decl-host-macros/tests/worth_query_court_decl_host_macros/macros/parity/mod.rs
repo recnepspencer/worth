@@ -6,6 +6,7 @@ use worth_query_decl::facade::application_schema::ApplicationSchemaDeclarationBu
 mod action;
 mod projection;
 mod record;
+mod relation;
 
 fn board() -> ApplicationSchemaDeclarationBuilder<Schema> {
     ApplicationSchemaDeclarationBuilder::<Schema>::from_fragment(Board)

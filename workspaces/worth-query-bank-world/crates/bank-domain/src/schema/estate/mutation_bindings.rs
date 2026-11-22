@@ -1,23 +1,21 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
-        ApplicationMutationFieldScope, ApplicationMutationInputScope, ApplicationMutationIntent,
-        NoApplicationMutationOutputs, NoApplicationMutationSource,
+        ApplicationCapabilityAdmission, ApplicationCapabilityMutationBinding,
+        ApplicationMutationBinding, ApplicationMutationFieldScope, ApplicationMutationInputScope,
+        NoApplicationMutationOutputs,
     },
-    application_schema::ApplicationPrincipalBindingRef,
-    worth_query_structured_value_binding,
+    worth_query_mutation_binding, worth_query_structured_value_binding,
 };
 
 use crate::{
     estate::{DeathNoticeId, EstateAction, EstateCaseId},
     model::{AccountId, BankPrincipalId},
-    proposals::BankIdempotencyKey,
 };
 
 use crate::schema::{
-    BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, EstateCaseIdentityField,
-    ExternalPrincipalMapping, FreezeEstateAccountCapability, FreezeEstateAccountOperation,
-    NotifyDeathEstateCapability, NotifyDeathEstateOperation, Principal,
+    BankBindingContext, BankSchema, EstateActionInputBinding, EstateCaseIdentityField,
+    FreezeEstateAccountCapability, FreezeEstateAccountOperation, NotifyDeathEstateCapability,
+    NotifyDeathEstateOperation,
 };
 
 mod open_estate_case;
@@ -56,6 +54,14 @@ impl NotifyEstateDeath {
     pub const fn action(self) -> EstateAction {
         self.action
     }
+
+    const fn shared_action(&self) -> &EstateAction {
+        &self.action
+    }
+
+    const fn scope_estate(&self) -> EstateCaseId {
+        self.estate
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -70,6 +76,14 @@ impl FreezeEstateAccount {
             action: EstateAction::FreezeAccount { estate, account },
             estate,
         }
+    }
+
+    const fn shared_action(&self) -> &EstateAction {
+        &self.action
+    }
+
+    const fn scope_estate(&self) -> EstateCaseId {
+        self.estate
     }
 }
 
@@ -95,101 +109,45 @@ worth_query_structured_value_binding!(
     }
 );
 
-pub struct NotifyEstateDeathMutationBinding;
+worth_query_mutation_binding!(
+    pub NotifyEstateDeathMutationBinding for EstateAction, schema BankSchema, context BankBindingContext,
+    intent NotifyEstateDeath => NotifyEstateDeath::shared_action,
+    identity "bank.estate.notify-death.mutation-binding.v1",
+    input EstateActionInputBinding,
+    operation NotifyDeathEstateOperation,
+    result EstateMutationResultBinding,
+    decision EstateAction,
+    denial EstateMutationDenialBinding,
+    handler identity "bank.estate.notify-death.handler.v1",
+    admission ApplicationCapabilityAdmission<NotifyDeathEstateCapability>,
+    program required,
+    outputs NoApplicationMutationOutputs,
+    scope EstateCaseIdentityField,
+    field EstateCaseIdentityField::at("EstateCaseIdentityField"),
+    value NotifyEstateDeath::scope_estate,
+);
 
-impl ApplicationMutationBinding<BankSchema> for NotifyEstateDeathMutationBinding {
-    fn workflow_execution_requirements(
-    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
-    {
-        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
-    }
-
-    type Input = EstateAction;
-    type InputBinding = super::EstateActionInputBinding;
-    type Result = EstateMutationResult;
-    type ResultBinding = EstateMutationResultBinding;
-    type IdempotencyKey = BankIdempotencyKey;
-    type Operation = NotifyDeathEstateOperation;
-    type Decision = EstateAction;
-    type Denial = EstateMutationDenial;
-    type DenialBinding = EstateMutationDenialBinding;
-    type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<EstateCaseIdentityField>;
-    type PrincipalBinding = BankPrincipalBinding;
-    type Mapping = ExternalPrincipalMapping;
-    type Principal = Principal;
-    type PrincipalIdentity = BankPrincipalId;
-    type PrincipalIdentityBinding = BankPrincipalIdBinding;
-    type SourceExpectation = NoApplicationMutationSource;
-
-    const IDENTITY: &'static str = "bank.estate.notify-death.mutation-binding.v1";
-    const HANDLER_IDENTITY: &'static str = "bank.estate.notify-death.handler.v1";
-    const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
-    const REQUIRES_APPLICATION_PROGRAM: bool = true;
-
-    fn scope_field() -> EstateCaseIdentityField {
-        EstateCaseIdentityField::at("EstateCaseIdentityField")
-    }
-
-    fn principal_binding() -> ApplicationPrincipalBindingRef<
-        BankSchema,
-        BankPrincipalBinding,
-        ExternalPrincipalMapping,
-        Principal,
-        BankPrincipalId,
-        BankPrincipalIdBinding,
-    > {
-        BankPrincipalBinding::reference()
-    }
+impl ApplicationCapabilityMutationBinding<BankSchema> for NotifyEstateDeathMutationBinding {
+    type Capability = NotifyDeathEstateCapability;
 }
 
-pub struct FreezeEstateAccountMutationBinding;
-
-impl ApplicationMutationBinding<BankSchema> for FreezeEstateAccountMutationBinding {
-    fn workflow_execution_requirements(
-    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
-    {
-        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
-    }
-
-    type Input = EstateAction;
-    type InputBinding = super::EstateActionInputBinding;
-    type Result = EstateMutationResult;
-    type ResultBinding = EstateMutationResultBinding;
-    type IdempotencyKey = BankIdempotencyKey;
-    type Operation = FreezeEstateAccountOperation;
-    type Decision = EstateAction;
-    type Denial = EstateMutationDenial;
-    type DenialBinding = EstateMutationDenialBinding;
-    type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<EstateCaseIdentityField>;
-    type PrincipalBinding = BankPrincipalBinding;
-    type Mapping = ExternalPrincipalMapping;
-    type Principal = Principal;
-    type PrincipalIdentity = BankPrincipalId;
-    type PrincipalIdentityBinding = BankPrincipalIdBinding;
-    type SourceExpectation = NoApplicationMutationSource;
-
-    const IDENTITY: &'static str = "bank.estate.freeze-account.mutation-binding.v1";
-    const HANDLER_IDENTITY: &'static str = "bank.estate.freeze-account.handler.v1";
-    const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
-    const REQUIRES_APPLICATION_PROGRAM: bool = true;
-
-    fn scope_field() -> EstateCaseIdentityField {
-        EstateCaseIdentityField::at("EstateCaseIdentityField")
-    }
-
-    fn principal_binding() -> ApplicationPrincipalBindingRef<
-        BankSchema,
-        BankPrincipalBinding,
-        ExternalPrincipalMapping,
-        Principal,
-        BankPrincipalId,
-        BankPrincipalIdBinding,
-    > {
-        BankPrincipalBinding::reference()
-    }
-}
+worth_query_mutation_binding!(
+    pub FreezeEstateAccountMutationBinding for EstateAction, schema BankSchema, context BankBindingContext,
+    intent FreezeEstateAccount => FreezeEstateAccount::shared_action,
+    identity "bank.estate.freeze-account.mutation-binding.v1",
+    input EstateActionInputBinding,
+    operation FreezeEstateAccountOperation,
+    result EstateMutationResultBinding,
+    decision EstateAction,
+    denial EstateMutationDenialBinding,
+    handler identity "bank.estate.freeze-account.handler.v1",
+    admission ApplicationCapabilityAdmission<FreezeEstateAccountCapability>,
+    program required,
+    outputs NoApplicationMutationOutputs,
+    scope EstateCaseIdentityField,
+    field EstateCaseIdentityField::at("EstateCaseIdentityField"),
+    value FreezeEstateAccount::scope_estate,
+);
 
 impl ApplicationCapabilityMutationBinding<BankSchema> for FreezeEstateAccountMutationBinding {
     type Capability = FreezeEstateAccountCapability;
@@ -208,64 +166,6 @@ impl ApplicationMutationInputScope<BankSchema, FreezeEstateAccountMutationBindin
                 .expect("every estate action variant carries its estate"),
         )
     }
-}
-
-impl ApplicationMutationIntent<BankSchema> for FreezeEstateAccount {
-    type Binding = FreezeEstateAccountMutationBinding;
-
-    fn input(&self) -> &EstateAction {
-        &self.action
-    }
-
-    fn scope_binding(
-        &self,
-    ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(
-            EstateCaseIdentityField::at("EstateCaseIdentityField"),
-            self.estate,
-        )
-    }
-}
-
-impl ApplicationCapabilityMutationBinding<BankSchema> for NotifyEstateDeathMutationBinding {
-    type Capability = NotifyDeathEstateCapability;
-}
-
-impl ApplicationMutationIntent<BankSchema> for NotifyEstateDeath {
-    type Binding = NotifyEstateDeathMutationBinding;
-
-    fn input(&self) -> &EstateAction {
-        &self.action
-    }
-
-    fn scope_binding(
-        &self,
-    ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(
-            EstateCaseIdentityField::at("EstateCaseIdentityField"),
-            self.estate,
-        )
-    }
-}
-
-impl
-    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
-    for FreezeEstateAccountMutationBinding
-{
-    type Admission =
-        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
-            FreezeEstateAccountCapability,
-        >;
-}
-
-impl
-    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
-    for NotifyEstateDeathMutationBinding
-{
-    type Admission =
-        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
-            NotifyDeathEstateCapability,
-        >;
 }
 
 impl TryFrom<EstateAction> for NotifyEstateDeath {

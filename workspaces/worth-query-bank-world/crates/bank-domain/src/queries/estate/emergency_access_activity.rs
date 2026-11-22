@@ -20,15 +20,10 @@ use crate::{
     },
 };
 
-use self::{
-    selectors::{access_id, access_issued_at, estate_accesses, estate_id},
-    shape::emergency_access_activity_shape,
-};
+use self::projection::{AccessRow, EstateRow, ReviewRow};
 
 mod live_cause;
 mod projection;
-mod selectors;
-mod shape;
 #[cfg(test)]
 mod tests;
 
@@ -166,6 +161,7 @@ pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefiniti
     EstateEmergencyAccessActivity,
     EstateCase,
 > {
+    type Q = EstateEmergencyAccessActivityQuery;
     let field = || {
         crate::schema::encoded_bank_value::<crate::schema::RestrictedBankFieldBinding>(
             RestrictedBankField::EmergencyAccessActivity,
@@ -207,24 +203,23 @@ pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefiniti
         access_ordering.clone(),
     )
     .expect("owned record selection is valid")
-    .disclose_field_by(estate_id(), field(), live_scope)
-    .disclose_relation_by(estate_accesses(), field(), collection)
-    .disclose_field_by(access_id(), field(), access_ordering.clone())
-    .disclose_field_by(selectors::access_reason(), field(), no_influence.clone())
-    .disclose_field_by(selectors::access_status(), field(), no_influence.clone())
-    .disclose_field_by(selectors::access_issued_at(), field(), access_ordering)
-    .disclose_field_by(
-        selectors::access_expires_at(),
-        field(),
-        no_influence.clone(),
-    )
-    .disclose_relation_by(selectors::access_review(), field(), no_influence.clone())
-    .disclose_field_by(selectors::review_id(), field(), no_influence.clone())
-    .disclose_field_by(selectors::review_status(), field(), no_influence);
+    .disclose_field_by(EstateRow::estate::<Q>(), field(), live_scope)
+    .disclose_relation_by(EstateRow::accesses::<Q>(), field(), collection)
+    .disclose_field_by(AccessRow::access::<Q>(), field(), access_ordering.clone())
+    .disclose_field_by(AccessRow::reason::<Q>(), field(), no_influence.clone())
+    .disclose_field_by(AccessRow::status::<Q>(), field(), no_influence.clone())
+    .disclose_field_by(AccessRow::issued_at::<Q>(), field(), access_ordering)
+    .disclose_field_by(AccessRow::expires_at::<Q>(), field(), no_influence.clone())
+    .disclose_relation_by(AccessRow::review::<Q>(), field(), no_influence.clone())
+    .disclose_field_by(ReviewRow::review::<Q>(), field(), no_influence.clone())
+    .disclose_field_by(ReviewRow::status::<Q>(), field(), no_influence);
     ApplicationQueryDefinitionBuilder::declare(EstateEmergencyAccessActivityQuery::reference())
         .root(EstateCase::reference())
         .scope(EstateCase::reference())
-        .result_shape(emergency_access_activity_shape())
+        .result_shape(
+            EstateRow::result_shape_builder::<Q, EstateEmergencyAccessActivityQueryResultBinding>()
+                .build(),
+        )
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .disclosure(disclosure)
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned().with_preview())
@@ -236,13 +231,16 @@ pub fn estate_emergency_access_activity_definition() -> ApplicationQueryDefiniti
         )
         .requires_ability(ViewEstateCase::reference())
         .order_by(
-            access_issued_at(),
+            AccessRow::issued_at(),
             ApplicationQueryOrderingDirection::Ascending,
         )
-        .order_by(access_id(), ApplicationQueryOrderingDirection::Ascending)
-        .continue_by(estate_accesses())
+        .order_by(
+            AccessRow::access(),
+            ApplicationQueryOrderingDirection::Ascending,
+        )
+        .continue_by(EstateRow::accesses())
         .live_by::<EmergencyAccess, EstateEmergencyAccessActivityLiveCause>(
-            estate_id(),
-            access_id(),
+            EstateRow::estate(),
+            AccessRow::access(),
         )
 }

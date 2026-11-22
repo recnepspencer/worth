@@ -897,7 +897,12 @@ Bindings that share a principal mapping, idempotency key and denial name one
 Context,` after the schema in `worth_query_mutation_binding!` or
 `worth_query_query_binding!`. Omitted principal, `idempotency` and `denial`
 clauses resolve to the context; a clause written on the binding wins. Both
-spellings install the same canonical schema.
+spellings install the same canonical schema. When one input serves several
+operations (an action enum, for example), bind each operation's own intent
+type to the shared input: `pub OpenBinding for Action, schema S, context C,
+intent OpenCase => OpenCase::action, ..` makes `OpenCase` the
+`ApplicationMutationIntent` whose `input()` lends the shared `Action` and
+whose scope `value` reads `OpenCase`.
 
 `decl::application_identity::ApplicationIdentityNamespace` derives one root's
 identities (`root.input`, `root.binding`, `root.request`, `root.result`,
@@ -946,7 +951,16 @@ or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
   field, `result_shape::<Query>()` and `WorthQueryApplicationProjection` for
   every query whose result binding carries the row. Each field names its
   selection with `field = Alias`; a field whose type differs from the column's
-  does not compile.
+  does not compile. A field may instead traverse a relation:
+  `relation = R, nested = Binding` leaves the root along `R`, and
+  `reverse_from = Entity` arrives at the root from `R`'s declaring entity. The
+  field type selects the cardinality (`T` one, `Option<T>` at most one,
+  `Vec<T>` many), where `T` is itself a derived projection rooted at the
+  related entity; `Binding` identifies its nested shape. Every derived row
+  also has `result_shape_builder::<Query, Binding>()` and
+  `project_row::<Query>(row)`, so a row can feed a domain result type that
+  converts from it. `selector = name` renames a slot's generated selector
+  function when the row already has a method of the field's name.
 - `WorthQueryAction` on an input declares its input binding, operation (with
   forwarded `access(..)` and inline capabilities such as `reads(Task)`),
   contextual mutation binding and optional source-completion `delivery`, with
@@ -7861,6 +7875,10 @@ reservations, 256 custody records). Each `with_*` override replaces one budget
 group verbatim, and `install()` validates through
 `WorthQueryProductWorldResources::install`, returning the same
 `RuntimeWorldBudgetDenial` an explicit installation would.
+`with_execution_policy`, `with_query_profile` and `with_signal_budget` replace
+the preset's serial unlimited-work execution policy, default query profile and
+development conditional budget verbatim, so an application with finite work
+and memory ceilings keeps them under the preset.
 
 Set optional published-snapshot, active-snapshot and prepared-candidate policies
 in `PublicationConfig`; `Some(amount)` selects a finite policy. Retain snapshots

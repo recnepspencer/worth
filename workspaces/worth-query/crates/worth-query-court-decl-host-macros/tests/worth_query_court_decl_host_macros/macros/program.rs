@@ -1,6 +1,6 @@
 //! One feature, contribution and program; an in-memory Host under bounded
 //! serial limits; and the local-process principal that uses it.
-use super::{actions::*, reads, schema::*};
+use super::{actions::*, reads, relations, schema::*};
 use std::time::Duration;
 use worth_foundational::facade::CanonicalDate;
 use worth_query_decl::facade::application_schema::fragment::Registration;
@@ -24,6 +24,8 @@ worth_query_application_contribution! {
                 .application_query_binding::<reads::SearchBinding>()
                 .application_query(reads::due())
                 .application_query_binding::<reads::DueBinding>()
+                .application_query(relations::outline())
+                .application_query_binding::<relations::OutlineQueryBinding>()
         };
         body_action(RenameBinding, Renamed) { operation: rename_definition(); };
         body_action(RescheduleBinding, Rescheduled) { operation: reschedule_definition(); };

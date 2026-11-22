@@ -1,27 +1,21 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
-        ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
-        NoApplicationMutationSource,
+        ApplicationCapabilityAdmission, ApplicationCapabilityMutationBinding,
+        NoApplicationMutationOutputs,
     },
-    application_schema::ApplicationPrincipalBindingRef,
+    worth_query_mutation_binding,
 };
 
 use crate::{
     estate::{DeathNoticeId, EstateAction, EstateCaseId},
     model::BankPrincipalId,
-    proposals::BankIdempotencyKey,
     schema::{
-        BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, EstateCaseIdentityField,
-        ExternalPrincipalMapping, Principal, RetransmitDeathNoticeEstateCapability,
-        RetransmitDeathNoticeEstateOperation,
+        BankBindingContext, BankSchema, EstateActionInputBinding, EstateCaseIdentityField,
+        RetransmitDeathNoticeEstateCapability, RetransmitDeathNoticeEstateOperation,
     },
 };
 
-use super::{
-    EstateMutationDenial, EstateMutationDenialBinding, EstateMutationResult,
-    EstateMutationResultBinding,
-};
+use super::{EstateMutationDenialBinding, EstateMutationResultBinding};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RetransmitEstateDeathNotice {
@@ -44,87 +38,38 @@ impl RetransmitEstateDeathNotice {
             estate,
         }
     }
-}
 
-pub struct RetransmitEstateDeathNoticeMutationBinding;
-
-impl ApplicationMutationBinding<BankSchema> for RetransmitEstateDeathNoticeMutationBinding {
-    fn workflow_execution_requirements(
-    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
-    {
-        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
+    const fn shared_action(&self) -> &EstateAction {
+        &self.action
     }
 
-    type Input = EstateAction;
-    type InputBinding = super::super::EstateActionInputBinding;
-    type Result = EstateMutationResult;
-    type ResultBinding = EstateMutationResultBinding;
-    type IdempotencyKey = BankIdempotencyKey;
-    type Operation = RetransmitDeathNoticeEstateOperation;
-    type Decision = EstateAction;
-    type Denial = EstateMutationDenial;
-    type DenialBinding = EstateMutationDenialBinding;
-    type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<EstateCaseIdentityField>;
-    type PrincipalBinding = BankPrincipalBinding;
-    type Mapping = ExternalPrincipalMapping;
-    type Principal = Principal;
-    type PrincipalIdentity = BankPrincipalId;
-    type PrincipalIdentityBinding = BankPrincipalIdBinding;
-    type SourceExpectation = NoApplicationMutationSource;
-
-    const IDENTITY: &'static str = "bank.estate.retransmit-death-notice.mutation-binding.v1";
-    const HANDLER_IDENTITY: &'static str = "bank.estate.retransmit-death-notice.handler.v1";
-    const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
-    const REQUIRES_APPLICATION_PROGRAM: bool = true;
-
-    fn scope_field() -> EstateCaseIdentityField {
-        EstateCaseIdentityField::at("EstateCaseIdentityField")
-    }
-
-    fn principal_binding() -> ApplicationPrincipalBindingRef<
-        BankSchema,
-        BankPrincipalBinding,
-        ExternalPrincipalMapping,
-        Principal,
-        BankPrincipalId,
-        BankPrincipalIdBinding,
-    > {
-        BankPrincipalBinding::reference()
+    const fn scope_estate(&self) -> EstateCaseId {
+        self.estate
     }
 }
+
+worth_query_mutation_binding!(
+    pub RetransmitEstateDeathNoticeMutationBinding for EstateAction, schema BankSchema, context BankBindingContext,
+    intent RetransmitEstateDeathNotice => RetransmitEstateDeathNotice::shared_action,
+    identity "bank.estate.retransmit-death-notice.mutation-binding.v1",
+    input EstateActionInputBinding,
+    operation RetransmitDeathNoticeEstateOperation,
+    result EstateMutationResultBinding,
+    decision EstateAction,
+    denial EstateMutationDenialBinding,
+    handler identity "bank.estate.retransmit-death-notice.handler.v1",
+    admission ApplicationCapabilityAdmission<RetransmitDeathNoticeEstateCapability>,
+    program required,
+    outputs NoApplicationMutationOutputs,
+    scope EstateCaseIdentityField,
+    field EstateCaseIdentityField::at("EstateCaseIdentityField"),
+    value RetransmitEstateDeathNotice::scope_estate,
+);
 
 impl ApplicationCapabilityMutationBinding<BankSchema>
     for RetransmitEstateDeathNoticeMutationBinding
 {
     type Capability = RetransmitDeathNoticeEstateCapability;
-}
-
-impl ApplicationMutationIntent<BankSchema> for RetransmitEstateDeathNotice {
-    type Binding = RetransmitEstateDeathNoticeMutationBinding;
-
-    fn input(&self) -> &EstateAction {
-        &self.action
-    }
-
-    fn scope_binding(
-        &self,
-    ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(
-            EstateCaseIdentityField::at("EstateCaseIdentityField"),
-            self.estate,
-        )
-    }
-}
-
-impl
-    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
-    for RetransmitEstateDeathNoticeMutationBinding
-{
-    type Admission =
-        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
-            RetransmitDeathNoticeEstateCapability,
-        >;
 }
 
 impl TryFrom<EstateAction> for RetransmitEstateDeathNotice {
