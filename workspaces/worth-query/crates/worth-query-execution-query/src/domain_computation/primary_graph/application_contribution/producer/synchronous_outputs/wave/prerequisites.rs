@@ -150,6 +150,18 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             )?;
         }
         self.leave_refusal(context, i);
+        // A parent it closed on that already derived is a selection it made:
+        // re-closing must select it again, verified once it derives again
+        // (`verify_rediscovered`). Every path that clears a capture keeps it,
+        // whether or not a selection change for it is still queued.
+        let derived = self
+            .canonical_set(i)
+            .into_iter()
+            .filter(|&parent| self.tasks[parent].is_done())
+            .collect::<Vec<_>>();
+        if !derived.is_empty() {
+            self.merge_reopen_check(context, i, None, Vec::new(), derived)?;
+        }
         let task = &mut self.tasks[i];
         task.close_epoch = task.close_epoch.wrapping_add(1);
         task.prerequisites = Vec::new();

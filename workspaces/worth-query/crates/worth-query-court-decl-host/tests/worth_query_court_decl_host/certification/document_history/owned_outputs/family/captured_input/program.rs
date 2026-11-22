@@ -189,6 +189,12 @@ where
     features
 }
 
+/// The switching `choice` member drains on the seed port, before the
+/// zero-weight control `a` (PR C C4 r4): its first choice derives first.
+/// Per court; each court runs in its own process.
+pub(in super::super::super) static CHOICE_FIRST: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
 pub(in super::super::super) fn seed(
     graph: &mut WorthQueryPrimaryGraphBootstrap<Schema>,
     parent_switch: Option<bool>,
@@ -224,6 +230,13 @@ pub(in super::super::super) fn seed(
         Some(true) => &switching,
     };
     for &(key, parent, weight) in members {
+        let weight = if key == "capture:choice"
+            && CHOICE_FIRST.load(std::sync::atomic::Ordering::SeqCst)
+        {
+            1
+        } else {
+            weight
+        };
         graph.bind_entity(
             WorthQueryApplicationEntitySeed::new(
                 Member::reference(),

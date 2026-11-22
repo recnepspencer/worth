@@ -11,11 +11,13 @@ use crate::domain_computation::primary_graph::application_contribution::coupled_
 use state::{map_insert, map_remove, TaskState};
 mod check;
 
-/// What a reopened row selected before, and the append that reopened it.
+/// What a reopened row selected before, and the append that reopened it:
+/// none when only its capture was cleared, so its re-derivation is verified
+/// without ending any earlier evidence.
 /// Children are compared by route: a child no occurrence component
 /// coalesces is a new row on re-discovery, yet the same selection.
 pub(super) struct ReopenCheck {
-    invalidator: usize,
+    invalidator: Option<usize>,
     prior_children: Vec<SelectedRoute>,
     prior_prerequisites: Vec<usize>,
 }
@@ -114,7 +116,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     self.routes(context, candidate, children)?
                 };
                 let prior_prerequisites = self.canonical_set(i);
-                self.merge_reopen_check(context, i, invalidator, prior_children, prior_prerequisites)?;
+                self.merge_reopen_check(context, i, Some(invalidator), prior_children, prior_prerequisites)?;
                 return self.discover_completed(context, candidate, vec![i], 1);
             }
         }
@@ -124,15 +126,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         }
         observation::record(|| format!("reselect task={i} owed={owed} (not done)"));
         if matches!(self.tasks[i].state, TaskState::Closed { .. }) {
-            // A parent it closed on that already derived is a selection it
-            // made: re-closing must keep it, verified once it derives again.
-            let derived = self
-                .canonical_set(i)
-                .into_iter()
-                .filter(|&parent| self.tasks[parent].is_done())
-                .collect::<Vec<_>>();
-            if !derived.is_empty() {
-                self.merge_reopen_check(context, i, invalidator, Vec::new(), derived)?;
+            // Clearing keeps the derived parents it closed on (the check);
+            // this selection change is their invalidator.
+            if self.canonical_set(i).iter().any(|&parent| self.tasks[parent].is_done()) {
+                self.merge_reopen_check(context, i, Some(invalidator), Vec::new(), Vec::new())?;
             }
             self.clear_input_capture(context, i)?;
         }
@@ -160,7 +157,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             self.routes(context, candidate, children)?
         };
         self.leave_refusal(context, i);
-        self.merge_reopen_check(context, i, invalidator, prior_children, prior_prerequisites)?;
+        self.merge_reopen_check(context, i, Some(invalidator), prior_children, prior_prerequisites)?;
         // Its re-discovery is verified once it derives again, not before.
         self.rediscovered.retain(|&row| row != i);
         let task = &mut self.tasks[i];
@@ -231,7 +228,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 let children = std::mem::take(&mut self.tasks[alias].children);
                 self.routes(context, candidate, children)?
             };
-            self.merge_reopen_check(context, alias, invalidator, prior_children, Vec::new())?;
+            self.merge_reopen_check(context, alias, Some(invalidator), prior_children, Vec::new())?;
             self.rediscovered.retain(|&row| row != alias);
             // An alias already waiting on this canonical waits once.
             let waiting = !self.tasks[alias].continuation_done && !was_ready;
@@ -261,7 +258,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             let children = std::mem::take(&mut self.tasks[alias].children);
             self.routes(context, candidate, children)?
         };
-        self.merge_reopen_check(context, alias, invalidator, prior_children, Vec::new())?;
+        self.merge_reopen_check(context, alias, Some(invalidator), prior_children, Vec::new())?;
         let row = &mut self.tasks[alias];
         row.continuation_done = false;
         let subject = row.subject;
@@ -322,10 +319,12 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     ),
                 )));
             }
-            context
-                .owner
-                .supersede_discovery(context.execution, row, check.invalidator)
-                .map_err(CoupledSourceReadStop::from)?;
+            if let Some(invalidator) = check.invalidator {
+                context
+                    .owner
+                    .supersede_discovery(context.execution, row, invalidator)
+                    .map_err(CoupledSourceReadStop::from)?;
+            }
         }
         Ok(())
     }
