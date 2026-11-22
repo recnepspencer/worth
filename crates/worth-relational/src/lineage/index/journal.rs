@@ -5,17 +5,19 @@ use std::collections::HashSet;
 use crate::identity::data::LineageId;
 use crate::lineage::data::PersistentNameKey;
 
-use super::{LineageHolder, NameEntry, PersistentNameBranchIndex};
+use super::{NameEntry, PersistentNameBranchIndex};
 
-/// Prior values of everything one batch touched, saved before first change.
+/// Prior name entries one batch touched, saved before first change, and the
+/// lineages it bound for the first time.
 ///
 /// Complexity: O(touched entries) to record and to restore.
 #[derive(Default)]
 pub(super) struct IngestionJournal {
     saved_names: HashSet<PersistentNameKey>,
     names: Vec<(PersistentNameKey, Option<NameEntry>)>,
-    lineage_names: Vec<(LineageId, Option<PersistentNameKey>)>,
-    lineage_holders: Vec<(LineageId, Option<LineageHolder>)>,
+    /// Lineages first bound to a name or record in this batch.
+    bound_lineage_names: Vec<LineageId>,
+    bound_lineage_holders: Vec<LineageId>,
 }
 
 impl IngestionJournal {
@@ -25,19 +27,16 @@ impl IngestionJournal {
         }
     }
 
-    pub(super) fn save_lineage_name(
-        &mut self,
-        lineage: LineageId,
-        prior: Option<PersistentNameKey>,
-    ) {
-        self.lineage_names.push((lineage, prior));
+    pub(super) fn bound_lineage_name(&mut self, lineage: LineageId) {
+        self.bound_lineage_names.push(lineage);
     }
 
-    pub(super) fn save_lineage_holder(&mut self, lineage: LineageId, prior: Option<LineageHolder>) {
-        self.lineage_holders.push((lineage, prior));
+    pub(super) fn bound_lineage_holder(&mut self, lineage: LineageId) {
+        self.bound_lineage_holders.push(lineage);
     }
 
-    /// Puts every touched value back, newest change first.
+    /// Puts every touched entry back, newest change first, and unbinds every
+    /// lineage this batch bound.
     pub(super) fn restore(self, index: &mut PersistentNameBranchIndex) {
         for (key, prior) in self.names.into_iter().rev() {
             match prior {
@@ -45,17 +44,11 @@ impl IngestionJournal {
                 None => index.names.remove(&key),
             };
         }
-        for (lineage, prior) in self.lineage_names.into_iter().rev() {
-            match prior {
-                Some(key) => index.lineage_names.insert(lineage, key),
-                None => index.lineage_names.remove(&lineage),
-            };
+        for lineage in self.bound_lineage_names {
+            index.lineage_names.remove(&lineage);
         }
-        for (lineage, prior) in self.lineage_holders.into_iter().rev() {
-            match prior {
-                Some(holder) => index.lineage_holders.insert(lineage, holder),
-                None => index.lineage_holders.remove(&lineage),
-            };
+        for lineage in self.bound_lineage_holders {
+            index.lineage_holders.remove(&lineage);
         }
     }
 }

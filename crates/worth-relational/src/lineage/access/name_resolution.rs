@@ -25,8 +25,8 @@ type Resolution = Result<PersistentNameResolution, PersistentNameResolutionDenia
 impl PersistentNameBranchIndex {
     /// Resolves `held` at `basis` under `selection`.
     ///
-    /// Complexity: O(1) probes for a pruned basis, an unknown name, or a name
-    /// live at `basis`; otherwise O(p log p) in the forward lineage path `p`
+    /// Complexity: O(1) probes for an empty filter, a pruned basis, an unknown
+    /// name, or a name live at `basis`; otherwise O(p log p) in the forward lineage path `p`
     /// from `held` to its live or retired frontier at `basis`. Each probe also
     /// pays O(log t) in that one name's own timeline. Total names and
     /// unrelated commits never enter the cost.
@@ -48,6 +48,14 @@ impl PersistentNameBranchIndex {
         selection: &PersistentNameSelection,
         metrics: &mut PersistentNameResolutionMetrics,
     ) -> Resolution {
+        let empty_filter = match selection {
+            PersistentNameSelection::BoundedByCarriers { carriers } => carriers.is_empty(),
+            PersistentNameSelection::KeepSide { discriminator } => discriminator.is_empty(),
+            PersistentNameSelection::Exact | PersistentNameSelection::AllDescendants => false,
+        };
+        if empty_filter {
+            return Err(PersistentNameResolutionDenial::EmptySelectionFilter);
+        }
         if let Some(retention_floor) = self.retention_floor()
             && basis < retention_floor
         {

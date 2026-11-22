@@ -51,9 +51,10 @@ fn erased_name_keeps_the_exact_digest_and_canonical_order() {
 #[test]
 fn bounded_by_carriers_sorts_and_deduplicates_independently_of_input_order() {
     let (a, b, c) = (face(0x30), face(0x10), face(0x20));
-    let forward = NameSelection::bounded_by_carriers([a.erased(), b.erased(), c.erased()]);
+    let forward = NameSelection::bounded_by_carriers([a.erased(), b.erased(), c.erased()]).unwrap();
     let shuffled =
-        NameSelection::bounded_by_carriers([c.erased(), a.erased(), b.erased(), a.erased()]);
+        NameSelection::bounded_by_carriers([c.erased(), a.erased(), b.erased(), a.erased()])
+            .unwrap();
     assert_eq!(forward, shuffled);
     let NameSelection::BoundedByCarriers { carriers } = forward else {
         panic!("expected a carrier selection");
@@ -63,11 +64,26 @@ fn bounded_by_carriers_sorts_and_deduplicates_independently_of_input_order() {
         &[b.erased(), c.erased(), a.erased()],
         "carriers are kept in ascending digest order without duplicates"
     );
-    let NameSelection::BoundedByCarriers { carriers } = NameSelection::bounded_by_carriers([])
-    else {
+}
+
+#[test]
+fn bounded_by_carriers_refuses_an_empty_carrier_list_instead_of_matching_everything() {
+    assert_eq!(
+        NameSelection::bounded_by_carriers([]),
+        Err(NameSelectionDenial::EmptyCarrierSet)
+    );
+    assert_eq!(
+        NameSelection::bounded_by_carriers(Vec::<ErasedWorthQueryName>::new()),
+        Err(NameSelectionDenial::EmptyCarrierSet)
+    );
+    assert!(NameSelectionDenial::EmptyCarrierSet
+        .to_string()
+        .contains("no carrier"));
+    let single = NameSelection::bounded_by_carriers([face(0x01).erased()]).unwrap();
+    let NameSelection::BoundedByCarriers { carriers } = single else {
         panic!("expected a carrier selection");
     };
-    assert!(carriers.as_slice().is_empty());
+    assert_eq!(carriers.as_slice().len(), 1);
 }
 
 #[test]

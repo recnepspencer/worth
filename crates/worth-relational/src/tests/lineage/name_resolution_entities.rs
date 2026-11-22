@@ -11,7 +11,7 @@ use super::name_index_fixtures::{
     all, ambiguous, bounded, exact, exact_key, main_branch, metrics, no_match, plural_keys, probes,
     rebuild, resolve, retired, side, unknown,
 };
-use super::name_world::{Keep, LineageWorld, Subject};
+use super::name_world::{side_of, Keep, LineageWorld, Subject};
 
 #[test]
 fn entity_split_retire_merge_lifecycle_resolves_at_head_and_every_historical_basis() {
@@ -235,4 +235,43 @@ fn unknown_names_and_pruned_bases_refuse_typed_in_constant_work() {
         Err(PersistentNameResolutionDenial::BasisPruned { .. })
     ));
     assert_eq!(pruned.branch_id(), &BranchId("main".to_owned()));
+}
+
+#[test]
+fn empty_filters_refuse_and_sideless_births_never_match_a_side() {
+    let mut world = LineageWorld::new();
+    let plain = world.create(Subject::Entity, "");
+    let sided = world.create(Subject::Entity, "s");
+    world.commit(); // 2
+    let index = rebuild(world.log());
+    let (plain_key, sided_key) = (world.key_of(&plain), world.key_of(&sided));
+    // A birth without a discriminator has no side, exactly like a group.
+    assert_eq!(index.names[&plain_key].side(), None);
+    assert_eq!(
+        index.names[&sided_key].side(),
+        Some(side_of("s").as_slice())
+    );
+    for held in [plain_key, sided_key] {
+        for empty in [side(""), bounded(&[])] {
+            let outcome = index.resolve(held, CommitId(2), &empty);
+            assert_eq!(
+                outcome.result,
+                Err(PersistentNameResolutionDenial::EmptySelectionFilter),
+                "an empty filter never matches as a wildcard"
+            );
+            assert_eq!(outcome.metrics, probes(0, 0, 0));
+        }
+    }
+    assert_eq!(
+        resolve(&index, plain_key, 2, &side("s")),
+        no_match(vec![plain_key])
+    );
+    assert_eq!(
+        exact_key(&resolve(&index, sided_key, 2, &side("s"))),
+        sided_key
+    );
+    assert_eq!(
+        resolve(&index, sided_key, 2, &bounded(&[member(1)])),
+        no_match(vec![sided_key])
+    );
 }

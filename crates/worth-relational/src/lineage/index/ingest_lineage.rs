@@ -23,6 +23,13 @@ use super::{
     PersistentNameCommittedBatch, PersistentNameIndexDenial,
 };
 
+const fn subject_kind(subject: LineageSubject) -> PersistentNameSubjectKind {
+    match subject {
+        LineageSubject::Entity => PersistentNameSubjectKind::Entity,
+        LineageSubject::Relation => PersistentNameSubjectKind::Relation,
+    }
+}
+
 fn subject_key(subject: LineageSubject, name: PersistentNameIdentity) -> PersistentNameKey {
     match subject {
         LineageSubject::Entity => PersistentNameKey::Entity(name),
@@ -55,7 +62,7 @@ impl PersistentNameBranchIndex {
                 Some(bound) if *bound == holder => {}
                 Some(_) => return Err(PersistentNameIndexDenial::ConflictingHolder { lineage }),
                 None => {
-                    journal.save_lineage_holder(lineage, None);
+                    journal.bound_lineage_holder(lineage);
                     self.lineage_holders.insert(lineage, holder);
                 }
             }
@@ -99,6 +106,12 @@ impl PersistentNameBranchIndex {
         let Some(name) = birth.map(|birth| birth.identity()).or(kept) else {
             return Ok(());
         };
+        if birth.is_some() && kept.is_some() {
+            return Err(invalid(
+                subject_key(event.subject(), name),
+                "a Create cannot both birth a name and keep another",
+            ));
+        }
         let &[lineage] = event.targets() else {
             return Err(invalid(
                 subject_key(event.subject(), name),
@@ -111,24 +124,18 @@ impl PersistentNameBranchIndex {
             .ok_or(PersistentNameIndexDenial::MissingHolder { lineage })?;
         if let Some(birth) = birth {
             let key = subject_key(event.subject(), birth.identity());
-            let subject_matches = matches!(
-                (event.subject(), birth.subject_kind()),
-                (LineageSubject::Entity, PersistentNameSubjectKind::Entity)
-                    | (
-                        LineageSubject::Relation,
-                        PersistentNameSubjectKind::Relation
-                    )
-            );
-            if !subject_matches {
+            if birth.subject_kind() != subject_kind(event.subject()) {
                 return Err(invalid(key, "birth subject differs from its event subject"));
             }
             let live = LiveName {
                 target: target_for(key, birth.identity(), holder, lineage)?,
                 carriers: BTreeSet::new(),
             };
-            let side = Some(birth.parts().canonical_discriminator().to_vec());
+            // A name born without a discriminator has no side, exactly like a group.
+            let canonical = birth.parts().canonical_discriminator();
+            let side = (!canonical.is_empty()).then(|| canonical.to_vec());
             self.insert_entry(key, NameEntry::born(commit, side, live), journal)?;
-            self.bind_lineage_name(lineage, key, journal);
+            self.bind_lineage_name(lineage, key, journal)?;
         }
         if let Some(kept) = kept {
             let key = subject_key(event.subject(), kept);
@@ -144,7 +151,7 @@ impl PersistentNameBranchIndex {
             };
             self.entry_mut(key, journal)
                 .set_state(commit, NameState::Live(live));
-            self.bind_lineage_name(lineage, key, journal);
+            self.bind_lineage_name(lineage, key, journal)?;
         }
         Ok(())
     }
@@ -162,10 +169,20 @@ impl PersistentNameBranchIndex {
             .collect();
         successors.sort_unstable();
         successors.dedup();
+        let subject = subject_kind(event.subject());
+        if let Some(foreign) = successors.iter().find(|key| key.subject_kind() != subject) {
+            return Err(invalid(
+                *foreign,
+                "a successor differs from its event subject",
+            ));
+        }
         for source in event.sources() {
             let Some(&key) = self.lineage_names.get(source) else {
                 continue;
             };
+            if key.subject_kind() != subject {
+                return Err(invalid(key, "a source differs from its event subject"));
+            }
             if successors.binary_search(&key).is_ok() {
                 continue;
             }
@@ -189,14 +206,20 @@ impl PersistentNameBranchIndex {
         Ok(())
     }
 
+    /// Binds a created lineage to the name it carries; a lineage is created
+    /// once, so a second binding is corrupt history and refuses.
     fn bind_lineage_name(
         &mut self,
         lineage: LineageId,
         key: PersistentNameKey,
         journal: &mut IngestionJournal,
-    ) {
-        let prior = self.lineage_names.insert(lineage, key);
-        journal.save_lineage_name(lineage, prior);
+    ) -> Result<(), PersistentNameIndexDenial> {
+        if self.lineage_names.contains_key(&lineage) {
+            return Err(invalid(key, "a lineage cannot be bound to a second name"));
+        }
+        journal.bound_lineage_name(lineage);
+        self.lineage_names.insert(lineage, key);
+        Ok(())
     }
 }
 

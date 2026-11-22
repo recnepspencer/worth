@@ -120,15 +120,15 @@ pub use worth_query_declaration::{
 ///
 /// ```
 /// use worth_query_decl::facade::application_naming::{
-///     NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
+///     NameResolutionDenial, NameSelection, NameSelectionDenial, ResolvedName, WorthQueryName,
 /// };
 /// struct Face;
-/// fn plan(cutter: WorthQueryName<Face>) -> [NameSelection; 3] {
-///     [
+/// fn plan(cutter: WorthQueryName<Face>) -> Result<[NameSelection; 3], NameSelectionDenial> {
+///     Ok([
 ///         NameSelection::Exact,
 ///         NameSelection::AllDescendants,
-///         NameSelection::bounded_by_carriers([cutter.erased()]),
-///     ]
+///         NameSelection::bounded_by_carriers([cutter.erased()])?,
+///     ])
 /// }
 /// fn report(outcome: Result<ResolvedName<u32>, NameResolutionDenial<Face>>) -> usize {
 ///     match outcome {
@@ -139,7 +139,12 @@ pub use worth_query_declaration::{
 ///         Err(_) => 0,
 ///     }
 /// }
-/// let _plan: fn(WorthQueryName<Face>) -> [NameSelection; 3] = plan;
+/// let _plan: fn(WorthQueryName<Face>) -> Result<[NameSelection; 3], NameSelectionDenial> = plan;
 /// assert_eq!(report(Ok(ResolvedName::Plural(vec![1, 2]))), 2);
+/// // An empty carrier filter is refused rather than matching every candidate.
+/// assert_eq!(
+///     NameSelection::bounded_by_carriers([]),
+///     Err(NameSelectionDenial::EmptyCarrierSet)
+/// );
 /// ```
 pub use worth_query_declaration::facade::canonicalization::CanonicalQueryArtifact;

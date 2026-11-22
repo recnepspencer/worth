@@ -7,7 +7,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_query_declaration::facade::application_naming::{
-    ApplicationNameDiscriminator, NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
+    ApplicationNameDiscriminator, NameResolutionDenial, NameSelection, NameSelectionDenial,
+    ResolvedName, WorthQueryName,
 };
 use worth_query_declaration::persistent_name_admission_authority::admit_minted_digest;
 use worth_relational::facade::aggregate_identity::{
@@ -137,6 +138,9 @@ fn lift<K>(
         }
         Err(PersistentNameResolutionDenial::UnknownName { .. }) => {
             Err(NameResolutionDenial::UnknownName)
+        }
+        Err(PersistentNameResolutionDenial::EmptySelectionFilter) => {
+            unreachable!("declaration selections never lower to an empty filter")
         }
     }
 }
@@ -276,7 +280,12 @@ fn declaration_resolution_vocabulary_agrees_with_relational_name_index() {
     let carriers = NameSelection::bounded_by_carriers([
         admit_minted_digest::<Face>(*sorted[3].as_bytes()).erased(),
         admit_minted_digest::<Face>(*sorted[2].as_bytes()).erased(),
-    ]);
+    ])
+    .expect("two carriers form a nonempty filter");
+    assert_eq!(
+        NameSelection::bounded_by_carriers([]),
+        Err(NameSelectionDenial::EmptyCarrierSet)
+    );
     assert_eq!(
         resolve(&carriers, 2),
         Ok(ResolvedName::Exact(PersistentNameTarget::Group {

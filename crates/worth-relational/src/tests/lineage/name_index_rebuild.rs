@@ -9,8 +9,8 @@ use worth_foundational::facade::AggregateIdentity;
 use crate::aggregate_identity::AggregateGroupLineageEvent;
 use crate::facade::history::CommitId;
 use crate::facade::lineage::{
-    PersistentNameBranchIndex, PersistentNameCommittedBatch, PersistentNameIndexDenial,
-    PersistentNameKey, PersistentNameSelection,
+    LineageEventKind, LineageSubject, PersistentNameBranchIndex, PersistentNameCommittedBatch,
+    PersistentNameIndexDenial, PersistentNameKey, PersistentNameSelection,
 };
 
 use super::name_group_world::{member, GroupWorld};
@@ -146,7 +146,7 @@ fn refused_batches_leave_the_index_exactly_as_it_was() {
         index.apply(&half_valid),
         Err(PersistentNameIndexDenial::InvalidTransition {
             name: PersistentNameKey::Group(group(0x72)),
-            detail: "only a live group can retire",
+            detail: "only a group live before the commit can retire",
         })
     );
     let existing = before
@@ -198,4 +198,179 @@ fn refused_batches_leave_the_index_exactly_as_it_was() {
         fresh.name_count(),
         BTreeSet::from_iter(fresh.name_keys()).len()
     );
+}
+
+/// Applies `batch`, which must refuse, and proves the index is untouched.
+fn refuses(index: &mut PersistentNameBranchIndex, batch: &PersistentNameCommittedBatch) -> String {
+    let before = index.clone();
+    let denial = index.apply(batch).expect_err("corrupt batch refuses");
+    assert_eq!(
+        *index, before,
+        "refusal of {denial:?} restored the prior index"
+    );
+    denial.to_string()
+}
+
+fn groups_at(commit: u64, events: Vec<AggregateGroupLineageEvent>) -> PersistentNameCommittedBatch {
+    PersistentNameCommittedBatch::new(CommitId(commit)).with_group_events(events)
+}
+
+#[test]
+fn corrupt_group_transitions_refuse_against_pre_commit_state() {
+    use AggregateGroupLineageEvent::{Born, MergedInto, Retired, Revived, SplitFrom};
+    let (a, b, c, d) = (group(0x81), group(0x82), group(0x83), group(0x84));
+    let mut index = PersistentNameBranchIndex::new(main_branch(), None);
+    index
+        .apply(&groups_at(
+            1,
+            vec![Born { group: a }, Born { group: b }, Born { group: d }],
+        ))
+        .unwrap();
+    index
+        .apply(&groups_at(2, vec![Retired { group: d }]))
+        .unwrap();
+    let cases: Vec<(Vec<AggregateGroupLineageEvent>, &str)> = vec![
+        (
+            vec![MergedInto {
+                absorbed: a,
+                keeper: b,
+            }],
+            "retired by it",
+        ),
+        (
+            vec![SplitFrom {
+                fragment: b,
+                source: d,
+            }],
+            "live before it",
+        ),
+        (
+            vec![
+                Born { group: c },
+                SplitFrom {
+                    fragment: c,
+                    source: d,
+                },
+            ],
+            "live before it",
+        ),
+        (
+            vec![MergedInto {
+                absorbed: d,
+                keeper: b,
+            }],
+            "retired by it",
+        ),
+        (
+            vec![
+                Born { group: c },
+                SplitFrom {
+                    fragment: c,
+                    source: c,
+                },
+            ],
+            "live before it",
+        ),
+        (
+            vec![SplitFrom {
+                fragment: a,
+                source: a,
+            }],
+            "loop to itself",
+        ),
+        (
+            vec![
+                Retired { group: a },
+                MergedInto {
+                    absorbed: a,
+                    keeper: a,
+                },
+            ],
+            "loop to itself",
+        ),
+        (
+            vec![Born { group: c }, Retired { group: c }],
+            "live before the commit",
+        ),
+        (
+            vec![Revived { group: d }, Retired { group: d }],
+            "live before the commit",
+        ),
+        (
+            vec![SplitFrom {
+                fragment: d,
+                source: a,
+            }],
+            "reach a live group",
+        ),
+    ];
+    for (events, reason) in cases {
+        let detail = refuses(&mut index, &groups_at(3, events.clone()));
+        assert!(detail.contains(reason), "{events:?} refused for `{detail}`");
+    }
+    // The canonical shapes still ingest: a kept split, then a merge.
+    index
+        .apply(&groups_at(
+            3,
+            vec![
+                Born { group: c },
+                SplitFrom {
+                    fragment: c,
+                    source: a,
+                },
+            ],
+        ))
+        .unwrap();
+    index
+        .apply(&groups_at(
+            4,
+            vec![
+                Retired { group: a },
+                MergedInto {
+                    absorbed: a,
+                    keeper: b,
+                },
+            ],
+        ))
+        .unwrap();
+}
+
+#[test]
+fn corrupt_lineage_creates_and_subjects_refuse_atomically() {
+    let mut world = LineageWorld::new();
+    let a = world.create(Subject::Entity, "a");
+    let b = world.create(Subject::Entity, "b");
+    world.commit(); // 2
+    let (a_name, b_name) = (world.name_of(&a), world.name_of(&b));
+    world.merge(&[a_name, b_name], Keep::Recreated);
+    let merge = world.commit(); // 3
+    let mut index = rebuild(&world.log()[..2]);
+    let kept_create = merge
+        .lineage_events
+        .iter()
+        .find(|event| event.kept_name().is_some())
+        .expect("a recreated keeper emits a kept Create")
+        .clone();
+
+    let mut duplicated = merge.clone();
+    duplicated.lineage_events.push(kept_create.clone());
+    assert!(refuses(&mut index, &duplicated).contains("second name"));
+
+    let mut dual = merge.clone();
+    let birth = world.log()[1].lineage_events[0].name_birth().cloned();
+    for event in &mut dual.lineage_events {
+        if event.kept_name().is_some() {
+            event.name_birth = birth.clone();
+        }
+    }
+    assert!(refuses(&mut index, &dual).contains("both birth"));
+
+    let mut foreign_subject = merge.clone();
+    for event in &mut foreign_subject.lineage_events {
+        if event.kind() == LineageEventKind::Merge {
+            event.subject = LineageSubject::Relation;
+        }
+    }
+    assert!(refuses(&mut index, &foreign_subject).contains("event subject"));
+    index.apply(&merge).expect("the canonical merge ingests");
 }

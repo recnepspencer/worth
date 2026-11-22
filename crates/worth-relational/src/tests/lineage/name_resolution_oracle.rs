@@ -79,8 +79,10 @@ pub(super) fn view_at(log: &[PersistentNameCommittedBatch], basis: u64) -> Oracl
             if let Some(birth) = event.name_birth() {
                 let k = key(event.subject(), birth.identity());
                 view.born.insert(k);
-                view.sides
-                    .insert(k, birth.parts().canonical_discriminator().to_vec());
+                let side = birth.parts().canonical_discriminator();
+                if !side.is_empty() {
+                    view.sides.insert(k, side.to_vec());
+                }
                 view.live
                     .insert(k, (target(k, holders[&lineage], lineage), BTreeSet::new()));
                 names.insert(lineage, k);
@@ -161,6 +163,14 @@ pub(super) fn answer(
     held: PersistentNameKey,
     selection: &PersistentNameSelection,
 ) -> Answer {
+    let wildcard = match selection {
+        PersistentNameSelection::BoundedByCarriers { carriers } => carriers.is_empty(),
+        PersistentNameSelection::KeepSide { discriminator } => discriminator.is_empty(),
+        _ => false,
+    };
+    if wildcard {
+        return Err(PersistentNameResolutionDenial::EmptySelectionFilter);
+    }
     if !view.born.contains(&held) {
         return Err(PersistentNameResolutionDenial::UnknownName { name: held });
     }

@@ -86,6 +86,9 @@ fn selections() -> Vec<PersistentNameSelection> {
         bounded(&[a, b]),
         bounded(&[member(2)]),
         bounded(&[member(3), member(4)]),
+        // Empty filter payloads must refuse, never match as wildcards.
+        side(""),
+        bounded(&[]),
     ]
 }
 
@@ -109,12 +112,13 @@ fn stage(world: &mut LineageWorld, op: Op, used: &mut BTreeSet<Name>) {
     };
     match op {
         Op::Create { relation } => {
-            let subject = if relation {
-                Subject::Relation
+            // Faces are born without a discriminator, seams with one.
+            let (subject, label) = if relation {
+                (Subject::Relation, "c")
             } else {
-                Subject::Entity
+                (Subject::Entity, "")
             };
-            world.create(subject, "c");
+            world.create(subject, label);
         }
         Op::Split { pick: at, pieces } => {
             let Some((parent, _)) = pick(at, &free) else {

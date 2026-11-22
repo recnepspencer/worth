@@ -13,7 +13,8 @@ use super::{validate_discriminator_identity, ApplicationNameDiscriminator, Erase
 /// - [`NameSelection::AllDescendants`]: one resolves `Exact`; two or more
 ///   resolve `Plural` in canonical name order.
 /// - [`NameSelection::BoundedByCarriers`]: keeps the live descendants whose
-///   declared carriers include every requested carrier.
+///   declared carriers include every requested carrier; at least one carrier
+///   is required, so the filter is never a wildcard.
 /// - [`NameSelection::KeepSide`]: keeps the live descendants born with exactly
 ///   this canonical split discriminator.
 ///
@@ -43,7 +44,7 @@ use super::{validate_discriminator_identity, ApplicationNameDiscriminator, Erase
 /// ```
 /// use worth_query_declaration::facade::application_naming::{
 ///     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder, NameSelection,
-///     WorthQueryName,
+///     NameSelectionDenial, WorthQueryName,
 /// };
 ///
 /// struct Face;
@@ -57,10 +58,15 @@ use super::{validate_discriminator_identity, ApplicationNameDiscriminator, Erase
 /// }
 ///
 /// fn select(a: WorthQueryName<Face>, b: WorthQueryName<Face>) {
-///     let forward = NameSelection::bounded_by_carriers([a.erased(), b.erased(), a.erased()]);
-///     let backward = NameSelection::bounded_by_carriers([b.erased(), a.erased()]);
+///     let forward = NameSelection::bounded_by_carriers([a.erased(), b.erased(), a.erased()]).unwrap();
+///     let backward = NameSelection::bounded_by_carriers([b.erased(), a.erased()]).unwrap();
 ///     assert_eq!(forward, backward);
 /// }
+///
+/// assert_eq!(
+///     NameSelection::bounded_by_carriers([]),
+///     Err(NameSelectionDenial::EmptyCarrierSet)
+/// );
 ///
 /// let side = NameSelection::keep_side(&Side(1)).unwrap();
 /// let NameSelection::KeepSide { discriminator } = &side else { unreachable!() };
@@ -82,13 +88,19 @@ pub enum NameSelection {
 impl NameSelection {
     /// Selects the live descendants bounded by every listed carrier. The
     /// carriers are sorted and deduplicated, so argument order never matters.
-    pub fn bounded_by_carriers(carriers: impl IntoIterator<Item = ErasedWorthQueryName>) -> Self {
+    /// Refuses an empty carrier list, which would otherwise match everything.
+    pub fn bounded_by_carriers(
+        carriers: impl IntoIterator<Item = ErasedWorthQueryName>,
+    ) -> Result<Self, NameSelectionDenial> {
         let mut carriers: Vec<ErasedWorthQueryName> = carriers.into_iter().collect();
+        if carriers.is_empty() {
+            return Err(NameSelectionDenial::EmptyCarrierSet);
+        }
         carriers.sort_unstable();
         carriers.dedup();
-        Self::BoundedByCarriers {
+        Ok(Self::BoundedByCarriers {
             carriers: NameCarrierSet { carriers },
-        }
+        })
     }
 
     /// Selects the live descendant born on `side`, encoded by the canonical
@@ -110,7 +122,8 @@ impl NameSelection {
     }
 }
 
-/// Sorted, deduplicated carriers of a [`NameSelection::BoundedByCarriers`].
+/// Sorted, deduplicated, nonempty carriers of a
+/// [`NameSelection::BoundedByCarriers`].
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct NameCarrierSet {
     carriers: Vec<ErasedWorthQueryName>,
@@ -142,6 +155,8 @@ impl NameSideDiscriminator {
 pub enum NameSelectionDenial {
     /// The side discriminator type declares a malformed identity string.
     InvalidDiscriminatorIdentity { discriminator_identity: String },
+    /// A carrier filter names no carrier.
+    EmptyCarrierSet,
 }
 
 impl fmt::Display for NameSelectionDenial {
@@ -153,6 +168,7 @@ impl fmt::Display for NameSelectionDenial {
                 formatter,
                 "side discriminator declares malformed identity `{discriminator_identity}`"
             ),
+            Self::EmptyCarrierSet => formatter.write_str("carrier filter names no carrier"),
         }
     }
 }

@@ -76,9 +76,11 @@ impl PersistentNameTarget {
 /// `Exact` refuses `Ambiguous` on two or more; `AllDescendants` returns them
 /// all as `Plural`. `BoundedByCarriers` keeps descendants whose carrier set
 /// contains every requested carrier; `KeepSide` keeps descendants born with
-/// exactly this canonical discriminator (groups carry none). A filter
-/// resolves one match `Exact`, refuses several `Ambiguous`, and refuses zero
-/// `NoMatchingCandidate`.
+/// exactly this canonical discriminator (groups and names born without one
+/// carry none). A filter resolves one match `Exact`, refuses several
+/// `Ambiguous`, and refuses zero `NoMatchingCandidate`. An empty carrier set
+/// or empty discriminator would match as a wildcard, so resolution refuses it
+/// with [`PersistentNameResolutionDenial::EmptySelectionFilter`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PersistentNameSelection {
     Exact,
@@ -119,6 +121,8 @@ pub enum PersistentNameResolutionDenial {
     },
     /// The held name has no birth at or before the basis.
     UnknownName { name: PersistentNameKey },
+    /// A carrier or side filter carries an empty payload.
+    EmptySelectionFilter,
 }
 
 /// Exact work one resolution performed, independent of unrelated history.
