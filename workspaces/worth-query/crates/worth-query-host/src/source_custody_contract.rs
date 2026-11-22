@@ -111,7 +111,7 @@
 //!
 //! Nor does a bare query intent execute:
 //!
-//! ```compile_fail,E0599
+//! ```compile_fail,E0277
 //! use worth_query_host::facade::{
 //!     application_entry::WorthQueryApplicationRequest,
 //!     declaration::application_query::ApplicationQueryIntent, domain::ApplicationSchema,

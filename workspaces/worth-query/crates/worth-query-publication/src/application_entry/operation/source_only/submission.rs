@@ -50,13 +50,13 @@ where
 /// write `I: WorthQuerySourceMutation<S>` instead of restating the binding's
 /// input, key, scope-resolution and native driver bounds.
 pub trait WorthQuerySourceMutation<S: ApplicationSchema>:
-    ApplicationMutationIntent<S, Binding: WorthQuerySourceMutationBinding<S>> + 'static
+    ApplicationMutationIntent<S, Binding: WorthQuerySourceMutationBinding<S>>
 {
 }
 impl<S, I> WorthQuerySourceMutation<S> for I
 where
     S: ApplicationSchema,
-    I: ApplicationMutationIntent<S, Binding: WorthQuerySourceMutationBinding<S>> + 'static,
+    I: ApplicationMutationIntent<S, Binding: WorthQuerySourceMutationBinding<S>>,
 {
 }
 

@@ -3536,7 +3536,11 @@ retention, one advance and one close, and returns `Committed` (closed, with the
 `WorthQueryTerminalSourceEvidence`, such as a `DomainDenied` or a full-history
 `ProductPreparationRefused`) or `Pending` with the retained custody and the
 native owner's own `WorthQuerySourceCustodyPending` cause. No request, principal
-or phase is retained; matching a variant lends or returns the exact owner.
+or phase is retained; matching a variant lends or returns the exact owner. Match
+`Pending`'s cause rather than retrying blindly:
+`Close(NativeObligationRetained)` means native recovery still owns the
+command. Report `Declined` evidence and drop it; do not keep the native carrier
+across frames.
 
 <!-- illustrative -->
 ```rust,ignore

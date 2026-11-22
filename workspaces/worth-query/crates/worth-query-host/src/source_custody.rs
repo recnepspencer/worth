@@ -45,6 +45,9 @@ where
 }
 
 /// What one resume established.
+///
+/// Drop a `Declined` step's evidence once it has been reported: it is a raw
+/// native carrier, not a value to keep across frames.
 #[must_use = "a pending step still owns the command"]
 pub enum WorthQuerySourceCustodyStep<S, I, P, A>
 where
@@ -70,6 +73,9 @@ where
 }
 
 /// Why custody is pending. Each variant is the native owner's own refusal.
+/// Match on the cause before resuming: `Close(NativeObligationRetained)`
+/// means native recovery still owns the command, so resuming again in the
+/// same state does not release it.
 #[derive(Debug)]
 pub enum WorthQuerySourceCustodyPending {
     /// Durable retention refused; the description is retained.

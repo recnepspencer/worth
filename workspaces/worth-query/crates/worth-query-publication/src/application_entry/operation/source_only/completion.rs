@@ -195,14 +195,16 @@ where
             Err(denial) => return Err((self, denial)),
         };
         let evidence = match (self.operation.keyed_terminal.take(), self.operation.state) {
-            (Some(resolution), _) => WorthQueryTerminalSourceEvidence::Keyed(resolution),
+            (Some(resolution), SourceState::<S, I>::Initial) => {
+                WorthQueryTerminalSourceEvidence::Keyed(resolution)
+            }
             (None, SourceState::<S, I>::Stopped(outcome)) => {
                 WorthQueryTerminalSourceEvidence::Outcome(outcome)
             }
             (None, SourceState::<S, I>::AdmissionStopped(denial)) => {
                 WorthQueryTerminalSourceEvidence::AdmissionStopped(denial)
             }
-            (None, _) => unreachable!("closable terminal custody owns its stopping evidence"),
+            _ => unreachable!("closable terminal custody owns its stopping evidence"),
         };
         Ok((closed, evidence))
     }
