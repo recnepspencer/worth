@@ -48,6 +48,8 @@ impl WorthQueryMutationHandlerWork {
 pub struct WorthQueryMutationHandlerExecutionReport<Value, Denial> {
     outcome: Result<HandlerResult<Value, Denial>, MutationHandlerExecutionDenial>,
     decision_work: WorthQueryMutationHandlerWork,
+    /// What a decision that refused in its domain read (PR C §1.7).
+    refusal_proofs: Option<crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::RefusalProofs>,
 }
 
 impl<Value, Denial> WorthQueryMutationHandlerExecutionReport<Value, Denial> {
@@ -58,6 +60,7 @@ impl<Value, Denial> WorthQueryMutationHandlerExecutionReport<Value, Denial> {
         Self {
             outcome,
             decision_work,
+            refusal_proofs: None,
         }
     }
 
@@ -67,6 +70,14 @@ impl<Value, Denial> WorthQueryMutationHandlerExecutionReport<Value, Denial> {
         &self.outcome
     }
 
+    /// A domain refusal keeps what its decision read (PR C §1.7).
+    pub fn with_refusal_proofs(mut self, proofs: crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::RefusalProofs) -> Self {
+        self.refusal_proofs = Some(proofs);
+        self
+    }
+    pub fn take_refusal_proofs(&mut self) -> Option<crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::RefusalProofs> {
+        self.refusal_proofs.take()
+    }
     pub const fn decision_work(&self) -> &WorthQueryMutationHandlerWork {
         &self.decision_work
     }
@@ -102,6 +113,7 @@ impl<Denial> WorthQueryMutationHandlerExecutionReport<std::convert::Infallible, 
                 HandlerResult::DeadlineExceeded => HandlerResult::DeadlineExceeded,
             }),
             decision_work: self.decision_work,
+            refusal_proofs: self.refusal_proofs,
         }
     }
 }

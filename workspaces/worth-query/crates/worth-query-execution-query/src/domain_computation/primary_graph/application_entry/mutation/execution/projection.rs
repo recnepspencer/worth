@@ -16,6 +16,13 @@ pub enum PreparedMutationProjection<Schema, Operation> {
     },
 }
 impl<Schema: ApplicationSchema, Operation> PreparedMutationProjection<Schema, Operation> {
+    /// What an applied decision read, kept when it refuses (PR C §1.7).
+    pub fn refusal_proofs(&self) -> Option<crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::RefusalProofs> {
+        match self {
+            Self::Applied { decision, .. } => Some(decision.facts.refusal_proofs()),
+            Self::Committed(_) => None,
+        }
+    }
     pub fn prepared_current_inputs(&self) -> PreparedCurrentInputs<'_> {
         match self {
             Self::Committed(projection) => projection.prepared_current_inputs(),
