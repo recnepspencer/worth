@@ -164,7 +164,7 @@
 //! A related row must be rooted where the traversal arrives: `Contains`
 //! leads from a project to tasks, so project rows cannot project its targets.
 //!
-//! ```compile_fail,E0277
+//! ```compile_fail,E0308
 //! # use worth_query_decl::facade::application_schema::fragment::NativeScalars;
 //! # use worth_query_decl::facade::{application_identity::*, *};
 //! # use worth_query_host::facade::primary_graph::*;
