@@ -2,6 +2,8 @@ mod birth_fixtures;
 mod branch_locality;
 mod fork_scale;
 mod graph_queries;
+mod posture_conservation_merges;
+mod posture_conservation_ops;
 mod posture_conservation_proptest;
 mod posture_corruption;
 mod posture_corruption_fixtures;

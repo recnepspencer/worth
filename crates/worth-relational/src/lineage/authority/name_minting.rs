@@ -277,50 +277,6 @@ fn write_len_prefixed(hasher: &mut Sha256, bytes: &[u8]) {
     hasher.update(bytes);
 }
 
-#[cfg(test)]
-pub(super) fn mint_entity_births(
-    scheme_registry: &InstalledPersistentNameSchemeRegistry,
-    live_holders: &BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
-    retired_in_commit: &BTreeSet<PersistentNameIdentity>,
-    created_entities: &BTreeSet<crate::identity::data::EntityId>,
-    named_births: &BTreeMap<crate::identity::data::EntityId, PersistentNameBirthRequest>,
-) -> Result<BTreeMap<crate::identity::data::EntityId, PersistentNameBirthRecord>, LineageNameDenial>
-{
-    if named_births.is_empty() {
-        return Ok(BTreeMap::new());
-    }
-    let created_targets = created_entities
-        .iter()
-        .copied()
-        .map(crate::lineage::data::LineageRecordTarget::Entity)
-        .collect();
-    let target_births = named_births
-        .iter()
-        .map(|(&id, req)| {
-            (
-                crate::lineage::data::LineageRecordTarget::Entity(id),
-                req.clone(),
-            )
-        })
-        .collect();
-    let minted = mint_target_births(
-        scheme_registry,
-        live_holders,
-        retired_in_commit,
-        &created_targets,
-        &target_births,
-    )?;
-    Ok(minted
-        .into_iter()
-        .filter_map(|(target, record)| match target {
-            crate::lineage::data::LineageRecordTarget::Entity(entity_id) => {
-                Some((entity_id, record))
-            }
-            crate::lineage::data::LineageRecordTarget::Relation(_) => None,
-        })
-        .collect())
-}
-
 pub(super) fn mint_target_births(
     scheme_registry: &InstalledPersistentNameSchemeRegistry,
     live_holders: &BTreeMap<PersistentNameIdentity, PersistentNameHolder>,

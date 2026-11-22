@@ -159,3 +159,116 @@ fn posture_replay_produces_identical_lineage_events_and_supports_recreated_keepe
     let run2 = run_replayable_sequence();
     assert_eq!(run1, run2);
 }
+
+#[test]
+fn default_empty_posture_path_emits_exact_create_replace_retire_and_zero_unpostured_relations() {
+    use crate::facade::identity::{KindId, PartitionId};
+    use crate::facade::lineage::LineageDecisionKind;
+    use crate::facade::transactions::{
+        AspectFieldPatch, DeleteEntityIntent, DeleteRelationIntent, EntityMutationIntent,
+        EntitySpec, MutationIntent, RelationMutationIntent, ReplaceEntityIntent,
+    };
+    use crate::symbols::data::ClientKey;
+
+    let allocator = LineageIdentityAllocator::new();
+    let mut staged = empty_working_state();
+    let empty_input = LineageCommitPostureInput::default();
+
+    // Commit 1: Two entities passed in reverse EntityId order + one unpostured
+    // fieldless relation. Default path must sort entity Creates by EntityId and
+    // emit zero relation events (preserving Home PR C compatibility).
+    let e0 = push_entity(&mut staged, VersionId(1));
+    let e1 = push_entity(&mut staged, VersionId(1));
+    let r0 = push_relation(&mut staged, VersionId(1), e0, e1);
+    let c1 = finalize_postures_in_working_state(
+        &allocator,
+        &mut staged,
+        &receipt_at(1, 1),
+        &[],
+        &[
+            RecordRef::Relation(r0),
+            RecordRef::Entity(e1),
+            RecordRef::Entity(e0),
+        ],
+        &empty_input,
+    )
+    .expect("default commit 1 finalizes cleanly");
+    let e0_lin = staged_entity_lineage(&staged, e0).unwrap();
+    let e1_lin = staged_entity_lineage(&staged, e1).unwrap();
+    let c1_ev = c1.artifact().event_batch().events();
+    assert_eq!(c1_ev.len(), 2, "unpostured relation must emit no lineage");
+    assert!(c1.relation_lineages().is_empty());
+    assert_eq!(c1_ev[0].kind(), LineageEventKind::Create);
+    assert_eq!(c1_ev[0].targets(), &[e0_lin]);
+    assert_eq!(c1_ev[1].kind(), LineageEventKind::Create);
+    assert_eq!(c1_ev[1].targets(), &[e1_lin]);
+    assert!(
+        e0_lin < e1_lin,
+        "Creates must be assigned in ascending EntityId order"
+    );
+
+    // Commit 2: Default Delete(e0), Replace(e1 -> e2), and unpostured
+    // Delete(r0) emit exact Create(e2), Retire(e0), Replace(e1 -> e2) and
+    // zero relation events.
+    retire_entity(&mut staged, e0, VersionId(2));
+    retire_entity(&mut staged, e1, VersionId(2));
+    let e2 = push_entity(&mut staged, VersionId(2));
+    retire_relation(&mut staged, r0, VersionId(2));
+    let merged_plan = vec![
+        MutationIntent::Entity(EntityMutationIntent::Delete(DeleteEntityIntent {
+            entity_id: e0,
+        })),
+        MutationIntent::Entity(EntityMutationIntent::Replace(ReplaceEntityIntent {
+            entity_id: e1,
+            replacement: EntitySpec {
+                partition_id: PartitionId::main(),
+                kind_id: KindId(1),
+                client_key: ClientKey::raw("e2"),
+                fields: AspectFieldPatch::default(),
+            },
+        })),
+        MutationIntent::Relation(RelationMutationIntent::Delete(DeleteRelationIntent {
+            relation_id: r0,
+        })),
+    ];
+    let c2 = finalize_postures_in_working_state(
+        &allocator,
+        &mut staged,
+        &receipt_at(2, 2),
+        &merged_plan,
+        &[
+            RecordRef::Entity(e0),
+            RecordRef::Entity(e1),
+            RecordRef::Entity(e2),
+            RecordRef::Relation(r0),
+        ],
+        &empty_input,
+    )
+    .expect("default commit 2 finalizes cleanly");
+    let e2_lin = staged_entity_lineage(&staged, e2).unwrap();
+    let c2_ev = c2.artifact().event_batch().events();
+    assert_eq!(c2_ev.len(), 3);
+    assert_eq!(c2_ev[0].kind(), LineageEventKind::Create);
+    assert_eq!(c2_ev[0].targets(), &[e2_lin]);
+    assert_eq!(c2_ev[1].kind(), LineageEventKind::Retire);
+    assert_eq!(c2_ev[1].sources(), &[e0_lin]);
+    assert_eq!(c2_ev[2].kind(), LineageEventKind::Replace);
+    assert_eq!(c2_ev[2].sources(), &[e1_lin]);
+    assert_eq!(c2_ev[2].targets(), &[e2_lin]);
+    assert!(c2_ev.iter().all(|e| e.subject() == LineageSubject::Entity));
+    let decisions: Vec<_> = c2
+        .artifact()
+        .decision_log()
+        .decisions()
+        .iter()
+        .map(|d| d.kind().clone())
+        .collect();
+    assert_eq!(
+        decisions,
+        vec![
+            LineageDecisionKind::CreateAccepted,
+            LineageDecisionKind::RetireAccepted,
+            LineageDecisionKind::ReplaceAccepted,
+        ]
+    );
+}

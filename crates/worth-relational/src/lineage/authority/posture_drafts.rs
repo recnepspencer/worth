@@ -163,7 +163,16 @@ pub(super) fn build_posture_drafts(
 
     // 3. Emit default entity Delete/Replace and tracked relation Delete intents
     //    not already consumed by an explicit Phase 2 posture.
-    let mut consumed_replace_targets = BTreeSet::new();
+    //    Pre-seed `consumed_replace_targets` with posture-claimed created entities
+    //    so an unpostured `Replace` never hijacks a posture-claimed target.
+    let mut consumed_replace_targets: BTreeSet<EntityId> = validated
+        .claimed_created_targets
+        .iter()
+        .filter_map(|target| match target {
+            LineageRecordTarget::Entity(id) => Some(*id),
+            LineageRecordTarget::Relation(_) => None,
+        })
+        .collect();
     for intent in merged_plan {
         match intent {
             MutationIntent::Entity(EntityMutationIntent::Delete(spec)) => {

@@ -100,3 +100,25 @@ pub(super) fn staged_entity_lineage_id(
         .extra()
         .lineage_id
 }
+
+pub(super) fn create_postures_input(
+    scheme_registry: InstalledPersistentNameSchemeRegistry,
+    births: Vec<(EntityId, PersistentNameBirthRequest)>,
+) -> crate::facade::lineage::LineageCommitPostureInput {
+    use crate::facade::lineage::{
+        LineageCommitPostureInput, LineagePostureClaim, LineageRecordTarget,
+    };
+
+    LineageCommitPostureInput {
+        scheme_registry,
+        live_holders: BTreeMap::new(),
+        live_lineages: BTreeMap::new(),
+        postures: births
+            .into_iter()
+            .map(|(entity, birth)| LineagePostureClaim::Create {
+                target: LineageRecordTarget::Entity(entity),
+                birth,
+            })
+            .collect(),
+    }
+}

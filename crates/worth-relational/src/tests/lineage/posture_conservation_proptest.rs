@@ -5,58 +5,19 @@ use proptest::prelude::*;
 use crate::facade::identity::{EntityId, LineageId, RelationId, VersionId};
 use crate::facade::lineage::{
     LineageCommitPostureInput, LineageEventKind, LineagePostureClaim, LineageRecordTarget,
-    LineageSplitChild, LineageSubject, PersistentNameHolder, PersistentNameIdentity,
+    LineageSubject, PersistentNameHolder, PersistentNameIdentity,
 };
 use crate::facade::transactions::RecordRef;
 use crate::lineage::authority::finalize_postures_in_working_state;
 use crate::runtime::LineageIdentityAllocator;
 
+use super::posture_conservation_ops::{arb_step, CommitBatchAccumulator, StepOp};
 use super::posture_fixtures::{
-    cad_scheme_registry, empty_working_state, face_birth, push_entity, push_relation, receipt_at,
-    retire_entity, retire_relation, seam_birth, stage_entity_merge, stage_relation_merge,
+    cad_scheme_registry, empty_working_state, face_birth, push_entity, receipt_at,
     staged_entity_lineage,
 };
 
-#[derive(Clone, Copy, Debug)]
-enum StepOp {
-    CreateEntity,
-    CreateRelation,
-    PreserveEntity(usize),
-    PreserveRelation(usize),
-    SplitEntity(usize, u8),
-    SplitRelation(usize, u8),
-    MergeEntities {
-        a: usize,
-        b: usize,
-        keep_parent: bool,
-    },
-    MergeRelations {
-        a: usize,
-        b: usize,
-        keep_parent: bool,
-    },
-    RetireEntity(usize),
-    RetireRelation(usize),
-}
-
-fn arb_step() -> impl Strategy<Value = StepOp> {
-    prop_oneof![
-        Just(StepOp::CreateEntity),
-        Just(StepOp::CreateRelation),
-        (0usize..8).prop_map(StepOp::PreserveEntity),
-        (0usize..8).prop_map(StepOp::PreserveRelation),
-        (0usize..8, 2u8..=3).prop_map(|(i, n)| StepOp::SplitEntity(i, n)),
-        (0usize..8, 2u8..=3).prop_map(|(i, n)| StepOp::SplitRelation(i, n)),
-        (0usize..8, 0usize..8, any::<bool>())
-            .prop_map(|(a, b, keep_parent)| { StepOp::MergeEntities { a, b, keep_parent } }),
-        (0usize..8, 0usize..8, any::<bool>())
-            .prop_map(|(a, b, keep_parent)| { StepOp::MergeRelations { a, b, keep_parent } }),
-        (0usize..8).prop_map(StepOp::RetireEntity),
-        (0usize..8).prop_map(StepOp::RetireRelation),
-    ]
-}
-
-fn run_conservation_sequence(ops: &[StepOp]) {
+fn run_multi_op_conservation_sequence(commit_batches: &[Vec<StepOp>]) {
     let allocator = LineageIdentityAllocator::new();
     let registry = cad_scheme_registry();
     let mut staged = empty_working_state();
@@ -65,11 +26,13 @@ fn run_conservation_sequence(ops: &[StepOp]) {
     let anchor_b = push_entity(&mut staged, VersionId(1));
     let mut live_entities: Vec<(EntityId, LineageId, PersistentNameIdentity)> = Vec::new();
     let mut live_relations: Vec<(RelationId, LineageId, PersistentNameIdentity)> = Vec::new();
+    let mut live_unnamed_entities: Vec<(EntityId, LineageId)> = Vec::new();
     let mut live_holders: BTreeMap<PersistentNameIdentity, PersistentNameHolder> = BTreeMap::new();
     let mut live_lineages: BTreeMap<PersistentNameHolder, LineageId> = BTreeMap::new();
     let mut all_known_lineages: BTreeSet<LineageId> = BTreeSet::new();
     let mut retired_lineages: BTreeSet<LineageId> = BTreeSet::new();
 
+    // Commit 1 seeds two anchor faces so relations always have live endpoints.
     let seed = finalize_postures_in_working_state(
         &allocator,
         &mut staged,
@@ -107,179 +70,64 @@ fn run_conservation_sequence(ops: &[StepOp]) {
         live_lineages.insert(PersistentNameHolder::Entity(ent), lin);
     }
 
-    for (idx, &op) in ops.iter().enumerate() {
-        let commit_no = (idx as u64) + 2;
+    for (batch_idx, ops) in commit_batches.iter().enumerate() {
+        let commit_no = (batch_idx as u64) + 2;
         let ver = VersionId(commit_no);
-        let occ = format!("occ.step.{commit_no}");
-        let mut changed = Vec::new();
-        let mut postures = Vec::new();
-        let mut expected_retired: BTreeSet<LineageId> = BTreeSet::new();
+        let mut avail_entities = live_entities.clone();
+        let mut avail_relations = live_relations.clone();
+        let mut acc = CommitBatchAccumulator::new();
 
-        match op {
-            StepOp::CreateEntity => {
-                let e = push_entity(&mut staged, ver);
-                changed.push(RecordRef::Entity(e));
-                postures.push(LineagePostureClaim::Create {
-                    target: LineageRecordTarget::Entity(e),
-                    birth: face_birth(&occ, "authored", vec![], &format!("e-{commit_no}"), e),
-                });
-            }
-            StepOp::CreateRelation => {
-                let r = push_relation(&mut staged, ver, anchor_a, anchor_b);
-                changed.push(RecordRef::Relation(r));
-                postures.push(LineagePostureClaim::Create {
-                    target: LineageRecordTarget::Relation(r),
-                    birth: seam_birth(&occ, "seam", vec![], &format!("r-{commit_no}"), r),
-                });
-            }
-            StepOp::PreserveEntity(pick) if !live_entities.is_empty() => {
-                let (e, _, name) = live_entities[pick % live_entities.len()];
-                postures.push(LineagePostureClaim::Preserve {
-                    target: LineageRecordTarget::Entity(e),
-                    name,
-                });
-            }
-            StepOp::PreserveRelation(pick) if !live_relations.is_empty() => {
-                let (r, _, name) = live_relations[pick % live_relations.len()];
-                postures.push(LineagePostureClaim::Preserve {
-                    target: LineageRecordTarget::Relation(r),
-                    name,
-                });
-            }
-            StepOp::SplitEntity(pick, pieces) if !live_entities.is_empty() => {
-                let (parent_e, parent_lin, parent_name) =
-                    live_entities.remove(pick % live_entities.len());
-                retire_entity(&mut staged, parent_e, ver);
-                changed.push(RecordRef::Entity(parent_e));
-                expected_retired.insert(parent_lin);
-                let children = (0..pieces)
-                    .map(|piece| {
-                        let c = push_entity(&mut staged, ver);
-                        changed.push(RecordRef::Entity(c));
-                        LineageSplitChild {
-                            target: LineageRecordTarget::Entity(c),
-                            birth: face_birth(
-                                &occ,
-                                "cut_piece",
-                                vec![parent_name],
-                                &format!("ep-{commit_no}-{piece}"),
-                                c,
-                            ),
-                        }
-                    })
-                    .collect();
-                postures.push(LineagePostureClaim::Split {
-                    parent_target: LineageRecordTarget::Entity(parent_e),
-                    parent_name,
-                    children,
-                });
-            }
-            StepOp::SplitRelation(pick, pieces) if !live_relations.is_empty() => {
-                let (parent_r, parent_lin, parent_name) =
-                    live_relations.remove(pick % live_relations.len());
-                retire_relation(&mut staged, parent_r, ver);
-                changed.push(RecordRef::Relation(parent_r));
-                expected_retired.insert(parent_lin);
-                let children = (0..pieces)
-                    .map(|piece| {
-                        let c = push_relation(&mut staged, ver, anchor_a, anchor_b);
-                        changed.push(RecordRef::Relation(c));
-                        LineageSplitChild {
-                            target: LineageRecordTarget::Relation(c),
-                            birth: seam_birth(
-                                &occ,
-                                "seam_piece",
-                                vec![parent_name],
-                                &format!("rp-{commit_no}-{piece}"),
-                                c,
-                            ),
-                        }
-                    })
-                    .collect();
-                postures.push(LineagePostureClaim::Split {
-                    parent_target: LineageRecordTarget::Relation(parent_r),
-                    parent_name,
-                    children,
-                });
-            }
-            StepOp::MergeEntities { a, b, keep_parent } if live_entities.len() >= 2 => {
-                postures.push(stage_entity_merge(
-                    &mut staged,
-                    &mut live_entities,
-                    ver,
-                    &occ,
-                    commit_no,
-                    a,
-                    b,
-                    keep_parent,
-                    &mut changed,
-                    &mut expected_retired,
-                ));
-            }
-            StepOp::MergeRelations { a, b, keep_parent } if live_relations.len() >= 2 => {
-                postures.push(stage_relation_merge(
-                    &mut staged,
-                    &mut live_relations,
-                    (anchor_a, anchor_b),
-                    ver,
-                    &occ,
-                    commit_no,
-                    a,
-                    b,
-                    keep_parent,
-                    &mut changed,
-                    &mut expected_retired,
-                ));
-            }
-            StepOp::RetireEntity(pick) if live_entities.len() > 2 => {
-                let (e, lin, name) = live_entities.remove(pick % live_entities.len());
-                retire_entity(&mut staged, e, ver);
-                changed.push(RecordRef::Entity(e));
-                expected_retired.insert(lin);
-                postures.push(LineagePostureClaim::Retire {
-                    target: LineageRecordTarget::Entity(e),
-                    name,
-                });
-            }
-            StepOp::RetireRelation(pick) if !live_relations.is_empty() => {
-                let (r, lin, name) = live_relations.remove(pick % live_relations.len());
-                retire_relation(&mut staged, r, ver);
-                changed.push(RecordRef::Relation(r));
-                expected_retired.insert(lin);
-                postures.push(LineagePostureClaim::Retire {
-                    target: LineageRecordTarget::Relation(r),
-                    name,
-                });
-            }
-            _ => continue,
+        for (op_idx, &op) in ops.iter().enumerate() {
+            acc.apply_op(
+                &mut staged,
+                &mut avail_entities,
+                &mut avail_relations,
+                (anchor_a, anchor_b),
+                ver,
+                commit_no,
+                op_idx,
+                op,
+            );
+        }
+        if acc.changed.is_empty() && acc.postures.is_empty() && acc.merged_plan.is_empty() {
+            continue;
         }
 
         let prepared = finalize_postures_in_working_state(
             &allocator,
             &mut staged,
             &receipt_at(commit_no, commit_no),
-            &[],
-            &changed,
+            &acc.merged_plan,
+            &acc.changed,
             &LineageCommitPostureInput {
                 scheme_registry: registry.clone(),
                 live_holders: live_holders.clone(),
                 live_lineages: live_lineages.clone(),
-                postures,
+                postures: acc.postures,
             },
         )
-        .expect("valid posture sequence must finalize cleanly");
+        .expect("valid multi-op posture + default intent commit must finalize cleanly");
+
+        // Carry forward untouched basis records plus explicitly preserved/in-place-kept records.
+        live_entities = avail_entities;
+        live_entities.extend(acc.kept_entities);
+        live_relations = avail_relations;
+        live_relations.extend(acc.kept_relations);
 
         let mut observed_retired_sources = BTreeSet::new();
+        let mut observed_recreated_keepers = BTreeMap::new();
+        let mut observed_unnamed_entities = BTreeSet::new();
+
         for ev in prepared.artifact().event_batch().events() {
             match ev.kind() {
                 LineageEventKind::Create => {
                     assert_eq!(ev.targets().len(), 1);
                     let lin = ev.targets()[0];
                     assert!(all_known_lineages.insert(lin), "duplicate created lineage");
-                    let birth = ev.name_birth().expect("named Create carries birth");
                     match ev.subject() {
                         LineageSubject::Entity => {
-                            let e = changed
+                            let e = acc
+                                .changed
                                 .iter()
                                 .find_map(|r| match r {
                                     RecordRef::Entity(id)
@@ -289,8 +137,24 @@ fn run_conservation_sequence(ops: &[StepOp]) {
                                     }
                                     _ => None,
                                 })
-                                .expect("created entity lineage missing in staged arena");
-                            live_entities.push((e, lin, birth.identity()));
+                                .expect("created entity lineage installed in staged arena");
+                            match (ev.name_birth(), ev.kept_name()) {
+                                (Some(birth), None) => {
+                                    live_entities.push((e, lin, birth.identity()));
+                                }
+                                (None, Some(kept)) => {
+                                    observed_recreated_keepers
+                                        .insert(LineageRecordTarget::Entity(e), kept);
+                                    live_entities.push((e, lin, kept));
+                                }
+                                (None, None) => {
+                                    assert!(observed_unnamed_entities.insert(e));
+                                    live_unnamed_entities.push((e, lin));
+                                }
+                                (Some(_), Some(_)) => {
+                                    panic!("Create cannot carry both name_birth and kept_name");
+                                }
+                            }
                         }
                         LineageSubject::Relation => {
                             let (&r, _) = prepared
@@ -298,48 +162,77 @@ fn run_conservation_sequence(ops: &[StepOp]) {
                                 .iter()
                                 .find(|(_, l)| **l == lin)
                                 .expect("created relation lineage recorded");
-                            live_relations.push((r, lin, birth.identity()));
+                            match (ev.name_birth(), ev.kept_name()) {
+                                (Some(birth), None) => {
+                                    live_relations.push((r, lin, birth.identity()));
+                                }
+                                (None, Some(kept)) => {
+                                    observed_recreated_keepers
+                                        .insert(LineageRecordTarget::Relation(r), kept);
+                                    live_relations.push((r, lin, kept));
+                                }
+                                _ => {
+                                    panic!("postured Relation Create must carry birth or kept_name")
+                                }
+                            }
                         }
                     }
                 }
-                LineageEventKind::Retire | LineageEventKind::Split | LineageEventKind::Merge => {
+                LineageEventKind::Retire
+                | LineageEventKind::Split
+                | LineageEventKind::Merge
+                | LineageEventKind::Replace => {
                     for &src in ev.sources() {
-                        if expected_retired.contains(&src) {
+                        if acc.expected_retired.contains(&src) {
                             assert!(
                                 observed_retired_sources.insert(src),
-                                "retired source appeared twice in one commit"
+                                "retired source {src:?} appeared twice in one commit"
                             );
                         }
                     }
                     for &tgt in ev.targets() {
                         assert!(
-                            all_known_lineages.contains(&tgt) && !retired_lineages.contains(&tgt),
+                            all_known_lineages.contains(&tgt)
+                                && !retired_lineages.contains(&tgt)
+                                && !acc.expected_retired.contains(&tgt),
                             "dangling or retired target lineage {tgt:?}"
                         );
                     }
                 }
-                LineageEventKind::Replace => {}
             }
         }
 
-        assert_eq!(observed_retired_sources, expected_retired);
-        retired_lineages.extend(expected_retired);
+        // Conservation invariants after EVERY multi-op commit:
+        assert_eq!(observed_retired_sources, acc.expected_retired);
+        assert_eq!(observed_recreated_keepers, acc.expected_recreated_keepers);
+        assert_eq!(observed_unnamed_entities, acc.expected_unnamed_entities);
+        retired_lineages.extend(acc.expected_retired);
+
         live_holders.clear();
         live_lineages.clear();
         let mut live_head_set = BTreeSet::new();
         for &(e, lin, name) in &live_entities {
             assert!(!retired_lineages.contains(&lin) && live_head_set.insert(lin));
-            assert!(live_holders
-                .insert(name, PersistentNameHolder::Entity(e))
-                .is_none());
+            assert!(
+                live_holders
+                    .insert(name, PersistentNameHolder::Entity(e))
+                    .is_none(),
+                "duplicate live persistent name across entities"
+            );
             live_lineages.insert(PersistentNameHolder::Entity(e), lin);
         }
         for &(r, lin, name) in &live_relations {
             assert!(!retired_lineages.contains(&lin) && live_head_set.insert(lin));
-            assert!(live_holders
-                .insert(name, PersistentNameHolder::Relation(r))
-                .is_none());
+            assert!(
+                live_holders
+                    .insert(name, PersistentNameHolder::Relation(r))
+                    .is_none(),
+                "duplicate live persistent name across relations"
+            );
             live_lineages.insert(PersistentNameHolder::Relation(r), lin);
+        }
+        for &(_, lin) in &live_unnamed_entities {
+            assert!(!retired_lineages.contains(&lin) && live_head_set.insert(lin));
         }
     }
 }
@@ -349,8 +242,8 @@ proptest! {
 
     #[test]
     fn many_to_many_entity_and_relation_lineage_conservation_holds(
-        ops in prop::collection::vec(arb_step(), 4..=18)
+        batches in prop::collection::vec(prop::collection::vec(arb_step(), 1..=4), 3..=10)
     ) {
-        run_conservation_sequence(&ops);
+        run_multi_op_conservation_sequence(&batches);
     }
 }
