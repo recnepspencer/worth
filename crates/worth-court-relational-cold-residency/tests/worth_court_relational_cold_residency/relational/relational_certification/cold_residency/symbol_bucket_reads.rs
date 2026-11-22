@@ -25,6 +25,7 @@ fn cold_symbol_buckets_refuse_each_preparation_door_without_journal_effects_and_
         let fixture = recipe.reopen(execution);
         let frontier = fixture.runtime.history().latest_patch_stream_position();
         let offered = fixture.medium.offered().len();
+        let symbols = fixture.runtime.observe_resident_symbol_dictionary();
         *fixture.source.failed_member.lock().unwrap() = Some(fixture.label_bucket);
         let failure = door
             .run(execution, &fixture)
@@ -41,6 +42,11 @@ fn cold_symbol_buckets_refuse_each_preparation_door_without_journal_effects_and_
             fixture.source.reads.load(Ordering::Relaxed),
             reads,
             "{door:?} damage is sticky"
+        );
+        assert_eq!(
+            fixture.runtime.observe_resident_symbol_dictionary(),
+            symbols,
+            "failed bucket or draft publishes no meaning"
         );
 
         assert_eq!(
@@ -60,6 +66,14 @@ fn cold_symbol_publication_reads_only_touched_buckets() {
         .commit(execution, &fixture.runtime)
         .unwrap();
     let relation = super::current_publications::changed_relations(&committed)[0];
+    assert!(
+        relation.slot_index() > fixture.relation_floor,
+        "a discarded symbol-probe draft cannot reuse its identity"
+    );
+    assert!(
+        relation.slot_index() < fixture.relation_floor + 16,
+        "retry growth uses headroom"
+    );
     let mut reader = begin_main_transaction(&fixture.runtime);
     assert!(reader
         .read_relation(execution, relation)
@@ -69,6 +83,11 @@ fn cold_symbol_publication_reads_only_touched_buckets() {
     assert!(
         fixture.source.reads.load(Ordering::Relaxed) < 16,
         "one root and touched buckets fit bounded headroom"
+    );
+    assert!(
+        fixture.runtime.observe_resident_symbol_dictionary().len()
+            < super::symbol_bucket_source::POPULATION / 2,
+        "operation must not load the dictionary population"
     );
 
     release_test_commit_snapshot(&fixture.runtime, &committed);

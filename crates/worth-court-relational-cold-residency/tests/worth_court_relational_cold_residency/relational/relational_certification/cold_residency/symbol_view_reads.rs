@@ -31,6 +31,19 @@ fn current_symbols_preserve_full_history_refusal_and_original_head_values() {
         assert!(
             matches!(name_value(&current),Some(AspectValue::String(InternedString::Symbol(symbol))) if symbol.0==fixture.current.0)
         );
+        let symbols = fixture.runtime.observe_resident_symbol_dictionary();
+        assert_eq!(
+            symbols.resolve(fixture.current),
+            Some("paged-view-value-0600")
+        );
+        assert!(
+            symbols.resolve(fixture.historical).is_none(),
+            "Head must not admit the history-only page of a physically Full cell"
+        );
+        assert!(
+            symbols.len() < 400,
+            "one current closure has ample headroom below the 601 admitted texts"
+        );
         let (_, basis) = fixture
             .runtime
             .observe_branch(&fixture.runtime.main_branch_identity())
@@ -67,6 +80,24 @@ fn current_symbols_preserve_full_history_refusal_and_original_head_values() {
             assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
         } else {
             assert!(read_full().unwrap().is_some());
+            assert!(
+                fixture
+                    .runtime
+                    .observe_resident_entity_metadata_history_len(
+                        &BranchId("main".into()),
+                        fixture.entity,
+                    )
+                    .unwrap()
+                    > 1,
+                "Full must retain both real committed field versions"
+            );
+            assert_eq!(
+                fixture
+                    .runtime
+                    .observe_resident_symbol_dictionary()
+                    .resolve(fixture.historical),
+                Some("paged-view-value-0300")
+            );
             let history = fixture
                 .runtime
                 .history()
@@ -84,6 +115,17 @@ fn current_symbols_preserve_full_history_refusal_and_original_head_values() {
                 .entity_record_at_observation(request, &covered_basis.observation(), fixture.entity)
                 .unwrap()
                 .is_some());
+            assert_eq!(
+                covered
+                    .observe_branch_region_residency(
+                        &BranchId("main".into()),
+                        fixture.entity.partition_id,
+                    )
+                    .unwrap()
+                    .head,
+                worth_relational::facade::durability::RelationalRegionProbeStatus::Resident,
+                "a Full symbol guard must cover Head without recollecting the view"
+            );
             let mut read = begin_main_transaction(&covered);
             assert_eq!(
                 read.read_entity(request, fixture.entity)

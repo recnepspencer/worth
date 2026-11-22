@@ -116,7 +116,6 @@ impl RelationalCommitEnvelopeResidency {
             }),
         }
     }
-    #[cfg(test)]
     pub(crate) fn resident_payload_bytes(&self) -> Option<u64> {
         self.state
             .lock()

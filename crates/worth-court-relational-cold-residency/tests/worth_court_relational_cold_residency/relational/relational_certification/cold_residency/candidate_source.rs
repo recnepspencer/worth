@@ -22,6 +22,7 @@ pub(super) struct CandidateFixture {
     pub source: Arc<ImmutableCheckpointMemberSource>,
     pub medium: Arc<TestDurableMedium>,
     pub remote: EntityId,
+    pub floor: usize,
     pub directory: super::selected_directory::Directory,
 }
 pub(super) fn runtime(medium: &Arc<TestDurableMedium>) -> RelationalRuntime {
@@ -75,11 +76,24 @@ pub(super) fn recovered(request: &ExecutionRequest<'_, '_>) -> CandidateFixture 
         .unwrap()
         .is_some());
     drop(basis);
+    let main_branch = worth_relational::facade::history::BranchId("main".into());
+    assert_eq!(
+        runtime
+            .observe_branch_region_residency(&main_branch, REMOTE)
+            .unwrap()
+            .full,
+        RelationalRegionProbeStatus::Cold
+    );
+    let floor = runtime
+        .observe_branch_partition_slot_census(&main_branch, PartitionId::main())
+        .unwrap()
+        .entity_slot_count;
     CandidateFixture {
         runtime,
         source: original.source,
         medium,
         remote,
+        floor,
         directory,
     }
 }

@@ -22,7 +22,15 @@ fn head_reads_in_each_fork_preserve_original_name_without_the_missing_history() 
         } else {
             [&cold.runtime, &fork]
         };
+        let main_branch = worth_relational::facade::history::BranchId("main".into());
         for runtime in ordered {
+            assert_eq!(
+                runtime
+                    .observe_branch_region_residency(&main_branch, cold.entities[0].partition_id)
+                    .unwrap()
+                    .head,
+                worth_relational::facade::durability::RelationalRegionProbeStatus::Cold
+            );
             let mut txn = begin_main_transaction(runtime);
             let record = txn
                 .read_entity(request, cold.entities[0])
@@ -31,6 +39,17 @@ fn head_reads_in_each_fork_preserve_original_name_without_the_missing_history() 
                 .cloned()
                 .expect("a cold Head miss cannot escape as absence");
             assert_eq!(name(&record), Some("source"));
+            let probe = runtime
+                .observe_branch_region_residency(&main_branch, cold.entities[0].partition_id)
+                .unwrap();
+            assert_eq!(
+                probe.head,
+                worth_relational::facade::durability::RelationalRegionProbeStatus::Resident
+            );
+            assert_eq!(
+                probe.full,
+                worth_relational::facade::durability::RelationalRegionProbeStatus::Cold
+            );
         }
     }
 }
@@ -110,6 +129,11 @@ fn cold_forks_edit_existing_ring_records_in_both_orders_and_checkpoint() {
                 )
                 .unwrap();
             assert!(relations.len() >= 2);
+            let main_branch = worth_relational::facade::history::BranchId("main".into());
+            let slot_census = runtime
+                .observe_branch_partition_slot_census(&main_branch, PartitionId(4))
+                .expect("edited partition 4 is resident");
+            assert_eq!(slot_census.occupied_relation_slots.len(), relations.len());
             for id in relations {
                 assert_eq!(
                     reader.read_relation(request, id).unwrap().effective(),

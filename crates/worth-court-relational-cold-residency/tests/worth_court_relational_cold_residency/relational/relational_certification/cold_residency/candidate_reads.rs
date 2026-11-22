@@ -84,6 +84,8 @@ fn candidate_invariant_discovery_refuses_stickily_without_publication() {
         let runtime = fixture.runtime;
         let source = fixture.source;
         let medium = fixture.medium;
+        let before = runtime.observe_complexity_counters();
+        let dictionary = runtime.observe_resident_symbol_dictionary();
         let diagnostics = runtime.publication().diagnostics_snapshot().diagnostics;
         let frontier = runtime.history().latest_patch_stream_position();
         let offered = medium.offered().len();
@@ -112,6 +114,16 @@ fn candidate_invariant_discovery_refuses_stickily_without_publication() {
         source.damaged.store(false, Ordering::Relaxed);
         assert_eq!(run(), Err(failure));
         assert_eq!(source.reads.load(Ordering::Relaxed), reads);
+        let after = runtime.observe_complexity_counters();
+        assert_eq!(
+            after.preparation_packet_count,
+            before.preparation_packet_count
+        );
+        assert_eq!(
+            after.invariant_entity_slot_scans,
+            before.invariant_entity_slot_scans
+        );
+        assert_eq!(runtime.observe_resident_symbol_dictionary(), dictionary);
         assert_eq!(
             runtime.publication().diagnostics_snapshot().diagnostics,
             diagnostics
@@ -137,6 +149,8 @@ fn cold_and_warm_candidate_preparation_both_publish_the_original_mutation() {
         .unwrap()
         .is_some());
     drop(basis);
+    let before_cold = cold.runtime.observe_complexity_counters();
+    let before_warm = warm.runtime.observe_complexity_counters();
     let cold_commit = transaction(request, &cold.runtime)
         .commit(request, &cold.runtime)
         .unwrap();
@@ -145,6 +159,30 @@ fn cold_and_warm_candidate_preparation_both_publish_the_original_mutation() {
         .unwrap();
     let cold_entity = changed_entities(&cold_commit)[0];
     let warm_entity = changed_entities(&warm_commit)[0];
+    assert!(
+        cold_entity.slot_index() > cold.floor,
+        "the discarded applied candidate cannot reuse an identity"
+    );
+    assert!(
+        cold_entity.slot_index() < cold.floor + 16,
+        "retry growth has bounded headroom"
+    );
+    assert!((warm.floor..warm.floor + 16).contains(&warm_entity.slot_index()));
+    assert!(
+        cold_entity.slot_index() > warm_entity.slot_index(),
+        "cold discovery abandons an extra applied identity"
+    );
+    let after_cold = cold.runtime.observe_complexity_counters();
+    let after_warm = warm.runtime.observe_complexity_counters();
+    assert!(after_cold.preparation_packet_count > before_cold.preparation_packet_count);
+    assert_eq!(
+        after_cold.preparation_packet_count - before_cold.preparation_packet_count,
+        after_warm.preparation_packet_count - before_warm.preparation_packet_count
+    );
+    assert_eq!(
+        after_cold.invariant_entity_slot_scans - before_cold.invariant_entity_slot_scans,
+        after_warm.invariant_entity_slot_scans - before_warm.invariant_entity_slot_scans
+    );
     assert!(cold.source.reads.load(Ordering::Relaxed) < 24);
     for (runtime, entity) in [(&cold.runtime, cold_entity), (&warm.runtime, warm_entity)] {
         let mut reader = begin_main_transaction(runtime);

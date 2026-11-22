@@ -43,6 +43,8 @@ pub(super) struct Region {
     pub partition_id: PartitionId,
     pub head: RelationalDurableMemberLocator,
     pub history: RelationalDurableMemberLocator,
+    #[serde(default)]
+    pub relation_slots: usize,
 }
 #[derive(Deserialize)]
 pub(super) struct Component {

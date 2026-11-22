@@ -30,6 +30,16 @@ pub(super) struct CountedSource {
 }
 
 impl RelationalDurableColdSource for CountedSource {
+    fn checkpoint_selected_read_protection(
+        &self,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<
+        crate::durability::medium::RelationalDurableReadPayload,
+        RelationalDurableOwnedReadRefusal,
+    > {
+        request.check_live().map_err(|c| RelationalDurableOwnedReadRefusal::Request(c.into()))?;
+        Ok(Box::new(()))
+    }
     fn read_member_owned(
         &self,
         request: &ExecutionRequest<'_, '_>,
@@ -38,9 +48,7 @@ impl RelationalDurableColdSource for CountedSource {
         limit: u64,
     ) -> Result<ExecutionImmutableBytes, RelationalDurableOwnedReadRefusal> {
         use crate::durability::medium::RelationalDurableOwnedReadRefusal as Refusal;
-        request
-            .check_live()
-            .map_err(|cause| Refusal::Request(cause.into()))?;
+        request.check_live().map_err(|cause| Refusal::Request(cause.into()))?;
         if !original.is::<()>() {
             return Err(Refusal::ForeignProtection);
         }
@@ -52,21 +60,14 @@ impl RelationalDurableColdSource for CountedSource {
         _members: &[RelationalDurableMemberLocator],
         issuer: std::sync::Weak<dyn RelationalDurableColdSource>,
     ) -> Result<RelationalDurableMemberCustody, RelationalDurableOwnedReadRefusal> {
-        // This immutable archive has no separate placement registration.
         RelationalDurableMemberCustody::try_new_from_source_for_request(issuer, request, || Ok(()))
     }
-
     fn validate_member_custody_retirement(
         &self,
         original: &(dyn std::any::Any + Send + Sync),
     ) -> Result<(), RelationalDurableMemberRetirementRefusal> {
-        if original.is::<()>() {
-            Ok(())
-        } else {
-            Err(RelationalDurableMemberRetirementRefusal::ForeignCustody)
-        }
+        if original.is::<()>() { Ok(()) } else { Err(RelationalDurableMemberRetirementRefusal::ForeignCustody) }
     }
-
     fn advance_member_custody_retirement(
         &self,
         _request: &ExecutionRequest<'_, '_>,
@@ -78,23 +79,12 @@ impl RelationalDurableColdSource for CountedSource {
             Err(cause) => Observation::Refused(cause),
         }
     }
-
-    fn retain_members(
-        &self,
-        _members: &[RelationalDurableMemberLocator],
-    ) -> Result<RelationalDurableMemberCustody, Cause> {
+    fn retain_members(&self, _: &[RelationalDurableMemberLocator]) -> Result<RelationalDurableMemberCustody, Cause> {
         Ok(RelationalDurableMemberCustody::new(()))
     }
-
-    fn read_member(
-        &self,
-        locator: RelationalDurableMemberLocator,
-        limit: u64,
-    ) -> Result<Vec<u8>, Cause> {
+    fn read_member(&self, locator: RelationalDurableMemberLocator, limit: u64) -> Result<Vec<u8>, Cause> {
         let mut bytes = self.member(locator, limit)?.to_vec();
-        if self.corrupt.load(Ordering::SeqCst) {
-            bytes[0] ^= 1;
-        }
+        if self.corrupt.load(Ordering::SeqCst) { bytes[0] ^= 1; }
         Ok(bytes)
     }
     fn read_commit(&self, _: PatchStreamPosition, _: u64) -> Result<Vec<u8>, Cause> {

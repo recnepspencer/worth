@@ -6,7 +6,9 @@ mod checkpoint_recovery;
 mod derived_index_checkpoint;
 mod descriptor_continuity;
 mod managed_field_text;
+mod merge_replay_continuity;
 mod native_checkpoint;
+mod record_allocation_recovery;
 mod rejected_and_parent_closure;
 mod semantic_result;
 

@@ -28,12 +28,38 @@ impl RelationalAllocationWitness {
     }
 }
 
+/// Weak identity of one attached cold source port. It never extends custody.
+#[derive(Debug, Clone)]
+pub struct RelationalColdSourceWitness(
+    Weak<dyn crate::durability::medium::RelationalDurableColdSource>,
+);
+
+impl RelationalColdSourceWitness {
+    pub(crate) fn of(
+        source: &Arc<dyn crate::durability::medium::RelationalDurableColdSource>,
+    ) -> Self {
+        Self(Arc::downgrade(source))
+    }
+    /// Whether some owner still retains the witnessed cold source.
+    pub fn is_retained(&self) -> bool {
+        self.0.strong_count() != 0
+    }
+    /// Whether both witnesses name the same cold source allocation.
+    pub fn same_source(&self, other: &Self) -> bool {
+        Weak::ptr_eq(&self.0, &other.0)
+    }
+}
+
 /// Custody posture of one retained canonical commit envelope cell.
 #[derive(Debug, Clone)]
 pub struct RelationalCommitEnvelopeCustody {
     pub commit_id: crate::history::data::CommitId,
     /// The sealed positioned envelope is resident in this cell.
     pub resident: bool,
+    /// Weak identity of the resident canonical body, when resident.
+    pub resident_body: Option<RelationalAllocationWitness>,
+    /// Encoded duplicate payload byte count currently retained in this cell, if any.
+    pub resident_payload_bytes: Option<u64>,
     /// The selected checkpoint directory backing this cell, when placed.
     pub selected_directory: Option<RelationalAllocationWitness>,
     /// The retained journal or selected-member index owner backing this cell.
@@ -65,9 +91,14 @@ impl RelationalRuntime {
             .into_iter()
             .map(|artifact| {
                 let cell = artifact.envelope_residency();
+                let resident_positioned = cell.positioned_if_resident();
                 RelationalCommitEnvelopeCustody {
                     commit_id: artifact.commit_id(),
-                    resident: cell.positioned_if_resident().is_some(),
+                    resident: resident_positioned.is_some(),
+                    resident_body: resident_positioned
+                        .as_ref()
+                        .map(|positioned| RelationalAllocationWitness::of(positioned.canonical_arc())),
+                    resident_payload_bytes: cell.resident_payload_bytes(),
                     selected_directory: cell
                         .selected_directory()
                         .map(|directory| RelationalAllocationWitness::of(&directory)),
@@ -109,6 +140,13 @@ impl RelationalRuntime {
         self.durability
             .cold_source()
             .is_some_and(|attached| std::ptr::addr_eq(Arc::as_ptr(&attached), Arc::as_ptr(source)))
+    }
+
+    /// Weak identity of this runtime's attached durable cold source, if any.
+    pub fn observe_cold_source_witness(&self) -> Option<RelationalColdSourceWitness> {
+        self.durability
+            .cold_source()
+            .map(|source| RelationalColdSourceWitness::of(&source))
     }
 
     /// Observe the served checkpoint selection and acknowledged catalog frontier.

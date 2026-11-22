@@ -23,6 +23,7 @@ fn residency_failure_matrix_symbol_buckets_cover_every_preparation_door_and_clas
             let fixture = recipe.reopen(execution);
             let frontier = fixture.runtime.history().latest_patch_stream_position();
             let offered = fixture.medium.offered().len();
+            let symbols = fixture.runtime.observe_resident_symbol_dictionary();
             let diagnostics = fixture
                 .runtime
                 .publication()
@@ -55,6 +56,10 @@ fn residency_failure_matrix_symbol_buckets_cover_every_preparation_door_and_clas
                     .diagnostics,
                 diagnostics
             );
+            assert_eq!(
+                fixture.runtime.observe_resident_symbol_dictionary(),
+                symbols
+            );
 
             fixture.source.failures.lock().unwrap().clear();
             let reads = fixture.source.reads.load(Ordering::Relaxed);
@@ -73,6 +78,10 @@ fn residency_failure_matrix_symbol_buckets_cover_every_preparation_door_and_clas
                         .diagnostics_snapshot()
                         .diagnostics,
                     diagnostics
+                );
+                assert_eq!(
+                    fixture.runtime.observe_resident_symbol_dictionary(),
+                    symbols
                 );
             } else {
                 door.run(execution, &fixture)

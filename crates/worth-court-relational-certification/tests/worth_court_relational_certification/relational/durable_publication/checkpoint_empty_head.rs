@@ -31,4 +31,11 @@ fn durability_contract_empty_checkpoint_restores_a_live_retained_head() {
         .observe_branch(&identity)
         .expect("an empty recovered branch still has a complete owner root");
     assert_eq!(basis.observation().selected_root_identity(), 0);
+    assert_eq!(
+        recovered
+            .branch_retention_cost_counters(&recovered.main_branch_identity())
+            .unwrap()
+            .head_installs,
+        1
+    );
 }

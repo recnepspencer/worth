@@ -14,8 +14,16 @@ pub(crate) mod branch_transition_artifact;
 pub(crate) mod canonical_commit_artifact;
 mod capture_custody_census;
 pub use capture_custody_census::{
-    RelationalAllocationWitness, RelationalCheckpointSelectionCensus,
+    RelationalAllocationWitness, RelationalCheckpointSelectionCensus, RelationalColdSourceWitness,
     RelationalCommitEnvelopeCustody, RelationalSelectedCheckpointObservation,
+};
+mod cold_residency_census;
+pub use cold_residency_census::{
+    RelationalCompleteCarriedIndexBasis, RelationalCompleteIndexSelectionInspection,
+    RelationalHistoryFoldBounds, RelationalLineageResidencyObservation,
+    RelationalPartitionSlotCensus, RelationalRegionProbeStatus,
+    RelationalRegionResidencyObservation, RelationalReplayRetentionObservation,
+    RelationalResidentSymbolDictionary, RelationalRetainedCheckpointCensus,
 };
 pub(crate) mod checkpoint_admission;
 pub(crate) mod checkpoint_history;

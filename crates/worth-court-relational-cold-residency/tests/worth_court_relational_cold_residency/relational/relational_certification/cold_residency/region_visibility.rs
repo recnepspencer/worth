@@ -37,13 +37,43 @@ fn partially_cold_visibility_reads_preserve_nonempty_warm_results() {
                     .len()
             }
         };
+        let before = cold.runtime.observe_complexity_counters();
         let reads = cold.source.reads.load(Ordering::Relaxed);
         let first = read();
         assert!(
             cold.source.reads.load(Ordering::Relaxed) > reads,
             "the selected cold path actually readmits another carrier"
         );
+        let after_cold = cold.runtime.observe_complexity_counters();
         assert_eq!(read(), first);
         assert!(first > 0, "the producer populated the selected path");
+        let after_warm = cold.runtime.observe_complexity_counters();
+        let cold_mat = after_cold.visible_authoritative_entity_records_materialized
+            - before.visible_authoritative_entity_records_materialized;
+        let warm_mat = after_warm.visible_authoritative_entity_records_materialized
+            - after_cold.visible_authoritative_entity_records_materialized;
+        let cold_leases =
+            after_cold.adjacency_kind_slices_leased - before.adjacency_kind_slices_leased;
+        let warm_leases =
+            after_warm.adjacency_kind_slices_leased - after_cold.adjacency_kind_slices_leased;
+        if scan {
+            assert!(
+                warm_mat > 0,
+                "the selected paid scan actually settles materialization instrumentation"
+            );
+        } else {
+            assert!(
+                warm_leases > 0,
+                "the selected traversal actually settles a substrate lease"
+            );
+        }
+        assert_eq!(
+            cold_mat, warm_mat,
+            "discarded scan rounds have no materialization effect"
+        );
+        assert_eq!(
+            cold_leases, warm_leases,
+            "discarded adjacency rounds have no lease-ledger effect"
+        );
     }
 }

@@ -63,8 +63,13 @@ pub use crate::durability::source_initial_inputs::{
     RelationalSourceInitialInputsArtifact,
 };
 pub use crate::durability::{
-    RelationalAllocationWitness, RelationalCheckpointSelectionCensus,
-    RelationalCommitEnvelopeCustody, RelationalSelectedCheckpointObservation,
+    RelationalAllocationWitness, RelationalCheckpointSelectionCensus, RelationalColdSourceWitness,
+    RelationalCommitEnvelopeCustody, RelationalCompleteCarriedIndexBasis,
+    RelationalCompleteIndexSelectionInspection, RelationalHistoryFoldBounds,
+    RelationalLineageResidencyObservation, RelationalPartitionSlotCensus,
+    RelationalRegionProbeStatus, RelationalRegionResidencyObservation,
+    RelationalReplayRetentionObservation, RelationalResidentSymbolDictionary,
+    RelationalRetainedCheckpointCensus, RelationalSelectedCheckpointObservation,
 };
 pub use crate::durability::{
     RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,

@@ -233,7 +233,6 @@ impl RelationalCanonicalPublicationRoutes {
         self.performed_stream.reservation_counters()
     }
 
-    #[cfg(test)]
     pub(crate) fn pending_count(&self) -> usize {
         self.by_commit
             .iter()

@@ -29,13 +29,39 @@ fn live_nonhead_history_reads_original_patches_from_memory_and_durable_owners() 
             .canonical_commit_envelope(request, commit)
             .unwrap()
             .unwrap();
+        let witness = runtime
+            .observe_commit_envelope_custody()
+            .into_iter()
+            .find(|cell| cell.commit_id == commit)
+            .and_then(|cell| cell.resident_body)
+            .expect("head commit envelope is resident before retirement");
         drop(body);
         update_entity(request, &runtime, entity, "live-envelope-after");
         runtime.run_branch_root_reclamation_pass();
+    let resident = runtime
+        .observe_commit_envelope_custody()
+        .into_iter()
+        .filter(|cell| cell.resident)
+        .count();
+    assert!(
+        resident < 4,
+        "released journal bodies fit head and reclamation headroom"
+    );
         assert!(
             runtime.retired_branch_root_count() < 4,
             "a single retired version fits reclamation headroom"
         );
+        if durable {
+            assert!(
+                !witness.is_retained(),
+                "a settled nonhead without a reader must release its journal-backed body"
+            );
+        } else {
+            assert!(
+                witness.is_retained(),
+                "memory-only history has no other copy"
+            );
+        }
         let patches = runtime
             .history()
             .bounded_canonical_commit_patches(request, commit, NonZeroUsize::new(32).unwrap())
@@ -57,6 +83,15 @@ fn live_history_remains_in_external_capture_and_retained_recovery() {
         update_entity(request, &runtime, entity, &format!("live-index-{n}"));
     }
     runtime.run_branch_root_reclamation_pass();
+    let resident = runtime
+        .observe_commit_envelope_custody()
+        .into_iter()
+        .filter(|cell| cell.resident)
+        .count();
+    assert!(
+        resident < 4,
+        "released journal bodies fit head and reclamation headroom"
+    );
     let ids = medium
         .committed_artifacts()
         .unwrap()
@@ -137,6 +172,24 @@ fn recovered_nonhead_tail_envelopes_keep_their_original_receipt_and_source_read_
         0,
         "tail replay already owns its readmitted frames"
     );
+    let (_, head_basis) = fixture
+        .runtime
+        .observe_branch(&fixture.runtime.main_branch_identity())
+        .unwrap();
+    let head_commit = head_basis.observation().commit_id().unwrap();
+    drop(head_basis);
+    let cells = fixture.runtime.observe_commit_envelope_custody();
+    assert!(
+        cells
+            .iter()
+            .find(|cell| cell.commit_id == head_commit)
+            .is_some_and(|cell| cell.resident),
+        "head commit envelope stays resident"
+    );
+    assert!(
+        cells.iter().all(|cell| cell.resident_payload_bytes.is_none()),
+        "journal placement releases encoded duplicate buffers too"
+    );
     let receipt = fixture
         .runtime
         .history()
@@ -149,6 +202,16 @@ fn recovered_nonhead_tail_envelopes_keep_their_original_receipt_and_source_read_
         .unwrap()
         .unwrap();
     drop(body);
+    assert!(
+        !fixture
+            .runtime
+            .observe_commit_envelope_custody()
+            .into_iter()
+            .find(|cell| cell.commit_id == receipt.commit_id)
+            .unwrap()
+            .resident,
+        "replay must not turn a nonhead journal body into permanent memory truth"
+    );
     assert_eq!(
         fixture
             .runtime

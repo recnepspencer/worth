@@ -37,6 +37,8 @@ fn checkpoint_restart_cycles_preserve_full_reads_and_retention() {
     let original = source_with_history(execution, 3, false);
     let entity = original.entity;
     let (mut recovery, mut archive) = copy_input(&original);
+    let mut consolidations = 0usize;
+    let mut previous_depth = 0usize;
     // Original loop cardinality is eight policy layers times four, without a cost claim.
     for _ in 0..32 {
         let runtime = recover(execution, copy_transport(&recovery, archive.clone()));
@@ -73,6 +75,15 @@ fn checkpoint_restart_cycles_preserve_full_reads_and_retention() {
             )
             .unwrap();
         archive = archive.with_selected_members(native.members());
+        let bounds = native
+            .inspect_history_fold_bounds(execution, Some(archive.clone()))
+            .unwrap()
+            .expect("external-member checkpoint carries a directory");
+        assert!(bounds.all_within_bounds);
+        assert!(bounds.max_layers < bounds.max_layers_limit + 1);
+        assert!(bounds.max_input_bytes < bounds.input_target_bytes);
+        consolidations += usize::from(bounds.max_layers < previous_depth);
+        previous_depth = bounds.max_layers;
         recovery = RelationalDurableRecoverySource::new(
             Some(RelationalDurableCheckpointSource::new(
                 native.covered_position().unwrap(),
@@ -91,4 +102,8 @@ fn checkpoint_restart_cycles_preserve_full_reads_and_retention() {
             Some(&expected)
         );
     }
+    assert!(
+        consolidations >= 2,
+        "real runtime capture must repeatedly consolidate"
+    );
 }
