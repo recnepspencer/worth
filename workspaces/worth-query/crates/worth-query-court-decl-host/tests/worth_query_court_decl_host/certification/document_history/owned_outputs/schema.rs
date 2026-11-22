@@ -130,6 +130,7 @@ fn declare(
     let schema = family::c3b::guarded_presence::declare(schema);
     let schema = family::c3b::guarded_current::declare(schema);
     let schema = family::c3b::guarded_first::declare(schema);
+    let schema = family::c3b::decision_write_n::declare(schema);
     let schema = family::self_write::declare(schema);
     let schema = family::cross_reader::declare(schema);
     let schema = family::cross_converge::declare(schema);

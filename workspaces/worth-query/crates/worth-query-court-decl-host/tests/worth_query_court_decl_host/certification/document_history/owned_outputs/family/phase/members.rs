@@ -36,6 +36,13 @@ macro_rules! producer_member_target {
     (SelfWriteInitial, $reader:ident) => { producer_member_target!(@write $reader) };
     (SelfWritePreserve, $reader:ident) => { producer_member_target!(@write $reader) };
     (DecisionWriteInitial, $reader:ident) => { producer_member_target!(@write $reader) };
+    (DecisionWriteNInitial, $reader:ident) => { producer_member_target!(@write_n $reader) };
+    (DecisionWriteNPreserve, $reader:ident) => { producer_member_target!(@write_n $reader) };
+    (@write_n $reader:ident) => {{
+        let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "n".to_owned())?;
+        $reader.field(&member, MemberValue::at("MemberValue"))?;
+        Some($reader.mutation_target(&member)?)
+    }};
     (DecisionWritePreserve, $reader:ident) => { producer_member_target!(@write $reader) };
     (@write $reader:ident) => {{
         let member = $reader.resolve_entity(MemberKey::at("MemberKey"), "m".to_owned())?;
@@ -60,6 +67,8 @@ macro_rules! producer_member_effect {
     (SelfWriteInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (SelfWritePreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (DecisionWriteInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
+    (DecisionWriteNInitial, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
+    (DecisionWriteNPreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (DecisionWritePreserve, $writer:ident, $decision:ident, $input:ident) => { producer_member_effect!(@write $writer, $decision, $input) };
     (@write $writer:ident, $decision:ident, $input:ident) => {{
         let member = $writer.projected_entity($decision.member_target.as_ref().expect("actual completed member decision"))?;

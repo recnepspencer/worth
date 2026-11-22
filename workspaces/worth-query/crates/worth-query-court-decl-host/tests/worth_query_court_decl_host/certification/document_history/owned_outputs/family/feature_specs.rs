@@ -20,6 +20,7 @@ pub(in super::super) fn feature_specs(
         super::c3b::guarded_presence::feature(),
         super::c3b::guarded_current::feature(),
         super::c3b::guarded_first::feature(),
+        super::c3b::decision_write_n::feature(),
         self_write::feature(),
         cross_reader::feature(),
         cross_converge::feature(),
