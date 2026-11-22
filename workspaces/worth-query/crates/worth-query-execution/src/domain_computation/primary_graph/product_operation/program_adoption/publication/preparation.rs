@@ -112,6 +112,13 @@ impl PreparedAdoptionPublication {
             selected_entity_count: details.selected,
             migration: details.migration,
         };
+        let stage_control = &selected
+            .application()
+            .runtime
+            .primary_provider
+            .application_attempt_operation_control;
+        use crate::domain_computation::primary_graph::application_runtime::operation_control::WorthQueryBranchAdoptionStageForTest as AdoptionStage;
+        stage_control.reach_branch_adoption_stage(AdoptionStage::BeforeRetainBranch);
         selected
             .application()
             .installed_program_support()
@@ -120,7 +127,9 @@ impl PreparedAdoptionPublication {
             .retain_branch_adoption(execution, row)
             .map_err(Failure::Obligation)?;
         support.transfer_to_durable();
+        stage_control.reach_branch_adoption_stage(AdoptionStage::AfterRetainBranch);
         let opened = advance_open(pending, &binding, request, execution)?;
+        stage_control.reach_branch_adoption_stage(AdoptionStage::AfterWorldOpen);
         let prepared = graph
             .with_runtime(execution, |native| {
                 opened.prepare_native(native, execution, proposal)

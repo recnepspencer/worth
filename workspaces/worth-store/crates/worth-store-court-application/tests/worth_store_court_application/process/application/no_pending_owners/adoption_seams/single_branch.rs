@@ -1,5 +1,5 @@
-//! First-durable-barrier single-branch adoption kills (armed after Home open)
-//! and the World-Released / Query-ReleaseBranch observer cut.
+//! Exact durable owner-record boundary kills for single-branch adoption
+//! (armed after Home open) and the World-Released / Query-ReleaseBranch cut.
 use super::*;
 use worth_query_execution::facade::application_home_integration::QueryColdAdoptionReadmissionSummary;
 use worth_query_host::facade::application_entry::WorthQueryBranchAdoptionRecoveryOutcome;
@@ -14,8 +14,7 @@ enum SingleBranchSeam {
     AlreadyCompleted = 5,
 }
 
-struct BarrierHit {
-    nth: u64,
+struct StageHit {
     seam: SingleBranchSeam,
     detail: String,
     _dir: tempfile::TempDir,
@@ -55,32 +54,23 @@ fn classify_single_branch(
     }
 }
 
-fn close_hit(hit: BarrierHit, execution: &worth_execution::ExecutionRequest<'_, '_>) {
-    hit.home.close(execution).unwrap().reclaim();
-}
-
-fn probe_barrier(
+fn kill_at_stage_and_reopen(
     execution: worth_execution::ExecutionRequest<'_, '_>,
-    nth: u64,
-) -> Option<BarrierHit> {
+    stage: &str,
+) -> StageHit {
     let dir = tempfile::tempdir().unwrap();
-    let loc = dir.path().join("probe");
+    let loc = dir.path().join("home");
     predecessor(&loc, false);
-    let (end, detail) = run_child(&loc, &format!("single:{nth}"));
-    if end == crate::killed_child::ChildEnd::Finished {
-        return None;
-    }
+    let (end, detail) = run_child(&loc, &format!("stage:{stage}"));
     assert_eq!(
         end,
         crate::killed_child::ChildEnd::KilledAtPark,
-        "adoption barrier nth={nth} must park"
+        "stage:{stage} must park and be killed"
     );
-    assert!(
-        detail.contains("role=SynchronizeFileState")
-            && detail.contains("op=Some(")
-            && detail.contains("path=Some(")
-            && detail.contains("id_ord=Some("),
-        "nth={nth} must bind semantic media context: {detail}"
+    assert_eq!(
+        detail.trim(),
+        format!("stage={stage}"),
+        "child must announce the exact durable owner-record stage"
     );
     let home = open_home(&loc, false, execution, None);
     let summary = home
@@ -90,100 +80,27 @@ fn probe_barrier(
     let recovery_rows = home
         .runtime()
         .runtime()
-        .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+        .product_publication_recovery_page(None, NonZeroUsize::MIN)
         .unwrap()
         .rows()
         .len();
     let seam = classify_single_branch(summary, recovery_rows);
-    Some(BarrierHit {
-        nth,
+    StageHit {
         seam,
         detail,
         _dir: dir,
         loc,
         home,
-    })
-}
-
-fn find_first_barrier(
-    execution: worth_execution::ExecutionRequest<'_, '_>,
-    mut lo: u64,
-    mut hi: u64,
-    target: SingleBranchSeam,
-    expected_prev: SingleBranchSeam,
-) -> BarrierHit {
-    let mut best: Option<BarrierHit> = None;
-    let mut prev_seen: Option<(u64, SingleBranchSeam)> = None;
-    while lo <= hi {
-        let mid = lo + (hi - lo) / 2;
-        let Some(hit) = probe_barrier(execution, mid) else {
-            if mid == 0 {
-                break;
-            }
-            hi = mid - 1;
-            continue;
-        };
-        if hit.seam >= target {
-            if hit.seam == target && best.as_ref().is_none_or(|b| hit.nth < b.nth) {
-                if let Some(old) = best.replace(hit) {
-                    close_hit(old, &execution);
-                }
-            } else {
-                close_hit(hit, &execution);
-            }
-            if mid == 0 {
-                break;
-            }
-            hi = mid - 1;
-        } else {
-            if prev_seen.is_none_or(|(n, _)| hit.nth > n) {
-                prev_seen = Some((hit.nth, hit.seam));
-            }
-            close_hit(hit, &execution);
-            lo = mid + 1;
-        }
     }
-    let mut first = best.unwrap_or_else(|| {
-        panic!("must locate a real first barrier for {target:?} (lo={lo} hi={hi})")
-    });
-    // Confirm the immediately preceding barrier is strictly earlier; if ±1
-    // background-sync jitter exposes an even earlier hit in `target`, step down.
-    while first.nth > 1 {
-        if let Some((prev_n, prev_seam)) = prev_seen
-            && prev_n + 1 == first.nth
-        {
-            assert_eq!(
-                prev_seam, expected_prev,
-                "barrier {} before first {target:?} (nth={}) must be {expected_prev:?}",
-                prev_n, first.nth
-            );
-            break;
-        }
-        let prev = probe_barrier(execution, first.nth - 1)
-            .unwrap_or_else(|| panic!("barrier {} before first {target:?} must park", first.nth - 1));
-        if prev.seam == target {
-            let old = std::mem::replace(&mut first, prev);
-            close_hit(old, &execution);
-            continue;
-        }
-        assert_eq!(
-            prev.seam, expected_prev,
-            "barrier {} before first {target:?} (nth={}) must be {expected_prev:?}",
-            prev.nth, first.nth
-        );
-        close_hit(prev, &execution);
-        break;
-    }
-    eprintln!("C3.4 first barrier {target:?}: {}", first.detail);
-    first
 }
 
 fn resume_native_recovery_adoption(
     home: &Home,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     label: &str,
-) {
+) -> CompositeCommitIdentity {
     let host = home.runtime();
+    let p0 = *host.owned_revision();
     let p1 = *host
         .supported_program::<RetentionProgramP1>()
         .unwrap()
@@ -199,7 +116,7 @@ fn resume_native_recovery_adoption(
     );
     let page = host
         .runtime()
-        .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+        .product_publication_recovery_page(None, NonZeroUsize::MIN)
         .unwrap();
     assert_eq!(page.rows().len(), 1, "{label}: one adoption recovery row");
     let recovery = host
@@ -220,109 +137,174 @@ fn resume_native_recovery_adoption(
     else {
         panic!("{label}: recovered adoption must publish");
     };
-    assert_eq!(adoption.target(), &p1);
+    assert_eq!((adoption.source(), adoption.target()), (&p0, &p1));
+    let commit = adoption.product_commit().clone();
     cleanup.unwrap_or_else(|cause| panic!("{label}: cleanup recovered adoption: {cause:?}"));
     drop(adoption);
     assert!(
         host.runtime()
-            .product_publication_recovery_page(None, std::num::NonZeroUsize::MIN)
+            .product_publication_recovery_page(None, NonZeroUsize::MIN)
             .unwrap()
             .rows()
             .is_empty(),
         "{label}: recovery catalogue cleared after resume"
     );
+    commit
+}
+
+struct SingleBranchControl {
+    installed_commits: usize,
+    branch_history_len: usize,
 }
 
 fn measure_uninterrupted_adoption(
     execution: worth_execution::ExecutionRequest<'_, '_>,
-) -> (u64, usize) {
-    let control_dir = tempfile::tempdir().unwrap();
-    let control_loc = control_dir.path().join("control");
-    predecessor(&control_loc, false);
-    let (end, count_text) = run_child(&control_loc, "single-uninterrupted");
-    assert_eq!(end, crate::killed_child::ChildEnd::Finished);
-    let total_syncs: u64 = count_text
-        .trim()
-        .parse()
-        .unwrap_or_else(|_| panic!("expected identified sync count, got {count_text:?}"));
-    assert!(total_syncs >= 5, "adoption performs at least 5 identified syncs: {total_syncs}");
-    let control_home = open_home(&control_loc, false, execution, None);
-    let control_commits = control_home
+) -> SingleBranchControl {
+    let dir = tempfile::tempdir().unwrap();
+    let loc = dir.path().join("control");
+    predecessor(&loc, false);
+    let home = open_home(&loc, false, execution, None);
+    let performed = adopt_branch_to_p1(&home);
+    let commit = performed.product_commit().clone();
+    drop(performed);
+    let installed_commits = home
         .runtime()
         .runtime()
         .world_history_snapshot_for_test()
         .installed_commits();
-    verify_p1_and_close(control_home, execution, &control_loc, control_commits, "control");
-    (total_syncs, control_commits)
+    let branch = home.runtime().current_world();
+    let (branch_history_len, _) = assert_single_p0_to_p1_occurrence(
+        &home,
+        branch,
+        None,
+        ExpectedAdoptionCommit::Live(&commit),
+        "control",
+    );
+    verify_p1_and_close(
+        home,
+        execution,
+        &loc,
+        installed_commits,
+        branch_history_len,
+        ExpectedAdoptionCommit::Live(&commit),
+        "control",
+    );
+    SingleBranchControl {
+        installed_commits,
+        branch_history_len,
+    }
 }
 
-fn verify_first_durable_barrier(target: SingleBranchSeam, expected_prev: SingleBranchSeam) {
+fn verify_durable_record_boundary(
+    before_stage: &str,
+    expected_before: SingleBranchSeam,
+    after_stage: &str,
+    expected_after: SingleBranchSeam,
+) {
     let lease = checkpoint_capture::lease(256 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let (total_syncs, control_commits) = measure_uninterrupted_adoption(execution);
-    let hit = if target == SingleBranchSeam::PreOpenRetained {
-        let first = probe_barrier(execution, 1).expect("nth=1 must park");
-        if first.seam == target {
-            eprintln!("C3.4 first barrier {target:?}: {}", first.detail);
-            first
-        } else {
-            close_hit(first, &execution);
-            find_first_barrier(execution, 2, total_syncs, target, expected_prev)
-        }
-    } else {
-        find_first_barrier(execution, 1, total_syncs, target, expected_prev)
-    };
-    let label = format!("{target:?} (first barrier nth={})", hit.nth);
-    match target {
+    let control = measure_uninterrupted_adoption(execution);
+
+    // Prove the immediately preceding boundary has not crossed this record's durability fence.
+    let before = kill_at_stage_and_reopen(execution, before_stage);
+    assert_eq!(
+        before.seam, expected_before,
+        "before-side stage:{before_stage} must remain {expected_before:?} ({})",
+        before.detail
+    );
+    before.home.close(&execution).unwrap().reclaim();
+
+    // Prove immediately after this durable owner record commits, cold readmission sees `expected_after`.
+    let hit = kill_at_stage_and_reopen(execution, after_stage);
+    assert_eq!(
+        hit.seam, expected_after,
+        "after-side stage:{after_stage} must land in {expected_after:?} ({})",
+        hit.detail
+    );
+    let label = format!("{expected_after:?} (stage:{after_stage})");
+    eprintln!("C3.4 durable boundary {expected_before:?} -> {expected_after:?}: {}", hit.detail);
+    let commit = match expected_after {
         SingleBranchSeam::BeforeAdoption => unreachable!(),
         SingleBranchSeam::PreOpenRetained | SingleBranchSeam::EmptyOpenReleased => {
-            adopt_branch_to_p1(&hit.home);
+            Some(adopt_branch_to_p1(&hit.home).product_commit().clone())
         }
         SingleBranchSeam::NativeRecoveryRetained => {
-            resume_native_recovery_adoption(&hit.home, &execution, &label);
+            Some(resume_native_recovery_adoption(&hit.home, &execution, &label))
         }
-        SingleBranchSeam::PublishedDischarged | SingleBranchSeam::AlreadyCompleted => {}
-    }
-    verify_p1_and_close(hit.home, execution, &hit.loc, control_commits, &label);
+        SingleBranchSeam::PublishedDischarged | SingleBranchSeam::AlreadyCompleted => None,
+    };
+    let expected_commit = commit
+        .as_ref()
+        .map_or(ExpectedAdoptionCommit::Any, ExpectedAdoptionCommit::Live);
+    verify_p1_and_close(
+        hit.home,
+        execution,
+        &hit.loc,
+        control.installed_commits,
+        control.branch_history_len,
+        expected_commit,
+        &label,
+    );
 }
 
 #[test]
 fn first_barrier_pre_open_retained_resumes_once() {
-    verify_first_durable_barrier(SingleBranchSeam::PreOpenRetained, SingleBranchSeam::BeforeAdoption);
+    verify_durable_record_boundary(
+        "before-retain",
+        SingleBranchSeam::BeforeAdoption,
+        "after-retain",
+        SingleBranchSeam::PreOpenRetained,
+    );
 }
 #[test]
 fn first_barrier_empty_open_released_resumes_once() {
-    verify_first_durable_barrier(SingleBranchSeam::EmptyOpenReleased, SingleBranchSeam::PreOpenRetained);
+    verify_durable_record_boundary(
+        "after-retain",
+        SingleBranchSeam::PreOpenRetained,
+        "after-world-open",
+        SingleBranchSeam::EmptyOpenReleased,
+    );
 }
 #[test]
 fn first_barrier_native_recovery_retained_resumes_once() {
-    verify_first_durable_barrier(SingleBranchSeam::NativeRecoveryRetained, SingleBranchSeam::EmptyOpenReleased);
+    verify_durable_record_boundary(
+        "after-world-open",
+        SingleBranchSeam::EmptyOpenReleased,
+        "before-product-compare",
+        SingleBranchSeam::NativeRecoveryRetained,
+    );
 }
 #[test]
 fn first_barrier_published_discharged_resumes_once() {
-    verify_first_durable_barrier(SingleBranchSeam::PublishedDischarged, SingleBranchSeam::NativeRecoveryRetained);
+    verify_durable_record_boundary(
+        "before-product-compare",
+        SingleBranchSeam::NativeRecoveryRetained,
+        "after-world-published",
+        SingleBranchSeam::PublishedDischarged,
+    );
 }
 #[test]
 fn first_barrier_already_completed_resumes_once() {
-    verify_first_durable_barrier(SingleBranchSeam::AlreadyCompleted, SingleBranchSeam::PublishedDischarged);
+    verify_durable_record_boundary(
+        "after-world-published",
+        SingleBranchSeam::PublishedDischarged,
+        "after-obligation-released",
+        SingleBranchSeam::AlreadyCompleted,
+    );
 }
 
 #[test]
 fn empty_open_world_released_cut_never_reports_adoption_success() {
     let lease = checkpoint_capture::lease(256 << 20);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let (total_syncs, _) = measure_uninterrupted_adoption(execution);
-    let empty_hit = find_first_barrier(
-        execution, 1, total_syncs,
-        SingleBranchSeam::EmptyOpenReleased, SingleBranchSeam::PreOpenRetained,
-    );
-    let empty_setup = empty_hit.nth + 3;
-    close_hit(empty_hit, &execution);
 
     let count_dir = tempfile::tempdir().unwrap();
     let count_loc = count_dir.path().join("count");
     predecessor(&count_loc, false);
-    assert_eq!(run_child(&count_loc, &format!("single:{empty_setup}")).0, crate::killed_child::ChildEnd::KilledAtPark);
+    assert_eq!(
+        run_child(&count_loc, "stage:after-world-open").0,
+        crate::killed_child::ChildEnd::KilledAtPark
+    );
     let (end, reopen_count_text) = run_child(&count_loc, "reopen-count");
     assert_eq!(end, crate::killed_child::ChildEnd::Finished);
     let reopen_syncs: u64 = reopen_count_text.trim().parse().unwrap();
@@ -333,35 +315,66 @@ fn empty_open_world_released_cut_never_reports_adoption_success() {
         let d = tempfile::tempdir().unwrap();
         let l = d.path().join("cut");
         predecessor(&l, false);
-        assert_eq!(run_child(&l, &format!("single:{empty_setup}")).0, crate::killed_child::ChildEnd::KilledAtPark);
+        assert_eq!(
+            run_child(&l, "stage:after-world-open").0,
+            crate::killed_child::ChildEnd::KilledAtPark
+        );
         let (end, detail) = run_child(&l, &format!("reopen-kill:{mid}"));
         if end == crate::killed_child::ChildEnd::Finished {
-            if mid == 0 { break; }
+            if mid == 0 {
+                break;
+            }
             hi = mid - 1;
             continue;
         }
         assert_eq!(end, crate::killed_child::ChildEnd::KilledAtPark, "reopen mid={mid}");
+        assert!(
+            detail.contains("role=SynchronizeFileState")
+                && detail.contains("path=Some(ArtifactOwned)")
+                && detail.contains("op=Some(")
+                && detail.contains("id_ord=Some("),
+            "reopen barrier must report ArtifactOwned file sync context: {detail}"
+        );
         let home = open_home(&l, false, execution, None);
-        let s = home.runtime().runtime().cold_adoption_readmission_summary_for_test();
-        assert_eq!((s.published_discharged, s.already_completed), (0, 0), "no-effect release cannot report success (mid={mid}): {s:?}");
+        let s = home
+            .runtime()
+            .runtime()
+            .cold_adoption_readmission_summary_for_test();
+        assert_eq!(
+            (s.published_discharged, s.already_completed),
+            (0, 0),
+            "no-effect release cannot report success (mid={mid}): {s:?}"
+        );
         if s.released_discharged == 1 {
             eprintln!("C3.4 World-Released / Query-ReleaseBranch cut: {detail}");
             hit_released_discharged = true;
             home.close(&execution).unwrap().reclaim();
             let after = open_home(&l, false, execution, None);
-            let s2 = after.runtime().runtime().cold_adoption_readmission_summary_for_test();
-            assert_eq!((s2.already_released, s2.already_completed, s2.published_discharged), (1, 0, 0), "discharged no-effect attempt must classify as already_released");
+            let s2 = after
+                .runtime()
+                .runtime()
+                .cold_adoption_readmission_summary_for_test();
+            assert_eq!(
+                (s2.already_released, s2.already_completed, s2.published_discharged),
+                (1, 0, 0),
+                "discharged no-effect attempt must classify as already_released"
+            );
             after.close(&execution).unwrap().reclaim();
             break;
         }
         let progressed_past = s.already_released == 1;
         home.close(&execution).unwrap().reclaim();
         if progressed_past {
-            if mid == 0 { break; }
+            if mid == 0 {
+                break;
+            }
             hi = mid - 1;
         } else {
             lo = mid + 1;
         }
     }
-    assert!(hit_released_discharged, "must observe World Released / Query ReleaseBranch cut within {reopen_syncs} syncs");
+    assert!(
+        hit_released_discharged,
+        "must observe World Released / Query ReleaseBranch cut within {reopen_syncs} syncs"
+    );
 }

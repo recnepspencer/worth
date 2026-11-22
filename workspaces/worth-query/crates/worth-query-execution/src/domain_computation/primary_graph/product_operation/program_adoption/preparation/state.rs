@@ -91,6 +91,12 @@ pub(super) fn prepare<Schema: ApplicationSchema, Operation, Input, Scope>(
     maximum_selection_work: usize,
     request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
 ) -> Result<WorthQueryPreparedBranchAdoption, WorthQueryBranchAdoptionPreparationDenial> {
+    selected
+        .application()
+        .runtime
+        .primary_provider
+        .application_attempt_operation_control
+        .record_branch_adoption_preparation(selected.product().product_branch());
     admission.validate_current_authority().map_err(|cause| WorthQueryBranchAdoptionPreparationDenial::Authorization(super::super::authorization::WorthQueryProgramAdoptionAuthorizationDenial::Authorization(cause)))?;
     let (source, requirements) = requirements(selected, target)?;
     if &requirements != expected_requirements {

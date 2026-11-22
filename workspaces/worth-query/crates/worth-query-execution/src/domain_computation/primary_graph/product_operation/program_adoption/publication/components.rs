@@ -145,6 +145,17 @@ Err(PublicationDenial::Stopped(stop)) => {
                 )
             }
         };
+        let stage_control = &application
+            .runtime
+            .primary_provider
+            .application_attempt_operation_control;
+        use crate::domain_computation::primary_graph::application_runtime::operation_control::WorthQueryBranchAdoptionStageForTest as AdoptionStage;
+        if matches!(
+            &outcome,
+            WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
+        ) {
+            stage_control.reach_branch_adoption_stage(AdoptionStage::AfterWorldPublished);
+        }
         if !matches!(
             &outcome,
             WorthQueryBranchAdoptionPublicationOutcome::ProductUnpublished(_)
@@ -160,6 +171,12 @@ Err(PublicationDenial::Stopped(stop)) => {
                     cause,
                     outcome: Box::new(outcome),
                 };
+            }
+            if matches!(
+                &outcome,
+                WorthQueryBranchAdoptionPublicationOutcome::Performed(_)
+            ) {
+                stage_control.reach_branch_adoption_stage(AdoptionStage::AfterObligationReleased);
             }
         }
         outcome

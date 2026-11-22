@@ -11,6 +11,11 @@ use std::sync::{
 use std::time::Duration;
 
 pub(crate) mod caller_pass;
+mod branch_adoption;
+pub use branch_adoption::{
+    WorthQueryBranchAdoptionPreparationObserverForTest, WorthQueryBranchAdoptionStageForTest,
+    WorthQueryBranchAdoptionStagePauseForTest,
+};
 mod managed_source;
 pub use managed_source::WorthQueryManagedSourceRevalidationPauseForTest;
 mod source_publication;
@@ -29,6 +34,8 @@ pub struct WorthQueryApplicationAttemptOperationControl {
     pending_source_validation: Arc<PendingAttemptPause>,
     pending_source_comparison: Arc<PendingAttemptPause>,
     pending_managed_revalidation: Arc<PendingAttemptPause>,
+    pending_branch_adoption_stage: Arc<branch_adoption::PendingAdoptionStagePause>,
+    branch_adoption_preparation_observer: Arc<branch_adoption::AdoptionPreparationObserverSlot>,
     source_validation_observations: Arc<Mutex<Vec<WorthQuerySourcePublicationImageForTest>>>,
 }
 

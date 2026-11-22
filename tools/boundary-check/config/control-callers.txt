@@ -165,6 +165,7 @@ crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-certification/t
 crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-certification/tests/application_contracts/projection_lifecycle/support.rs
 crates/worth-runtime-bridge/ workspaces/worth-ui/crates/worth-ui-query-binding/src/scalar_projection_drift_tests.rs
 crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/guarded_cutover.rs
+crates/worth-runtime-world/ workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/no_pending_owners/adoption_seams.rs
 crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/memory_handoff.rs
 crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/memory_handoff/deadline.rs
 crates/worth-runtime-world/ crates/worth-court-runtime-world/tests/worth_court_runtime_world/runtime_world/court/current_read/mod.rs

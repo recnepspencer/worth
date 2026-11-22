@@ -7,9 +7,34 @@ mod coupled_participant;
 pub(in crate::domain_computation::primary_graph) use attempt_registration::WorthQueryApplicationAttemptOperationControl;
 pub use attempt_registration::WorthQueryApplicationAttemptRegistrationPauseForTest;
 pub use attempt_registration::WorthQueryApplicationCandidatePreparationPauseForTest;
+pub use attempt_registration::WorthQueryBranchAdoptionPreparationObserverForTest;
+pub use attempt_registration::WorthQueryBranchAdoptionStageForTest;
+pub use attempt_registration::WorthQueryBranchAdoptionStagePauseForTest;
 pub use attempt_registration::WorthQueryManagedSourceRevalidationPauseForTest;
 
 impl<Schema> WorthQueryPrimaryGraphApplicationRuntime<Schema> {
+    /// Parks one single-branch adoption at an exact durable owner-record boundary.
+    #[doc(hidden)]
+    pub fn pause_branch_adoption_stage_for_test(
+        &self,
+        stage: WorthQueryBranchAdoptionStageForTest,
+    ) -> WorthQueryBranchAdoptionStagePauseForTest {
+        self.runtime
+            .primary_provider
+            .application_attempt_operation_control
+            .pause_branch_adoption_stage(stage)
+    }
+
+    /// Passively observes branch selectors that enter single-branch adoption preparation.
+    #[doc(hidden)]
+    pub fn observe_branch_adoption_preparations_for_test(
+        &self,
+    ) -> WorthQueryBranchAdoptionPreparationObserverForTest {
+        self.runtime
+            .primary_provider
+            .application_attempt_operation_control
+            .observe_branch_adoption_preparations()
+    }
     /// Parks a successfully revalidated managed target before its atomic Native pin.
     #[doc(hidden)]
     pub fn pause_after_managed_source_revalidation_for_test(
