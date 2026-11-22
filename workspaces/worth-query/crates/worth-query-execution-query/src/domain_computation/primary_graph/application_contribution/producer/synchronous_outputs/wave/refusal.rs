@@ -38,6 +38,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         }
         self.tasks[i].state = TaskState::Refused {
             failure: Box::new(failure),
+            read,
         };
         observation::record(|| format!("pending refusal task={i}"));
         Ok(None)
@@ -48,15 +49,29 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         matches!(self.tasks[i].state, TaskState::Refused { .. })
     }
 
-    /// The first pending refusal in stage order (owed position, then row),
-    /// reported with its original stop.
+    /// The first pending refusal still needed, in stage order (owed position,
+    /// then row), reported with its original stop. A refusal no needed task
+    /// waits on any more (its consumer dropped it) is not this edit's cause.
     pub(super) fn take_pending_refusal(&mut self) -> Option<SynchronousOutputFailure> {
         let i = (0..self.tasks.len())
-            .filter(|&i| self.is_refused(i))
+            .filter(|&i| self.tasks[i].needed && self.is_refused(i))
             .min_by_key(|&i| (self.tasks[i].owed.position(), i))?;
         match std::mem::replace(&mut self.tasks[i].state, TaskState::Identified) {
-            TaskState::Refused { failure } => Some(*failure),
+            TaskState::Refused { failure, .. } => Some(*failure),
             _ => unreachable!("matched a pending refusal"),
+        }
+    }
+
+    /// Task `i` leaves a pending refusal (it derives again): the ledger entry
+    /// that retained its proofs retires, so a later change to them reopens
+    /// nothing.
+    pub(super) fn leave_refusal(
+        &self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        i: usize,
+    ) {
+        if let TaskState::Refused { read, .. } = &self.tasks[i].state {
+            context.owner.retire_refusal(*read);
         }
     }
 }

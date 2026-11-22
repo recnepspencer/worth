@@ -15,6 +15,13 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
     ) -> ParentRead {
         self.next_read()
     }
+    /// A refused derivation derives again: its proofs' entry retires.
+    pub(in crate::domain_computation::primary_graph::application_contribution) fn retire_refusal(
+        &self,
+        read: ParentRead,
+    ) {
+        self.retire_part(read);
+    }
     /// Retain a refused derivation's proofs as `read`: R2 retries its task
     /// when an append marks one.
     pub(in crate::domain_computation::primary_graph::application_contribution) fn register_refusal(
@@ -39,6 +46,7 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
                         |relation| layout.relation(relation).map(|relation| relation.kind),
                     )
                 })
+                .chain(proofs.touches.iter().map(|touch| Some(vec![touch.clone()])))
                 .collect()
         };
         charge(execution, subject, keys.len() as u64 + 1)?;

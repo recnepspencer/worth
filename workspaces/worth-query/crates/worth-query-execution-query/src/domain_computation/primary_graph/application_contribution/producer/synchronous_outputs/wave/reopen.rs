@@ -83,9 +83,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         let i = self.canonical(row);
         checkpoint(context.execution, self.tasks[i].subject, 1)?;
         let owed = self.tasks[i].owed.position().max(invalidator_owed);
-        if self.tasks[row].reopen_check.is_some() {
+        if self.tasks[row].reopen_check.is_some() && !self.is_refused(i) {
             // Its re-discovery is pending and verified against what it
-            // selected before: that replaces this support too.
+            // selected before: that replaces this support too. A pending
+            // refusal reopens below: nothing else would retry it.
             observation::record(|| format!("reselect task={row} owed={owed} (rediscovering)"));
             self.raise_owed(i, owed);
             return Ok(());
@@ -102,15 +103,12 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                     let children = std::mem::take(&mut self.tasks[i].children);
                     self.routes(context, candidate, children)?
                 };
-                self.tasks[i].reopen_check = Some(ReopenCheck {
-                    invalidator,
-                    prior_children,
-                    prior_prerequisites: self.canonical_set(i),
-                });
+                let prior_prerequisites = self.canonical_set(i);
+                self.merge_reopen_check(context, i, invalidator, prior_children, prior_prerequisites)?;
                 return self.discover_completed(context, candidate, vec![i], 1);
             }
         }
-        if self.tasks[i].is_done() {
+        if self.tasks[i].is_done() || self.is_refused(i) {
             observation::record(|| format!("reselect task={i} owed={owed}"));
             return self.reopen_task(context, candidate, i, owed, invalidator);
         }
@@ -141,16 +139,15 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             let children = std::mem::take(&mut self.tasks[i].children);
             self.routes(context, candidate, children)?
         };
+        self.leave_refusal(context, i);
+        self.merge_reopen_check(context, i, invalidator, prior_children, prior_prerequisites)?;
+        // Its re-discovery is verified once it derives again, not before.
+        self.rediscovered.retain(|&row| row != i);
         let task = &mut self.tasks[i];
         let previous = match std::mem::replace(&mut task.state, TaskState::Identified) {
             TaskState::Done { parent } => parent,
             _ => None,
         };
-        task.reopen_check = Some(ReopenCheck {
-            invalidator,
-            prior_children,
-            prior_prerequisites,
-        });
         task.close_epoch = task.close_epoch.wrapping_add(1);
         task.prerequisites = Vec::new();
         task._prerequisite_memory = None;
@@ -195,7 +192,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         for &alias in &aliases {
             let subject = self.tasks[alias].subject;
             checkpoint(context.execution, subject, 1)?;
-            if self.ready_alias_continuations.contains_key(&alias) {
+            let was_ready = self.ready_alias_continuations.contains_key(&alias);
+            if was_ready {
                 map_remove(
                     &mut self.ready_alias_continuations,
                     &alias,
@@ -210,15 +208,15 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 let children = std::mem::take(&mut self.tasks[alias].children);
                 self.routes(context, candidate, children)?
             };
-            let row = &mut self.tasks[alias];
-            row.reopen_check = Some(ReopenCheck {
-                invalidator,
-                prior_children,
-                prior_prerequisites: Vec::new(),
-            });
-            row.continuation_done = false;
-            let prev = self.tasks[i].waiting_aliases_head.replace(alias);
-            self.tasks[alias].next_waiting_alias = prev;
+            self.merge_reopen_check(context, alias, invalidator, prior_children, Vec::new())?;
+            self.rediscovered.retain(|&row| row != alias);
+            // An alias already waiting on this canonical waits once.
+            let waiting = !self.tasks[alias].continuation_done && !was_ready;
+            self.tasks[alias].continuation_done = false;
+            if !waiting {
+                let prev = self.tasks[i].waiting_aliases_head.replace(alias);
+                self.tasks[alias].next_waiting_alias = prev;
+            }
         }
         self.tasks[i].alias_rows = aliases;
         Ok(())
@@ -240,12 +238,8 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             let children = std::mem::take(&mut self.tasks[alias].children);
             self.routes(context, candidate, children)?
         };
+        self.merge_reopen_check(context, alias, invalidator, prior_children, Vec::new())?;
         let row = &mut self.tasks[alias];
-        row.reopen_check = Some(ReopenCheck {
-            invalidator,
-            prior_children,
-            prior_prerequisites: Vec::new(),
-        });
         row.continuation_done = false;
         let subject = row.subject;
         map_insert(
@@ -255,6 +249,47 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             context.execution,
             subject,
         )
+    }
+
+    /// Record what `row` selected before a reopen at `invalidator`. A row
+    /// already reopened keeps what it selected before its first reopen: the
+    /// checks merge (earliest invalidator, every prior child and parent), so
+    /// a second reopen in the same edit never forgets a selection to verify.
+    fn merge_reopen_check(
+        &mut self,
+        context: &SynchronousOutputAssembly<'_, '_, '_, '_, S>,
+        row: usize,
+        invalidator: usize,
+        prior_children: Vec<SelectedRoute>,
+        prior_prerequisites: Vec<usize>,
+    ) -> Result<(), SynchronousOutputFailure> {
+        if let Some(check) = &self.tasks[row].reopen_check {
+            let work = check.prior_children.len().max(1) * prior_children.len()
+                + check.prior_prerequisites.len()
+                + prior_prerequisites.len();
+            checkpoint(context.execution, self.tasks[row].subject, work as u64 + 1)?;
+        }
+        let check = match self.tasks[row].reopen_check.take() {
+            None => ReopenCheck {
+                invalidator,
+                prior_children,
+                prior_prerequisites,
+            },
+            Some(mut check) => {
+                check.invalidator = check.invalidator.min(invalidator);
+                for child in prior_children {
+                    if !check.prior_children.contains(&child) {
+                        check.prior_children.push(child);
+                    }
+                }
+                check.prior_prerequisites.extend(prior_prerequisites);
+                check.prior_prerequisites.sort_unstable();
+                check.prior_prerequisites.dedup();
+                check
+            }
+        };
+        self.tasks[row].reopen_check = Some(check);
+        Ok(())
     }
 
     /// The routes of `rows`: an occurrence's key, otherwise its route read.

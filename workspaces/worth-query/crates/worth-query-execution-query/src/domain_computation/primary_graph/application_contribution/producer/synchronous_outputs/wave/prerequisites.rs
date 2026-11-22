@@ -149,6 +149,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 subject,
             )?;
         }
+        self.leave_refusal(context, i);
         let task = &mut self.tasks[i];
         task.close_epoch = task.close_epoch.wrapping_add(1);
         task.prerequisites = Vec::new();

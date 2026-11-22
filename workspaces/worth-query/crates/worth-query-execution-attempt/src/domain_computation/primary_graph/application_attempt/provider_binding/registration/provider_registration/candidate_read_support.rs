@@ -226,7 +226,8 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
     /// every live entry retained before it (conservative, charged per entry).
     /// A changed task-owned entry ends at `invalidator`, whose comparison is
     /// its authenticated invalidation; its task selects again. A root
-    /// selector's support (no owner) stays live and strict.
+    /// selection (owner at or above `first_root`) is skipped: its stage
+    /// window ends at the next authored stage (`end_root_selections`).
     pub(in crate::domain_computation::primary_graph) fn changed_selection_owners(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

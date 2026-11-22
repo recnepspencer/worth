@@ -127,6 +127,7 @@ fn declare(
     let schema = family::c3b::cycle_consumer::declare(schema);
     let schema = family::c3b::guarded_input::declare(schema);
     let schema = family::c3b::guarded_member::declare(schema);
+    let schema = family::c3b::guarded_presence::declare(schema);
     let schema = family::self_write::declare(schema);
     let schema = family::cross_reader::declare(schema);
     let schema = family::cross_converge::declare(schema);

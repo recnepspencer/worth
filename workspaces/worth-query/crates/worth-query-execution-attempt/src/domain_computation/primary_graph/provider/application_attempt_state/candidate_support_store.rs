@@ -139,9 +139,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             answer
         })
     }
-    /// Requalify the verified parent the root retained as `read` (PR C R2):
-    /// compare it exactly at `current` against the edit's C basis.
-    #[allow(clippy::too_many_arguments)]
+    /// Whether any selector's query support is live (#238).
     pub fn has_live_selection_support(
         &self,
         root: &WorthQueryProviderSessionTerminalBinding,
@@ -201,6 +199,9 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .query_support_root(root)?
             .end_root_selections(execution, first_root, at)
     }
+    /// Requalify the verified parent the root retained as `read` (PR C R2):
+    /// compare it exactly at `current` against the edit's C basis.
+    #[allow(clippy::too_many_arguments)]
     pub fn requalify_retained_parent(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

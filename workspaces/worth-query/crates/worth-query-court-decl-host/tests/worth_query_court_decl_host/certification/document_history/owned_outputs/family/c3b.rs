@@ -11,6 +11,7 @@ pub mod cycle_consumer;
 pub mod cycle_parent;
 pub mod guarded_input;
 pub mod guarded_member;
+pub mod guarded_presence;
 pub mod saturated_consumer;
 pub mod saturated_input;
 pub mod self_write;
@@ -29,7 +30,8 @@ pub fn contracts(
     cycle_parent::contracts(contracts)?;
     cycle_consumer::contracts(contracts)?;
     guarded_input::contracts(contracts)?;
-    guarded_member::contracts(contracts)
+    guarded_member::contracts(contracts)?;
+    guarded_presence::contracts(contracts)
 }
 pub fn install(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Schema>,
@@ -45,5 +47,6 @@ pub fn install(
     cycle_parent::install(setup)?;
     cycle_consumer::install(setup)?;
     guarded_input::install(setup)?;
-    guarded_member::install(setup)
+    guarded_member::install(setup)?;
+    guarded_presence::install(setup)
 }

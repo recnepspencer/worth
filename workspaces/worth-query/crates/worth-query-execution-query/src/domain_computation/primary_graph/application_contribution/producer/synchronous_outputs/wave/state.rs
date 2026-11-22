@@ -21,6 +21,8 @@ pub(super) enum TaskState {
     /// §1.7): retried when R2 marks its proofs, reported if still pending.
     Refused {
         failure: Box<SynchronousOutputFailure>,
+        /// The ledger derivation that retains its proofs.
+        read: crate::domain_computation::primary_graph::provider::ParentRead,
     },
 }
 

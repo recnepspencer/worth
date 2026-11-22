@@ -166,6 +166,12 @@ macro_rules! producer_decision_dependency {
     (GuardedInputInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@model_b $reader) };
     (GuardedInputPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@model_b $reader) };
     (GuardedMemberInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (GuardedPresenceInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@saturated_presence $reader) };
+    (GuardedPresencePreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@saturated_presence $reader) };
+    // Whether output `saturated:a` exists: an optional indexed lookup, a source fact.
+    (@saturated_presence $reader:ident) => {
+        u64::from($reader.resolve_optional_entity(FirstKey::at("FirstKey"), "saturated:a".to_owned())?.is_some())
+    };
     (GuardedMemberPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (@model_b $reader:ident) => {{
         let b = $reader.resolve_entity(ModelKey::at("ModelKey"), "b".to_owned())?;
