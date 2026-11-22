@@ -145,6 +145,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
         invalidator: usize,
+        first_root: usize,
     ) -> Result<Vec<(usize, bool)>, Denial> {
         self.graph.with_runtime(execution, |runtime| {
             let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
@@ -158,11 +159,28 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                 .unwrap_or_else(|p| p.into_inner())
                 .query_support_root(root)
                 .and_then(|attempt| {
-                    attempt.changed_selection_owners(execution, runtime, &snapshot, current, invalidator)
+                    attempt.changed_selection_owners(
+                        execution, runtime, &snapshot, current, invalidator, first_root,
+                    )
                 });
             crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
             answer
         })
+    }
+    /// An authored stage appended at `at` ends earlier roots' selection
+    /// windows there (#238).
+    pub fn end_root_selections(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        first_root: usize,
+        at: usize,
+    ) -> Result<(), Denial> {
+        self.attempts
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .query_support_root(root)?
+            .end_root_selections(execution, first_root, at)
     }
     pub fn requalify_retained_parent(
         &self,

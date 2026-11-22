@@ -236,11 +236,11 @@ impl<S: ApplicationSchema> CoupledApplicationAssembly<'_, '_, '_, S> {
         member: AppendedMember,
     ) -> Result<(), CoupledSourceReadStop> {
         let subject = "append touch marking";
-        let (at, at_owed) = match &member {
-            AppendedMember::Part { position, owed, .. } => (*position, *owed),
-            AppendedMember::Stage { position, .. } => (*position, *position),
+        let (at, at_owed, stage) = match &member {
+            AppendedMember::Part { position, owed, .. } => (*position, *owed, false),
+            AppendedMember::Stage { position, .. } => (*position, *position, true),
         };
-        self.mark_selections(execution, candidate, at, at_owed)?;
+        self.mark_selections(execution, candidate, at, at_owed, stage)?;
         if self.ledger.borrow().is_empty() {
             return Ok(());
         }

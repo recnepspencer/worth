@@ -270,6 +270,7 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
         invalidator: usize,
+        first_root: usize,
     ) -> Result<Vec<(usize, bool)>, Denial> {
         let mut owners: Vec<(usize, bool)> = Vec::new();
         for entry in &mut self.candidate_read_support.values {
@@ -278,7 +279,8 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             else {
                 continue;
             };
-            if entry.position >= invalidator {
+            // A root's support is judged only within its own stage.
+            if entry.position >= invalidator || owner >= first_root {
                 continue;
             }
             charge_scan(execution, "selection support qualification", 1)?;
@@ -296,6 +298,28 @@ impl WorthQueryPrimaryGraphApplicationAttempt {
             }
         }
         Ok(owners)
+    }
+    /// The authored stage appended at `at` ends every earlier root's stage:
+    /// each live root-owned selection support retained before it holds only
+    /// up to that append (#238). One commit per stage evaluates a root once,
+    /// so a later change to its support is no change to what it selected.
+    pub fn end_root_selections(
+        &mut self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        first_root: usize,
+        at: usize,
+    ) -> Result<(), Denial> {
+        for entry in &mut self.candidate_read_support.values {
+            let (Some(owner), None) = (entry.owner, entry.window_end) else {
+                continue;
+            };
+            if owner < first_root || entry.position >= at {
+                continue;
+            }
+            charge_scan(execution, "root selection window", 1)?;
+            entry.window_end = Some(at);
+        }
+        Ok(())
     }
     /// Compare the verified parent retained as `read` from its own image to
     /// `current`. A change base does not settle supersedes it at `invalidator`.

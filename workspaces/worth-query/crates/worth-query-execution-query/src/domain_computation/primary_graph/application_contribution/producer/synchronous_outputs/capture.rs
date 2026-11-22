@@ -167,8 +167,12 @@ impl CapturedSynchronousOutputs {
                 order: tree.order(),
             };
             order = Some(tree.order().clone());
-            tree.seed(&context, candidate, wave)
-                .map_err(|cause| cause.0)?;
+            // The root owns its selector's support: it holds only within the
+            // root's own stage (#238, windowed at the next stage's append).
+            owner.discover_for(Some(wave.next_root()));
+            let seeded = tree.seed(&context, candidate, wave);
+            owner.discover_for(None);
+            seeded.map_err(|cause| cause.0)?;
         }
         Ok(order)
     }
