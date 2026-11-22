@@ -916,7 +916,8 @@ links [InboxTasks];`. A fragment whose fields are native scalars uses
 `worth_query_native_scalar_bindings!(pub Codecs);` when it also needs explicit
 `Scalar<T>` impls such as principal identity, content, unit-bearing or
 structured codecs. The [single-source court](../workspaces/worth-query/crates/worth-query-court-decl-host-single-source/tests/worth_query_court_decl_host_single_source/single_source/mod.rs)
-installs and runs each form.
+installs and runs body actions, a generic family, binding contexts, identity
+namespaces, a `worth_query_native_scalar_bindings!` set and inline `reads`.
 
 Declare operation access once with `worth_query_operation!(... for Schema:
 SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
