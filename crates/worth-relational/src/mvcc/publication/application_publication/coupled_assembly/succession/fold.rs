@@ -15,7 +15,9 @@ use crate::mvcc::validation::proposal_touches::ValidatedMutationTouch;
 use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
 use crate::schema::data::AspectContractPlanCatalog;
 use crate::storage::overlay::WorkingState;
-use crate::transactions::data::intents::mutation_intent::{CreateIntent, MutationIntent};
+use crate::transactions::data::intents::mutation_intent::{
+    CreateIntent, MutationIntent, RelationMutationIntent,
+};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::{RecordRef, WorkerIntentBatch};
 use crate::visibility::materialization::read_records::reader::pinned_read::{
@@ -84,8 +86,10 @@ pub(super) fn fold_records(
                             crate::transactions::data::outcomes::transaction_commit_error::origin_denial("a re-create has no chain allocation")
                         })?
                     }
-                    // A proved relation re-create keeps the head's relation.
-                    MutationIntent::Create(CreateIntent::Relation(_)) => continue,
+                    // A proved relation re-create keeps the head's relation, and
+                    // a proved re-delete keeps the latest round's delete.
+                    MutationIntent::Create(CreateIntent::Relation(_))
+                    | MutationIntent::Relation(RelationMutationIntent::Delete(_)) => continue,
                     _ => entity_write(intent).ok_or_else(|| {
                         crate::transactions::data::outcomes::transaction_commit_error::origin_denial("a proved round wrote no entity")
                     })?,

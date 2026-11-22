@@ -118,5 +118,6 @@ pub use publication::application_publication::coupled_assembly::{
     ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate,
     RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
     RelationalCoupledAppendTouches, RelationalCoupledChainOverlay,
+    RelationalCoupledOverlayEndpoints, RelationalCoupledOverlayRelation,
     RelationalCoupledProducerContinuation,
 };

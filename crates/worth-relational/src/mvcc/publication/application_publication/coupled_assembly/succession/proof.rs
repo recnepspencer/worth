@@ -61,28 +61,21 @@ pub(super) fn prove_succession(
                 ));
             }
             let created = part.chain.created.iter().copied().collect::<BTreeSet<_>>();
-            // Identity: each head relation is re-created over the same endpoints.
-            let mut links = BTreeSet::new();
-            for intent in &part.commands.plan().merged_intents {
-                if let Some(link) =
-                    relations::relink(bindings, symbols, intent, source, &mut charge)?
-                {
-                    links.insert(link);
-                }
-            }
-            let mut relinked = BTreeSet::new();
+            let latest = &part.commands.plan().merged_intents;
+            let mut relation_identity = relations::RelationIdentity::of_chain(
+                bindings,
+                symbols,
+                latest,
+                source,
+                &mut charge,
+            )?;
             let mut written = BTreeSet::<Unit>::new();
             let mut recreated = BTreeSet::new();
             // One write per record: a chain record folds as one round's one write.
             let mut targets = BTreeSet::new();
             for intent in batches.iter().flat_map(|batch| &batch.intents) {
                 charge(intent.owned_allocation_capacity_bytes().saturating_add(1))?;
-                if let Some(link) =
-                    relations::relink(bindings, symbols, intent, source, &mut charge)?
-                {
-                    if !links.contains(&link) || !relinked.insert(link) {
-                        return Err(postponed(Reason::StructuralEffect, source));
-                    }
+                if relation_identity.admit(bindings, symbols, intent, source, &mut charge)? {
                     continue;
                 }
                 let id = match intent {
@@ -123,14 +116,9 @@ pub(super) fn prove_succession(
                     return Err(postponed(Reason::UncoveredWrite, *id));
                 }
             }
-            for intent in &part.commands.plan().merged_intents {
+            for intent in latest {
                 charge(intent.owned_allocation_capacity_bytes().saturating_add(1))?;
-                if let Some(link) =
-                    relations::relink(bindings, symbols, intent, source, &mut charge)?
-                {
-                    if !relinked.contains(&link) {
-                        return Err(postponed(Reason::UncoveredWrite, source));
-                    }
+                if relation_identity.covers(bindings, symbols, intent, source, &mut charge)? {
                     continue;
                 }
                 let id = match intent {

@@ -7,6 +7,7 @@ use crate::authority::mutation::intents::{
 use crate::transactions::data::intents::mutation_intent::ApplyEntityAspectPatchIntent;
 use crate::transactions::data::intents::CreateIntent;
 use crate::transactions::data::intents::EntityMutationIntent;
+use crate::transactions::data::intents::RelationMutationIntent;
 use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
 use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
 use crate::transactions::data::primitives::CreatedEntityRef;
@@ -54,11 +55,13 @@ impl OwnedNormalizedPlan {
             })
             .map_err(request_denial)?
             .0?;
-        let relinks = self
-            .plan
-            .merged_intents
-            .iter()
-            .any(|intent| matches!(intent, MutationIntent::Create(CreateIntent::Relation(_))));
+        let relinks = self.plan.merged_intents.iter().any(|intent| {
+            matches!(
+                intent,
+                MutationIntent::Create(CreateIntent::Relation(_))
+                    | MutationIntent::Relation(RelationMutationIntent::Delete(_))
+            )
+        });
         if recreates.is_empty() && !relinks {
             return Ok(self);
         }
@@ -69,9 +72,14 @@ impl OwnedNormalizedPlan {
             .into_iter()
             .enumerate()
         {
-            // A successor's relation creates were proved re-creates of its
-            // chain's relations (`prove_succession`), which the head applied.
-            if matches!(intent, MutationIntent::Create(CreateIntent::Relation(_))) {
+            // A successor's relation creates and deletes were proved re-creates
+            // and re-deletes of its chain's relations (`prove_succession`),
+            // which earlier rounds already applied.
+            if matches!(
+                intent,
+                MutationIntent::Create(CreateIntent::Relation(_))
+                    | MutationIntent::Relation(RelationMutationIntent::Delete(_))
+            ) {
                 continue;
             }
             let Some(&(_, entity_id)) = next.peek().filter(|&&(idx, _)| idx == index) else {
