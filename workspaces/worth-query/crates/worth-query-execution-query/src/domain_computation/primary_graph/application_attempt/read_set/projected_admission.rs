@@ -16,6 +16,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     ) -> Result<
         WorthQueryApplicationReadAttempt<
             'request,
@@ -36,6 +37,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             projection,
             candidate,
             allocation_policy,
+            own_outputs,
         )
     }
 }

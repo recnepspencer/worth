@@ -2,13 +2,15 @@
 use super::*;
 use crate::publication::data::AuthoredRetirementRefusal as Cause;
 
+mod settlement;
+
 /// Request-local carriage of an existing Native publication or an admitted part.
 /// Descriptive routes alone cannot construct this input or enroll a writer.
 #[derive(Clone, Debug)]
 pub struct RelationalRequiredOutputInput {
-    proposal: RelationalMutationProposalIdentity,
-    issuance: Arc<InputIssuance>,
-    origin: InputOrigin,
+    pub(super) proposal: RelationalMutationProposalIdentity,
+    pub(super) issuance: Arc<InputIssuance>,
+    pub(super) origin: InputOrigin,
 }
 
 #[derive(Debug)]
@@ -23,7 +25,7 @@ pub(crate) struct RequiredOutputInputs {
 }
 
 #[derive(Clone, Debug)]
-enum InputOrigin {
+pub(super) enum InputOrigin {
     Current(RelationalRequiredOutputPublication),
     Applied(usize),
     Restored {
@@ -177,6 +179,18 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         })
     }
 
+    /// Whether part `parent`'s latest round applied wholly before part
+    /// `consumer`'s latest round. Without successor rounds this is part order.
+    fn round_precedes(&self, parent: usize, consumer: usize) -> bool {
+        parent != consumer
+            && match (self.parts.get(parent), self.parts.get(consumer)) {
+                (Some(parent), Some(consumer)) => {
+                    parent.chain.batches.end <= consumer.chain.batches.start
+                }
+                _ => false,
+            }
+    }
+
     /// Only an actual earlier appended owned publication can supply this input.
     /// Ordinary participants carry no Native-owned publication to retain.
     pub fn applied_output_input(
@@ -251,7 +265,10 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     {
                         return Err(part::reject(Cause::ForeignCoupledOwner, subject));
                     }
-                    if matches!(&parent.origin, InputOrigin::Applied(previous) if *previous >= index) {
+                    // The parent's latest round applied before the consumer's
+                    // latest round: a successor folds into its chain's part
+                    // index, so part order alone no longer orders rounds.
+                    if matches!(&parent.origin, InputOrigin::Applied(previous) if !self.round_precedes(*previous, index)) {
                         return Err(part::reject(Cause::ForeignCoupledOwner, subject));
                     }
                     let (meaning, source) = self.input_route(&parent.origin);

@@ -12,6 +12,7 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         }
         let aliases = std::mem::take(&mut self.ready_alias_continuations);
         let mut next = Self::new();
+        let mut selections = Vec::new();
         let pin = candidate
             .pin_source(context.execution)
             .map_err(CoupledSourceReadStop::from)?;
@@ -25,20 +26,34 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
             // Parent supplies data; this row supplies its own static intent.
             let (earlier, remaining) = self.tasks.split_at_mut(i);
             let task = &mut remaining[0];
+            // A canonical that is not done (reopened) runs it after it is.
             if let Some(parent) = earlier[canonical].parent_mut() {
                 parent.pin = pin.clone();
                 // This row's own static intent is owed by its own demand.
                 context.owner.owe(&task.owed);
-                task.tree
-                    .discover_static(context, candidate, parent, &mut next)?;
+                context.owner.discover_for(Some(i));
+                let start = next.tasks.len();
+                let discovered = task
+                    .tree
+                    .discover_static(context, candidate, parent, &mut next);
+                context.owner.discover_for(None);
+                discovered?;
+                task.continuation_done = true;
+                selections.push((i, start..next.tasks.len()));
+            } else if matches!(earlier[canonical].state, TaskState::Done { parent: None })
+                && task.reopen_check.is_some()
+            {
+                // A reopened canonical that now retires selects nothing: its
+                // reopened alias is verified against no children, as the
+                // canonical itself is.
+                task.continuation_done = true;
+                selections.push((i, 0..0));
             }
-            task.continuation_done = true;
         }
         let appended = !next.tasks.is_empty();
-        for task in next.tasks {
-            self.reserve_slot(context, task.subject)?;
-            self.tasks.push(task);
-        }
-        Ok(appended)
+        self.adopt_discovered(context, next, selections, Selection::Replace)?;
+        // A re-discovery to verify closes its frontier before another batch
+        // can reopen the canonical again.
+        Ok(appended || !self.rediscovered.is_empty())
     }
 }

@@ -35,6 +35,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         admission: &A,
         before: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         predecessor_access: Option<&dyn SourceQueryReaderPort>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<
@@ -62,6 +63,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             admission,
             before,
             candidate,
+            own_outputs,
             predecessor_access,
             projection,
             allocation,
@@ -75,6 +77,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
         admission: &dyn AdmittedOperationPort,
         before: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         predecessor_access: Option<&dyn SourceQueryReaderPort>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<'_, '_, Schema, Operation>,
@@ -110,6 +113,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                 product.relational_basis(),
                 snapshot,
                 Some((before, candidate)),
+                own_outputs,
                 |reader| {
                     super::admitted::project(
                         self,

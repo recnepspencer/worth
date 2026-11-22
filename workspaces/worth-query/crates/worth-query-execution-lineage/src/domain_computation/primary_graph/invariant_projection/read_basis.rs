@@ -3,6 +3,8 @@
 use super::*;
 pub mod selection;
 pub use selection::ProjectionEntitySelection;
+pub mod own_outputs;
+pub use own_outputs::OwnOutputOverlay;
 use worth_relational::facade::{
     runtime::{
         RelationalAppliedCandidateReadIdentity, RelationalAppliedCandidateReadQualification,
@@ -16,6 +18,8 @@ pub enum NativeProjectionRead<'a> {
     Applied {
         before: &'a RelationalPinnedRead,
         candidate: &'a RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        /// A successor round's own records, read before its chain (§1.5).
+        own_outputs: Option<&'a OwnOutputOverlay>,
     },
 }
 
@@ -73,6 +77,13 @@ impl NativeProjectionRead<'_> {
             Self::Committed(_) => None,
         }
     }
+    /// A successor round's own-output view, when this read serves one.
+    pub fn own_outputs(&self) -> Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>{
+        match self {
+            Self::Applied { own_outputs, .. } => *own_outputs,
+            Self::Committed(_) => None,
+        }
+    }
     pub fn committed_runtime(&self) -> Option<&RelationalRuntime> {
         match self {
             Self::Committed(runtime) => Some(runtime),
@@ -115,7 +126,14 @@ impl NativeProjectionRead<'_> {
         Option<Output>,
         worth_relational::facade::transactions::RelationalExecutionDenialCause,
     > {
-        let Some(view) = self.projection(snapshot) else {
+        let own = match self {
+            Self::Applied {
+                own_outputs: Some(own),
+                ..
+            } => own.head_for(entity).map(|head| head.project_candidate()),
+            _ => None,
+        };
+        let Some(view) = own.or_else(|| self.projection(snapshot)) else {
             return Ok(None);
         };
         super::super::application_attempt::observe_field_from_view_admitted(
@@ -156,9 +174,25 @@ impl NativeProjectionRead<'_> {
                     work,
                 )
             }
-            Self::Applied { before, candidate } => {
-                let (result, work) = installed.resolve_applied_with_work(
-                    execution, before, candidate, entity, aspect, field, &expected,
+            Self::Applied {
+                before,
+                candidate,
+                own_outputs,
+            } => {
+                // A record the successor's own chain wrote resolves as it was
+                // before the chain: a Birth's own output is absent again, and
+                // a key the chain moved away resolves to its record again.
+                // Every other record resolves as it is now.
+                let covers = |entity| own_outputs.is_some_and(|own| own.covers(entity));
+                let (result, work) = installed.resolve_applied_merged_with_work(
+                    execution,
+                    before,
+                    candidate,
+                    own_outputs.map(|own| (own.head(), &covers as &dyn Fn(_) -> bool)),
+                    entity,
+                    aspect,
+                    field,
+                    &expected,
                 );
                 (
                     result.map(|value| ProjectionResolvedEntity {

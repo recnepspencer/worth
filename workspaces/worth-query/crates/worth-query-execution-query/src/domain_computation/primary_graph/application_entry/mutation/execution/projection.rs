@@ -12,6 +12,7 @@ pub enum PreparedMutationProjection<Schema, Operation> {
     Applied {
         decision: AppliedOperationProjection<Schema, Operation>,
         pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own_outputs: Option<crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     },
 }
 impl<Schema: ApplicationSchema, Operation> PreparedMutationProjection<Schema, Operation> {
@@ -33,8 +34,17 @@ impl<Schema: ApplicationSchema, Operation> PreparedMutationProjection<Schema, Op
                 .begin_projected_application_read_attempt_with_request(
                     execution, admission, projection, allocation,
                 ),
-            Self::Applied { decision, pin } => runtime.begin_applied_application_read_attempt(
-                execution, admission, decision, pin, allocation,
+            Self::Applied {
+                decision,
+                pin,
+                own_outputs,
+            } => runtime.begin_applied_application_read_attempt(
+                execution,
+                admission,
+                decision,
+                pin,
+                allocation,
+                own_outputs.as_ref(),
             ),
         }
     }

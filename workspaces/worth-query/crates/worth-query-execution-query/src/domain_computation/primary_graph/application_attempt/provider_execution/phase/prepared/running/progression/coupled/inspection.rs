@@ -22,6 +22,8 @@ struct CoupledWriterCustody {
     original_completion:
         crate::domain_computation::primary_graph::provider::OriginalCompletionReceiver,
     completion_storage: super::super::super::completion_storage::ApplicationCommitCompletionStorage,
+    /// A successor round's own-output view (§1.5), for its commit recompare.
+    own_outputs: Option<crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
 }
 pub struct InspectedCoupledWriter<'run> {
     custody: CoupledWriterCustody,
@@ -40,6 +42,7 @@ pub fn inspect_coupled_application<'run, S, B>(
     candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
         worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
     >,
+    own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     predecessor: Option<worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
 ) -> Result<
     (
@@ -66,9 +69,11 @@ where
         application,
         registered,
         candidate,
+        own_outputs,
     )?;
     let source = source.expect("a genuine producer retains its source publication");
     use crate::domain_computation::provider_session::ManagedGraphWorkSessionPrimaryExt;
+    custody.own_outputs = own_outputs.cloned();
     let typed = &mut custody.typed;
     let handler = typed
         .downcast_mut::<CoupledWriterAdmission<S, B::Operation>>()
@@ -166,6 +171,7 @@ impl CoupledWriterCustody {
         outcome: WorthQueryProviderProgressionOutcome,
     ) -> WorthQueryApplicationCommitOutcome {
         let Self {
+            own_outputs: _,
             completion: _,
             typed,
             dispatch_outbox: _,

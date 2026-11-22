@@ -22,7 +22,8 @@ pub use application_attempt_state::commit_preparation::relational_commit::commit
 pub use application_attempt_state::{
     AppliedOutputParticipants, AppliedParticipantOutputs, CandidateReadSupport,
     CoupledApplicationMember, CoupledApplicationMemberKind, CoupledAttemptPreparation,
-    CoupledProducerPreparation, ParentRead,
+    CoupledProducerPreparation, ParentRead, RetainedCandidateRead, RetainedReadRequalification,
+    SupersededRound,
 };
 pub use application_attempt_state::{
     FactlessCurrentness, OwnEffectOnReads, RebaseVerificationReason,

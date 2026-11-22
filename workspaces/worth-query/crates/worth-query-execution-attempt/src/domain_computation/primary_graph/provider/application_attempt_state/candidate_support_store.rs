@@ -52,6 +52,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         root: &WorthQueryProviderSessionTerminalBinding,
         source: EntityId,
         position: usize,
+        owner: Option<usize>,
         support: CandidateReadSupport,
     ) -> Result<(), Denial> {
         if self
@@ -68,7 +69,33 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .query_support_root(root)?
-            .retain_candidate_read_support(execution, source, position, support)
+            .retain_candidate_read_support(execution, source, position, owner, support)
+    }
+    pub(in crate::domain_computation::primary_graph) fn supersede_owned_candidate_support(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        owner: usize,
+        invalidator: usize,
+    ) -> Result<(), Denial> {
+        self.attempts
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .query_support_root(root)?
+            .supersede_owned_candidate_support(execution, owner, invalidator)
+    }
+    pub(in crate::domain_computation::primary_graph) fn supersede_retained_parent(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        read: crate::domain_computation::primary_graph::provider::ParentRead,
+        invalidator: usize,
+    ) -> Result<(), Denial> {
+        self.attempts
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .query_support_root(root)?
+            .supersede_retained_parent(execution, read, invalidator)
     }
     pub fn reset_candidate_read_support(
         &self,
@@ -91,5 +118,49 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .unwrap_or_else(|p| p.into_inner())
             .query_support_root(root)?
             .refresh_outgoing_read_support(execution)
+    }
+    /// Requalify the verified parent the root retained as `read` (PR C R2):
+    /// compare it exactly at `current` against the edit's C basis.
+    #[allow(clippy::too_many_arguments)]
+    pub(in crate::domain_computation::primary_graph) fn requalify_retained_parent(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        before: &crate::basis::WorthQueryProductBranchLease,
+        read: crate::domain_computation::primary_graph::provider::ParentRead,
+        current: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        invalidator: usize,
+        settles: impl Fn(&crate::domain_computation::primary_graph::application_contribution::producer::VerifiedAppliedParent) -> bool,
+    ) -> Result<
+        crate::domain_computation::primary_graph::provider::RetainedReadRequalification,
+        Denial,
+    > {
+        self.graph.with_runtime(execution, |runtime| {
+            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
+                runtime,
+                before.relational_basis(),
+            )
+            .map_err(|_| Denial::new(Kind::StorageUnavailable, "coupled qualification C basis"))?;
+            let answer = self
+                .attempts
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .query_support_root(root)
+                .and_then(|attempt| {
+                    attempt.requalify_retained_parent(
+                        execution,
+                        runtime,
+                        &snapshot,
+                        read,
+                        current,
+                        invalidator,
+                        settles,
+                    )
+                });
+            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+            answer
+        })
     }
 }

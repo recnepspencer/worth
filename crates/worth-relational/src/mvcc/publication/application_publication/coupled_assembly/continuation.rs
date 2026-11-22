@@ -62,6 +62,51 @@ impl ContinuationState {
     }
 }
 impl RelationalAuthoredCoupledCandidate<'_> {
+    /// Why part `index` cannot derive its chain's next round, if it cannot:
+    /// the complete continuation admission, with the record each refusal
+    /// names. `next_producer_round` refuses with exactly this answer, so a
+    /// caller that reopens appended routes (`continues_owned_route`) asks the
+    /// same question Native answers when the round arrives.
+    fn continuation_refusal(&self, index: usize) -> Option<(Cause, EntityId)> {
+        let Some(part) = self.parts.get(index) else {
+            return Some((Cause::MissingCoupledOwner, self.authored_source()));
+        };
+        let source = part
+            .publication
+            .producing_meaning()
+            .expect("admitted part")
+            .source_scope;
+        // Only an Edit may observe its already appended owned route again;
+        // a retirement or restoration still requires its exact preserving
+        // participants.
+        if !self.permits_unchanged_output_selection() {
+            return Some((Cause::CoupledContinuationRequiresEditSource, source));
+        }
+        // Only an owned publication of a producer that owns a source scope.
+        let producer = part
+            .publication
+            .lineage_attribution()
+            .expect("actual producer")
+            .0;
+        if part.publication.owned().is_none()
+            || self
+                .binding
+                .installed
+                .source_scope_ownership
+                .scope_kind(producer)
+                .is_none()
+        {
+            return Some((Cause::CoupledContinuationRequiresOwnedRoute, source));
+        }
+        None
+    }
+
+    /// Whether part `index` can derive its chain's next round: exactly when
+    /// `next_producer_round` would admit it.
+    pub fn continues_owned_route(&self, index: usize) -> bool {
+        self.continuation_refusal(index).is_none()
+    }
+
     /// Begin another observation of a real owned route. This does not admit a
     /// second publication or weaken first-entry duplicate-route admission.
     pub fn next_producer_round(
@@ -69,12 +114,10 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         execution: &ExecutionRequest<'_, '_>,
         index: usize,
     ) -> Result<RelationalCoupledProducerContinuation, TransactionCommitError> {
-        let Some(part) = self.parts.get(index) else {
-            return Err(part::reject(
-                Cause::MissingCoupledOwner,
-                self.authored_source(),
-            ));
-        };
+        if let Some((cause, subject)) = self.continuation_refusal(index) {
+            return Err(part::reject(cause, subject));
+        }
+        let part = &self.parts[index];
         let meaning = part.publication.producing_meaning().expect("admitted part");
         let producer = part
             .publication
@@ -88,33 +131,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             })
             .map_err(super::custody::execution_stop)?
             .0?;
-        // Only an Edit may observe its already appended owned route again;
-        // a retirement still requires its exact preserving participants.
-        if !self.permits_unchanged_output_selection() {
-            return Err(part::reject(
-                Cause::CoupledContinuationRequiresEditSource,
-                meaning.source_scope,
-            ));
-        }
-        if part.publication.owned().is_none()
-            || self
-                .binding
-                .installed
-                .source_scope_ownership
-                .scope_kind(producer)
-                .is_none()
-        {
-            return Err(part::reject(
-                Cause::CoupledContinuationRequiresOwnedRoute,
-                meaning.source_scope,
-            ));
-        }
-        self.continuation.issue(
-            self.identity,
-            index,
-            self.applied_parts(),
-            meaning.source_scope,
-        )
+        let source = meaning.source_scope;
+        self.continuation
+            .issue(self.identity, index, self.applied_parts(), source)
     }
 }
 

@@ -111,6 +111,11 @@ impl<'a, 'run, 'phase, S: ApplicationSchema> CoupledApplicationAssembly<'a, 'run
             }
             return Err(cause.into());
         }
+        self.mark_append(
+            execution,
+            candidate,
+            super::AppendedMember::Stage { physical, position },
+        )?;
         let after_own = candidate.pin_source(execution)?;
         let writers = self.authored.borrow();
         let Some(CoupledWriterStage::Inspected(writer)) =

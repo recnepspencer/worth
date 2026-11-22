@@ -27,6 +27,7 @@ pub fn prepare<Schema, Binding>(
     before: &crate::basis::WorthQueryProductBranchLease,
     before_pin: &RelationalPinnedRead,
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
     erased: ErasedAppliedProducerSource,
     predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
@@ -272,6 +273,7 @@ where
             Some(&source_query),
             admission,
             Some((before_pin, candidate)),
+            own_outputs,
             prepared_inputs,
             || {
                 contact_observation::record(

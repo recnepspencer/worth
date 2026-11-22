@@ -2,9 +2,15 @@
 //! Recording never changes control flow; it runs only under an installed
 //! `WorthQueryExecutionObservation` and clears with it.
 
-/// Adds work the wave charged, only while observed.
-pub(super) fn charged(units: u64) {
+/// Adds work the wave charged, only while observed. Qualified use charges
+/// its marking, comparisons and lookups here too: it is scheduling work.
+pub(in crate::domain_computation::primary_graph) fn charged(units: u64) {
     crate::domain_computation::execution_observation::record_wave_charged(units);
+}
+/// Counts retained candidate reads qualified use visited in one lookup,
+/// only while observed: an index visits the entries it needs, a scan all.
+pub(in crate::domain_computation::primary_graph) fn visited_retained_reads(entries: u64) {
+    crate::domain_computation::execution_observation::record_retained_reads_visited(entries);
 }
 
 /// Records one event, formatted only while observed.
