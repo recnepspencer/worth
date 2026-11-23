@@ -22,6 +22,9 @@ pub struct ManagedIndexParentReadFootprint {
     pub fields: Vec<(KindId, AspectKey, FieldKey)>,
     pub relations: Vec<KindId>,
     pub entities: Vec<KindId>,
+    /// The scope-key field: a scope appearing with the probed scope's value
+    /// would make that key resolve to another scope.
+    pub scope_key: Option<(KindId, AspectKey, FieldKey)>,
 }
 
 impl RelationalAuthoredCoupledCandidate<'_> {
@@ -59,7 +62,10 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let effect = &self.mutation.outcome.effect;
         let state = &self.mutation.state;
         let registry = self.prepared.schema_authority.registry();
-        let relevance = SourceRelevance::of(registry, program, scope, footprint, effect);
+        let key_of = |entity: crate::identity::data::EntityId| {
+            scope_key_value(state, footprint.scope_key.as_ref()?, entity)
+        };
+        let relevance = SourceRelevance::of(registry, program, scope, footprint, effect, &key_of);
         let (unchanged, _) = execution
             .run_native_with_checkpoint(|context| {
                 for delta in &effect.adjacency.deltas {
@@ -103,5 +109,24 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         unchanged.map_err(|cause: crate::execution::RelationalExecutionDenialCause| {
             Denial::from(crate::derived_relation::DerivedRelationReadDenial::Request(cause))
         })
+    }
+}
+
+/// One entity's scope-key value in the candidate's working state, when it is
+/// an entity of the key's kind with that field present.
+fn scope_key_value(
+    state: &crate::storage::overlay::WorkingState,
+    (kind, aspect, field): &(KindId, AspectKey, FieldKey),
+    entity: crate::identity::data::EntityId,
+) -> Option<worth_foundational::facade::AspectValue> {
+    use worth_foundational::facade::ContractValidatedAspectValueView as View;
+    let partition = state.get_current_partition(entity.partition_id)?;
+    let slot = partition.entity(entity)?;
+    if slot.kind_id()? != *kind {
+        return None;
+    }
+    match slot.extra().authoritative_aspect_state()?.get(aspect)?.view() {
+        View::Struct(value) => value.get(field).cloned(),
+        View::Scalar(value) => Some(value.clone()),
     }
 }

@@ -141,7 +141,6 @@ impl WorthQueryComputationManagedIndexDenial {
             _ => None,
         }
     }
-    /// The exact Native stop retaining the read's Source fact.
     /// The stop that interrupted reaching a declared peer's shared owner.
     pub fn scope_traversal_denial(&self) -> Option<&WorthQueryInvariantProjectionTraversalDenial> {
         match self.cause.as_ref() {
@@ -149,6 +148,7 @@ impl WorthQueryComputationManagedIndexDenial {
             _ => None,
         }
     }
+    /// The exact Native stop retaining the read's Source fact.
     pub fn native_decision_refusal(&self) -> Option<&CompanionPreflightStop> {
         match self.cause.as_ref() {
             Cause::Native(cause) => Some(cause),

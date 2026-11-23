@@ -15,9 +15,15 @@ use std::collections::BTreeSet;
 use worth_foundational::facade::{AspectKey, FieldKey};
 
 /// The literal relations of an ordered-events membership.
+#[derive(Clone, Copy)]
 struct Ordered {
     predecessor: KindId,
+    introduced: KindId,
+    retired: KindId,
 }
+
+/// Reads one entity's scope-key value from the candidate.
+pub(super) type ScopeKeyReader<'p> = &'p dyn Fn(EntityId) -> Option<worth_foundational::facade::AspectValue>;
 
 pub(super) struct SourceRelevance<'p> {
     program: &'p ManagedIndexSourceProgram,
@@ -30,6 +36,8 @@ pub(super) struct SourceRelevance<'p> {
     ordered: Option<Ordered>,
     /// Scope entities this candidate created, other than the probed scope.
     born: BTreeSet<EntityId>,
+    key_of: ScopeKeyReader<'p>,
+    probed_key: Option<worth_foundational::facade::AspectValue>,
 }
 
 impl<'p> SourceRelevance<'p> {
@@ -39,6 +47,7 @@ impl<'p> SourceRelevance<'p> {
         probed: EntityId,
         footprint: &'p ManagedIndexParentReadFootprint,
         effect: &MutationEffect,
+        key_of: ScopeKeyReader<'p>,
     ) -> Self {
         let scope = program.scope_kind();
         // An ordered-events membership, compiled or behind one derived
@@ -47,12 +56,17 @@ impl<'p> SourceRelevance<'p> {
             .0
             .ordered
             .as_ref()
-            .map(|recipe| recipe.predecessor)
+            .map(|recipe| (recipe.predecessor, recipe.introduced, recipe.retired))
             .or_else(|| {
                 let main = program.paths().next()?;
-                registry.ordered_events_recipe(main).ok().map(|recipe| recipe.predecessor)
+                let recipe = registry.ordered_events_recipe(main).ok()?;
+                Some((recipe.predecessor, recipe.introduced, recipe.retired))
             })
-            .map(|predecessor| Ordered { predecessor });
+            .map(|(predecessor, introduced, retired)| Ordered {
+                predecessor,
+                introduced,
+                retired,
+            });
         let structural_paths = program.paths().enumerate().all(|(index, path)| {
             let parts = path.parts();
             matches!(parts.from, NativeMemberDomain::Entity(_))
@@ -90,14 +104,35 @@ impl<'p> SourceRelevance<'p> {
                 _ => None,
             })
             .collect();
+        // A born scope's predecessor is followed only by its own chain while
+        // the scope is never a row, the order relation is no membership event,
+        // and no projection route reads a scope or the order relation.
+        let ordered = ordered.filter(|recipe| {
+            structural_paths
+                && scope != program.row_kind()
+                && recipe.predecessor != recipe.introduced
+                && recipe.predecessor != recipe.retired
+                && program
+                    .projection_routes()
+                    .iter()
+                    .all(|route| route.endpoint_kind() != scope)
+                && program.paths().skip(1).all(|route| {
+                    route
+                        .physical_sources()
+                        .iter()
+                        .all(|&(relation, _, _)| relation != recipe.predecessor)
+                })
+        });
         Self {
             program,
             footprint,
             probed,
             structural_paths,
             root_only_scope,
-            ordered: ordered.filter(|_| structural_paths),
+            ordered,
             born,
+            key_of,
+            probed_key: key_of(probed),
         }
     }
 
@@ -137,13 +172,14 @@ impl<'p> SourceRelevance<'p> {
                 if delta.structural_change == Change::Updated && self.parent_field_changed(delta) {
                     return true;
                 }
-                if self.other_root(id, kind) {
-                    return false;
-                }
+                // A Parent-read kind's lifecycle is relevant on any entity.
                 if delta.structural_change != Change::Updated
                     && self.footprint.entities.contains(&kind)
                 {
                     return true;
+                }
+                if self.other_root(id, kind) {
+                    return self.appears_with_probed_key(delta, id);
                 }
                 if !self.entity(kind) {
                     return false;
@@ -176,6 +212,24 @@ impl<'p> SourceRelevance<'p> {
             (RecordRef::Relation(_), Some(kind)) => {
                 self.physical(kind) || self.footprint.relations.contains(&kind)
             }
+        }
+    }
+
+    /// A scope that appears in the candidate answering to the probed scope's
+    /// key would make that key name another scope: equal, unreadable or
+    /// opaque keys are relevant; a distinct key is not.
+    fn appears_with_probed_key(&self, delta: &CanonicalRecordAspectDelta, id: EntityId) -> bool {
+        if !matches!(delta.structural_change, Change::Created | Change::Rematerialized)
+            || self.footprint.scope_key.is_none()
+        {
+            return false;
+        }
+        if delta.contains_opaque_aspect {
+            return true;
+        }
+        match (&self.probed_key, (self.key_of)(id)) {
+            (Some(probed), Some(sibling)) => *probed == sibling,
+            _ => true,
         }
     }
 
