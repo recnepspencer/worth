@@ -57,6 +57,19 @@ worth_query_name_discriminator! {
     }
 }
 
+/// A piece cut along a seam linked in the same commit.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CutAlong {
+    pub side: u64,
+    pub seam: WorthQuerySameCommitName<Seam>,
+}
+worth_query_name_discriminator! {
+    struct CutAlong {
+        identity: "worth.tests.persistent-naming.cut-along.v1",
+        fields: [side, seam]
+    }
+}
+
 /// Which seam of a member authored in the same commit this is.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SeamOf {

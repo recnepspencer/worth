@@ -7,8 +7,6 @@
 //! is the name Relational minted for the referenced birth, and the resulting
 //! name must equal the one the ordinary two-commit route gives.
 
-use std::sync::Arc;
-
 use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::application_naming::{
     WorthQueryName, WorthQuerySameCommitName,
@@ -65,14 +63,12 @@ pub fn side(occurrence: &str, role: &str, side: u8) -> WorthQueryOutputBirth {
 
 /// One program under authoring, as a candidate writer builds it.
 pub struct Authoring {
-    pub candidate: Arc<()>,
     pub program: BoundOperationNaming,
 }
 
 impl Authoring {
     pub fn new() -> Self {
         Self {
-            candidate: Arc::new(()),
             program: BoundOperationNaming::default(),
         }
     }
@@ -97,8 +93,7 @@ impl Authoring {
     /// The reference to the name the already named face `key` is born with.
     pub fn fresh(&self, key: &str) -> WorthQuerySameCommitName<Face> {
         let target = PendingBirthTarget::CreatedEntity(face_ref(key));
-        same_commit_name_of(&self.candidate, &self.program, &target)
-            .expect("the program names the referenced face")
+        same_commit_name_of(&self.program, &target).expect("the program names the referenced face")
     }
 
     pub fn patch(&self, occurrence: &str, of: &str, index: u8) -> WorthQueryOutputBirth {

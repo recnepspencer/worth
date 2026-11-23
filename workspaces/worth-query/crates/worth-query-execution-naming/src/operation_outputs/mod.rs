@@ -19,6 +19,8 @@ pub use denial::WorthQueryOutputNameDenial;
 pub use lowering::{admit_output_birth, OutputBirthPosture};
 pub use same_commit::admit_same_commit_names;
 
+use std::sync::Arc;
+
 use worth_query_declaration::facade::application_naming::{
     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder, ApplicationNameSubjectKind,
     SameCommitNameSlot, WorthQueryName,
@@ -187,18 +189,33 @@ pub enum OperationNamingEntry<T> {
 
 /// Ordered naming effects of one operation. Empty for every unnamed or
 /// schemaless program, in which case no naming plan reaches the commit.
-#[derive(Clone, Debug, Eq, PartialEq)]
+///
+/// The program is the candidate its same-commit name references are issued
+/// by: a reference designates one of this program's own named outputs, and
+/// both authoring and lowering refuse one another program issued. Two
+/// programs are equal when they declare the same effects.
+#[derive(Clone, Debug)]
 pub struct OperationNamingProgram<T> {
+    candidate: Arc<()>,
     entries: Vec<OperationNamingEntry<T>>,
 }
 
 impl<T> Default for OperationNamingProgram<T> {
     fn default() -> Self {
         Self {
+            candidate: Arc::new(()),
             entries: Vec::new(),
         }
     }
 }
+
+impl<T: PartialEq> PartialEq for OperationNamingProgram<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.entries == other.entries
+    }
+}
+
+impl<T: Eq> Eq for OperationNamingProgram<T> {}
 
 /// The program as authored against stable output keys.
 pub type AuthoredOperationNaming = OperationNamingProgram<OperationOutputKey>;
@@ -224,6 +241,11 @@ impl<T> OperationNamingEntry<T> {
 impl<T> OperationNamingProgram<T> {
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
+    }
+
+    /// The identity this program issues same-commit name references under.
+    pub(crate) fn candidate(&self) -> &Arc<()> {
+        &self.candidate
     }
 
     /// Every output the program names, in declaration order. An output's
@@ -295,7 +317,10 @@ impl<T> OperationNamingProgram<T> {
                 },
             });
         }
-        Ok(OperationNamingProgram { entries })
+        Ok(OperationNamingProgram {
+            candidate: self.candidate,
+            entries,
+        })
     }
 }
 

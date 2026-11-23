@@ -129,7 +129,7 @@ impl BoundOperationNaming {
             let outputs = entry.named_outputs().iter();
             outputs.map(move |output| (output, parents.clone()))
         });
-        let resolved = resolve_same_commit_names(catalog, outputs)?;
+        let resolved = resolve_same_commit_names(catalog, self.candidate(), outputs)?;
         identities.extend(resolved.iter().map(|name| name.identity));
         // Consumed in the declaration order the outputs were resolved in.
         let mut resolved = resolved.into_iter();

@@ -58,8 +58,11 @@ impl Registration<Schema> for Registrations {
     {
         use worth_query_decl::facade::application_naming::ApplicationNameSchemeBuilder;
         let scheme = ApplicationNameSchemeBuilder::<Schema, Member>::new(MEMBER_SCHEME)
-            .role_order(&["authored", "piece", "merged"])
+            // A piece may tell itself apart by a member or a seam authored
+            // beside it; the seam scheme sorts after this one.
+            .role_order(&["authored", "seam", "piece", "merged"])
             .role_depends_on("piece", "authored")
+            .role_depends_on("piece", "seam")
             .split_discriminator::<outputs::MemberCut>()
             .require_authored_occurrence()
             .build()

@@ -100,6 +100,62 @@ fn an_output_references_a_name_born_by_the_same_commit() {
     assert!(a2 != a && b2 != b && s2 != s);
 }
 
+/// A chain through two schemes in one commit: member `a`, the seam `s` told
+/// apart by `a`, and member `b` told apart by `s`. `b`'s scheme sorts before
+/// the seam's, so its birth must still mint after the seam it references.
+fn chain(creates: &[&str]) -> Plan {
+    Plan {
+        creates: keys(creates),
+        seams: vec![("s".into(), "a".into(), "b".into())],
+        steps: vec![
+            Step::Birth("a".into(), birth("chain", "authored")),
+            Step::SeamBirthOf {
+                key: "s".into(),
+                birth: birth("chain", "seam"),
+                index: 1,
+                of: "a".into(),
+            },
+            Step::BirthAlong {
+                key: "b".into(),
+                birth: birth("chain", "piece"),
+                side: 1,
+                seam: "s".into(),
+            },
+        ],
+        ..Plan::default()
+    }
+}
+
+#[test]
+fn a_chain_of_same_commit_references_crosses_schemes_in_either_direction() {
+    let world = World::install();
+    world.committed("same-commit-chain", chain(&["a", "b"]));
+    let (a, b, s) = names(&world, "same-commit-chain-names");
+    assert_ne!(a, b);
+
+    // Rebuilt with the creations in another order: the same three names.
+    let rebuilt = World::install();
+    rebuilt.committed("same-commit-chain-rebuilt", chain(&["b", "a"]));
+    assert_eq!(
+        names(&rebuilt, "same-commit-chain-rebuilt-names"),
+        (a, b, s)
+    );
+
+    // The seam's name feeds the piece's: a seam told apart otherwise gives
+    // the piece another name, while the authored member keeps its own.
+    let other = World::install();
+    let mut plan = chain(&["a", "b"]);
+    plan.steps[1] = Step::SeamBirthOf {
+        key: "s".into(),
+        birth: birth("chain", "seam"),
+        index: 2,
+        of: "a".into(),
+    };
+    other.committed("same-commit-chain-other", plan);
+    let (a2, b2, s2) = names(&other, "same-commit-chain-other-names");
+    assert!(a2 == a && s2 != s && b2 != b);
+}
+
 /// Runs `plan`, which the handler must refuse while authoring, and returns
 /// the typed refusal with nothing created.
 fn refused(token: &str, plan: Plan) -> sculpt::Refusal {

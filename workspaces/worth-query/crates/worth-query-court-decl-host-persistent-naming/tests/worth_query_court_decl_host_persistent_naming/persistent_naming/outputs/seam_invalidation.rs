@@ -146,6 +146,26 @@ fn merging_a_resolved_seam_away_invalidates_the_decision() {
     assert!(stale(&outcome), "{outcome:?}");
 }
 
+/// Unlinks `s` and links another seam between the same members under the
+/// same name (`Preserve`): the name and the endpoints stay, the seam changes.
+fn replace() -> Plan {
+    Plan {
+        seam_reads: vec![seam_read("s", "m1", "m2")],
+        seams: vec![("s2".into(), "m1".into(), "m2".into())],
+        steps: vec![
+            Step::SeamRetire(HeldSeam::Read("s".into())),
+            Step::SeamBirth("s2".into(), seam("weld", "seam", 1)),
+        ],
+        ..unlink()
+    }
+}
+
+#[test]
+fn replacing_a_resolved_seam_between_the_same_members_invalidates_the_decision() {
+    let outcome = race("seam-replace-race", false, replace());
+    assert!(stale(&outcome), "{outcome:?}");
+}
+
 #[test]
 fn retiring_a_seam_whose_name_was_read_invalidates_the_decision() {
     let outcome = race("seam-named-race", true, retire());
@@ -166,6 +186,36 @@ fn retiring_an_unrelated_seam_leaves_the_decision_current() {
         },
     );
     assert!(matches!(outcome, Outcome::Committed { .. }), "{outcome:?}");
+}
+
+#[test]
+fn a_seam_handle_another_world_issued_is_foreign() {
+    let elsewhere = members();
+    elsewhere.committed(
+        "foreign-elsewhere",
+        link("s", "m1", "m2", seam("weld", "seam", 1)),
+    );
+    read_name(&elsewhere, "foreign-elsewhere", "m1", "m2");
+    let world = members();
+    world.committed(
+        "foreign-here",
+        link("s", "m1", "m2", seam("weld", "seam", 1)),
+    );
+    // The other world's reader issued the handle its probe kept.
+    probe::seams::replay("foreign-here", "theirs", "foreign-elsewhere", "read");
+    let (observed, ended) = world.probe_seams("foreign-here", &MEMBERS, 0);
+    assert!(
+        matches!(
+            observed.as_slice(),
+            [SeamObservation::NameRefused { label, refusal }]
+                if label == "theirs" && refusal == "ForeignIdentity"
+        ),
+        "{observed:?}"
+    );
+    assert!(
+        ended.contains("Committed"),
+        "a handle refused before any read leaves nothing to veto: {ended}"
+    );
 }
 
 fn vetoed(ended: &str) -> bool {

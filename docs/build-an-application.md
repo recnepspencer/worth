@@ -367,13 +367,12 @@ An unnamed program carries no naming plan at all.
   The scheme of the referencing output must list the referenced role
   earlier in its `role_order` and declare
   `role_depends_on(role, referenced_role)`; a reference across schemes (a
-  seam told apart by a member) declares the member's role in the seam's
-  scheme. Relational mints a scheme's births after those of every scheme
-  whose identifier sorts before it, so a cross-scheme reference must point
-  to the scheme that sorts first; the other direction refuses
-  `InvalidDiscriminatorBasis` at commit. Pieces of one split cannot
-  reference each other: a reference designates an output named by an
-  earlier call.
+  seam told apart by a member, or a member told apart by a seam) declares
+  the referenced role in the referencing output's scheme. References may
+  chain (a member, a seam told apart by it, a piece told apart by the
+  seam): Relational mints each birth after the births it references,
+  whatever their schemes. Pieces of one split cannot reference each other:
+  a reference designates an output named by an earlier call.
 - **Regeneration (`Preserve`).** `writer.retire_entity_name(held)` (or
   `retire_relation_name`) beside the deletion of the holder, plus a birth of
   the same occurrence and role, keeps the exact name on the regenerated

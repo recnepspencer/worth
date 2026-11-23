@@ -2,6 +2,7 @@ mod commit_births;
 mod commit_finalization;
 mod discriminator_scan;
 mod event_emission;
+mod mint_order;
 mod name_minting;
 mod name_readmission;
 mod pending_birth_identity;
@@ -16,6 +17,8 @@ mod posture_validation;
 mod selection_continuity;
 mod staged_effects;
 
+#[cfg(test)]
+mod mint_order_tests;
 #[cfg(test)]
 mod name_minting_tests;
 

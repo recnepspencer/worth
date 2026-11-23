@@ -49,7 +49,7 @@ impl<Schema, Operation, Input, Scope>
         subject_name: String,
         target: &OperationOutputKey,
     ) -> Result<WorthQuerySameCommitName<K>, WorthQueryApplicationAttemptDenial> {
-        same_commit_name_of(&self.program, &self.persistent_names, target).ok_or_else(|| {
+        same_commit_name_of(&self.persistent_names, target).ok_or_else(|| {
             refused(WorthQueryOutputNameDenial::UnnamedOutputReference {
                 subject,
                 subject_name,

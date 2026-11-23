@@ -86,6 +86,16 @@ pub(super) fn execute(
                 };
                 writer.name_created_entity(&members[key], birth.clone().with_discriminator(&cut))?
             }
+            Step::BirthAlong {
+                key,
+                birth,
+                side,
+                seam,
+            } => {
+                let seam = writer.same_commit_relation_name(&seams[seam])?;
+                let cut = outputs::CutAlong { side: *side, seam };
+                writer.name_created_entity(&members[key], birth.clone().with_discriminator(&cut))?
+            }
             Step::SeamBirthOf {
                 key,
                 birth,

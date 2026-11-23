@@ -206,14 +206,8 @@ impl<Schema, Operation, Input, Scope>
         })?;
         let scheme_id = admit_output_birth(catalog, subject, &subject_name, &birth, posture)
             .map_err(refused)?;
-        admit_same_commit_names(
-            catalog,
-            &self.program,
-            &self.persistent_names,
-            &scheme_id,
-            &birth,
-        )
-        .map_err(refused)?;
+        admit_same_commit_names(catalog, &self.persistent_names, &scheme_id, &birth)
+            .map_err(refused)?;
         Ok(OperationNamedOutput {
             target,
             scheme_id,

@@ -3,8 +3,6 @@
 //! lowering, before any effect. A placeholder that reaches Relational
 //! unwritten refuses there.
 
-use std::sync::Arc;
-
 use worth_execution::ExecutionRequest;
 use worth_query_execution_naming::facade::{
     admit_same_commit_names, ExecutionNameBirthPlanBuilder, ExecutionNamingCommitAuthority,
@@ -48,7 +46,6 @@ fn refused(
     let birth = referencing(&authoring, occurrence, role, "earlier");
     let while_authoring = admit_same_commit_names(
         &lowered_cad_catalog(),
-        &authoring.candidate,
         &authoring.program,
         FACE_SCHEME_ID,
         &birth,
@@ -138,31 +135,37 @@ fn naming_same_commit_reference_of_another_candidate_refuses() {
     let lease = execution_lease_for_workers(2);
     let execution = ExecutionRequest::leased(&lease);
     let world = seeded_world(&execution);
+    let before = world.head().commit_id();
+    let catalog = lowered_cad_catalog();
+    // Both candidates name a `cut` first, so the reference designates output
+    // 0 in each: only the candidate that issued it tells the two apart.
     let mut other = Authoring::new();
-    other
-        .birth("filler", side("occ.x", "authored", 3))
-        .birth("cut", side("occ.x", "cut_piece", 2));
-    // The other candidate's second output: this program names no such one.
+    other.birth("cut", side("occ.x", "cut_piece", 2));
     let foreign = other.patch("occ.x", "cut", 1);
     let mut authoring = Authoring::new();
-    authoring.birth("cut", side("occ.x", "cut_piece", 2));
-    let foreign_candidate = |denial: &WorthQueryOutputNameDenial| matches!(denial, WorthQueryOutputNameDenial::ForeignOutputReference { role_path } if role_path == "seam_patch");
-    let admitted = |candidate: &Arc<()>| {
-        let catalog = lowered_cad_catalog();
-        admit_same_commit_names(
-            &catalog,
-            candidate,
-            &authoring.program,
-            FACE_SCHEME_ID,
-            &foreign,
+    authoring.birth("cut", side("occ.x", "cut_piece", 9));
+    let foreign_candidate = |denial: &WorthQueryOutputNameDenial| {
+        matches!(
+            denial,
+            WorthQueryOutputNameDenial::ForeignOutputReference { role_path }
+                if role_path == "seam_patch"
         )
     };
-    // Neither the issuing candidate's identity nor this one's admits it here.
-    let while_authoring = admitted(&authoring.candidate).expect_err("foreign reference refuses");
+    let while_authoring =
+        admit_same_commit_names(&catalog, &authoring.program, FACE_SCHEME_ID, &foreign)
+            .expect_err("another candidate's reference refuses while authoring");
     assert!(foreign_candidate(&while_authoring), "{while_authoring:?}");
-    authoring.birth("patch", foreign);
-    let at_lowering = lower(&world, &execution, &authoring.program).expect_err("it never lowers");
+    authoring.birth("patch", foreign.clone());
+    let at_lowering = lower(&world, &execution, &authoring.program)
+        .expect_err("another candidate's reference never rebinds at lowering");
     assert!(foreign_candidate(&at_lowering), "{at_lowering:?}");
+    assert_eq!(world.head().commit_id(), before);
+
+    // The candidate that issued it admits and lowers the same reference.
+    admit_same_commit_names(&catalog, &other.program, FACE_SCHEME_ID, &foreign)
+        .expect("its own candidate admits it");
+    other.birth("patch", foreign);
+    lower(&world, &execution, &other.program).expect("its own candidate lowers it");
 }
 
 #[test]

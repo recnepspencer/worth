@@ -58,6 +58,14 @@ pub enum Step {
         side: u64,
         of: String,
     },
+    /// Names created member `key` as the `side` piece cut along `seam`, a
+    /// seam this run linked and named.
+    BirthAlong {
+        key: String,
+        birth: WorthQueryOutputBirth,
+        side: u64,
+        seam: String,
+    },
     /// Names created seam `key`, told apart by created member `of`.
     SeamBirthOf {
         key: String,

@@ -24,7 +24,7 @@ use crate::lowering::LoweredExecutionNameSchemeCatalog;
 /// Admits the same-commit references of `birth`, about to be named under
 /// `scheme_id` in `program`, before any effect.
 ///
-/// Refuses a reference `candidate` did not issue, one whose output the
+/// Refuses a reference `program` did not issue, one whose output the
 /// program does not name, one into another occurrence, and one to a role
 /// that is not strictly earlier than, and a declared dependency of, the
 /// birth's own role.
@@ -33,7 +33,6 @@ use crate::lowering::LoweredExecutionNameSchemeCatalog;
 /// declared dependencies of the role.
 pub fn admit_same_commit_names<T>(
     catalog: &LoweredExecutionNameSchemeCatalog,
-    candidate: &Arc<()>,
     program: &OperationNamingProgram<T>,
     scheme_id: &str,
     birth: &WorthQueryOutputBirth,
@@ -41,7 +40,7 @@ pub fn admit_same_commit_names<T>(
     for slot in &birth.same_commit_names {
         let reference = slot.reference();
         let referenced = reference
-            .issued_by(candidate)
+            .issued_by(program.candidate())
             .then(|| program.named_outputs().nth(reference.output()))
             .flatten()
             .ok_or(WorthQueryOutputNameDenial::ForeignOutputReference {
@@ -106,16 +105,19 @@ pub(super) struct ResolvedOutputName {
     pub(super) same_occurrence_roles: BTreeMap<[u8; 32], String>,
 }
 
-/// Resolves the outputs of a program in declaration order. `parents` gives
-/// each output's resolved parent identities (none for a plain birth).
+/// Resolves the outputs of the program `candidate` identifies, in
+/// declaration order. Each output comes with its resolved parent identities
+/// (none for a plain birth).
 ///
-/// A reference always designates an earlier output, so one forward pass
-/// writes every placeholder before the name that carries it is computed.
+/// A reference must be one this program issued, and always designates an
+/// earlier output, so one forward pass writes every placeholder before the
+/// name that carries it is computed.
 ///
 /// Complexity: O(E * (R + B)) for E outputs of R references and B
 /// discriminator bytes.
 pub(super) fn resolve_same_commit_names<'program, T: 'program>(
     catalog: &LoweredExecutionNameSchemeCatalog,
+    candidate: &Arc<()>,
     outputs: impl Iterator<
         Item = (
             &'program OperationNamedOutput<T>,
@@ -131,21 +133,22 @@ pub(super) fn resolve_same_commit_names<'program, T: 'program>(
         let mut embedded_name_digests = birth.embedded_name_digests.clone();
         let mut same_occurrence_roles = BTreeMap::new();
         for slot in &birth.same_commit_names {
+            let foreign = || WorthQueryOutputNameDenial::ForeignOutputReference {
+                role_path: birth.role_path.clone(),
+            };
+            // An ordinal only means something in the program that issued it.
+            if !slot.reference().issued_by(candidate) {
+                return Err(foreign());
+            }
             let ordinal = slot.reference().output();
             let (Some(referenced), Some(referenced_birth)) =
                 (resolved.get(ordinal), births.get(ordinal))
             else {
-                return Err(WorthQueryOutputNameDenial::ForeignOutputReference {
-                    role_path: birth.role_path.clone(),
-                });
+                return Err(foreign());
             };
             admit_reference(catalog, &output.scheme_id, birth, referenced_birth)?;
             let digest = *referenced.identity.as_bytes();
-            write_name(&mut canonical_discriminator, slot.offset(), &digest).ok_or_else(|| {
-                WorthQueryOutputNameDenial::ForeignOutputReference {
-                    role_path: birth.role_path.clone(),
-                }
-            })?;
+            write_name(&mut canonical_discriminator, slot.offset(), &digest).ok_or_else(foreign)?;
             embedded_name_digests.push(digest);
             same_occurrence_roles.insert(digest, referenced_birth.role_path.clone());
         }

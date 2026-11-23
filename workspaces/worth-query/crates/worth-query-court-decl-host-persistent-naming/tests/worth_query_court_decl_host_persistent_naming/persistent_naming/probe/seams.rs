@@ -56,7 +56,17 @@ pub enum SeamObservation {
 struct SeamProbe {
     named: Vec<(String, String, String)>,
     held: Vec<(String, WorthQueryName<Seam>, NameSelection)>,
+    replayed: Vec<(String, (String, String))>,
     observed: Vec<SeamObservation>,
+}
+
+/// The handle each probe run last named a seam through, by `(token, label)`.
+static HANDLES: Mutex<BTreeMap<(String, String), Handle>> = Mutex::new(BTreeMap::new());
+
+fn handles() -> std::sync::MutexGuard<'static, BTreeMap<(String, String), Handle>> {
+    HANDLES
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 static PROBES: Mutex<BTreeMap<String, SeamProbe>> = Mutex::new(BTreeMap::new());
@@ -84,6 +94,15 @@ pub fn hold(token: &str, label: &str, name: WorthQueryName<Seam>, selection: Nam
     probe.held.push((label.to_owned(), name, selection));
 }
 
+/// Reads, under `label`, the name of the seam handle the probe run
+/// `issuer` kept for its own `issued` label, in later runs carrying `token`.
+pub fn replay(token: &str, label: &str, issuer: &str, issued: &str) {
+    let mut probes = probes();
+    let probe = probes.entry(token.to_owned()).or_default();
+    let kept = (issuer.to_owned(), issued.to_owned());
+    probe.replayed.push((label.to_owned(), kept));
+}
+
 /// Takes what probe runs carrying `token` observed of seams since last taken.
 pub fn take(token: &str) -> Vec<SeamObservation> {
     probes()
@@ -108,11 +127,27 @@ pub(super) fn observe(
     token: &str,
     live: &Live,
 ) -> Result<(), HandlerExecutionDenial> {
-    let (named, held) = probes()
+    let (named, held, replayed) = probes()
         .get(token)
-        .map(|probe| (probe.named.clone(), probe.held.clone()))
+        .map(|probe| {
+            (
+                probe.named.clone(),
+                probe.held.clone(),
+                probe.replayed.clone(),
+            )
+        })
         .unwrap_or_default();
     let mut observed = Vec::new();
+    let read_name = |reader: &mut DecisionReader<'_, '_, '_, Schema, super::Binding>,
+                     label: String,
+                     seam: &Handle| match reader.reader().relation_name_of(seam)
+    {
+        Ok(name) => SeamObservation::Named { label, name },
+        Err(refusal) => SeamObservation::NameRefused {
+            label,
+            refusal: format!("{refusal:?}"),
+        },
+    };
     let member = |key: &str| live.iter().find(|(k, _)| k == key).map(|(_, m)| m);
     for (label, from, to) in named {
         let (Some(from), Some(to)) = (member(&from), member(&to)) else {
@@ -126,14 +161,16 @@ pub(super) fn observe(
             .find(|seam| seam.to() == to);
         observed.push(match seam {
             None => SeamObservation::Unlinked { label },
-            Some(seam) => match reader.reader().relation_name_of(&seam) {
-                Ok(name) => SeamObservation::Named { label, name },
-                Err(refusal) => SeamObservation::NameRefused {
-                    label,
-                    refusal: format!("{refusal:?}"),
-                },
-            },
+            Some(seam) => {
+                handles().insert((token.to_owned(), label.clone()), seam.clone());
+                read_name(reader, label, &seam)
+            }
         });
+    }
+    for (label, kept) in replayed {
+        let handle = handles().get(&kept).cloned();
+        let handle = handle.unwrap_or_else(|| panic!("no seam handle kept as {kept:?}"));
+        observed.push(read_name(reader, label, &handle));
     }
     for (label, name, selection) in held {
         let resolved = reader
