@@ -8,7 +8,7 @@ use crate::graph_member::{
 };
 use crate::identity::data::{EntityId, KindId};
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeSet;
 use std::sync::Arc;
 

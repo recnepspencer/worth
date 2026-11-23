@@ -1,5 +1,5 @@
 //! Source visits charge their original SDK scope immediately, including refused paths.
-use crate::derived_relation::DerivedRelationReadDenial;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
 use crate::validation::candidate_source::ManagedIndexSourcePreparationDenial as Denial;
 use crate::validation::custom_rule::CustomPreparationBudget;
 use worth_execution::{ExecutionRequest, MapKernelStop, WorkCeilingDenial};

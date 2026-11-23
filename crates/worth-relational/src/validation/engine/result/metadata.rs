@@ -73,7 +73,8 @@ pub struct InvariantExecutionMetadata {
     preparation_failures: Vec<PreparationFailureClass>,
     proof_boundary: Option<InvariantProofBoundarySummary>,
     #[serde(skip)]
-    proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+    proposal_identity:
+        Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
 }
 
 impl InvariantExecutionMetadata {
@@ -92,7 +93,9 @@ impl InvariantExecutionMetadata {
         preparation_strategy: Option<PreparationStrategy>,
         preparation_failures: Vec<PreparationFailureClass>,
         proof_boundary: Option<InvariantProofBoundarySummary>,
-        proposal_identity: Option<crate::mvcc::RelationalMutationProposalIdentity>,
+        proposal_identity: Option<
+            crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+        >,
     ) -> Self {
         Self {
             execution_point,
@@ -160,7 +163,10 @@ impl InvariantExecutionMetadata {
         self.proof_boundary.as_ref()
     }
 
-    pub fn proposal_identity(&self) -> Option<&crate::mvcc::RelationalMutationProposalIdentity> {
+    pub fn proposal_identity(
+        &self,
+    ) -> Option<&crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>
+    {
         self.proposal_identity.as_ref()
     }
 

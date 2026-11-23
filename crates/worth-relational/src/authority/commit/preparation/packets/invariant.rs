@@ -5,10 +5,10 @@ use crate::authority::commit::preparation::proofs::kinds::PreparationProofKind;
 use crate::authority::commit::preparation::proofs::locality::PreparationLocalityProof;
 use crate::authority::commit::preparation::proofs::validity::PreparationProofValidity;
 use crate::authority::commit::preparation::reduction::keys::ValidationReductionKey;
-use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
-use crate::validation::data::{
-    CustomInvariantRegistration, InvariantRegistration, PreparedCustomInvariantExecution,
-};
+use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
+use crate::validation::custom_rule::CustomInvariantRegistration;
+use crate::validation::custom_rule::PreparedCustomInvariantExecution;
+use crate::validation::data::catalog::InvariantRegistration;
 use crate::validation::engine::{InvariantObservation, PreparedRelationIntegrityScopes};
 
 #[derive(Clone)]
@@ -17,20 +17,24 @@ pub(crate) enum InvariantPacketRegistration {
     Custom {
         registration: CustomInvariantRegistration,
         prepared_execution: Arc<dyn PreparedCustomInvariantExecution>,
-        prepared_scope: crate::validation::data::PreparedCustomInvariantScope,
-        retained_touched: Arc<crate::validation::data::TouchedStructuralSet>,
+        prepared_scope: crate::validation::custom_rule::PreparedCustomInvariantScope,
+        retained_touched:
+            Arc<crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet>,
     },
     CustomNotApplicable {
         registration: CustomInvariantRegistration,
-        prepared_scope: crate::validation::data::PreparedCustomInvariantScope,
-        retained_touched: Arc<crate::validation::data::TouchedStructuralSet>,
-        work: crate::validation::CustomInvariantWorkMeter,
-        basis: crate::validation::data::CustomInvariantNonApplicability,
+        prepared_scope: crate::validation::custom_rule::PreparedCustomInvariantScope,
+        retained_touched:
+            Arc<crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet>,
+        work: crate::validation::custom_rule::work_meter::CustomInvariantWorkMeter,
+        basis: crate::validation::data::non_applicability::CustomInvariantNonApplicability,
     },
 }
 
 impl InvariantPacketRegistration {
-    pub(crate) fn execution_point(&self) -> crate::validation::data::InvariantExecutionPoint {
+    pub(crate) fn execution_point(
+        &self,
+    ) -> crate::validation::data::execution::InvariantExecutionPoint {
         match self {
             Self::Native(registration) => registration.execution_point,
             Self::Custom { registration, .. } | Self::CustomNotApplicable { registration, .. } => {
@@ -39,7 +43,9 @@ impl InvariantPacketRegistration {
         }
     }
 
-    pub(crate) fn failure_effect(&self) -> crate::validation::data::InvariantFailureEffect {
+    pub(crate) fn failure_effect(
+        &self,
+    ) -> crate::validation::data::execution::InvariantFailureEffect {
         match self {
             Self::Native(registration) => registration.failure_effect,
             Self::Custom { registration, .. } | Self::CustomNotApplicable { registration, .. } => {
@@ -48,7 +54,7 @@ impl InvariantPacketRegistration {
         }
     }
 
-    pub(crate) fn groups(&self) -> crate::validation::data::InvariantGroupSet {
+    pub(crate) fn groups(&self) -> crate::validation::data::groups::InvariantGroupSet {
         match self {
             Self::Native(registration) => registration.groups(),
             Self::Custom { registration, .. } | Self::CustomNotApplicable { registration, .. } => {

@@ -39,7 +39,8 @@ impl SourceRead for Control {
     fn adjacency(
         &mut self,
         _: crate::derived_relation::evaluation::Adjacency,
-    ) -> Result<Vec<crate::validation::data::StructuralRelationRecord>, Denial> {
+    ) -> Result<Vec<crate::validation::data::structural_read::StructuralRelationRecord>, Denial>
+    {
         unreachable!("memo never acquires graph adjacency")
     }
     fn reads(&self) -> DerivedRelationReads {

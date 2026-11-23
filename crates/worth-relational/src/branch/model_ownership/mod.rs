@@ -5,11 +5,7 @@ use std::collections::BTreeSet;
 mod basis;
 mod custody_observation;
 pub use custody_observation::{observe_candidate_custody_reads, RelationalCandidateCustodyReads};
-mod current_publications;
-pub use current_publications::{
-    RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,
-    RelationalOwnedModelPublishedRoute,
-};
+pub(crate) mod current_publications;
 mod graph_admission;
 mod graph_denial;
 mod graph_selection;
@@ -18,6 +14,8 @@ mod publication;
 pub use graph_denial::{RelationalOwnedModelForeignRelation, RelationalOwnedModelSelectionDenial};
 pub use graph_selection::RelationalOwnedModelGraphSelection;
 pub(crate) use publication::validate_candidate_ownership;
+mod runtime_publications;
+mod runtime_selection;
 mod selection;
 mod traversal;
 pub use selection::RelationalOwnedModelEntityBoundary;
@@ -54,15 +52,15 @@ impl RelationalModelOwnershipConflict {
 #[derive(Debug)]
 pub enum RelationalModelOwnershipDenial {
     ForeignBasis,
-    Custody(crate::transactions::data::TransactionCommitError),
+    Custody(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError),
     TargetNotCurrent,
     SchemaChanged,
     ModelRootKind { model: EntityId, actual: KindId },
     EntityUnavailable(EntityId),
     Conflict(RelationalModelOwnershipConflict),
-    Read(crate::validation::data::StructuralReadError),
+    Read(crate::validation::data::structural_read::StructuralReadError),
     Adjacency(crate::validation::data::CustomInvariantTraversalError),
-    Traversal(crate::validation::data::StructuralWalkDenialKind),
+    Traversal(crate::validation::data::structural_walk_denial::StructuralWalkDenialKind),
     Request(worth_execution::WorkCeilingDenial),
     Native(crate::execution::RelationalExecutionDenialCause),
 }
@@ -120,11 +118,11 @@ impl RelationalModelOwnershipDenial {
         match self {
             Self::Request(worth_execution::WorkCeilingDenial::Stopped(stop)) => Some(*stop),
             Self::Native(cause) => cause.as_kernel_stop(),
-            Self::Custody(crate::transactions::data::TransactionCommitError::Execution {
+            Self::Custody(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
                 denial,
                 ..
             }) => {
-                let crate::transactions::data::CommitExecutionDenialKind::Cause(cause) =
+                let crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause) =
                     denial.kind;
                 cause.as_kernel_stop()
             }

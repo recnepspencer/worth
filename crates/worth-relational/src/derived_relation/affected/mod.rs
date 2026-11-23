@@ -7,7 +7,7 @@ use super::{DerivedRelationData, DerivedRelationHandle, DerivedRelationReadDenia
 use crate::authority::mutation::AdjacencyDelta;
 use crate::graph_member::NativeMemberKey;
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeSet;
 
 pub(crate) struct DerivedAffectedRoots {

@@ -12,7 +12,7 @@ impl NativeManagedSourceInterpretation {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         directory: crate::content::ContentDirectory,
-        schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+        schema: &crate::branch::root::RelationalBranchRootSchemaAuthority,
     ) -> Result<(), Denial> {
         let memory = execution
             .reserve_retained_memory(size_of::<ContentViews>() as u64)
@@ -43,11 +43,13 @@ impl NativeManagedSourceInterpretation {
     pub(crate) fn content_view(
         &self,
         before: bool,
-    ) -> Result<&NativeContentSourceView, crate::derived_relation::DerivedRelationReadDenial> {
-        let views = self
-            .content
-            .get()
-            .ok_or(crate::derived_relation::DerivedRelationDenial::ForeignObservation)?;
+    ) -> Result<
+        &NativeContentSourceView,
+        crate::derived_relation::read_denial::DerivedRelationReadDenial,
+    > {
+        let views = self.content.get().ok_or(
+            crate::derived_relation::definition::DerivedRelationDenial::ForeignObservation,
+        )?;
         Ok(if before { &views.before } else { &views.after })
     }
     pub(crate) fn restoration_content(&self) -> Option<&crate::content::ContentDirectory> {

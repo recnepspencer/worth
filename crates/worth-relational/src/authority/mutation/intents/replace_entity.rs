@@ -4,7 +4,8 @@ use crate::authority::mutation::record_changes::{
 };
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
-use crate::transactions::data::{RecordAspectPatchTarget, ReplaceEntityIntent};
+use crate::transactions::data::intents::mutation_intent::ReplaceEntityIntent;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 use super::field_authoring_candidate::FieldAuthoringDomain;
@@ -13,7 +14,10 @@ use super::record_aspect_patch;
 pub(super) fn apply(
     intent: &ReplaceEntityIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let version_id = workspace.version_id();
     let cascade_delete_policy = workspace.cascade_delete_policy();
     let target = RecordAspectPatchTarget::EntityCreation {
@@ -59,9 +63,9 @@ pub(super) fn apply(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>(replacement_id)
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(replacement_id)
     })?;
     outcome.extend(
         &workspace.execution(),

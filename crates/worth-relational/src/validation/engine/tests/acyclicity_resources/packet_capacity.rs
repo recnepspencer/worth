@@ -28,7 +28,7 @@ fn run(
         InvariantObservation::committed(runtime.storage_access().current_edition()),
         runtime.current_version_id(),
         Some(&plan),
-        Some(crate::validation::data::InvariantPlanContract::from_merged_plan(&plan)),
+        Some(crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan)),
     );
     let view = InvariantRuntimeView::from_runtime(runtime);
     let prepared = crate::validation::execution::plan_invariant_execution(
@@ -46,8 +46,8 @@ fn run(
     let packets = prepared.packets.into_iter().map(|packet| {
         assert!(matches!(&packet.registration,
             crate::authority::commit::preparation::packets::invariant::InvariantPacketRegistration::Native(
-                crate::validation::data::InvariantRegistration {
-                    rule: crate::validation::data::InvariantRule::AcyclicityContract(_), ..
+                crate::validation::data::catalog::InvariantRegistration {
+                    rule: crate::validation::data::rules::InvariantRule::AcyclicityContract(_), ..
                 }
             )
         ), "the actual installed rule must be acyclicity");
@@ -88,7 +88,7 @@ fn run(
             .flat_map(|envelope| &envelope.results)
             .all(|result| matches!(
                 result.result.verdict,
-                crate::validation::data::InvariantVerdict::Pass
+                crate::validation::data::execution::InvariantVerdict::Pass
             )));
     });
     assert_eq!(lease.charged_memory_bytes(), 0);
@@ -109,10 +109,11 @@ fn scratch_admission_covers_all_simultaneous_native_buffers_and_convergent_targe
     let edges: usize = (1..=3).map(|offset| fixture.nodes.len() - offset).sum();
     let extent = (edges
         * std::mem::size_of::<(
-            &crate::transactions::data::EntityReference,
-            &crate::transactions::data::EntityReference,
+            &crate::transactions::data::primitives::EntityReference,
+            &crate::transactions::data::primitives::EntityReference,
         )>()
-        + 2 * edges * std::mem::size_of::<&crate::transactions::data::EntityReference>()
+        + 2 * edges
+            * std::mem::size_of::<&crate::transactions::data::primitives::EntityReference>()
         + fixture.nodes.len() * (std::mem::size_of::<u8>() + std::mem::size_of::<usize>()))
         as u64;
     run(&fixture, 3, extent, 4_000_000)

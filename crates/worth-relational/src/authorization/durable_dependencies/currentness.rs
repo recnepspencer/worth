@@ -6,7 +6,7 @@ use worth_foundational::facade::{
 
 use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::SnapshotHandle;
-use crate::visibility::materialization::read_records::RelationalAdjacencyDirection;
+use crate::visibility::materialization::read_records::projection::RelationalAdjacencyDirection;
 
 use super::{
     capture, FieldDependency, RelationalAuthorizationDependencyDenial as Denial,
@@ -129,7 +129,7 @@ impl RelationalAuthorizationDurableDependencies {
 
 fn field_revision_matches(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    view: &crate::visibility::materialization::read_records::VisibilityProjectionView,
+    view: &crate::visibility::materialization::read_records::projection::VisibilityProjectionView,
     field: &FieldDependency,
 ) -> Result<bool, Denial> {
     let _locator_storage = super::storage::locator_storage(execution, &field.aspect, &field.field)?;

@@ -1,7 +1,7 @@
 //! Actual change/event backing and old/new reallocation overlap.
 use super::MutationOutcome;
 use crate::execution::RelationalExecutionDenialCause as Cause;
-use crate::transactions::data::TransactionCommitError as Error;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError as Error;
 use worth_execution::ExecutionRequest;
 impl MutationOutcome {
     pub(super) fn overflow() -> Error {

@@ -6,9 +6,10 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue, CanonicalField
 
 use crate::diagnostics::data::DiagnosticCode;
 use crate::storage::data::authoritative_aspect_value_field_comparison_key;
-use crate::validation::data::{
-    InvariantClass, InvariantViolation, InvariantViolationFields, StorageInconsistencyScan,
-};
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::results::InvariantViolationFields;
+use crate::validation::data::results::StorageInconsistencyScan;
 
 use super::super::context::InvariantExecutionContext;
 use super::common::{storage_inconsistency_violation, StorageInconsistencyContext};

@@ -1,6 +1,7 @@
 //! Index the proposal's changed edges once, never once per visited vertex.
 use super::PlannedRelationEdge;
-use crate::transactions::data::{EntityReference, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
 use std::collections::BTreeMap;
 
 type Prepare<'a> = dyn Fn(u64, u64) -> Result<(), TransactionCommitError> + 'a;

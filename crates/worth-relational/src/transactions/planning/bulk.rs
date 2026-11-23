@@ -3,15 +3,46 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
+use crate::history::data::BranchId;
 use crate::symbols::data::ClientKey;
+use crate::transactions::data::bulk_plan_digest::bulk_lineage_plan_digest;
+use crate::transactions::data::bulk_plan_digest::bulk_naming_plan_digest;
+use crate::transactions::data::bulk_plan_digest::bulk_provenance_plan_digest;
 use crate::transactions::data::canonical_intent_key::canonical_intent_key;
-use crate::transactions::data::{
-    bulk_lineage_plan_digest, bulk_naming_plan_digest, bulk_provenance_plan_digest,
-    BulkMutationLineagePlan, BulkMutationLocalityFootprint, BulkMutationNamingPlan,
-    BulkMutationProvenancePlan, BulkMutationScope, CreateIntent, EntityMutationIntent,
-    MutationIntent, PlannedLineageTransition, RelationMutationIntent, TransactionId,
-    WorkerIntentBatch,
-};
+use crate::transactions::data::intents::CreateIntent;
+use crate::transactions::data::intents::EntityMutationIntent;
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::intents::RelationMutationIntent;
+use crate::transactions::data::primitives::BulkMutationLineagePlan;
+use crate::transactions::data::primitives::BulkMutationLocalityFootprint;
+use crate::transactions::data::primitives::BulkMutationNamingPlan;
+use crate::transactions::data::primitives::BulkMutationProvenancePlan;
+use crate::transactions::data::primitives::BulkMutationScope;
+use crate::transactions::data::primitives::PlannedBulkMutationBatch;
+use crate::transactions::data::primitives::PlannedLineageTransition;
+use crate::transactions::data::primitives::TransactionId;
+use crate::transactions::data::primitives::WorkerIntentBatch;
+
+pub(crate) fn plan_batch(
+    transaction_id: TransactionId,
+    branch: Option<&BranchId>,
+    batches: &[WorkerIntentBatch],
+) -> Option<PlannedBulkMutationBatch> {
+    let intents = canonical_bulk_mutation_intents(batches);
+    if intents.is_empty() {
+        return None;
+    }
+
+    Some(PlannedBulkMutationBatch {
+        transaction_id,
+        scope: bulk_mutation_scope(&intents),
+        locality: bulk_mutation_locality(&intents),
+        naming: bulk_mutation_naming(&intents),
+        lineage: bulk_mutation_lineage(&intents),
+        provenance: bulk_mutation_provenance(transaction_id, branch.cloned(), batches),
+        intents: intents.into(),
+    })
+}
 
 pub(crate) fn canonical_bulk_mutation_intents(
     batches: &[WorkerIntentBatch],
@@ -117,8 +148,12 @@ pub(crate) fn bulk_mutation_locality(intents: &[MutationIntent]) -> BulkMutation
                 relation_target_count += 1;
             }
             MutationIntent::Materialization(intent) => match intent.record() {
-                crate::transactions::data::RecordRef::Entity(_) => entity_target_count += 1,
-                crate::transactions::data::RecordRef::Relation(_) => relation_target_count += 1,
+                crate::transactions::data::primitives::RecordRef::Entity(_) => {
+                    entity_target_count += 1
+                }
+                crate::transactions::data::primitives::RecordRef::Relation(_) => {
+                    relation_target_count += 1
+                }
             },
         }
     }

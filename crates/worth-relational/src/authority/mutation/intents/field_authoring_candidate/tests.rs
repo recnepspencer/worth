@@ -7,7 +7,8 @@ use crate::schema::data::{
     AspectBinding, AspectContractPlanCatalog, AspectContractPlanRevision,
     LoweredAspectContractBinding,
 };
-use crate::transactions::data::{planned_single_field_locator, RecordAspectPatchTarget};
+use crate::transactions::data::aspect_field_patch::planned_single_field_locator;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
 use std::collections::BTreeMap;
 use worth_execution::{CancellationSource, SerialMemoryBudget, SerialRequest};
 use worth_foundational::facade::*;

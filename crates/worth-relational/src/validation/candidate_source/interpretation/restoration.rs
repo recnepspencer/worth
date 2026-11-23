@@ -1,7 +1,7 @@
 //! Only the real materialization custody can supply a restoration origin.
 use super::*;
+use crate::branch::materialization::RelationalMaterializationCustody;
 use crate::branch::materialization::RelationalMaterializationRecord;
-use crate::branch::RelationalMaterializationCustody;
 use crate::history::data::CommitId;
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -19,9 +19,9 @@ pub(crate) enum InvariantStage {
 impl InvariantStage {
     pub(super) fn registration_points(
         self,
-        point: crate::validation::data::InvariantExecutionPoint,
-    ) -> [Option<crate::validation::data::InvariantExecutionPoint>; 2] {
-        use crate::validation::data::InvariantExecutionPoint as Point;
+        point: crate::validation::data::execution::InvariantExecutionPoint,
+    ) -> [Option<crate::validation::data::execution::InvariantExecutionPoint>; 2] {
+        use crate::validation::data::execution::InvariantExecutionPoint as Point;
         match self {
             Self::NativeAfterBoundary { .. } => [
                 Some(Point::MutationSensitive),

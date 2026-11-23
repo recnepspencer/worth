@@ -18,7 +18,7 @@ pub(in crate::aggregate_identity) fn validate(
     before: &InvariantStateView<'_>,
     after: &InvariantStateView<'_>,
     adjacency: &[crate::authority::mutation::AdjacencyDelta],
-    records: &[crate::transactions::data::RecordRef],
+    records: &[crate::transactions::data::primitives::RecordRef],
     has_entity_deletions: bool,
     stage: LawStage,
     work: &mut AggregateWork<'_, '_, '_, '_>,

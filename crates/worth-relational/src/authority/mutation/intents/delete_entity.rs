@@ -2,12 +2,15 @@ use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::record_changes::delete_entity_with_cascade;
 use crate::authority::mutation::stale_targets::ensure_entity_target_is_current;
 use crate::authority::mutation::MutationWorkspace;
-use crate::transactions::data::DeleteEntityIntent;
+use crate::transactions::data::intents::mutation_intent::DeleteEntityIntent;
 
 pub(super) fn apply(
     intent: &DeleteEntityIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let version_id = workspace.version_id();
     let cascade_delete_policy = workspace.cascade_delete_policy();
     let branch_local_no_op = workspace.branch_local_delete_allows_entity(intent.entity_id);
@@ -15,7 +18,7 @@ pub(super) fn apply(
     workspace.with_context(|context| {
         if let Err(error) = ensure_entity_target_is_current(context.state, intent.entity_id) {
             if branch_local_no_op {
-                return Ok::<(), crate::transactions::data::TransactionCommitError>(());
+                return Ok::<(), crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(());
             }
             return Err(error.into());
         }
@@ -29,7 +32,7 @@ pub(super) fn apply(
             &mut outcome,
             context.deferred_publication_edges,
         )?;
-        Ok::<(), crate::transactions::data::TransactionCommitError>(())
+        Ok::<(), crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(())
     })?;
     Ok(outcome)
 }

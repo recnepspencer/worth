@@ -21,12 +21,16 @@ use crate::authority::commit::preparation::reduction::merge::{
 use crate::authority::mutation::outcomes::{MutationOutcome, RecordMutation};
 use crate::authority::mutation::record_changes::allocate_relation;
 use crate::authority::mutation::MutationWorkspace;
-use crate::transactions::data::{
-    AspectFieldPatch, BulkImportRowDomain, BulkImportStage, BulkRelationCreateIntent,
-    CommitConflict, ConflictClass, EntityReference, RecordAspectPatchTarget,
-    TransactionCommitError,
-};
-use crate::validation::data::InvariantGroupSet;
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::BulkRelationCreateIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::BulkImportRowDomain;
+use crate::transactions::data::outcomes::conflict_class::BulkImportStage;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::groups::InvariantGroupSet;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 use super::field_authoring_candidate::{self, FieldAuthoringDomain};
@@ -151,7 +155,7 @@ fn for_each_staged_bulk_relation_row<'a>(
                 )?,
                 ImportStagedRow::Entity { .. } => {
                     return Err(CommitConflict::new(
-                        crate::transactions::data::ConflictClass::BulkImportDomainMismatch {
+                        crate::transactions::data::outcomes::conflict_class::ConflictClass::BulkImportDomainMismatch {
                             expected: BulkImportRowDomain::Relation,
                             actual: BulkImportRowDomain::Entity,
                             stage: BulkImportStage::RelationCreate,

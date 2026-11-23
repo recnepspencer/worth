@@ -13,8 +13,9 @@ use worth_foundational::{
 use super::custom_rules::AlwaysViolatesCustomRule;
 use super::validation_engine_fixtures::*;
 use crate::authority::commit::preparation::planning::strategy::PreparationStrategySelection;
-use crate::facade::runtime::CustomInvariantLeaseBudget;
-use crate::validation::data::{CustomInvariantRefusal, InvariantViolationFields};
+use crate::validation::custom_rule::CustomInvariantLeaseBudget;
+use crate::validation::data::custom_rule::refusal::CustomInvariantRefusal;
+use crate::validation::data::results::InvariantViolationFields;
 
 /// Whether the later-installed rule has finished.
 #[derive(Default)]
@@ -178,7 +179,7 @@ fn run(workers: usize, wait: Duration) -> Run {
         )
         .build()
         .expect("valid native runtime configuration");
-    let lease = crate::tests::support::test_execution_authority()
+    let lease = crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
@@ -215,7 +216,7 @@ fn run(workers: usize, wait: Duration) -> Run {
     ));
     assert!(matches!(
         result.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::Pass
+        crate::validation::data::execution::InvariantVerdict::Pass
     ));
     assert_eq!(result.decision_log().len(), 3);
     assert_eq!(

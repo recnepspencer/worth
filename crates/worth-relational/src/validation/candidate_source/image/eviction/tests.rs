@@ -89,20 +89,22 @@ fn managed_cache_retirement_defers_last_opaque_drop_beyond_directory_guard() {
 #[test]
 fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() {
     use crate::authority::mutation::{AdjacencyDelta, AdjacencyDeltaKind};
-    use crate::derived_relation::{
-        DerivedRelationDefinitionParts, DerivedRelationIdentity, DerivedRelationNode as Node,
-    };
-    use crate::facade::config::{CascadeDeletePolicy, CrossContextPolicy};
-    use crate::facade::identity::{KindId, PartitionId};
+    use crate::config::data::CascadeDeletePolicy;
+    use crate::config::data::CrossContextPolicy;
+    use crate::derived_relation::definition::DerivedRelationDefinitionParts;
+    use crate::derived_relation::definition::DerivedRelationIdentity;
+    use crate::derived_relation::definition::DerivedRelationNode as Node;
     use crate::facade::schema::*;
     use crate::facade::transactions::*;
+    use crate::identity::data::KindId;
+    use crate::identity::data::PartitionId;
     use crate::symbols::data::ClientKey;
     use crate::tests::support::{
         release_test_commit_snapshot, test_owner_begin_transaction_for_main,
     };
     use crate::validation::candidate_source::{scope_closure, ManagedIndexSourceProjectionRoute};
     use crate::validation::custom_rule::{CustomInvariantWorkMeter, StructuralRelationView};
-    use crate::validation::data::CustomInvariantAccessContract;
+    use crate::validation::data::descriptor::CustomInvariantAccessContract;
     use crate::validation::engine::{
         state_view::InvariantStateView, InvariantObservation, InvariantRuntimeView,
     };
@@ -239,7 +241,7 @@ fn ordered_birth_edges_into_old_reverse_projection_anchors_prepare_the_prefix() 
             .schema_registry(schema.clone())
             .build()
             .unwrap();
-        let host = crate::test_execution_policy::serial_request();
+        let host = crate::execution::test_policy::serial_request();
         let execution = ExecutionRequest::serial(&host);
         let created = |kind, key: &str| CreatedEntityRef {
             partition_id: PartitionId::main(),

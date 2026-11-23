@@ -6,9 +6,11 @@ use crate::identity::data::EntityId;
 use crate::publication::patch::data::{
     PatchDetail, PublishedAuthoritativeAspectChange, RecordStructuralChange,
 };
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, ExistingRecordTarget, RecordRef, TransactionCommitError,
-};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::ExistingRecordTarget;
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeMap;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 use worth_foundational::facade::AuthoritativeRecordAspectPatch;
@@ -48,7 +50,7 @@ pub(crate) fn compose(
         }
     }
     let _memory = ExecutionMemoryReservation::reserve_in_scope(
-        crate::authority::commit::pipeline::request_lease(execution),
+        crate::execution::request_custody::request_lease(execution),
         bytes,
     )
     .map_err(|cause| stop(crate::execution::denial::lease_denial(cause)))?;
@@ -170,7 +172,7 @@ impl Joined {
             TransitionOutcome::Denied(denial) => return Err(TransactionCommitError::conflict(
                 super::data::CanonicalDeltaError::FoundationalPatchConstruction {
                     target: RecordRef::Entity(self.target),
-                    denial: crate::transactions::data::AspectDeltaPatchConstructionDenial::FoundationalPatchConstructionDenied(denial),
+                    denial: crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaPatchConstructionDenial::FoundationalPatchConstructionDenied(denial),
                 }.to_commit_conflict())),
         };
         self.changes.extend(right.changes);
@@ -232,8 +234,8 @@ fn conflict(entity: EntityId) -> TransactionCommitError {
 fn stop(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }

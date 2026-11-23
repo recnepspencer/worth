@@ -1,12 +1,12 @@
 use super::InvariantCheckResult;
 use serde::{Deserialize, Serialize};
 
+use crate::validation::custom_rule::CustomInvariantProvenance;
 use crate::validation::data::execution::{
     InvariantExecutionPoint, InvariantFailureEffect, InvariantReportedRule, InvariantVerdict,
     InvariantWitnessKey,
 };
 use crate::validation::data::results::InvariantViolationFields;
-use crate::validation::data::CustomInvariantProvenance;
 
 use super::{InvariantExecutionResult, InvariantFailure, InvariantProofBoundarySummary};
 

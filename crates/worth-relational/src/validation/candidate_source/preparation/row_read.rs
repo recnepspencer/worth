@@ -8,10 +8,10 @@ pub(super) struct OrderedStepSupport {
     pub(super) identity: crate::derived_relation::DerivedRelationReadIdentity,
     pub(super) members: std::collections::BTreeSet<EntityId>,
     pub(super) _records: (
-        Vec<crate::validation::data::StructuralRelationRecord>,
-        Vec<crate::validation::data::StructuralRelationRecord>,
+        Vec<crate::validation::data::structural_read::StructuralRelationRecord>,
+        Vec<crate::validation::data::structural_read::StructuralRelationRecord>,
     ),
-    pub(super) _retention: crate::validation::CustomInvariantWorkMeter,
+    pub(super) _retention: crate::validation::custom_rule::CustomInvariantWorkMeter,
 }
 pub(super) enum OccurrenceMembership {
     Inverse(PreparedManagedIndexRelationRead),
@@ -173,7 +173,7 @@ impl PreparedManagedIndexSourceRowRead<'_, '_> {
         &self,
         column: usize,
         project: impl FnOnce(
-            crate::runtime::RelationalProjectedFieldObservation<'_>,
+            crate::visibility::materialization::read_records::projection::projection_records::RelationalProjectedFieldObservation<'_>,
             Option<crate::content::RelationalContentFrame>,
         ) -> T,
     ) -> Result<T, super::super::ManagedIndexSourcePreparationDenial> {
@@ -195,7 +195,7 @@ impl PreparedManagedIndexSourceRowRead<'_, '_> {
     pub fn with_field<T>(
         &self,
         column: usize,
-        project: impl FnOnce(crate::runtime::RelationalProjectedFieldObservation<'_>) -> T,
+        project: impl FnOnce(crate::visibility::materialization::read_records::projection::projection_records::RelationalProjectedFieldObservation<'_>) -> T,
     ) -> Result<T, ReadDenial> {
         self.rows.projection.checkpoint(0)?;
         // Construction proved membership in this immutable loan. The retained

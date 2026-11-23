@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use crate::identity::data::PartitionId;
-use crate::transactions::data::RecordRef;
-use crate::validation::data::{InvariantExecutionPoint, InvariantGroupSet};
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::groups::InvariantGroupSet;
 use crate::validation::engine::InvariantObservationKind;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]

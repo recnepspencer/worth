@@ -41,16 +41,19 @@ pub(crate) mod identity;
 pub(crate) mod lifecycle;
 pub(crate) mod managed_source_affinity;
 pub(crate) mod materialization;
-mod model_ownership;
+pub(crate) mod model_ownership;
 mod owner_services;
 pub(crate) mod recorded_basis;
+pub use model_ownership::current_publications::{
+    RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,
+    RelationalOwnedModelPublishedRoute,
+};
 pub use model_ownership::{
     observe_candidate_custody_reads, RelationalCandidateCustodyReads, RelationalModelOwnership,
     RelationalModelOwnershipConflict, RelationalModelOwnershipDenial,
     RelationalModelOwnershipDomain, RelationalOwnedModelEntityBoundary,
     RelationalOwnedModelForeignRelation, RelationalOwnedModelGraphSelection,
-    RelationalOwnedModelOutputRoute, RelationalOwnedModelPublicationRead,
-    RelationalOwnedModelPublishedRoute, RelationalOwnedModelSelectionDenial,
+    RelationalOwnedModelSelectionDenial,
 };
 pub(crate) mod reference;
 pub(crate) mod reference_checkpoint_data;
@@ -83,7 +86,7 @@ pub(crate) use root_regions::RelationalPartitionVisit;
 mod root_runtime_access;
 pub(crate) mod root_selection;
 mod root_selection_admission;
-mod selected_read;
+pub(crate) mod selected_read;
 pub(crate) use selected_read::SelectedRelationalBranchRead;
 mod sharing_cost_cell;
 pub(crate) mod target;

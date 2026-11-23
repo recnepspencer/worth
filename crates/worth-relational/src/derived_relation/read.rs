@@ -1,7 +1,7 @@
 //! Immutable complete derivation facts, separate from source authority.
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, KindId};
-use crate::validation::data::StructuralRelationRecord;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 
 /// Every explored physical adjacency, including an empty one.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]

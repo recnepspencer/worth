@@ -1,13 +1,12 @@
 use worth_foundational::facade::{AspectFieldLocator, LocatorAuthority};
 
 use crate::identity::data::{EntityId, RelationId};
-use crate::runtime::RelationalRuntime;
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::overlay::PartitionAccess;
-use crate::visibility::materialization::read_records::{
-    AdjacencyStructuralRevisionDenial, ProjectionAspectScope, RelationalAdjacencyDirection,
-    VisibilityProjectionView,
-};
+use crate::visibility::materialization::read_records::projection::contracts::ProjectionAspectScope;
+use crate::visibility::materialization::read_records::projection::AdjacencyStructuralRevisionDenial;
+use crate::visibility::materialization::read_records::projection::RelationalAdjacencyDirection;
+use crate::visibility::materialization::read_records::projection::VisibilityProjectionView;
 
 use super::{
     AdjacencyDependency, EntityDependency, FieldDependency, FieldLocatorAuthority,
@@ -17,18 +16,11 @@ use super::{
     MAXIMUM_AUTHORIZATION_DEPENDENCIES, MAXIMUM_AUTHORIZATION_DEPENDENCY_BYTES,
 };
 
-pub(super) fn capture(
-    runtime: &RelationalRuntime,
+pub(in crate::authorization) fn capture(
+    view: &VisibilityProjectionView,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     evidence: &RelationalAuthorizationObservationEvidence,
 ) -> Result<RelationalAuthorizationDurableDependencies, Denial> {
-    if evidence.snapshot().runtime_instance_id != runtime.runtime_instance_id() {
-        return Err(Denial::ForeignRuntime);
-    }
-    let view = runtime
-        .read_truth()
-        .project_snapshot(evidence.snapshot())
-        .ok_or(Denial::SnapshotUnavailable)?;
     if !view.is_exact_basis() {
         return Err(Denial::InexactSnapshot);
     }
@@ -41,8 +33,8 @@ pub(super) fn capture(
     let storage = super::storage::capture_quote(evidence)?.admit(execution)?;
     let mut remaining = MAXIMUM_AUTHORIZATION_DEPENDENCIES;
     let mut string_bytes = 0usize;
-    let principal = capture_entity(execution, &view, evidence.principal(), &mut remaining)?;
-    let scope = capture_entity(execution, &view, evidence.scope(), &mut remaining)?;
+    let principal = capture_entity(execution, view, evidence.principal(), &mut remaining)?;
+    let scope = capture_entity(execution, view, evidence.scope(), &mut remaining)?;
     let mut paths = Vec::with_capacity(evidence.paths().len());
     for path in evidence.paths() {
         if !path.exhaustive() || path.matched() != path.witness().is_some() {
@@ -57,13 +49,13 @@ pub(super) fn capture(
             path.entities().len(),
             path.entities()
                 .iter()
-                .map(|&entity| capture_entity(execution, &view, entity, &mut remaining)),
+                .map(|&entity| capture_entity(execution, view, entity, &mut remaining)),
         )?;
         let relations = super::storage::capture_list(
             path.relations().len(),
             path.relations()
                 .iter()
-                .map(|&relation| capture_relation(execution, &view, relation, &mut remaining)),
+                .map(|&relation| capture_relation(execution, view, relation, &mut remaining)),
         )?;
         let adjacencies = super::storage::capture_list(
             path.adjacency_lists().len(),

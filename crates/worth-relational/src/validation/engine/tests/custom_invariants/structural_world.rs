@@ -2,7 +2,7 @@
 //! compared with the same rules installed alone.
 use super::super::validation_engine_fixtures::*;
 use crate::identity::data::EntityId;
-use crate::performance::data::RuntimeComplexityCounters;
+use crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters;
 use crate::validation::engine::InvariantExecutionResult;
 
 pub(super) struct StructuralWorld {
@@ -51,11 +51,11 @@ impl StructuralWorld {
         let relation = |client_key: &str| {
             MutationIntent::Create(CreateIntent::Relation(RelationSpec {
                 partition_id: PartitionId::main(),
-                kind_id: crate::facade::identity::KindId(2),
+                kind_id: crate::identity::data::KindId(2),
                 client_key: ClientKey::raw(client_key),
-                source: crate::transactions::data::EntityReference::Existing(source),
-                target: crate::transactions::data::EntityReference::Existing(target),
-                fields: crate::transactions::data::AspectFieldPatch::default(),
+                source: crate::transactions::data::primitives::EntityReference::Existing(source),
+                target: crate::transactions::data::primitives::EntityReference::Existing(target),
+                fields: crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
             }))
         };
         let plan = MergedCommitPlan {
@@ -63,9 +63,10 @@ impl StructuralWorld {
             merged_intents: vec![
                 MutationIntent::Create(CreateIntent::Entity(EntitySpec {
                     partition_id: PartitionId::main(),
-                    kind_id: crate::facade::identity::KindId(1),
+                    kind_id: crate::identity::data::KindId(1),
                     client_key: ClientKey::raw("source"),
-                    fields: crate::transactions::data::AspectFieldPatch::default(),
+                    fields:
+                        crate::transactions::data::aspect_field_patch::AspectFieldPatch::default(),
                 })),
                 relation("edge"),
                 relation("edge-2"),

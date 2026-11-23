@@ -10,7 +10,7 @@ use crate::identity::data::VersionId;
 use crate::storage::data::{RelationalFieldPresence, RelationalFieldRevision};
 use crate::storage::overlay::WorkingState;
 use crate::storage::substrate::{partition_of, slot_of, EntityRecordKind, RelationRecordKind};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 /// Stamp owner-native field transitions on the same staged root that receives
 /// the canonical aspect delta. Unknown restored columns stay unknown until a

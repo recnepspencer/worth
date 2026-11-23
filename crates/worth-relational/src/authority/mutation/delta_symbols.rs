@@ -1,7 +1,8 @@
 //! A delta's symbol ids are admitted before its revision stamps are written.
 use super::canonical_deltas::CanonicalRecordAspectDelta;
 use super::field_versions::visit_changed_fields;
-use crate::runtime::{MutationSymbolMeanings, SymbolReservationDenial};
+use crate::runtime::state::subsystems::services::symbol_table::MutationSymbolMeanings;
+use crate::runtime::state::subsystems::services::symbol_table::SymbolReservationDenial;
 use crate::symbols::data::Symbol;
 use worth_foundational::facade::{AspectKey, FieldKey};
 

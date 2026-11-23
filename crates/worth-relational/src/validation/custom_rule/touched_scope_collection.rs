@@ -1,12 +1,14 @@
-use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
+use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
 use std::collections::BTreeSet;
 
-use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
-};
-use crate::validation::data::{
-    PlannedEntityCreate, PlannedRelationCreate, PlannedRelationEndpointUpdate, TouchedStructuralSet,
-};
+use crate::transactions::data::intents::CreateIntent;
+use crate::transactions::data::intents::EntityMutationIntent;
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::intents::RelationMutationIntent;
+use crate::validation::data::custom_rule::touched_scope::PlannedEntityCreate;
+use crate::validation::data::custom_rule::touched_scope::PlannedRelationCreate;
+use crate::validation::data::custom_rule::touched_scope::PlannedRelationEndpointUpdate;
+use crate::validation::data::custom_rule::touched_scope::TouchedStructuralSet;
 use crate::validation::engine::state_view::InvariantStateView;
 
 use super::affected_record_filter::{
@@ -23,7 +25,7 @@ pub(crate) fn collect_touched_structural_set(
     state_view: &InvariantStateView<'_>,
     before_image_view: Option<&InvariantStateView<'_>>,
     semantic_plan: Option<RelationalSemanticPlan<'_>>,
-    access: &crate::validation::data::CustomInvariantAccessContract,
+    access: &crate::validation::data::descriptor::CustomInvariantAccessContract,
     work: &super::CustomInvariantWorkMeter,
 ) -> TouchedStructuralSet {
     let mut visible_entities = BTreeSet::new();
@@ -339,7 +341,7 @@ pub(crate) fn collect_touched_structural_set(
                     }
                 }
                 MutationIntent::Materialization(intent) => match intent.record() {
-                    crate::transactions::data::RecordRef::Entity(entity_id) => {
+                    crate::transactions::data::primitives::RecordRef::Entity(entity_id) => {
                         include_affected_entity(
                             &mut visible_entities,
                             entity_id,
@@ -348,7 +350,7 @@ pub(crate) fn collect_touched_structural_set(
                             access,
                         );
                     }
-                    crate::transactions::data::RecordRef::Relation(relation_id) => {
+                    crate::transactions::data::primitives::RecordRef::Relation(relation_id) => {
                         include_affected_relation(
                             &mut visible_entities,
                             &mut visible_relations,

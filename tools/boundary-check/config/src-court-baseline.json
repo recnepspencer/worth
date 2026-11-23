@@ -67,7 +67,6 @@
 {"source":"crates/worth-relational/src/authority/commit/pipeline/request_checkpoints/stage_counts.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/authority/commit/pipeline/request_checkpoints/strategy_cancellation.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/authority/commit/pipeline/request_checkpoints/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime","SerialRequest"]},
-{"source":"crates/worth-relational/src/authority/commit/pipeline/request_checkpoints/work_account.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/authority/commit/preparation/reduction/merge/checked.rs","module":"tests","roots":["ExecutionResourceLease"]},
 {"source":"crates/worth-relational/src/authority/commit/publication/tests.rs","module":"file","roots":["ExecutionResourceLease"]},
 {"source":"crates/worth-relational/src/authority/mutation/canonical_deltas/engine_tests/support.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},

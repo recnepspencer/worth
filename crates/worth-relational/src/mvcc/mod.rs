@@ -14,7 +14,7 @@ pub(crate) mod retained_entity_selection;
 pub use owned_graph_selection::{
     RelationalOwnedGraphSelection, RelationalOwnedGraphSelectionPreparationError,
 };
-mod transaction;
+pub(crate) mod transaction;
 pub(crate) use transaction::normalized_plan as plan_copy_admission;
 pub(crate) use transaction::normalized_plan::OwnedNormalizedPlan;
 #[cfg(test)]

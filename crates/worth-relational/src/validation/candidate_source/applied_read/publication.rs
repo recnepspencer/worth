@@ -39,7 +39,7 @@ impl ManagedIndexAppliedSourcePublication {
         };
         if generation != self.affinity.generation {
             return Err(Denial::Publication(
-                crate::mvcc::CompanionPreflightStop::RegistrationChanged,
+                crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop::RegistrationChanged,
             ));
         }
         let observed = runtime.read_truth().observe_managed_index_source(

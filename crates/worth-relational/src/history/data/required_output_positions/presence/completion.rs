@@ -3,8 +3,8 @@ use super::*;
 use crate::authority::mutation::current_records::CompletedCurrentRecords;
 use crate::authority::mutation::current_records::Writer;
 use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::config::data::StorageConfig;
 use crate::history::data::CanonicalCommitEnvelopeBody;
-use crate::runtime::RelationalPreparationRuntime;
 use crate::schema::current_publication_ownership::POSITION;
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
@@ -14,10 +14,10 @@ use worth_execution::{ExecutionRequest, MapKernelContext};
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn complete(
     execution: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    storage_config: &StorageConfig,
     basis: &AdmittedRelationalBranchBasis,
     working: &mut WorkingState,
-    identities: &mut crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
+    identities: &mut crate::authority::mutation::pending_identities::PendingMutationIdentities,
     candidate: &CanonicalCommitEnvelopeBody,
     current: &[PresenceRow],
     positions: &mut Option<crate::history::data::RequiredOutputPublicationPositions>,
@@ -60,7 +60,7 @@ pub(crate) fn complete(
     let mut positions = positions.as_mut();
     let mut writer = Writer::in_stage(
         execution,
-        &runtime.config.storage,
+        storage_config,
         basis,
         working,
         identities,

@@ -37,7 +37,8 @@ pub(in crate::authority::mutation) fn delete_entity_with_cascade(
     default_cascade_delete_policy: CascadeDeletePolicy,
     outcome: &mut MutationOutcome,
     deferred_publication_edges: Option<&std::collections::BTreeSet<RelationId>>,
-) -> Result<(), crate::transactions::data::TransactionCommitError> {
+) -> Result<(), crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>
+{
     let input = input(state, entity_id)?;
     let declaration = schema_registry
         .entity_registration(input.kind_id)
@@ -81,7 +82,8 @@ fn retire(
     deferred_publication_edges: Option<&std::collections::BTreeSet<RelationId>>,
     input: EntityDeletionInput,
     authoritative_patch: Option<MutationAspectPatch>,
-) -> Result<(), crate::transactions::data::TransactionCommitError> {
+) -> Result<(), crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>
+{
     let slot = entity_id.slot_index();
     state
         .mark_entity_slot_touched_for_request(entity_id.partition_id, slot, execution)
@@ -95,7 +97,7 @@ fn retire(
         .entity_arena
         .retire_for_request(execution, slot, version_id)
         .map_err(|cause| {
-            crate::transactions::data::TransactionCommitError::execution(cause.into())
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
         })?
         .ok_or_else(|| {
             mutation_state_inconsistency(

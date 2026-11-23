@@ -1,7 +1,7 @@
 //! Borrowed adjacency; no endpoint or authored key is copied into scratch.
 use std::mem::size_of;
 
-use crate::transactions::data::EntityReference;
+use crate::transactions::data::primitives::EntityReference;
 use crate::validation::engine::context::InvariantExecutionContext;
 use crate::validation::engine::request::PreparedRelationIntegrityScope;
 

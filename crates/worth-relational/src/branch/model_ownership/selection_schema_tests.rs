@@ -1,7 +1,8 @@
 //! Pure schema-admission policy: registry commitments, with no runtime roots.
 use super::require_same_schema;
+use crate::branch::model_ownership::RelationalModelOwnershipDenial as Denial;
+use crate::schema::data::SchemaVersionId;
 use crate::tests::support::{aspect_key, entity_field_aspect, field_key, AspectSchemaFixture};
-use crate::{branch::RelationalModelOwnershipDenial as Denial, schema::data::SchemaVersionId};
 
 #[test]
 fn entity_boundary_refuses_changed_schema_meaning_before_structural_selection() {

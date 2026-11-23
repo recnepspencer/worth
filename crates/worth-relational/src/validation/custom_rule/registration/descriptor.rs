@@ -19,7 +19,7 @@ impl CustomInvariantRegistration {
             return Err(CustomInvariantRegistrationError::EmptyDisplayName);
         }
         if descriptor.operational.execution_point
-            == crate::validation::data::InvariantExecutionPoint::ProposedState
+            == crate::validation::data::execution::InvariantExecutionPoint::ProposedState
         {
             return Err(CustomInvariantRegistrationError::AggregateExecutionPoint);
         }

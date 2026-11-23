@@ -7,7 +7,7 @@ pub(crate) mod lineage;
 pub(crate) mod lineage_identity;
 mod publication;
 mod publication_diagnostics;
-mod record_identity;
+pub(crate) mod record_identity;
 mod schema_contract_runtime;
 pub(crate) mod services;
 pub(crate) mod storage;

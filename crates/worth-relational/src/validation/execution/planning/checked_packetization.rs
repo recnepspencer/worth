@@ -18,8 +18,11 @@ use crate::validation::engine::{
 };
 
 pub(crate) struct CheckedPacketPlan<'state> {
-    pub(crate) packets:
-        Vec<ReadOnlyPacket<crate::authority::commit::preparation::InvariantWorkPacket<'state>>>,
+    pub(crate) packets: Vec<
+        ReadOnlyPacket<
+            crate::authority::commit::preparation::packets::invariant::InvariantWorkPacket<'state>,
+        >,
+    >,
     pub(crate) proof_boundary: InvariantProofBoundarySummary,
     pub(crate) scope_units: usize,
 }
@@ -35,7 +38,7 @@ pub(crate) fn prepare_checked_invariant_packets<'state>(
     let memory = crate::execution::PacketMemory::Tracked;
     let preparation_bytes =
         crate::execution::packet_preparation_bytes::<
-            crate::authority::commit::preparation::InvariantWorkPacket<'_>,
+            crate::authority::commit::preparation::packets::invariant::InvariantWorkPacket<'_>,
         >(planned.packets.len())?
         .checked_add((2 * size_of::<InvariantScopeWideningCause>()) as u64)
         .and_then(|bytes| {
@@ -58,36 +61,38 @@ pub(crate) fn prepare_checked_invariant_packets<'state>(
             crate::execution::PacketAdmissionDenial::MemoryOverflow,
         ))?;
     let mut metadata = None;
-    let (packets, _) =
-        prepare_borrowed_packets(lease, work_budget, preparation_bytes, |budget| {
-            let (proof_boundary, scope_units) = fold_scope(&planned, budget)?;
-            metadata = Some((proof_boundary, scope_units));
-            let mut packets = Vec::new();
-            for packet in planned.packets {
-                budget
-                    .claim_packet::<crate::authority::commit::preparation::InvariantWorkPacket<'_>>(
+    let (packets, _) = prepare_borrowed_packets(lease, work_budget, preparation_bytes, |budget| {
+        let (proof_boundary, scope_units) = fold_scope(&planned, budget)?;
+        metadata = Some((proof_boundary, scope_units));
+        let mut packets = Vec::new();
+        for packet in planned.packets {
+            budget
+                    .claim_packet::<crate::authority::commit::preparation::packets::invariant::InvariantWorkPacket<'_>>(
                     )?;
-                packets
-                    .try_reserve(1)
-                    .map_err(|_| MapKernelFailure::ResultCapacityExceeded)?;
-                let scope_bytes = match &packet.locality.partition_scope {
-                    PreparationPartitionScope::AllObserved => 0,
-                    PreparationPartitionScope::TouchedPartitions(partitions) => {
-                        (partitions.len() as u64).saturating_mul(size_of::<PartitionId>() as u64)
-                    }
-                };
-                packets.push(ReadOnlyPacket {
-                    identity: PartitionIdentity::new(packet.packet_index as u64),
-                    input_bytes: scope_bytes.saturating_add(
-                        (packet.reduction_key.partition_scope.len() as u64)
-                            .saturating_mul(size_of::<PartitionId>() as u64),
-                    ),
-                    memory,
-                    value: packet,
-                });
-            }
-            Ok(packets)
-        })?;
+            packets
+                .try_reserve(1)
+                .map_err(|_| MapKernelFailure::ResultCapacityExceeded)?;
+            let scope_bytes = match &packet.locality.partition_scope {
+                PreparationPartitionScope::AllObserved => 0,
+                PreparationPartitionScope::TouchedPartitions(partitions) => {
+                    (partitions.len() as u64).saturating_mul(size_of::<PartitionId>() as u64)
+                }
+            };
+            packets.push(ReadOnlyPacket {
+                identity: PartitionIdentity::new(packet.packet_index as u64),
+                input_bytes: scope_bytes.saturating_add(
+                    (packet.reduction_key.partition_scope.len() as u64).saturating_mul(size_of::<
+                        PartitionId,
+                    >(
+                    )
+                        as u64),
+                ),
+                memory,
+                value: packet,
+            });
+        }
+        Ok(packets)
+    })?;
     let mut packets = packets;
     if let Some(first) = packets.first_mut() {
         first.input_bytes = first.input_bytes.saturating_add(retained_plan_bytes);

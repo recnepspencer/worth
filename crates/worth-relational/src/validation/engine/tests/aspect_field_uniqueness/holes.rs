@@ -3,7 +3,7 @@ use super::*;
 
 #[test]
 fn uniqueness_sees_records_past_a_refused_reservation_hole() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
     let runtime = runtime_with_summary_title_uniqueness();
     commit_entity_with_summary(execution, &runtime, "alpha", "alpha-title", "open").unwrap();
@@ -15,8 +15,8 @@ fn uniqueness_sees_records_past_a_refused_reservation_hole() {
         .changed_records
         .iter()
         .find_map(|record| match record {
-            crate::transactions::data::RecordRef::Entity(id) => Some(*id),
-            crate::transactions::data::RecordRef::Relation(_) => None,
+            crate::transactions::data::primitives::RecordRef::Entity(id) => Some(*id),
+            crate::transactions::data::primitives::RecordRef::Relation(_) => None,
         })
         .unwrap();
     assert!(

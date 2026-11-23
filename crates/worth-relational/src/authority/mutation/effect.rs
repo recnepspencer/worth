@@ -1,5 +1,5 @@
 use crate::diagnostics::data::RelationalDiagnosticsEntry;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::canonical_deltas::{CanonicalRecordAspectDelta, FoundationalPatchFragment};
 

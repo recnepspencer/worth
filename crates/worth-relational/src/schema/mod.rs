@@ -1,4 +1,5 @@
 pub(crate) mod aggregate_identity;
+pub(crate) mod aspect_plan_source;
 pub(crate) mod aspect_plans;
 pub(crate) mod continuity;
 pub(crate) mod current_publication_ownership;

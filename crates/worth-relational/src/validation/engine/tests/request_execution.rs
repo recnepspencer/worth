@@ -8,7 +8,7 @@ impl<'runtime> InvariantEngine<'runtime> {
     where
         'runtime: 'state,
     {
-        let backing = crate::test_execution_policy::serial_request();
+        let backing = crate::execution::test_policy::serial_request();
         self.execute(
             &worth_execution::ExecutionRequest::serial(&backing),
             request,

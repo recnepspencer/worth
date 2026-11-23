@@ -19,7 +19,7 @@ pub use restored_producer_prior::RelationalRestoredProducerPrior;
 mod completion;
 mod coupled_assembly;
 mod coupled_owners;
-mod custody;
+pub(crate) mod custody;
 pub(crate) mod output_meaning;
 mod ownership_reach;
 pub(crate) use coupled_assembly::{BoundAuthoredCoupling, RequiredOutputInputs};

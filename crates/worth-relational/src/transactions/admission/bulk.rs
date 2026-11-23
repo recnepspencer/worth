@@ -1,10 +1,14 @@
 //! Admission checks for planned bulk mutation batches.
 
 use crate::symbols::data::ClientKeySymbolPolicy;
-use crate::transactions::data::{
-    bulk_lineage_plan_digest, bulk_naming_plan_digest, BulkMutationAdmissionDenial, CommitConflict,
-    ConflictClass, MutationStateInconsistencyEvidence, PlannedBulkMutationBatch, WorkerIntentBatch,
-};
+use crate::transactions::data::bulk_plan_digest::bulk_lineage_plan_digest;
+use crate::transactions::data::bulk_plan_digest::bulk_naming_plan_digest;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::BulkMutationAdmissionDenial;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::MutationStateInconsistencyEvidence;
+use crate::transactions::data::primitives::PlannedBulkMutationBatch;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 
 use crate::transactions::planning::bulk::{
     bulk_mutation_lineage, bulk_mutation_naming, bulk_mutation_provenance,
@@ -118,7 +122,7 @@ pub(crate) fn validate_lineage_plan(
 
     if matches!(
         planned.scope,
-        crate::transactions::data::BulkMutationScope::TopologyRegionRewrite
+        crate::transactions::data::primitives::BulkMutationScope::TopologyRegionRewrite
     ) && planned.lineage.transitions.is_empty()
     {
         return Err(CommitConflict::new(
@@ -197,58 +201,50 @@ fn bulk_admission_evidence(
 #[cfg(test)]
 mod tests {
     use super::{validate_lineage_plan, validate_naming_plan, validate_provenance_plan};
-    use crate::capabilities::RuntimeConfigSource;
-    use crate::facade::identity::{KindId, PartitionId};
-    use crate::facade::transactions::{
-        BulkEntityCreateIntent, BulkRelationCreateIntent, ReplaceEntityIntent,
+    use crate::identity::data::{EntityId, KindId, PartitionId};
+    use crate::symbols::data::{ClientKey, ClientKeySymbolPolicy, StringInterner};
+    use crate::tests::support::runtime_with_test_schema;
+    use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+    use crate::transactions::data::intents::{
+        BulkEntityCreateIntent, BulkRelationCreateIntent, CreateIntent, EntityMutationIntent,
+        MutationIntent, ReplaceEntityIntent,
     };
-    use crate::symbols::data::ClientKey;
-    use crate::tests::support::{create_entity, runtime_with_test_schema};
-    use crate::transactions::data::{
-        BulkMutationAdmissionDenial, ConflictClass, CreateIntent, EntityMutationIntent,
-        MutationIntent, MutationStateInconsistencyEvidence, WorkerIntentBatch,
+    use crate::transactions::data::outcomes::conflict_class::{
+        BulkMutationAdmissionDenial, ConflictClass, MutationStateInconsistencyEvidence,
     };
+    use crate::transactions::data::primitives::{
+        EntityReference, EntitySpec, PlannedBulkMutationBatch, TransactionId, WorkerIntentBatch,
+    };
+
+    fn plan(batches: &[WorkerIntentBatch]) -> PlannedBulkMutationBatch {
+        crate::transactions::planning::bulk::plan_batch(TransactionId(1), None, batches)
+            .expect("the fixture contains a mutation")
+    }
 
     #[test]
     fn naming_admission_rejects_tampered_normalized_key_plan() {
-        let host_request = crate::test_execution_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-        let runtime = runtime_with_test_schema();
-        let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-        txn.push_batch(
-            WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
+        let policy = ClientKeySymbolPolicy::PreferInterned;
+        let mut interner = StringInterner::default();
+        let normalized = ClientKey::raw("raw-key")
+            .normalize_with(&mut interner, policy)
+            .unwrap();
+        assert!(normalized.as_symbol().is_some());
+        let mut planned = plan(
+            &[WorkerIntentBatch::new("bulk").push(MutationIntent::Create(
                 CreateIntent::BulkEntities(BulkEntityCreateIntent {
                     partition_id: PartitionId::main(),
                     kind_id: KindId(1),
-                    client_keys: vec![ClientKey::raw("raw-key")],
-                    field_patches: vec![crate::tests::support::name_field_patch("raw")],
+                    client_keys: vec![normalized],
+                    field_patches: vec![AspectFieldPatch::default()],
                 }),
-            )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-
-        txn.prepare_merged_plan(execution, &runtime).unwrap();
-        let mut planned = txn
-            .plan_bulk_mutation_batch(&runtime)
-            .expect("planning succeeds")
-            .expect("planned batch");
-        assert!(planned.naming.normalized_client_keys[0]
-            .as_symbol()
-            .is_some());
-        validate_naming_plan(
-            &planned,
-            runtime.runtime_config().identity.client_key_symbol_policy,
-        )
-        .expect("real prepared naming is admitted before tampering");
+            ))],
+        );
+        validate_naming_plan(&planned, policy).expect("the unchanged key plan is admitted");
         planned.naming.normalized_client_keys =
             std::sync::Arc::<[ClientKey]>::from(vec![ClientKey::raw("raw-key")]);
 
-        let error = validate_naming_plan(
-            &planned,
-            runtime.runtime_config().identity.client_key_symbol_policy,
-        )
-        .expect_err("naming admission should reject tampered normalized key plan");
+        let error = validate_naming_plan(&planned, policy)
+            .expect_err("naming admission should reject tampered normalized key plan");
         assert!(matches!(
             error.class,
             ConflictClass::MutationStateInconsistency {
@@ -263,32 +259,20 @@ mod tests {
 
     #[test]
     fn lineage_admission_rejects_tampered_transition_digest() {
-        let host_request = crate::test_execution_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-        let runtime = runtime_with_test_schema();
-        let entity = create_entity(execution, &runtime, "replace-me");
-        let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-        txn.push_batch(
+        let mut planned = plan(&[
             WorkerIntentBatch::new("rewrite").push(MutationIntent::Entity(
                 EntityMutationIntent::Replace(ReplaceEntityIntent {
-                    entity_id: entity,
-                    replacement: crate::transactions::data::EntitySpec {
+                    entity_id: EntityId::new(PartitionId::main(), 1, 1),
+                    replacement: EntitySpec {
                         partition_id: PartitionId::main(),
                         kind_id: KindId(1),
                         client_key: ClientKey::raw("replacement"),
-                        fields: crate::tests::support::name_field_patch("replacement"),
+                        fields: AspectFieldPatch::default(),
                     },
                 }),
             )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-
-        let mut planned = txn
-            .plan_bulk_mutation_batch(&runtime)
-            .expect("planning succeeds")
-            .expect("planned batch");
+        ]);
+        validate_lineage_plan(&planned).expect("the unchanged lineage digest is admitted");
         planned.lineage.lineage_scope_digest = "tampered".to_string();
 
         let error = validate_lineage_plan(&planned).expect_err("lineage admission should reject");
@@ -306,38 +290,27 @@ mod tests {
 
     #[test]
     fn provenance_admission_rejects_tampered_worker_evidence() {
-        let host_request = crate::test_execution_policy::serial_request();
-        let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-        let runtime = runtime_with_test_schema();
-        let source = create_entity(execution, &runtime, "source");
-        let target = create_entity(execution, &runtime, "target");
-        let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
-        txn.push_batch(
+        let batches = [
             WorkerIntentBatch::new("worker-a").push(MutationIntent::Create(
                 CreateIntent::BulkRelations(BulkRelationCreateIntent {
                     partition_id: PartitionId::main(),
                     kind_id: KindId(2),
                     client_keys: vec![ClientKey::raw("edge")],
                     endpoints: vec![(
-                        crate::transactions::data::EntityReference::Existing(source),
-                        crate::transactions::data::EntityReference::Existing(target),
+                        EntityReference::Existing(EntityId::new(PartitionId::main(), 1, 1)),
+                        EntityReference::Existing(EntityId::new(PartitionId::main(), 2, 1)),
                     )],
-                    field_patches: vec![crate::tests::support::relation_label_field_patch("edge")],
+                    field_patches: vec![AspectFieldPatch::default()],
                 }),
             )),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-        )
-        .expect("test staging stays within configured resource budgets");
-
-        let mut planned = txn
-            .plan_bulk_mutation_batch(&runtime)
-            .expect("planning succeeds")
-            .expect("planned batch");
+        ];
+        let mut planned = plan(&batches);
+        validate_provenance_plan(&planned, &batches)
+            .expect("the unchanged worker evidence is admitted");
         planned.provenance.worker_batch_names =
             std::sync::Arc::<[String]>::from(vec!["tampered".to_string()]);
 
-        let error = validate_provenance_plan(&planned, txn.batches())
+        let error = validate_provenance_plan(&planned, &batches)
             .expect_err("provenance admission should reject");
         assert!(matches!(
             error.class,

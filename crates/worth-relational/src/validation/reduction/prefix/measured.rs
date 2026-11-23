@@ -4,7 +4,7 @@ use crate::execution::{
     PacketBudgetDenial, PacketExecutionStop, RelationalExecutionDenialCause as Cause,
     RequestWorkBudget,
 };
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::{check_invariant_request, InvariantExecutionRequest};
 use worth_execution::{
     ChargedBytes, ExecutionRequest, ExecutionResourceLease, ExecutionWorkCeiling, LeaseDenial,

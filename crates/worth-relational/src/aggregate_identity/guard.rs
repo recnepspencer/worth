@@ -1,10 +1,11 @@
 //! Ordinary graph authors cannot write Native-owned metadata kinds.
 use crate::identity::data::KindId;
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent as Entity, MutationIntent,
-    RelationMutationIntent as Relation, TransactionCommitError,
-};
+use crate::transactions::data::intents::CreateIntent;
+use crate::transactions::data::intents::EntityMutationIntent as Entity;
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::intents::RelationMutationIntent as Relation;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::state_view::InvariantStateView;
 
 /// Selection is not a metadata-owner grant, even when its old payload is genuine.
@@ -47,7 +48,7 @@ pub(crate) fn ordinary_plan(
     registry: &RelationalSchemaRegistry,
     before: &InvariantStateView<'_>,
     intents: &[MutationIntent],
-    mode: Option<crate::mvcc::RelationalMaterializationTransactionMode>,
+    mode: Option<crate::mvcc::transaction::intent::materialization_mode::RelationalMaterializationTransactionMode>,
 ) -> Result<(), TransactionCommitError> {
     if registry.current_publication_storage.is_none()
         && !registry
@@ -112,12 +113,12 @@ pub(crate) fn ordinary_plan(
                     )
                 }
                 MutationIntent::Materialization(value) => {
-                    let physical_owner = matches!(mode, Some(crate::mvcc::RelationalMaterializationTransactionMode::Suspend)) && value.is_suspension()
-                        || matches!(mode, Some(crate::mvcc::RelationalMaterializationTransactionMode::Rematerialize)) && value.is_rematerialization();
+                    let physical_owner = matches!(mode, Some(crate::mvcc::transaction::intent::materialization_mode::RelationalMaterializationTransactionMode::Suspend)) && value.is_suspension()
+                        || matches!(mode, Some(crate::mvcc::transaction::intent::materialization_mode::RelationalMaterializationTransactionMode::Rematerialize)) && value.is_rematerialization();
                     if physical_owner { continue; }
                     let kind = match value.record() {
-                        crate::transactions::data::RecordRef::Entity(id) => before.entity_metadata(id).map(|entry| entry.kind_id),
-                        crate::transactions::data::RecordRef::Relation(id) => before.relation_metadata(id).map(|entry| entry.kind_id),
+                        crate::transactions::data::primitives::RecordRef::Entity(id) => before.entity_metadata(id).map(|entry| entry.kind_id),
+                        crate::transactions::data::primitives::RecordRef::Relation(id) => before.relation_metadata(id).map(|entry| entry.kind_id),
                     };
                     (None, kind)
                 }
@@ -125,13 +126,13 @@ pub(crate) fn ordinary_plan(
             if declared.into_iter().chain(record).any(private) {
                 if registry.current_publication_storage.is_some() {
                     let target=match intent {
-                        MutationIntent::Entity(Entity::UpdateFields(v))=>Some(crate::transactions::data::RecordRef::Entity(v.entity_id)),
-                        MutationIntent::Entity(Entity::ApplyAspectPatch(v))=>Some(crate::transactions::data::RecordRef::Entity(v.entity_id)),
-                        MutationIntent::Entity(Entity::Delete(v))=>Some(crate::transactions::data::RecordRef::Entity(v.entity_id)),
-                        MutationIntent::Entity(Entity::Replace(v))=>Some(crate::transactions::data::RecordRef::Entity(v.entity_id)),
-                        MutationIntent::Relation(Relation::UpdateEndpoints(v))=>Some(crate::transactions::data::RecordRef::Relation(v.relation_id)),
-                        MutationIntent::Relation(Relation::ApplyAspectPatch(v))=>Some(crate::transactions::data::RecordRef::Relation(v.relation_id)),
-                        MutationIntent::Relation(Relation::Delete(v))=>Some(crate::transactions::data::RecordRef::Relation(v.relation_id)),
+                        MutationIntent::Entity(Entity::UpdateFields(v))=>Some(crate::transactions::data::primitives::RecordRef::Entity(v.entity_id)),
+                        MutationIntent::Entity(Entity::ApplyAspectPatch(v))=>Some(crate::transactions::data::primitives::RecordRef::Entity(v.entity_id)),
+                        MutationIntent::Entity(Entity::Delete(v))=>Some(crate::transactions::data::primitives::RecordRef::Entity(v.entity_id)),
+                        MutationIntent::Entity(Entity::Replace(v))=>Some(crate::transactions::data::primitives::RecordRef::Entity(v.entity_id)),
+                        MutationIntent::Relation(Relation::UpdateEndpoints(v))=>Some(crate::transactions::data::primitives::RecordRef::Relation(v.relation_id)),
+                        MutationIntent::Relation(Relation::ApplyAspectPatch(v))=>Some(crate::transactions::data::primitives::RecordRef::Relation(v.relation_id)),
+                        MutationIntent::Relation(Relation::Delete(v))=>Some(crate::transactions::data::primitives::RecordRef::Relation(v.relation_id)),
                         _=>None,
                     };
                     return work.invalid(super::preparation::PlanDenial::CurrentMetadataWrite{kind:declared.or(record).expect("a private declared or retained kind matched"),record:target});

@@ -1,7 +1,7 @@
 use super::InvariantPreparationControl;
-use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
-use crate::transactions::data::MergedCommitPlan;
-use crate::validation::data::InvariantPlanContract;
+use crate::authority::commit::semantic_plan::meaning::RelationalSemanticPlan;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::validation::data::contracts::InvariantPlanContract;
 use std::collections::BTreeMap;
 
 use super::relation_integrity_scopes::prepare_relation_integrity_scopes;
@@ -36,7 +36,7 @@ impl<'state> InvariantExecutionRequest<'state> {
             &InvariantPreparationControl::new(
                 crate::mvcc::RelationalOperationControl::uninterrupted(),
                 worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                crate::mvcc::RelationalInterruptionBoundary::ProposalValidation,
+                crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
             ),
         )
         .expect("uninterrupted System scope preparation")
@@ -52,7 +52,10 @@ impl<'state> InvariantExecutionRequest<'state> {
         merged_plan: Option<&'state MergedCommitPlan>,
         plan_contract: Option<InvariantPlanContract>,
         control: &InvariantPreparationControl<'_, '_>,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         Self::from_semantic_plan(
             execution,
             profile,
@@ -76,7 +79,10 @@ impl<'state> InvariantExecutionRequest<'state> {
         semantic_plan: Option<RelationalSemanticPlan<'state>>,
         plan_contract: Option<InvariantPlanContract>,
         control: &InvariantPreparationControl<'_, '_>,
-    ) -> Result<Self, crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        Self,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         control.check()?;
         debug_assert!(
             /* Proof: Request construction is private to the invariant planner, which selects each profile by supports_observation before building its packet. Unsupported registrations are refused at runtime construction. */
@@ -155,14 +161,14 @@ fn relation_scope_requirements_for(
     control: &InvariantPreparationControl<'_, '_>,
 ) -> Result<
     BTreeMap<crate::identity::data::KindId, super::RelationScopeRequirement>,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     runtime.schema_contract_runtime.invariant_points[profile.execution_point() as usize]
         .iter()
         .filter(|registration| {
             profile != InvariantRequestProfile::ProposedState
                 || registration.execution_point
-                    != crate::validation::data::InvariantExecutionPoint::CommitBoundary
+                    != crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary
         })
         .try_fold(BTreeMap::new(), |mut requirements, registration| {
             control.check()?;

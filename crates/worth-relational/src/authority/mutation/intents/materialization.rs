@@ -2,9 +2,10 @@ mod relation_rematerialization;
 use crate::authority::mutation::outcomes::{MutationEvent, MutationOutcome, RecordMutation};
 use crate::authority::mutation::MutationWorkspace;
 use crate::storage::substrate::{EntityExtra, RelationEndpoints, RelationExtra};
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, MaterializationMutationIntent, RecordAspectPatchTarget,
-};
+use crate::transactions::data::intents::MaterializationMutationIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
 use relation_rematerialization::rematerialize_relation;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
@@ -14,7 +15,10 @@ use super::{record_aspect_patch, relation_endpoint_candidate};
 pub(super) fn apply(
     intent: &MaterializationMutationIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     match intent {
         MaterializationMutationIntent::SuspendEntity(intent) => {
             suspend_entity(intent.entity_id, workspace)
@@ -34,27 +38,30 @@ pub(super) fn apply(
 fn suspend_entity(
     entity_id: crate::identity::data::EntityId,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let mut unavailable =
         EntityExtra::empty_for_request(&workspace.execution()).map_err(|cause| {
-            crate::transactions::data::TransactionCommitError::execution(cause.into())
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
         })?;
     let (kind_id, old_state) = workspace.with_context(|context| {
         let partition = context
             .state
             .get_partition_mut_for_request(entity_id.partition_id, &context.execution)
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         let slot = partition.entity_arena.get(&entity_id).ok_or_else(|| {
             materialization_conflict(
-                crate::transactions::data::RecordRef::Entity(entity_id),
+                crate::transactions::data::primitives::RecordRef::Entity(entity_id),
                 "entity suspension requires its exact live identity",
             )
         })?;
         let kind_id = slot.kind_id().ok_or_else(|| {
             materialization_conflict(
-                crate::transactions::data::RecordRef::Entity(entity_id),
+                crate::transactions::data::primitives::RecordRef::Entity(entity_id),
                 "entity suspension requires retained kind identity",
             )
         })?;
@@ -69,11 +76,11 @@ fn suspend_entity(
             )
             .map_err(|denial| match denial {
                 crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
-                    crate::transactions::data::TransactionCommitError::execution(cause.into())
+                    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
                 }
                 crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => {
                     materialization_conflict(
-                        crate::transactions::data::RecordRef::Entity(entity_id),
+                        crate::transactions::data::primitives::RecordRef::Entity(entity_id),
                         detail,
                     )
                     .into()
@@ -87,9 +94,9 @@ fn suspend_entity(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>((kind_id, old_state))
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>((kind_id, old_state))
     })?;
     let mut outcome = MutationOutcome::with_capacity(&workspace.execution(), 1, 1)?;
     outcome.record_change(
@@ -110,33 +117,36 @@ fn suspend_entity(
 fn suspend_relation(
     relation_id: crate::identity::data::RelationId,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let unavailable =
         RelationExtra::empty_for_request(&workspace.execution()).map_err(|cause| {
-            crate::transactions::data::TransactionCommitError::execution(cause.into())
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
         })?;
     let (kind_id, endpoints, old_state) = workspace.with_context(|context| {
         let partition = context
             .state
             .get_partition_mut_for_request(relation_id.partition_id, &context.execution)
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         let slot = partition.relation_arena.get(&relation_id).ok_or_else(|| {
             materialization_conflict(
-                crate::transactions::data::RecordRef::Relation(relation_id),
+                crate::transactions::data::primitives::RecordRef::Relation(relation_id),
                 "relation suspension requires its exact live identity",
             )
         })?;
         let kind_id = slot.kind_id().ok_or_else(|| {
             materialization_conflict(
-                crate::transactions::data::RecordRef::Relation(relation_id),
+                crate::transactions::data::primitives::RecordRef::Relation(relation_id),
                 "relation suspension requires retained kind identity",
             )
         })?;
         let endpoints = slot.extra().endpoints.clone().ok_or_else(|| {
             materialization_conflict(
-                crate::transactions::data::RecordRef::Relation(relation_id),
+                crate::transactions::data::primitives::RecordRef::Relation(relation_id),
                 "live relation suspension requires exact endpoints",
             )
         })?;
@@ -150,11 +160,11 @@ fn suspend_relation(
             )
             .map_err(|denial| match denial {
                 crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
-                    crate::transactions::data::TransactionCommitError::execution(cause.into())
+                    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
                 }
                 crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => {
                     materialization_conflict(
-                        crate::transactions::data::RecordRef::Relation(relation_id),
+                        crate::transactions::data::primitives::RecordRef::Relation(relation_id),
                         detail,
                     )
                     .into()
@@ -168,9 +178,9 @@ fn suspend_relation(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>((kind_id, endpoints, old_state))
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>((kind_id, endpoints, old_state))
     })?;
     let mut outcome = MutationOutcome::with_capacity(&workspace.execution(), 1, 1)?;
     outcome.record_change(
@@ -191,9 +201,12 @@ fn suspend_relation(
 }
 
 fn rematerialize_entity(
-    intent: &crate::transactions::data::RematerializeEntityIntent,
+    intent: &crate::transactions::data::intents::materialization_intent::RematerializeEntityIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let target = RecordAspectPatchTarget::EntityCreation {
         kind_id: intent.kind_id,
     };
@@ -213,7 +226,7 @@ fn rematerialize_entity(
             .state
             .get_partition_mut_for_request(intent.entity_id.partition_id, &context.execution)
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         let lineage_id = partition
             .entity_arena
@@ -235,14 +248,14 @@ fn rematerialize_entity(
             .map_err(|denial| {
                 let detail = match denial {
                     crate::storage::substrate::MetadataWriteDenial::Request(cause) => {
-                        return crate::transactions::data::TransactionCommitError::execution(
+                        return crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(
                             cause.into(),
                         )
                     }
                     crate::storage::substrate::MetadataWriteDenial::Invalid(detail) => detail,
                 };
                 materialization_conflict(
-                    crate::transactions::data::RecordRef::Entity(intent.entity_id),
+                    crate::transactions::data::primitives::RecordRef::Entity(intent.entity_id),
                     detail,
                 )
                 .into()
@@ -255,9 +268,9 @@ fn rematerialize_entity(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>(())
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(())
     })?;
     let state = workspace.with_context(|context| {
         context
@@ -284,13 +297,13 @@ fn rematerialize_entity(
 }
 
 fn materialization_conflict(
-    record: crate::transactions::data::RecordRef,
+    record: crate::transactions::data::primitives::RecordRef,
     detail: impl Into<String>,
 ) -> CommitConflict {
     CommitConflict::new(ConflictClass::MutationStateInconsistency {
         detail: detail.into(),
         evidence:
-            crate::transactions::data::MutationStateInconsistencyEvidence::MaterializationTransition {
+            crate::transactions::data::outcomes::conflict_class::MutationStateInconsistencyEvidence::MaterializationTransition {
                 record,
             },
     })

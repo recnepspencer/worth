@@ -7,8 +7,8 @@ use crate::authorization::{
     RelationalAuthorizationTraversalDirection,
 };
 use crate::identity::data::EntityId;
-use crate::runtime::RelationalRuntime;
-use crate::visibility::materialization::read_records::VisibilityProjectionView;
+use crate::schema::data::AspectContractPlanCatalog;
+use crate::visibility::materialization::read_records::projection::VisibilityProjectionView;
 use std::collections::BTreeSet;
 
 mod constraints;
@@ -19,14 +19,14 @@ use state::{Context, State, Witness};
 
 pub(in crate::authorization) fn evaluate_path<A: RelationalAuthorizationObservationAdmission>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     view: &VisibilityProjectionView,
     plan: &RelationalAuthorizationObservationPlan,
     path: &RelationalAuthorizationPathPlan,
     counters: &mut RelationalAuthorizationObservationCounters,
     admission: &mut A,
 ) -> ObservationResult<RelationalAuthorizationPathObservation, A> {
-    let context = Context { runtime, view };
+    let context = Context { aspect_plans, view };
     let mut state = State::new(plan.principal(), counters, admission)?;
     admission::ordered_insert::<A, Witness>(
         state.admission,

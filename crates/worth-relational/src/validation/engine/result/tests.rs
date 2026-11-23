@@ -1,11 +1,16 @@
 use super::failures::InvariantFailure;
 use crate::diagnostics::data::DiagnosticCode;
-use crate::publication::bundle::PublicationStage;
-use crate::validation::data::{
-    InvariantClass, InvariantCostClass, InvariantDecisionKind, InvariantFailureEffect,
-    InvariantGroupSet, InvariantReportedRule, InvariantRule, InvariantVerdict, InvariantViolation,
-    InvariantViolationFields,
-};
+use crate::publication::bundle::publication_status::PublicationStage;
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::execution::InvariantDecisionKind;
+use crate::validation::data::execution::InvariantFailureEffect;
+use crate::validation::data::execution::InvariantReportedRule;
+use crate::validation::data::execution::InvariantVerdict;
+use crate::validation::data::groups::InvariantCostClass;
+use crate::validation::data::groups::InvariantGroupSet;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::results::InvariantViolationFields;
+use crate::validation::data::rules::InvariantRule;
 use crate::validation::engine::{
     InvariantExecutionDisposition, InvariantExecutionMetadata, InvariantObservationKind,
     InvariantPlanScopeClass, InvariantProofBoundarySummary, InvariantScopeWideningCause,
@@ -14,7 +19,7 @@ use crate::validation::engine::{
 #[test]
 fn invariant_failure_converts_to_commit_and_publication_errors() {
     let failure = InvariantFailure::new(
-        crate::validation::data::InvariantExecutionPoint::SnapshotPublication,
+        crate::validation::data::execution::InvariantExecutionPoint::SnapshotPublication,
         InvariantFailureEffect::BlockPublication,
         InvariantViolation {
             class: InvariantClass::SnapshotAudit,
@@ -51,12 +56,12 @@ fn invariant_failure_converts_to_commit_and_publication_errors() {
 #[test]
 fn skipped_result_retains_execution_metadata_without_checks() {
     let metadata = InvariantExecutionMetadata::new(
-        crate::validation::data::InvariantExecutionPoint::CommitBoundary,
+        crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
         InvariantObservationKind::Committed,
         crate::identity::data::VersionId(2),
         crate::identity::data::VersionId(1),
-        crate::validation::data::InvariantGroupSet::from_mask(0b111),
-        crate::validation::data::InvariantGroupSet::empty(),
+        crate::validation::data::groups::InvariantGroupSet::from_mask(0b111),
+        crate::validation::data::groups::InvariantGroupSet::empty(),
         InvariantCostClass::Partition,
         InvariantExecutionDisposition::SkippedByMayBreakMask,
         None,
@@ -85,7 +90,7 @@ fn skipped_result_retains_execution_metadata_without_checks() {
 #[test]
 fn executed_result_builds_decision_log_from_results() {
     let metadata = InvariantExecutionMetadata::new(
-        crate::validation::data::InvariantExecutionPoint::CommitBoundary,
+        crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
         InvariantObservationKind::Committed,
         crate::identity::data::VersionId(2),
         crate::identity::data::VersionId(2),
@@ -102,16 +107,19 @@ fn executed_result_builds_decision_log_from_results() {
     );
     let result = crate::validation::engine::InvariantExecutionResult::executed(
         metadata,
-        vec![crate::validation::data::InvariantCheckResult {
-            execution_point: crate::validation::data::InvariantExecutionPoint::CommitBoundary,
-            failure_effect: InvariantFailureEffect::BlockCommit,
-            rule: InvariantReportedRule::Native(InvariantRule::MaxMergedIntents(1)),
-            witness: crate::validation::data::InvariantWitnessKey::pass(),
-            groups: InvariantGroupSet::empty(),
-            cost: InvariantCostClass::Touched,
-            custom_provenance: None,
-            verdict: InvariantVerdict::Pass,
-        }],
+        vec![
+            crate::validation::engine::result::check_result::InvariantCheckResult {
+                execution_point:
+                    crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
+                failure_effect: InvariantFailureEffect::BlockCommit,
+                rule: InvariantReportedRule::Native(InvariantRule::MaxMergedIntents(1)),
+                witness: crate::validation::data::execution::InvariantWitnessKey::pass(),
+                groups: InvariantGroupSet::empty(),
+                cost: InvariantCostClass::Touched,
+                custom_provenance: None,
+                verdict: InvariantVerdict::Pass,
+            },
+        ],
     );
 
     assert_eq!(result.decision_log().len(), 1);
@@ -124,7 +132,7 @@ fn executed_result_builds_decision_log_from_results() {
 #[test]
 fn proof_boundary_artifact_uses_typed_diagnostic_labels() {
     let metadata = InvariantExecutionMetadata::new(
-        crate::validation::data::InvariantExecutionPoint::CommitBoundary,
+        crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
         InvariantObservationKind::Committed,
         crate::identity::data::VersionId(2),
         crate::identity::data::VersionId(2),
@@ -165,7 +173,7 @@ fn proof_boundary_artifact_uses_typed_diagnostic_labels() {
 #[test]
 fn failure_artifact_preserves_failure_effect_and_nested_proof_boundary() {
     let metadata = InvariantExecutionMetadata::new(
-        crate::validation::data::InvariantExecutionPoint::CommitBoundary,
+        crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
         InvariantObservationKind::Committed,
         crate::identity::data::VersionId(2),
         crate::identity::data::VersionId(2),
@@ -193,19 +201,22 @@ fn failure_artifact_preserves_failure_effect_and_nested_proof_boundary() {
     };
     let result = crate::validation::engine::InvariantExecutionResult::executed(
         metadata,
-        vec![crate::validation::data::InvariantCheckResult {
-            execution_point: crate::validation::data::InvariantExecutionPoint::CommitBoundary,
-            failure_effect: InvariantFailureEffect::BlockCommit,
-            rule: InvariantReportedRule::Native(InvariantRule::MaxMergedIntents(1)),
-            witness: crate::validation::data::InvariantWitnessKey::pass(),
-            groups: InvariantGroupSet::empty(),
-            cost: InvariantCostClass::Touched,
-            custom_provenance: None,
-            verdict: InvariantVerdict::Violation(violation.clone()),
-        }],
+        vec![
+            crate::validation::engine::result::check_result::InvariantCheckResult {
+                execution_point:
+                    crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
+                failure_effect: InvariantFailureEffect::BlockCommit,
+                rule: InvariantReportedRule::Native(InvariantRule::MaxMergedIntents(1)),
+                witness: crate::validation::data::execution::InvariantWitnessKey::pass(),
+                groups: InvariantGroupSet::empty(),
+                cost: InvariantCostClass::Touched,
+                custom_provenance: None,
+                verdict: InvariantVerdict::Violation(violation.clone()),
+            },
+        ],
     );
     let failure = InvariantFailure::new(
-        crate::validation::data::InvariantExecutionPoint::CommitBoundary,
+        crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary,
         InvariantFailureEffect::BlockCommit,
         violation,
     );
@@ -213,7 +224,7 @@ fn failure_artifact_preserves_failure_effect_and_nested_proof_boundary() {
 
     assert_eq!(
         artifact.execution_point(),
-        crate::validation::data::InvariantExecutionPoint::CommitBoundary
+        crate::validation::data::execution::InvariantExecutionPoint::CommitBoundary
     );
     assert_eq!(
         artifact.failure_effect(),

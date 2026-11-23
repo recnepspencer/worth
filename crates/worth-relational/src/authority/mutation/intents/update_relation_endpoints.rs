@@ -7,10 +7,12 @@ use crate::authority::mutation::MutationWorkspace;
 use crate::authority::mutation::{AdjacencyDelta, AdjacencyDeltaKind};
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::substrate::RelationEndpoints;
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, EntityReference, RecordAspectPatchTarget,
-    RelationEndpointUpdateMissingState, UpdateRelationEndpointsIntent,
-};
+use crate::transactions::data::intents::mutation_intent::UpdateRelationEndpointsIntent;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
+use crate::transactions::data::outcomes::conflict_class::RelationEndpointUpdateMissingState;
+use crate::transactions::data::primitives::EntityReference;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 use super::{record_aspect_patch, relation_endpoint_candidate};
@@ -18,7 +20,10 @@ use super::{record_aspect_patch, relation_endpoint_candidate};
 pub(super) fn apply(
     intent: &UpdateRelationEndpointsIntent,
     workspace: &mut MutationWorkspace<'_>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let version_id = workspace.version_id();
     let slot = intent.relation_id.slot_index();
     let source = resolve_relation_endpoint(workspace, &intent.source, "source")?;
@@ -79,7 +84,7 @@ pub(super) fn apply(
                     &context.execution,
                 )
                 .map_err(|cause| {
-                    crate::transactions::data::TransactionCommitError::execution(cause.into())
+                    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
                 })?;
             apply_adjacency_deltas_for_request(
                 &context.execution,
@@ -101,7 +106,7 @@ pub(super) fn apply(
                 ],
                 version_id,
             )?;
-            Ok::<_, crate::transactions::data::TransactionCommitError>((
+            Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>((
                 kind_id,
                 old_endpoints,
                 old_authoritative_aspect_state,
@@ -140,7 +145,7 @@ pub(super) fn apply(
             .state
             .get_partition_mut_for_request(intent.relation_id.partition_id, &context.execution)
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
         partition
             .relation_arena
@@ -151,10 +156,10 @@ pub(super) fn apply(
                 version_id,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?
             .ok_or_else(|| missing(intent, RelationEndpointUpdateMissingState::Slot))?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>(())
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(())
     })?;
 
     let authoritative_aspect_state = workspace.with_context(|context| {

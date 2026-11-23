@@ -76,7 +76,7 @@ pub(super) struct PreparedBody {
     pub(super) data: DerivedRelationData,
     pub(super) steps: Vec<DerivedRelationWalkStep>,
     // Backing precedes its original meter so its reservation survives last drop.
-    pub(super) _retention: crate::validation::CustomInvariantWorkMeter,
+    pub(super) _retention: crate::validation::custom_rule::CustomInvariantWorkMeter,
 }
 
 impl PreparedDerivedRelationRead {

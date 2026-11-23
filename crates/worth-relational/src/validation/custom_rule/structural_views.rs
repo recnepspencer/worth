@@ -14,14 +14,14 @@ pub use crate::validation::data::structural_read::{StructuralReadError, Structur
 pub struct StructuralAspectStateView<'runtime> {
     state_view: InvariantStateView<'runtime>,
     work: super::CustomInvariantWorkMeter,
-    access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+    access: std::sync::Arc<crate::validation::data::descriptor::CustomInvariantAccessContract>,
 }
 
 impl<'runtime> StructuralAspectStateView<'runtime> {
     pub(crate) fn new(
         state_view: InvariantStateView<'runtime>,
         work: super::CustomInvariantWorkMeter,
-        access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+        access: std::sync::Arc<crate::validation::data::descriptor::CustomInvariantAccessContract>,
     ) -> Self {
         Self {
             state_view,
@@ -80,7 +80,7 @@ pub struct StructuralRelationView<'runtime> {
     state_view: InvariantStateView<'runtime>,
     execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
     work: super::CustomInvariantWorkMeter,
-    access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+    access: std::sync::Arc<crate::validation::data::descriptor::CustomInvariantAccessContract>,
     aggregate: Option<(
         crate::aggregate_identity::AggregateInvocation<'runtime>,
         bool,
@@ -134,7 +134,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
         state_view: InvariantStateView<'runtime>,
         execution: worth_execution::ExecutionRequest<'runtime, 'runtime>,
         work: super::CustomInvariantWorkMeter,
-        access: std::sync::Arc<crate::validation::data::CustomInvariantAccessContract>,
+        access: std::sync::Arc<crate::validation::data::descriptor::CustomInvariantAccessContract>,
     ) -> Self {
         Self {
             state_view,

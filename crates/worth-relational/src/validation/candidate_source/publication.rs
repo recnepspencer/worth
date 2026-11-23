@@ -49,8 +49,11 @@ impl super::NativeManagedSourceInterpretation {
     pub(crate) fn prepare_publication_loan(
         &self,
         binding: &crate::mvcc::publication::CandidateCompanionBinding,
-    ) -> Result<ManagedIndexSourcePublication<'_>, crate::mvcc::CompanionPreflightStop> {
-        use crate::mvcc::CompanionPreflightStop as Stop;
+    ) -> Result<
+        ManagedIndexSourcePublication<'_>,
+        crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop,
+    > {
+        use crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop as Stop;
         let prepared = self.prepared.get().ok_or(Stop::ManagedSourceNotPrepared)?;
         let basis = self.physical_basis();
         if basis.identity().runtime_instance_id() != binding.runtime_instance_id

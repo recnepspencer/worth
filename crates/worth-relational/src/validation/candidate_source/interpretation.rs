@@ -2,7 +2,7 @@
 use crate::branch::basis::AdmittedRelationalBranchBasis;
 pub(crate) use crate::branch::materialization::source::NativeMaterializationSource;
 use crate::identity::data::VersionId;
-use crate::mvcc::RelationalMaterializationTransactionMode;
+use crate::mvcc::transaction::intent::materialization_mode::RelationalMaterializationTransactionMode;
 use std::sync::{Arc, Weak};
 mod content;
 mod restoration;
@@ -120,7 +120,7 @@ impl NativeManagedSourceInterpretation {
             .ok_or(Denial::MissingParticipant)?;
         if generation != prepared.registration_generation {
             return Err(Denial::Publication(
-                crate::mvcc::CompanionPreflightStop::RegistrationChanged,
+                crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop::RegistrationChanged,
             ));
         }
         Ok(())

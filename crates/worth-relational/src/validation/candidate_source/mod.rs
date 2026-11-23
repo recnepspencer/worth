@@ -17,6 +17,7 @@ mod preparation;
 mod preparation_group;
 pub(crate) use preparation_group::SourcePreparationGroup;
 mod projection;
+pub(crate) use projection::selected_rows;
 pub(crate) mod provider_failure;
 pub use provider_failure::ManagedIndexSourceProviderFailure;
 mod publication;

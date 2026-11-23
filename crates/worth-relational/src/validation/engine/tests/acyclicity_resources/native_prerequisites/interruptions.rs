@@ -1,7 +1,7 @@
 //! Stops at the real native stage cannot enter the installed custom hook.
 use super::*;
 use crate::execution::RelationalExecutionDenialCause as Cause;
-use crate::transactions::data::CommitExecutionDenialKind;
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
 use crate::validation::engine::InvariantRuntimeView;
 use crate::validation::execution::InvariantStage;
 use worth_execution::CancellationSource;
@@ -83,7 +83,7 @@ fn the_checked_native_worker_exhausts_before_custom_preparation_and_the_funded_t
         .flat_map(|envelope| &envelope.results)
         .all(|worker| matches!(
             worker.result.verdict,
-            crate::validation::data::InvariantVerdict::Pass
+            crate::validation::data::execution::InvariantVerdict::Pass
         )));
     assert_eq!(
         charges.len(),

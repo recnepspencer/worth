@@ -1,8 +1,9 @@
 use crate::diagnostics::data::DiagnosticCode;
 use crate::schema::data::LoweredCardinalityMinimumContract;
-use crate::validation::data::{
-    InvariantClass, InvariantViolation, InvariantViolationFields, RelationCardinalityBoundary,
-};
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::results::InvariantViolationFields;
+use crate::validation::data::results::RelationCardinalityBoundary;
 
 use super::super::super::context::InvariantExecutionContext;
 use super::super::common::{canonicalize_violations, relation_violation};

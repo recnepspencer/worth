@@ -3,7 +3,7 @@ use super::*;
 
 #[test]
 fn checked_custom_preparation_reads_declared_structural_state() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let target = Arc::new(OnceLock::new());
@@ -50,7 +50,7 @@ fn checked_custom_preparation_reads_declared_structural_state() {
     assert_eq!(evaluation_visits.load(Ordering::SeqCst), 1);
     assert!(matches!(
         result.results()[0].verdict,
-        crate::validation::data::InvariantVerdict::Pass
+        crate::validation::data::execution::InvariantVerdict::Pass
     ));
 }
 
@@ -92,9 +92,9 @@ fn checked_custom_preparation_observes_cancellation_mid_scan() {
     assert!(matches!(
         result,
         Err(
-            crate::transactions::data::TransactionCommitError::Execution {
-                denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
+                denial: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                    kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                         crate::execution::RelationalExecutionDenialCause::Cancelled
                     ),
                     ..
@@ -141,11 +141,11 @@ fn checked_custom_preparation_denies_memory_before_large_scratch_claim() {
     assert_eq!(evaluation_visits.load(Ordering::SeqCst), 0);
     // The claim is charged to the lease before it is made, so the request's
     // own memory policy refuses it: the claim alone exceeds the request.
-    let Err(crate::transactions::data::TransactionCommitError::Execution {
+    let Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
         denial:
-            crate::transactions::data::CommitExecutionDenial {
+            crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
                 kind:
-                    crate::transactions::data::CommitExecutionDenialKind::Cause(
+                    crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                         crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
                             requested,
                             admitted,

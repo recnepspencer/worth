@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
     for leased in [false, true] {
-        let host_request = crate::test_execution_policy::serial_request();
+        let host_request = crate::execution::test_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
         let cancellation = CancellationSource::new();
@@ -44,7 +44,7 @@ fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
             None,
         );
         let serial =
-            crate::test_execution_policy::serial_request().with_cancellation(cancellation.token());
+            crate::execution::test_policy::serial_request().with_cancellation(cancellation.token());
         let original = if leased {
             worth_execution::ExecutionRequest::leased(&lease)
         } else {
@@ -61,9 +61,9 @@ fn checked_custom_evaluation_observes_cancellation_during_structural_views() {
         assert!(matches!(
             result,
             Err(
-                crate::transactions::data::TransactionCommitError::Execution {
-                    denial: crate::transactions::data::CommitExecutionDenial {
-                        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
+                    denial: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                             crate::execution::RelationalExecutionDenialCause::Cancelled
                         ),
                         ..

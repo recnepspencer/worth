@@ -1,10 +1,11 @@
 use crate::diagnostics::data::DiagnosticCode;
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::substrate::{EntityRecordKind, RecordKind, RelationRecordKind, SlotView};
-use crate::validation::data::{
-    InvariantClass, InvariantViolation, InvariantViolationFields, RecordKindTag,
-    StorageInconsistencyScan,
-};
+use crate::validation::data::execution::InvariantClass;
+use crate::validation::data::results::InvariantViolation;
+use crate::validation::data::results::InvariantViolationFields;
+use crate::validation::data::results::StorageInconsistencyScan;
+use crate::validation::data::rules::RecordKindTag;
 
 use super::super::super::context::InvariantExecutionContext;
 use super::super::common::{storage_inconsistency_violation, StorageInconsistencyContext};

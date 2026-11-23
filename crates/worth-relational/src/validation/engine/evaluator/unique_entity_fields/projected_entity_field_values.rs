@@ -6,7 +6,7 @@ use worth_foundational::facade::{
 use crate::identity::data::KindId;
 use crate::schema::data::{LoweredAspectContractBinding, LoweredAspectContractPlan};
 use crate::validation::engine::state_view::VisibleEntityMetadata;
-use crate::visibility::materialization::read_records::ProjectionAspectScope;
+use crate::visibility::materialization::read_records::projection::contracts::ProjectionAspectScope;
 
 use super::super::super::context::InvariantExecutionContext;
 

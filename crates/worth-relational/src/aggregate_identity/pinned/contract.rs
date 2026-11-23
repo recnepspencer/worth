@@ -1,6 +1,6 @@
 //! Resolve only the actual selected root's aggregate contract.
 use super::*;
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::schema::data::AggregateIdentityContractDeclaration;
 
 pub(super) fn resolve<'root>(

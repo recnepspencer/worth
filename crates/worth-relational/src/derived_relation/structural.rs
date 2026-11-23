@@ -9,9 +9,9 @@ use super::{DerivedRelationDenial as DefinitionDenial, DerivedRelationHandle as 
 use super::{DerivedRelationReadDenial as Denial, DerivedRelationReads as Reads};
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, KindId};
-use crate::validation::data::{
-    StructuralReadError, StructuralRelationRecord, StructuralRelationView,
-};
+use crate::validation::custom_rule::structural_views::StructuralRelationView;
+use crate::validation::data::structural_read::StructuralReadError;
+use crate::validation::data::structural_read::StructuralRelationRecord;
 use std::sync::Arc;
 
 mod changes;

@@ -10,6 +10,7 @@ use crate::visibility::snapshot_states::{
 };
 use std::{collections::BTreeMap, sync::Arc};
 
+mod aggregate_reads;
 mod candidate;
 #[cfg(test)]
 mod commit_tests;

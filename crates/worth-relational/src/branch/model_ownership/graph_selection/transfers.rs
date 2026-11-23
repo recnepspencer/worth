@@ -11,20 +11,20 @@ pub(super) struct RestorationBoundary {
     pub _memory: Vec<ExecutionMemoryReservation>,
 }
 pub(super) fn prepare(
-    native: &RelationalRuntime,
+    selected_history: &HistorySubsystem,
     execution: &ExecutionRequest<'_, '_>,
     context: &mut MapKernelContext<'_, '_>,
     entities: &RelationalOwnedModelEntityBoundary,
     installed: &RelationalModelOwnership,
 ) -> Result<RestorationBoundary, Denial> {
     let ((participants, current_edges), mut memory) = basis::read(
-        native,
+        selected_history.runtime_instance_id,
         execution,
         entities.current_basis(),
         context,
         |read| {
             let participants = history::participants(
-                native,
+                selected_history,
                 execution,
                 entities.current_basis(),
                 entities.model(),
@@ -41,7 +41,7 @@ pub(super) fn prepare(
         },
     )?;
     let ((current, selected, transferred, participants), selected_memory) = basis::read(
-        native,
+        selected_history.runtime_instance_id,
         execution,
         entities.selected_basis(),
         context,
@@ -127,7 +127,7 @@ pub(super) fn prepare(
     let mut current = current;
     let mut participants = participants;
     let ((), current_memory) = basis::read(
-        native,
+        selected_history.runtime_instance_id,
         execution,
         entities.current_basis(),
         context,

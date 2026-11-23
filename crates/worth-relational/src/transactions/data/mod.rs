@@ -1,7 +1,7 @@
 pub(crate) mod aspect_field_patch;
 mod aspect_reports;
 pub(crate) mod aspect_traces;
-mod bulk_plan_digest;
+pub(crate) mod bulk_plan_digest;
 pub(crate) mod canonical_intent_key;
 pub(crate) mod commit_log;
 pub(crate) mod intents;

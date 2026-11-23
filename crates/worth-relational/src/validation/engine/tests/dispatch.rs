@@ -23,7 +23,9 @@ fn engine_skips_rules_when_request_groups_do_not_intersect() {
             InvariantObservation::committed(runtime.storage_access().current_edition()),
             runtime.current_version_id(),
             Some(&plan),
-            Some(crate::validation::data::InvariantPlanContract::from_merged_plan(&plan)),
+            Some(
+                crate::validation::data::contracts::InvariantPlanContract::from_merged_plan(&plan),
+            ),
         )
         .with_applicable_groups(InvariantGroupSet::of(InvariantGroup::LineageIntegrity)),
     );

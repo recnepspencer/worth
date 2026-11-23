@@ -3,8 +3,8 @@ use super::{
     traversal::{walk, Read},
     *,
 };
+use crate::validation::custom_rule::structural_views::StructuralPresenceDenial;
 use crate::validation::data::*;
-use crate::validation::StructuralPresenceDenial;
 use std::sync::Arc;
 
 impl RelationalModelOwnership {

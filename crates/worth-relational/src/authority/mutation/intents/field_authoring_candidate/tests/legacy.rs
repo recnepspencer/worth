@@ -8,9 +8,9 @@ use worth_foundational::facade::{
 };
 
 use crate::schema::data::LoweredAspectContractPlan;
-use crate::transactions::data::{
-    AspectFieldPatch, AspectFieldTargetRejectionReason, RecordAspectPatchDenial,
-};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::outcomes::conflict_class::AspectFieldTargetRejectionReason;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchDenial;
 
 use super::super::FieldAuthoringDomain;
 

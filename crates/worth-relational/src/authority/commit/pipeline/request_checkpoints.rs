@@ -73,9 +73,6 @@ mod split_publication;
 mod stage_counts;
 
 #[cfg(test)]
-mod work_account;
-
-#[cfg(test)]
 mod strategy_cancellation;
 
 impl From<worth_execution::WorkCeilingDenial> for TransactionCommitError {

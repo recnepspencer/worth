@@ -4,8 +4,11 @@ pub(super) fn stage_leased_entity_rows(
     intent: &BulkEntityCreateIntent,
     workspace: &mut MutationWorkspace<'_>,
     lease: &ExecutionResourceLease<'_>,
-) -> Result<Vec<crate::transactions::data::AspectFieldPatch>, TransactionCommitError> {
-    use crate::transactions::data::AspectFieldPatch;
+) -> Result<
+    Vec<crate::transactions::data::aspect_field_patch::AspectFieldPatch>,
+    TransactionCommitError,
+> {
+    use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
     let packet_count = coarse_preparation_packet_count(
         intent.field_patches.len(),
         TARGET_PREPARATION_ITEMS_PER_PACKET,

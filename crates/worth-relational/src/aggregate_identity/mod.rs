@@ -28,6 +28,7 @@ mod stored_read;
 mod stored_record;
 pub(crate) mod transition;
 pub use observations::AggregateReadObservations;
+pub(crate) use pinned::{read_aggregate_lineage, read_aggregate_scope};
 pub use pinned::{
     PinnedAggregateLineageRead, PinnedAggregateLineageScope, PinnedAggregateRead,
     PinnedAggregateReadDenial, PinnedAggregateReadDenialKind, PinnedAggregateReadScope,

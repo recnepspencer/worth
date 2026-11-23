@@ -12,7 +12,7 @@ mod footprint_client_keys;
 mod footprint_staging;
 mod index_row;
 mod inspection;
-mod intent;
+pub(crate) mod intent;
 mod intent_locus;
 pub(crate) mod normalized_plan;
 mod overlay;
@@ -32,7 +32,7 @@ mod read_view;
 mod region_demand;
 mod request_custody;
 mod savepoint;
-mod staging;
+pub(crate) mod staging;
 mod staging_storage;
 
 pub use admission::RelationalBranchTransactionAdmissionDenial;
@@ -58,5 +58,5 @@ pub(crate) use overlay::DetachedRelationalTransactionOverlay;
 #[cfg(test)]
 pub(crate) mod split_contacts;
 
-mod read_denial;
+pub(crate) mod read_denial;
 pub use read_denial::RelationalTransactionReadDenial;

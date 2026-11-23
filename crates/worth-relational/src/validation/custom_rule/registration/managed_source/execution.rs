@@ -10,11 +10,12 @@ use crate::validation::custom_rule::{
     CustomInvariantExecutionContext, CustomInvariantLeaseBudget, CustomInvariantScopePlanner,
     CustomInvariantWorkMeter,
 };
-use crate::validation::data::{
-    CustomInvariantExecutionError, CustomInvariantFailure, CustomInvariantPreparationError,
-    CustomInvariantSemanticIdentity, CustomInvariantVerdict,
-    PreparedCustomInvariantExecutionOutcome as Outcome,
-};
+use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
+use crate::validation::data::CustomInvariantExecutionError;
+use crate::validation::data::CustomInvariantFailure;
+use crate::validation::data::CustomInvariantPreparationError;
+use crate::validation::data::CustomInvariantVerdict;
+use crate::validation::data::PreparedCustomInvariantExecutionOutcome as Outcome;
 use crate::validation::engine::InvariantRuntimeView;
 use std::sync::Arc;
 

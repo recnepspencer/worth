@@ -65,9 +65,9 @@ pub(super) fn apply_relation_row<'a>(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>(relation_id)
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(relation_id)
     })?;
     if let Some(client_key) = intent.client_keys.get(row_index) {
         // Both staging adapters emit canonical ImportReductionKey row order.

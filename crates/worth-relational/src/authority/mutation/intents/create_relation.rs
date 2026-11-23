@@ -1,9 +1,11 @@
 use crate::authority::mutation::outcomes::MutationOutcome;
 use crate::authority::mutation::record_changes::allocate_relation;
 use crate::authority::mutation::MutationWorkspace;
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, EntityReference, RecordAspectPatchTarget, RelationSpec,
-};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::conflict_class::RecordAspectPatchTarget;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::RelationSpec;
 use worth_foundational::facade::PortablePatchReadmissionPurpose;
 
 use super::field_authoring_candidate::{self, FieldAuthoringDomain};
@@ -12,7 +14,10 @@ use super::{record_aspect_patch, relation_endpoint_candidate};
 pub(super) fn apply<'a>(
     spec: &'a RelationSpec,
     workspace: &mut MutationWorkspace<'a>,
-) -> Result<MutationOutcome, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    MutationOutcome,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let version_id = workspace.version_id();
     let source = resolve_entity_reference(workspace, &spec.source)?;
     let target = resolve_entity_reference(workspace, &spec.target)?;
@@ -65,9 +70,9 @@ pub(super) fn apply<'a>(
                 &context.execution,
             )
             .map_err(|cause| {
-                crate::transactions::data::TransactionCommitError::execution(cause.into())
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(cause.into())
             })?;
-        Ok::<_, crate::transactions::data::TransactionCommitError>(relation_id)
+        Ok::<_, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>(relation_id)
     })?;
     workspace.register_created_relation(
         spec.partition_id,

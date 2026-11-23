@@ -1,6 +1,7 @@
 //! A successful native prefix preserves the real subsequent preparation cause.
 use super::*;
-use crate::validation::data::{CustomInvariantFailurePhase, InvariantVerdict};
+use crate::validation::data::execution::InvariantVerdict;
+use crate::validation::data::results::custom_invariant_failure::CustomInvariantFailurePhase;
 use worth_execution::CancellationSource;
 
 #[test]
@@ -33,7 +34,7 @@ fn native_pass_preserves_custom_preparation_refusal_and_original_cancellation() 
             };
             assert_eq!(
                 denial.kind,
-                crate::transactions::data::CommitExecutionDenialKind::Cause(
+                crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                     crate::execution::RelationalExecutionDenialCause::Cancelled,
                 )
             );

@@ -4,16 +4,10 @@ use crate::authority::mutation::{
     apply_plan_with_publication_edges, MutationApplyDenial, MutationApplyOutcome,
 };
 use crate::branch::SelectedRelationalBranchRead;
-use crate::runtime::{
-    PendingRecordAllocations, PendingSymbolMeanings, RelationalPreparationRuntime, WorkingState,
-};
+use crate::runtime::{PendingSymbolMeanings, RelationalPreparationRuntime, WorkingState};
 use crate::transactions::data::{AuthoritativeApplyPlan, MergedCommitPlan};
 
-#[derive(Debug)]
-pub(crate) struct PendingMutationIdentities {
-    pub(crate) records: PendingRecordAllocations,
-    pub(crate) symbols: PendingSymbolMeanings,
-}
+pub(crate) use crate::authority::mutation::pending_identities::PendingMutationIdentities;
 
 mod aggregate_consequences;
 mod coupled_return;

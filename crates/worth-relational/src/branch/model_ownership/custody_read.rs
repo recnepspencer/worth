@@ -1,8 +1,9 @@
 //! Declared source-scope custody is observed by its existing Native fact reader.
 use super::*;
 use crate::identity::data::RelationId;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
 use crate::publication::ownership::CurrentPublicationRoster;
-use crate::{mvcc::RequiredOutputRolePosture as Posture, transactions::data::RecordRef};
+use crate::transactions::data::primitives::RecordRef;
 use std::rc::Rc;
 
 /// What the ownership walk consumes of one entity's authenticated roster:

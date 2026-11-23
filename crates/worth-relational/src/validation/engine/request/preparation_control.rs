@@ -1,5 +1,8 @@
-use crate::mvcc::{RelationalInterruptionBoundary, RelationalOperationControl};
-use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
+use crate::mvcc::RelationalOperationControl;
+use crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionAllocationPolicy;
 
 /// Control for complete scope preparation. It does not charge the scope's

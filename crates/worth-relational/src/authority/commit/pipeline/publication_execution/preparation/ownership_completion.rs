@@ -34,7 +34,7 @@ pub(super) fn complete(
                 let mut position =
                     crate::history::data::current_route_presence::completion::complete(
                         execution,
-                        runtime,
+                        &runtime.config.storage,
                         basis,
                         working,
                         identities,

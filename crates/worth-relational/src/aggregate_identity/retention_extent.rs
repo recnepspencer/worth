@@ -2,7 +2,8 @@
 use super::{AggregateAssignment, AggregateLineageEvent};
 use crate::graph_member::NativeMemberKey as Member;
 use crate::identity::data::{EntityId, PartitionId, RelationId};
-use crate::transactions::data::{EntityReference, MutationIntent};
+use crate::transactions::data::intents::MutationIntent;
+use crate::transactions::data::primitives::EntityReference;
 use std::collections::{BTreeMap, BTreeSet};
 use std::mem::size_of;
 use worth_foundational::facade::{AggregateIdentity, AspectFieldLocator, AspectValue, FieldKey};

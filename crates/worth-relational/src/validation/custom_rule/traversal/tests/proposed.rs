@@ -2,17 +2,25 @@
 use std::sync::{Mutex, OnceLock};
 
 use super::*;
-use crate::facade::transactions::{RelationMutationIntent, UpdateRelationEndpointsIntent};
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateRelationEndpointsIntent;
 use crate::validation::custom_rule::{
     CustomInvariantExecutionContext, CustomInvariantRegistration, CustomInvariantRule,
     CustomInvariantScopePlanner,
 };
-use crate::validation::data::{
-    CustomInvariantDescriptor, CustomInvariantExecutionError, CustomInvariantOperationalMetadata,
-    CustomInvariantPreparationError, CustomInvariantRuleId, CustomInvariantSemanticIdentity,
-    CustomInvariantSemanticVersion, CustomInvariantVerdict, InvariantCostClass,
-    InvariantExecutionPoint, InvariantFailureEffect, InvariantGroup, InvariantGroupSet,
-};
+use crate::validation::data::descriptor::CustomInvariantDescriptor;
+use crate::validation::data::descriptor::CustomInvariantOperationalMetadata;
+use crate::validation::data::execution::InvariantExecutionPoint;
+use crate::validation::data::execution::InvariantFailureEffect;
+use crate::validation::data::groups::InvariantCostClass;
+use crate::validation::data::groups::InvariantGroup;
+use crate::validation::data::groups::InvariantGroupSet;
+use crate::validation::data::rule_id::CustomInvariantRuleId;
+use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
+use crate::validation::data::rule_id::CustomInvariantSemanticVersion;
+use crate::validation::data::CustomInvariantExecutionError;
+use crate::validation::data::CustomInvariantPreparationError;
+use crate::validation::data::CustomInvariantVerdict;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 struct ObservedViews {
@@ -93,7 +101,7 @@ impl CustomInvariantRule for CandidateWalkRule {
 
 #[test]
 fn ordinary_retarget_walks_actual_proposed_and_committed_views() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&host);
     let root = Arc::new(OnceLock::new());
     let observations = Arc::new(Mutex::new(Vec::new()));

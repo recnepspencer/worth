@@ -7,6 +7,7 @@ pub mod execution;
 mod invariant_access;
 mod invariant_authority;
 mod preparation_invariant_authority;
+mod proposed_state;
 pub mod reduction;
 
 pub use custom_registry::DuplicateCustomInvariantRegistration;

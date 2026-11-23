@@ -1,21 +1,27 @@
 //! Real native graph construction and scoped read entry for traversal courts.
 use std::sync::Arc;
 
-use crate::facade::identity::{EntityId, KindId, PartitionId};
 use crate::facade::runtime::{RelationalRuntime, RelationalRuntimeApi};
-use crate::facade::schema::{
-    KindAspectContractDeclarations, RelationIntegrityDeclarations, RelationKindRegistration,
-};
-use crate::facade::transactions::{
-    AspectFieldPatch, CreateIntent, CreatedEntityRef, EntityReference, EntitySpec, MutationIntent,
-    RelationSpec, WorkerIntentBatch,
-};
+use crate::identity::data::EntityId;
+use crate::identity::data::KindId;
+use crate::identity::data::PartitionId;
+use crate::schema::data::KindAspectContractDeclarations;
+use crate::schema::data::RelationIntegrityDeclarations;
+use crate::schema::data::RelationKindRegistration;
 use crate::symbols::data::ClientKey;
 use crate::tests::support::{
     release_test_commit_snapshot, test_owner_begin_transaction_for_main, AspectSchemaFixture,
 };
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::primitives::CreatedEntityRef;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::RelationSpec;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use crate::validation::custom_rule::{CustomInvariantWorkMeter, StructuralRelationView};
-use crate::validation::data::CustomInvariantAccessContract;
+use crate::validation::data::descriptor::CustomInvariantAccessContract;
 use crate::validation::engine::{state_view::InvariantStateView, InvariantObservation};
 use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
 
