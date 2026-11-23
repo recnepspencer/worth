@@ -9,12 +9,8 @@ publish = false
 
 [dependencies]
 worth-execution = { path = "../../../../crates/worth-execution" }
-worth-foundational = { path = "../../../../crates/worth-foundational" }
-worth-proof = { path = "../../../../crates/worth-proof" }
 worth-relational = { path = "../../../../crates/worth-relational" }
 worth-query-declaration = { path = "../worth-query-declaration" }
-worth-query-execution-contracts = { path = "../worth-query-execution-contracts" }
-worth-query-execution-runtime = { path = "../worth-query-execution-runtime" }
 worth-query-installation = { path = "../worth-query-installation" }
 
 [lints]

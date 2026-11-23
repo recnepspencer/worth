@@ -245,8 +245,9 @@ fn commit_finalization_with_births_attaches_birth_and_refuses_with_zero_effects(
     use crate::facade::identity::EntityId;
     use crate::facade::lineage::{
         LineageEventKind, LineageNameDenial, LineagePostureKind, LineageSubject,
-        PersistentNameHolder, PersistentNameMintingAuthority,
+        PersistentNameHolder,
     };
+    use crate::lineage::authority::PersistentNameMintingAuthority;
     use crate::transactions::data::RecordRef;
     use std::collections::{BTreeMap, BTreeSet};
 

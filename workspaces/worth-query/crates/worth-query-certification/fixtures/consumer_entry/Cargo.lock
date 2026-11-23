@@ -1518,11 +1518,7 @@ name = "worth-query-execution-naming"
 version = "0.1.0"
 dependencies = [
  "worth-execution",
- "worth-foundational",
- "worth-proof",
  "worth-query-declaration",
- "worth-query-execution-contracts",
- "worth-query-execution-runtime",
  "worth-query-installation",
  "worth-relational",
 ]

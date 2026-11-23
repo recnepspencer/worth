@@ -5,7 +5,6 @@ pub use crate::durability::naming::{
     FORMAT_VERSION as PERSISTENT_NAME_DURABLE_FORMAT_VERSION,
 };
 pub use crate::lineage::access::{RelationalLineageDiscoveryDenial, RelationalLineageNodeRead};
-pub use crate::lineage::authority::PersistentNameMintingAuthority;
 pub use crate::lineage::data::{
     CommitNamingPlan, DiscriminatorBasisDenialReason, HistoricalLineageResolution,
     HistoricalLineageResolutionDigestBasis, HistoricalLineageResolutionMetrics,
@@ -19,7 +18,8 @@ pub use crate::lineage::data::{
     LineageGraphDigestMode, LineageGraphMetrics, LineageGraphRequest, LineageGraphSnapshot,
     LineageGraphTraversalBasis, LineageInvariant, LineageMergeKeeper, LineageNameDenial,
     LineageNode, LineagePostureClaim, LineagePostureKind, LineageRecordTarget, LineageSplitChild,
-    LineageSubject, PendingBirthTarget, PendingCommitBirth, PersistentNameBirthParts,
+    LineageSubject, PendingBirthTarget, PendingCommitBirth, PendingMergeClaim, PendingMergeKeeper,
+    PendingMergeTarget, PendingSplitChild, PendingSplitClaim, PersistentNameBirthParts,
     PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameDiscriminatorReference,
     PersistentNameHolder, PersistentNameIdentity, PersistentNameKey, PersistentNameReferenceBasis,
     PersistentNameResolution, PersistentNameResolutionDenial, PersistentNameResolutionMetrics,

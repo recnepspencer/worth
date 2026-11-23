@@ -41,11 +41,44 @@ fn validate_envelope_lineage(
     failure_class: RecoveryFailureClass,
     ledger: &mut RecoveredLineageIdentityLedger,
 ) -> Result<(), DurabilityError> {
+    let relation_lineages = envelope.lineage_relation_lineages();
+    if !relation_lineages.is_empty() {
+        let relation_event_targets: BTreeSet<LineageId> = envelope
+            .lineage_events()
+            .iter()
+            .filter(|event| {
+                event.subject() == crate::lineage::data::LineageSubject::Relation
+                    && matches!(
+                        event.kind(),
+                        crate::lineage::data::LineageEventKind::Create
+                            | crate::lineage::data::LineageEventKind::Restore
+                    )
+            })
+            .flat_map(|event| event.targets().iter().copied())
+            .collect();
+        let mut seen_relations = BTreeSet::new();
+        let mut seen_lineages = BTreeSet::new();
+        for &(relation_id, lineage_id) in relation_lineages {
+            if !seen_relations.insert(relation_id)
+                || !seen_lineages.insert(lineage_id)
+                || !relation_event_targets.contains(&lineage_id)
+            {
+                return Err(DurabilityError::new(
+                    failure_class,
+                    format!(
+                        "recovered relation lineage binding ({relation_id:?}, {lineage_id:?}) for commit {} conflicts with its lineage events",
+                        envelope.commit.commit_id.0
+                    ),
+                ));
+            }
+        }
+    }
     let observed = crate::lineage::data::LineageFinalizationArtifact::new(
         envelope.branch_context.clone(),
         crate::lineage::data::FinalizedLineageEventBatch::new(envelope.lineage_events().to_vec()),
         crate::lineage::data::LineageDecisionLog::new(envelope.lineage_decision_log().to_vec()),
     )
+    .with_relation_lineages(relation_lineages.to_vec())
     .publish();
     if &observed != envelope.published_lineage() {
         return Err(DurabilityError::new(

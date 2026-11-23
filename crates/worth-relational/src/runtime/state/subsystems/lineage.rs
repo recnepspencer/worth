@@ -183,8 +183,35 @@ impl LineageSubsystem {
             .record_relation_lineage(relation_id, lineage_id);
     }
 
+    pub(crate) fn record_fork_ancestry_metadata(
+        &self,
+        target_branch: BranchId,
+        source_branch: BranchId,
+        fork_commit_id: CommitId,
+    ) {
+        self.state.write().record_fork_ancestry_metadata(
+            target_branch,
+            source_branch,
+            fork_commit_id,
+        );
+    }
+
     pub(crate) fn relation_lineage(&self, relation_id: RelationId) -> Option<LineageId> {
         self.state.read().relation_lineage(relation_id)
+    }
+
+    pub(crate) fn relation_lineages_snapshot(&self) -> Vec<(RelationId, LineageId)> {
+        self.state.read().relation_lineages_snapshot()
+    }
+
+    pub(crate) fn holder_and_name_for_lineage(
+        &self,
+        branch_id: &BranchId,
+        lineage_id: LineageId,
+    ) -> Option<(PersistentNameHolder, PersistentNameIdentity)> {
+        self.state
+            .read()
+            .holder_and_name_for_lineage(branch_id, lineage_id)
     }
 
     pub(crate) fn naming_basis_binding(&self) -> LineageNamingBasisBinding {

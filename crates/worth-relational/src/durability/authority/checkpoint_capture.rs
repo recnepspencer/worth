@@ -35,6 +35,8 @@ pub(super) struct CapturedCheckpointBasis {
     pub(super) aspect_contracts: crate::schema::data::AspectContractPlanCatalog,
     pub(super) mirror_schema_authority: Option<crate::branch::RelationalBranchRootSchemaAuthority>,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
+    pub(super) relation_lineages:
+        Vec<(crate::identity::data::RelationId, crate::identity::data::LineageId)>,
     pub(super) lineage_events: Vec<crate::durability::data::RelationalCheckpointLineageEventRow>,
     pub(super) lineage_event_pages_resident: bool,
     pub(super) lineage_event_leases: Vec<crate::runtime::ResidentLineageEventPage>,
@@ -248,6 +250,7 @@ impl CapturedCheckpointBasis {
                 .as_ref()
                 .clone(),
             lineage_nodes: runtime.lineage_access().resident_nodes_snapshot(),
+            relation_lineages: runtime.lineage.relation_lineages_snapshot(),
             lineage_event_pages_resident,
             lineage_event_leases,
             guarded_member_sources: runtime

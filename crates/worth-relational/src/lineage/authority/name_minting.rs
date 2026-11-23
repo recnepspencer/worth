@@ -12,9 +12,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use sha2::{Digest, Sha256};
 
 use crate::lineage::data::{
-    DiscriminatorBasisDenialReason, InstalledPersistentNameSchemeRegistry, LineageNameDenial,
-    PersistentNameBirthParts, PersistentNameBirthRecord, PersistentNameBirthRequest,
-    PersistentNameHolder, PersistentNameIdentity, PersistentNameReferenceBasis,
+    DiscriminatorBasisDenialReason, InstalledPersistentNameSchemeRegistry, LineageBasisView,
+    LineageNameDenial, PersistentNameBirthParts, PersistentNameBirthRecord,
+    PersistentNameBirthRequest, PersistentNameHolder, PersistentNameIdentity,
+    PersistentNameReferenceBasis,
 };
 
 use super::discriminator_scan::extract_embedded_name_refs;
@@ -39,27 +40,28 @@ impl PersistentNameMintingAuthority {
     /// name or parent, or collides with an existing live holder (not retired in
     /// this commit) or another birth in the same commit, returns
     /// `Err(LineageNameDenial)` with zero emitted birth records.
-    pub fn mint_commit_births(
+    #[cfg(test)]
+    pub(crate) fn mint_commit_births(
         registry: &InstalledPersistentNameSchemeRegistry,
         live_holders: &BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
         retired_in_commit: &BTreeSet<PersistentNameIdentity>,
         requests: &[PersistentNameBirthRequest],
     ) -> Result<Vec<PersistentNameBirthRecord>, LineageNameDenial> {
-        let no_previously_retired = BTreeSet::new();
-        Self::mint_commit_births_with_retired(
-            registry,
-            live_holders,
-            retired_in_commit,
-            &no_previously_retired,
-            requests,
-        )
+        struct MapBasis<'a>(&'a BTreeMap<PersistentNameIdentity, PersistentNameHolder>);
+        impl LineageBasisView for MapBasis<'_> {
+            fn live_holder(&self, id: &PersistentNameIdentity) -> Option<&PersistentNameHolder> {
+                self.0.get(id)
+            }
+            fn live_lineage(&self, _: &PersistentNameHolder) -> Option<crate::identity::data::LineageId> { None }
+            fn retired_lineage(&self, _: &PersistentNameIdentity) -> Option<(crate::lineage::data::LineageSubject, crate::identity::data::LineageId)> { None }
+        }
+        Self::mint_commit_births_with_basis(registry, &MapBasis(live_holders), retired_in_commit, requests)
     }
 
-    pub(super) fn mint_commit_births_with_retired(
+    pub(super) fn mint_commit_births_with_basis(
         registry: &InstalledPersistentNameSchemeRegistry,
-        live_holders: &BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
+        basis: &dyn LineageBasisView,
         retired_in_commit: &BTreeSet<PersistentNameIdentity>,
-        previously_retired: &BTreeSet<PersistentNameIdentity>,
         requests: &[PersistentNameBirthRequest],
     ) -> Result<Vec<PersistentNameBirthRecord>, LineageNameDenial> {
         let mut records = Vec::with_capacity(requests.len());
@@ -93,7 +95,7 @@ impl PersistentNameMintingAuthority {
                 request,
                 scheme,
                 role_rank,
-                live_holders,
+                basis,
                 retired_in_commit,
                 &minted_in_occurrence,
             )?;
@@ -121,9 +123,9 @@ impl PersistentNameMintingAuthority {
                 });
             }
             for &parent in &sorted_parents {
-                let exists = live_holders.contains_key(&parent)
+                let exists = basis.contains_live_holder(&parent)
                     || retired_in_commit.contains(&parent)
-                    || previously_retired.contains(&parent)
+                    || basis.contains_retired(&parent)
                     || commit_holders.contains_key(&parent);
                 if !exists {
                     return Err(LineageNameDenial::UnknownParentIdentity {
@@ -153,7 +155,7 @@ impl PersistentNameMintingAuthority {
 
             // Live-holder collision guard (excluding holders retired in this commit).
             if !retired_in_commit.contains(&identity)
-                && let Some(first) = live_holders.get(&identity)
+                && let Some(first) = basis.live_holder(&identity)
             {
                 return Err(LineageNameDenial::DuplicateBirth {
                     identity,
@@ -189,7 +191,7 @@ fn verify_discriminator_references(
     request: &PersistentNameBirthRequest,
     scheme: &crate::lineage::data::InstalledPersistentNameScheme,
     role_rank: u32,
-    live_holders: &BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
+    basis: &dyn LineageBasisView,
     retired_in_commit: &BTreeSet<PersistentNameIdentity>,
     minted_in_occurrence: &BTreeMap<(String, String), BTreeSet<PersistentNameIdentity>>,
 ) -> Result<(), LineageNameDenial> {
@@ -224,7 +226,7 @@ fn verify_discriminator_references(
     for reference in &request.referenced_names {
         match &reference.basis {
             PersistentNameReferenceBasis::Basis => {
-                let live_at_basis = live_holders.contains_key(&reference.identity)
+                let live_at_basis = basis.contains_live_holder(&reference.identity)
                     && !retired_in_commit.contains(&reference.identity);
                 if !live_at_basis {
                     return Err(LineageNameDenial::InvalidDiscriminatorBasis {
@@ -319,9 +321,8 @@ fn write_len_prefixed(hasher: &mut Sha256, bytes: &[u8]) {
 
 pub(super) fn mint_target_births(
     scheme_registry: &InstalledPersistentNameSchemeRegistry,
-    live_holders: &BTreeMap<PersistentNameIdentity, PersistentNameHolder>,
+    basis: &dyn LineageBasisView,
     retired_in_commit: &BTreeSet<PersistentNameIdentity>,
-    previously_retired: &BTreeSet<PersistentNameIdentity>,
     created_targets: &BTreeSet<crate::lineage::data::LineageRecordTarget>,
     named_births: &BTreeMap<crate::lineage::data::LineageRecordTarget, PersistentNameBirthRequest>,
 ) -> Result<
@@ -377,11 +378,10 @@ pub(super) fn mint_target_births(
     });
     let targets: Vec<_> = ordered.iter().map(|(id, _)| *id).collect();
     let requests: Vec<_> = ordered.into_iter().map(|(_, req)| req.clone()).collect();
-    let records = PersistentNameMintingAuthority::mint_commit_births_with_retired(
+    let records = PersistentNameMintingAuthority::mint_commit_births_with_basis(
         scheme_registry,
-        live_holders,
+        basis,
         retired_in_commit,
-        previously_retired,
         &requests,
     )?;
     Ok(targets.into_iter().zip(records).collect())

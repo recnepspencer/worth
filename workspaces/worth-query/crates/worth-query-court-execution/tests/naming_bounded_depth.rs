@@ -1,6 +1,6 @@
 //! Slice 1B court proving O(1) bounded `WorthQueryName<K>` size (32 bytes) and
-//! O(1) birth-part size across a 64-deep committed split chain through
-//! `worth-query-execution-naming` -> `worth-relational`.
+//! O(1) birth-part size across a 64-deep committed `Split` posture chain
+//! through `worth-query-execution-naming` -> `worth-relational`.
 
 use std::collections::BTreeSet;
 use std::mem::size_of;
@@ -9,14 +9,17 @@ use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::application_naming::WorthQueryName;
 use worth_query_execution_naming::facade::{
     ExecutionNameBirthPlanBuilder, ExecutionNamingCommitAuthority, ExecutionPendingEntityBirth,
+    ExecutionSplitChildSpec,
 };
+use worth_relational::facade::lineage::{LineageEventKind, LineageRecordTarget};
 use worth_relational::facade::transactions::{
     DeleteEntityIntent, EntityMutationIntent, MutationIntent,
 };
 
 use crate::naming_execution_fixture::{
     begin_staged_tx, create_face_intent, execution_lease_for_workers, face_ref, fresh_cad_runtime,
-    lowered_cad_catalog, release_commit_snapshot, Face, FaceSplitDisc, Seam, FACE_SCHEME_ID,
+    lowered_cad_catalog, release_commit_snapshot, CadNamingSchema, Face, FaceSplitDisc, Seam,
+    FACE_SCHEME_ID,
 };
 
 #[test]
@@ -29,7 +32,6 @@ fn bounded_o1_name_size_and_birth_part_size_across_64_deep_split_chain() {
     let lease = execution_lease_for_workers(2);
     let execution = ExecutionRequest::leased(&lease);
 
-    // Commit root face.
     let root_ref = face_ref("root");
     let tx0 = begin_staged_tx(&runtime, "root", vec![create_face_intent("root")]);
     let mut b0 = ExecutionNameBirthPlanBuilder::new(&catalog, std::iter::empty());
@@ -48,7 +50,9 @@ fn bounded_o1_name_size_and_birth_part_size_across_64_deep_split_chain() {
     )
     .expect("root commit succeeds");
     let (res0, names0) = c0.into_parts();
-    let (mut cur_entity, mut cur_name) = names0.created_entity_name::<Face>(&res0, &root_ref).unwrap();
+    let (mut cur_entity, cur_name) = names0
+        .created_entity_name::<CadNamingSchema, Face>(&res0, &root_ref)
+        .unwrap();
     let mut cur_rel_id = names0.entity_relational_identity(cur_entity).unwrap();
     release_commit_snapshot(&runtime, &res0);
 
@@ -72,11 +76,13 @@ fn bounded_o1_name_size_and_birth_part_size_across_64_deep_split_chain() {
             ],
         );
         let mut b = ExecutionNameBirthPlanBuilder::new(&catalog, [cur_rel_id]);
-        b.add_retire_entity(cur_entity, cur_rel_id);
-        b.add_entity_birth(
-            ExecutionPendingEntityBirth::new(next_ref.clone(), FACE_SCHEME_ID, &occ, "cut_piece")
-                .with_parent(cur_name)
-                .with_discriminator(&FaceSplitDisc::Side { side: depth }),
+        b.add_split_posture(
+            LineageRecordTarget::Entity(cur_entity),
+            cur_rel_id,
+            vec![
+                ExecutionSplitChildSpec::entity(next_ref.clone(), FACE_SCHEME_ID, &occ, "cut_piece")
+                    .with_discriminator(&FaceSplitDisc::Side { side: depth }),
+            ],
         )
         .unwrap();
         let committed = ExecutionNamingCommitAuthority::commit_with_naming_plan(
@@ -85,12 +91,21 @@ fn bounded_o1_name_size_and_birth_part_size_across_64_deep_split_chain() {
             tx,
             b.build(),
         )
-        .expect("split step commit succeeds");
+        .expect("split posture commit succeeds");
         let (res, names) = committed.into_parts();
-        let (next_entity, next_name) = names.created_entity_name::<Face>(&res, &next_ref).unwrap();
+        assert!(
+            res.envelope()
+                .lineage_events()
+                .iter()
+                .any(|ev| ev.kind() == LineageEventKind::Split),
+            "depth {depth} must record a Split lineage event"
+        );
+        let (next_entity, next_name) = names
+            .created_entity_name::<CadNamingSchema, Face>(&res, &next_ref)
+            .unwrap();
         let birth = names.entity_birth(next_entity).unwrap();
         assert_eq!(next_name.as_bytes().len(), 32);
-        assert_eq!(birth.parts().parent_identities().len(), 1);
+        assert_eq!(birth.parts().parent_identities(), &[cur_rel_id]);
         assert!(seen_names.insert(*next_name.as_bytes()));
         let part_len = birth.parts().logical_byte_len();
         match depth {
@@ -101,7 +116,6 @@ fn bounded_o1_name_size_and_birth_part_size_across_64_deep_split_chain() {
         }
         cur_rel_id = birth.identity();
         cur_entity = next_entity;
-        cur_name = next_name;
         release_commit_snapshot(&runtime, &res);
     }
 

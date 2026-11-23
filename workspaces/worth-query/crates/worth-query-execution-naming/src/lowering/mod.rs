@@ -81,7 +81,7 @@ impl LoweredExecutionNameSchemeCatalog {
         let mut group_by_subject = BTreeMap::new();
 
         for layout in catalog.schemes() {
-            let relational_scheme = lower_entity_or_relation_scheme(layout);
+            let relational_scheme = lower_entity_or_relation_scheme(layout)?;
             relational_registry.register(relational_scheme).map_err(|detail| {
                 ExecutionNamingDenial::SchemeLowering {
                     scheme_id: layout.scheme_id().to_owned(),
@@ -151,19 +151,24 @@ impl LoweredExecutionNameSchemeCatalog {
 
 fn lower_entity_or_relation_scheme(
     layout: &InstalledNameSchemeLayout,
-) -> InstalledPersistentNameScheme {
+) -> Result<InstalledPersistentNameScheme, ExecutionNamingDenial> {
     let subject_kind = match layout.subject_kind() {
         ApplicationNameSubjectKind::Entity => PersistentNameSubjectKind::Entity,
         ApplicationNameSubjectKind::Relation => PersistentNameSubjectKind::Relation,
         ApplicationNameSubjectKind::Group => PersistentNameSubjectKind::Group,
     };
-    InstalledPersistentNameScheme::from_ordered_roles(
+    InstalledPersistentNameScheme::try_from_ordered_roles_for_subject(
         layout.scheme_id(),
         subject_kind,
+        layout.subject_name(),
         layout.role_order(),
         layout.split_capable(),
         layout.require_authored_occurrence(),
     )
+    .map_err(|detail| ExecutionNamingDenial::SchemeLowering {
+        scheme_id: layout.scheme_id().to_owned(),
+        detail,
+    })
 }
 
 fn lower_group_scheme(

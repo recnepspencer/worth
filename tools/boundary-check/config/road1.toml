@@ -884,7 +884,13 @@ exclude_paths = [
   "workspaces/worth-query/crates/worth-query-declaration/src/persistent_name_admission_authority.rs",
   "workspaces/worth-query/crates/worth-query-execution-naming/src/admission",
 ]
-forbidden_identifiers = ["persistent_name_admission_authority", "admit_minted_digest"]
+forbidden_identifiers = [
+  "persistent_name_admission_authority",
+  "admit_minted_digest",
+  "admit_minted_birth_record",
+  "admit_group_assignment",
+  "admit_resolved_name_key",
+]
 forbidden_identifier_fragments = []
 guidance = "Milestone 11 (D2726): only worth-query-execution-naming's admission boundary may elevate Relational-minted persistent name digests into WorthQueryName<K>"
 

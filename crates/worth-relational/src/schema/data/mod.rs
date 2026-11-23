@@ -120,6 +120,15 @@ pub struct RelationalSchemaRegistry {
         crate::projected_member_domain::ProjectedMemberDomainIdentity,
         std::sync::Arc<crate::projected_member_domain::RegisteredProjectedMemberDomain>,
     >,
+    pub(crate) persistent_name_schemes:
+        crate::lineage::data::InstalledPersistentNameSchemeRegistry,
+    pub(crate) kind_name_schemes: BTreeMap<
+        (
+            crate::lineage::data::PersistentNameSubjectKind,
+            KindId,
+        ),
+        String,
+    >,
 }
 
 impl RelationalSchemaRegistry {
@@ -343,5 +352,7 @@ impl RelationalSchemaRegistry {
         Ok(Some((schema_id.clone(), schema_version_id)))
     }
 }
+
+mod naming_schemes;
 
 pub(crate) use continuity::{SchemaTextReadmissionMemory, SchemaTransitionReadmissionMemory};

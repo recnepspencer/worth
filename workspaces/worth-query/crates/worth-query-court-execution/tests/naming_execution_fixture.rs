@@ -18,10 +18,12 @@ use worth_query_declaration::facade::application_naming::{
 use worth_query_declaration::facade::application_schema::{fragment, *};
 use worth_query_execution_naming::facade::LoweredExecutionNameSchemeCatalog;
 use worth_query_installation::facade::install_schema_name_schemes;
+use worth_relational::facade::branch::RelationalBranchIdentity;
 use worth_relational::facade::config::{
     CascadeDeletePolicy, CrossContextPolicy, RelationalRuntimeProfile,
 };
 use worth_relational::facade::identity::{KindId, PartitionId};
+use worth_relational::facade::lineage::PersistentNameSubjectKind;
 use worth_relational::facade::mvcc::{
     BranchBoundRelationalTransaction, RelationalTransactionIntent,
 };
@@ -38,11 +40,16 @@ use worth_relational::facade::transactions::{
 
 pub const FACE_KIND_ID: KindId = KindId(1);
 pub const SEAM_KIND_ID: KindId = KindId(2);
+pub const EDGE_KIND_ID: KindId = KindId(3);
+pub const DUMMY_ENTITY_KIND_ID: KindId = KindId(99);
+pub const DUMMY_RELATION_KIND_ID: KindId = KindId(100);
 pub const FACE_SCHEME_ID: &str = "worth.cad.face.v1";
+pub const EDGE_SCHEME_ID: &str = "worth.cad.edge.v1";
 pub const SEAM_SCHEME_ID: &str = "worth.cad.seam.v1";
 pub const ROOM_GROUP_SCHEME_ID: &str = "worth.cad.room.v1";
 
 pub struct Face;
+pub struct Edge;
 pub struct Seam;
 pub struct RoomGroup;
 
@@ -50,6 +57,12 @@ impl fragment::Entity for Face {
     const NAME: &'static str = "Face";
     type Aspects = ();
     type Relations = (Seam,);
+}
+
+impl fragment::Entity for Edge {
+    const NAME: &'static str = "Edge";
+    type Aspects = ();
+    type Relations = ();
 }
 
 impl fragment::Relation for Seam {
@@ -61,7 +74,7 @@ pub struct CadNamingFragment;
 impl fragment::Fragment for CadNamingFragment {
     const NAME: &'static str = "CadNaming";
     type Bindings = fragment::NoBindings;
-    type Members = (Face,);
+    type Members = (Face, Edge);
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -111,6 +124,11 @@ impl ApplicationSchema for CadNamingSchema {
             .require_authored_occurrence()
             .build()
             .expect("valid face scheme");
+        let edge_scheme = ApplicationNameSchemeBuilder::<Self, Edge>::new(EDGE_SCHEME_ID)
+            .role_order(&["authored", "cut_edge"])
+            .require_authored_occurrence()
+            .build()
+            .expect("valid edge scheme");
         let seam_scheme = ApplicationNameSchemeBuilder::<Self, Seam>::for_relation(
             SEAM_SCHEME_ID,
             fragment::relation(CadNamingFragment, Face, Seam),
@@ -134,6 +152,7 @@ impl ApplicationSchema for CadNamingSchema {
 
         ApplicationSchemaDeclarationBuilder::from_fragment(CadNamingFragment)?
             .application_name_scheme::<Face>(face_scheme)?
+            .application_name_scheme::<Edge>(edge_scheme)?
             .application_name_scheme::<Seam>(seam_scheme)?
             .application_group_name_scheme::<RoomGroup>(room_scheme)?
             .build()
@@ -157,32 +176,58 @@ pub fn release_commit_snapshot(
     );
 }
 
-pub fn fresh_cad_runtime() -> RelationalRuntime {
-    let registry = RelationalSchemaRegistry::new()
-        .register_entity_kind(EntityKindRegistration {
-            kind_id: FACE_KIND_ID,
-            kind_name: "Face".to_owned(),
-            schema_id: SchemaId("worth.tests.execution.naming.CadNaming".to_owned()),
-            schema_version_id: SchemaVersionId(1),
-            aspect_contract_declarations: KindAspectContractDeclarations::new(Vec::new()),
-        })
+pub fn cad_schema_registry() -> RelationalSchemaRegistry {
+    let catalog = lowered_cad_catalog();
+    let schema_id = SchemaId("worth.tests.execution.naming.CadNaming".to_owned());
+    let entity = |kind_id, kind_name: &str| EntityKindRegistration {
+        kind_id,
+        kind_name: kind_name.to_owned(),
+        schema_id: schema_id.clone(),
+        schema_version_id: SchemaVersionId(1),
+        aspect_contract_declarations: KindAspectContractDeclarations::new(Vec::new()),
+    };
+    let relation = |kind_id, kind_name: &str| RelationKindRegistration {
+        kind_id,
+        kind_name: kind_name.to_owned(),
+        schema_id: schema_id.clone(),
+        schema_version_id: SchemaVersionId(1),
+        cross_context_policy: CrossContextPolicy::AllowExplicit,
+        cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
+        aspect_contract_declarations: KindAspectContractDeclarations::new(Vec::new()),
+        relation_integrity: RelationIntegrityDeclarations::default(),
+    };
+    RelationalSchemaRegistry::new()
+        .register_entity_kind(entity(FACE_KIND_ID, "Face"))
+        .and_then(|reg| reg.register_entity_kind(entity(EDGE_KIND_ID, "Edge")))
+        .and_then(|reg| reg.register_entity_kind(entity(DUMMY_ENTITY_KIND_ID, "DummyEntity")))
+        .and_then(|reg| reg.register_relation_kind(relation(SEAM_KIND_ID, "Seam")))
+        .and_then(|reg| reg.register_relation_kind(relation(DUMMY_RELATION_KIND_ID, "DummyRel")))
         .and_then(|reg| {
-            reg.register_relation_kind(RelationKindRegistration {
-                kind_id: SEAM_KIND_ID,
-                kind_name: "Seam".to_owned(),
-                schema_id: SchemaId("worth.tests.execution.naming.CadNaming".to_owned()),
-                schema_version_id: SchemaVersionId(1),
-                cross_context_policy: CrossContextPolicy::AllowExplicit,
-                cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
-                aspect_contract_declarations: KindAspectContractDeclarations::new(Vec::new()),
-                relation_integrity: RelationIntegrityDeclarations::default(),
-            })
+            reg.install_persistent_name_schemes(
+                catalog.relational_registry().clone(),
+                std::collections::BTreeMap::from([
+                    (
+                        (PersistentNameSubjectKind::Entity, FACE_KIND_ID),
+                        FACE_SCHEME_ID.to_owned(),
+                    ),
+                    (
+                        (PersistentNameSubjectKind::Entity, EDGE_KIND_ID),
+                        EDGE_SCHEME_ID.to_owned(),
+                    ),
+                    (
+                        (PersistentNameSubjectKind::Relation, SEAM_KIND_ID),
+                        SEAM_SCHEME_ID.to_owned(),
+                    ),
+                ]),
+            )
         })
-        .expect("valid relational schema registry");
+        .expect("valid relational schema registry with installed naming schemes")
+}
 
+pub fn fresh_cad_runtime() -> RelationalRuntime {
     RelationalRuntimeApi::builder()
         .profile(RelationalRuntimeProfile::CertificationCore)
-        .schema_registry(registry)
+        .schema_registry(cad_schema_registry())
         .build()
         .expect("valid relational runtime")
 }
@@ -260,14 +305,15 @@ pub fn create_seam_intent(
     }))
 }
 
-pub fn begin_staged_tx(
+pub fn begin_branch_staged_tx(
     runtime: &RelationalRuntime,
+    branch: &RelationalBranchIdentity,
     worker_id: &str,
     intents: Vec<MutationIntent>,
 ) -> BranchBoundRelationalTransaction {
     let basis = runtime
-        .admit_branch_basis(&runtime.main_branch_identity())
-        .expect("main branch basis");
+        .admit_branch_basis(branch)
+        .expect("branch basis admitted");
     let mut tx = runtime
         .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .expect("begin branch transaction");
@@ -278,6 +324,14 @@ pub fn begin_staged_tx(
     tx.push_batch(batch, ExecutionAllocationPolicy::SystemAllocation)
         .expect("stage intent batch");
     tx
+}
+
+pub fn begin_staged_tx(
+    runtime: &RelationalRuntime,
+    worker_id: &str,
+    intents: Vec<MutationIntent>,
+) -> BranchBoundRelationalTransaction {
+    begin_branch_staged_tx(runtime, &runtime.main_branch_identity(), worker_id, intents)
 }
 
 pub fn commit_dummy_preallocations(
@@ -293,13 +347,31 @@ pub fn commit_dummy_preallocations(
     let mut refs = Vec::with_capacity(dummy_entities);
     for i in 0..dummy_entities {
         let key = format!("dummy.e.{i}");
-        refs.push(face_ref(&key));
-        intents.push(create_face_intent(&key));
+        refs.push(CreatedEntityRef {
+            partition_id: PartitionId::main(),
+            kind_id: DUMMY_ENTITY_KIND_ID,
+            client_key: ClientKey::raw(&key),
+        });
+        intents.push(MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+            partition_id: PartitionId::main(),
+            kind_id: DUMMY_ENTITY_KIND_ID,
+            client_key: ClientKey::raw(&key),
+            fields: AspectFieldPatch::default(),
+        })));
     }
     for i in 0..dummy_relations {
         let src = EntityReference::Created(refs[i % refs.len()].clone());
         let dst = EntityReference::Created(refs[(i + 1) % refs.len()].clone());
-        intents.push(create_seam_intent(&format!("dummy.r.{i}"), src, dst));
+        intents.push(MutationIntent::Create(CreateIntent::Relation(
+            RelationSpec {
+                partition_id: PartitionId::main(),
+                kind_id: DUMMY_RELATION_KIND_ID,
+                client_key: ClientKey::raw(format!("dummy.r.{i}")),
+                source: src,
+                target: dst,
+                fields: AspectFieldPatch::default(),
+            },
+        )));
     }
     let tx = begin_staged_tx(runtime, "dummy-prealloc", intents);
     let committed = runtime

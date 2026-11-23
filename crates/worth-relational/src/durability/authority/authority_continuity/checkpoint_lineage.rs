@@ -63,6 +63,7 @@ fn validate_published_lineage_artifacts(
             ),
             crate::lineage::data::LineageDecisionLog::new(envelope.lineage_decision_log().to_vec()),
         )
+        .with_relation_lineages(envelope.lineage_relation_lineages().to_vec())
         .publish();
         if &expected != envelope.published_lineage() {
             return Err(corrupt_lineage(format!(

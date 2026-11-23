@@ -1,8 +1,8 @@
 //! Execution-time persistent naming authority for installed Query schemas.
 //!
-//! Sits cleanly above `worth-query-execution-contracts` and
-//! `worth-query-execution-runtime` (and below `worth-query-execution-query` /
-//! `worth-query-execution`). Owns:
+//! Sits cleanly between `worth-query-declaration` / `worth-query-installation` /
+//! `worth-relational` and `worth-query-execution-query` /
+//! `worth-query-execution`. Owns:
 //! - lowering installed entity, relation, and group name schemes into
 //!   Relational naming contracts;
 //! - deterministic birth-plan and posture assembly (including canonical

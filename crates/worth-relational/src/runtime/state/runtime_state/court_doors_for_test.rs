@@ -60,6 +60,15 @@ impl RelationalRuntime {
         self.visibility.cache.clear();
         true
     }
+
+    #[cfg(test)]
+    pub(crate) fn rebuild_lineage_derived_indexes_for_test(&self) -> crate::runtime::LineageState {
+        let mut snapshot = self.lineage.snapshot();
+        crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
+            snapshot.rebuild_derived_indexes(lane);
+        });
+        snapshot
+    }
 }
 
 impl crate::storage::overlay::PartitionState {

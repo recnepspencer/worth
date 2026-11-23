@@ -5,8 +5,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::identity::data::VersionId;
 use crate::lineage::data::{
-    LineageCommitPostureInput, LineageNameDenial, LineagePostureKind, LineageRecordTarget,
-    LineageSplitChild, PersistentNameBirthRequest, PersistentNameIdentity,
+    InstalledPersistentNameSchemeRegistry, LineageBasisView, LineageNameDenial,
+    LineagePostureKind, LineageRecordTarget, LineageSplitChild, PersistentNameBirthRequest,
+    PersistentNameIdentity,
 };
 use crate::runtime::WorkingState;
 
@@ -19,7 +20,8 @@ use super::staged_effects::{existed_at_basis, is_retired_in_commit};
 pub(super) fn validate_split_claim(
     staged: &WorkingState,
     version_id: VersionId,
-    input: &LineageCommitPostureInput,
+    scheme_registry: &InstalledPersistentNameSchemeRegistry,
+    basis: &dyn LineageBasisView,
     created_targets: &BTreeSet<LineageRecordTarget>,
     parent_target: LineageRecordTarget,
     parent_name: PersistentNameIdentity,
@@ -55,7 +57,7 @@ pub(super) fn validate_split_claim(
     let parent_lineage = require_live_holder_and_lineage(
         LineagePostureKind::Split,
         staged,
-        input,
+        basis,
         parent_target,
         parent_name,
     )?;
@@ -88,9 +90,9 @@ pub(super) fn validate_split_claim(
             LineagePostureKind::Split,
             child.target,
             &child.birth,
-            input,
+            scheme_registry,
         )?;
-        if let Some(scheme) = input.scheme_registry.get(&child.birth.scheme_id)
+        if let Some(scheme) = scheme_registry.get(&child.birth.scheme_id)
             && !scheme.split_capable()
         {
             return Err(mismatch(

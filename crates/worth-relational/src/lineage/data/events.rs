@@ -14,6 +14,12 @@ pub enum LineageSubject {
     Relation,
 }
 
+impl LineageSubject {
+    pub(crate) fn is_entity(&self) -> bool {
+        matches!(self, Self::Entity)
+    }
+}
+
 /// What a committed lineage event did to entity or relation lineages, as
 /// recorded in a [`LineageEventRecord`].
 ///
@@ -53,11 +59,19 @@ pub struct LineageEventRecord {
     pub(crate) kind: LineageEventKind,
     pub(crate) sources: Vec<LineageId>,
     pub(crate) targets: Vec<LineageId>,
-    #[serde(skip)]
+    #[serde(default, skip_serializing_if = "LineageSubject::is_entity")]
     pub(crate) subject: LineageSubject,
-    #[serde(skip)]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "super::event_serde::verified_birth"
+    )]
     pub(crate) name_birth: Option<PersistentNameBirthRecord>,
-    #[serde(skip)]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "super::event_serde::persisted_kept_name"
+    )]
     pub(crate) kept_name: Option<PersistentNameIdentity>,
 }
 

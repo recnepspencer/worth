@@ -24,7 +24,7 @@ mod checkpoint_region_consistency;
 mod checkpoint_transition;
 mod checkpointing;
 mod diagnostics;
-mod lineage_allocation;
+pub(crate) mod lineage_allocation;
 #[cfg(test)]
 mod lineage_allocation_fixtures;
 #[cfg(test)]

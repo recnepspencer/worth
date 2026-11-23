@@ -90,10 +90,13 @@ For allocation-independent, stable persistent identities across rebuilds, splits
 merges, and reorders, declare [persistent naming schemes](build-an-application.md#persistent-naming-schemes)
 on the application schema with `decl::application_naming::{ApplicationNameSchemeBuilder, ApplicationGroupNameSchemeBuilder, ApplicationGroupContinuityRule, WorthQueryName}`
 and `decl::worth_query_name_discriminator!`. Installed entity, relation, and group
-schemes lower into commit-time birth minting that produces fixed 32-byte,
-non-forgeable `WorthQueryName<K>` handles invariant across fresh builds, dummy
-pre-allocations, and worker counts, refusing `DuplicateBirth` and
-`InvalidDiscriminatorBasis` fail-closed with zero committed effects.
+schemes lower into `LoweredExecutionNameSchemeCatalog`, bind into Relational's
+schema authority, and mint fixed 32-byte, kind-verified, non-forgeable
+`WorthQueryName<K>` handles through `ExecutionNamingCommitAuthority` invariant
+across fresh builds, dummy pre-allocations, worker counts, forks, checkpoints,
+and tail replay—refusing `MissingBirth`, `DuplicateBirth`, and
+`InvalidDiscriminatorBasis` fail-closed with zero committed effects (automatic
+Query handler/producer lowering follows in subsequent slices).
 
 For a new installed feature, use the
 [complete feature definition](build-an-application.md#complete-feature-definitions)

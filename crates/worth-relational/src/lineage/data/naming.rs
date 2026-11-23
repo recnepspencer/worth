@@ -188,21 +188,73 @@ pub struct PersistentNameDiscriminatorReference {
 pub struct InstalledPersistentNameScheme {
     scheme_id: String,
     subject_kind: PersistentNameSubjectKind,
+    subject_name: String,
     role_ranks: BTreeMap<String, u32>,
     split_capable: bool,
     require_authored_occurrence: bool,
 }
 
 impl InstalledPersistentNameScheme {
-    /// Constructs a Relational scheme contract from topologically ordered roles
-    /// lowered by installation.
-    pub fn from_ordered_roles(
+    /// Validates and constructs a Relational scheme contract from topologically
+    /// ordered roles lowered by installation, binding the declared subject name.
+    pub fn try_from_ordered_roles_for_subject(
+        scheme_id: impl Into<String>,
+        subject_kind: PersistentNameSubjectKind,
+        subject_name: impl Into<String>,
+        ordered_roles: impl IntoIterator<Item = impl Into<String>>,
+        split_capable: bool,
+        require_authored_occurrence: bool,
+    ) -> Result<Self, String> {
+        let scheme_id = scheme_id.into();
+        if !is_valid_dotted_scheme_id(&scheme_id) {
+            return Err(format!("invalid persistent name scheme identifier `{scheme_id}`"));
+        }
+        let subject_name = subject_name.into();
+        if subject_name.trim().is_empty() {
+            return Err(format!(
+                "persistent name scheme `{scheme_id}` requires a non-empty subject name"
+            ));
+        }
+        let mut role_ranks = BTreeMap::new();
+        for (rank, role) in ordered_roles.into_iter().enumerate() {
+            let role = role.into();
+            if role.trim().is_empty() {
+                return Err(format!(
+                    "persistent name scheme `{scheme_id}` contains an empty role name"
+                ));
+            }
+            let rank = u32::try_from(rank)
+                .map_err(|_| format!("persistent name scheme `{scheme_id}` exceeded u32 roles"))?;
+            if role_ranks.insert(role.clone(), rank).is_some() {
+                return Err(format!(
+                    "persistent name scheme `{scheme_id}` contains duplicate role `{role}`"
+                ));
+            }
+        }
+        if role_ranks.is_empty() {
+            return Err(format!(
+                "persistent name scheme `{scheme_id}` must declare at least one role"
+            ));
+        }
+        Ok(Self {
+            scheme_id,
+            subject_kind,
+            subject_name,
+            role_ranks,
+            split_capable,
+            require_authored_occurrence,
+        })
+    }
+
+    #[cfg(test)]
+    pub(crate) fn from_ordered_roles(
         scheme_id: impl Into<String>,
         subject_kind: PersistentNameSubjectKind,
         ordered_roles: impl IntoIterator<Item = impl Into<String>>,
         split_capable: bool,
         require_authored_occurrence: bool,
     ) -> Self {
+        let scheme_id = scheme_id.into();
         let mut role_ranks = BTreeMap::new();
         for (rank, role) in ordered_roles.into_iter().enumerate() {
             role_ranks.insert(
@@ -211,7 +263,8 @@ impl InstalledPersistentNameScheme {
             );
         }
         Self {
-            scheme_id: scheme_id.into(),
+            subject_name: scheme_id.clone(),
+            scheme_id,
             subject_kind,
             role_ranks,
             split_capable,
@@ -227,6 +280,10 @@ impl InstalledPersistentNameScheme {
         self.subject_kind
     }
 
+    pub fn subject_name(&self) -> &str {
+        &self.subject_name
+    }
+
     pub fn role_rank(&self, role: &str) -> Option<u32> {
         self.role_ranks.get(role).copied()
     }
@@ -238,6 +295,16 @@ impl InstalledPersistentNameScheme {
     pub const fn require_authored_occurrence(&self) -> bool {
         self.require_authored_occurrence
     }
+}
+
+fn is_valid_dotted_scheme_id(id: &str) -> bool {
+    !id.is_empty()
+        && id.split('.').all(|segment| {
+            !segment.is_empty()
+                && segment
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-')
+        })
 }
 
 /// Immutable registry of installed persistent name schemes visible during

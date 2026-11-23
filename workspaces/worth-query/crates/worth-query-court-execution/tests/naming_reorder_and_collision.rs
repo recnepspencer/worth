@@ -1,6 +1,7 @@
 //! Slice 1B courts for reorder invariance vs parent-changing reorder,
 //! `DuplicateBirth` & `InvalidDiscriminatorBasis` commit refusals with zero
-//! committed effects, and Relational self-derived live/retired basis enforcement.
+//! committed effects (head AND naming basis unchanged), and Relational
+//! self-derived live/retired basis enforcement.
 
 use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::application_naming::WorthQueryName;
@@ -8,6 +9,7 @@ use worth_query_execution_naming::facade::{
     ExecutionNameBirthPlanBuilder, ExecutionNamingCommitAuthority, ExecutionNamingDenial,
     ExecutionPendingEntityBirth, ExecutionPendingRelationBirth,
 };
+use worth_relational::facade::history::BranchId;
 use worth_relational::facade::lineage::{
     CommitNamingPlan, DiscriminatorBasisDenialReason, LineageNameDenial, PendingBirthTarget,
     PendingCommitBirth, PersistentNameHolder,
@@ -18,8 +20,8 @@ use worth_relational::facade::transactions::{
 
 use crate::naming_execution_fixture::{
     begin_staged_tx, create_face_intent, create_seam_intent, execution_lease_for_workers, face_ref,
-    fresh_cad_runtime, lowered_cad_catalog, release_commit_snapshot, seam_ref, Face, FaceSplitDisc,
-    Seam, SeamSplitDisc, FACE_SCHEME_ID, SEAM_SCHEME_ID,
+    fresh_cad_runtime, lowered_cad_catalog, release_commit_snapshot, seam_ref, CadNamingSchema,
+    Face, FaceSplitDisc, Seam, SeamSplitDisc, FACE_SCHEME_ID, SEAM_SCHEME_ID,
 };
 
 #[test]
@@ -49,7 +51,9 @@ fn independent_occurrence_reorder_invariance_vs_parent_changing_reorder() {
             )
             .expect("commit succeeds");
             let (res, names) = c.into_parts();
-            let (eid, name) = names.created_entity_name::<Face>(&res, &r).unwrap();
+            let (eid, name) = names
+                .created_entity_name::<CadNamingSchema, Face>(&res, &r)
+                .unwrap();
             let rel_id = names.entity_relational_identity(eid).unwrap();
             release_commit_snapshot(&rt, &res);
             (eid, name, rel_id)
@@ -59,15 +63,12 @@ fn independent_occurrence_reorder_invariance_vs_parent_changing_reorder() {
         (rt, a, b)
     };
 
-    // Independent occurrences F1 then F2 vs F2 then F1 must yield identical names.
     let (rt_ab, (e_f1_a, name_f1_a, id_f1_a), (_, name_f2_a, _)) = commit_two("occ.F1", "occ.F2");
     let (rt_ba, (e_f2_b, name_f2_b, id_f2_b), (_, name_f1_b, _)) = commit_two("occ.F2", "occ.F1");
     assert_eq!(name_f1_a, name_f1_b);
     assert_eq!(name_f2_a, name_f2_b);
     assert_ne!(name_f1_a, name_f2_a);
 
-    // Parent-changing reorder: splitting F1 vs splitting F2 under the exact same
-    // occurrence key & discriminator must mint DISTINCT child names (no silent rebind).
     let split_face = |rt: &worth_relational::facade::runtime::RelationalRuntime,
                       parent_e,
                       parent_name: WorthQueryName<Face>,
@@ -104,7 +105,9 @@ fn independent_occurrence_reorder_invariance_vs_parent_changing_reorder() {
         )
         .expect("split commit succeeds");
         let (res, names) = c.into_parts();
-        let (_, child_name) = names.created_entity_name::<Face>(&res, &child_ref).unwrap();
+        let (_, child_name) = names
+            .created_entity_name::<CadNamingSchema, Face>(&res, &child_ref)
+            .unwrap();
         release_commit_snapshot(rt, &res);
         child_name
     };
@@ -123,6 +126,7 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
     let runtime = fresh_cad_runtime();
     let lease = execution_lease_for_workers(2);
     let execution = ExecutionRequest::leased(&lease);
+    let main = BranchId("main".to_owned());
 
     let head_commit = |rt: &worth_relational::facade::runtime::RelationalRuntime| {
         rt.admit_branch_basis(&rt.main_branch_identity())
@@ -133,6 +137,7 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
 
     // 1. Same-commit sibling collision: two created entities claim identical birth.
     let head_before = head_commit(&runtime);
+    let basis_before = runtime.branch_live_persistent_names(&main);
     let dup_a = face_ref("sib-a");
     let dup_b = face_ref("sib-b");
     let tx_sib = begin_staged_tx(
@@ -164,22 +169,19 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
     )
     .err()
     .expect("same-commit sibling collision must refuse");
-    assert!(
-        matches!(
-            sib_err,
-            ExecutionNamingDenial::RelationalNaming(LineageNameDenial::DuplicateBirth {
-                first: PersistentNameHolder::Entity(e1),
-                second: PersistentNameHolder::Entity(e2),
-                ..
-            }) if e1 != e2
-        ),
-        "expected DuplicateBirth naming both concrete entity holders, got {sib_err:?}"
-    );
-    assert_eq!(head_commit(&runtime), head_before, "zero committed effects");
+    assert!(matches!(
+        sib_err,
+        ExecutionNamingDenial::RelationalNaming(LineageNameDenial::DuplicateBirth {
+            first: PersistentNameHolder::Entity(e1),
+            second: PersistentNameHolder::Entity(e2),
+            ..
+        }) if e1 != e2
+    ));
+    assert_eq!(head_commit(&runtime), head_before);
+    assert_eq!(runtime.branch_live_persistent_names(&main), basis_before);
 
-    // 2. Commit valid entity F1 + relation S1, then prove Relational self-derives
-    //    live holders (entity AND persisted relation) across commits with zero
-    //    caller-supplied live maps.
+    // 2. Seed entity F1 + F2 + relation S1, then prove Relational self-derives
+    //    live holders across commits with zero caller-supplied live maps.
     let f1_ref = face_ref("f1");
     let f2_ref = face_ref("f2");
     let s1_ref = seam_ref(
@@ -225,15 +227,22 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
     )
     .expect("seed commit succeeds");
     let (c1_res, c1_names) = c1.into_parts();
-    let (f1_id, f1_name) = c1_names.created_entity_name::<Face>(&c1_res, &f1_ref).unwrap();
-    let (f2_id, _) = c1_names.created_entity_name::<Face>(&c1_res, &f2_ref).unwrap();
-    let (s1_id, s1_name) = c1_names.created_relation_name::<Seam>(&c1_res, &s1_ref).unwrap();
+    let (f1_id, f1_name) = c1_names
+        .created_entity_name::<CadNamingSchema, Face>(&c1_res, &f1_ref)
+        .unwrap();
+    let (f2_id, _) = c1_names
+        .created_entity_name::<CadNamingSchema, Face>(&c1_res, &f2_ref)
+        .unwrap();
+    let (s1_id, s1_name) = c1_names
+        .created_relation_name::<Seam>(&c1_res, &s1_ref)
+        .unwrap();
     release_commit_snapshot(&runtime, &c1_res);
 
     let head_after_seed = head_commit(&runtime);
+    let basis_after_seed = runtime.branch_live_persistent_names(&main);
     assert!(runtime.relation_lineage(s1_id).is_some());
 
-    // Cross-commit duplicate entity birth (CommitNamingPlan has NO live_holders map!).
+    // Cross-commit duplicate entity birth.
     let dup_f_ref = face_ref("dup-f1");
     let tx_dup_f = begin_staged_tx(&runtime, "dup-f", vec![create_face_intent("dup-f1")]);
     let mut b_dup_f = ExecutionNameBirthPlanBuilder::new(&catalog, std::iter::empty());
@@ -253,24 +262,20 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
     )
     .err()
     .expect("cross-commit live entity DuplicateBirth must refuse");
-    assert!(
-        matches!(
-            dup_f_err,
-            ExecutionNamingDenial::RelationalNaming(LineageNameDenial::DuplicateBirth {
-                identity,
-                ref first,
-                second: PersistentNameHolder::Entity(other),
-            }) if *identity.as_bytes() == *f1_name.as_bytes()
-                && *first == PersistentNameHolder::Entity(f1_id)
-                && other != f1_id
-        ),
-        "unexpected cross-commit entity refusal: {dup_f_err:?}"
-    );
+    assert!(matches!(
+        dup_f_err,
+        ExecutionNamingDenial::RelationalNaming(LineageNameDenial::DuplicateBirth {
+            identity,
+            ref first,
+            second: PersistentNameHolder::Entity(other),
+        }) if *identity.as_bytes() == *f1_name.as_bytes()
+            && *first == PersistentNameHolder::Entity(f1_id)
+            && other != f1_id
+    ));
     assert_eq!(head_commit(&runtime), head_after_seed);
+    assert_eq!(runtime.branch_live_persistent_names(&main), basis_after_seed);
 
-    // Cross-commit duplicate relation birth (proves persisted relation live holders).
-    // Uses distinct endpoints (f2 -> f1) so structural relation uniqueness passes
-    // and Relational's lineage finalization catches the persistent-name collision.
+    // Cross-commit duplicate relation birth (distinct endpoints f2 -> f1).
     let dup_s_ref = seam_ref(
         "dup-s1",
         EntityReference::Existing(f2_id),
@@ -300,23 +305,21 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
     )
     .err()
     .expect("cross-commit live relation DuplicateBirth must refuse");
-    assert!(
-        matches!(
-            dup_s_err,
-            ExecutionNamingDenial::RelationalNaming(LineageNameDenial::DuplicateBirth {
-                identity,
-                ref first,
-                second: PersistentNameHolder::Relation(other),
-            }) if *identity.as_bytes() == *s1_name.as_bytes()
-                && *first == PersistentNameHolder::Relation(s1_id)
-                && other != s1_id
-        ),
-        "unexpected cross-commit relation refusal: {dup_s_err:?}"
-    );
+    assert!(matches!(
+        dup_s_err,
+        ExecutionNamingDenial::RelationalNaming(LineageNameDenial::DuplicateBirth {
+            identity,
+            ref first,
+            second: PersistentNameHolder::Relation(other),
+        }) if *identity.as_bytes() == *s1_name.as_bytes()
+            && *first == PersistentNameHolder::Relation(s1_id)
+            && other != s1_id
+    ));
     assert_eq!(head_commit(&runtime), head_after_seed);
+    assert_eq!(runtime.branch_live_persistent_names(&main), basis_after_seed);
 
     // 3. Smuggled/undeclared embedded name reference in discriminator bytes
-    //    must be refused by Relational's scanner (`InvalidDiscriminatorBasis`).
+    //    refuses via Relational's scanner (`InvalidDiscriminatorBasis`).
     let bad_ref = face_ref("smuggled");
     let mut tx_bad = begin_staged_tx(&runtime, "smuggled", vec![create_face_intent("smuggled")]);
     let (disc_bytes, _) =
@@ -327,31 +330,28 @@ fn duplicate_birth_and_invalid_discriminator_refuse_with_zero_effects_using_self
             },
         );
     tx_bad.attach_naming_plan(CommitNamingPlan {
-        scheme_registry: catalog.relational_registry().clone(),
         pending_births: vec![PendingCommitBirth {
             target: PendingBirthTarget::CreatedEntity(bad_ref),
             scheme_id: FACE_SCHEME_ID.to_owned(),
             occurrence_key: "occ.smuggle".to_owned(),
             role_path: "cut_piece".to_owned(),
             parent_identities: Vec::new(),
-            referenced_names: Vec::new(), // deliberately omitted!
+            referenced_names: Vec::new(),
             canonical_discriminator: disc_bytes,
         }],
-        postures: Vec::new(),
+        ..Default::default()
     });
     let smuggle_err = runtime
         .commit_branch_transaction(&execution, tx_bad)
         .err()
         .expect("undeclared embedded name reference must refuse");
-    assert!(
-        matches!(
-            smuggle_err.lineage_name_denial_ref(),
-            Some(LineageNameDenial::InvalidDiscriminatorBasis {
-                reason: DiscriminatorBasisDenialReason::UndeclaredEncodedNameReference { raw_digest },
-                ..
-            }) if raw_digest == f1_name.as_bytes()
-        ),
-        "unexpected InvalidDiscriminatorBasis refusal: {smuggle_err:?}"
-    );
+    assert!(matches!(
+        smuggle_err.lineage_name_denial_ref(),
+        Some(LineageNameDenial::InvalidDiscriminatorBasis {
+            reason: DiscriminatorBasisDenialReason::UndeclaredEncodedNameReference { raw_digest },
+            ..
+        }) if raw_digest == f1_name.as_bytes()
+    ));
     assert_eq!(head_commit(&runtime), head_after_seed);
+    assert_eq!(runtime.branch_live_persistent_names(&main), basis_after_seed);
 }

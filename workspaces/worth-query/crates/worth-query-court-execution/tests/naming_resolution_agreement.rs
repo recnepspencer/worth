@@ -1,16 +1,18 @@
 //! Cross-crate agreement court between `worth-query-declaration`'s
 //! resolution vocabulary (`NameSelection`, `ResolvedName`,
 //! `NameResolutionDenial`, `ErasedWorthQueryName`) and `worth-relational`'s
-//! derived name index resolution contract, over real Relational name minting
-//! and real group naming transitions.
+//! derived name index resolution contract, over real Relational committed name
+//! minting and real group naming transitions.
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::application_naming::{
-    ApplicationNameDiscriminator, NameResolutionDenial, NameSelection, NameSelectionDenial,
-    ResolvedName, WorthQueryName,
+    NameSelection, NameSelectionDenial, ResolvedName, WorthQueryName,
 };
-use worth_query_execution_naming::facade::{admit_minted_birth_record, admit_resolved_name_key};
+use worth_query_execution_naming::facade::{
+    ExecutionNameBirthPlanBuilder, ExecutionNamingCommitAuthority, ExecutionPendingEntityBirth,
+};
 use worth_relational::facade::aggregate_identity::{
     AggregateContinuityRule, AggregateGroupMembers, AggregateGroupNamingAuthority,
     AggregateGroupScheme, AggregateGroupSchemeId, AggregateIdentity, AggregateMemberRole,
@@ -19,67 +21,66 @@ use worth_relational::facade::aggregate_identity::{
 use worth_relational::facade::history::{BranchId, CommitId};
 use worth_relational::facade::identity::{EntityId, PartitionId};
 use worth_relational::facade::lineage::{
-    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry,
-    PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameBranchIndex,
-    PersistentNameCommittedBatch, PersistentNameHolder, PersistentNameIdentity, PersistentNameKey,
-    PersistentNameMintingAuthority, PersistentNameResolution, PersistentNameResolutionDenial,
-    PersistentNameResolutionOutcome, PersistentNameSelection, PersistentNameSubjectKind,
+    PersistentNameBirthRecord, PersistentNameBranchIndex, PersistentNameCommittedBatch,
+    PersistentNameIdentity, PersistentNameKey, PersistentNameResolution,
+    PersistentNameResolutionDenial, PersistentNameResolutionOutcome, PersistentNameSelection,
     PersistentNameTarget,
 };
 use worth_relational::facade::schema::NativeMemberKey;
 
-struct Space;
-struct Face;
+use crate::naming_execution_fixture::{
+    begin_staged_tx, create_face_intent, execution_lease_for_workers, face_ref, fresh_cad_runtime,
+    lowered_cad_catalog, release_commit_snapshot, CadNamingSchema, Face, FaceSplitDisc,
+    FACE_SCHEME_ID,
+};
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-enum FaceSide {
-    Piece { index: u8 },
-}
+/// Commits four real `Face` entities through `ExecutionNamingCommitAuthority`,
+/// each born on its own canonical `FaceSplitDisc::Side` discriminator.
+fn commit_four_faces() -> Vec<(WorthQueryName<Face>, PersistentNameBirthRecord)> {
+    let catalog = lowered_cad_catalog();
+    let runtime = fresh_cad_runtime();
+    let lease = execution_lease_for_workers(2);
+    let execution = ExecutionRequest::leased(&lease);
 
-worth_query_declaration::worth_query_name_discriminator! {
-    enum FaceSide {
-        identity: "worth.court.face.side.v1",
-        variants: {
-            Piece { index },
-        }
+    let refs: Vec<_> = (0..4u8).map(|i| face_ref(&format!("f-{i}"))).collect();
+    let intents: Vec<_> = (0..4u8)
+        .map(|i| create_face_intent(&format!("f-{i}")))
+        .collect();
+    let tx = begin_staged_tx(&runtime, "mint-four", intents);
+    let mut builder = ExecutionNameBirthPlanBuilder::new(&catalog, std::iter::empty());
+    for (i, r) in refs.iter().enumerate() {
+        builder
+            .add_entity_birth(
+                ExecutionPendingEntityBirth::new(
+                    r.clone(),
+                    FACE_SCHEME_ID,
+                    "occ.court",
+                    "authored",
+                )
+                .with_discriminator(&FaceSplitDisc::Side { side: i as u8 }),
+            )
+            .unwrap();
     }
-}
-
-/// Mints four faces through Relational's naming authority, each born on
-/// its own canonical declaration side.
-fn mint_faces() -> Vec<PersistentNameBirthRecord> {
-    let mut registry = InstalledPersistentNameSchemeRegistry::new();
-    registry
-        .register(InstalledPersistentNameScheme::from_ordered_roles(
-            "worth.court.face.v1",
-            PersistentNameSubjectKind::Entity,
-            ["authored"],
-            true,
-            true,
-        ))
-        .unwrap();
-    let births: Vec<_> = (0..4u8)
-        .map(|index| PersistentNameBirthRequest {
-            scheme_id: "worth.court.face.v1".to_owned(),
-            occurrence_key: "occ.court".to_owned(),
-            role_path: "authored".to_owned(),
-            parent_identities: Vec::new(),
-            referenced_names: Vec::new(),
-            canonical_discriminator: FaceSide::Piece { index }.canonical_bytes(),
-            holder: PersistentNameHolder::PendingBirth {
-                occurrence_key: "occ.court".to_owned(),
-                role_path: "authored".to_owned(),
-                ordinal: usize::from(index),
-            },
+    let committed = ExecutionNamingCommitAuthority::commit_with_naming_plan(
+        &runtime,
+        &execution,
+        tx,
+        builder.build(),
+    )
+    .expect("four distinct sides commit cleanly");
+    let (res, admitted) = committed.into_parts();
+    let out: Vec<_> = refs
+        .iter()
+        .map(|r| {
+            let (eid, name) = admitted
+                .created_entity_name::<CadNamingSchema, Face>(&res, r)
+                .unwrap();
+            let birth = admitted.entity_birth(eid).unwrap().clone();
+            (name, birth)
         })
         .collect();
-    PersistentNameMintingAuthority::mint_commit_births(
-        &registry,
-        &BTreeMap::new(),
-        &BTreeSet::new(),
-        &births,
-    )
-    .expect("distinct sides mint distinct faces")
+    release_commit_snapshot(&runtime, &res);
+    out
 }
 
 /// Lowers a declaration selection onto Relational's selection contract.
@@ -107,38 +108,31 @@ fn lower(
     }
 }
 
-fn names<K>(keys: Vec<PersistentNameKey>) -> Vec<WorthQueryName<K>> {
-    keys.into_iter()
-        .map(|key| admit_resolved_name_key(key, key.subject_kind()).unwrap())
-        .collect()
+#[derive(Debug, Eq, PartialEq)]
+enum LiftedDenial {
+    Ambiguous(Vec<[u8; 32]>),
+    NoMatchingCandidate(Vec<[u8; 32]>),
+    BasisPruned,
+    UnknownName,
 }
 
-/// Lifts a Relational outcome into the declaration resolution vocabulary.
-fn lift<K>(
-    outcome: PersistentNameResolutionOutcome,
-) -> Result<ResolvedName<PersistentNameTarget>, NameResolutionDenial<K>> {
+fn lift(outcome: PersistentNameResolutionOutcome) -> Result<ResolvedName<PersistentNameTarget>, LiftedDenial> {
     match outcome.result {
         Ok(PersistentNameResolution::Exact(target)) => Ok(ResolvedName::Exact(target)),
         Ok(PersistentNameResolution::Plural(targets)) => Ok(ResolvedName::Plural(targets)),
         Ok(PersistentNameResolution::Retired { at_commit }) => Ok(ResolvedName::Retired {
             at_commit: at_commit.0,
         }),
-        Err(PersistentNameResolutionDenial::Ambiguous { candidates }) => {
-            Err(NameResolutionDenial::Ambiguous {
-                candidates: names(candidates),
-            })
-        }
+        Err(PersistentNameResolutionDenial::Ambiguous { candidates }) => Err(
+            LiftedDenial::Ambiguous(candidates.into_iter().map(|k| *k.digest()).collect()),
+        ),
         Err(PersistentNameResolutionDenial::NoMatchingCandidate { live_candidates }) => {
-            Err(NameResolutionDenial::NoMatchingCandidate {
-                live_candidates: names(live_candidates),
-            })
+            Err(LiftedDenial::NoMatchingCandidate(
+                live_candidates.into_iter().map(|k| *k.digest()).collect(),
+            ))
         }
-        Err(PersistentNameResolutionDenial::BasisPruned { .. }) => {
-            Err(NameResolutionDenial::BasisPruned)
-        }
-        Err(PersistentNameResolutionDenial::UnknownName { .. }) => {
-            Err(NameResolutionDenial::UnknownName)
-        }
+        Err(PersistentNameResolutionDenial::BasisPruned { .. }) => Err(LiftedDenial::BasisPruned),
+        Err(PersistentNameResolutionDenial::UnknownName { .. }) => Err(LiftedDenial::UnknownName),
         Err(PersistentNameResolutionDenial::EmptySelectionFilter) => {
             unreachable!("declaration selections never lower to an empty filter")
         }
@@ -213,29 +207,32 @@ impl Groups {
 
 #[test]
 fn declaration_resolution_vocabulary_agrees_with_relational_name_index() {
-    let faces = mint_faces();
+    let faces = commit_four_faces();
     let minted: BTreeMap<[u8; 32], PersistentNameIdentity> = faces
         .iter()
-        .map(|birth| (*birth.identity().as_bytes(), birth.identity()))
+        .map(|(_, birth)| (*birth.identity().as_bytes(), birth.identity()))
         .collect();
+    let name_by_id: BTreeMap<PersistentNameIdentity, WorthQueryName<Face>> = faces
+        .iter()
+        .map(|(name, birth)| (birth.identity(), *name))
+        .collect();
+
     // KeepSide carries exactly the canonical bytes Relational records at birth.
-    let side = NameSelection::keep_side(&FaceSide::Piece { index: 1 }).unwrap();
+    let side = NameSelection::keep_side(&FaceSplitDisc::Side { side: 1 }).unwrap();
     let NameSelection::KeepSide { discriminator } = &side else {
         unreachable!()
     };
     assert_eq!(
         discriminator.as_bytes(),
-        faces[1].parts().canonical_discriminator()
+        faces[1].1.parts().canonical_discriminator()
     );
     assert_ne!(
         discriminator.as_bytes(),
-        faces[2].parts().canonical_discriminator()
+        faces[2].1.parts().canonical_discriminator()
     );
-    let face: WorthQueryName<Face> =
-        admit_minted_birth_record(&faces[0], PersistentNameSubjectKind::Entity).unwrap();
     assert_eq!(
-        face.erased().as_bytes(),
-        PersistentNameKey::Entity(faces[0].identity()).digest()
+        faces[0].0.erased().as_bytes(),
+        PersistentNameKey::Entity(faces[0].1.identity()).digest()
     );
 
     let sorted: Vec<_> = minted.values().copied().collect();
@@ -254,51 +251,25 @@ fn declaration_resolution_vocabulary_agrees_with_relational_name_index() {
     let (one, two) = (groups.group_of(sorted[1]), groups.group_of(sorted[2]));
     let index = groups.index(None);
     let resolve = |selection: &NameSelection, basis: u64| {
-        lift::<Space>(index.resolve(held, CommitId(basis), &lower(selection, &minted)))
+        lift(index.resolve(held, CommitId(basis), &lower(selection, &minted)))
     };
-    let mut fragments: Vec<WorthQueryName<Space>> = vec![
-        admit_resolved_name_key(
-            PersistentNameKey::Group(one),
-            PersistentNameSubjectKind::Group,
-        )
-        .unwrap(),
-        admit_resolved_name_key(
-            PersistentNameKey::Group(two),
-            PersistentNameSubjectKind::Group,
-        )
-        .unwrap(),
-    ];
+    let mut fragments: Vec<[u8; 32]> = vec![*one.bytes(), *two.bytes()];
     fragments.sort();
     assert_eq!(
         resolve(&NameSelection::Exact, 2),
-        Err(NameResolutionDenial::Ambiguous {
-            candidates: fragments.clone()
-        })
+        Err(LiftedDenial::Ambiguous(fragments.clone()))
     );
     let Ok(ResolvedName::Plural(targets)) = resolve(&NameSelection::AllDescendants, 2) else {
         panic!("all descendants resolve plural");
     };
-    let plural: Vec<WorthQueryName<Space>> = targets
-        .iter()
-        .map(|t| admit_resolved_name_key(t.key(), t.key().subject_kind()).unwrap())
-        .collect();
+    let plural: Vec<[u8; 32]> = targets.iter().map(|t| *t.key().digest()).collect();
     assert_eq!(
         plural, fragments,
         "plural answers keep canonical name order"
     );
     let carriers = NameSelection::bounded_by_carriers([
-        admit_resolved_name_key::<Face>(
-            PersistentNameKey::Entity(sorted[3]),
-            PersistentNameSubjectKind::Entity,
-        )
-        .unwrap()
-        .erased(),
-        admit_resolved_name_key::<Face>(
-            PersistentNameKey::Entity(sorted[2]),
-            PersistentNameSubjectKind::Entity,
-        )
-        .unwrap()
-        .erased(),
+        name_by_id[&sorted[3]].erased(),
+        name_by_id[&sorted[2]].erased(),
     ])
     .expect("two carriers form a nonempty filter");
     assert_eq!(
@@ -313,9 +284,7 @@ fn declaration_resolution_vocabulary_agrees_with_relational_name_index() {
     );
     assert_eq!(
         resolve(&side, 2),
-        Err(NameResolutionDenial::NoMatchingCandidate {
-            live_candidates: fragments
-        })
+        Err(LiftedDenial::NoMatchingCandidate(fragments))
     );
     assert_eq!(
         resolve(&NameSelection::Exact, 1),
@@ -327,9 +296,7 @@ fn declaration_resolution_vocabulary_agrees_with_relational_name_index() {
     groups.step(&[&sorted[2..4]]); // 3: one fragment retires
     groups.step(&[]); // 4: the last fragment retires
     let index = groups.index(None);
-    let at = |basis: u64| {
-        lift::<Space>(index.resolve(held, CommitId(basis), &PersistentNameSelection::Exact))
-    };
+    let at = |basis: u64| lift(index.resolve(held, CommitId(basis), &PersistentNameSelection::Exact));
     assert_eq!(
         at(3),
         Ok(ResolvedName::Exact(PersistentNameTarget::Group {
@@ -339,12 +306,12 @@ fn declaration_resolution_vocabulary_agrees_with_relational_name_index() {
     assert_eq!(at(4), Ok(ResolvedName::Retired { at_commit: 4 }));
     let never = PersistentNameKey::Group(AggregateIdentity::from_bytes([9; 32]));
     assert_eq!(
-        lift::<Space>(index.resolve(never, CommitId(4), &PersistentNameSelection::Exact)),
-        Err(NameResolutionDenial::UnknownName)
+        lift(index.resolve(never, CommitId(4), &PersistentNameSelection::Exact)),
+        Err(LiftedDenial::UnknownName)
     );
     let pruned = groups.index(Some(CommitId(2)));
     assert_eq!(
-        lift::<Space>(pruned.resolve(held, CommitId(1), &PersistentNameSelection::Exact)),
-        Err(NameResolutionDenial::BasisPruned)
+        lift(pruned.resolve(held, CommitId(1), &PersistentNameSelection::Exact)),
+        Err(LiftedDenial::BasisPruned)
     );
 }

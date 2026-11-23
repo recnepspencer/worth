@@ -3,26 +3,94 @@
 
 use std::collections::BTreeMap;
 
-use worth_query_declaration::facade::application_naming::ApplicationNameSubjectKind;
+use worth_query_declaration::facade::application_naming::{
+    ApplicationNameDiscriminator, ApplicationNameSubjectKind, WorthQueryName,
+};
 use worth_relational::facade::identity::{EntityId, RelationId};
 use worth_relational::facade::lineage::{
-    LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget, LineageSplitChild,
-    PersistentNameBirthRequest, PersistentNameIdentity,
+    LineagePostureClaim, LineageRecordTarget, PendingBirthTarget, PendingMergeClaim,
+    PendingMergeKeeper, PendingMergeTarget, PendingSplitChild, PendingSplitClaim,
+    PersistentNameIdentity,
 };
+use worth_relational::facade::transactions::{CreatedEntityRef, CreatedRelationRef};
 
 use crate::birth_plan::assembly::ExecutionNameBirthPlanBuilder;
 use crate::denial::ExecutionNamingDenial;
 
-/// One created child inside an explicit `Split` posture.
+/// One newly created successor child inside an explicit `Split` posture.
 #[derive(Clone, Debug)]
 pub struct ExecutionSplitChildSpec {
-    pub target: LineageRecordTarget,
+    pub target: PendingBirthTarget,
     pub scheme_id: String,
     pub occurrence_key: String,
     pub role_path: String,
     pub canonical_discriminator: Vec<u8>,
     pub embedded_name_digests: Vec<[u8; 32]>,
     pub same_occurrence_roles: BTreeMap<[u8; 32], String>,
+}
+
+impl ExecutionSplitChildSpec {
+    pub fn entity(
+        created: CreatedEntityRef,
+        scheme_id: impl Into<String>,
+        occurrence_key: impl Into<String>,
+        role_path: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PendingBirthTarget::CreatedEntity(created),
+            scheme_id,
+            occurrence_key,
+            role_path,
+        )
+    }
+
+    pub fn relation(
+        created: CreatedRelationRef,
+        scheme_id: impl Into<String>,
+        occurrence_key: impl Into<String>,
+        role_path: impl Into<String>,
+    ) -> Self {
+        Self::new(
+            PendingBirthTarget::CreatedRelation(created),
+            scheme_id,
+            occurrence_key,
+            role_path,
+        )
+    }
+
+    fn new(
+        target: PendingBirthTarget,
+        scheme_id: impl Into<String>,
+        occurrence_key: impl Into<String>,
+        role_path: impl Into<String>,
+    ) -> Self {
+        Self {
+            target,
+            scheme_id: scheme_id.into(),
+            occurrence_key: occurrence_key.into(),
+            role_path: role_path.into(),
+            canonical_discriminator: Vec::new(),
+            embedded_name_digests: Vec::new(),
+            same_occurrence_roles: BTreeMap::new(),
+        }
+    }
+
+    pub fn with_discriminator<D: ApplicationNameDiscriminator>(mut self, discriminator: &D) -> Self {
+        let (bytes, refs) = discriminator.canonical_bytes_with_references();
+        self.canonical_discriminator = bytes;
+        self.embedded_name_digests = refs;
+        self
+    }
+
+    pub fn with_same_occurrence_reference<K>(
+        mut self,
+        name: WorthQueryName<K>,
+        referenced_role: impl Into<String>,
+    ) -> Self {
+        self.same_occurrence_roles
+            .insert(*name.as_bytes(), referenced_role.into());
+        self
+    }
 }
 
 /// Keeper choice for an explicit `Merge` posture.
@@ -36,6 +104,24 @@ pub enum ExecutionNamedMergeKeeper {
         canonical_discriminator: Vec<u8>,
         embedded_name_digests: Vec<[u8; 32]>,
     },
+}
+
+impl ExecutionNamedMergeKeeper {
+    pub fn mint_new<D: ApplicationNameDiscriminator>(
+        scheme_id: impl Into<String>,
+        occurrence_key: impl Into<String>,
+        role_path: impl Into<String>,
+        discriminator: &D,
+    ) -> Self {
+        let (bytes, refs) = discriminator.canonical_bytes_with_references();
+        Self::MintNew {
+            scheme_id: scheme_id.into(),
+            occurrence_key: occurrence_key.into(),
+            role_path: role_path.into(),
+            canonical_discriminator: bytes,
+            embedded_name_digests: refs,
+        }
+    }
 }
 
 impl<'a> ExecutionNameBirthPlanBuilder<'a> {
@@ -65,7 +151,8 @@ impl<'a> ExecutionNameBirthPlanBuilder<'a> {
         self
     }
 
-    /// Registers an explicit `Split` posture over concrete created records.
+    /// Registers an explicit `Split` posture whose newly created children will
+    /// be bound by Relational to their allocated record identities.
     pub fn add_split_posture(
         &mut self,
         parent_target: LineageRecordTarget,
@@ -75,8 +162,8 @@ impl<'a> ExecutionNameBirthPlanBuilder<'a> {
         let mut lowered_children = Vec::with_capacity(children.len());
         for child in children {
             let expected_kind = match child.target {
-                LineageRecordTarget::Entity(_) => ApplicationNameSubjectKind::Entity,
-                LineageRecordTarget::Relation(_) => ApplicationNameSubjectKind::Relation,
+                PendingBirthTarget::CreatedEntity(_) => ApplicationNameSubjectKind::Entity,
+                PendingBirthTarget::CreatedRelation(_) => ApplicationNameSubjectKind::Relation,
             };
             let layout = self.require_scheme(expected_kind, &child.scheme_id, &child.role_path)?;
             if layout.require_authored_occurrence() && child.occurrence_key.trim().is_empty() {
@@ -98,20 +185,16 @@ impl<'a> ExecutionNameBirthPlanBuilder<'a> {
                 &child.embedded_name_digests,
                 &child.same_occurrence_roles,
             )?;
-            lowered_children.push(LineageSplitChild {
+            lowered_children.push(PendingSplitChild {
                 target: child.target,
-                birth: PersistentNameBirthRequest {
-                    scheme_id: child.scheme_id,
-                    occurrence_key: child.occurrence_key,
-                    role_path: child.role_path,
-                    parent_identities: vec![parent_name],
-                    referenced_names,
-                    canonical_discriminator: child.canonical_discriminator,
-                    holder: child.target.to_holder(),
-                },
+                scheme_id: child.scheme_id,
+                occurrence_key: child.occurrence_key,
+                role_path: child.role_path,
+                referenced_names,
+                canonical_discriminator: child.canonical_discriminator,
             });
         }
-        self.push_posture(LineagePostureClaim::Split {
+        self.push_pending_split(PendingSplitClaim {
             parent_target,
             parent_name,
             children: lowered_children,
@@ -119,15 +202,26 @@ impl<'a> ExecutionNameBirthPlanBuilder<'a> {
         Ok(self)
     }
 
-    /// Registers an explicit `Merge` posture over concrete records.
+    /// Registers an explicit `Merge` posture over an existing in-place keeper
+    /// or newly created merge target.
     pub fn add_merge_posture(
         &mut self,
         parents: Vec<(LineageRecordTarget, PersistentNameIdentity)>,
-        target: LineageRecordTarget,
+        target: PendingMergeTarget,
         keeper: ExecutionNamedMergeKeeper,
     ) -> Result<&mut Self, ExecutionNamingDenial> {
+        let expected_kind = match &target {
+            PendingMergeTarget::Existing(LineageRecordTarget::Entity(_))
+            | PendingMergeTarget::Created(PendingBirthTarget::CreatedEntity(_)) => {
+                ApplicationNameSubjectKind::Entity
+            }
+            PendingMergeTarget::Existing(LineageRecordTarget::Relation(_))
+            | PendingMergeTarget::Created(PendingBirthTarget::CreatedRelation(_)) => {
+                ApplicationNameSubjectKind::Relation
+            }
+        };
         let keeper = match keeper {
-            ExecutionNamedMergeKeeper::KeepParent(id) => LineageMergeKeeper::KeepParent(id),
+            ExecutionNamedMergeKeeper::KeepParent(id) => PendingMergeKeeper::KeepParent(id),
             ExecutionNamedMergeKeeper::MintNew {
                 scheme_id,
                 occurrence_key,
@@ -135,11 +229,10 @@ impl<'a> ExecutionNameBirthPlanBuilder<'a> {
                 canonical_discriminator,
                 embedded_name_digests,
             } => {
-                let expected_kind = match target {
-                    LineageRecordTarget::Entity(_) => ApplicationNameSubjectKind::Entity,
-                    LineageRecordTarget::Relation(_) => ApplicationNameSubjectKind::Relation,
-                };
                 let layout = self.require_scheme(expected_kind, &scheme_id, &role_path)?;
+                if layout.require_authored_occurrence() && occurrence_key.trim().is_empty() {
+                    return Err(ExecutionNamingDenial::MissingAuthoredOccurrenceKey { scheme_id });
+                }
                 let role_rank = layout.role_rank(&role_path).expect("validated role");
                 let referenced_names = self.resolve_references(
                     layout,
@@ -148,22 +241,16 @@ impl<'a> ExecutionNameBirthPlanBuilder<'a> {
                     &embedded_name_digests,
                     &BTreeMap::new(),
                 )?;
-                let mut parent_ids: Vec<_> = parents.iter().map(|(_, id)| *id).collect();
-                parent_ids.sort_unstable();
-                LineageMergeKeeper::MintNew {
-                    birth: PersistentNameBirthRequest {
-                        scheme_id,
-                        occurrence_key,
-                        role_path,
-                        parent_identities: parent_ids,
-                        referenced_names,
-                        canonical_discriminator,
-                        holder: target.to_holder(),
-                    },
+                PendingMergeKeeper::MintNew {
+                    scheme_id,
+                    occurrence_key,
+                    role_path,
+                    referenced_names,
+                    canonical_discriminator,
                 }
             }
         };
-        self.push_posture(LineagePostureClaim::Merge {
+        self.push_pending_merge(PendingMergeClaim {
             parents,
             target,
             keeper,

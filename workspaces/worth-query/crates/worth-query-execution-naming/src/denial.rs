@@ -4,7 +4,6 @@
 use std::fmt;
 
 use worth_query_declaration::facade::application_naming::ApplicationNameSubjectKind;
-use worth_relational::facade::aggregate_identity::AggregateGroupNamingDenial;
 use worth_relational::facade::lineage::{
     LineageNameDenial, PersistentNameHolder, PersistentNameIdentity, PersistentNameSubjectKind,
 };
@@ -59,14 +58,20 @@ pub enum ExecutionNamingDenial {
         expected: PersistentNameSubjectKind,
         actual: PersistentNameSubjectKind,
     },
+    /// Attempted to admit a committed birth under a declared Rust entity or
+    /// relation marker whose kind identifier does not match the birth scheme's
+    /// installed subject name.
+    KindIdentityMismatch {
+        scheme_id: String,
+        expected_subject: String,
+        requested_subject: String,
+    },
     /// Relational commit finalization refused the naming/lineage plan (for
     /// example `DuplicateBirth` or `InvalidDiscriminatorBasis`) with zero
     /// committed effects.
     RelationalNaming(LineageNameDenial),
     /// Relational rejected the enclosing commit before publication.
     RelationalCommit(Box<TransactionCommitError>),
-    /// Relational aggregate group naming refused a group transition.
-    GroupNaming(AggregateGroupNamingDenial),
 }
 
 impl ExecutionNamingDenial {
@@ -160,9 +165,16 @@ impl fmt::Display for ExecutionNamingDenial {
                 formatter,
                 "persistent name admission expected subject {expected:?}, found {actual:?}"
             ),
+            Self::KindIdentityMismatch {
+                scheme_id,
+                expected_subject,
+                requested_subject,
+            } => write!(
+                formatter,
+                "birth under scheme `{scheme_id}` belongs to subject `{expected_subject}`, not `{requested_subject}`"
+            ),
             Self::RelationalNaming(denial) => write!(formatter, "relational naming refusal: {denial}"),
             Self::RelationalCommit(err) => write!(formatter, "relational commit failed: {err:?}"),
-            Self::GroupNaming(denial) => write!(formatter, "relational group naming refusal: {denial:?}"),
         }
     }
 }

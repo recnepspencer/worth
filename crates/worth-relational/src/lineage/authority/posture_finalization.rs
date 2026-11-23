@@ -3,22 +3,23 @@
 
 use std::collections::BTreeMap;
 
+use crate::capabilities::SchemaSource;
 use crate::history::data::RelationalCommitReceipt;
 use crate::identity::data::{EntityId, LineageId, RelationId};
 use crate::lineage::authority::LineagePreparationAuthority;
 use crate::lineage::data::{
-    FinalizedLineageEventBatch, LineageCommitPostureInput, LineageDecisionKind, LineageDecisionLog,
-    LineageDecisionRecord, LineageEventKind, LineageEventRecord, LineageFinalizationArtifact,
-    LineageNode, LineageRecordTarget, LineageSubject, PersistentNameBirthRecord,
-    PersistentNameIdentity, PreparedLineageFinalization,
+    FinalizedLineageEventBatch, InstalledPersistentNameSchemeRegistry, LineageBasisView,
+    LineageDecisionKind, LineageDecisionLog, LineageDecisionRecord, LineageEventKind,
+    LineageEventRecord, LineageFinalizationArtifact, LineageNode, LineagePostureClaim,
+    LineageRecordTarget, LineageSubject, PersistentNameBirthRecord, PersistentNameIdentity,
+    PreparedLineageFinalization,
 };
 use crate::runtime::{LineageIdentityAllocator, WorkingState};
+use crate::schema::data::RelationalSchemaRegistry;
 use crate::transactions::data::{MutationIntent, RecordRef, TransactionCommitError};
 
 use super::posture_drafts::{build_posture_drafts, PostureEventDraft};
 use super::posture_validation::{validate_commit_postures, ValidatedMergeTarget};
-#[cfg(test)]
-use super::staged_effects::install_lineage_id_in_working_state;
 use super::staged_effects::{entity_lineage, install_lineage_id, lineage_error};
 
 struct AssignedPostureEvent {
@@ -34,41 +35,39 @@ struct AssignedPostureEvent {
 }
 
 impl<'runtime> LineagePreparationAuthority<'runtime> {
-    /// Validates every declared entity and relation posture against staged
-    /// effects, mints persistent names against Relational's own authoritative
-    /// branch lineage state (ignoring any caller-supplied live/retired maps),
-    /// and atomically reserves lineage IDs and emits canonical events.
-    pub(crate) fn ensure_lineage_for_commit_with_postures(
+    /// Production commit-finalization entry: uses Relational's installed
+    /// schema registry (never caller-supplied registries), enforces fail-closed
+    /// `MissingBirth` on schemed kinds, and queries Relational's own branch
+    /// naming state via a zero-clone read-lock guard.
+    pub(super) fn finalize_commit_with_installed_schema(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         staged: &mut WorkingState,
         commit: &RelationalCommitReceipt,
         merged_plan: &[MutationIntent],
         changed_records: &[RecordRef],
-        input: &LineageCommitPostureInput,
+        postures: &[LineagePostureClaim],
     ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
-        let authoritative = self
+        let schema = self.runtime.schema_registry();
+        let basis = self
             .runtime
             .lineage_naming_basis
-            .authoritative_basis(&commit.branch_id);
-        let authoritative_input = LineageCommitPostureInput {
-            scheme_registry: input.scheme_registry.clone(),
-            live_holders: authoritative.live_holders,
-            live_lineages: authoritative.live_lineages,
-            retired_lineages: authoritative.retired_lineages,
-            postures: input.postures.clone(),
-        };
+            .read_guard(commit.branch_id.clone());
         let prepared = finalize_postures_with_installer(
             &self.runtime.lineage_identity,
             staged,
             commit,
             merged_plan,
             changed_records,
-            &authoritative_input,
+            schema.persistent_name_schemes(),
+            Some(schema),
+            &basis,
+            postures,
             |staged, entity_id, lineage_id| {
                 install_lineage_id(execution, staged, entity_id, lineage_id)
             },
         )?;
+        drop(basis);
         self.runtime
             .performance_access()
             .count_lineage_finalization(
@@ -79,50 +78,36 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
     }
 }
 
-#[cfg(test)]
-pub(crate) fn finalize_postures_in_working_state(
+#[allow(clippy::too_many_arguments)]
+pub(super) fn finalize_postures_with_installer<F>(
     allocator: &LineageIdentityAllocator,
     staged: &mut WorkingState,
     commit: &RelationalCommitReceipt,
     merged_plan: &[MutationIntent],
     changed_records: &[RecordRef],
-    input: &LineageCommitPostureInput,
-) -> Result<PreparedLineageFinalization, TransactionCommitError> {
-    finalize_postures_with_installer(
-        allocator,
-        staged,
-        commit,
-        merged_plan,
-        changed_records,
-        input,
-        install_lineage_id_in_working_state,
-    )
-}
-
-fn finalize_postures_with_installer<F>(
-    allocator: &LineageIdentityAllocator,
-    staged: &mut WorkingState,
-    commit: &RelationalCommitReceipt,
-    merged_plan: &[MutationIntent],
-    changed_records: &[RecordRef],
-    input: &LineageCommitPostureInput,
+    scheme_registry: &InstalledPersistentNameSchemeRegistry,
+    schema_registry: Option<&RelationalSchemaRegistry>,
+    basis: &dyn LineageBasisView,
+    postures: &[LineagePostureClaim],
     mut install_entity_lineage: F,
 ) -> Result<PreparedLineageFinalization, TransactionCommitError>
 where
     F: FnMut(&mut WorkingState, EntityId, LineageId) -> Result<(), TransactionCommitError>,
 {
-    let mut validated = validate_commit_postures(staged, commit.version_id, changed_records, input)
-        .map_err(TransactionCommitError::lineage_name_denial)?;
-
-    let (drafts, required_lineage_ids) = build_posture_drafts(
+    let mut validated = validate_commit_postures(
         staged,
-        commit,
-        merged_plan,
+        commit.version_id,
         changed_records,
-        input,
-        &validated,
+        scheme_registry,
+        schema_registry,
+        basis,
+        postures,
     )
     .map_err(TransactionCommitError::lineage_name_denial)?;
+
+    let (drafts, required_lineage_ids) =
+        build_posture_drafts(staged, commit, merged_plan, changed_records, basis, &validated)
+            .map_err(TransactionCommitError::lineage_name_denial)?;
 
     let lineage_width = u64::try_from(required_lineage_ids)
         .map_err(|_| lineage_error("lineage id batch capacity exceeded u64".to_owned()))?;
@@ -189,11 +174,16 @@ where
         events.push(event);
     }
 
+    let relation_lineage_vec = new_relation_lineages
+        .iter()
+        .map(|(&rel, &lin)| (rel, lin))
+        .collect();
     let artifact = LineageFinalizationArtifact::new(
         commit.branch_id.clone(),
         FinalizedLineageEventBatch::new(events),
         LineageDecisionLog::new(decisions),
-    );
+    )
+    .with_relation_lineages(relation_lineage_vec);
     Ok(PreparedLineageFinalization::with_relation_lineages(
         artifact,
         new_nodes,

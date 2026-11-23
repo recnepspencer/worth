@@ -8,7 +8,8 @@ use worth_query_declaration::facade::application_naming::{
 };
 use worth_relational::facade::lineage::{
     CommitNamingPlan, LineagePostureClaim, PendingBirthTarget, PendingCommitBirth,
-    PersistentNameDiscriminatorReference, PersistentNameIdentity, PersistentNameReferenceBasis,
+    PendingMergeClaim, PendingSplitClaim, PersistentNameDiscriminatorReference,
+    PersistentNameIdentity, PersistentNameReferenceBasis,
 };
 use worth_relational::facade::transactions::{CreatedEntityRef, CreatedRelationRef};
 
@@ -159,6 +160,8 @@ pub struct ExecutionNameBirthPlanBuilder<'a> {
     catalog: &'a LoweredExecutionNameSchemeCatalog,
     admitted_identities: BTreeMap<[u8; 32], PersistentNameIdentity>,
     pending_births: Vec<(u32, PendingCommitBirth)>,
+    pending_splits: Vec<PendingSplitClaim>,
+    pending_merges: Vec<PendingMergeClaim>,
     postures: Vec<LineagePostureClaim>,
 }
 
@@ -177,6 +180,8 @@ impl<'a> ExecutionNameBirthPlanBuilder<'a> {
             catalog,
             admitted_identities,
             pending_births: Vec::new(),
+            pending_splits: Vec::new(),
+            pending_merges: Vec::new(),
             postures: Vec::new(),
         }
     }
@@ -229,36 +234,27 @@ impl<'a> ExecutionNameBirthPlanBuilder<'a> {
         self.postures.push(claim);
     }
 
+    pub(super) fn push_pending_split(&mut self, claim: PendingSplitClaim) {
+        self.pending_splits.push(claim);
+    }
+
+    pub(super) fn push_pending_merge(&mut self, claim: PendingMergeClaim) {
+        self.pending_merges.push(claim);
+    }
+
     /// Canonicalizes pending births in deterministic meaning order
     /// `(scheme_id, occurrence_key, role_rank, role_path, parent_identities, canonical_discriminator)`
     /// independent of caller submission order or worker scheduling.
     pub fn build(mut self) -> ExecutionNameBirthPlan {
-        self.pending_births.sort_by(|(rank_a, a), (rank_b, b)| {
-            (
-                &a.scheme_id,
-                &a.occurrence_key,
-                rank_a,
-                &a.role_path,
-                &a.parent_identities,
-                &a.canonical_discriminator,
-            )
-                .cmp(&(
-                    &b.scheme_id,
-                    &b.occurrence_key,
-                    rank_b,
-                    &b.role_path,
-                    &b.parent_identities,
-                    &b.canonical_discriminator,
-                ))
+        self.pending_births.sort_by(|(ra, a), (rb, b)| {
+            (&a.scheme_id, &a.occurrence_key, ra, &a.role_path, &a.parent_identities, &a.canonical_discriminator)
+                .cmp(&(&b.scheme_id, &b.occurrence_key, rb, &b.role_path, &b.parent_identities, &b.canonical_discriminator))
         });
         ExecutionNameBirthPlan {
             commit_plan: CommitNamingPlan {
-                scheme_registry: self.catalog.relational_registry().clone(),
-                pending_births: self
-                    .pending_births
-                    .into_iter()
-                    .map(|(_, birth)| birth)
-                    .collect(),
+                pending_births: self.pending_births.into_iter().map(|(_, b)| b).collect(),
+                pending_splits: self.pending_splits,
+                pending_merges: self.pending_merges,
                 postures: self.postures,
             },
         }

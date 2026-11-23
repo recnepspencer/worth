@@ -157,7 +157,8 @@ impl RootSchemaReadmissionCatalog {
             || !envelope
                 .schema_authority
                 .projected_member_domains
-                .is_empty())
+                .is_empty()
+            || !configured.persistent_name_schemes().is_empty())
             && configured
                 .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(
                     *execution,

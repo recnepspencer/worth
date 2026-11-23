@@ -296,18 +296,30 @@ schema using `worth_query_decl::facade::application_naming`:
   binding one closed `ApplicationGroupContinuityRule` (`Anchor`, `Boundary`, or
   `ProducerRole`) to declared member roles, attached with
   `ApplicationSchemaDeclarationBuilder::application_group_name_scheme::<Group>(scheme)`.
-- **Commit-time birth minting** lowers installed schemes into deterministic
-  birth plans and mints fixed 32-byte, non-forgeable `WorthQueryName<K>` handles
-  exclusively at commit finalization from canonical birth provenance
+- **Commit-time birth minting** lowers installed schemes via
+  `LoweredExecutionNameSchemeCatalog` and binds them into Relational's schema
+  authority (`RelationalSchemaRegistry::install_persistent_name_schemes`).
+  `ExecutionNamingCommitAuthority` attaches deterministic birth and lifecycle
+  posture plans (`Retire`, `Split`, `Merge`) to transactions and admits fixed
+  32-byte, non-forgeable `WorthQueryName<K>` handles exclusively from sealed
+  commits with declared-kind verification (`KindIdentityMismatch` on wrong kind).
+  Names are minted from canonical birth provenance
   `(scheme_id, occurrence_key, role_path, sorted_parent_identities, canonical_discriminator)`,
-  independent of allocator slots, worker counts, and independent occurrence ordering.
-  Live-holder collisions (`DuplicateBirth`) and invalid or undeclared discriminator
-  references (`InvalidDiscriminatorBasis`) refuse fail-closed with zero committed effects.
+  independent of allocator slots, worker counts, and independent occurrence
+  ordering, and survive forks, checkpoint restore, and journal tail replay.
+  Creating a schemed kind without a birth plan (`MissingBirth`), live-holder
+  collisions (`DuplicateBirth`), and invalid or undeclared discriminator
+  references (`InvalidDiscriminatorBasis`) refuse fail-closed with zero committed
+  effects. Automatic Query handler/producer lowering builds on this foundation
+  in subsequent slices.
 
 The runnable Slice 1B counterparts are the
 [end-to-end birth-wiring court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_execution_birth_wiring.rs),
 [reorder and collision court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_reorder_and_collision.rs),
-[bounded-depth split court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_bounded_depth.rs), and
+[bounded-depth split court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_bounded_depth.rs),
+[end-to-end posture court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_postures_e2e.rs),
+[fork-ancestry naming court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_fork_ancestry.rs),
+[durable recovery court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_durable_recovery.rs), and
 [group-scheme installation court](../workspaces/worth-query/crates/worth-query-court-installation/tests/worth_query_court_installation/installation/naming_groups.rs).
 
 ### 2.1 Declare operation access once
