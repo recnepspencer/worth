@@ -199,10 +199,10 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
     let prepared = runtime
         .prepare_merge_execution(
             execution,
-            crate::merge::data::MergeExecutionRequest::new(
+            crate::merge::data::requests::raw::MergeExecutionRequest::new(
                 BranchId("main".to_owned()),
                 BranchId("feature".to_owned()),
-                crate::merge::data::MergeIntent::ReconcileIntoTarget,
+                crate::merge::data::requests::raw::MergeIntent::ReconcileIntoTarget,
             ),
         )
         .expect("governed merge prepares");

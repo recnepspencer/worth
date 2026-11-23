@@ -9,7 +9,7 @@ pub(crate) mod identity;
 pub(crate) mod inspection_digest;
 pub(crate) mod plans;
 pub(crate) mod policy;
-mod readmission_memory;
+pub(crate) mod readmission_memory;
 pub(crate) mod requests;
 pub(crate) mod resolved_value_strategy;
 pub(crate) use readmission_memory::{

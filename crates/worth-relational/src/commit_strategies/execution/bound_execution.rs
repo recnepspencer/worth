@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::capabilities::{AspectPlanSource, SchemaSource};
-use crate::commit_strategies::data::execution::executor_registration::CommitStrategyExecutor;
 use crate::commit_strategies::data::execution::observation_context::StrategyObservationContext;
 use crate::commit_strategies::data::CanonicalStrategyCommitRequest;
 use crate::runtime::RelationalRuntime;
@@ -10,11 +9,7 @@ use crate::snapshots::data::SnapshotHandle;
 use super::error::StrategyExecutionError;
 use super::read_contract_admission::validate_supported_read_contract;
 
-pub(crate) struct BoundStrategyExecution<'runtime> {
-    pub(super) request: &'runtime CanonicalStrategyCommitRequest,
-    pub(super) executor: Arc<dyn CommitStrategyExecutor>,
-    pub(super) observation: StrategyObservationContext<'runtime>,
-}
+use super::bound_strategy::BoundStrategyExecution;
 
 pub(crate) fn bind_execution<'runtime>(
     runtime: &'runtime RelationalRuntime,
@@ -22,7 +17,8 @@ pub(crate) fn bind_execution<'runtime>(
     snapshot: &'runtime SnapshotHandle,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) -> Result<BoundStrategyExecution<'runtime>, StrategyExecutionError> {
-    crate::execution::check_request(execution).map_err(StrategyExecutionError::Execution)?;
+    crate::execution::request_custody::check_request(execution)
+        .map_err(StrategyExecutionError::Execution)?;
     let descriptor = runtime
         .commit_strategy_registry()
         .get_by_id(request.strategy_id())

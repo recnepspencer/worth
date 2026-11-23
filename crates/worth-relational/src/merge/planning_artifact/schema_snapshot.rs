@@ -2,33 +2,12 @@ use std::collections::BTreeSet;
 
 use sha2::Digest;
 
-use crate::capabilities::RuntimeConfigSource;
 use crate::merge::data::{
     BranchTouchedRecordDelta, MergeSchemaKindClass, MergeSchemaKindSemanticSnapshot,
     MergeSchemaSnapshotDigestBasis, VisibleMergeRecord, VisibleMergeRecordKind,
 };
-use crate::runtime::RelationalRuntime;
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::transactions::data::RecordRef;
-
-pub(crate) fn merge_schema_snapshot_for_execution_ready(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalRuntime,
-    target_version_id: crate::identity::data::VersionId,
-    source_records: &[VisibleMergeRecord],
-    target_touched_records: &[BranchTouchedRecordDelta],
-) -> Result<MergeSchemaSnapshotDigestBasis, crate::merge::data::MergePlanningError> {
-    let target_view = runtime
-        .read_truth()
-        .read_version(execution, target_version_id)
-        .map_err(crate::merge::data::MergePlanningError::Execution)?;
-    Ok(merge_schema_snapshot(
-        &runtime.runtime_config().schema.registry,
-        source_records,
-        &target_view,
-        target_touched_records,
-    ))
-}
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn merge_schema_snapshot(
     registry: &RelationalSchemaRegistry,

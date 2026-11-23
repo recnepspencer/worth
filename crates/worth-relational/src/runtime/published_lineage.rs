@@ -1,5 +1,15 @@
 use crate::identity::data::{LineageId, RelationId};
-use crate::lineage::authority::LineageAuthority;
+use crate::runtime::RelationalRuntime;
+
+pub(crate) struct LineageAuthority<'runtime> {
+    runtime: &'runtime RelationalRuntime,
+}
+
+impl RelationalRuntime {
+    pub(crate) fn lineage_authority(&self) -> LineageAuthority<'_> {
+        LineageAuthority { runtime: self }
+    }
+}
 
 impl<'runtime> LineageAuthority<'runtime> {
     pub(crate) fn install_published_lineage(

@@ -19,10 +19,11 @@ use crate::commit_strategies::data::{
     StrategyTraversalBasis,
 };
 use crate::storage::data::authoritative_aspect_value_field_comparison_key;
-use crate::transactions::data::AspectFieldPatch;
-use crate::transactions::data::{
-    EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent, WorkerIntentBatch,
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::{
+    EntityMutationIntent, MutationIntent, UpdateEntityFieldsIntent,
 };
+use crate::transactions::data::primitives::WorkerIntentBatch;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AspectFieldReconciliationInput {
@@ -230,20 +231,19 @@ impl CommitStrategyExecutor for AspectFieldReconciliationStrategy {
         let updated = existing.projected_field_comparison_key(&input.field_locator)
             != Some(desired_comparison_key);
         let mutation_program = if updated {
-            let batch = WorkerIntentBatch::new("aspect-field-reconciliation-update").push(
-                MutationIntent::Entity(EntityMutationIntent::UpdateFields(
-                    UpdateEntityFieldsIntent {
-                        entity_id: input.entity_id,
-                        fields: AspectFieldPatch::from_locator(
-                            crate::transactions::data::planned_single_field_locator(
-                                input.field_locator.aspect().aspect_key().clone(),
-                                field_key,
-                            ),
-                            input.desired_value.clone(),
+            let batch = WorkerIntentBatch::new("aspect-field-reconciliation-update")
+                .push(MutationIntent::Entity(EntityMutationIntent::UpdateFields(
+                UpdateEntityFieldsIntent {
+                    entity_id: input.entity_id,
+                    fields: AspectFieldPatch::from_locator(
+                        crate::transactions::data::aspect_field_patch::planned_single_field_locator(
+                            input.field_locator.aspect().aspect_key().clone(),
+                            field_key,
                         ),
-                    },
-                )),
-            );
+                        input.desired_value.clone(),
+                    ),
+                },
+            )));
             StrategyMutationProgram::new(vec![batch])
         } else {
             StrategyMutationProgram::new(Vec::<WorkerIntentBatch>::new())
@@ -288,6 +288,3 @@ fn undeclared_locator_failure(
         },
     )
 }
-
-#[cfg(test)]
-mod tests;

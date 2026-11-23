@@ -1,5 +1,6 @@
 mod auto_resolution;
 mod value_basis;
+pub(super) use value_basis::performance_receipt::PolicyValueLookupCounters;
 
 use crate::schema::data::{AspectBinding, LoweredAspectContractBinding};
 

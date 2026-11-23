@@ -1,26 +1,24 @@
 use std::sync::OnceLock;
 
-use super::{
-    bind_execution, execute_bound_strategy, CommitStrategyExecutionRegistryError,
-    FrozenCommitStrategyExecutorRegistry, StrategyExecutionError,
+use super::current_snapshot;
+use worth_relational::facade::commit_strategies::{
+    CanonicalStrategyCommitRequest, CanonicalStrategyOutputArtifact, CommitStrategyDescriptor,
+    CommitStrategyFamilyName, CommitStrategyId, CommitStrategyRegistration,
+    CommitStrategySemanticName, CommitStrategyVersion, NativeStrategyCommitRequest,
+    PersistentArtifactName, StrategyExecutionResult, StrategyInputSchemaName,
+    StrategyInputSchemaVersion, StrategyIntentName, StrategyMutationProgram,
+    StrategyOutputSchemaName, StrategyPacketContract, StrategyReadContract, StrategyReadCostClass,
+    StrategyReadLocalityClass, StrategyReadScopeClass, StrategyTraversalBasis,
 };
-use crate::commit_strategies::data::execution::executor_registration::{
+use worth_relational::facade::commit_strategies::{
     CommitStrategyExecutionRegistration, CommitStrategyExecutor,
 };
-use crate::commit_strategies::data::{
-    CanonicalStrategyCommitRequest, CanonicalStrategyInputArtifact, CanonicalStrategyInputDigest,
-    CanonicalStrategyOutputArtifact, CommitStrategyDescriptor, CommitStrategyFamilyName,
-    CommitStrategyId, CommitStrategyRegistration, CommitStrategySemanticName,
-    CommitStrategyVersion, PersistentArtifactName, StrategyExecutionResult,
-    StrategyInputSchemaName, StrategyInputSchemaVersion, StrategyIntentName,
-    StrategyMutationProgram, StrategyOutputSchemaName, StrategyPacketContract,
-    StrategyReadContract, StrategyReadCostClass, StrategyReadLocalityClass, StrategyReadScopeClass,
-    StrategyTraversalBasis,
+use worth_relational::facade::commit_strategies::{
+    CommitStrategyExecutionRegistryError, StrategyExecutionError,
 };
-use crate::commit_strategies::FrozenCommitStrategyRegistry;
-use crate::identity::data::{EntityId, KindId, PartitionId};
-use crate::runtime::builder::RelationalRuntimeBuilder;
-use crate::snapshots::data::SnapshotHandle;
+use worth_relational::facade::identity::{EntityId, KindId, PartitionId};
+use worth_relational::facade::runtime::{RelationalRuntime, RelationalRuntimeConstructionDenial};
+use worth_relational::facade::snapshots::SnapshotHandle;
 
 fn empty_result() -> StrategyExecutionResult {
     StrategyExecutionResult::new(
@@ -29,7 +27,9 @@ fn empty_result() -> StrategyExecutionResult {
             b"status=ok".to_vec(),
             PersistentArtifactName::new("strategy.intent.reconcile"),
         ),
-        StrategyMutationProgram::new(Vec::<crate::transactions::data::WorkerIntentBatch>::new()),
+        StrategyMutationProgram::new(Vec::<
+            worth_relational::facade::transactions::WorkerIntentBatch,
+        >::new()),
     )
 }
 
@@ -41,9 +41,11 @@ impl CommitStrategyExecutor for EchoExecutor {
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &CanonicalStrategyCommitRequest,
-        observation: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
-    ) -> Result<StrategyExecutionResult, crate::commit_strategies::data::StrategyExecutorFailure>
-    {
+        observation: &worth_relational::facade::commit_strategies::StrategyObservationContext<'_>,
+    ) -> Result<
+        StrategyExecutionResult,
+        worth_relational::facade::commit_strategies::StrategyExecutorFailure,
+    > {
         let _ = observation
             .visibility()
             .entities_in::<TestEntityProjection>(_execution, PartitionId(1))?;
@@ -59,9 +61,11 @@ impl CommitStrategyExecutor for CrossPartitionExecutor {
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &CanonicalStrategyCommitRequest,
-        observation: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
-    ) -> Result<StrategyExecutionResult, crate::commit_strategies::data::StrategyExecutorFailure>
-    {
+        observation: &worth_relational::facade::commit_strategies::StrategyObservationContext<'_>,
+    ) -> Result<
+        StrategyExecutionResult,
+        worth_relational::facade::commit_strategies::StrategyExecutorFailure,
+    > {
         let _ = observation
             .visibility()
             .entity::<TestEntityProjection>(_execution, EntityId::new(PartitionId(1), 0, 0))?;
@@ -80,9 +84,11 @@ impl CommitStrategyExecutor for UnsupportedContractExecutor {
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &CanonicalStrategyCommitRequest,
-        _observation: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
-    ) -> Result<StrategyExecutionResult, crate::commit_strategies::data::StrategyExecutorFailure>
-    {
+        _observation: &worth_relational::facade::commit_strategies::StrategyObservationContext<'_>,
+    ) -> Result<
+        StrategyExecutionResult,
+        worth_relational::facade::commit_strategies::StrategyExecutorFailure,
+    > {
         Ok(empty_result())
     }
 }
@@ -95,22 +101,22 @@ impl CommitStrategyExecutor for PanicExecutor {
         &self,
         _execution: &worth_execution::ExecutionRequest<'_, '_>,
         _request: &CanonicalStrategyCommitRequest,
-        _observation: &crate::commit_strategies::data::execution::observation_context::StrategyObservationContext<'_>,
-    ) -> Result<StrategyExecutionResult, crate::commit_strategies::data::StrategyExecutorFailure>
-    {
+        _observation: &worth_relational::facade::commit_strategies::StrategyObservationContext<'_>,
+    ) -> Result<
+        StrategyExecutionResult,
+        worth_relational::facade::commit_strategies::StrategyExecutorFailure,
+    > {
         panic!("panic containment probe")
     }
 }
 
 struct TestEntityProjection;
 
-impl crate::visibility::materialization::read_records::EntityRecordProjection
-    for TestEntityProjection
-{
+impl worth_relational::facade::runtime::EntityRecordProjection for TestEntityProjection {
     const KIND: KindId = KindId(100);
 
     fn from_record(
-        _record: crate::visibility::materialization::read_records::EntityProjectionRecord<'_>,
+        _record: worth_relational::facade::runtime::EntityProjectionRecord<'_>,
     ) -> Option<Self> {
         Some(Self)
     }
@@ -118,15 +124,12 @@ impl crate::visibility::materialization::read_records::EntityRecordProjection
 
 struct MissingAspectProjection;
 
-impl crate::visibility::materialization::read_records::EntityRecordProjection
-    for MissingAspectProjection
-{
+impl worth_relational::facade::runtime::EntityRecordProjection for MissingAspectProjection {
     const KIND: KindId = KindId(100);
 
-    fn projection_scope() -> crate::visibility::materialization::read_records::ProjectionAspectScope
-    {
+    fn projection_scope() -> worth_relational::facade::runtime::ProjectionAspectScope {
         static REQUIRED: OnceLock<Box<[worth_foundational::facade::AspectKey]>> = OnceLock::new();
-        crate::visibility::materialization::read_records::ProjectionAspectScope::whole_aspects(
+        worth_relational::facade::runtime::ProjectionAspectScope::whole_aspects(
             REQUIRED
                 .get_or_init(|| {
                     vec![worth_foundational::facade::AspectKey::new("missing.aspect").unwrap()]
@@ -138,7 +141,7 @@ impl crate::visibility::materialization::read_records::EntityRecordProjection
     }
 
     fn from_record(
-        _record: crate::visibility::materialization::read_records::EntityProjectionRecord<'_>,
+        _record: worth_relational::facade::runtime::EntityProjectionRecord<'_>,
     ) -> Option<Self> {
         Some(Self)
     }
@@ -165,11 +168,6 @@ fn descriptor() -> CommitStrategyDescriptor {
     )
 }
 
-fn canonical_request() -> CanonicalStrategyCommitRequest {
-    let descriptor = descriptor();
-    canonical_request_for(&descriptor)
-}
-
 fn unsupported_descriptor() -> CommitStrategyDescriptor {
     CommitStrategyDescriptor::new(
         CommitStrategyId(42),
@@ -191,51 +189,50 @@ fn unsupported_descriptor() -> CommitStrategyDescriptor {
     )
 }
 
-fn canonical_request_for(descriptor: &CommitStrategyDescriptor) -> CanonicalStrategyCommitRequest {
-    CanonicalStrategyCommitRequest::new(
-        descriptor.id(),
-        descriptor.digest(),
-        CanonicalStrategyInputArtifact::new(
-            descriptor.input_schema_name().clone(),
-            descriptor.input_schema_version(),
-            b"a=1".to_vec().into(),
-            CanonicalStrategyInputDigest([7; 32]),
-            descriptor.artifact_name().clone(),
-        ),
-        crate::commit_strategies::data::StrategyCallerProvenance {
-            request_origin: crate::commit_strategies::data::StrategyRequestOrigin::Test,
-            actor_identity: None,
-            correlation_id: None,
-        },
-    )
+fn canonical_request_for(
+    runtime: &RelationalRuntime,
+    descriptor: &CommitStrategyDescriptor,
+) -> CanonicalStrategyCommitRequest {
+    runtime
+        .commit_strategies()
+        .canonicalize_request(&NativeStrategyCommitRequest::from_native_canonical_bytes(
+            descriptor.semantic_name().clone(),
+            b"a=1".to_vec(),
+            worth_relational::facade::commit_strategies::StrategyCallerProvenance {
+                request_origin:
+                    worth_relational::facade::commit_strategies::StrategyRequestOrigin::Test,
+                actor_identity: None,
+                correlation_id: None,
+            },
+        ))
+        .unwrap()
 }
 
 #[test]
 fn executor_registry_rejects_binding_without_descriptor_registration() {
     let descriptor = descriptor();
-    let registry = FrozenCommitStrategyRegistry::from_registrations(Vec::new()).unwrap();
-
-    let error = FrozenCommitStrategyExecutorRegistry::from_registrations(
-        vec![CommitStrategyExecutionRegistration::new(
+    let error = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
+        .commit_strategy_executor(CommitStrategyExecutionRegistration::new(
             &descriptor,
             EchoExecutor,
-        )],
-        &registry,
-    )
-    .unwrap_err();
-
+        ))
+        .build()
+        .err()
+        .expect("executor without a descriptor must be refused");
     assert_eq!(
         error,
-        CommitStrategyExecutionRegistryError::MissingDescriptorRegistration {
-            strategy_id: CommitStrategyId(41),
-            descriptor_digest: descriptor.digest(),
-        }
+        RelationalRuntimeConstructionDenial::CommitStrategyExecutor(
+            CommitStrategyExecutionRegistryError::MissingDescriptorRegistration {
+                strategy_id: CommitStrategyId(41),
+                descriptor_digest: descriptor.digest(),
+            }
+        ),
     );
 }
 
 #[test]
 fn bound_execution_executes_against_snapshot_and_contains_panics() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = descriptor();
@@ -243,19 +240,18 @@ fn bound_execution_executes_against_snapshot_and_contains_panics() {
     let executor_binding = CommitStrategyExecutionRegistration::new(&descriptor, EchoExecutor);
     let panic_binding = CommitStrategyExecutionRegistration::new(&descriptor, PanicExecutor);
 
-    let runtime = RelationalRuntimeBuilder::new()
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .commit_strategy(registration.clone())
         .commit_strategy_executor(executor_binding)
         .build()
         .expect("valid native runtime configuration");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
-    let request = canonical_request();
+    let snapshot = current_snapshot(&runtime);
+    let request = canonical_request_for(&runtime, &descriptor);
 
-    let bound = bind_execution(&runtime, &request, &snapshot, execution).expect("bind strategy");
-    let draft = execute_bound_strategy(execution, bound).expect("execute strategy");
+    let draft = runtime
+        .commit_strategies()
+        .execute(&request, &snapshot, execution)
+        .expect("execute strategy");
 
     assert_eq!(
         draft.output().schema_name().as_str(),
@@ -264,19 +260,17 @@ fn bound_execution_executes_against_snapshot_and_contains_panics() {
     assert_eq!(draft.summary().projected_partition_reads, 0);
     assert_eq!(draft.summary().projected_entity_record_reads, 0);
 
-    let panic_runtime = RelationalRuntimeBuilder::new()
+    let panic_runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .commit_strategy(registration)
         .commit_strategy_executor(panic_binding)
         .build()
         .expect("valid native runtime configuration");
-    let panic_snapshot: SnapshotHandle = panic_runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let panic_snapshot: SnapshotHandle = current_snapshot(&panic_runtime);
 
-    let panic_bound = bind_execution(&panic_runtime, &request, &panic_snapshot, execution)
-        .expect("bind strategy");
-    let error = execute_bound_strategy(execution, panic_bound).unwrap_err();
+    let error = panic_runtime
+        .commit_strategies()
+        .execute(&request, &panic_snapshot, execution)
+        .unwrap_err();
     assert_eq!(
         error,
         StrategyExecutionError::ExecutorPanicked {
@@ -287,7 +281,7 @@ fn bound_execution_executes_against_snapshot_and_contains_panics() {
 
 #[test]
 fn single_partition_locality_rejects_cross_partition_strategy_reads() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = descriptor();
@@ -295,72 +289,72 @@ fn single_partition_locality_rejects_cross_partition_strategy_reads() {
     let executor_binding =
         CommitStrategyExecutionRegistration::new(&descriptor, CrossPartitionExecutor);
 
-    let runtime = RelationalRuntimeBuilder::new()
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .commit_strategy(registration)
         .commit_strategy_executor(executor_binding)
         .build()
         .expect("valid native runtime configuration");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
-    let request = canonical_request();
+    let snapshot = current_snapshot(&runtime);
+    let request = canonical_request_for(&runtime, &descriptor);
 
-    let bound = bind_execution(&runtime, &request, &snapshot, execution).expect("bind strategy");
-    let error = execute_bound_strategy(execution, bound).unwrap_err();
+    let error = runtime
+        .commit_strategies()
+        .execute(&request, &snapshot, execution)
+        .unwrap_err();
 
     assert!(matches!(
         error,
         StrategyExecutionError::ExecutorFailed {
             strategy_id: CommitStrategyId(41),
             failure,
-        } if matches!(&failure, crate::commit_strategies::data::StrategyExecutorFailure::Domain { class, detail, .. } if *class
-            == crate::commit_strategies::data::StrategyExecutorFailureClass::ReadContractViolation
+        } if matches!(&failure, worth_relational::facade::commit_strategies::StrategyExecutorFailure::Domain { class, detail, .. } if *class
+            == worth_relational::facade::commit_strategies::StrategyExecutorFailureClass::ReadContractViolation
             && detail.contains("SinglePartition locality"))
     ));
 }
 
 #[test]
 fn foreign_snapshot_handle_is_rejected_for_strategy_execution() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = descriptor();
     let registration = CommitStrategyRegistration::new(descriptor.clone()).unwrap();
     let executor_binding = CommitStrategyExecutionRegistration::new(&descriptor, EchoExecutor);
 
-    let left_runtime = RelationalRuntimeBuilder::new()
+    let left_runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .commit_strategy(registration.clone())
         .commit_strategy_executor(executor_binding.clone())
         .build()
         .expect("valid native runtime configuration");
-    let foreign_snapshot = left_runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let foreign_snapshot = current_snapshot(&left_runtime);
 
-    let right_runtime = RelationalRuntimeBuilder::new()
+    let right_runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .commit_strategy(registration)
         .commit_strategy_executor(executor_binding)
         .build()
         .expect("valid native runtime configuration");
-    let request = canonical_request();
+    let request = canonical_request_for(&right_runtime, &descriptor);
 
-    let error = match bind_execution(&right_runtime, &request, &foreign_snapshot, execution) {
-        Ok(_) => panic!("foreign snapshot should be rejected"),
-        Err(error) => error,
-    };
+    let error =
+        match right_runtime
+            .commit_strategies()
+            .execute(&request, &foreign_snapshot, execution)
+        {
+            Ok(_) => panic!("foreign snapshot should be rejected"),
+            Err(error) => error,
+        };
     assert_eq!(
         error,
         StrategyExecutionError::UnknownSnapshot {
-            snapshot_id: foreign_snapshot.snapshot_id
+            snapshot_id: foreign_snapshot.snapshot_id()
         }
     );
 }
 
 #[test]
 fn unsupported_read_contract_is_rejected_before_execution() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = unsupported_descriptor();
@@ -368,18 +362,18 @@ fn unsupported_read_contract_is_rejected_before_execution() {
     let executor_binding =
         CommitStrategyExecutionRegistration::new(&descriptor, UnsupportedContractExecutor);
 
-    let runtime = RelationalRuntimeBuilder::new()
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .commit_strategy(registration)
         .commit_strategy_executor(executor_binding)
         .build()
         .expect("valid native runtime configuration");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
-    let request = canonical_request_for(&descriptor);
+    let snapshot = current_snapshot(&runtime);
+    let request = canonical_request_for(&runtime, &descriptor);
 
-    let error = match bind_execution(&runtime, &request, &snapshot, execution) {
+    let error = match runtime
+        .commit_strategies()
+        .execute(&request, &snapshot, execution)
+    {
         Ok(_) => panic!("unsupported read contract should be rejected"),
         Err(error) => error,
     };
@@ -392,5 +386,4 @@ fn unsupported_read_contract_is_rejected_before_execution() {
     ));
 }
 
-#[path = "tests/projection_denial.rs"]
 mod projection_denial;

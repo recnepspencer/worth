@@ -4,13 +4,14 @@ use crate::merge::data::{
     MergeExecutionCompilationError, PreserveSharedRecordPlan, ReconcileRecordPlan,
     ReconciledIdentityBasis,
 };
+use crate::schema::data::AspectContractPlanCatalog;
 
 use super::aspect_plan_compilation::compile_executable_aspect_plans;
 use super::lineage_continuity::derive_deleted_on_both_sides_lineage_continuity;
 use super::plan_compilation::SourceRecordsByRef;
 
 pub(super) fn compile_record_plan(
-    runtime: &crate::runtime::RelationalRuntime,
+    aspect_plans: &AspectContractPlanCatalog,
     source_records_by_ref: &SourceRecordsByRef<'_>,
     lowered_record: &crate::merge::data::LoweredMergePlanRecord,
 ) -> Result<BoundExecutableMergeRecordPlan, MergeExecutionCompilationError> {
@@ -21,7 +22,7 @@ pub(super) fn compile_record_plan(
             record: lowered_record.record.clone(),
         })?;
     let provenance = executable_record_provenance(lowered_record)?;
-    let aspect_plan = compile_executable_aspect_plans(runtime, source_record, lowered_record)?;
+    let aspect_plan = compile_executable_aspect_plans(aspect_plans, source_record, lowered_record)?;
 
     match &lowered_record.record_decision {
         LoweredRecordDecision::Execute(bundle) => {

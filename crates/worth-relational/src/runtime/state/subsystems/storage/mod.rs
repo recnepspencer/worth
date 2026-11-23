@@ -1,7 +1,7 @@
 mod edition_copy_lane;
 mod edition_writer;
 mod mirror_state;
-mod partition_edition;
+pub(crate) mod partition_edition;
 mod residency_demand;
 mod resident_target;
 mod source_retirement;

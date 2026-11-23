@@ -7,7 +7,7 @@ mod consequence_plan;
 mod derived_source;
 mod final_laws;
 mod funding;
-mod group_lineage;
+pub(crate) mod group_lineage;
 pub(crate) use final_laws::validate_final_derived_laws;
 pub use group_lineage::AggregateGroupLineageEvent;
 mod materialization;
@@ -26,7 +26,7 @@ mod selection;
 mod stored_lineage;
 mod stored_read;
 mod stored_record;
-mod transition;
+pub(crate) mod transition;
 pub use observations::AggregateReadObservations;
 pub use pinned::{
     PinnedAggregateLineageRead, PinnedAggregateLineageScope, PinnedAggregateRead,

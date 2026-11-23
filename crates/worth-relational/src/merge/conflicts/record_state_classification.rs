@@ -6,7 +6,7 @@ use crate::merge::data::{
     VisibleMergeRecordKind,
 };
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn classify_record_state(
     record: &VisibleMergeRecord,

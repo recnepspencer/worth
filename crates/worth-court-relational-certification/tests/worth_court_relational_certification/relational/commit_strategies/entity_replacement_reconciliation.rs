@@ -1,31 +1,28 @@
-use super::super::{
+use super::{current_snapshot, lifecycle_aspect};
+use worth_foundational::facade::{AspectFieldLocator, AspectKey, AspectValue, InternedString};
+use worth_relational::facade::commit_strategies::{
     EntityReplacementReconciliationAction, EntityReplacementReconciliationInput,
     EntityReplacementReconciliationOutput, EntityReplacementReconciliationStrategy,
 };
-use crate::commit_strategies::data::{
+use worth_relational::facade::commit_strategies::{
     StrategyCallerProvenance, StrategyExecutorFailureClass, StrategyRequestOrigin,
 };
-use crate::runtime::builder::RelationalRuntimeBuilder;
-use crate::tests::support::{
-    create_entity, entity_field_aspect, entity_u64_field_aspect, lifecycle_aspect,
-    AspectSchemaFixture,
+use worth_relational::facade::transactions::AspectFieldPatch;
+use worth_testkit_relational::aspect_storage::{
+    entity_field_aspect, entity_u64_field_aspect, AspectSchemaFixture,
 };
-use crate::transactions::data::AspectFieldPatch;
-use worth_foundational::facade::{
-    AspectFieldLocator, AspectKey, AspectValue, CanonicalFieldPath, FieldKey, InternedString,
-    LocatorAuthority,
-};
+use worth_testkit_relational::ordinary_records::create_entity;
 
-fn strategy_registry() -> crate::schema::data::RelationalSchemaRegistry {
+fn strategy_registry() -> worth_relational::facade::schema::RelationalSchemaRegistry {
     AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(
-                crate::tests::support::aspect_key("name"),
-                crate::tests::support::field_key("name"),
+                worth_testkit_relational::aspect_storage::aspect_key("name"),
+                worth_testkit_relational::aspect_storage::field_key("name"),
             ),
             entity_u64_field_aspect(
-                crate::tests::support::aspect_key("replicas"),
-                crate::tests::support::field_key("replicas"),
+                worth_testkit_relational::aspect_storage::aspect_key("replicas"),
+                worth_testkit_relational::aspect_storage::field_key("replicas"),
             ),
             lifecycle_aspect(),
         ],
@@ -35,33 +32,35 @@ fn strategy_registry() -> crate::schema::data::RelationalSchemaRegistry {
 }
 
 fn replicas_patch_target() -> AspectFieldLocator {
-    crate::transactions::data::planned_single_field_locator(
-        crate::tests::support::aspect_key("replicas"),
-        crate::tests::support::field_key("replicas"),
+    worth_relational::facade::transactions::planned_single_field_locator(
+        worth_testkit_relational::aspect_storage::aspect_key("replicas"),
+        worth_testkit_relational::aspect_storage::field_key("replicas"),
     )
 }
 
 fn name_patch_target() -> AspectFieldLocator {
-    crate::transactions::data::planned_single_field_locator(
-        crate::tests::support::aspect_key("name"),
-        crate::tests::support::field_key("name"),
+    worth_relational::facade::transactions::planned_single_field_locator(
+        worth_testkit_relational::aspect_storage::aspect_key("name"),
+        worth_testkit_relational::aspect_storage::field_key("name"),
     )
 }
 
 #[test]
 fn entity_replacement_reconciliation_strategy_replaces_with_normalized_client_key_and_preserved_fields(
 ) {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = EntityReplacementReconciliationStrategy::descriptor(
-        crate::commit_strategies::data::CommitStrategyId(711),
+        worth_relational::facade::commit_strategies::CommitStrategyId(711),
     );
-    let runtime = RelationalRuntimeBuilder::new()
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(strategy_registry())
         .commit_strategy(
-            crate::commit_strategies::data::CommitStrategyRegistration::new(descriptor.clone())
-                .expect("strategy registration"),
+            worth_relational::facade::commit_strategies::CommitStrategyRegistration::new(
+                descriptor.clone(),
+            )
+            .expect("strategy registration"),
         )
         .commit_strategy_executor(
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
@@ -88,10 +87,7 @@ fn entity_replacement_reconciliation_strategy_replaces_with_normalized_client_ke
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let snapshot = current_snapshot(&runtime);
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -100,8 +96,8 @@ fn entity_replacement_reconciliation_strategy_replaces_with_normalized_client_ke
         EntityReplacementReconciliationOutput::decode(execution.output().canonical_bytes())
             .expect("output decode");
     let replacement = match &execution.mutation_program().worker_batches()[0].intents[0] {
-        crate::transactions::data::MutationIntent::Entity(
-            crate::transactions::data::EntityMutationIntent::Replace(intent),
+        worth_relational::facade::transactions::MutationIntent::Entity(
+            worth_relational::facade::transactions::EntityMutationIntent::Replace(intent),
         ) => intent,
         other => panic!("expected replace entity intent, got {other:?}"),
     };
@@ -113,24 +109,26 @@ fn entity_replacement_reconciliation_strategy_replaces_with_normalized_client_ke
     );
     assert_eq!(
         replacement.replacement.client_key,
-        crate::symbols::data::ClientKey::raw("service-replacement")
+        worth_relational::facade::symbols::ClientKey::raw("service-replacement")
     );
     assert_eq!(replacement_replicas, Some(&AspectValue::UInt64(3)));
 }
 
 #[test]
 fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to_authority() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = EntityReplacementReconciliationStrategy::descriptor(
-        crate::commit_strategies::data::CommitStrategyId(713),
+        worth_relational::facade::commit_strategies::CommitStrategyId(713),
     );
-    let runtime = RelationalRuntimeBuilder::new()
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(strategy_registry())
         .commit_strategy(
-            crate::commit_strategies::data::CommitStrategyRegistration::new(descriptor.clone())
-                .expect("strategy registration"),
+            worth_relational::facade::commit_strategies::CommitStrategyRegistration::new(
+                descriptor.clone(),
+            )
+            .expect("strategy registration"),
         )
         .commit_strategy_executor(
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
@@ -157,15 +155,13 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let snapshot = current_snapshot(&runtime);
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
         .expect("strategy execution");
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    let mut txn =
+        worth_testkit_relational::aspect_storage::publications::begin_main_transaction(&runtime);
     for batch in execution
         .mutation_program()
         .worker_batches()
@@ -181,16 +177,14 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
     let commit = txn
         .commit(request_execution, &runtime)
         .expect("replacement patch commit");
-    let replacement_id = crate::tests::support::changed_entities(&commit)
-        .into_iter()
-        .last()
-        .expect("replacement entity id");
-    let replacement_snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let replacement_id =
+        worth_testkit_relational::aspect_storage::publications::changed_entities(&commit)
+            .into_iter()
+            .last()
+            .expect("replacement entity id");
+    let replacement_snapshot = current_snapshot(&runtime);
     let replacement_read = runtime
-        .visibility_reads()
+        .read_truth()
         .read_snapshot(&replacement_snapshot, request_execution)
         .expect("read request remains live")
         .expect("replacement snapshot should read");
@@ -198,48 +192,46 @@ fn entity_replacement_reconciliation_strategy_replacement_declaration_applies_to
         .get_entity(replacement_id)
         .expect("replacement record should be visible");
 
-    let expected_replicas_key =
-        crate::storage::data::authoritative_aspect_value_field_comparison_key(
-            &AspectValue::UInt64(7),
-        );
-    let replicas_locator = AspectFieldLocator::new(
-        LocatorAuthority::Planned,
-        AspectKey::new("replicas").expect("valid replicas aspect"),
-        CanonicalFieldPath::single(FieldKey::new("replicas").expect("valid replicas field")),
-    );
-    assert_eq!(
-        crate::visibility::materialization::read_records::entity_query_locus_comparison_key(
-            replacement_record,
-            &replicas_locator
-        ),
-        Some(expected_replicas_key)
-    );
+    let replicas = replacement_record
+        .authoritative_aspect_state
+        .as_ref()
+        .unwrap()
+        .get(&AspectKey::new("replicas").unwrap())
+        .unwrap();
+    assert!(matches!(
+        replicas.view(),
+        worth_foundational::facade::ContractValidatedAspectValueView::Scalar(AspectValue::UInt64(
+            7
+        ))
+    ));
 }
 
 #[test]
 fn entity_replacement_reconciliation_strategy_rejects_undeclared_fields() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = EntityReplacementReconciliationStrategy::descriptor(
-        crate::commit_strategies::data::CommitStrategyId(712),
+        worth_relational::facade::commit_strategies::CommitStrategyId(712),
     );
     let registry = AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(
-                crate::tests::support::aspect_key("name"),
-                crate::tests::support::field_key("name"),
+                worth_testkit_relational::aspect_storage::aspect_key("name"),
+                worth_testkit_relational::aspect_storage::field_key("name"),
             ),
             lifecycle_aspect(),
         ],
         ..AspectSchemaFixture::default()
     }
     .build_registry();
-    let runtime = RelationalRuntimeBuilder::new()
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .commit_strategy(
-            crate::commit_strategies::data::CommitStrategyRegistration::new(descriptor.clone())
-                .expect("strategy registration"),
+            worth_relational::facade::commit_strategies::CommitStrategyRegistration::new(
+                descriptor.clone(),
+            )
+            .expect("strategy registration"),
         )
         .commit_strategy_executor(
             EntityReplacementReconciliationStrategy::execution_registration(&descriptor),
@@ -266,18 +258,18 @@ fn entity_replacement_reconciliation_strategy_rejects_undeclared_fields() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let snapshot = current_snapshot(&runtime);
     let error = runtime
         .commit_strategies()
         .execute(&request, &snapshot, execution)
         .expect_err("undeclared replacement fields should fail");
 
     match error {
-        crate::commit_strategies::StrategyExecutionError::ExecutorFailed { failure, .. } => {
-            let crate::commit_strategies::data::StrategyExecutorFailure::Domain {
+        worth_relational::facade::commit_strategies::StrategyExecutionError::ExecutorFailed {
+            failure,
+            ..
+        } => {
+            let worth_relational::facade::commit_strategies::StrategyExecutorFailure::Domain {
                 class,
                 detail,
                 ..
@@ -294,13 +286,13 @@ fn entity_replacement_reconciliation_strategy_rejects_undeclared_fields() {
 
 #[test]
 fn entity_replacement_reconciliation_strategy_replaces_when_only_client_key_changes() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = EntityReplacementReconciliationStrategy::descriptor(
-        crate::facade::commit_strategies::CommitStrategyId(77),
+        worth_relational::facade::commit_strategies::CommitStrategyId(77),
     );
-    let runtime = RelationalRuntimeBuilder::new()
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(strategy_registry())
         .commit_strategy(
             EntityReplacementReconciliationStrategy::registration(descriptor.id())
@@ -331,10 +323,7 @@ fn entity_replacement_reconciliation_strategy_replaces_when_only_client_key_chan
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let snapshot = current_snapshot(&runtime);
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -349,5 +338,4 @@ fn entity_replacement_reconciliation_strategy_replaces_when_only_client_key_chan
     );
 }
 
-#[path = "tests/unchanged_state.rs"]
 mod unchanged_state;

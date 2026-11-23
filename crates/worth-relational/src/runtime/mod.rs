@@ -24,8 +24,12 @@ pub(crate) use home_program_transition::{
     RelationalHomeProgramPredecessorCatalog, RelationalHomeTargetCoverage,
     RelationalRootExecutionContracts,
 };
+pub(crate) mod commit_strategy_validation;
 mod interruption_counters;
+mod lineage_commit;
 pub(crate) mod operation_control;
+pub(crate) mod prepared_merge_execution;
+mod published_lineage;
 mod schema_transition_admission;
 pub(crate) mod state;
 pub use state::{

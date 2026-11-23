@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 
 use worth_foundational::facade::AggregateIdentity;
 
-use crate::aggregate_identity::AggregateGroupLineageEvent;
+use crate::aggregate_identity::group_lineage::AggregateGroupLineageEvent;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::{EntityId, LineageId, PartitionId, RelationId, VersionId};
 use crate::lineage::authority::{PersistedBirthClaim, PersistedNameBytes};

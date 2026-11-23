@@ -4,7 +4,7 @@ use crate::merge::data::{
     VisibleMergeRecordKind,
 };
 use crate::storage::data::RecordLifecycleState;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use crate::visibility::snapshot_read_view::RelationalReadView;
 
 pub(super) fn source_record_visibility_evidence(

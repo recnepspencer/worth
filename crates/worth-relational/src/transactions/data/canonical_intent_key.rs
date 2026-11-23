@@ -1,7 +1,8 @@
 use crate::identity::data::{EntityId, RelationId};
-use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent, EntityReference, MutationIntent, RelationMutationIntent,
+use crate::transactions::data::intents::mutation_intent::{
+    CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
 };
+use crate::transactions::data::primitives::EntityReference;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum CanonicalIntentKey {
@@ -35,7 +36,7 @@ pub(crate) enum CanonicalIntentKey {
     UpdateRelationEndpoints(RelationId),
     DeleteEntity(EntityId),
     Materialization {
-        record: crate::transactions::data::RecordRef,
+        record: crate::transactions::data::primitives::RecordRef,
         suspension: bool,
     },
 }
@@ -140,10 +141,11 @@ mod tests {
     use super::canonical_intent_key;
     use crate::identity::data::{EntityId, KindId, PartitionId};
     use crate::symbols::data::ClientKey;
-    use crate::transactions::data::AspectFieldPatch;
-    use crate::transactions::data::{
-        BulkRelationCreateIntent, CreateIntent, EntityReference, MutationIntent,
+    use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+    use crate::transactions::data::intents::mutation_intent::{
+        BulkRelationCreateIntent, CreateIntent, MutationIntent,
     };
+    use crate::transactions::data::primitives::EntityReference;
 
     #[test]
     fn bulk_relation_canonical_keys_preserve_client_key_identity() {

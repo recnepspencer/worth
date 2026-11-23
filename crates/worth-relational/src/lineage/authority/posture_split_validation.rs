@@ -5,11 +5,10 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::identity::data::VersionId;
 use crate::lineage::data::{
-    InstalledPersistentNameSchemeRegistry, LineageBasisView, LineageNameDenial,
-    LineagePostureKind, LineageRecordTarget, LineageSplitChild, PersistentNameBirthRequest,
-    PersistentNameIdentity,
+    InstalledPersistentNameSchemeRegistry, LineageBasisView, LineageNameDenial, LineagePostureKind,
+    LineageRecordTarget, LineageSplitChild, PersistentNameBirthRequest, PersistentNameIdentity,
 };
-use crate::runtime::WorkingState;
+use crate::storage::overlay::WorkingState;
 
 use super::posture_validation::{
     mismatch, require_live_holder_and_lineage, validate_birth_holder_and_subject, ValidatedPosture,

@@ -142,7 +142,7 @@ impl<'runtime> MergeAccess<'runtime> {
         started_at: Instant,
     ) -> Result<super::RelationalMergePlanningObservation, MergePlanningError> {
         let plan = self.lower_planning_scope(execution, &normalized_request)?;
-        let artifact = super::planning_artifact::materialize_planning_observation(
+        let artifact = super::planning_artifact::selected_basis::materialize_planning_observation(
             execution,
             self.runtime,
             plan,

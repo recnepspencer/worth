@@ -1,24 +1,13 @@
 use std::collections::BTreeSet;
 
+use super::historical_walk::BranchScopedHistoricalResolutionRequest;
 use crate::history::data::BranchId;
 use crate::history::data::CommitId;
 use crate::identity::data::LineageId;
 use crate::lineage::access::LineageAccess;
 use crate::lineage::data::{
-    HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,
-    HistoricalLineageResolutionMetrics, HistoricalResolutionBoundednessBasis,
-    HistoricalResolutionDigestMode, HistoricalResolutionRequest, HistoricalResolutionTrace,
-    LineageEventKind, RecordHistoryRequest,
+    HistoricalLineageResolution, HistoricalResolutionRequest, RecordHistoryRequest,
 };
-
-#[derive(Debug, Clone)]
-pub(super) struct BranchScopedHistoricalResolutionRequest {
-    pub(super) branch_id: BranchId,
-    pub(super) lineage_id: LineageId,
-    pub(super) boundedness_basis: HistoricalResolutionBoundednessBasis,
-    pub(super) lineage_seed_index_probe_count: usize,
-    pub(super) lineage_seed_event_visit_count: usize,
-}
 
 pub(super) enum HistoricalTraversalScope {
     AuthoringBranch,
@@ -84,18 +73,6 @@ impl SelectedRootReachableCommitScope {
     }
 }
 
-impl BranchScopedHistoricalResolutionRequest {
-    fn from_request(request: HistoricalResolutionRequest) -> Self {
-        Self {
-            branch_id: request.branch_id,
-            lineage_id: request.lineage_id,
-            boundedness_basis: request.boundedness_basis,
-            lineage_seed_index_probe_count: 0,
-            lineage_seed_event_visit_count: 0,
-        }
-    }
-}
-
 impl<'runtime> LineageAccess<'runtime> {
     pub fn resolve_historical_lineage(
         &self,
@@ -116,131 +93,36 @@ impl<'runtime> LineageAccess<'runtime> {
         request: BranchScopedHistoricalResolutionRequest,
         mut traversal_scope: HistoricalTraversalScope,
     ) -> HistoricalLineageResolution {
-        let mut current = BTreeSet::from([request.lineage_id]);
-        let mut reached = BTreeSet::from([request.lineage_id]);
-        let (scheduled_event_positions, mut reachable_event_index_probe_count) =
-            self.event_positions_for_sources(&request.branch_id, &current, &mut traversal_scope);
-        let mut scheduled_event_positions =
-            self.schedule_event_positions(scheduled_event_positions);
-        let mut visited_event_positions = BTreeSet::new();
-        let mut traversed_event_ids = Vec::new();
-        let mut event_visit_count = request.lineage_seed_event_visit_count;
-
-        while let Some((event_id, position)) = scheduled_event_positions.first().copied() {
-            scheduled_event_positions.remove(&(event_id, position));
-            if !visited_event_positions.insert(position) {
-                continue;
-            }
-            event_visit_count += 1;
-            let event = self
-                .runtime
-                .lineage
-                .event(position)
-                .expect(/* Proof: Historical event demand pins the selected event pages before traversal; event-index entries are installed together with their published events. */ "lineage index references a published event");
-            let source_matches = match event.kind() {
-                LineageEventKind::Restore => event
-                    .sources()
-                    .iter()
-                    .any(|source| reached.contains(source)),
-                _ => event
-                    .sources()
-                    .iter()
-                    .any(|source| current.contains(source)),
-            };
-            if !source_matches {
-                continue;
-            }
-            match event.kind() {
-                LineageEventKind::Replace
-                | LineageEventKind::Split
-                | LineageEventKind::Merge
-                | LineageEventKind::Restore => {
-                    traversed_event_ids.push(event.event_id());
-                    for source in event.sources() {
-                        current.remove(source);
-                    }
-                    let new_targets = event.targets().iter().copied().collect::<BTreeSet<_>>();
-                    current.extend(new_targets.iter().copied());
-                    reached.extend(new_targets.iter().copied());
-                    let (new_positions, index_probe_count) = self.event_positions_for_sources(
-                        &request.branch_id,
-                        &new_targets,
-                        &mut traversal_scope,
-                    );
-                    scheduled_event_positions.extend(self.schedule_event_positions(new_positions));
-                    reachable_event_index_probe_count += index_probe_count;
-                }
-                LineageEventKind::Create | LineageEventKind::Retire => {}
-            }
-        }
-        let traversed_event_count = traversed_event_ids.len();
-        let (
-            reachable_commit_node_visits,
-            reachable_commit_catalog_probes,
-            reachable_commit_parent_edge_visits,
-        ) = match &traversal_scope {
+        let walk = super::historical_walk::walk_lineage(
+            &self.runtime.lineage,
+            &request,
+            &mut |lineage_ids| {
+                self.event_positions_for_sources(
+                    &request.branch_id,
+                    lineage_ids,
+                    &mut traversal_scope,
+                )
+            },
+        );
+        let ancestry_work = match &traversal_scope {
             HistoricalTraversalScope::AuthoringBranch => (0, 0, 0),
             HistoricalTraversalScope::SelectedRootReachable(scope) => scope.ancestry_work(),
         };
+        let resolved = walk.finish(request, ancestry_work);
+        let metrics = resolved.metrics;
         self.runtime
             .performance_access()
             .count_lineage_historical_resolution(
-                request
+                metrics
                     .lineage_seed_index_probe_count
-                    .saturating_add(reachable_event_index_probe_count),
-                event_visit_count,
-                traversed_event_count,
-                reachable_commit_node_visits,
-                reachable_commit_parent_edge_visits,
-                reachable_commit_catalog_probes,
+                    .saturating_add(metrics.reachable_event_index_probe_count),
+                metrics.event_visit_count,
+                metrics.traversed_event_count,
+                metrics.reachable_commit_node_visits,
+                metrics.reachable_commit_parent_edge_visits,
+                metrics.reachable_commit_catalog_probes,
             );
-
-        let metrics = HistoricalLineageResolutionMetrics {
-            traversed_event_count,
-            event_visit_count,
-            resolved_lineage_count: current.len(),
-            lineage_seed_index_probe_count: request.lineage_seed_index_probe_count,
-            reachable_event_index_probe_count,
-            reachable_commit_node_visits,
-            reachable_commit_parent_edge_visits,
-            reachable_commit_catalog_probes,
-        };
-        let digest_basis = HistoricalLineageResolutionDigestBasis::new(
-            request.branch_id.clone(),
-            request.lineage_id,
-            current.iter().copied().collect(),
-            traversed_event_ids.clone(),
-            request.boundedness_basis,
-            HistoricalResolutionDigestMode::ExactDigestCanonicalOrder,
-        );
-
-        HistoricalLineageResolution::new(
-            request.branch_id,
-            request.lineage_id,
-            current.iter().copied().collect(),
-            request.boundedness_basis,
-            traversed_event_ids.clone(),
-            digest_basis.clone(),
-            HistoricalResolutionTrace::new(
-                traversed_event_ids,
-                request.boundedness_basis,
-                digest_basis,
-                metrics,
-            ),
-            metrics,
-        )
-    }
-
-    fn schedule_event_positions(&self, positions: BTreeSet<usize>) -> BTreeSet<(u64, usize)> {
-        positions
-            .into_iter()
-            .filter_map(|position| {
-                self.runtime
-                    .lineage
-                    .event(position)
-                    .map(|event| (event.event_id(), position))
-            })
-            .collect()
+        resolved
     }
 
     pub fn resolve_record_history(

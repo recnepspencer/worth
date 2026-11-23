@@ -2,6 +2,7 @@ pub(crate) mod aspect_field_patch;
 mod aspect_reports;
 pub(crate) mod aspect_traces;
 mod bulk_plan_digest;
+pub(crate) mod canonical_intent_key;
 pub(crate) mod commit_log;
 pub(crate) mod intents;
 pub(crate) mod mutation_planning;
@@ -73,8 +74,8 @@ pub use primitives::{
     BulkMutationProvenancePlan, BulkMutationScope, CreatedEntityRef, CreatedRelationRef,
     CrossContextEndpointClass, EntityReference, EntitySpec, ExistingRecordTarget,
     LineageSafeBulkMutationBatch, NamingStableBulkMutationBatch, PlannedBulkMutationBatch,
-    PlannedLineageTransition, ProvenanceCompleteBulkMutationBatch, RecordRef, RelationIdentity,
-    RelationScope, RelationSpec, SavepointId, TransactionId, WorkerIntentBatch,
+    PlannedLineageTransition, ProvenanceCompleteBulkMutationBatch, RecordRef, RelationScope,
+    RelationSpec, SavepointId, TransactionId, WorkerIntentBatch,
 };
 
 pub(crate) use outcomes::{

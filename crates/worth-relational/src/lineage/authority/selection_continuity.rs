@@ -31,14 +31,14 @@ use crate::lineage::data::{
     LineageBasisView, LineageNameDenial, LineagePostureKind, LineageRecordTarget,
     PersistentNameHolder, PersistentNameIdentity,
 };
-use crate::runtime::WorkingState;
+use crate::storage::overlay::WorkingState;
 
 use super::posture_validation::{mismatch, ValidatedPosture, ValidatedPostureBatch};
 use super::staged_effects::{
     basis_lineage_id, entity_lineage, is_created_in_commit, target_kind_id,
 };
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 /// A named entity kept live in place whose selected slot carries another
 /// lineage; the branch's live lineage is reinstalled so later retirements

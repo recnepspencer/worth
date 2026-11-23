@@ -25,7 +25,7 @@ pub(crate) use checkpoint_member_list::CapturedCheckpointMembers;
 pub(crate) use checkpoint_page::RelationalCheckpointPage;
 mod checkpoint_restore_work;
 mod history_member_directory;
-mod lineage_event_pages;
+pub(crate) mod lineage_event_pages;
 pub(crate) use history_member_directory::{
     RelationalCheckpointHistoryDependency, RelationalHistoryMemberDirectory,
 };

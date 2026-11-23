@@ -3,8 +3,8 @@
 use std::collections::BTreeSet;
 use std::sync::Arc;
 
-use crate::authority::intent_merge::canonical_intent_key;
 use crate::symbols::data::ClientKey;
+use crate::transactions::data::canonical_intent_key::canonical_intent_key;
 use crate::transactions::data::{
     bulk_lineage_plan_digest, bulk_naming_plan_digest, bulk_provenance_plan_digest,
     BulkMutationLineagePlan, BulkMutationLocalityFootprint, BulkMutationNamingPlan,

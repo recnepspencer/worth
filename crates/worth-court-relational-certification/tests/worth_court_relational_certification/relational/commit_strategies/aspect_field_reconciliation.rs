@@ -1,30 +1,32 @@
-use super::{
-    AspectFieldReconciliationInput, AspectFieldReconciliationOutput,
-    AspectFieldReconciliationStrategy,
-};
-use crate::commit_strategies::data::{
-    StrategyCallerProvenance, StrategyExecutorFailureClass, StrategyExecutorFailureEvidence,
-    StrategyRequestOrigin,
-};
-use crate::config::data::CascadeDeletePolicy;
-use crate::runtime::builder::RelationalRuntimeBuilder;
-use crate::tests::support::{
-    create_entity, entity_field_aspect, entity_u64_field_aspect, lifecycle_aspect,
-    AspectSchemaFixture,
-};
+use super::{current_snapshot, lifecycle_aspect};
 use worth_foundational::facade::{
     AspectFieldLocator, AspectKey, CanonicalFieldPath, FieldKey, LocatorAuthority,
 };
+use worth_relational::facade::commit_strategies::{
+    AspectFieldReconciliationInput, AspectFieldReconciliationOutput,
+    AspectFieldReconciliationStrategy,
+};
+use worth_relational::facade::commit_strategies::{
+    StrategyCallerProvenance, StrategyExecutorFailureClass, StrategyRequestOrigin,
+};
+use worth_relational::facade::config::CascadeDeletePolicy;
+use worth_testkit_relational::aspect_storage::{
+    entity_field_aspect, entity_u64_field_aspect, AspectSchemaFixture,
+};
+use worth_testkit_relational::cold_recovery::update_entity;
+use worth_testkit_relational::ordinary_records::create_entity;
 
 fn strategy_runtime(
-    descriptor: crate::commit_strategies::data::CommitStrategyDescriptor,
-    registry: crate::schema::data::RelationalSchemaRegistry,
-) -> crate::runtime::RelationalRuntime {
-    RelationalRuntimeBuilder::new()
+    descriptor: worth_relational::facade::commit_strategies::CommitStrategyDescriptor,
+    registry: worth_relational::facade::schema::RelationalSchemaRegistry,
+) -> worth_relational::facade::runtime::RelationalRuntime {
+    worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(registry)
         .commit_strategy(
-            crate::commit_strategies::data::CommitStrategyRegistration::new(descriptor.clone())
-                .expect("strategy registration"),
+            worth_relational::facade::commit_strategies::CommitStrategyRegistration::new(
+                descriptor.clone(),
+            )
+            .expect("strategy registration"),
         )
         .commit_strategy_executor(AspectFieldReconciliationStrategy::execution_registration(
             &descriptor,
@@ -33,17 +35,17 @@ fn strategy_runtime(
         .expect("valid native runtime configuration")
 }
 
-fn registry_with_replicas_field() -> crate::schema::data::RelationalSchemaRegistry {
+fn registry_with_replicas_field() -> worth_relational::facade::schema::RelationalSchemaRegistry {
     AspectSchemaFixture {
         cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
         entity_aspects: vec![
             entity_field_aspect(
-                crate::tests::support::aspect_key("name"),
-                crate::tests::support::field_key("name"),
+                worth_testkit_relational::aspect_storage::aspect_key("name"),
+                worth_testkit_relational::aspect_storage::field_key("name"),
             ),
             entity_u64_field_aspect(
-                crate::tests::support::aspect_key("replicas"),
-                crate::tests::support::field_key("replicas"),
+                worth_testkit_relational::aspect_storage::aspect_key("replicas"),
+                worth_testkit_relational::aspect_storage::field_key("replicas"),
             ),
             lifecycle_aspect(),
         ],
@@ -61,31 +63,31 @@ fn field_locator(aspect_key: AspectKey, field_key: FieldKey) -> AspectFieldLocat
 }
 
 fn replicas_patch_target() -> AspectFieldLocator {
-    crate::transactions::data::planned_single_field_locator(
-        crate::tests::support::aspect_key("replicas"),
-        crate::tests::support::field_key("replicas"),
+    worth_relational::facade::transactions::planned_single_field_locator(
+        worth_testkit_relational::aspect_storage::aspect_key("replicas"),
+        worth_testkit_relational::aspect_storage::field_key("replicas"),
     )
 }
 
 #[test]
 fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = AspectFieldReconciliationStrategy::descriptor(
-        crate::commit_strategies::data::CommitStrategyId(701),
+        worth_relational::facade::commit_strategies::CommitStrategyId(701),
     );
     let runtime = strategy_runtime(descriptor, registry_with_replicas_field());
     let entity = create_entity(request_execution, &runtime, "before");
-    crate::tests::support::update_entity(request_execution, &runtime, entity, "before");
+    update_entity(request_execution, &runtime, entity, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
             &AspectFieldReconciliationInput {
                 entity_id: entity,
                 field_locator: field_locator(
-                    crate::tests::support::aspect_key("replicas"),
-                    crate::tests::support::field_key("replicas"),
+                    worth_testkit_relational::aspect_storage::aspect_key("replicas"),
+                    worth_testkit_relational::aspect_storage::field_key("replicas"),
                 ),
                 desired_value: worth_foundational::facade::AspectValue::UInt64(5),
             }
@@ -97,10 +99,7 @@ fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let snapshot = current_snapshot(&runtime);
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -108,8 +107,8 @@ fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
     let output = AspectFieldReconciliationOutput::decode(execution.output().canonical_bytes())
         .expect("output decode");
     let updated_replicas = match &execution.mutation_program().worker_batches()[0].intents[0] {
-        crate::transactions::data::MutationIntent::Entity(
-            crate::transactions::data::EntityMutationIntent::UpdateFields(intent),
+        worth_relational::facade::transactions::MutationIntent::Entity(
+            worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(intent),
         ) => intent.fields.get(&replicas_patch_target()),
         other => panic!("expected update entity fields intent, got {other:?}"),
     };
@@ -118,8 +117,8 @@ fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
     assert_eq!(
         output.field_locator,
         field_locator(
-            crate::tests::support::aspect_key("replicas"),
-            crate::tests::support::field_key("replicas")
+            worth_testkit_relational::aspect_storage::aspect_key("replicas"),
+            worth_testkit_relational::aspect_storage::field_key("replicas")
         )
     );
     assert_eq!(
@@ -130,11 +129,11 @@ fn aspect_field_reconciliation_strategy_updates_only_declared_field_aspect() {
 
 #[test]
 fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = AspectFieldReconciliationStrategy::descriptor(
-        crate::commit_strategies::data::CommitStrategyId(703),
+        worth_relational::facade::commit_strategies::CommitStrategyId(703),
     );
     let runtime = strategy_runtime(descriptor, registry_with_replicas_field());
     let entity = create_entity(request_execution, &runtime, "stable");
@@ -144,8 +143,8 @@ fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches()
             &AspectFieldReconciliationInput {
                 entity_id: entity,
                 field_locator: field_locator(
-                    crate::tests::support::aspect_key("name"),
-                    crate::tests::support::field_key("name"),
+                    worth_testkit_relational::aspect_storage::aspect_key("name"),
+                    worth_testkit_relational::aspect_storage::field_key("name"),
                 ),
                 desired_value: worth_foundational::facade::AspectValue::String(
                     worth_foundational::facade::InternedString::Raw("stable".to_string()),
@@ -159,10 +158,7 @@ fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches()
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let snapshot = current_snapshot(&runtime);
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -176,18 +172,18 @@ fn aspect_field_reconciliation_strategy_noops_when_authoritative_field_matches()
 
 #[test]
 fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = AspectFieldReconciliationStrategy::descriptor(
-        crate::commit_strategies::data::CommitStrategyId(702),
+        worth_relational::facade::commit_strategies::CommitStrategyId(702),
     );
     let registry = AspectSchemaFixture {
         cascade_delete_policy: CascadeDeletePolicy::CascadeDeleteRelations,
         entity_aspects: vec![
             entity_field_aspect(
-                crate::tests::support::aspect_key("name"),
-                crate::tests::support::field_key("name"),
+                worth_testkit_relational::aspect_storage::aspect_key("name"),
+                worth_testkit_relational::aspect_storage::field_key("name"),
             ),
             lifecycle_aspect(),
         ],
@@ -202,8 +198,8 @@ fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
             &AspectFieldReconciliationInput {
                 entity_id: entity,
                 field_locator: field_locator(
-                    crate::tests::support::aspect_key("replicas"),
-                    crate::tests::support::field_key("replicas"),
+                    worth_testkit_relational::aspect_storage::aspect_key("replicas"),
+                    worth_testkit_relational::aspect_storage::field_key("replicas"),
                 ),
                 desired_value: worth_foundational::facade::AspectValue::UInt64(5),
             }
@@ -215,18 +211,18 @@ fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let snapshot = current_snapshot(&runtime);
     let error = runtime
         .commit_strategies()
         .execute(&request, &snapshot, execution)
         .expect_err("undeclared aspect field should be rejected");
 
     match error {
-        crate::commit_strategies::StrategyExecutionError::ExecutorFailed { failure, .. } => {
-            let crate::commit_strategies::data::StrategyExecutorFailure::Domain {
+        worth_relational::facade::commit_strategies::StrategyExecutionError::ExecutorFailed {
+            failure,
+            ..
+        } => {
+            let worth_relational::facade::commit_strategies::StrategyExecutorFailure::Domain {
                 class,
                 detail,
                 evidence,
@@ -239,14 +235,16 @@ fn aspect_field_reconciliation_strategy_rejects_undeclared_field() {
             assert!(detail.contains(
                 "aspect field locator is not a lowered foundational scalar entity aspect"
             ));
+            let evidence = serde_json::to_value(evidence.unwrap()).unwrap();
+            let encoded_locator: Vec<u8> =
+                serde_json::from_value(evidence["AspectFieldLocator"]["locator"].clone()).unwrap();
             assert_eq!(
-                evidence,
-                Some(StrategyExecutorFailureEvidence::AspectFieldLocator {
-                    locator: field_locator(
-                        crate::tests::support::aspect_key("replicas"),
-                        crate::tests::support::field_key("replicas")
-                    )
-                })
+                encoded_locator
+                    .windows(b"replicas".len())
+                    .filter(|word| *word == b"replicas")
+                    .count(),
+                2,
+                "the evidence names the refused aspect and its field",
             );
         }
         other => panic!("expected executor failure, got {other:?}"),

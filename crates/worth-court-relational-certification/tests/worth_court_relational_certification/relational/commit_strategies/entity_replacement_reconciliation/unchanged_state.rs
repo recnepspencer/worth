@@ -2,13 +2,13 @@ use super::*;
 
 #[test]
 fn entity_replacement_reconciliation_strategy_noops_when_authoritative_fields_match() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = EntityReplacementReconciliationStrategy::descriptor(
-        crate::facade::commit_strategies::CommitStrategyId(78),
+        worth_relational::facade::commit_strategies::CommitStrategyId(78),
     );
-    let runtime = RelationalRuntimeBuilder::new()
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(strategy_registry())
         .commit_strategy(
             EntityReplacementReconciliationStrategy::registration(descriptor.id())
@@ -39,10 +39,7 @@ fn entity_replacement_reconciliation_strategy_noops_when_authoritative_fields_ma
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let snapshot = current_snapshot(&runtime);
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)

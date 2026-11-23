@@ -2,7 +2,7 @@ use crate::diagnostics::data::RelationalDiagnosticValue;
 use crate::merge::data::{
     ExecutedMergeAspectDiagnosticRow, MaterializedAspectValue, MaterializedAspectValueEvidence,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn executed_aspect_row_fields(
     row: &ExecutedMergeAspectDiagnosticRow,

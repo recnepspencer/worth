@@ -8,16 +8,23 @@ use crate::merge::data::{
     MergeConflictClassification, RelationConflictPropagation, TopologyRegionConflictReason,
     VisibleMergeRecord,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use crate::visibility::snapshot_read_view::RelationalReadView;
 
+#[derive(Default)]
+pub(in crate::merge) struct TopologyRegionWork {
+    pub(in crate::merge) relation_candidates: usize,
+    pub(in crate::merge) endpoint_incidences: usize,
+    pub(in crate::merge) region_conflicts: usize,
+    pub(in crate::merge) escalated_records: usize,
+}
+
 pub(super) fn refine_relation_topology_conflicts(
-    runtime: &crate::runtime::RelationalRuntime,
     source_records_by_ref: &BTreeMap<RecordRef, &VisibleMergeRecord>,
     ancestor_basis: &AncestorRecordBasisContext<'_>,
     target_view: &RelationalReadView,
     mut classifications: Vec<MergeConflictClassification>,
-) -> Vec<MergeConflictClassification> {
+) -> (Vec<MergeConflictClassification>, TopologyRegionWork) {
     let mut relation_nodes = Vec::<RelationTopologyNode>::new();
     for (index, classification) in classifications.iter().enumerate() {
         let Some(relation_evidence) = classification.relation_evidence.as_ref() else {
@@ -45,7 +52,7 @@ pub(super) fn refine_relation_topology_conflicts(
     }
 
     if relation_nodes.is_empty() {
-        return classifications;
+        return (classifications, TopologyRegionWork::default());
     }
 
     let mut endpoint_index = BTreeMap::<EntityId, Vec<usize>>::new();
@@ -114,15 +121,15 @@ pub(super) fn refine_relation_topology_conflicts(
         }
     }
 
-    runtime
-        .performance_access()
-        .count_merge_topology_region_detection(
-            scoped_relation_candidates,
-            scoped_endpoint_incidences,
-            region_conflicts_detected,
-            region_records_escalated,
-        );
-    classifications
+    (
+        classifications,
+        TopologyRegionWork {
+            relation_candidates: scoped_relation_candidates,
+            endpoint_incidences: scoped_endpoint_incidences,
+            region_conflicts: region_conflicts_detected,
+            escalated_records: region_records_escalated,
+        },
+    )
 }
 
 #[derive(Debug)]

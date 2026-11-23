@@ -13,7 +13,7 @@ use crate::identity::data::LineageId;
 use crate::lineage::data::{
     LineageNameDenial, LineagePostureKind, LineageRecordTarget, PersistentNameIdentity,
 };
-use crate::runtime::WorkingState;
+use crate::storage::overlay::WorkingState;
 
 use super::posture_drafts::PostureEventDraft;
 use super::staged_effects::created_entity_lineage_slot;

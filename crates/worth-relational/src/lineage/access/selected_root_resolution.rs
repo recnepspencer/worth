@@ -2,10 +2,8 @@ use std::collections::BTreeSet;
 
 use crate::lineage::data::{HistoricalLineageResolution, HistoricalResolutionBoundednessBasis};
 
-use super::resolution::{
-    BranchScopedHistoricalResolutionRequest, HistoricalTraversalScope,
-    SelectedRootReachableCommitScope,
-};
+use super::historical_walk::BranchScopedHistoricalResolutionRequest;
+use super::resolution::{HistoricalTraversalScope, SelectedRootReachableCommitScope};
 use super::LineageAccess;
 
 impl<'runtime> LineageAccess<'runtime> {

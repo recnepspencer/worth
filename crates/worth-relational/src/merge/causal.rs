@@ -4,11 +4,10 @@ use std::sync::Arc;
 use crate::history::data::CommitId;
 use crate::merge::data::{
     BranchCausalDot, CausalAnnotationSummary, CausallyAnnotatedMergePlan,
-    ConflictClassifiedMergePlan, MergeCausalEvidenceModel, MergePlanningError,
-    MergeRecordCausalAnnotation, MergeRecordCausalDisposition,
+    ConflictClassifiedMergePlan, MergeCausalEvidenceModel, MergeRecordCausalAnnotation,
+    MergeRecordCausalDisposition,
 };
-use crate::merge::MergeAccess;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 enum TouchedRecordKey {
@@ -16,98 +15,81 @@ enum TouchedRecordKey {
     RelationSlot(crate::identity::data::PartitionId, u64),
 }
 
-impl<'runtime> MergeAccess<'runtime> {
-    pub(in crate::merge) fn plan_causal_scope(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: &crate::merge::request_normalization::BoundMergeInputs,
-    ) -> Result<CausallyAnnotatedMergePlan, MergePlanningError> {
-        let conflict_plan = self.plan_conflict_scope(execution, request)?;
-        Ok(self.annotate_causal_scope(conflict_plan))
-    }
+pub(super) fn annotate_causal_scope(
+    conflict_plan: ConflictClassifiedMergePlan,
+    ancestor_closure: &dyn Fn(CommitId) -> Vec<CommitId>,
+) -> CausallyAnnotatedMergePlan {
+    let source_touch_index = touched_record_latest_commit_index(&conflict_plan.source_delta);
+    let target_touch_index = touched_record_latest_commit_index(&conflict_plan.target_delta);
+    let relevant_commit_ids = source_touch_index
+        .values()
+        .chain(target_touch_index.values())
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let ancestor_cache = relevant_commit_ids
+        .into_iter()
+        .map(|commit_id| (commit_id, ancestor_closure(commit_id)))
+        .collect::<BTreeMap<_, _>>();
 
-    fn annotate_causal_scope(
-        &self,
-        conflict_plan: ConflictClassifiedMergePlan,
-    ) -> CausallyAnnotatedMergePlan {
-        let history = self.runtime.history();
-        let source_touch_index = touched_record_latest_commit_index(&conflict_plan.source_delta);
-        let target_touch_index = touched_record_latest_commit_index(&conflict_plan.target_delta);
-        let relevant_commit_ids = source_touch_index
-            .values()
-            .chain(target_touch_index.values())
-            .copied()
-            .collect::<BTreeSet<_>>();
-        let ancestor_cache = relevant_commit_ids
-            .into_iter()
-            .map(|commit_id| {
-                (
+    let annotations = conflict_plan
+        .classifications
+        .iter()
+        .map(|classification| {
+            let source_latest_touch = source_touch_index
+                .get(&touched_record_key(&classification.record))
+                .copied()
+                .map(|commit_id| BranchCausalDot {
+                    branch_id: conflict_plan.source_delta.branch_id.clone(),
                     commit_id,
-                    history.ancestor_closure_by_commit_id_order(commit_id),
-                )
-            })
-            .collect::<BTreeMap<_, _>>();
+                });
+            let target_latest_touch = classification
+                .target_record
+                .as_ref()
+                .map(touched_record_key)
+                .or_else(|| {
+                    classification
+                        .target_record_visible
+                        .then(|| touched_record_key(&classification.record))
+                })
+                .and_then(|record_key| target_touch_index.get(&record_key).copied())
+                .map(|commit_id| BranchCausalDot {
+                    branch_id: conflict_plan.target_delta.branch_id.clone(),
+                    commit_id,
+                });
+            let disposition = causal_disposition(
+                source_latest_touch.as_ref().map(|dot| dot.commit_id),
+                target_latest_touch.as_ref().map(|dot| dot.commit_id),
+                &ancestor_cache,
+            );
 
-        let annotations = conflict_plan
-            .classifications
-            .iter()
-            .map(|classification| {
-                let source_latest_touch = source_touch_index
-                    .get(&touched_record_key(&classification.record))
-                    .copied()
-                    .map(|commit_id| BranchCausalDot {
-                        branch_id: conflict_plan.source_delta.branch_id.clone(),
-                        commit_id,
-                    });
-                let target_latest_touch = classification
-                    .target_record
-                    .as_ref()
-                    .map(touched_record_key)
-                    .or_else(|| {
-                        classification
-                            .target_record_visible
-                            .then(|| touched_record_key(&classification.record))
-                    })
-                    .and_then(|record_key| target_touch_index.get(&record_key).copied())
-                    .map(|commit_id| BranchCausalDot {
-                        branch_id: conflict_plan.target_delta.branch_id.clone(),
-                        commit_id,
-                    });
-                let disposition = causal_disposition(
-                    source_latest_touch.as_ref().map(|dot| dot.commit_id),
-                    target_latest_touch.as_ref().map(|dot| dot.commit_id),
-                    &ancestor_cache,
-                );
+            MergeRecordCausalAnnotation {
+                record: classification.record.clone(),
+                target_record: classification.target_record.clone(),
+                merge_base_commit_id: conflict_plan.basis.merge_base.commit.commit_id,
+                source_latest_touch,
+                target_latest_touch,
+                disposition,
+                evidence_model: MergeCausalEvidenceModel::BranchHistoryDerived,
+            }
+        })
+        .collect::<Vec<_>>();
+    let causal_summary = summarize_causal_annotations(Arc::from(annotations.clone()));
 
-                MergeRecordCausalAnnotation {
-                    record: classification.record.clone(),
-                    target_record: classification.target_record.clone(),
-                    merge_base_commit_id: conflict_plan.basis.merge_base.commit.commit_id,
-                    source_latest_touch,
-                    target_latest_touch,
-                    disposition,
-                    evidence_model: MergeCausalEvidenceModel::BranchHistoryDerived,
-                }
-            })
-            .collect::<Vec<_>>();
-        let causal_summary = summarize_causal_annotations(Arc::from(annotations.clone()));
-
-        CausallyAnnotatedMergePlan {
-            request: conflict_plan.request,
-            basis: conflict_plan.basis,
-            ancestry: conflict_plan.ancestry,
-            target_delta: conflict_plan.target_delta,
-            source_delta: conflict_plan.source_delta,
-            effective_identity_declarations: conflict_plan.effective_identity_declarations,
-            source_records: conflict_plan.source_records,
-            candidates: conflict_plan.candidates,
-            validated_schema_correspondences: conflict_plan.validated_schema_correspondences,
-            identity_summary: conflict_plan.identity_summary,
-            classifications: conflict_plan.classifications,
-            conflict_summary: conflict_plan.conflict_summary,
-            causal_annotations: Arc::from(annotations),
-            causal_summary,
-        }
+    CausallyAnnotatedMergePlan {
+        request: conflict_plan.request,
+        basis: conflict_plan.basis,
+        ancestry: conflict_plan.ancestry,
+        target_delta: conflict_plan.target_delta,
+        source_delta: conflict_plan.source_delta,
+        effective_identity_declarations: conflict_plan.effective_identity_declarations,
+        source_records: conflict_plan.source_records,
+        candidates: conflict_plan.candidates,
+        validated_schema_correspondences: conflict_plan.validated_schema_correspondences,
+        identity_summary: conflict_plan.identity_summary,
+        classifications: conflict_plan.classifications,
+        conflict_summary: conflict_plan.conflict_summary,
+        causal_annotations: Arc::from(annotations),
+        causal_summary,
     }
 }
 

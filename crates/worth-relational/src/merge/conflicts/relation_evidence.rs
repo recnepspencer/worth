@@ -8,7 +8,7 @@ use crate::merge::data::{
     RelationContinuityClass, VisibleMergeRecord, VisibleMergeRecordKind,
 };
 use crate::storage::data::RelationReadRecord;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn relation_conflict_evidence(
     record: &VisibleMergeRecord,

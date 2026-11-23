@@ -1,10 +1,12 @@
 use crate::identity::data::{KindId, PartitionId};
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::symbols::data::{ClientKey, StringInterner, Symbol};
-use crate::transactions::data::{
-    CommitConflict, ConflictClass, CreateIntent, EntityMutationIntent, EntityReference,
-    ExistingRecordTarget, MutationIntent, RelationMutationIntent,
+use crate::transactions::data::intents::mutation_intent::{
+    CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
 };
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::primitives::{EntityReference, ExistingRecordTarget};
 
 use super::{
     collect_created_entity_refs,
@@ -15,7 +17,7 @@ use super::{
 /// normalization can mutate runtime-owned symbol state.
 pub(crate) fn validate_branch_locality(
     state: &impl CurrentPartitionAccess,
-    batches: &[crate::transactions::data::WorkerIntentBatch],
+    batches: &[crate::transactions::data::primitives::WorkerIntentBatch],
     interner: &crate::symbols::data::StringInterner,
 ) -> Result<(), CommitConflict> {
     let created_entities =
@@ -114,7 +116,7 @@ struct BranchLocalCreatedEntityRef {
 
 impl BranchLocalCreatedEntityRef {
     fn new(
-        created: &crate::transactions::data::CreatedEntityRef,
+        created: &crate::transactions::data::primitives::CreatedEntityRef,
         interner: &StringInterner,
     ) -> Self {
         Self {

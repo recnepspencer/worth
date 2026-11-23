@@ -33,7 +33,7 @@ pub use historical_selection::{
 mod kind_scans;
 mod pinned;
 pub(crate) mod projection_records;
-mod query_locus_projection;
+pub(crate) mod query_locus_projection;
 mod read_record_identity_ordering;
 mod record_source;
 mod residency;

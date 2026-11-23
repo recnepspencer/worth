@@ -5,9 +5,10 @@ use std::collections::BTreeSet;
 
 use crate::identity::data::{EntityId, KindId, LineageId, PartitionId, RelationId, VersionId};
 use crate::lineage::data::{LineageBasisView, LineageRecordTarget, PersistentNameHolder};
-use crate::runtime::WorkingState;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{RecordRef, TransactionCommitError};
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(super) fn created_entity_lineage_slot(
     staged: &WorkingState,
@@ -24,48 +25,9 @@ pub(super) fn created_entity_lineage_slot(
 
 pub(super) fn lineage_error(detail: String) -> TransactionCommitError {
     TransactionCommitError::publication(crate::publication::data::PublicationError::new(
-        crate::publication::bundle::PublicationStage::BundleAssembly,
+        crate::publication::bundle::publication_status::PublicationStage::BundleAssembly,
         detail,
     ))
-}
-
-pub(super) fn install_lineage_id(
-    execution: &worth_execution::ExecutionRequest<'_, '_>,
-    staged: &mut WorkingState,
-    entity_id: EntityId,
-    lineage_id: LineageId,
-) -> Result<(), TransactionCommitError> {
-    staged
-        .get_partition_mut(entity_id.partition_id)
-        .entity_arena
-        .install_lineage_id(execution, entity_id.slot_index(), lineage_id)
-        .map_err(|denial| match denial {
-            crate::storage::substrate::ExtraLineageDenial::Request(cause) => {
-                TransactionCommitError::execution(cause.into())
-            }
-            crate::storage::substrate::ExtraLineageDenial::Missing(detail) => {
-                lineage_error(detail.to_owned())
-            }
-        })
-}
-
-#[cfg(test)]
-pub(super) fn install_lineage_id_in_working_state(
-    staged: &mut WorkingState,
-    entity_id: EntityId,
-    lineage_id: LineageId,
-) -> Result<(), TransactionCommitError> {
-    let arena = &mut staged
-        .get_partition_mut(entity_id.partition_id)
-        .entity_arena;
-    let physical = arena
-        .physical_index(entity_id.slot_index())
-        .ok_or_else(|| lineage_error("planned lineage entity slot is unavailable".to_owned()))?;
-    let extra = arena.extra.get_mut(physical).ok_or_else(|| {
-        lineage_error("planned lineage entity metadata is unavailable".to_owned())
-    })?;
-    extra.lineage_id = Some(lineage_id);
-    Ok(())
 }
 
 pub(super) fn entity_lineage(staged: &WorkingState, entity_id: EntityId) -> Option<LineageId> {

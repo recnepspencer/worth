@@ -1,4 +1,4 @@
-mod access;
+pub(crate) mod access;
 mod authority;
 pub(crate) mod commit;
 pub mod data;

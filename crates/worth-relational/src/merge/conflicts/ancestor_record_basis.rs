@@ -5,14 +5,15 @@ use worth_foundational::facade::AuthoritativeRecordAspectState;
 use crate::identity::data::{EntityId, LineageId, PartitionId, RelationId};
 use crate::merge::data::VisibleMergeRecord;
 use crate::storage::data::{EntityReadRecord, RecordLifecycleState, RelationReadRecord};
-use crate::transactions::data::RecordRef;
-use crate::visibility::snapshot_read_view::RelationalReadView;
+use crate::transactions::data::primitives::RecordRef;
+use crate::visibility::snapshot_read_view::{find_entity, find_relation};
 
 #[cfg(test)]
 mod tests;
 
 pub(super) struct AncestorRecordBasisContext<'a> {
-    view: &'a RelationalReadView,
+    entities: &'a [EntityReadRecord],
+    relations: &'a [RelationReadRecord],
     entities_by_lineage: BTreeMap<LineageId, EntityId>,
     entities_by_slot: BTreeMap<(PartitionId, u64), EntityId>,
     relations_by_slot: BTreeMap<(PartitionId, u64), RelationId>,
@@ -27,12 +28,16 @@ pub(super) struct AncestorRelationRecordBasis<'a> {
 }
 
 impl<'a> AncestorRecordBasisContext<'a> {
-    pub(super) fn new(view: &'a RelationalReadView) -> Self {
+    pub(super) fn new(
+        entities: &'a [EntityReadRecord],
+        relations: &'a [RelationReadRecord],
+    ) -> Self {
         Self {
-            view,
-            entities_by_lineage: index_entities_by_lineage(view),
-            entities_by_slot: index_entities_by_slot(view),
-            relations_by_slot: index_relations_by_slot(view),
+            entities,
+            relations,
+            entities_by_lineage: index_entities_by_lineage(entities),
+            entities_by_slot: index_entities_by_slot(entities),
+            relations_by_slot: index_relations_by_slot(relations),
         }
     }
 
@@ -69,11 +74,11 @@ impl<'a> AncestorRecordBasisContext<'a> {
     }
 
     fn entity_by_id_or_slot(&self, entity_id: EntityId) -> Option<&'a EntityReadRecord> {
-        self.view.get_entity(entity_id).or_else(|| {
+        find_entity(self.entities, entity_id).or_else(|| {
             self.entities_by_slot
                 .get(&(entity_id.partition_id, entity_id.local_slot.0))
                 .copied()
-                .and_then(|resolved_entity_id| self.view.get_entity(resolved_entity_id))
+                .and_then(|resolved_entity_id| find_entity(self.entities, resolved_entity_id))
         })
     }
 
@@ -81,15 +86,17 @@ impl<'a> AncestorRecordBasisContext<'a> {
         self.entities_by_lineage
             .get(&lineage_id)
             .copied()
-            .and_then(|entity_id| self.view.get_entity(entity_id))
+            .and_then(|entity_id| find_entity(self.entities, entity_id))
     }
 
     fn relation_by_id_or_slot(&self, relation_id: RelationId) -> Option<&'a RelationReadRecord> {
-        self.view.get_relation(relation_id).or_else(|| {
+        find_relation(self.relations, relation_id).or_else(|| {
             self.relations_by_slot
                 .get(&(relation_id.partition_id, relation_id.local_slot.0))
                 .copied()
-                .and_then(|resolved_relation_id| self.view.get_relation(resolved_relation_id))
+                .and_then(|resolved_relation_id| {
+                    find_relation(self.relations, resolved_relation_id)
+                })
         })
     }
 }
@@ -132,8 +139,8 @@ impl AncestorRelationRecordBasis<'_> {
     }
 }
 
-fn index_entities_by_lineage(view: &RelationalReadView) -> BTreeMap<LineageId, EntityId> {
-    view.entities()
+fn index_entities_by_lineage(entities: &[EntityReadRecord]) -> BTreeMap<LineageId, EntityId> {
+    entities
         .iter()
         .filter_map(|entity| {
             entity
@@ -143,8 +150,8 @@ fn index_entities_by_lineage(view: &RelationalReadView) -> BTreeMap<LineageId, E
         .collect()
 }
 
-fn index_entities_by_slot(view: &RelationalReadView) -> BTreeMap<(PartitionId, u64), EntityId> {
-    view.entities()
+fn index_entities_by_slot(entities: &[EntityReadRecord]) -> BTreeMap<(PartitionId, u64), EntityId> {
+    entities
         .iter()
         .map(|entity| {
             (
@@ -155,8 +162,10 @@ fn index_entities_by_slot(view: &RelationalReadView) -> BTreeMap<(PartitionId, u
         .collect()
 }
 
-fn index_relations_by_slot(view: &RelationalReadView) -> BTreeMap<(PartitionId, u64), RelationId> {
-    view.relations()
+fn index_relations_by_slot(
+    relations: &[RelationReadRecord],
+) -> BTreeMap<(PartitionId, u64), RelationId> {
+    relations
         .iter()
         .map(|relation| {
             (

@@ -10,7 +10,7 @@ use crate::transactions::data::{
     CommitConflict, ConflictClass, MergeExecutionOutcome, TransactionCommitError,
 };
 
-pub(in crate::merge) fn execute_prepared_merge(
+pub(crate) fn execute_prepared_merge(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalRuntime,
     prepared: PreparedMergeExecution,
@@ -111,8 +111,8 @@ fn emit_failure(
     prepared: &PreparedMergeExecution,
     error: MergeExecutionError,
 ) -> MergeExecutionError {
-    super::super::execution_diagnostics::emit_merge_execution_failure_artifact(
-        runtime, prepared, &error,
+    runtime.publication_authority().push_diagnostic_artifact(
+        crate::merge::execution_diagnostics::merge_execution_failure_artifact(prepared, &error),
     );
     error
 }

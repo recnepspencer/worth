@@ -74,16 +74,30 @@ impl RelationalReadView {
     }
 
     pub fn get_entity(&self, entity_id: EntityId) -> Option<&EntityReadRecord> {
-        self.entities
-            .binary_search_by_key(&entity_id, |record| record.entity_id)
-            .ok()
-            .map(|index| &self.entities[index])
+        find_entity(&self.entities, entity_id)
     }
 
     pub fn get_relation(&self, relation_id: RelationId) -> Option<&RelationReadRecord> {
-        self.relations
-            .binary_search_by_key(&relation_id, |record| record.relation_id)
-            .ok()
-            .map(|index| &self.relations[index])
+        find_relation(&self.relations, relation_id)
     }
+}
+
+pub(crate) fn find_entity(
+    records: &[EntityReadRecord],
+    entity_id: EntityId,
+) -> Option<&EntityReadRecord> {
+    records
+        .binary_search_by_key(&entity_id, |record| record.entity_id)
+        .ok()
+        .map(|index| &records[index])
+}
+
+pub(crate) fn find_relation(
+    records: &[RelationReadRecord],
+    relation_id: RelationId,
+) -> Option<&RelationReadRecord> {
+    records
+        .binary_search_by_key(&relation_id, |record| record.relation_id)
+        .ok()
+        .map(|index| &records[index])
 }

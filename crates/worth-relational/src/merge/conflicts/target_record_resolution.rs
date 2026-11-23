@@ -1,5 +1,5 @@
 use crate::merge::data::{VisibleMergeRecord, VisibleMergeRecordKind};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use crate::visibility::snapshot_read_view::RelationalReadView;
 
 pub(super) fn visible_target_record(

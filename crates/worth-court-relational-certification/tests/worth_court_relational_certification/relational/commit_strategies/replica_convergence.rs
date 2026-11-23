@@ -1,25 +1,28 @@
+use super::{current_snapshot, lifecycle_aspect};
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
-use super::{
+use worth_relational::facade::commit_strategies::{
     ReplicaConvergenceAction, ReplicaConvergenceInput, ReplicaConvergenceOutput,
     ReplicaConvergenceStrategy,
 };
-use crate::commit_strategies::data::{StrategyCallerProvenance, StrategyRequestOrigin};
-use crate::runtime::builder::RelationalRuntimeBuilder;
-use crate::tests::support::{
-    entity_field_aspect, entity_u64_field_aspect, lifecycle_aspect, AspectSchemaFixture,
+use worth_relational::facade::commit_strategies::{
+    StrategyCallerProvenance, StrategyRequestOrigin,
 };
+use worth_testkit_relational::aspect_storage::{
+    entity_field_aspect, entity_u64_field_aspect, AspectSchemaFixture,
+};
+use worth_testkit_relational::ordinary_records::create_entity;
 
-fn strategy_registry() -> crate::schema::data::RelationalSchemaRegistry {
+fn strategy_registry() -> worth_relational::facade::schema::RelationalSchemaRegistry {
     AspectSchemaFixture {
         entity_aspects: vec![
             entity_field_aspect(
-                crate::tests::support::aspect_key("name"),
-                crate::tests::support::field_key("name"),
+                worth_testkit_relational::aspect_storage::aspect_key("name"),
+                worth_testkit_relational::aspect_storage::field_key("name"),
             ),
             entity_u64_field_aspect(
-                crate::tests::support::aspect_key("replicas"),
-                crate::tests::support::field_key("replicas"),
+                worth_testkit_relational::aspect_storage::aspect_key("replicas"),
+                worth_testkit_relational::aspect_storage::field_key("replicas"),
             ),
             lifecycle_aspect(),
         ],
@@ -29,32 +32,34 @@ fn strategy_registry() -> crate::schema::data::RelationalSchemaRegistry {
 }
 
 fn replicas_patch_target() -> AspectFieldLocator {
-    crate::transactions::data::planned_single_field_locator(
-        crate::tests::support::aspect_key("replicas"),
-        crate::tests::support::field_key("replicas"),
+    worth_relational::facade::transactions::planned_single_field_locator(
+        worth_testkit_relational::aspect_storage::aspect_key("replicas"),
+        worth_testkit_relational::aspect_storage::field_key("replicas"),
     )
 }
 
 #[test]
 fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = ReplicaConvergenceStrategy::descriptor(
-        crate::commit_strategies::data::CommitStrategyId(601),
+        worth_relational::facade::commit_strategies::CommitStrategyId(601),
     );
-    let runtime = RelationalRuntimeBuilder::new()
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(strategy_registry())
         .commit_strategy(
-            crate::commit_strategies::data::CommitStrategyRegistration::new(descriptor.clone())
-                .expect("strategy registration"),
+            worth_relational::facade::commit_strategies::CommitStrategyRegistration::new(
+                descriptor.clone(),
+            )
+            .expect("strategy registration"),
         )
         .commit_strategy_executor(ReplicaConvergenceStrategy::execution_registration(
             &descriptor,
         ))
         .build()
         .expect("valid native runtime configuration");
-    let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
+    let entity = create_entity(request_execution, &runtime, "before");
     let request = runtime
         .commit_strategies()
         .canonicalize_request(
@@ -70,10 +75,7 @@ fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let snapshot = current_snapshot(&runtime);
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
@@ -82,8 +84,8 @@ fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
         .expect("output decode");
     let intent = &execution.mutation_program().worker_batches()[0].intents[0];
     let updated_replicas = match intent {
-        crate::transactions::data::MutationIntent::Entity(
-            crate::transactions::data::EntityMutationIntent::UpdateFields(intent),
+        worth_relational::facade::transactions::MutationIntent::Entity(
+            worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(intent),
         ) => intent.fields.get(&replicas_patch_target()),
         other => panic!("expected update entity fields intent, got {other:?}"),
     };
@@ -94,35 +96,39 @@ fn replica_convergence_strategy_updates_replicas_and_preserves_other_fields() {
 
 #[test]
 fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let request_execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let descriptor = ReplicaConvergenceStrategy::descriptor(
-        crate::commit_strategies::data::CommitStrategyId(602),
+        worth_relational::facade::commit_strategies::CommitStrategyId(602),
     );
-    let runtime = RelationalRuntimeBuilder::new()
+    let runtime = worth_relational::facade::runtime::RelationalRuntimeApi::builder()
         .schema_registry(strategy_registry())
         .commit_strategy(
-            crate::commit_strategies::data::CommitStrategyRegistration::new(descriptor.clone())
-                .expect("strategy registration"),
+            worth_relational::facade::commit_strategies::CommitStrategyRegistration::new(
+                descriptor.clone(),
+            )
+            .expect("strategy registration"),
         )
         .commit_strategy_executor(ReplicaConvergenceStrategy::execution_registration(
             &descriptor,
         ))
         .build()
         .expect("valid native runtime configuration");
-    let entity = crate::tests::support::create_entity(request_execution, &runtime, "before");
-    let mut txn = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
+    let entity = create_entity(request_execution, &runtime, "before");
+    let mut txn =
+        worth_testkit_relational::aspect_storage::publications::begin_main_transaction(&runtime);
     txn.push_batch(
-        crate::transactions::data::WorkerIntentBatch::new("seed-replicas").push(
-            crate::transactions::data::MutationIntent::Entity(
-                crate::transactions::data::EntityMutationIntent::UpdateFields(
-                    crate::transactions::data::UpdateEntityFieldsIntent {
+        worth_relational::facade::transactions::WorkerIntentBatch::new("seed-replicas").push(
+            worth_relational::facade::transactions::MutationIntent::Entity(
+                worth_relational::facade::transactions::EntityMutationIntent::UpdateFields(
+                    worth_relational::facade::transactions::UpdateEntityFieldsIntent {
                         entity_id: entity,
-                        fields: crate::transactions::data::AspectFieldPatch::from_locator(
-                            replicas_patch_target(),
-                            AspectValue::UInt64(5),
-                        ),
+                        fields:
+                            worth_relational::facade::transactions::AspectFieldPatch::from_locator(
+                                replicas_patch_target(),
+                                AspectValue::UInt64(5),
+                            ),
                     },
                 ),
             ),
@@ -147,10 +153,7 @@ fn replica_convergence_strategy_noops_when_authoritative_replicas_match() {
             .expect("native canonical strategy request"),
         )
         .expect("canonical request");
-    let snapshot = runtime
-        .visibility_authority()
-        .snapshot()
-        .expect("current snapshot fixture is admitted");
+    let snapshot = current_snapshot(&runtime);
     let execution = runtime
         .commit_strategies()
         .execute(&request, &snapshot, request_execution)
