@@ -7,6 +7,7 @@ mod metrics;
 mod name_resolution;
 mod naming;
 mod naming_denial;
+mod pending_birth_identity;
 mod postures;
 mod resolution;
 
@@ -37,6 +38,7 @@ pub use naming::{
     PersistentNameSubjectKind,
 };
 pub use naming_denial::{DiscriminatorBasisDenialReason, LineageNameDenial, LineagePostureKind};
+pub(crate) use pending_birth_identity::canonical_birth_digest;
 pub(crate) use postures::LineageBasisView;
 pub use postures::{
     CommitNamingPlan, LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget,

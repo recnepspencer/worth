@@ -37,6 +37,7 @@ pub use derived_relation::{
 };
 pub mod managed_index;
 pub mod naming;
+pub mod relation_naming;
 pub use managed_index::{
     native_index_decision_cause, WorthQueryComputationManagedIndexDenial,
     WorthQueryComputationManagedIndexDenialKind,

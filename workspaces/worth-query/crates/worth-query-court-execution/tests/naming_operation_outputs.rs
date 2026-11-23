@@ -1,8 +1,8 @@
 //! Slice 5C operation-output lowering for relations: a bound operation naming
 //! program lowered against the commit basis's name index splits, merges and
 //! retires held relation names through Relational's commit finalization.
-//! (Installed-world decision readers cannot hold relation names, so the
-//! relation postures are certified here against a real Relational runtime.)
+//! (The installed-world courts drive the same postures by names a decision
+//! reader read; these certify the lowering against a real Relational runtime.)
 
 use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::application_naming::{

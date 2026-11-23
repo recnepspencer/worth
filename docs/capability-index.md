@@ -106,13 +106,20 @@ and `retire_*_name`, `split_*_name` and `merge_*_names`
 (`WorthQueryOutputMergeKeeper`) declare what its deletions do to held names;
 re-minting a retired name in the same operation is `Preserve` continuity
 ([operation output names](build-an-application.md#operation-output-names)).
+A later-role output may tell itself apart by an output the same candidate
+named earlier in the same occurrence: `same_commit_entity_name` /
+`same_commit_relation_name` return a `WorthQuerySameCommitName<K>` that is
+only a discriminator value, and the name it stands for is the one the
+two-commit route gives.
 `HistoryDocument` `undo_step` / `redo_to` / `checkout` keep held names on the
 checked-out node with no naming ceremony: Native appends `Retire` / `Restore`
 for every named record the selection retires or restores
 ([names across undo, redo, checkout and rebuild](build-an-application.md#names-across-undo-redo-checkout-and-rebuild)). To hold a name and resolve it later at a reader's pinned basis, use
 `host::application_naming::ExecutionNameReader` (`entity_name_of`,
 `resolve_entity`, `relation_name_of`, `resolve_relation`) or the decision
-reader's `name_of` / `resolve`; answers are kind-checked, `Exact` refuses
+reader's `name_of` / `resolve` for entities and `relation_name_of` /
+`resolve_relation` for relations, which key every live record the answer
+rested on as a decision fact; answers are kind-checked, `Exact` refuses
 `Ambiguous { candidates }` rather than picking a member, cost is O(lineage
 path), and `NameReadDependencies::currentness_after_commit` reports which
 later commits stale a read. Bridge continuity of named records consumes the

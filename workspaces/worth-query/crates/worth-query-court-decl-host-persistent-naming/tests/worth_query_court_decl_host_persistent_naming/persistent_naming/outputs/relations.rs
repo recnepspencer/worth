@@ -95,7 +95,7 @@ fn one_seam(from: &str, to: &str) -> Plan {
 fn deleting_an_endpoint_retires_its_named_seam_so_the_seam_re_mints() {
     let world = World::install();
     endpoints(&world);
-    world.committed("link", one_seam("e1", "e2"));
+    world.committed("endpoint-link", one_seam("e1", "e2"));
     // `e1` is deleted with its seam still attached: no unlink, no posture.
     // The seam is retained dangling for audit, and its name ends with it.
     world.committed(
@@ -117,14 +117,14 @@ fn deleting_an_endpoint_retires_its_named_seam_so_the_seam_re_mints() {
     );
     // The same seam identity mints again: its name is not dangling live on
     // the retired relation (which would refuse `DuplicateBirth`).
-    world.committed("relink", one_seam("e3", "e2"));
+    world.committed("endpoint-relink", one_seam("e3", "e2"));
 }
 
 #[test]
 fn unlinking_a_named_seam_retires_its_name() {
     let world = World::install();
     endpoints(&world);
-    world.committed("link", one_seam("e1", "e2"));
+    world.committed("unlink-link", one_seam("e1", "e2"));
     let live = world.sculpt("live-remint", one_seam("e2", "e1"));
     assert!(
         matches!(
@@ -141,5 +141,5 @@ fn unlinking_a_named_seam_retires_its_name() {
             ..Plan::default()
         },
     );
-    world.committed("relink", one_seam("e1", "e2"));
+    world.committed("unlink-relink", one_seam("e1", "e2"));
 }
