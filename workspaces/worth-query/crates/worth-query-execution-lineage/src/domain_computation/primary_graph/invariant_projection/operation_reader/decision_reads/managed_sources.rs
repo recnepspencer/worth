@@ -31,6 +31,10 @@ pub struct IssuedManagedSourceValues {
     allocation: Option<Arc<SourceFactsAllocation>>,
 }
 impl IssuedManagedSourceValues {
+    /// Whether nothing was issued (PR C §1.7: a pending refusal's proofs).
+    pub fn is_empty(&self) -> bool {
+        self.values.is_empty() && self.authorizations.is_empty()
+    }
     pub fn authorization(
         &self,
         key: &SourceReadAuthorizationKey,

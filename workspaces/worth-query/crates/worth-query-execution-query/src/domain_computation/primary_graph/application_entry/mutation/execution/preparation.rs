@@ -78,6 +78,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
             admission,
             None,
             None,
+            None,
             on_contact,
             allocation_policy,
         )
@@ -107,6 +108,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
             >,
         )>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         prepared_inputs: Option<PreparedMutationInputs<Schema, Binding>>,
         on_contact: impl FnOnce(),
         allocation_policy: worth_execution::ExecutionAllocationPolicy<'_, 'authority>,
@@ -266,6 +268,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                     &admission,
                     before,
                     candidate,
+                    own_outputs,
                     source_query_port,
                     projection,
                     allocation_control.policy(),
@@ -276,6 +279,7 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                         super::projection::PreparedMutationProjection::Applied {
                             decision,
                             pin: candidate.clone(),
+                            own_outputs: own_outputs.cloned(),
                         },
                         work,
                     )

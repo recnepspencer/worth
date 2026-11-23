@@ -1,9 +1,9 @@
-//! A parent that ran without effect still refuses when a later writer moves its input.
-//! Publishing that journey needs same-route receipt replacement, postponed by D1483.
+//! A parent that ran without effect, whose input a later writer moves, reopens
+//! and re-derives (PR C §1.5): its successor round folds into its chain, so the
+//! route publishes one receipt with the re-derived value.
 use super::*;
 mod program;
-use worth_query_host::facade::primary_graph::WorthQueryInvariantExecutionDenialKind as Kind;
-use worth_relational::facade::{inspection::observe_maintenance_work, transactions::RecordRef};
+use worth_relational::facade::inspection::observe_maintenance_work;
 fn limits(worker: bool) -> WorthQueryApplicationLimits {
     if worker {
         world::worker_limits()
@@ -79,7 +79,39 @@ fn worker_only_parity_parent_alone_executes_again_without_changing_its_output() 
     parent_alone_runs_without_effect(true)
 }
 
-fn later_writer_refuses(worker: bool) {
+/// The sequential oracle: `parity:a` derived on demand from the committed
+/// world settles as already current, with no producer contact.
+fn settles_current(
+    host: &WorthQueryProgramApplicationRuntime<Schema, program::Program>,
+    request: &family::Request<'_, '_, '_>,
+) {
+    let contacts = host.producer_contacts_on_this_thread_for_test();
+    let mut operation = request
+        .demand(family::parity_input::Demand("a".into()))
+        .retain_program_outputs::<program::Program, program::Tree>(host)
+        .unwrap_or_else(|cause| panic!("{:?}", cause.denial()));
+    for _ in 0..128 {
+        operation = match operation.advance(request) {
+            WorthQueryProgramOutputOperationAdvance::Pending(next) => next,
+            WorthQueryProgramOutputOperationAdvance::Settled(done) => {
+                done.deliver_current(request).unwrap();
+                done.close(request)
+                    .unwrap_or_else(|cause| panic!("{:?}", cause.denial()));
+                assert_eq!(host.producer_contacts_on_this_thread_for_test(), contacts);
+                return;
+            }
+            WorthQueryProgramOutputOperationAdvance::Refused { denial, .. } => {
+                panic!("{denial:?}")
+            }
+            WorthQueryProgramOutputOperationAdvance::Terminal(terminal) => {
+                panic!("{:?}", terminal.denial())
+            }
+        };
+    }
+    panic!("on-demand parity:a did not settle")
+}
+
+fn later_writer_rederives(worker: bool) {
     let _execution = WorthQueryExecutionObservation::install_on_this_thread();
     let host = world::install_program_with_value::<program::Program>(limits(worker), 2);
     let scope = request_scope();
@@ -120,13 +152,7 @@ fn later_writer_refuses(worker: bool) {
     assert!(settled);
     drop(outputs);
     assert_eq!(parity(&request).value, 5);
-    let source = request
-        .query(query::model::Read("a".into()))
-        .execute()
-        .unwrap()
-        .rows()[0]
-        .native_id;
-    let before = super::super::failure::checkpoint(&host);
+    let born = parity(&request).native_id;
     let head = courts::native_head(&host);
     let contacts = host.producer_contacts_on_this_thread_for_test();
     let (intent, key) = source_edit("moved", 6);
@@ -142,38 +168,33 @@ fn later_writer_refuses(worker: bool) {
             )
             .unwrap()
     });
-    let WorthQueryApplicationPerformedMutationOutcome::NotPerformed(
-        WorthQueryApplicationMutationOutcome::Commit(WorthQueryApplicationUncommitted::Denied(
-            cause,
-        )),
-    ) = outcome
-    else {
-        panic!("a later writer moving the unchanged parent's input must refuse the whole edit")
-    };
-    let failure = cause
-        .invariant_execution_failure()
-        .expect("the final candidate decision-support owner refuses");
-    assert_eq!(failure.kind(), Kind::CoupledReadSupportChanged);
     assert!(
-        failure.detail().contains("decision support") && failure.detail().contains("MemberValue"),
-        "{failure:?}"
+        matches!(
+            outcome,
+            WorthQueryApplicationPerformedMutationOutcome::Performed(_)
+        ),
+        "the moved input re-derives the parent and the edit performs"
     );
-    assert_eq!(failure.affected_records(), [RecordRef::Entity(source)]);
+    // The parent ran without effect (parity 0 + m 5), the child wrote m = 6 + 1,
+    // and the parent's successor round re-derived parity 0 + 7.
     assert_eq!(
         host.producer_contacts_on_this_thread_for_test(),
-        contacts + 2,
-        "the parent ran without effect and the child ran before the refusal"
+        contacts + 3,
+        "the parent, the child, then the parent's successor round"
     );
-    assert_eq!(work.published_rows.len() + work.omitted_publications, 0);
-    assert_eq!(courts::native_head(&host), head);
-    super::super::failure::assert_model_unchanged(&host, &before);
-    assert_eq!(parity(&request).value, 5);
+    assert_eq!(work.published_rows.len() + work.omitted_publications, 1);
+    assert_ne!(courts::native_head(&host), head);
+    let row = parity(&request);
+    assert_eq!(row.value, 7);
+    assert_eq!(row.native_id, born, "the chain re-derives the same output");
+    settles_current(&host, &request);
+    assert_eq!(parity(&request).value, 7);
 }
 #[test]
-fn a_later_writer_cannot_move_the_input_of_a_parent_that_ran_without_effect() {
-    later_writer_refuses(false)
+fn a_later_writer_moving_the_input_of_a_parent_that_ran_without_effect_rederives_it() {
+    later_writer_rederives(false)
 }
 #[test]
-fn worker_only_later_writer_cannot_move_the_input_of_a_parent_that_ran_without_effect() {
-    later_writer_refuses(true)
+fn worker_only_later_writer_moving_the_input_of_a_parent_that_ran_without_effect_rederives_it() {
+    later_writer_rederives(true)
 }

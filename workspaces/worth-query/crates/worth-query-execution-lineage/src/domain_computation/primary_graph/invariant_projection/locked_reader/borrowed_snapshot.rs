@@ -27,6 +27,7 @@ pub enum NativeReadAccess<'a> {
         &'a worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
+        Option<&'a crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     ),
 }
 
@@ -71,6 +72,7 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
             basis,
             snapshot,
             None,
+            None,
             projection,
             retention_control,
         )
@@ -88,13 +90,14 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                 worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
             >,
         )>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>,
         ) -> Output,
         retention_control: StorageControl<'_, '_>,
     ) -> Result<CompletedProjectionRead<Output>, WorthQueryInvariantProjectionDenial> {
         let access = match applied {
-            Some((before, candidate)) => NativeReadAccess::Applied(before, candidate),
+            Some((before, candidate)) => NativeReadAccess::Applied(before, candidate, own_outputs),
             None => NativeReadAccess::Acquire,
         };
         self.read_native_with_access(
@@ -173,19 +176,25 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                     &decode_work,
                 )
             })),
-            NativeReadAccess::Applied(before, candidate) => catch_unwind(AssertUnwindSafe(|| {
-                self.execute_reader(
-                    execution,
-                    NativeProjectionRead::Applied { before, candidate },
-                    value_decode,
-                    basis,
-                    snapshot,
-                    work_budget,
-                    projection,
-                    retention_control,
-                    &decode_work,
-                )
-            })),
+            NativeReadAccess::Applied(before, candidate, own_outputs) => {
+                catch_unwind(AssertUnwindSafe(|| {
+                    self.execute_reader(
+                        execution,
+                        NativeProjectionRead::Applied {
+                            before,
+                            candidate,
+                            own_outputs,
+                        },
+                        value_decode,
+                        basis,
+                        snapshot,
+                        work_budget,
+                        projection,
+                        retention_control,
+                        &decode_work,
+                    )
+                }))
+            }
         });
         let projected = decoded.map_err(|cause| {
             WorthQueryInvariantProjectionDenial::value_decode_stopped(cause, decode_work.get())

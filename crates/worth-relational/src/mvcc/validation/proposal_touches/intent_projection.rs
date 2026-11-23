@@ -189,7 +189,7 @@ fn project_fields(
     }
 }
 
-fn project_entity_aspect_patch(
+pub(super) fn project_entity_aspect_patch(
     kind: KindId,
     patch: &worth_foundational::facade::PortableRecordAspectPatch,
     touches: &mut super::collection::TouchCollection<'_, '_>,
@@ -229,7 +229,7 @@ fn project_relation_fields(
     }
 }
 
-fn entity_kind(
+pub(super) fn entity_kind(
     state: &crate::storage::overlay::WorkingState,
     entity: EntityId,
     work: &mut ValidatedMutationTouchProjectionWork,

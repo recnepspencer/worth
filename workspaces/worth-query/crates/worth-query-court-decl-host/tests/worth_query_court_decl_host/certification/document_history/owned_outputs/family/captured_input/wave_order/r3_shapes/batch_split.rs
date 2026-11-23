@@ -1,4 +1,5 @@
-//! Shape 3 (r3 item 2b): same-rank `[P, U, X, R]` batch-prefix split at `Recapture`.
+//! Shape 3 (r3 item 2b): same-rank `[P, U, X, Z]` batch-prefix split at `Recapture`:
+//! `capture:x` recaptures and cuts the batch before its trailing sibling `capture:z`.
 use super::*;
 
 pub struct SplitParent;

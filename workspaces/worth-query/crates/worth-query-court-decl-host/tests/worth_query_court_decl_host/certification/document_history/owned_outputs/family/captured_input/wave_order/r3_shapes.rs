@@ -1,11 +1,13 @@
 //! Named PR B base-order shapes from #256 r3:
-//! 1. Late outgoing edge (r3 item 1): base refuses `CoupledReadSupportChanged` (hold None).
+//! 1. Late outgoing edge (r3 item 1): base refuses `CoupledReadSupportChanged`; PR C
+//!    qualified use reopens the stale reader and the edit commits (golden).
 //! 2. Reverse-rank consumer across batches (r3 item 2a): base runs W before higher-rank C.
-//! 3. Batch-prefix split at `Recapture` (r3 item 2b): `[P, U, X, R]` cuts at X before R.
+//! 3. Batch-prefix split at `Recapture` (r3 item 2b): `[P, U, X, Z]` cuts at X before Z
+//!    (`capture:x` recaptures; its trailing sibling is `capture:z`).
 use super::super::super::super::hierarchy::program as hierarchy;
 use super::super::super::super::synchronous_edit::envelope_fixture as fixture;
 use super::super::*;
-use super::{child_value, summarize_outcome, Trace};
+use super::{child_value, summarize_outcome, value, Trace};
 use worth_query_host::facade::runtime::ExecutionAllocationPolicy;
 
 pub(super) mod batch_split;
@@ -333,13 +335,33 @@ mod late_edge {
                 .unwrap();
             summarize_outcome(outcome, obs)
         };
-        assert!(
-            late.0.contains("CoupledReadSupportChanged") && late.0.contains("hold=None"),
-            "base must refuse late outgoing edge with hold=None: {:?}",
-            late.0
-        );
+        // Qualified use reopens what read the old suppliers, and the edit
+        // commits exactly the world one commit per stage commits.
+        assert_eq!(late.0, "committed", "late outgoing edge: {late:?}");
         trace.edit("late-change", late);
         trace.rows(&host, &["first:carriage:d", "captured:capture:r"]);
+        let sequential: WorthQueryProgramApplicationRuntime<Schema, Program> =
+            install_custom(|graph| {
+                composed::seed(graph, 0, false)?;
+                bind_model(graph, "capture:bridge", 1)
+            });
+        for (key, model, value, tree_is_seed) in [
+            ("r3-seq-seed-d", "carriage:d", 4, true),
+            ("r3-seq-seed-s", "capture:s", 6, true),
+            ("r3-seq-born", "carriage:late", 5, false),
+            ("r3-seq-late-d", "carriage:d", 5, false),
+            ("r3-seq-late-s", "capture:s", 7, false),
+        ] {
+            let stage = if tree_is_seed {
+                edit_stage!(&sequential, SeedFirstTree, key, model, value)
+            } else {
+                edit_stage!(&sequential, Tree, key, model, value)
+            };
+            assert_eq!(stage.0, "committed", "sequential {key}: {stage:?}");
+        }
+        for key in ["first:carriage:d", "captured:capture:r"] {
+            assert_eq!(value(&host, key), value(&sequential, key), "{key}");
+        }
     }
 }
 

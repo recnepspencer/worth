@@ -1,12 +1,10 @@
 //! #233 sequential demand and Query output-availability courts.
 use super::*;
 
-/// #233 (H1): the positioned court above publishes `first:carriage:late` = 350
-/// eagerly. One commit per stage leaves it underived; a current demand on the
-/// sequential side must derive the same value.
-#[test]
-fn a_sequential_later_link_derives_the_positioned_value_on_demand() {
-    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+/// The model write (a = 3) and the later link of `carriage:late` to `a`, as
+/// one positioned edit (`positioned`) or one commit per stage, on a fresh
+/// world, and returns that host.
+fn link_late(positioned: bool) -> WorthQueryProgramApplicationRuntime<Schema, Program> {
     let host: WorthQueryProgramApplicationRuntime<Schema, Program> = world::install_configured(
         host_limits(
             worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system(),
@@ -22,37 +20,72 @@ fn a_sequential_later_link_derives_the_positioned_value_on_demand() {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
-    for (ordinal, attach) in [false, true].into_iter().enumerate() {
+    let edits: Vec<Vec<bool>> = if positioned {
+        vec![vec![false, true]]
+    } else {
+        vec![vec![false], vec![true]]
+    };
+    for (ordinal, stages) in edits.into_iter().enumerate() {
         let mut edit = request
             .edit_envelope()
-            .idempotency(format!("sequential-link:{ordinal}"))
+            .idempotency(format!("link-late:{positioned}:{ordinal}"))
             .runtime_stages(&host)
             .ordered_authored()
             .unwrap();
-        if attach {
-            edit.push_stage::<ApplicationNoOutputGraph, _>(attach::Intent {
-                parent: "a".into(),
-                child: "carriage:late".into(),
-                pending_child: false,
-            })
-        } else {
-            edit.push_stage::<Tree, _>(fixture::model::Intent {
-                key: "a".into(),
-                value: 3,
-                key_derived_target: false,
-            })
+        for attach in stages {
+            if attach {
+                edit.push_stage::<ApplicationNoOutputGraph, _>(attach::Intent {
+                    parent: "a".into(),
+                    child: "carriage:late".into(),
+                    pending_child: false,
+                })
+            } else {
+                edit.push_stage::<Tree, _>(fixture::model::Intent {
+                    key: "a".into(),
+                    value: 3,
+                    key_derived_target: false,
+                })
+            }
+            .unwrap();
         }
-        .unwrap();
         let outcome = edit
             .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap();
         assert!(matches!(outcome, Outcome::Committed(_)), "{outcome:?}");
     }
-    let committed = request
-        .query(query::first_output::Read("first:carriage:late".into()))
-        .execute()
-        .map(|rows| rows.rows().first().map(|row| row.value));
-    eprintln!("H1 sequential first:carriage:late before demand: {committed:?}");
+    host
+}
+
+/// #233 (H1, D2): the positioned edit publishes `first:carriage:late` = 350
+/// eagerly. One commit per stage leaves it underived: before demand its keyed
+/// read refuses `UnknownEntity` (storage truth: no row is committed). A
+/// current demand on the sequential side then derives the same 350.
+#[test]
+fn a_sequential_later_link_derives_the_positioned_value_on_demand() {
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+    let late = |host: &WorthQueryProgramApplicationRuntime<Schema, Program>| {
+        let scope = request_scope();
+        let principal = authenticate_operator(host.installed_schema(), &scope);
+        host.request(&principal, &scope)
+            .query(query::first_output::Read("first:carriage:late".into()))
+            .execute()
+            .map(|rows| rows.rows().first().map(|row| row.value))
+    };
+    let positioned = link_late(true);
+    assert_eq!(
+        late(&positioned).unwrap(),
+        Some((5 + 30) * 10),
+        "the positioned edit derives the linked consumer eagerly"
+    );
+    let host = link_late(false);
+    let committed = late(&host);
+    assert!(
+        format!("{committed:?}").contains("UnknownEntity"),
+        "one commit per stage leaves the linked consumer underived: {committed:?}"
+    );
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
     let mut demand = request
         .demand(Demand {
             source: "carriage:late".into(),
@@ -76,10 +109,6 @@ fn a_sequential_later_link_derives_the_positioned_value_on_demand() {
         .query(query::first_output::Read("first:carriage:late".into()))
         .execute()
         .unwrap();
-    eprintln!(
-        "H1 sequential first:carriage:late after demand: {:?}",
-        demanded.rows().first().map(|row| row.value)
-    );
     assert_eq!(
         demanded.rows()[0].value,
         (5 + 30) * 10,

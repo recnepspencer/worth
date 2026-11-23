@@ -114,6 +114,85 @@ pub(super) fn rescope(
         .map_err(custody::execution_stop)?
         .0
 }
+/// A successor round's attempt issues its own mutation partition; the chain's
+/// records live where its head allocated them. Each rescoped key names one
+/// chain record of its create kind (entity and relation keys are separate
+/// namespaces), so its creates and created references take the head's
+/// partition for that key.
+pub(super) fn repartition(
+    execution: &ExecutionRequest<'_, '_>,
+    head: &[crate::transactions::data::MutationIntent],
+    symbols: &StringInterner,
+    batches: &mut [WorkerIntentBatch],
+    roles: &mut [RequiredOutputRoleTarget],
+) -> Result<(), TransactionCommitError> {
+    use crate::transactions::data::{CreateIntent, MutationIntent};
+    execution
+        .run_native_with_checkpoint(|context| {
+            // Keyed by (relation create, text): an entity and a relation may
+            // share a key text without sharing a partition.
+            let mut partitions = std::collections::BTreeMap::new();
+            for intent in head {
+                let (relation, key, partition) = match intent {
+                    MutationIntent::Create(CreateIntent::Entity(spec)) => {
+                        (false, &spec.client_key, spec.partition_id)
+                    }
+                    MutationIntent::Create(CreateIntent::Relation(spec)) => {
+                        (true, &spec.client_key, spec.partition_id)
+                    }
+                    _ => continue,
+                };
+                let text = key.resolve_with_interner(symbols).ok_or_else(|| {
+                    crate::mvcc::origin_denial(
+                        "coupled local key has no actual Native symbol meaning",
+                    )
+                })?;
+                checkpoint(context, text.len() as u64 + 1).map_err(custody::execution_stop)?;
+                partitions.insert((relation, text.to_owned()), partition);
+            }
+            let head_partition = |relation: bool, key: &ClientKey| {
+                key.as_raw_str()
+                    .and_then(|text| partitions.get(&(relation, text.to_owned())))
+                    .copied()
+            };
+            // A created reference always names an entity.
+            let mut repartition = |reference: &mut EntityReference| {
+                if let EntityReference::Created(created) = reference
+                    && let Some(partition) = head_partition(false, &created.client_key)
+                {
+                    created.partition_id = partition;
+                }
+                Ok::<_, TransactionCommitError>(())
+            };
+            for batch in batches {
+                for intent in &mut batch.intents {
+                    checkpoint(context, 1).map_err(custody::execution_stop)?;
+                    let created = match intent {
+                        MutationIntent::Create(CreateIntent::Entity(spec)) => {
+                            Some((false, &spec.client_key, &mut spec.partition_id))
+                        }
+                        MutationIntent::Create(CreateIntent::Relation(spec)) => {
+                            Some((true, &spec.client_key, &mut spec.partition_id))
+                        }
+                        _ => None,
+                    };
+                    if let Some((relation, key, partition)) = created
+                        && let Some(head) = head_partition(relation, key)
+                    {
+                        *partition = head;
+                    }
+                    intent.visit_entity_references_mut(&mut repartition)?;
+                }
+            }
+            for role in roles {
+                checkpoint(context, 1).map_err(custody::execution_stop)?;
+                repartition(&mut role.target)?;
+            }
+            Ok::<_, TransactionCommitError>(())
+        })
+        .map_err(custody::execution_stop)?
+        .0
+}
 fn overflow() -> TransactionCommitError {
     custody::execution_stop(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
 }

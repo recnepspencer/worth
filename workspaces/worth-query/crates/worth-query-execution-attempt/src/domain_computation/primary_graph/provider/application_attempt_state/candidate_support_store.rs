@@ -1,4 +1,5 @@
 //! Retain actual discovery evidence on its already registered root, never admit from a descriptor.
+use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use super::*;
 use crate::domain_computation::primary_graph::{
     provider::CandidateReadSupport, WorthQueryApplicationAttemptDenial as Denial,
@@ -52,6 +53,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
         root: &WorthQueryProviderSessionTerminalBinding,
         source: EntityId,
         position: usize,
+        owner: Option<(usize, bool)>,
         support: CandidateReadSupport,
     ) -> Result<(), Denial> {
         if self
@@ -68,7 +70,33 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .query_support_root(root)?
-            .retain_candidate_read_support(execution, source, position, support)
+            .retain_candidate_read_support(execution, source, position, owner, support)
+    }
+    pub fn supersede_owned_candidate_support(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        owner: usize,
+        invalidator: usize,
+    ) -> Result<(), Denial> {
+        self.attempts
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .query_support_root(root)?
+            .supersede_owned_candidate_support(execution, owner, invalidator)
+    }
+    pub fn supersede_retained_parent(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        read: crate::domain_computation::primary_graph::provider::ParentRead,
+        invalidator: usize,
+    ) -> Result<(), Denial> {
+        self.attempts
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .query_support_root(root)?
+            .supersede_retained_parent(execution, read, invalidator)
     }
     pub fn reset_candidate_read_support(
         &self,
@@ -81,15 +109,138 @@ impl super::super::WorthQueryPrimaryGraphProvider {
             .reset_candidate_read_support();
         Ok(())
     }
+    /// Touch-filtered outgoing reclosure (PR C §4): the wave tasks whose
+    /// outgoing support is equal at `current` keep it; the wave re-closes the
+    /// rest.
     pub fn refresh_outgoing_read_support(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         root: &WorthQueryProviderSessionTerminalBinding,
+        before: &crate::basis::WorthQueryProductBranchLease,
+        current: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+    ) -> Result<Vec<usize>, Denial> {
+        self.graph.with_runtime(execution, |runtime| {
+            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
+                runtime,
+                before.relational_basis(),
+            )
+            .map_err(|_| Denial::new(Kind::StorageUnavailable, "outgoing discovery support refresh"))?;
+            let answer = self
+                .attempts
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .query_support_root(root)
+                .and_then(|attempt| {
+                    attempt.refresh_outgoing_read_support(execution, runtime, &snapshot, current)
+                });
+            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+            answer
+        })
+    }
+    /// Whether any selector's query support is live (#238).
+    pub fn has_live_selection_support(
+        &self,
+        root: &WorthQueryProviderSessionTerminalBinding,
+    ) -> Result<bool, Denial> {
+        Ok(self
+            .attempts
+            .lock()
+            .unwrap_or_else(|p| p.into_inner())
+            .query_support_root(root)?
+            .has_live_selection_support())
+    }
+    /// The wave tasks whose selector's support the append at `invalidator`
+    /// changed (#238), compared from each support's own image to `current`.
+    pub fn changed_selection_owners(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        before: &crate::basis::WorthQueryProductBranchLease,
+        current: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        invalidator: usize,
+        first_root: usize,
+    ) -> Result<Vec<(usize, bool)>, Denial> {
+        self.graph.with_runtime(execution, |runtime| {
+            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
+                runtime,
+                before.relational_basis(),
+            )
+            .map_err(|_| Denial::new(Kind::StorageUnavailable, "coupled selection qualification basis"))?;
+            let answer = self
+                .attempts
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .query_support_root(root)
+                .and_then(|attempt| {
+                    attempt.changed_selection_owners(
+                        execution, runtime, &snapshot, current, invalidator, first_root,
+                    )
+                });
+            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+            answer
+        })
+    }
+    /// An authored stage appended at `at` ends earlier roots' selection
+    /// windows there (#238).
+    pub fn end_root_selections(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        first_root: usize,
+        at: usize,
     ) -> Result<(), Denial> {
         self.attempts
             .lock()
             .unwrap_or_else(|p| p.into_inner())
             .query_support_root(root)?
-            .refresh_outgoing_read_support(execution)
+            .end_root_selections(execution, first_root, at)
+    }
+    /// Requalify the verified parent the root retained as `read` (PR C R2):
+    /// compare it exactly at `current` against the edit's C basis.
+    #[allow(clippy::too_many_arguments)]
+    pub fn requalify_retained_parent(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        root: &WorthQueryProviderSessionTerminalBinding,
+        before: &crate::basis::WorthQueryProductBranchLease,
+        read: crate::domain_computation::primary_graph::provider::ParentRead,
+        current: &worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
+        invalidator: usize,
+        settles: impl Fn(&dyn crate::ports::CandidateReadSupportPort) -> bool,
+    ) -> Result<
+        crate::domain_computation::primary_graph::provider::RetainedReadRequalification,
+        Denial,
+    > {
+        self.graph.with_runtime(execution, |runtime| {
+            let snapshot = crate::domain_computation::primary_graph::exact_basis_access::open_exact_basis_snapshot(
+                runtime,
+                before.relational_basis(),
+            )
+            .map_err(|_| Denial::new(Kind::StorageUnavailable, "coupled qualification C basis"))?;
+            let answer = self
+                .attempts
+                .lock()
+                .unwrap_or_else(|p| p.into_inner())
+                .query_support_root(root)
+                .and_then(|attempt| {
+                    attempt.requalify_retained_parent(
+                        execution,
+                        runtime,
+                        &snapshot,
+                        read,
+                        current,
+                        invalidator,
+                        settles,
+                    )
+                });
+            crate::relational_snapshot_release::release_query_snapshot(runtime, &snapshot);
+            answer
+        })
     }
 }

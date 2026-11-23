@@ -51,7 +51,12 @@ impl OwnedNormalizedPlan {
             })
             .map_err(request_denial)?
             .0?;
-        if recreates.is_empty() {
+        let relinks = self
+            .plan
+            .merged_intents
+            .iter()
+            .any(|intent| matches!(intent, MutationIntent::Create(CreateIntent::Relation(_))));
+        if recreates.is_empty() && !relinks {
             return Ok(self);
         }
         let mut kept = Vec::with_capacity(self.plan.merged_intents.len());
@@ -61,6 +66,11 @@ impl OwnedNormalizedPlan {
             .into_iter()
             .enumerate()
         {
+            // A successor's relation creates were proved re-creates of its
+            // chain's relations (`prove_succession`), which the head applied.
+            if matches!(intent, MutationIntent::Create(CreateIntent::Relation(_))) {
+                continue;
+            }
             let Some(&(_, entity_id)) = next.peek().filter(|&&(idx, _)| idx == index) else {
                 kept.push(intent);
                 continue;

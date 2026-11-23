@@ -133,7 +133,10 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
                 Ok(false)
             }
             TaskState::Closed { .. } => Ok(true),
-            TaskState::Pending | TaskState::Alias { .. } | TaskState::Done { .. } => Ok(false),
+            TaskState::Pending
+            | TaskState::Alias { .. }
+            | TaskState::Done { .. }
+            | TaskState::Refused { .. } => Ok(false),
         }
     }
 
@@ -155,7 +158,9 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         for i in 0..self.unidentified_from {
             // A real root alias remains a seed even when coalescing marked its
             // row done: its authentic canonical supplier may still be pending.
-            if self.tasks[i].root && allowed_matches(self.tasks[i].tree.family(), allowed) {
+            if (self.tasks[i].root || self.tasks[i].reopened)
+                && allowed_matches(self.tasks[i].tree.family(), allowed)
+            {
                 self.mark_needed(context, i, None)?;
             }
         }
@@ -225,6 +230,14 @@ impl<S: ApplicationSchema> SynchronousOutputWave<S> {
         let (earlier, later) = self.tasks.split_at(i);
         earlier[prior].owed.coalesce(&later[0].owed);
         self.tasks[i].state = TaskState::Alias { canonical: prior };
+        let canonical = &mut self.tasks[prior];
+        push_funded(
+            &mut canonical.alias_rows,
+            &mut canonical._alias_rows_memory,
+            i,
+            context.execution,
+            subject,
+        )?;
         if !self.tasks[i].continuation_done {
             if matches!(self.tasks[prior].state, TaskState::Done { .. }) {
                 map_insert(

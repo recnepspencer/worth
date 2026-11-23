@@ -66,6 +66,9 @@ pub struct ErasedAppliedProducerSource {
 pub enum CoupledSourceReadPurpose {
     Route,
     OutputPreparation,
+    /// Output preparation of a reopened derivation (PR C R2): never reuses a
+    /// prepared route or a verified output, so normal admission derives it.
+    Supersede,
 }
 
 pub enum CoupledSourceRead {
@@ -266,24 +269,29 @@ where
     {
         return Ok(CoupledSourceRead::Prepared(index));
     }
-    let (predecessor, required_writer, unlisted) =
-        match assembly.read_parent_owner(execution, demand.family, root, &partition)? {
-            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
-                return Ok(CoupledSourceRead::Retiring)
-            }
-            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Restored(
-                input,
-            )) => return Ok(CoupledSourceRead::Restored { scope: root, input }),
-            Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(
+    // A reopened route with a part reads the owner its part claimed (§1.5).
+    let owner = if purpose == CoupledSourceReadPurpose::Supersede {
+        assembly.read_successor_parent_owner(execution, demand.family, root, &partition)?
+    } else {
+        assembly.read_parent_owner(execution, demand.family, root, &partition)?
+    };
+    let (predecessor, required_writer, unlisted) = match owner {
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Retiring) => {
+            return Ok(CoupledSourceRead::Retiring)
+        }
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Restored(input)) => {
+            return Ok(CoupledSourceRead::Restored { scope: root, input })
+        }
+        Some(worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::Surviving(owner)) => {
+            (Some(owner.clone()), false, false)
+        }
+        Some(
+            worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::RequiredSurviving(
                 owner,
-            )) => (Some(owner.clone()), false, false),
-            Some(
-                worth_relational::facade::mvcc::RelationalDeclaredCoupledOwner::RequiredSurviving(
-                    owner,
-                ),
-            ) => (Some(owner.clone()), true, false),
-            None => (None, false, true),
-        };
+            ),
+        ) => (Some(owner.clone()), true, false),
+        None => (None, false, true),
+    };
     let reader = crate::domain_computation::primary_graph::application_query::SourceQueryReaderAccess::ordinary(runtime, &shared, external, request);
     let source = runtime
         .project_applied_source_plan::<SourceBinding<Schema, Binding>, SourceValue<Schema, Binding>>(

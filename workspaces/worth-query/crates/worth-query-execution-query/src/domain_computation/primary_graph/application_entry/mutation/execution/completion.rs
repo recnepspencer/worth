@@ -73,7 +73,14 @@ where
         identities: &ApplicationMutationIdentities<'_, Schema, Binding>,
     ) -> Report<Schema, Binding> {
         let decision = self.plan.run(self.execution);
-        (self.complete)(runtime, identities, decision, self.projection)
+        let proofs = matches!(decision, HandlerResult::DomainDenied(_))
+            .then(|| self.projection.refusal_proofs())
+            .flatten();
+        let report = (self.complete)(runtime, identities, decision, self.projection);
+        match proofs {
+            Some(proofs) => report.with_refusal_proofs(proofs),
+            None => report,
+        }
     }
 
     pub fn into_parts(
@@ -135,11 +142,14 @@ where
         slots: Vec<crate::domain_computation::primary_graph::application_contribution::computation::prepared_request::ComputedSlot>,
         execution: &QueryRequestExecution<'_>,
     ) -> Report<Schema, Binding> {
-        (self.complete)(
-            runtime,
-            identities,
-            self.decision.finish(slots, execution),
-            self.projection,
-        )
+        let decision = self.decision.finish(slots, execution);
+        let proofs = matches!(decision, HandlerResult::DomainDenied(_))
+            .then(|| self.projection.refusal_proofs())
+            .flatten();
+        let report = (self.complete)(runtime, identities, decision, self.projection);
+        match proofs {
+            Some(proofs) => report.with_refusal_proofs(proofs),
+            None => report,
+        }
     }
 }

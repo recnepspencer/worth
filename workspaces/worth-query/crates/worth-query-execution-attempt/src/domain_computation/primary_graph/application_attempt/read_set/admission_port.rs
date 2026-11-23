@@ -197,6 +197,7 @@ impl<'request, 'authority, Schema: ApplicationSchema, Operation, Input, Scope>
         projection: AppliedOperationProjection<Schema, Operation>,
         candidate: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         allocation_policy: ExecutionAllocationPolicy<'_, '_>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     ) -> Result<
         WorthQueryApplicationReadAttempt<
             'request,
@@ -254,6 +255,8 @@ impl<'request, 'authority, Schema: ApplicationSchema, Operation, Input, Scope>
             .map_err(|cause| cause.into_attempt_denial(admission.operation()))?
             .expect("checked genuine before lease")
             .with_applied_projection(candidate);
+        let mut lease = lease;
+        lease.retain_own_outputs(own_outputs);
         let root = admission.scope_entity_id();
         let consumed_outputs = projection
             .consumed_outputs

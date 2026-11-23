@@ -278,9 +278,12 @@ impl<Schema: ApplicationSchema, Operation>
                 super::super::super::read_basis::ProjectionEntitySelection::committed(outcome)
             }
             super::super::super::read_basis::NativeProjectionRead::Applied {
-                candidate, ..
-            } => super::super::super::read_basis::ProjectionEntitySelection::applied(
                 candidate,
+                own_outputs,
+                ..
+            } => super::super::super::read_basis::ProjectionEntitySelection::applied_with_own_outputs(
+                candidate,
+                *own_outputs,
                 &prepared.native,
                 &value,
                 candidate_limit,

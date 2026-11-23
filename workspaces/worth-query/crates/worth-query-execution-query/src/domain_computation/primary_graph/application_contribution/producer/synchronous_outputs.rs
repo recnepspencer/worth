@@ -40,9 +40,14 @@ mod input_preparation;
 mod occurrences;
 pub mod source;
 mod wave;
+#[doc(hidden)]
+pub mod court_doors_for_test;
 pub use input_preparation::PrerequisiteInputs;
 pub use rounds::default_producer_round_bounds;
 pub use wave::SynchronousOutputWave;
+pub(in crate::domain_computation::primary_graph) use wave::{
+    observe_scheduling_work, visited_retained_reads,
+};
 
 /// The actual authored prefix read by root discovery, without producer settlement.
 struct AppliedAuthoredDiscovery {
@@ -60,6 +65,24 @@ pub struct AppliedOutputParent {
 impl AppliedOutputParent {
     pub fn source(&self) -> worth_relational::facade::identity::EntityId {
         self.source
+    }
+    /// The Native input this output supplies, when it is an owned output.
+    pub fn input(
+        &self,
+    ) -> Option<&worth_relational::facade::mvcc::RelationalRequiredOutputInput> {
+        self.input.as_ref()
+    }
+    /// The image this output was read at.
+    pub fn pin(
+        &self,
+    ) -> &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
+        &self.pin
+    }
+    /// The assembly's identity for this output.
+    pub fn read(
+        &self,
+    ) -> Option<crate::domain_computation::primary_graph::provider::ParentRead> {
+        self.read
     }
     pub fn new(
         pin: RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,

@@ -27,6 +27,7 @@ pub fn prepare<Schema, Binding>(
     before: &crate::basis::WorthQueryProductBranchLease,
     before_pin: &RelationalPinnedRead,
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
     erased: ErasedAppliedProducerSource,
     predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
@@ -272,6 +273,7 @@ where
             Some(&source_query),
             admission,
             Some((before_pin, candidate)),
+            own_outputs,
             prepared_inputs,
             || {
                 contact_observation::record(
@@ -281,10 +283,11 @@ where
             },
             execution.allocation_policy(),
         );
-    let report = match prepared_handler {
+    let mut report = match prepared_handler {
         Ok(handler) => handler.run(runtime, &identities),
         Err(report) => report.into_uncompleted_report(),
     };
+    let refusal_proofs = report.take_refusal_proofs();
     if let Some(stop) = source_query.take_control_failure() {
         return Err(super::denial::request_admission_rejected(stop));
     }
@@ -298,7 +301,8 @@ where
             .into_outcome()
             .map_err(|cause| execution_failed(Binding::IDENTITY, cause))?,
         |cause| installed.provider.domain_denial_reason(cause),
-    )?;
+    )
+    .map_err(|denial| denial.with_refusal_proofs(refusal_proofs))?;
     let (mut program, _) = completed.into_parts();
     let implementation = worth_relational::facade::mvcc::RequiredOutputProducingImplementation::new(
         edition.build_identity(),
