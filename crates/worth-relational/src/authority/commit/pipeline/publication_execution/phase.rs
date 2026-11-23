@@ -1,8 +1,8 @@
 use super::super::rejection::elapsed_micros;
 use super::preparation::PreparedPublicationCompletion;
+use super::PublicationSettlementInputs;
 use crate::history::data::CommitId;
 use crate::runtime::state::subsystems::durability::commit_log::DurabilityCommitLog;
-use crate::runtime::RelationalRuntime;
 use crate::transactions::data::commit_log::CommitLog;
 use crate::transactions::data::commit_log::CommitPhase;
 use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
@@ -63,7 +63,7 @@ fn record_canonical_log_phase(
 }
 
 pub(super) fn finalize_publication_phase(
-    runtime: &RelationalRuntime,
+    inputs: &PublicationSettlementInputs<'_>,
     commit_log: &mut CommitLog,
     phase_timing: &mut CommitPhaseTiming,
     prepared: PreparedPublicationCompletion,
@@ -91,7 +91,7 @@ pub(super) fn finalize_publication_phase(
     } = prepared;
     commit_log.record_publication_position(positioned_commit.position());
     record_canonical_log_phase(
-        &runtime.durability.commit_log(),
+        &inputs.log,
         CanonicalLogPhaseInput {
             commit_log,
             phase_timing,
@@ -100,7 +100,7 @@ pub(super) fn finalize_publication_phase(
             envelope_cell,
         },
     );
-    runtime.lineage.install_published_lineage(
+    inputs.lineage.install_published_lineage(
         validated_lineage_events,
         commit_id,
         lineage_nodes,
@@ -111,7 +111,7 @@ pub(super) fn finalize_publication_phase(
     let mut publication_phase_timing =
         crate::authority::commit::phases::finalize::PublicationPhaseTiming::default();
     finalize_published_commit(
-        runtime,
+        inputs,
         FinalizationInput {
             mirror_publication,
             prepared_history,
@@ -131,9 +131,7 @@ pub(super) fn finalize_publication_phase(
         },
     );
     for artifact in deferred_diagnostic_artifacts {
-        runtime
-            .publication_authority()
-            .push_diagnostic_artifact(artifact);
+        inputs.publication.push_diagnostic_artifact(artifact);
     }
     commit_log.record_commit_published(commit_id, &commit_reference.branch_id.0);
     commit_log.complete_phase(CommitPhase::Publication);

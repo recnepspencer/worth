@@ -161,3 +161,5 @@ impl RuntimeInstrumentation {
 }
 
 mod bulk_mutation_counters;
+
+mod merge_execution_counters;

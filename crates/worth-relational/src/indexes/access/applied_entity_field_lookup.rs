@@ -5,7 +5,7 @@ use crate::execution::request_stage::checkpoint;
 use crate::identity::data::EntityId;
 use crate::identity::data::VersionId;
 use crate::indexes::access::prepared_entity_field_lookup::PreparedEntityFieldLookup;
-use crate::indexes::authority::maintenance::AppliedFieldImage;
+use crate::indexes::authority::maintenance::applied_field::AppliedFieldImage;
 use crate::indexes::data::applied_candidate_qualification::RelationalAppliedCandidateReadQualification;
 use crate::indexes::data::BoundedEntityFieldLookupAdmissionStop as Stop;
 use crate::indexes::data::BoundedEntityFieldLookupDenial;

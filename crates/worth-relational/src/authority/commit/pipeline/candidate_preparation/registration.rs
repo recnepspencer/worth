@@ -1,6 +1,22 @@
 //! Register one completely prepared publication after artifact-assembly frames expire.
 use super::super::{consult_stage, CommitStage};
+use crate::runtime::state::runtime_state::configuration_snapshot::RelationalRuntimeConfigurationSnapshot;
+use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
+use crate::runtime::state::subsystems::services::{
+    instrumentation::RuntimeInstrumentation, symbol_table::RuntimeSymbolTable,
+};
+use crate::runtime::state::subsystems::visibility::PublishedSnapshotCapacityOwner;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+
+pub(crate) struct CandidateRegistrationInputs<'a> {
+    pub(crate) snapshot_capacity: &'a std::sync::Arc<PublishedSnapshotCapacityOwner>,
+    pub(crate) receiver_epoch: &'a RelationalRuntimeConfigurationSnapshot,
+    pub(crate) invariant_generation: u64,
+    pub(crate) maximum_candidates: Option<usize>,
+    pub(crate) symbols: &'a RuntimeSymbolTable,
+    pub(crate) instrumentation: &'a RuntimeInstrumentation,
+    pub(crate) history: &'a RelationalPreparationHistory,
+}
 
 pub(super) struct CandidateRegistration {
     pub(super) runtime_instance_id: u64,
@@ -22,7 +38,7 @@ impl CandidateRegistration {
     pub(super) fn register(
         self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &crate::runtime::RelationalPreparationRuntime,
+        inputs: CandidateRegistrationInputs<'_>,
         mut prepared: super::super::PreparedCommitPublicationExecution,
     ) -> Result<crate::mvcc::publication::PreparedRelationalCommitCandidate, TransactionCommitError>
     {
@@ -46,7 +62,7 @@ impl CandidateRegistration {
             return Err(TransactionCommitError::interrupted(interruption));
         }
         consult_stage(execution, CommitStage::CandidateRegistration)?;
-        let published_snapshot_slot = runtime.reserve_published_snapshot_slot().map_err(|denial| {
+        let published_snapshot_slot = inputs.snapshot_capacity.reserve().map_err(|denial| {
             match denial {
                 crate::runtime::state::subsystems::visibility::PublishedSnapshotReservationDenial::Capacity { maximum_handles } => {
                     TransactionCommitError::publication_deferred(
@@ -112,8 +128,8 @@ impl CandidateRegistration {
         prepared.release_transaction_retention();
         let mut candidate = crate::mvcc::publication::PreparedRelationalCommitCandidate::new(
             runtime_instance_id,
-            runtime.configuration_generation,
-            runtime.configuration_epoch.clone(),
+            inputs.invariant_generation,
+            inputs.receiver_epoch.clone(),
             publication_binding,
             transaction_id,
             branch_id,
@@ -124,7 +140,7 @@ impl CandidateRegistration {
             candidate_retention,
             published_snapshot_slot,
             control,
-            runtime.config.publication.policy.max_prepared_candidates,
+            inputs.maximum_candidates,
         )
         .map_err(|stop| match stop {
             crate::mvcc::publication::PreparedRelationalCandidateAdmissionStop::Deferred(
@@ -136,13 +152,13 @@ impl CandidateRegistration {
         })?;
         if let Some(proposal) = coupled_proposal {
             candidate.retain_coupled_read(
-                runtime.services.symbols.clone(),
-                runtime.services.instrumentation.clone(),
+                inputs.symbols.clone(),
+                inputs.instrumentation.clone(),
                 decision_basis,
                 proposal,
             );
         }
-        runtime
+        inputs
             .history
             .record_candidate_preparation(candidate.branch());
         Ok(candidate)

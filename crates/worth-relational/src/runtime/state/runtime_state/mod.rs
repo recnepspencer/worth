@@ -6,6 +6,7 @@ mod close_authority;
 mod codec_recovery_destination;
 mod configuration;
 mod configuration_epoch_control;
+pub(crate) mod configuration_snapshot;
 mod core_access;
 mod memory_close;
 mod snapshot_visibility;

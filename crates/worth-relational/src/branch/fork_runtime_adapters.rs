@@ -36,6 +36,9 @@ impl RelationalRuntime {
                 self.protect_branch_heads(),
                 self.services.instrumentation.clone(),
             ),
+            crate::runtime::state::subsystems::history::canonical_publication_routes::ForkTransitionRoutes::new(
+                self.history.canonical_checkpoint_gate(),
+            ),
             self.durability.medium(),
             self.publication_binding(),
             self.indexes.catalog_binding(),

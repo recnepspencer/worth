@@ -2,7 +2,7 @@
 use super::authority_context::AuthoritativeCommitContext;
 use super::history_preparation::prepare_bound_history;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
-mod registration;
+pub(crate) mod registration;
 mod stages;
 use super::phase_backing::CommitPhaseBacking;
 

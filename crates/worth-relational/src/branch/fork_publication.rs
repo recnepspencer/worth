@@ -77,7 +77,7 @@ impl RelationalForkPort {
             .lifecycle
             .admit()
             .ok_or(denied(RelationalForkDenial::OwnerUnavailable))?;
-        let publication = self.owner.begin_branch_transition();
+        let publication = self.transitions.begin_branch_transition();
         let validated = self.validate_fork_input(source).map_err(denied)?;
         // The fork association uses the actual current registration through
         // durable installation. A rebind cannot turn its pending lookup live.

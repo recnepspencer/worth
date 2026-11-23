@@ -1,3 +1,5 @@
+use super::PublicationSettlementInputs;
+
 pub(super) struct FinalizationInput<'a> {
     pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
     pub(super) prepared_history:
@@ -21,7 +23,7 @@ pub(super) struct FinalizationInput<'a> {
 }
 
 pub(super) fn finalize_published_commit(
-    runtime: &crate::runtime::RelationalRuntime,
+    inputs: &PublicationSettlementInputs<'_>,
     input: FinalizationInput<'_>,
 ) {
     let FinalizationInput {
@@ -42,18 +44,18 @@ pub(super) fn finalize_published_commit(
         published_snapshot_slot,
     } = input;
     publish_storage(
-        &runtime.partitions,
-        &runtime.services.instrumentation.complexity_counters,
+        inputs.retention.partitions,
+        inputs.retention.counters,
         mirror_publication,
         phase_timing,
     );
     let started = std::time::Instant::now();
-    prepared_history.install(&runtime.history, patch_position);
+    prepared_history.install(inputs.history, patch_position);
     phase_timing.history_publish_micros = phase_timing
         .history_publish_micros
         .saturating_add(started.elapsed().as_micros() as u64);
     advance_visibility(
-        runtime,
+        inputs,
         branch_id,
         previous_branch_head_version,
         version_id,
@@ -62,17 +64,12 @@ pub(super) fn finalize_published_commit(
     );
     // Only main publishes into the mirror. A sibling's changed identities
     // carry no authority to trim or reconcile the mirror's record versions.
-    if branch_id == &runtime.history.main_branch {
-        reconcile_published_retention(runtime, changed_records, version_id, phase_timing);
+    if branch_id == &inputs.history.main_branch {
+        reconcile_published_retention(inputs, changed_records, version_id, phase_timing);
     }
-    compact_durability(
-        &runtime.durability.commit_log(),
-        &runtime.config.durability.policy.log,
-        phase_timing,
-    );
-    let publication = runtime.publication_authority();
+    compact_durability(&inputs.log, inputs.log_policy, phase_timing);
     let snapshot_id = publish_artifacts(
-        &publication,
+        &inputs.publication,
         version_id,
         artifacts,
         patch_position,
@@ -81,7 +78,7 @@ pub(super) fn finalize_published_commit(
         phase_timing,
     );
     consume_post_commit_artifacts(
-        &publication,
+        &inputs.publication,
         PostCommitArtifactInput {
             commit_id,
             snapshot_id,
@@ -108,7 +105,7 @@ fn publish_storage(
 }
 
 fn advance_visibility(
-    runtime: &crate::runtime::RelationalRuntime,
+    inputs: &PublicationSettlementInputs<'_>,
     branch_id: &crate::history::data::BranchId,
     previous_branch_head_version: Option<crate::identity::data::VersionId>,
     version_id: crate::identity::data::VersionId,
@@ -116,26 +113,27 @@ fn advance_visibility(
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
     let started = std::time::Instant::now();
-    runtime
-        .visibility_pins()
-        .move_branch_head_visibility_residency(
-            branch_id,
-            previous_branch_head_version,
-            Some(version_id),
-            Some(published_snapshot_basis),
-        );
+    inputs.visibility.move_residency(
+        branch_id,
+        previous_branch_head_version,
+        Some(version_id),
+        Some(published_snapshot_basis),
+    );
     timing.visibility_pin_micros = started.elapsed().as_micros() as u64;
 }
 
 fn reconcile_published_retention(
-    runtime: &crate::runtime::RelationalRuntime,
+    inputs: &PublicationSettlementInputs<'_>,
     changed_records: &[crate::transactions::data::primitives::RecordRef],
     version_id: crate::identity::data::VersionId,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
     let started = std::time::Instant::now();
-    let retention = runtime.retention();
-    retention.reconcile_changed_record_states(changed_records, version_id);
+    let fence = inputs
+        .visibility
+        .directory
+        .retention_fence_version(version_id);
+    inputs.retention.reconcile(changed_records, fence);
     timing.retention_reconcile_micros = started.elapsed().as_micros() as u64;
 }
 

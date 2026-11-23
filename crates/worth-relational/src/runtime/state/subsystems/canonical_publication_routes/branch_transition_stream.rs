@@ -60,6 +60,33 @@ struct BranchTransitionStreamState {
     _log_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
+/// Exact transition stream attached to the installed fork port.
+#[derive(Debug, Clone)]
+pub(crate) struct ForkTransitionRoutes(Arc<RelationalCanonicalPublicationRoutes>);
+
+impl ForkTransitionRoutes {
+    pub(crate) fn new(owner: Arc<RelationalCanonicalPublicationRoutes>) -> Self {
+        Self(owner)
+    }
+
+    pub(crate) fn observe_original_frontiers(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<
+        (
+            crate::publication::patch::data::PatchStreamPosition,
+            RelationalBranchTransitionSequence,
+        ),
+        worth_execution::WorkCeilingDenial,
+    > {
+        self.0.observe_fork_original_frontiers(execution)
+    }
+
+    pub(crate) fn begin_branch_transition(&self) -> BranchTransitionPublication<'_> {
+        self.0.begin_branch_transition()
+    }
+}
+
 /// Lifecycle admission acquired before any live branch coordination or state.
 pub(crate) struct BranchTransitionPublication<'routes> {
     routes: &'routes RelationalCanonicalPublicationRoutes,

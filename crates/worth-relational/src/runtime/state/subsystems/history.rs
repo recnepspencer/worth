@@ -69,9 +69,7 @@ mod history_retention;
 mod history_root_capture;
 #[path = "history_source_retirement.rs"]
 pub(crate) mod history_source_retirement;
-use canonical_publication_routes::{
-    BranchTransitionPublication, RelationalCanonicalPublicationRoutes,
-};
+use canonical_publication_routes::RelationalCanonicalPublicationRoutes;
 use history_costs::RelationalBranchSharingCostCounters;
 pub(crate) use history_costs::RelationalForkMaterializationCost;
 pub(crate) use history_costs::RelationalPhase4ReferenceCostOwner;
@@ -131,7 +129,6 @@ impl HistorySubsystem {
             self.branch_head_versions.clone(),
             self.retention_owner.binding(),
             Arc::clone(&self.basis_registry_metrics),
-            Arc::clone(&self.canonical_publication_routes),
             self.root_identity_issuer.clone(),
         )
     }

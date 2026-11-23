@@ -328,3 +328,7 @@ mod aggregate;
 
 #[path = "preparation_runtime/schema_publication.rs"]
 mod schema_publication;
+
+mod applied_mutation;
+
+mod candidate_registration;

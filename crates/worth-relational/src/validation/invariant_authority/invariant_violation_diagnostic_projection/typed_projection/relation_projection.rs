@@ -4,8 +4,8 @@ use crate::identity::data::{EntityId, KindId, PartitionId, RelationId};
 use crate::schema::data::{
     ContractId, EndpointDeletionIntegrityMode, SymmetryMode, UniquenessScope,
 };
-use crate::transactions::data::EntityReference;
-use crate::validation::data::{RelationCardinalityBoundary, RelationEndpointBoundary};
+use crate::transactions::data::primitives::EntityReference;
+use crate::validation::data::results::{RelationCardinalityBoundary, RelationEndpointBoundary};
 
 use super::typed_value_helpers::{
     entity_reference_diagnostic_value, optional_label, relation_cardinality_boundary_label,

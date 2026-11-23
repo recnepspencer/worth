@@ -98,7 +98,7 @@ impl PreparationInvariantAuthority<'_> {
         result: InvariantExecutionResult,
     ) -> Result<InvariantExecutionResult, TransactionCommitError> {
         if let Some(failure) = enforced_failure(&result, InvariantFailureEffect::BlockCommit) {
-            crate::validation::invariant_authority::preparation_diagnostics::emit_preparation_diagnostics(self.runtime, &result);
+            crate::validation::invariant_authority::preparation_diagnostics::emit_preparation_diagnostics(self.runtime.preparation_diagnostics(), &result);
             if !crate::validation::invariant_authority::failure_diagnostics::emit_collect_all_failure_diagnostics(self.runtime, &result) {
                 crate::validation::invariant_authority::failure_diagnostics::emit_conflict_diagnostic(self.runtime, &result, &failure);
             }
@@ -109,7 +109,7 @@ impl PreparationInvariantAuthority<'_> {
         match enforced_failure(&result, InvariantFailureEffect::BlockPublication) {
             Some(failure) => {
                 crate::validation::invariant_authority::preparation_diagnostics::emit_preparation_diagnostics(
-                    self.runtime,
+                    self.runtime.preparation_diagnostics(),
                     &result,
                 );
                 let collect_all = crate::validation::invariant_authority::failure_diagnostics::emit_collect_all_failure_diagnostics(

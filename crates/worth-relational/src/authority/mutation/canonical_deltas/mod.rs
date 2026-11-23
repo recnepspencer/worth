@@ -1,16 +1,17 @@
-mod disjoint_publication;
-pub(crate) use disjoint_publication::compose as compose_disjoint_publication;
 mod borrowed_evidence;
 pub(crate) use borrowed_evidence::{BorrowedAspectDeltaEvidence, BorrowedPatchOperation};
 mod aspect_trace_projection;
 mod changed_authoritative_patch;
-mod data;
-mod engine;
+pub(crate) mod data;
+pub(super) mod engine;
+pub(super) mod field_changes;
 mod lifecycle_transition_evidence;
 mod materialized_state;
 mod patch_authority;
 mod patch_fragments;
-mod published_patch_projection;
+mod publication_fragment;
+pub(super) mod published_patch_projection;
+pub(super) use publication_fragment::canonical_publication_fragment;
 mod semantic_change_projection;
 
 #[cfg(test)]
@@ -23,7 +24,6 @@ use data::CanonicalDeltaError;
 pub(crate) use data::{
     CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta, EvaluatedAspectBinding,
 };
-pub(crate) use engine::{canonical_delta_for_mutation, evaluate_relation_deletion_state};
 pub(crate) use patch_fragments::{
     authoritative_patch_with_delta_supplements, published_patch_for_delta,
     FoundationalPatchFragment,

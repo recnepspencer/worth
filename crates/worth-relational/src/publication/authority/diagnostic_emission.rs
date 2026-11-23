@@ -155,6 +155,14 @@ impl<'runtime> DiagnosticArtifactBuilder<'runtime> {
 }
 
 impl<'runtime> PublicationAuthority<'runtime> {
+    pub(crate) fn preparation_diagnostics(&self) -> PreparationDiagnostics<'runtime> {
+        PreparationDiagnostics {
+            profile: self.diagnostics_profile,
+            store: &self.publication.diagnostics,
+            instrumentation: self.instrumentation,
+        }
+    }
+
     pub(crate) fn push_diagnostic_artifact(&self, artifact: RelationalDiagnosticArtifact) {
         let _ = emit_filtered_artifact(
             self.diagnostics_profile,

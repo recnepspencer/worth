@@ -165,5 +165,5 @@ pub(super) fn register(
         registration,
         prepared,
     } = source.into_inner();
-    registration.register(request, &runtime, prepared.into_inner())
+    registration.register(request, (&runtime).into(), prepared.into_inner())
 }

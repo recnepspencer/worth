@@ -5,7 +5,7 @@ use crate::authority::mutation::{
 };
 use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
-use crate::runtime::RelationalPreparationRuntime;
+
 use crate::storage::overlay::WorkingState;
 use crate::transactions::data::outcomes::plan_artifacts::AuthoritativeApplyPlan;
 use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
@@ -13,6 +13,8 @@ use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 pub(crate) use crate::authority::mutation::pending_identities::PendingMutationIdentities;
 
 mod aggregate_consequences;
+pub(crate) mod inputs;
+use inputs::AppliedMutationInputs;
 pub(crate) mod aggregate_inputs;
 mod aggregate_metrics;
 mod coupled_return;
@@ -57,13 +59,14 @@ impl AppliedMutationDraft {
             .map(|owner| owner.borrow(&self.state, selected))
     }
 
-    pub(crate) fn prepare_aggregate(
+    pub(crate) fn prepare_aggregate<'a>(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        runtime: &RelationalPreparationRuntime,
+        inputs: impl Into<AppliedMutationInputs<'a>>,
         selected: SelectedRelationalBranchRead<'_>,
         business: &MergedCommitPlan,
     ) -> Result<(), MutationApplyDenial> {
+        let inputs = inputs.into();
         crate::publication::ownership::reserve_symbols(
             selected
                 .selected()
@@ -75,10 +78,10 @@ impl AppliedMutationDraft {
         )?;
         if let Some(owner) = &self.aggregate {
             let source = owner.borrow(&self.state, selected);
-            source.ensure_prepared(execution, runtime.commit_work_budget.as_ref(), business)?;
+            source.ensure_prepared(execution, inputs.work.as_ref(), business)?;
             source.reserve_consequence_symbols(
                 &mut self.identities.symbols,
-                runtime.config.identity.client_key_symbol_policy,
+                inputs.key_policy,
                 execution.allocation_policy(),
             )?;
         }
@@ -90,9 +93,9 @@ impl AppliedMutationDraft {
     }
 }
 
-pub(crate) fn apply_mutation_draft(
+pub(crate) fn apply_mutation_draft<'a>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    inputs: impl Into<AppliedMutationInputs<'a>>,
     selected_state: &SelectedRelationalBranchRead<'_>,
     working_state: &WorkingState,
     merged_plan: &MergedCommitPlan,
@@ -104,6 +107,7 @@ pub(crate) fn apply_mutation_draft(
     >,
     content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedDraftCustody, MutationApplyDenial> {
+    let inputs = inputs.into();
     require_original_source_interpretation(identity, &source_interpretation)?;
     let materialization = source_interpretation.materialization_mode();
     let version_id = identity.proposed_version_id();
@@ -116,17 +120,13 @@ pub(crate) fn apply_mutation_draft(
         version_id,
         merged_intents: merged_plan.merged_intents.clone(),
     };
-    let config = crate::config::data::MutationConfig {
-        cascade_delete_policy: runtime.config.storage.cascade_delete_policy,
-        adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
-        cross_context_policy: runtime.config.storage.cross_context_policy,
-    };
-    let mut core = if let Some(binding) = &runtime.authored_coupling {
+    let config = inputs.mutation_config();
+    let mut core = if let Some(binding) = inputs.authored_coupling {
         binding.adopt_applied(execution, identity, merged_plan, &mut symbols)?
     } else {
         AppliedCoreCustody::ordinary(ordinary_apply::apply(
             execution,
-            runtime,
+            inputs,
             selected_state,
             working_state,
             merged_plan,
@@ -140,7 +140,7 @@ pub(crate) fn apply_mutation_draft(
     };
     core.content = content::prepare(
         execution,
-        runtime,
+        inputs,
         selected_state.selected().state().root(),
         schema,
         content,
@@ -163,9 +163,9 @@ pub(crate) fn apply_mutation_draft(
     Ok(core.into_draft(source_interpretation))
 }
 
-pub(crate) fn apply_retained_entity_selection_draft(
+pub(crate) fn apply_retained_entity_selection_draft<'a>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    inputs: impl Into<AppliedMutationInputs<'a>>,
     selected_state: &SelectedRelationalBranchRead<'_>,
     working_state: &WorkingState,
     retained: &crate::authority::commit::semantic_plan::PreparedRetainedEntityPayload,
@@ -177,41 +177,34 @@ pub(crate) fn apply_retained_entity_selection_draft(
     >,
     content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedMutationDraft, MutationApplyDenial> {
+    let inputs = inputs.into();
     require_original_source_interpretation(identity, &source_interpretation)?;
     crate::aggregate_identity::guard::retained_entity_selection(
         execution,
-        runtime.commit_work_budget.as_ref(),
+        inputs.work.as_ref(),
         schema.registry(),
         retained.meaning.kind(),
     )?;
     let mut state = working_state.clone();
-    let mut records = runtime.record_identity.begin_allocations();
-    let config = crate::config::data::MutationConfig {
-        cascade_delete_policy: runtime.config.storage.cascade_delete_policy,
-        adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
-        cross_context_policy: runtime.config.storage.cross_context_policy,
-    };
-    let outcome = crate::execution::transaction_stage(
-        execution,
-        runtime.commit_work_budget.as_ref(),
-        || {
-            crate::authority::mutation::retained_entity_selection::apply(
-                execution,
-                &mut state,
-                retained,
-                identity.proposed_version_id(),
-                &config,
-                schema.registry(),
-                schema.aspect_plans(),
-                &mut symbols,
-                &mut records,
-                runtime.commit_work_budget.clone(),
-            )
-        },
-    )?;
+    let mut records = inputs.record_identity.begin_allocations();
+    let config = inputs.mutation_config();
+    let outcome = crate::execution::transaction_stage(execution, inputs.work.as_ref(), || {
+        crate::authority::mutation::retained_entity_selection::apply(
+            execution,
+            &mut state,
+            retained,
+            identity.proposed_version_id(),
+            &config,
+            schema.registry(),
+            schema.aspect_plans(),
+            &mut symbols,
+            &mut records,
+            inputs.work.clone(),
+        )
+    })?;
     let prepared_content = content::prepare(
         execution,
-        runtime,
+        inputs,
         selected_state.selected().state().root(),
         schema,
         content,

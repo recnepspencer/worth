@@ -1,7 +1,7 @@
 use crate::authority::commit::preparation::diagnostics::failures::PreparationFailureClass;
 use crate::authority::commit::preparation::planning::strategy::SerialPreparationReason;
 use crate::diagnostics::data::{RelationalDiagnosticFields, RelationalDiagnosticValue};
-use crate::validation::data::{
+use crate::validation::data::execution::{
     InvariantExecutionPoint, InvariantWitnessBasis, InvariantWitnessKey,
 };
 use crate::validation::engine::{

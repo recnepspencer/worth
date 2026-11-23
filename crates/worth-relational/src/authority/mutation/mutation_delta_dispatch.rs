@@ -6,13 +6,13 @@ use crate::authority::mutation::canonical_deltas::data::{
 use crate::authority::mutation::RecordMutation;
 use crate::schema::aspect_plan_source::AspectPlanSource;
 
-use super::entity_delta::{
+use super::canonical_deltas::engine::entity_delta::{
     evaluate_entity_delta, evaluate_entity_lifecycle_delta, evaluate_entity_update_delta,
 };
-use super::relation_delta::{
+use super::canonical_deltas::engine::relation_delta::{
     evaluate_relation_delta, evaluate_relation_lifecycle_delta, evaluate_relation_update_delta,
 };
-use super::state_views::{EntityAuthoritativeState, RelationState};
+use super::canonical_deltas::engine::state_views::{EntityAuthoritativeState, RelationState};
 
 pub(crate) fn canonical_delta_for_mutation(
     mutation: &RecordMutation,

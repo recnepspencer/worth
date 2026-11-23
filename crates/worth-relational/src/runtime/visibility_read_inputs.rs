@@ -121,3 +121,28 @@ impl<'a> From<&'a RelationalRuntime> for WorldSourceSelection<'a> {
         }
     }
 }
+
+use crate::visibility::snapshot_observation::SnapshotObservationInputs;
+
+impl<'a> From<&'a RelationalRuntime> for SnapshotObservationInputs<'a> {
+    fn from(runtime: &'a RelationalRuntime) -> Self {
+        Self {
+            runtime_identity: runtime.runtime_instance_id(),
+            symbols: &runtime.services.symbols,
+            visibility: &runtime.visibility,
+            history: &runtime.history,
+            maximum_active_snapshots: runtime
+                .config
+                .publication
+                .policy
+                .max_active_snapshot_handles,
+            cache: runtime.into(),
+        }
+    }
+}
+
+impl<'a> From<&'a Arc<RelationalRuntime>> for SnapshotObservationInputs<'a> {
+    fn from(runtime: &'a Arc<RelationalRuntime>) -> Self {
+        runtime.as_ref().into()
+    }
+}

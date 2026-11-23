@@ -20,15 +20,16 @@ pub(super) fn entity(
         .get(&member.kind)
         .ok_or("codec member source plan absent")?;
     let _scratch = reserve(plan, state, actual, context, lease)?;
-    let expected = crate::authority::mutation::entity_deletion_publication_patch(
-        member.id,
-        member.kind,
-        state,
-        declarations,
-        plans,
-        actual.detail.clone(),
-    )
-    .map_err(|_| Stop::from("codec member deletion reconstruction refused"))?;
+    let expected =
+        crate::authority::mutation::deletion_publication::entity_deletion_publication_patch(
+            member.id,
+            member.kind,
+            state,
+            declarations,
+            plans,
+            actual.detail.clone(),
+        )
+        .map_err(|_| Stop::from("codec member deletion reconstruction refused"))?;
     compare(&actual.authoritative_patch, &expected)
 }
 
@@ -47,16 +48,17 @@ pub(super) fn relation(
         .relation_aspect_plan(relation.kind)
         .ok_or("codec relation plan absent")?;
     let _scratch = reserve(plan, state, actual, context, lease)?;
-    let expected = crate::authority::mutation::relation_deletion_publication_patch(
-        relation.id,
-        relation.kind,
-        relation.source,
-        relation.target,
-        state,
-        runtime.input.plans,
-        actual.detail.clone(),
-    )
-    .map_err(|_| Stop::from("codec relation deletion reconstruction refused"))?;
+    let expected =
+        crate::authority::mutation::deletion_publication::relation_deletion_publication_patch(
+            relation.id,
+            relation.kind,
+            relation.source,
+            relation.target,
+            state,
+            runtime.input.plans,
+            actual.detail.clone(),
+        )
+        .map_err(|_| Stop::from("codec relation deletion reconstruction refused"))?;
     compare(&actual.authoritative_patch, &expected)
 }
 
@@ -88,7 +90,9 @@ fn reserve(
             .checked_add(binding.contract.owned_allocation_capacity_bytes())
             .and_then(|n| {
                 n.checked_add(
-                    std::mem::size_of::<crate::authority::mutation::EvaluatedAspectBinding>() + 256,
+                    std::mem::size_of::<
+                        crate::authority::mutation::canonical_deltas::data::EvaluatedAspectBinding,
+                    >() + 256,
                 )
             })
             .ok_or_else(super::super::memory_overflow)?;

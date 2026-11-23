@@ -1,5 +1,5 @@
 //! One canonical record patch for actual disjoint coupled updates, never sequential netting.
-use super::super::effect::MutationPublicationEffect;
+use super::effect::MutationPublicationEffect;
 use super::FoundationalPatchFragment as Fragment;
 use crate::execution::request_stage::checkpoint;
 use crate::identity::data::EntityId;
@@ -170,7 +170,7 @@ impl Joined {
         self.patch = match AuthoritativeRecordAspectPatch::combine(self.patch, right.patch) {
             TransitionOutcome::Success(patch) => patch,
             TransitionOutcome::Denied(denial) => return Err(TransactionCommitError::conflict(
-                super::data::CanonicalDeltaError::FoundationalPatchConstruction {
+                super::canonical_deltas::data::CanonicalDeltaError::FoundationalPatchConstruction {
                     target: RecordRef::Entity(self.target),
                     denial: crate::transactions::data::outcomes::aspect_delta_failure_fields::AspectDeltaPatchConstructionDenial::FoundationalPatchConstructionDenied(denial),
                 }.to_commit_conflict())),
@@ -200,7 +200,7 @@ impl Joined {
         )
         .map_err(stop)?;
         let published_patch =
-            super::published_patch_projection::published_patch_from_foundational_patch(
+            super::canonical_deltas::published_patch_projection::published_patch_from_foundational_patch(
                 &self.patch,
                 |key| {
                     let mut matching = self

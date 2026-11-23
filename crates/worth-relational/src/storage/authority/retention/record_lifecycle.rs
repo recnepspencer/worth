@@ -1,4 +1,4 @@
-use crate::identity::data::{VersionBound, VersionId};
+use crate::identity::data::VersionId;
 use crate::storage::data::RecordLifecycleState;
 use crate::storage::substrate::RecordKind;
 
@@ -12,12 +12,13 @@ impl StorageAuthority<'_> {
         retired_at: Option<VersionId>,
         retention_fence: VersionId,
     ) {
-        let Some(_retired_at) = retired_at else {
-            return;
-        };
-        let arena = K::arena_mut(partition);
-        let lifecycle = self.retention_lifecycle::<K>(arena, slot, retired_at, retention_fence);
-        arena.set_lifecycle_for_slot(slot, lifecycle);
+        crate::storage::record_retention::refresh_slot::<K>(
+            self.runtime.config.storage.retention.backend,
+            partition,
+            slot,
+            retired_at,
+            retention_fence,
+        )
     }
 
     pub(in crate::storage::authority) fn retention_lifecycle<K: RecordKind>(
@@ -27,32 +28,13 @@ impl StorageAuthority<'_> {
         retired_at: Option<VersionId>,
         retention_fence: VersionId,
     ) -> RecordLifecycleState {
-        match self.runtime.config.storage.retention.backend {
-            crate::config::data::RetentionBackend::PinTrackedRetention => {
-                if arena.snapshot_pin_count(slot).unwrap_or(0) > 0 {
-                    RecordLifecycleState::PinnedBySnapshot
-                } else if arena.branch_pin_count(slot).unwrap_or(0) > 0 {
-                    RecordLifecycleState::PinnedByBranch
-                } else if arena.replay_pin_count(slot).unwrap_or(0) > 0 {
-                    RecordLifecycleState::PinnedByReplayRetention
-                } else {
-                    RecordLifecycleState::Reclaimable
-                }
-            }
-            crate::config::data::RetentionBackend::EpochChunkRetention => {
-                if arena.branch_pin_count(slot).unwrap_or(0) > 0 {
-                    RecordLifecycleState::PinnedByBranch
-                } else if arena.replay_pin_count(slot).unwrap_or(0) > 0 {
-                    RecordLifecycleState::PinnedByReplayRetention
-                } else if retired_at.is_some_and(|retired| {
-                    !VersionBound::new(retention_fence).retains_retired(retired)
-                }) {
-                    RecordLifecycleState::Reclaimable
-                } else {
-                    RecordLifecycleState::PinnedBySnapshot
-                }
-            }
-        }
+        crate::storage::record_retention::retention_lifecycle::<K>(
+            self.runtime.config.storage.retention.backend,
+            arena,
+            slot,
+            retired_at,
+            retention_fence,
+        )
     }
 
     pub(crate) fn reclaim_record_if_reclaimable<K: RecordKind>(

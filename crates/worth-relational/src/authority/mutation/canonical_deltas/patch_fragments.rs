@@ -82,7 +82,7 @@ impl CanonicalRecordAspectDelta {
 
 pub(crate) fn authoritative_patch_with_delta_supplements(
     delta: &CanonicalRecordAspectDelta,
-    authoritative_patch: super::super::outcomes::MutationAspectPatch,
+    authoritative_patch: super::super::outcomes::mutation_aspect_patch::MutationAspectPatch,
 ) -> Result<AuthoritativeRecordAspectPatch, CanonicalDeltaError> {
     let changed_authoritative_patch =
         authoritative_patch_filtered_to_changed_bindings(delta, authoritative_patch.as_patch())?;

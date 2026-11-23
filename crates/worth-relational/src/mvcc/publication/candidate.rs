@@ -30,7 +30,7 @@ use std::sync::Arc;
 pub struct PreparedRelationalCommitCandidate {
     runtime_instance_id: u64,
     configuration_invariant_generation: u64,
-    receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
+    receiver_epoch: crate::runtime::state::runtime_state::configuration_snapshot::RelationalRuntimeConfigurationSnapshot,
     publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
     transaction_id: TransactionId,
     branch_id: BranchId,
@@ -82,7 +82,7 @@ impl PreparedRelationalCommitCandidate {
     pub(crate) fn new(
         runtime_instance_id: u64,
         configuration_invariant_generation: u64,
-        receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
+        receiver_epoch: crate::runtime::state::runtime_state::configuration_snapshot::RelationalRuntimeConfigurationSnapshot,
         publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
         transaction_id: TransactionId,
         branch_id: BranchId,
@@ -157,7 +157,7 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn belongs_to_receiver_epoch(
         &self,
-        epoch: &crate::runtime::RelationalRuntimeConfigurationSnapshot,
+        epoch: &crate::runtime::state::runtime_state::configuration_snapshot::RelationalRuntimeConfigurationSnapshot,
     ) -> bool {
         self.receiver_epoch.same_epoch(epoch)
     }

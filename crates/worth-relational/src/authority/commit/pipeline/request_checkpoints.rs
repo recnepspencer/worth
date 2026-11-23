@@ -72,9 +72,6 @@ mod split_publication;
 #[cfg(test)]
 mod stage_counts;
 
-#[cfg(test)]
-mod strategy_cancellation;
-
 impl From<worth_execution::WorkCeilingDenial> for TransactionCommitError {
     fn from(denial: worth_execution::WorkCeilingDenial) -> Self {
         Self::execution(denial.into())

@@ -158,8 +158,11 @@ pub(super) fn prepare_commit_publication_execution(
     CommitPhaseBacking::new(execution, result)
 }
 
+mod settlement_inputs;
+pub(crate) use settlement_inputs::PublicationSettlementInputs;
+
 pub(crate) fn publish_commit_execution(
-    runtime: &crate::runtime::RelationalRuntime,
+    inputs: PublicationSettlementInputs<'_>,
     publication: crate::publication::authority::SettlementPublication,
 ) -> PublishedCommitExecution {
     let (prepared, published_snapshot_basis, positioned, envelope_cell) = publication.into_parts();
@@ -182,7 +185,7 @@ pub(crate) fn publish_commit_execution(
     let finalized = {
         let (_, _, _, _, commit_log, phase_timing) = admitted.value_mut().phase_view().into_parts();
         finalize_publication_phase(
-            runtime,
+            &inputs,
             commit_log,
             phase_timing,
             publication,
@@ -204,15 +207,21 @@ pub(crate) fn publish_commit_execution(
             .into_iter()
             .map(|trace| trace.publish(patch_position))
             .collect();
-    runtime.publish_invariant_preparation_diagnostics(&invariant_executions);
+    let diagnostics = inputs.publication.preparation_diagnostics();
+    for result in &invariant_executions {
+        crate::validation::invariant_authority::preparation_diagnostics::emit_preparation_diagnostics(
+            diagnostics,
+            result,
+        );
+    }
     publish_prepared_trace_diagnostics(
-        &runtime.publication_authority(),
-        runtime.config.diagnostics.profile.detailed_traces_enabled,
+        &inputs.publication,
+        diagnostics.profile.detailed_traces_enabled,
         &aspect_evaluation_traces,
         &aspect_emission_traces,
     );
     if let Some(accounting) = admitted.value_mut().take_merge_accounting() {
-        runtime.performance_access().count_merge_execution_request(
+        inputs.instrumentation.count_merge_execution_request(
             accounting.admitted_records,
             accounting.emitted_mutation_intents,
         );

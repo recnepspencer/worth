@@ -1,13 +1,14 @@
 //! One coupled chain record as a single round of its latest re-derivation
 //! would publish it. Folding a successor round re-runs the ordinary record
 //! publication from the chain's base, not a patch-by-patch netting of rounds.
-use super::canonical_deltas::{canonical_delta_for_mutation, CanonicalRecordAspectDelta};
-use super::effect_publication::canonical_publication_fragment;
+use super::canonical_deltas::canonical_publication_fragment;
+use super::canonical_deltas::CanonicalRecordAspectDelta;
 use super::intents::entity_aspect_preparation::{
     prepare_fields, prepare_portable, PreparedEntityAspectMutation,
 };
 use super::intents::field_authoring_candidate::FieldAuthoringDomain;
 use super::intents::record_aspect_patch;
+use super::mutation_delta_dispatch::canonical_delta_for_mutation;
 use super::patch_details::{patch_detail_for_entity, EntityPatchDetailKind};
 use super::{FoundationalPatchFragment, RecordMutation};
 use crate::identity::data::EntityId;

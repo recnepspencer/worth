@@ -1,10 +1,12 @@
 //! Bind the installed runtime to the effect authorized by Publication.
 use super::RelationalRuntime;
+use crate::authority::commit::pipeline::publication_execution::PublicationSettlementInputs;
 use crate::authority::commit::pipeline::{publish_commit_execution, PublishedCommitExecution};
 use crate::history::data::{CommitId, RelationalCommitReceipt};
 use crate::mvcc::publication::outcome::PerformedRelationalCommit;
 use crate::publication::authority::{RelationalSettlementBinding, SettlementPublication};
 use crate::publication::data::PublicationSettlementRepairError;
+use crate::storage::changed_record_retention::ChangedRecordRetention;
 use crate::transactions::data::outcomes::commit_result::CommitResult;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
@@ -54,7 +56,24 @@ impl RelationalRuntime {
         &self,
         input: SettlementPublication,
     ) -> PublishedCommitExecution {
-        publish_commit_execution(self, input)
+        let instrumentation = &self.services.instrumentation;
+        publish_commit_execution(
+            PublicationSettlementInputs {
+                history: &self.history,
+                lineage: &self.lineage,
+                visibility: self.into(),
+                retention: ChangedRecordRetention {
+                    partitions: &self.partitions,
+                    counters: &instrumentation.complexity_counters,
+                    backend: self.config.storage.retention.backend,
+                },
+                log: self.durability.commit_log(),
+                log_policy: &self.config.durability.policy.log,
+                publication: self.publication_authority(),
+                instrumentation,
+            },
+            input,
+        )
     }
 }
 

@@ -2,14 +2,16 @@ use worth_execution::ExecutionResourceLease;
 use worth_foundational::ExecutionReport;
 
 use super::super::query_packetization::PacketizedQueryWork;
-use super::super::RelationalPinnedRead;
 use super::leased_explicit::execute_leased_explicit_fragment;
 use super::leased_map::{execute_leased_query_packets, QueryReadExecutionStop};
+use crate::identity::data::VersionId;
 use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
 use crate::storage::overlay::PartitionAccess;
+use crate::visibility::materialization::read_records::projection::ProjectionRecordSource;
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_explicit_query_fragments_from_exact_basis(
-    reader: &RelationalPinnedRead,
+    projection: &(impl ProjectionRecordSource + Sync),
+    current_version: VersionId,
     plan: &SnapshotPinnedQueryPlan,
     packets: Vec<PacketizedQueryWork>,
     basis: &crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis,
@@ -50,7 +52,8 @@ pub(in crate::visibility::materialization::read_records::reader) fn execute_expl
         lease,
         |packet, ordinal, ceiling, context| {
             execute_leased_explicit_fragment(
-                reader,
+                projection,
+                current_version,
                 state_access,
                 registry,
                 version_id,

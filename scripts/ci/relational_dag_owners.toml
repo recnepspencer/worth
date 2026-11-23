@@ -74,6 +74,32 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"indexes/access/field_candidate_comparison.rs" = "branch"
+"indexes/access/prepared_field_certification.rs" = "branch"
+"indexes/access/prepared_lookup_admission.rs" = "branch"
+
+"indexes/authority/maintenance/applied_field.rs" = "branch"
+"indexes/authority/maintenance/field_delta.rs" = "branch"
+"indexes/authority/maintenance/field_keys.rs" = "branch"
+"indexes/authority/maintenance/root_view.rs" = "branch"
+"indexes/authority/maintenance/work.rs" = "branch"
+"indexes/authority/maintenance/request_payment.rs" = "branch"
+"indexes/authority/maintenance/entry_edits.rs" = "branch"
+"indexes/authority/maintenance/persistent_allocation.rs" = "branch"
+"indexes/authority/maintenance/charge_rendezvous.rs" = "branch"
+"indexes/access/selected_index.rs" = "branch"
+"indexes/projected_field_values/exact_entity_field_match.rs" = "branch"
+
+"runtime/merge_ownership_probe.rs" = "runtime"
+"runtime/state/subsystems/schema_contract_runtime" = "mutation"
+"runtime/state/runtime_state/configuration_snapshot.rs" = "mutation"
+
+"authority/mutation/canonical_deltas" = "branch"
+"authority/mutation/canonical_deltas/engine_tests" = "mutation"
+"authority/mutation/deletion_publication.rs" = "branch"
+"authority/mutation/intents/entity_authoritative_deletion_patch.rs" = "branch"
+"authority/mutation/outcomes/mutation_aspect_patch.rs" = "branch"
+
 "durability/artifact_payload_emission.rs" = "branch"
 "durability/canonical_commit_artifact/frame_reference_encoding.rs" = "branch"
 "durability/canonical_commit_artifact/checkpoint_body.rs" = "branch"
@@ -339,7 +365,6 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "identity_authority" = "contracts"
 # The index root mounts the eager recovery entrance. Projection kernels stay in Indexes.
 "indexes/mod.rs" = "durability"
-"indexes/access" = "indexes"
 "indexes/access/admitted_generation" = "runtime"
 "indexes/access/definition_lookup" = "runtime"
 "indexes/access/execution" = "courts"
@@ -377,8 +402,22 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "indexes/data/mod.rs" = "branch"
 "indexes/data/related_entity_prefix" = "branch"
 "indexes/data/relation_join_index" = "branch"
-"indexes/projected_field_values" = "indexes"
+"indexes/projected_field_values" = "branch"
 "indexes/projected_field_values/field_projection_scope" = "contracts"
+"indexes/authority/maintenance/preparation.rs" = "branch"
+"indexes/access/applied_entity_field_lookup.rs" = "branch"
+"indexes/access/bounded_entity_field_lookup.rs" = "branch"
+"indexes/access/bounded_related_entity_ordered_lookup.rs" = "branch"
+"indexes/access/bounded_relation_join_lookup.rs" = "branch"
+"indexes/access/entity_field_collection.rs" = "branch"
+"indexes/access/pinned_entity_field_lookup.rs" = "branch"
+"indexes/access/prepared_entity_field_lookup" = "branch"
+"indexes/access/related_entity_prefix" = "branch"
+"indexes/projected_field_values/index_projection_source" = "branch"
+"indexes/projected_field_values/checked_entry_map.rs" = "branch"
+"indexes/projected_field_values/related_entity_ordering.rs" = "branch"
+"indexes/projected_field_values/index_projection_source/native_fields/navigation_tests.rs" = "branch"
+
 "indexes/retained_definition" = "branch"
 "inline_type_sizes.rs" = "runtime"
 # The layout census only measures declared data carriers.
@@ -630,6 +669,11 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "validation/engine/result/failures" = "contracts"
 "validation/invariant_access" = "runtime"
 "validation/invariant_authority" = "runtime"
+"validation/invariant_authority/preparation_diagnostics.rs" = "publication"
+"validation/invariant_authority/diagnostic_projection.rs" = "mutation"
+"validation/invariant_authority/custom_invariant_provenance_diagnostic_projection.rs" = "mutation"
+"validation/invariant_authority/invariant_violation_diagnostic_projection" = "mutation"
+
 "validation/mod.rs" = "runtime"
 "validation/preparation_invariant_authority.rs" = "runtime"
 "visibility" = "branch"
@@ -843,7 +887,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "history/data/codec_retirement_closure/coupled_restoration.rs" = "runtime"
 "history/retention/live_reclamation.rs" = "runtime"
 "history/retention/publication_reclamation.rs" = "runtime"
-"indexes/access" = "indexes"
 "indexes/access/admitted_generation" = "runtime"
 "indexes/access/bounded_entity_field_lookup" = "indexes"
 "indexes/access/definition_lookup" = "runtime"
@@ -989,7 +1032,7 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "history/retention/lane/retirement/tests.rs" = "branch"
 "indexes/authority/maintenance/recovery_catalog.rs" = "indexes"
 "indexes/authority/maintenance/retained_projection.rs" = "indexes"
-"indexes/projected_field_values/index_projection_source/native_fields/navigation_tests.rs" = "indexes"
+"indexes/projected_field_values/index_projection_source/native_fields/navigation_tests.rs" = "branch"
 "lineage/access/event_demand.rs" = "lineage"
 "runtime/state/subsystems/history_retention/retained_owner_tests.rs" = "branch"
 "runtime/state/subsystems/indexing/definition_catalog_schema_tests.rs" = "indexes"
@@ -1094,3 +1137,61 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Shared named-map byte emission needs only its caller-owned buffer.
 "durability/artifact_payload_emission.rs" = "branch"
+
+# Pure canonical aspect evaluation and funded patch meaning before live stamping.
+"authority/mutation/canonical_deltas" = "branch"
+"authority/mutation/canonical_deltas/engine_tests" = "mutation"
+"authority/mutation/deletion_publication.rs" = "branch"
+"authority/mutation/intents/entity_authoritative_deletion_patch.rs" = "branch"
+"authority/mutation/outcomes/mutation_aspect_patch.rs" = "branch"
+
+# Mirror retention and telemetry are executed by their native owners.
+"storage/record_retention.rs" = "storage"
+"storage/changed_record_retention.rs" = "storage"
+"runtime/state/subsystems/services/instrumentation/merge_execution_counters.rs" = "branch"
+
+# Invariant diagnostic projection belongs to its analysis and emission owners.
+"validation/invariant_authority/preparation_diagnostics.rs" = "publication"
+"validation/invariant_authority/diagnostic_projection.rs" = "mutation"
+"validation/invariant_authority/custom_invariant_provenance_diagnostic_projection.rs" = "mutation"
+"validation/invariant_authority/invariant_violation_diagnostic_projection" = "mutation"
+
+# Frozen schema executors and exact captured receiver pairs precede live installation.
+"runtime/state/subsystems/schema_contract_runtime" = "mutation"
+"runtime/state/runtime_state/configuration_snapshot.rs" = "mutation"
+
+# The installed receiver binds the original fork, merge and preparation services.
+"runtime/merge_ownership_probe.rs" = "runtime"
+
+# Selected applied field deltas and their request-funded read kernels serve Branch and Indexes.
+"indexes/authority/maintenance/applied_field.rs" = "branch"
+"indexes/authority/maintenance/field_delta.rs" = "branch"
+"indexes/authority/maintenance/field_keys.rs" = "branch"
+"indexes/authority/maintenance/root_view.rs" = "branch"
+"indexes/authority/maintenance/work.rs" = "branch"
+"indexes/authority/maintenance/request_payment.rs" = "branch"
+"indexes/authority/maintenance/entry_edits.rs" = "branch"
+"indexes/authority/maintenance/persistent_allocation.rs" = "branch"
+"indexes/authority/maintenance/charge_rendezvous.rs" = "branch"
+"indexes/access/selected_index.rs" = "branch"
+"indexes/projected_field_values/exact_entity_field_match.rs" = "branch"
+
+# An exact pin reads the already selected immutable generations and reached rows.
+"indexes/authority/maintenance/preparation.rs" = "branch"
+"indexes/access/applied_entity_field_lookup.rs" = "branch"
+"indexes/access/bounded_entity_field_lookup.rs" = "branch"
+"indexes/access/bounded_related_entity_ordered_lookup.rs" = "branch"
+"indexes/access/bounded_relation_join_lookup.rs" = "branch"
+"indexes/access/entity_field_collection.rs" = "branch"
+"indexes/access/pinned_entity_field_lookup.rs" = "branch"
+"indexes/access/prepared_entity_field_lookup" = "branch"
+"indexes/access/related_entity_prefix" = "branch"
+"indexes/projected_field_values/index_projection_source" = "branch"
+"indexes/projected_field_values/checked_entry_map.rs" = "branch"
+"indexes/projected_field_values/related_entity_ordering.rs" = "branch"
+
+# Pin certification consumes only exact immutable rows and the original read budget.
+"indexes/access/field_candidate_comparison.rs" = "branch"
+"indexes/access/prepared_field_certification.rs" = "branch"
+"indexes/access/prepared_lookup_admission.rs" = "branch"
+"indexes/projected_field_values" = "branch"

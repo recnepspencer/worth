@@ -31,6 +31,7 @@ impl RelationalPinnedRead {
                 super::super::query_execution::execute_leased_traversal_fragment(
                     execution,
                     self,
+                    self.pinned_current_version(),
                     state_access,
                     registry,
                     version_id,

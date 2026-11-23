@@ -22,9 +22,9 @@ impl AppliedMutationCore {
     }
 }
 
-pub(crate) fn apply(
+pub(crate) fn apply<'a>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    inputs: impl Into<AppliedMutationInputs<'a>>,
     selected_state: &SelectedRelationalBranchRead<'_>,
     working_state: &WorkingState,
     merged_plan: &MergedCommitPlan,
@@ -35,10 +35,11 @@ pub(crate) fn apply(
     mut symbols: PendingSymbolMeanings,
     materialization: Option<crate::mvcc::transaction::intent::materialization_mode::RelationalMaterializationTransactionMode>,
 ) -> Result<AppliedMutationCore, MutationApplyDenial> {
+    let inputs = inputs.into();
     let version_id = identity.proposed_version_id();
     crate::aggregate_identity::guard::ordinary_plan(
         execution,
-        runtime.commit_work_budget.as_ref(),
+        inputs.work.as_ref(),
         schema.registry(),
         &crate::validation::engine::state_view::InvariantStateView::new(
             selected_state,
@@ -49,7 +50,7 @@ pub(crate) fn apply(
     )?;
     let mut state = working_state.clone();
     let allowance = branch_local_delete_allowance_for_plan(selected_state, &state, merged_plan);
-    let mut records = runtime.record_identity.begin_allocations();
+    let mut records = inputs.record_identity.begin_allocations();
     let outcome = apply_plan_with_publication_edges(
         execution,
         &mut state,
@@ -61,10 +62,9 @@ pub(crate) fn apply(
         allowance,
         &mut records,
         crate::authority::commit::pipeline::request_lease(execution),
-        runtime.commit_work_budget.clone(),
-        runtime
+        inputs.work.clone(),
+        inputs
             .authored_coupling
-            .as_ref()
             .map(|binding| &binding.owners.deferred_edges),
     )?;
     crate::authority::mutation::apply_adjacency_deltas_for_request(
@@ -94,9 +94,9 @@ pub(crate) fn apply(
 
 /// The authored prefix uses the same mutation owner and the enclosing round's
 /// actual Native proposal identity, allocation stream and symbol reservations.
-pub(crate) fn apply_authored_prefix(
+pub(crate) fn apply_authored_prefix<'a>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
+    inputs: impl Into<AppliedMutationInputs<'a>>,
     selected: &SelectedRelationalBranchRead<'_>,
     prepared: &super::super::prepare::PreparedWorkingStateScope,
     commands: &MergedCommitPlan,
@@ -104,6 +104,7 @@ pub(crate) fn apply_authored_prefix(
     symbols: PendingSymbolMeanings,
     content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedMutationCore, MutationApplyDenial> {
+    let inputs = inputs.into();
     // This apply owner needs its own copied intent storage. The authored plan
     // retains its original reservation independently until coupled completion.
     let _plan_memory = crate::mvcc::transaction::normalized_plan::reserve_copy(
@@ -115,14 +116,10 @@ pub(crate) fn apply_authored_prefix(
         version_id: identity.proposed_version_id(),
         merged_intents: commands.merged_intents.clone(),
     };
-    let config = crate::config::data::MutationConfig {
-        cascade_delete_policy: runtime.config.storage.cascade_delete_policy,
-        adjacency_policy: runtime.config.storage.adjacency_policy.clone(),
-        cross_context_policy: runtime.config.storage.cross_context_policy,
-    };
+    let config = inputs.mutation_config();
     let mut applied = apply(
         execution,
-        runtime,
+        inputs,
         selected,
         &prepared.working_state,
         commands,
@@ -138,7 +135,7 @@ pub(crate) fn apply_authored_prefix(
         .expect("owner-issued prefix identity");
     applied.content = super::content::prepare(
         execution,
-        runtime,
+        inputs,
         selected.selected().state().root(),
         &prepared.schema_authority,
         content,
