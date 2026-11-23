@@ -2,8 +2,14 @@
 
 mod budget;
 mod directory;
+use super::super::materialization::materialize_authoritative_relation_record_at_version;
 use super::super::native_scan_stop::NativeScanStop;
-use super::*;
+use super::super::visibility::relation_slot_matches_kind_at_version;
+use super::{
+    context::VisibilityReadContext, kind_scan_visibility::KindScanVisibility,
+    projection_record_reader::ProjectionRecordReader,
+};
+use crate::{storage::data::RelationReadRecord, storage::overlay::PartitionAccess};
 use budget::RelationKindScan;
 
 #[derive(Debug)]
@@ -56,7 +62,10 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     &state,
                     &self.runtime.config.schema.registry,
                     kind_id,
-                    KindScanVisibility::for_version(self.runtime, version_id),
+                    KindScanVisibility::for_selected_version(
+                        self.runtime.current_version_id(),
+                        version_id,
+                    ),
                     maximum_work_units,
                     &mut |units| context.checkpoint(units),
                     memory,

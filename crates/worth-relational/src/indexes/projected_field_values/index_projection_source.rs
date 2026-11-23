@@ -9,7 +9,7 @@ use crate::visibility::materialization::read_records::projection::ProjectionReco
 ///
 /// Construction is private to this module so a caller cannot pair records
 /// with an ambient or unrelated schema authority.
-pub(in crate::indexes) struct IndexProjectionSource<'view> {
+pub(crate) struct IndexProjectionSource<'view> {
     projection: &'view VisibilityProjectionView,
     reconstruction:
         Option<&'view crate::storage::substrate::maintenance::ReconstructionLane<'view>>,
@@ -32,7 +32,7 @@ impl<'view> IndexProjectionSource<'view> {
             reconstruction: None,
         }
     }
-    pub(in crate::indexes) fn exact(projection: &'view VisibilityProjectionView) -> Option<Self> {
+    pub(crate) fn exact(projection: &'view VisibilityProjectionView) -> Option<Self> {
         projection.is_exact_basis().then_some(Self {
             projection,
             reconstruction: None,
@@ -147,7 +147,7 @@ impl<'view> IndexProjectionSource<'view> {
         )
     }
 
-    pub(in crate::indexes) fn with_entity<T>(
+    pub(crate) fn with_entity<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
@@ -172,7 +172,7 @@ impl<'view> IndexProjectionSource<'view> {
             .with_entity_record(execution, entity_id, before, inspect)
     }
 
-    pub(in crate::indexes) fn with_relation<T>(
+    pub(crate) fn with_relation<T>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
@@ -187,3 +187,5 @@ impl<'view> IndexProjectionSource<'view> {
 }
 
 mod native_fields;
+#[cfg(test)]
+pub(crate) use native_fields::verify_native_field_navigation;

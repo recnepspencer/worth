@@ -1,11 +1,9 @@
-use super::basis_issuance::{
-    descriptor_for_cell, issue_admitted_relational_branch_basis_with_retention,
-    map_retention_denial,
-};
 use super::{
-    basis_identity_validation::require_local_branch_identity, AdmittedRelationalBranchBasis,
-    RelationalBranchBasisDenial, RelationalBranchBasisDescriptor, RelationalBranchIdentity,
-    RelationalBranchRoot,
+    basis_admission::{descriptor_for_cell, issue_admitted_relational_branch_basis_with_retention},
+    basis_identity_validation::require_local_branch_identity,
+    basis_retention::map_retention_acquisition_denial,
+    AdmittedRelationalBranchBasis, RelationalBranchBasisDenial, RelationalBranchBasisDescriptor,
+    RelationalBranchIdentity, RelationalBranchRoot,
 };
 use crate::runtime::RelationalRuntime;
 
@@ -110,7 +108,7 @@ impl RelationalRuntime {
             let retention_binding = cell
                 .head_retention()
                 .binding()
-                .map_err(map_retention_denial)?;
+                .map_err(map_retention_acquisition_denial)?;
             (descriptor, root, cell.publication_cell(), retention_binding)
         };
         require_not_interrupted(control, &retention_binding)?;

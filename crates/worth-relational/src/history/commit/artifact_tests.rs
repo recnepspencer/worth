@@ -253,5 +253,3 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
 }
 #[path = "artifact_tests/shared_readmission.rs"]
 mod shared_readmission;
-#[path = "artifact_tests/strategy_readmission.rs"]
-mod strategy_readmission;

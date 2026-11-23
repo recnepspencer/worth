@@ -59,7 +59,7 @@ pub enum RelationalModelOwnershipDenial {
     EntityUnavailable(EntityId),
     Conflict(RelationalModelOwnershipConflict),
     Read(crate::validation::data::structural_read::StructuralReadError),
-    Adjacency(crate::validation::data::CustomInvariantTraversalError),
+    Adjacency(crate::validation::data::custom_rule::errors::CustomInvariantTraversalError),
     Traversal(crate::validation::data::structural_walk_denial::StructuralWalkDenialKind),
     Request(worth_execution::WorkCeilingDenial),
     Native(crate::execution::RelationalExecutionDenialCause),

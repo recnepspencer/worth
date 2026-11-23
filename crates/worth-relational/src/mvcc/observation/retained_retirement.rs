@@ -1,6 +1,6 @@
 //! The two original shares of an externally retained observation, with no read door.
 use super::*;
-use crate::branch::RelationalBasisRegistryRetirementCustody;
+use crate::branch::basis_registry::RelationalBasisRegistryRetirementCustody;
 use crate::history::retention::{
     RelationalRetentionRetirementCustody, RelationalRetentionRetirementError,
 };

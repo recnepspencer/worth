@@ -55,5 +55,3 @@ impl RelationalRuntime {
 pub(crate) mod read_stop;
 
 pub use reader::BoundedFrontierReadStop;
-
-pub(crate) use reader::KindScanVisibility;

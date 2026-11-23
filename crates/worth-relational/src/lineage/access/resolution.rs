@@ -80,8 +80,13 @@ impl<'runtime> LineageAccess<'runtime> {
         request: HistoricalResolutionRequest,
     ) -> Result<HistoricalLineageResolution, crate::execution::RelationalExecutionDenialCause> {
         let branches = BTreeSet::from([request.branch_id.clone()]);
-        let _events =
-            self.demand_historical_events(execution, request.lineage_id, &branches, None)?;
+        let _events = super::event_demand::demand_historical_events(
+            &self.runtime.lineage,
+            execution,
+            request.lineage_id,
+            &branches,
+            None,
+        )?;
         Ok(self.resolve_historical_lineage_in_scope(
             BranchScopedHistoricalResolutionRequest::from_request(request),
             HistoricalTraversalScope::AuthoringBranch,

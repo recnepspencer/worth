@@ -342,7 +342,8 @@ enum OldBacking {
     },
 }
 struct OldState {
-    authored_writes: Option<crate::runtime::AuthoredWriteGeneration>,
+    authored_writes:
+        Option<crate::history::access::relevant_writes::generation::AuthoredWriteGeneration>,
     backing: OldBacking,
     position: Option<RetainedCanonicalPosition>,
     damage: Option<RelationalStorageUnavailable>,

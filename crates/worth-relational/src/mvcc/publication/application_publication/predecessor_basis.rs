@@ -180,7 +180,7 @@ pub(crate) fn predecessor_publication_input(
     // The hold carries the publishing branch's cell: a fork keeps this
     // input after that branch is deleted and leaves the registry.
     let cell = &retained.publication_cell;
-    crate::branch::basis_issuance::issue_admitted_relational_branch_basis_with_retention(
+    crate::branch::basis_admission::issue_admitted_relational_branch_basis_with_retention(
         retained.descriptor.clone(),
         cell.identity().clone(),
         std::sync::Arc::clone(&retained.root),

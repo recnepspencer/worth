@@ -106,7 +106,7 @@ impl BranchMovementCutover<'_, '_> {
                 ),
             )));
         };
-        let observed = match crate::branch::basis_issuance::descriptor_for_cell(
+        let observed = match crate::branch::basis_admission::descriptor_for_cell(
             &observed_cell,
             &observed_root,
         ) {

@@ -3,6 +3,8 @@ mod entity_field_index_values;
 mod exact_entity_field_match;
 pub(crate) mod field_projection_scope;
 mod index_projection_source;
+#[cfg(test)]
+pub(crate) use index_projection_source::verify_native_field_navigation;
 mod related_entity_ordering;
 mod relation_field_index_values;
 mod relation_join;
@@ -16,7 +18,7 @@ pub(super) use entity_field_index_values::{
     entity_aspect_field_ordering_value,
 };
 pub(super) use exact_entity_field_match::exact_entity_field_matches;
-pub(super) use index_projection_source::IndexProjectionSource;
+pub(crate) use index_projection_source::IndexProjectionSource;
 pub(super) use related_entity_ordering::{
     build_related_entity_ordering_index, build_related_entity_ordering_index_checked,
     compare_ordering_value, compare_related_entries, RelatedEntityOrderingProjection,

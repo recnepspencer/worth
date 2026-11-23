@@ -41,7 +41,7 @@ impl ExactProjectionReader<'_> {
             self.root.schema_authority().registry(),
             partition,
             kind,
-            super::super::super::reader::KindScanVisibility::Live,
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live,
             charge,
             memory,
         )
@@ -86,7 +86,7 @@ impl ExactProjectionReader<'_> {
             self.root.schema_authority().registry(),
             partition,
             kind,
-            super::super::super::reader::KindScanVisibility::Live,
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live,
             charge,
             memory,
         )

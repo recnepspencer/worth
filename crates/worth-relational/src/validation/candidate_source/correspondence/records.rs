@@ -34,7 +34,7 @@ pub(super) fn matches(
             return Ok(false);
         }
     }
-    let backing = crate::branch::SymbolAdmittedRootRead::new(
+    let backing = crate::branch::symbol_read::SymbolAdmittedRootRead::new(
         &source.basis().inner.root,
         &runtime.services.symbols,
     );

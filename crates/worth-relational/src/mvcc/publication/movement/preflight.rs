@@ -48,20 +48,20 @@ impl PreparedCanonicalBranchMovement {
                 ),
             ));
         }
-        let next_descriptor =
-            match crate::branch::basis_issuance::descriptor_for_cell(&self.next_cell, &self.root) {
-                Ok(descriptor) => descriptor,
-                Err(denial) => {
-                    return Err(RelationalPublicationOutcome::failed(
-                        RelationalPublicationFailure::new(
-                            RelationalPublicationFailureKind::PreparedBasisDescriptor(
-                                denial.clone(),
-                            ),
-                            format!("prepared next basis failed before movement: {denial:?}"),
-                        ),
-                    ));
-                }
-            };
+        let next_descriptor = match crate::branch::basis_admission::descriptor_for_cell(
+            &self.next_cell,
+            &self.root,
+        ) {
+            Ok(descriptor) => descriptor,
+            Err(denial) => {
+                return Err(RelationalPublicationOutcome::failed(
+                    RelationalPublicationFailure::new(
+                        RelationalPublicationFailureKind::PreparedBasisDescriptor(denial.clone()),
+                        format!("prepared next basis failed before movement: {denial:?}"),
+                    ),
+                ));
+            }
+        };
         Ok((next_state, next_descriptor))
     }
 
@@ -79,7 +79,7 @@ impl PreparedCanonicalBranchMovement {
         RelationalPublicationOutcome,
     > {
         let next_basis =
-            crate::branch::basis_issuance::issue_admitted_relational_branch_basis_with_retention(
+            crate::branch::basis_admission::issue_admitted_relational_branch_basis_with_retention(
                 next_descriptor,
                 self.next_cell.identity().clone(),
                 Arc::clone(&self.root),

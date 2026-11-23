@@ -7,9 +7,8 @@ use crate::storage::partition::{AdjacencyDirection, AdjacencyKindBasis};
 use super::read_record_identity_ordering::relation_identity_order_key;
 use super::VisibilityProjectionView;
 use crate::visibility::materialization::read_records::reader::adjacency_work_ledger::AdjacencyLeaseLedger;
-use crate::visibility::materialization::read_records::reader::{
-    BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded,
-};
+use crate::visibility::materialization::read_records::reader::truth_frontier_adjacency::BoundedFrontierAdjacencyTruthRead;
+use crate::visibility::materialization::read_records::reader::truth_frontier_adjacency::FrontierAdjacencyTruthReadLimitExceeded;
 
 impl VisibilityProjectionView {
     pub fn bounded_outgoing_relations_for_frontier(

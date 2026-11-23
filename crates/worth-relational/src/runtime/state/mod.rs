@@ -78,6 +78,3 @@ pub(crate) use subsystems::TryPartitionMutationDenied;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
-
-#[cfg(test)]
-pub(crate) use subsystems::{AuthoredWriteGeneration, RetainedCanonicalPosition};

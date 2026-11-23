@@ -1,6 +1,4 @@
-//! Issue and describe one exact retained observation from the Branch owner.
-use std::sync::Arc;
-
+//! Admit exact retained Branch observation custody.
 use super::{
     authority::issue_relational_branch_observation_authority,
     basis::{
@@ -10,25 +8,25 @@ use super::{
     basis_admission_identity::RelationalBranchBasisAdmissionIdentity,
     basis_axis_validation::require_root_matches_reference,
     basis_denial::RelationalBranchBasisDenial,
+    basis_retention::map_retention_acquisition_denial,
     identity::RelationalBranchIdentity,
-    lifecycle::RelationalBranchLifecyclePosture,
     reference::RelationalBranchReferenceCell,
-    reference_publication_cell::RelationalBranchPublicationCell,
     root::RelationalBranchRoot,
 };
+use std::sync::Arc;
 
 pub(crate) fn issue_admitted_relational_branch_basis_with_retention(
     descriptor: RelationalBranchBasisDescriptor,
     identity: RelationalBranchIdentity,
     root: Arc<RelationalBranchRoot>,
-    publication_cell: RelationalBranchPublicationCell,
+    publication_cell: super::reference_publication_cell::RelationalBranchPublicationCell,
     retention_binding: &crate::history::retention::RelationalBranchRetentionBinding,
 ) -> Result<AdmittedRelationalBranchBasis, RelationalBranchBasisDenial> {
     let retention = crate::history::retention::RelationalObservationRetentionObligation::acquire(
         retention_binding,
         Arc::clone(&root),
     )
-    .map_err(map_retention_denial)?;
+    .map_err(map_retention_acquisition_denial)?;
     Ok(AdmittedRelationalBranchBasis {
         inner: Arc::new(AdmittedRelationalBranchBasisInner {
             descriptor,
@@ -44,26 +42,6 @@ pub(crate) fn issue_admitted_relational_branch_basis_with_retention(
     })
 }
 
-pub(super) fn map_retention_denial(
-    denial: crate::history::retention::RelationalRetentionAcquisitionDenial,
-) -> RelationalBranchBasisDenial {
-    match denial {
-        crate::history::retention::RelationalRetentionAcquisitionDenial::CapacityExhausted => {
-            RelationalBranchBasisDenial::RetentionCapacityExhausted
-        }
-        crate::history::retention::RelationalRetentionAcquisitionDenial::OwnerUnavailable => {
-            RelationalBranchBasisDenial::UnavailableRetainedTarget
-        }
-        crate::history::retention::RelationalRetentionAcquisitionDenial::IdentityExhausted => {
-            RelationalBranchBasisDenial::RetentionIdentityExhausted
-        }
-        crate::history::retention::RelationalRetentionAcquisitionDenial::RootSetTooLarge
-        | crate::history::retention::RelationalRetentionAcquisitionDenial::BindingMismatch => {
-            RelationalBranchBasisDenial::OwnerFailure
-        }
-    }
-}
-
 pub(crate) fn descriptor_for_cell(
     cell: &RelationalBranchReferenceCell,
     root: &Arc<RelationalBranchRoot>,
@@ -75,9 +53,15 @@ pub(crate) fn descriptor_for_cell(
     let schema_commitment = root.schema_authority().authority_digest();
     require_root_matches_reference(&cell.observation(), root)?;
     let posture = match cell.lifecycle_posture() {
-        RelationalBranchLifecyclePosture::Live => RelationalBranchBasisPosture::Live,
-        RelationalBranchLifecyclePosture::Archived => RelationalBranchBasisPosture::Archived,
-        RelationalBranchLifecyclePosture::Deleting => RelationalBranchBasisPosture::Deleting,
+        super::lifecycle::RelationalBranchLifecyclePosture::Live => {
+            RelationalBranchBasisPosture::Live
+        }
+        super::lifecycle::RelationalBranchLifecyclePosture::Archived => {
+            RelationalBranchBasisPosture::Archived
+        }
+        super::lifecycle::RelationalBranchLifecyclePosture::Deleting => {
+            RelationalBranchBasisPosture::Deleting
+        }
     };
     Ok(RelationalBranchBasisDescriptor::with_posture(
         super::basis::RelationalLiveBranchBasisDescriptorAxes {

@@ -1,4 +1,4 @@
-use super::*;
+use super::super::projection::contracts::ProjectionAspectFilter;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
 
 #[derive(Debug, Clone)]

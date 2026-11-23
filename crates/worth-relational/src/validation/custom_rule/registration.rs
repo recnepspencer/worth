@@ -12,15 +12,14 @@ use panic_value::panic_value_message;
 
 use super::execution_context::CustomInvariantExecutionContext;
 use super::scope_planner::CustomInvariantScopePlanner;
+use crate::validation::data::custom_rule::errors::{
+    CustomInvariantExecutionError, CustomInvariantFailure, CustomInvariantFailureKind,
+    CustomInvariantPreparationError, CustomInvariantRuntimePhase, CustomInvariantVerdict,
+    PreparedCustomInvariantExecutionOutcome,
+};
 use crate::validation::data::descriptor::CustomInvariantDescriptor;
 use crate::validation::data::rule_id::CustomInvariantRuleId;
 use crate::validation::data::rule_id::CustomInvariantSemanticIdentity;
-use crate::validation::data::CustomInvariantVerdict;
-use crate::validation::data::{
-    CustomInvariantExecutionError, CustomInvariantFailure, CustomInvariantFailureKind,
-    CustomInvariantPreparationError, CustomInvariantRuntimePhase,
-    PreparedCustomInvariantExecutionOutcome,
-};
 
 pub trait CustomInvariantRule: Send + Sync + RefUnwindSafe + 'static {
     type Scope: Send + Sync + 'static;
@@ -314,7 +313,8 @@ fn run_custom_rule_safely<T>(
 pub struct CustomInvariantRegistration {
     descriptor: CustomInvariantDescriptor,
     executable: Arc<dyn ErasedCustomInvariantRule>,
-    pub(crate) model_ownership: Option<Arc<crate::branch::RelationalModelOwnership>>,
+    pub(crate) model_ownership:
+        Option<Arc<crate::branch::model_ownership::RelationalModelOwnership>>,
     pub(crate) managed_sources:
         Arc<[crate::validation::candidate_source::ManagedIndexSourceProgram]>,
 }

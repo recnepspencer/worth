@@ -1,70 +1,53 @@
 //! Recover missing catalog coverage without replacing admitted predecessor selections.
-use super::super::live_access::IndexAuthority;
-use super::{request_payment, work::MaintenanceWork};
-use crate::indexes::data::{
-    DerivedIndexBuildRequest, DerivedIndexId, DerivedIndexMaintenanceBudget,
-    DerivedIndexMaintenanceDenial, DerivedIndexMaintenanceDenialKind as Denial,
-    DerivedIndexMaintenanceOutcome,
+use super::work::MaintenanceWork;
+use crate::branch::{
+    basis::AdmittedRelationalBranchBasis, basis_denial::RelationalBranchBasisDenial,
 };
+use crate::indexes::data::{
+    DerivedIndexBuildRequest, DerivedIndexId, DerivedIndexMaintenanceDenialKind as Denial,
+};
+use crate::mvcc::observation::RelationalBranchObservation;
+use crate::runtime::state::subsystems::indexing::IndexingSubsystem;
+use crate::storage::substrate::maintenance::ReconstructionLane;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 
-impl IndexAuthority<'_> {
-    pub(crate) fn reconstruct_installed_for_basis(
-        &self,
-        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
-    ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
-        let budget = DerivedIndexMaintenanceBudget {
-            maximum_work_units: None,
-            maximum_cold_record_slots: None,
-            maximum_derived_rows: None,
-        };
-        let (prepared, counts) = request_payment::run(execution, budget, |work| {
-            let observation = basis.observation();
-            let source_commit_id = observation.commit_id().ok_or(Denial::CommitMismatch)?;
-            let branch = observation.identity().branch_id();
-            let projection = self
-                .runtime
-                .read_truth()
-                .project_observation(&observation)
-                .map_err(Denial::Basis)?;
-            let root = projection
-                .selected_root()
-                .ok_or(Denial::SnapshotUnavailable)?;
-            let selected = self.runtime.indexes.prepare_reconstruction_basis(
-                lane,
-                root,
-                branch,
-                &mut |units, bytes| work.prepare(units, bytes),
-                None,
-            )?;
-            work.prepare(branch.0.len() as u64, branch.0.len() as u64)?;
-            let mut branch_name = String::new();
-            branch_name
-                .try_reserve_exact(branch.0.len())
-                .map_err(|_| allocation_failed())?;
-            branch_name.push_str(&branch.0);
-            let mut index_ids = self.runtime.indexes.with_definitions(|definitions| {
-                collect_ids(&mut definitions.keys().copied(), work)
-            })?;
-            retain_missing(&mut index_ids, &selected, work)?;
-            Ok(DerivedIndexBuildRequest {
-                source_commit_id,
-                branch_id: crate::history::data::BranchId(branch_name),
-                index_ids,
-            })
-        })?;
-        let (request, funding) = prepared.into_funded_parts();
-        if request.index_ids.is_empty() {
-            return Ok(DerivedIndexMaintenanceOutcome {
-                generations: Vec::new(),
-                work: counts,
-            });
-        }
-        let result = self.reconstruct_for_basis(execution, request, basis, budget);
-        drop(funding);
-        result
-    }
+pub(super) fn missing_build_request(
+    indexes: &IndexingSubsystem,
+    lane: &ReconstructionLane<'_>,
+    basis: &AdmittedRelationalBranchBasis,
+    work: &mut MaintenanceWork<'_, '_, '_>,
+    project: impl FnOnce(
+        &RelationalBranchObservation,
+    ) -> Result<VisibilityProjectionView, RelationalBranchBasisDenial>,
+) -> Result<DerivedIndexBuildRequest, Denial> {
+    let observation = basis.observation();
+    let source_commit_id = observation.commit_id().ok_or(Denial::CommitMismatch)?;
+    let branch = observation.identity().branch_id();
+    let projection = project(&observation).map_err(Denial::Basis)?;
+    let root = projection
+        .selected_root()
+        .ok_or(Denial::SnapshotUnavailable)?;
+    let selected = indexes.prepare_reconstruction_basis(
+        lane,
+        root,
+        branch,
+        &mut |units, bytes| work.prepare(units, bytes),
+        None,
+    )?;
+    work.prepare(branch.0.len() as u64, branch.0.len() as u64)?;
+    let mut branch_name = String::new();
+    branch_name
+        .try_reserve_exact(branch.0.len())
+        .map_err(|_| allocation_failed())?;
+    branch_name.push_str(&branch.0);
+    let mut index_ids = indexes
+        .with_definitions(|definitions| collect_ids(&mut definitions.keys().copied(), work))?;
+    retain_missing(&mut index_ids, &selected, work)?;
+    Ok(DerivedIndexBuildRequest {
+        source_commit_id,
+        branch_id: crate::history::data::BranchId(branch_name),
+        index_ids,
+    })
 }
 
 fn retain_missing(
@@ -112,6 +95,7 @@ fn allocation_failed() -> Denial {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::indexes::data::DerivedIndexMaintenanceBudget;
 
     #[test]
     fn catalog_selection_requires_work_and_backing_before_visiting_ids() {

@@ -152,7 +152,7 @@ fn retained_observation_independent_alias_remains_readable_and_vetoes_close() {
     let refused = runtime.prepare_close().unwrap_err();
     assert!(
         matches!(refused.reason(), RelationalRuntimeCloseDenial::ReadCustodyRetained(
-            crate::facade::change_source::RelationalReadCustodyHolders::SnapshotsAndHistory {
+            crate::change_source::read_custody::RelationalReadCustodyHolders::SnapshotsAndHistory {
                 active_snapshots, detached_history,
             }
         ) if active_snapshots != 0 || detached_history)
@@ -235,7 +235,7 @@ fn single_external_lease_retirement_preserves_an_independent_observation_veto() 
     let refused = runtime.prepare_close().unwrap_err();
     assert!(
         matches!(refused.reason(), RelationalRuntimeCloseDenial::ReadCustodyRetained(
-            crate::facade::change_source::RelationalReadCustodyHolders::SnapshotsAndHistory {
+            crate::change_source::read_custody::RelationalReadCustodyHolders::SnapshotsAndHistory {
                 active_snapshots, detached_history,
             }
         ) if active_snapshots != 0 || detached_history)
@@ -264,10 +264,8 @@ fn single_external_lease_retirement_preserves_an_independent_observation_veto() 
 
 #[test]
 fn original_basis_retirement_preserves_independent_reads_and_retained_payload() {
-    use crate::branch::{
-        RelationalBranchBasisRetirementDenial as Denial,
-        RelationalBranchBasisRetirementProgress as Progress,
-    };
+    use crate::branch::basis::RelationalBranchBasisRetirementDenial as Denial;
+    use crate::branch::basis::RelationalBranchBasisRetirementProgress as Progress;
     let stop = CancellationSource::new();
     let live = SerialRequest::from_memory(
         SerialMemoryBudget::new(None),
@@ -303,7 +301,7 @@ fn original_basis_retirement_preserves_independent_reads_and_retained_payload() 
     let refused = runtime.prepare_close().unwrap_err();
     assert!(
         matches!(refused.reason(), RelationalRuntimeCloseDenial::ReadCustodyRetained(
-            crate::facade::change_source::RelationalReadCustodyHolders::SnapshotsAndHistory {
+            crate::change_source::read_custody::RelationalReadCustodyHolders::SnapshotsAndHistory {
                 active_snapshots, detached_history,
             }
         ) if active_snapshots != 0 || detached_history)

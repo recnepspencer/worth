@@ -14,6 +14,7 @@ mod diagnostics;
 mod discard;
 mod live_access;
 pub(crate) mod maintenance;
+mod reconstruction_build;
 mod recovery_build;
 #[cfg(test)]
 pub(crate) use maintenance::charge_rendezvous::at_next_charges;
