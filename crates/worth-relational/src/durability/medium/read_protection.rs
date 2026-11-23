@@ -84,7 +84,7 @@ impl RelationalDurableReadProtection {
     pub fn bounds(&self) -> RelationalDurableReadBounds {
         self.bounds
     }
-    pub(super) fn validate(
+    pub(in crate::durability) fn validate(
         &self,
         source: &Arc<dyn RelationalDurableColdSource>,
     ) -> Result<(), Refusal> {

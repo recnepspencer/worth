@@ -157,7 +157,7 @@ fn prepare_regions(
     previous: Option<&Arc<RelationalBranchRoot>>,
     symbols: &crate::runtime::RuntimeSymbolTable,
     schema: &Arc<RelationalBranchRootSchemaAuthority>,
-    change: &Arc<crate::storage::substrate::maintenance::CommitChange>,
+    change: &Arc<crate::branch::maintenance::CommitChange>,
 ) -> Result<PreparedRootRegions, RelationalBranchRootCaptureDenial> {
     let (regions, publication_cost) = match previous {
         Some(previous) if previous.committed.is_some() => capture::build_incremental_regions(

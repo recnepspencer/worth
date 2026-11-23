@@ -13,7 +13,6 @@ pub use recovery_plan_entrypoint::DurabilityAccess;
 
 pub(crate) use authority_continuity::authority_continuity_for_envelopes;
 pub(super) use envelope_version_selection::descriptor_semantics_version_for_envelopes;
-pub(crate) use medium_recovery_plan::checkpoint_coverage;
 pub(crate) use native_checkpoint_recovery_plan::native_checkpoint_recovery_plan;
 
 /// Re-evaluate configuration-dependent evidence after the same Home receiver

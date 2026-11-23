@@ -10,7 +10,7 @@ use std::collections::{BTreeMap, BTreeSet};
 pub(super) struct FieldChanges(BTreeMap<RecordRef, BTreeSet<DerivedIndexId>>);
 impl FieldChanges {
     pub(super) fn prepare(
-        change: &crate::storage::substrate::maintenance::CommitChange,
+        change: &crate::branch::maintenance::CommitChange,
         routes: &InstalledIndexRouting,
         work: &mut MaintenanceWork,
     ) -> Result<Option<Self>, Denial> {

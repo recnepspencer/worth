@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::durability::medium::RelationalDurableMediumBinding;
+use crate::durability::published_medium::RelationalDurableMediumBinding;
 use crate::runtime::{RelationalForkOwnerBinding, RelationalRuntimeOwnerBinding};
 
 /// Cloneable branch-fork service bound to one live relational runtime owner.

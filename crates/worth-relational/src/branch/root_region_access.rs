@@ -21,9 +21,7 @@ impl RelationalBranchRoot {
     pub(crate) fn live_counts(&self) -> crate::storage::residency::LiveRecordCounts {
         self.regions.live_counts()
     }
-    pub(crate) fn commit_change(
-        &self,
-    ) -> Option<&Arc<crate::storage::substrate::maintenance::CommitChange>> {
+    pub(crate) fn commit_change(&self) -> Option<&Arc<crate::branch::maintenance::CommitChange>> {
         self.committed.as_ref()?.commit_change.as_ref()
     }
 

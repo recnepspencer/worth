@@ -110,6 +110,14 @@ class RelationalDagTests(unittest.TestCase):
             ordinary_storage_totals('inherent_impl', references),
             {'storage -> runtime': 1, 'runtime -> storage': 1})
 
+    def test_ordinary_storage_test_ratchet_includes_durability(self):
+        reference = 'durability::Frame'
+        counts = {'storage -> durability': Counter({
+            ((SOURCE / 'storage/data/frame_tests.rs').as_posix(), reference): 2,
+            ((SOURCE / 'storage/residency/frame_tests.rs').as_posix(), reference): 3,
+        })}
+        self.assertEqual(ordinary_storage_totals('cfg_test', counts), {'storage -> durability': 2})
+
     def test_test_only_scope_including_associated_items_and_nested_use(self):
         self.write('lib.rs', '''
             mod low; mod high; mod runtime;

@@ -37,7 +37,7 @@ impl RuntimeSymbolResidency {
         }
     }
 
-    pub(in crate::runtime) fn preflight_source_retirement(
+    pub(crate) fn preflight_source_retirement(
         &self,
         source: &dyn RelationalDurableColdSource,
     ) -> Result<(), Denial> {
@@ -52,14 +52,14 @@ impl RuntimeSymbolResidency {
         }
         Ok(())
     }
-    pub(in crate::runtime) fn loan_source_retirement(
+    pub(crate) fn loan_source_retirement(
         &self,
         handoff: &mut Option<NativeMemberRetirementHandoff>,
     ) -> Result<bool, Denial> {
         let mut pages = self.try_source_state()?;
         pages.physical.loan(handoff)
     }
-    pub(in crate::runtime) fn return_source_retirement(
+    pub(crate) fn return_source_retirement(
         &self,
         handoff: &mut Option<NativeMemberRetirementHandoff>,
         source: &dyn RelationalDurableColdSource,

@@ -306,7 +306,7 @@ impl PreparedCanonicalPublicationRoute {
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         cutover_before: Option<std::time::Instant>,
         allow_effect: Option<&mut dyn FnMut() -> bool>,
-        medium: Option<&crate::durability::medium::RelationalDurableMediumBinding>,
+        medium: Option<&crate::durability::published_medium::RelationalDurableMediumBinding>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         cutover: impl FnOnce(crate::publication::patch::data::PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {

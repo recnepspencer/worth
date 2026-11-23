@@ -13,7 +13,7 @@ pub(super) struct ChangedRecords {
 
 impl ChangedRecords {
     pub(super) fn patch(
-        change: &crate::storage::substrate::maintenance::CommitChange,
+        change: &crate::branch::maintenance::CommitChange,
         work: &mut MaintenanceWork,
     ) -> Result<Self, Denial> {
         let mut changed = Self {

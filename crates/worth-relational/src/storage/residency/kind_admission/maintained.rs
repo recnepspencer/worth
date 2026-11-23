@@ -3,11 +3,7 @@ use super::super::kind_incremental::{self, RegionKindIndexes};
 use super::super::kind_projection::{ProjectionCheckpoint, ProjectionRetention};
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use crate::storage::overlay::{PartitionMutationJournal, PartitionState};
-use crate::storage::substrate::maintenance::{
-    ChangeWork, CommitChange, Maintained, MaintenanceConsistency, MaintenanceRefusal,
-    MaintenanceRoute, ReconstructionLane, ReconstructionWork,
-};
-use std::collections::BTreeSet;
+use crate::storage::substrate::maintenance::{ChangeWork, MaintenanceRefusal};
 use std::sync::Arc;
 
 #[derive(Debug)]
@@ -25,7 +21,6 @@ pub(super) struct KindMaintainer<'a, 'request, 'lease> {
     execution: &'a worth_execution::ExecutionRequest<'request, 'lease>,
     partition: &'a mut PartitionState,
     previous: &'a PartitionState,
-    routes: BTreeSet<MaintenanceRoute>,
 }
 impl<'a, 'request, 'lease> KindMaintainer<'a, 'request, 'lease> {
     pub(super) fn new(
@@ -35,7 +30,6 @@ impl<'a, 'request, 'lease> KindMaintainer<'a, 'request, 'lease> {
     ) -> Self {
         Self {
             execution,
-            routes: BTreeSet::from([MaintenanceRoute::Partition(partition.partition_id)]),
             partition,
             previous,
         }
@@ -69,55 +63,6 @@ impl<'a, 'request, 'lease> KindMaintainer<'a, 'request, 'lease> {
         .map(Arc::new)
     }
 }
-impl Maintained for KindMaintainer<'_, '_, '_> {
-    type State = RegionKindIndexes;
-    // Kind history is committed meaning, never silently compacted by a cache.
-    type Retirement = std::convert::Infallible;
-    type Error = KindMaintenanceError;
-    fn routes(&self) -> &BTreeSet<MaintenanceRoute> {
-        &self.routes
-    }
-    fn consistency(&self) -> MaintenanceConsistency {
-        MaintenanceConsistency::Synchronous
-    }
-    fn apply(
-        &mut self,
-        previous: &Arc<Self::State>,
-        change: &CommitChange,
-        work: &mut ChangeWork<'_>,
-    ) -> Result<Arc<Self::State>, Self::Error> {
-        let Some(change) = change.partition(self.partition.partition_id) else {
-            return Ok(Arc::clone(previous));
-        };
-        self.apply_journal(previous, &change.journal, work)
-    }
-    fn cold(
-        &mut self,
-        lane: &ReconstructionLane<'_>,
-        work: &mut ReconstructionWork<'_, '_>,
-    ) -> Result<Arc<Self::State>, Self::Error> {
-        // cost-lane: reconstruction. Local history comes from the arena;
-        // authenticated peer projections remain root-local claims.
-        controlled(
-            self.execution,
-            &mut |units, bytes| work.prepare(units, bytes),
-            |checkpoint, retain| {
-                super::normalize_value(lane, self.partition, checkpoint, retain)?;
-                RegionKindIndexes::capture_controlled(lane, self.partition, checkpoint)
-            },
-        )
-        .map(Arc::new)
-    }
-    fn retire(
-        &mut self,
-        _: &Arc<Self::State>,
-        horizon: &Self::Retirement,
-        _: &mut ChangeWork<'_>,
-    ) -> Result<Arc<Self::State>, Self::Error> {
-        match *horizon {}
-    }
-}
-
 pub(super) fn controlled<T>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     prepare: &mut dyn FnMut(u64, u64) -> Result<(), MaintenanceRefusal>,

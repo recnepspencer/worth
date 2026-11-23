@@ -20,8 +20,8 @@ mod checkpoint_manifest;
 mod checkpoint_member;
 mod checkpoint_member_list;
 mod record_identity_image;
+use crate::storage::data::checkpoint_page;
 pub(crate) use checkpoint_member_list::CapturedCheckpointMembers;
-mod checkpoint_page;
 pub(crate) use checkpoint_page::RelationalCheckpointPage;
 mod checkpoint_restore_work;
 mod history_member_directory;
@@ -92,10 +92,10 @@ pub(crate) use checkpoint_index_definitions::CheckpointIndexDefinitions;
 mod checkpoint_lineage_basis;
 pub(crate) use checkpoint_lineage_basis::CheckpointLineageBasis;
 
-mod checkpoint_pages;
+use crate::storage::data::checkpoint_pages;
 pub(crate) use checkpoint_pages::CheckpointPages;
 
-mod checkpoint_symbol_buckets;
+use crate::storage::data::checkpoint_symbol_buckets;
 pub(crate) use checkpoint_symbol_buckets::CheckpointSymbolBuckets;
 
 mod checkpoint_lineage_event_pages;
@@ -105,3 +105,5 @@ pub(crate) use checkpoint_lineage_event_pages::{
 
 mod checkpoint_schema_images;
 pub(crate) use checkpoint_schema_images::CheckpointSchemaImages;
+
+pub(crate) use crate::storage::data::symbol_page_roster::RelationalCheckpointSymbolBucket;

@@ -7,16 +7,17 @@ mod initial_inputs;
 pub(crate) use checkpoint_selection::CheckpointPublication;
 pub(crate) use home_transition_requirement::RelationalDurableMediumTransfer;
 use home_transition_requirement::RelationalHomeProgramPhase;
-pub use home_transition_requirement::RelationalHomeProgramWriteDenial;
 pub(crate) use initial_inputs::RelationalCommittedInitialInputs;
 pub use initial_inputs::RelationalInitialInputsPublicationStop;
 use worth_proof::{AuthorityMarker, DurablyCommitted};
 
 use super::{
     DurablePublicationFate, RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
-    RelationalDurableMedium, RelationalDurablePublicationRefusal,
+    RelationalDurableMedium, RelationalDurablePublicationRefusal, RelationalDurableStepStop,
 };
-use crate::branch::PositionedBranchTransition;
+use crate::branch::transition::{
+    PositionedBranchTransition, RelationalDurableTransitionPublication,
+};
 use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact;
 use crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact;
 use crate::history::data::PositionedCanonicalCommit;
@@ -38,7 +39,7 @@ pub(crate) struct RelationalDurableMediumBinding {
     world_selection: Option<
         Arc<
             worth_proof::VerifiedHomeWorldSelection<
-                Arc<crate::durability::RelationalWorldSourceCatalog>,
+                Arc<crate::durability::home_world_catalog::RelationalWorldSourceCatalog>,
             >,
         >,
     >,
@@ -56,21 +57,11 @@ struct BindingState {
     unresolved: Arc<OnceLock<RelationalDurabilityUnresolved>>,
 }
 
-/// Why the durable step did not make a commit or transition durable.
-#[derive(Debug, Clone)]
-pub(crate) enum RelationalDurableStepStop {
-    /// Nothing durable changed; the position or sequence is not consumed.
-    Refused(RelationalDurablePublicationRefusal),
-    /// The publication's durable fate is unknown until the runtime is
-    /// reopened.
-    Unresolved(RelationalDurabilityUnresolved),
-}
-
 /// Placement facts issued only after the journal answered Committed.
 #[derive(Debug)]
 pub(crate) struct RelationalDurableCommitReadmission {
     positioned: Arc<PositionedCanonicalCommit>,
-    entry: crate::history::RetainedCanonicalIndex,
+    entry: crate::history::commit::RetainedCanonicalIndex,
     source: Arc<dyn super::RelationalDurableColdSource>,
 }
 impl RelationalDurableCommitReadmission {
@@ -78,7 +69,7 @@ impl RelationalDurableCommitReadmission {
         self,
     ) -> (
         Arc<PositionedCanonicalCommit>,
-        crate::history::RetainedCanonicalIndex,
+        crate::history::commit::RetainedCanonicalIndex,
         Arc<dyn super::RelationalDurableColdSource>,
     ) {
         (self.positioned, self.entry, self.source)
@@ -86,22 +77,6 @@ impl RelationalDurableCommitReadmission {
 }
 
 impl AuthorityMarker for RelationalDurableCommitReadmission {}
-
-/// The exact positioned transition accepted by the medium. Its construction
-/// stays in this binding, on the Committed branch only.
-#[derive(Debug)]
-pub(crate) struct RelationalDurableTransitionPublication {
-    positioned: PositionedBranchTransition,
-    digest: [u8; 32],
-}
-
-impl AuthorityMarker for RelationalDurableTransitionPublication {}
-
-impl RelationalDurableTransitionPublication {
-    pub(crate) fn into_evidence(self) -> (PositionedBranchTransition, [u8; 32]) {
-        (self.positioned, self.digest)
-    }
-}
 
 impl RelationalDurableMediumBinding {
     pub(crate) fn has_unresolved_publication(&self) -> bool {
@@ -151,7 +126,7 @@ impl RelationalDurableMediumBinding {
     ) -> Option<
         Arc<
             worth_proof::VerifiedHomeWorldSelection<
-                Arc<crate::durability::RelationalWorldSourceCatalog>,
+                Arc<crate::durability::home_world_catalog::RelationalWorldSourceCatalog>,
             >,
         >,
     > {
@@ -180,7 +155,7 @@ impl RelationalDurableMediumBinding {
         let artifact =
             RelationalCanonicalCommitArtifact::from_positioned_request(&commit, execution)
                 .map_err(|denial| refused(RelationalDurablePublicationRefusal::Encoding(denial)))?;
-        let entry = crate::history::RetainedCanonicalIndex::from_publication(
+        let entry = crate::history::commit::RetainedCanonicalIndex::from_publication(
             &commit,
             roots,
             *artifact.payload_digest().as_bytes(),
@@ -239,10 +214,11 @@ impl RelationalDurableMediumBinding {
                 follows: artifact.follows(),
                 digest: artifact.payload_digest(),
             },
-            || RelationalDurableTransitionPublication {
-                positioned: transition
-                    .with_recorded_artifact_digest(Some(*artifact.payload_digest().as_bytes())),
-                digest: *artifact.payload_digest().as_bytes(),
+            || {
+                RelationalDurableTransitionPublication::accepted(
+                    transition,
+                    *artifact.payload_digest().as_bytes(),
+                )
             },
         )
     }

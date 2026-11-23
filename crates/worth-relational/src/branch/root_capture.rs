@@ -62,9 +62,9 @@ pub(super) fn build_initial_regions_owned(
             partition,
             symbols,
         )?);
-        let observation = region
-            .observation()
-            .map_err(|_| RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(partition_id))?;
+        let observation = region.observation().map_err(|_| {
+            RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(partition_id)
+        })?;
         content_values_hashed += region.content_values_hashed;
         new_region_authoritative_bytes = new_region_authoritative_bytes
             .saturating_add(observation.authoritative_bytes)
@@ -100,7 +100,7 @@ pub(super) fn build_incremental_regions(
     previous: &RelationalBranchRoot,
     symbols: &crate::runtime::RuntimeSymbolTable,
     schema: &Arc<super::RelationalBranchRootSchemaAuthority>,
-    change: Option<&Arc<crate::storage::substrate::maintenance::CommitChange>>,
+    change: Option<&Arc<crate::branch::maintenance::CommitChange>>,
 ) -> Result<
     (
         Arc<RelationalPersistentRegionSet>,
@@ -136,7 +136,15 @@ pub(super) fn build_incremental_regions(
                 journal,
                 schema.clone(),
                 symbols,
-                change.map(Arc::as_ref),
+                change
+                    .map(|change| {
+                        change.partition(partition_id).ok_or(
+                            RelationalBranchRootCaptureDenial::PublishedPartitionMissing(
+                                partition_id,
+                            ),
+                        )
+                    })
+                    .transpose()?,
             )
         } else {
             crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(
@@ -164,9 +172,9 @@ pub(super) fn build_incremental_regions(
             issuer.issue_region_id()?,
             prepared,
         ));
-        let observation = region
-            .observation()
-            .map_err(|_| RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(partition_id))?;
+        let observation = region.observation().map_err(|_| {
+            RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(partition_id)
+        })?;
         content_values_hashed += region.content_values_hashed;
         new_region_authoritative_bytes = new_region_authoritative_bytes
             .saturating_add(new_payload_bytes)

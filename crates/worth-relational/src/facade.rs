@@ -371,14 +371,14 @@ pub mod visibility {
 }
 
 pub mod storage {
+    /// SDK-internal incremental maintenance contracts.
+    pub use crate::branch::maintenance;
     pub use crate::storage::data::{
         authoritative_aspect_value_field_comparison_key, AuthoritativeFieldComparisonKey,
         AuthoritativeFieldComparisonKeyDecodeDenial,
         AuthoritativeFieldComparisonKeyDecodeDenialKind, RecordLifecycleState,
         RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
     };
-    /// SDK-internal incremental maintenance contracts.
-    pub use crate::storage::substrate::maintenance;
 }
 
 pub mod symbols {

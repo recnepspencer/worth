@@ -78,10 +78,7 @@ fn unknown_provider_never_calls_legacy_vec_reads() {
         Err(Refusal::UnsupportedProvider)
     ));
     assert!(matches!(
-        crate::durability::checkpoint_history::readmission::SelectedCheckpointRead::capture(
-            unknown.clone(),
-            &request
-        ),
+        RelationalDurableMemberCustody::capture_selected_read(&unknown, &request),
         Err(Refusal::UnsupportedProvider)
     ));
     let source: Arc<dyn RelationalDurableColdSource> = Arc::new(LegacyCut);

@@ -1,9 +1,9 @@
 use super::{require_local_identity, ArchivedRelationalBranch, RelationalBranchArchiveDenial};
 use crate::branch::{
-    LiveBranchTransitionStep, RelationalBranchIdentity, RelationalBranchLifecyclePosture,
-    RelationalBranchTransition, RelationalBranchTransitionDurableStep,
-    RelationalBranchTransitionStop,
+    RelationalBranchIdentity, RelationalBranchLifecyclePosture, RelationalBranchTransition,
+    RelationalBranchTransitionDurableStep, RelationalBranchTransitionStop,
 };
+use crate::durability::published_medium::live_transition::LiveBranchTransitionStep;
 use crate::runtime::BranchTransitionRecordError;
 
 impl crate::runtime::RelationalRuntime {

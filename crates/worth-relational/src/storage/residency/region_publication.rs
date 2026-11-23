@@ -47,7 +47,7 @@ impl PreparedResidentRegion {
         journal: &PartitionMutationJournal,
         schema: Arc<RelationalBranchRootSchemaAuthority>,
         symbols: &RuntimeSymbolTable,
-        change: Option<&crate::storage::substrate::maintenance::CommitChange>,
+        change: Option<&crate::storage::substrate::maintenance::PartitionChange>,
     ) -> Result<Self, RegionContentFailure> {
         let absent = |cause| {
             RegionContentFailure::Storage(RelationalStorageUnavailable {

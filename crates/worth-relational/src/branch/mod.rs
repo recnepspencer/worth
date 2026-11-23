@@ -7,7 +7,7 @@ mod authority;
 mod custody_witness;
 pub use custody_witness::{RelationalBasisCustodyReadDenial, RelationalBasisCustodyWitness};
 pub(crate) mod basis;
-mod basis_admission_identity;
+pub(crate) mod basis_admission_identity;
 mod basis_axis_validation;
 mod basis_counters;
 mod basis_currentness;
@@ -17,6 +17,7 @@ mod basis_identity_validation;
 mod basis_observation;
 mod basis_readmission;
 mod basis_registry;
+pub(crate) mod home_program_step;
 pub(crate) use basis_registry::RelationalRetainedBasisSnapshotStop;
 #[cfg(test)]
 pub(crate) use basis_registry::{
@@ -31,6 +32,7 @@ mod coordination;
 mod fork;
 mod fork_port;
 mod fork_source_basis;
+pub mod maintenance;
 mod retained_fork_source;
 pub use retained_fork_source::AdmittedRelationalRetainedForkSource;
 mod identity;
@@ -169,14 +171,14 @@ pub(crate) use root_regions::{
 pub(crate) use root_selection::SelectedRelationalBranchState;
 pub(crate) use sharing_cost_cell::RelationalBranchSharingCostCell;
 pub use target::{RelationalBranchRootDescriptor, RelationalBranchTarget};
-pub(crate) use transition::{
-    LiveBranchTransitionStep, RelationalBranchTransitionDenial,
-    RelationalBranchTransitionDurableStep, RelationalTransitionPublication,
-    ReplayedBranchTransitionDivergence, ReplayedBranchTransitionStep,
-};
 pub use transition::{
     PositionedBranchTransition, RelationalBranchTransition, RelationalBranchTransitionSequence,
     RelationalBranchTransitionStop, RelationalCommittedTransitionEvidence,
+};
+pub(crate) use transition::{
+    RelationalBranchTransitionDenial, RelationalBranchTransitionDurableStep,
+    RelationalTransitionPublication, ReplayedBranchTransitionDivergence,
+    ReplayedBranchTransitionStep,
 };
 pub use version::RelationalBranchVersion;
 
@@ -187,6 +189,7 @@ mod basis_admission_tests;
 #[path = "basis_registry_scale_tests.rs"]
 mod basis_registry_scale_tests;
 
+pub(crate) mod symbol_publication;
 mod symbol_read;
 pub(crate) use symbol_read::SymbolAdmittedRootRead;
 #[cfg(test)]

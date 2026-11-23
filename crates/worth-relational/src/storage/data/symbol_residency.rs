@@ -3,9 +3,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex};
 
-use super::symbol_table::RuntimeSymbolTable;
-use crate::durability::data::{RelationalCheckpointPage, RelationalCheckpointSymbolBucket};
 use crate::durability::medium::{RelationalDurableColdSource, RelationalDurableMemberLocator};
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::storage::data::{
+    checkpoint_page::RelationalCheckpointPage, checkpoint_pages::CheckpointPages,
+    checkpoint_symbol_buckets::CheckpointSymbolBuckets,
+    symbol_page_roster::RelationalCheckpointSymbolBucket,
+};
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause, SymbolPageShape,
@@ -21,24 +25,25 @@ use crate::storage::data::SymbolPageSelection;
 use source_retirement::SymbolPageState;
 
 #[cfg(test)]
+#[path = "../../runtime/state/subsystems/services/symbol_residency/tests.rs"]
 mod tests;
 
 #[derive(Debug)]
-pub(super) struct RuntimeSymbolResidency {
-    by_id: crate::durability::data::CheckpointPages,
-    by_value: crate::durability::data::CheckpointSymbolBuckets,
+pub(crate) struct RuntimeSymbolResidency {
+    by_id: CheckpointPages,
+    by_value: CheckpointSymbolBuckets,
     pages: Mutex<SymbolPageState>,
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
 impl RuntimeSymbolResidency {
-    pub(super) fn all_id_pages_resident(&self) -> bool {
+    pub(crate) fn all_id_pages_resident(&self) -> bool {
         let pages = self.pages.lock().unwrap_or_else(|error| error.into_inner());
         self.by_id
             .iter()
             .all(|page| matches!(pages.get(&page.member), Some(Ok(_))))
     }
-    pub(super) fn new(
+    pub(crate) fn new(
         by_id: Vec<RelationalCheckpointPage>,
         by_value: Vec<RelationalCheckpointSymbolBucket>,
         source: Arc<dyn RelationalDurableColdSource>,
@@ -64,8 +69,8 @@ impl RuntimeSymbolResidency {
                 )
             })?;
         Ok(Self {
-            by_id: crate::durability::data::CheckpointPages::from_ordinary(by_id),
-            by_value: crate::durability::data::CheckpointSymbolBuckets::from_ordinary(by_value),
+            by_id: CheckpointPages::from_ordinary(by_id),
+            by_value: CheckpointSymbolBuckets::from_ordinary(by_value),
             pages: Mutex::new(SymbolPageState {
                 data: Default::default(),
                 physical: crate::durability::medium::NativeSourceMemberState::new(
@@ -76,7 +81,7 @@ impl RuntimeSymbolResidency {
         })
     }
 
-    pub(super) fn detached_with_owner<T>(&self, snapshot: impl FnOnce() -> T) -> (Self, T) {
+    pub(crate) fn detached_with_owner<T>(&self, snapshot: impl FnOnce() -> T) -> (Self, T) {
         // Page admission and snapshot capture both take pages before the
         // dictionary. The same immutable state owns meanings and proof marks.
         let pages = self
@@ -98,11 +103,11 @@ impl RuntimeSymbolResidency {
         )
     }
 
-    pub(super) fn same_directory(&self, other: &Self) -> bool {
+    pub(crate) fn same_directory(&self, other: &Self) -> bool {
         self.by_id == other.by_id && self.by_value == other.by_value
     }
 
-    pub(super) fn demand_ids(
+    pub(crate) fn demand_ids(
         &self,
         owner: &RuntimeSymbolTable,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -150,7 +155,7 @@ impl RuntimeSymbolResidency {
         Ok(())
     }
 
-    pub(super) fn demand_value(
+    pub(crate) fn demand_value(
         &self,
         owner: &RuntimeSymbolTable,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -180,7 +185,7 @@ impl RuntimeSymbolResidency {
 
     /// A probe may reserve a new text only after every candidate bucket page
     /// has proved that no prior spelling owns the identity.
-    pub(super) fn value_bucket_is_resident(
+    pub(crate) fn value_bucket_is_resident(
         &self,
         value: &str,
     ) -> Result<bool, RelationalStorageUnavailable> {
@@ -214,7 +219,7 @@ impl RuntimeSymbolResidency {
         locator: RelationalDurableMemberLocator,
         selection: SymbolPageSelection,
     ) -> Result<(), Failure> {
-        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(Failure::Request)?;
         let subject = selection.subject();
         let mut pages = self
             .pages
@@ -244,7 +249,7 @@ impl RuntimeSymbolResidency {
                 .ok_or_else(|| unavailable(subject, Cause::SourceUnavailable))?
                 .read_member(locator, 1 << 30)
                 .map_err(|cause| unavailable(subject, cause))?;
-            let snapshot = crate::durability::checkpoints::symbol_pages::readmit(
+            let snapshot = crate::storage::data::symbol_page_readmission::readmit(
                 execution, &bytes, locator, subject,
             )?;
             let shape =
@@ -258,7 +263,8 @@ impl RuntimeSymbolResidency {
             admitted
                 .insert_for_request(locator, Ok(shape), execution)
                 .map_err(Failure::Request)?;
-            crate::execution::check_request(execution).map_err(Failure::Request)?;
+            crate::execution::request_custody::check_request(execution)
+                .map_err(Failure::Request)?;
             owner
                 .import_canonical_snapshot(&snapshot)
                 .map_err(|_| unavailable(subject, Cause::Damaged))?;

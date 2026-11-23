@@ -14,7 +14,7 @@ impl<'runtime> DurabilityAccess<'runtime> {
     pub fn prepare_home_recovery_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: crate::durability::medium::RelationalDurableRecoverySource,
+        source: crate::durability::published_medium::RelationalDurableRecoverySource,
         verification_mode: RecoveryVerificationMode,
     ) -> Result<
         crate::durability::authority::PreparedRelationalHomeRecovery,
@@ -55,7 +55,7 @@ impl<'runtime> DurabilityAccess<'runtime> {
     pub fn recovery_plan_from_source(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        source: crate::durability::medium::RelationalDurableRecoverySource,
+        source: crate::durability::published_medium::RelationalDurableRecoverySource,
         verification_mode: RecoveryVerificationMode,
     ) -> Result<RecoveryPlan, crate::durability::data::RelationalRecoveryStop> {
         execution.check_live().map_err(|stop| {

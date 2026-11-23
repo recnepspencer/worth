@@ -17,9 +17,10 @@ use crate::durability::data::{
     DurabilityError, DurableCheckpoint, RecoveryFailureClass, RecoveryPlan,
     RecoveryVerificationMode, RelationalRecoveryStop,
 };
-use crate::durability::medium::{
+use crate::durability::published_medium::{
     RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
 };
+
 use crate::durability::migration::ReadmittedCanonicalCommit;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::runtime::RelationalRuntime;
@@ -144,7 +145,7 @@ fn readmit_covered_checkpoint(
         ),
     }?
     .checkpoint;
-    let covered = checkpoint_coverage(&checkpoint);
+    let covered = crate::durability::checkpoint_coverage::checkpoint_coverage(&checkpoint);
     if covered != filed_under {
         return Err(DurabilityError::new(
             RecoveryFailureClass::CorruptCheckpoint,
@@ -166,20 +167,6 @@ fn readmit_covered_checkpoint(
         .into());
     }
     Ok((checkpoint, covered))
-}
-
-/// The last position a checkpoint's retained envelopes include, or zero for a
-/// checkpoint of an empty history.
-pub(crate) fn checkpoint_coverage(checkpoint: &DurableCheckpoint) -> PatchStreamPosition {
-    if let Some(directory) = &checkpoint.directory {
-        return directory.manifest.covered_position;
-    }
-    checkpoint
-        .envelopes
-        .iter()
-        .map(crate::history::data::PositionedCanonicalCommit::position)
-        .max()
-        .unwrap_or(PatchStreamPosition(0))
 }
 
 /// Readmit every tail artifact, requiring positions `covered + 1`, `+ 2`, ...

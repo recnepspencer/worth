@@ -1,4 +1,5 @@
 use super::*;
+#[path = "tests/page_admission_tests.rs"]
 mod page_admission_tests;
 #[path = "routing_tests.rs"]
 mod routing_tests;
@@ -9,6 +10,7 @@ use crate::publication::patch::data::PatchStreamPosition;
 use crate::tests::support::*;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 
+#[path = "tests/region_admission_tests.rs"]
 mod region_admission_tests;
 
 struct SymbolDictionaryWorld<'host, 'scope> {
@@ -86,13 +88,31 @@ fn with_symbol_page_refusal_world<R>(
 }
 
 #[derive(Debug)]
-struct PageSource {
+pub(super) struct PageSource {
     members: BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
     reads: AtomicUsize,
     corrupt: AtomicBool,
     failed_member: Mutex<Option<RelationalDurableMemberLocator>>,
     failure: Mutex<Option<Cause>>,
 }
+impl PageSource {
+    pub(super) fn with_members(
+        members: BTreeMap<RelationalDurableMemberLocator, worth_execution::ExecutionImmutableBytes>,
+    ) -> Self {
+        Self {
+            members,
+            reads: AtomicUsize::new(0),
+            corrupt: AtomicBool::new(false),
+            failed_member: Mutex::new(None),
+            failure: Mutex::new(None),
+        }
+    }
+
+    pub(super) fn member_reads(&self) -> usize {
+        self.reads.load(Ordering::Relaxed)
+    }
+}
+
 impl RelationalDurableColdSource for PageSource {
     fn checkpoint_selected_read_protection(
         &self,
@@ -272,8 +292,8 @@ fn checkpoint_dictionary(
             .unwrap(),
     )
     .unwrap();
-    let source = Arc::new(PageSource {
-        members: native
+    let source = Arc::new(PageSource::with_members(
+        native
             .members()
             .iter()
             .map(|member| match member {
@@ -283,11 +303,7 @@ fn checkpoint_dictionary(
                 }
             })
             .collect(),
-        reads: AtomicUsize::new(0),
-        corrupt: AtomicBool::new(false),
-        failed_member: Mutex::new(None),
-        failure: Mutex::new(None),
-    });
+    ));
     let directory = crate::durability::data::PreparedCheckpointDirectory {
         history_members: input
             .manifest
@@ -301,7 +317,12 @@ fn checkpoint_dictionary(
     .readmit(execution)
     .unwrap();
     let table = RuntimeSymbolTable::default();
-    table.install_cold_pages(&directory).unwrap();
+    table
+        .install_cold_symbol_pages(
+            directory.manifest.symbol_page_roster(),
+            directory.source.clone(),
+        )
+        .unwrap();
     (
         table,
         directory,

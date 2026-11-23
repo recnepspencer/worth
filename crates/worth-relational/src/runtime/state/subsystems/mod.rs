@@ -72,9 +72,8 @@ pub(crate) use record_identity::{
 };
 pub(crate) use schema_contract_runtime::SchemaContractRuntimeSubsystem;
 pub(crate) use services::{
-    ColdSymbolDirectoryDenial, MutationSymbolMeanings, PendingSymbolMeanings,
-    PreparedSymbolPublication, RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable,
-    SymbolReservationDenial,
+    MutationSymbolMeanings, PendingSymbolMeanings, PreparedSymbolPublication,
+    RuntimeInstrumentation, RuntimeServices, RuntimeSymbolTable, SymbolReservationDenial,
 };
 pub(crate) use storage::{
     MirrorResidencyDemandBinding, PartitionEdition, PartitionEditionCopyLane,

@@ -107,7 +107,12 @@ fn detached_dictionary_keeps_replaced_id_and_bucket_pages_until_its_last_owner_d
     });
     directory.source = source.clone();
     let owner = RuntimeSymbolTable::default();
-    owner.install_cold_pages(&directory).unwrap();
+    owner
+        .install_cold_symbol_pages(
+            directory.manifest.symbol_page_roster(),
+            directory.source.clone(),
+        )
+        .unwrap();
     let by_id = owner.detached_owner_snapshot();
     let by_value = owner.detached_owner_snapshot();
     drop(owner);
@@ -186,9 +191,14 @@ fn dictionary_placement_refusal_is_typed_and_retryable_before_frontier_mutation(
     directory.source = source.clone();
     let table = RuntimeSymbolTable::default();
     let before = table.interner_snapshot();
-    let denial = table.install_cold_pages(&directory).unwrap_err();
+    let denial = table
+        .install_cold_symbol_pages(
+            directory.manifest.symbol_page_roster(),
+            directory.source.clone(),
+        )
+        .unwrap_err();
     let crate::durability::data::RelationalRecoveryStop::Durability(error) =
-        denial.into_recovery_stop()
+        crate::durability::data::RelationalRecoveryStop::from(denial)
     else {
         panic!("placement refusal must preserve durable failure classification");
     };
@@ -205,7 +215,123 @@ fn dictionary_placement_refusal_is_typed_and_retryable_before_frontier_mutation(
     assert_eq!(table.interner_snapshot(), before);
     assert!(!table.has_cold_pages());
     *source.refusal.lock().unwrap() = None;
-    table.install_cold_pages(&directory).unwrap();
+    table
+        .install_cold_symbol_pages(
+            directory.manifest.symbol_page_roster(),
+            directory.source.clone(),
+        )
+        .unwrap();
     assert!(table.has_cold_pages());
     assert_eq!(source.reads.load(Ordering::SeqCst), 0);
+}
+
+// Fixture adaptation (C2.4): restores 427700edd0:cold_metadata_pins.rs's
+// private cached-Head / absent-per-runtime-dictionary `SymbolsNotResident`
+// window over ExternalMembers recovery into a Memory runtime and its fork.
+
+#[test]
+fn metadata_pin_refuses_shared_head_until_its_runtime_has_the_aspect_meanings() {
+    use crate::durability::data::{
+        RecoveryVerificationMode, RelationalCheckpointArtifactPolicy, RelationalCheckpointMember,
+    };
+    use crate::durability::published_medium::{
+        RelationalDurableCheckpointSource, RelationalDurableRecoverySource,
+    };
+
+    use crate::tests::support::{
+        create_entity, runtime_with_test_schema, snapshot_for_owner_branch,
+        update_entity_and_release_snapshot,
+    };
+    use crate::visibility::materialization::read_records::RelationalEntityMetadataPinDenial as Denial;
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let name_aspect = worth_foundational::facade::AspectKey::new("name").unwrap();
+    let producer = runtime_with_test_schema();
+    let entity = create_entity(execution, &producer, "shared-head-meta");
+    update_entity_and_release_snapshot(execution, &producer, entity, "shared-head-meta-updated");
+    let native = producer
+        .durability_authority()
+        .native_checkpoint_with_policy(
+            execution,
+            execution.allocation_policy(),
+            RelationalCheckpointArtifactPolicy::ExternalMembers {
+                current_members: &[],
+                source: None,
+            },
+        )
+        .unwrap();
+    let members = native
+        .members()
+        .iter()
+        .map(|member| match member {
+            RelationalCheckpointMember::New { locator, bytes } => (*locator, bytes.clone()),
+            RelationalCheckpointMember::Carried { .. } => unreachable!(),
+        })
+        .collect();
+    let source = Arc::new(super::tests::PageSource::with_members(members));
+    let recovery = RelationalDurableRecoverySource::new(
+        Some(RelationalDurableCheckpointSource::new(
+            native.covered_position().unwrap(),
+            native.covered_branch_transitions().unwrap(),
+            native,
+        )),
+        Vec::new(),
+        Vec::new(),
+        source.clone(),
+    );
+    let mut runtime = runtime_with_test_schema();
+    let plan = runtime
+        .durability()
+        .recovery_plan_from_source(
+            execution,
+            recovery,
+            RecoveryVerificationMode::NormalRecoveryVerification,
+        )
+        .unwrap();
+    runtime
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
+    let fork = runtime.fork().unwrap();
+    let orig_snap =
+        snapshot_for_owner_branch(&runtime, &crate::history::data::BranchId("main".into()));
+    let _ = runtime
+        .read_truth()
+        .read_exact_snapshot_entity_aspect_version(execution, &orig_snap, entity, &name_aspect)
+        .unwrap();
+    runtime.snapshots().release_snapshot(&orig_snap).unwrap();
+    let snapshot = snapshot_for_owner_branch(&fork, &crate::history::data::BranchId("main".into()));
+    let (_, basis) = fork.observe_branch(&fork.main_branch_identity()).unwrap();
+    let reads = source.member_reads();
+    basis
+        .observation()
+        .selected_root()
+        .demand_region_head_cached(execution, entity.partition_id)
+        .unwrap();
+    assert_eq!(source.member_reads(), reads);
+    assert!(matches!(
+        fork.read_truth().pin_resident_entity_metadata(&snapshot, entity),
+        Err(Denial::SymbolsNotResident(partition)) if partition == entity.partition_id
+    ));
+    let original =
+        snapshot_for_owner_branch(&runtime, &crate::history::data::BranchId("main".into()));
+    let expected = runtime
+        .read_truth()
+        .read_exact_snapshot_entity_aspect_version(execution, &original, entity, &name_aspect)
+        .unwrap();
+    runtime.snapshots().release_snapshot(&original).unwrap();
+    assert_eq!(
+        fork.read_truth()
+            .read_exact_snapshot_entity_aspect_version(execution, &snapshot, entity, &name_aspect)
+            .unwrap(),
+        expected
+    );
+    let metadata = fork
+        .read_truth()
+        .pin_resident_entity_metadata(&snapshot, entity)
+        .unwrap()
+        .unwrap();
+    assert_eq!(metadata.live_kind(), Some(crate::identity::data::KindId(1)));
+    assert_eq!(metadata.aspect_version(&name_aspect), expected);
+    fork.snapshots().release_snapshot(&snapshot).unwrap();
 }

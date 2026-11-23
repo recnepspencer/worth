@@ -1,9 +1,10 @@
 //! Pure-byte tamper and transition inspection helpers for `OwnedTestDurableMedium`.
 
 use super::owned_medium::OwnedTestDurableMedium;
+use super::{Arc, CommitArt, Req};
 use crate::branch::RelationalBranchTransitionSequence;
 use crate::durability::data::{RelationalCheckpointMember, RelationalNativeCheckpoint};
-use crate::durability::medium::RelationalDurableCheckpointSource;
+use crate::durability::published_medium::RelationalDurableCheckpointSource;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::storage::data::RelationalStorageUnavailableCause as StorageCause;
 use sha2::{Digest, Sha256};
@@ -242,7 +243,10 @@ impl OwnedTestDurableMedium {
         self.lock().member_reads.clone()
     }
 
-    pub(super) fn check_and_record_member_read(&self, sha256: [u8; 32]) -> Result<(), StorageCause> {
+    pub(super) fn check_and_record_member_read(
+        &self,
+        sha256: [u8; 32],
+    ) -> Result<(), StorageCause> {
         let recording = self.observe_member_reads.load(Ordering::Acquire);
         let forbidding = self.has_forbidden_members.load(Ordering::Acquire);
         let recording_commits = self.observe_commit_reads.load(Ordering::Acquire);
@@ -287,5 +291,48 @@ impl OwnedTestDurableMedium {
             return Err(cause);
         }
         Ok(())
+    }
+}
+
+impl OwnedTestDurableMedium {
+    pub(crate) fn rewrite_artifact_envelope(
+        &self,
+        execution: &Req<'_, '_>,
+        position: PatchStreamPosition,
+        edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
+    ) {
+        let bytes = self
+            .commit_bytes_at(position)
+            .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
+        let readmitted = CommitArt::readmit(&bytes, execution)
+            .expect("the medium's own artifact readmits before it is rewritten");
+        let mut envelope = readmitted.envelope().copy_original_for_test(execution);
+        edit(envelope.body_mut_for_test());
+        let rewritten = CommitArt::from_positioned(
+            &crate::history::data::PositionedCanonicalCommit::for_test(
+                position,
+                Arc::new(envelope),
+            ),
+            execution.allocation_policy(),
+        )
+        .expect("a rewritten envelope still encodes");
+        self.replace_commit_bytes(position, Box::from(rewritten.as_bytes()));
+    }
+    pub(crate) fn rewrite_commit_envelope(
+        &self,
+        execution: &Req<'_, '_>,
+        commit_id: crate::history::data::CommitId,
+        edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
+    ) {
+        let position = self
+            .positions()
+            .into_iter()
+            .find(|p| {
+                self.artifact_bytes(*p)
+                    .and_then(|b| CommitArt::from_untrusted_bytes(b).ok())
+                    .is_some_and(|a| a.commit_id() == commit_id)
+            })
+            .unwrap_or_else(|| panic!("medium holds no artifact for {commit_id:?}"));
+        self.rewrite_artifact_envelope(execution, position, edit);
     }
 }

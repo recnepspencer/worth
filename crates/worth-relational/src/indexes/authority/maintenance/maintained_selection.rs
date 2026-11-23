@@ -4,11 +4,11 @@ use super::{
     publication::PreparedRefresh, refresh_inputs::RootMaintenanceInputs, root_view::IndexRootView,
     work::MaintenanceWork,
 };
+use crate::branch::maintenance::{CommitChange, Maintained, MaintenanceConsistency};
 use crate::indexes::data::*;
 use crate::runtime::IndexSelectionState;
 use crate::storage::substrate::maintenance::{
-    ChangeWork, CommitChange, Maintained, MaintenanceConsistency, MaintenanceRoute,
-    ReconstructionLane, ReconstructionWork,
+    ChangeWork, MaintenanceRoute, ReconstructionLane, ReconstructionWork,
 };
 use std::{cell::RefCell, collections::BTreeSet, sync::Arc};
 use DerivedIndexMaintenanceDenialKind as Denial;

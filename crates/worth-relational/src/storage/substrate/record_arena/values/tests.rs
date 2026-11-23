@@ -144,8 +144,9 @@ fn funded_extra_shares_actual_row_history_and_private_holds_until_last_drop() {
     drop(private);
     assert_eq!(budget.charged_memory_bytes(), 0);
 }
-#[test]
-fn unique_extra_move_and_borrowed_export_preserve_original_funding() {
+pub(crate) fn assert_unique_extra_move_funding(
+    observe: impl FnOnce(Option<&AuthoritativeRecordAspectState>, AspectContract),
+) {
     let budget = SerialMemoryBudget::new(Some(16 * 1024));
     let host = request(&budget);
     let execution = ExecutionRequest::serial(&host);
@@ -160,13 +161,7 @@ fn unique_extra_move_and_borrowed_export_preserve_original_funding() {
         bill,
         "the whole unique extra moved, including its footer"
     );
-    let catalog = crate::durability::checkpoints::aspect_state_images::CheckpointAspectContractCatalog::from_contracts(&[patch("unused").0]).unwrap();
-    let exported = crate::durability::checkpoints::aspect_state_images::export_state(
-        moved[0].authoritative_aspect_state(),
-        Some(&catalog),
-    )
-    .unwrap();
-    assert!(exported.is_some());
+    observe(moved[0].authoritative_aspect_state(), patch("unused").0);
     assert_eq!(budget.charged_memory_bytes(), bill);
     drop(moved);
     assert_eq!(budget.charged_memory_bytes(), 0);

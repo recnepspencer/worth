@@ -35,8 +35,8 @@ impl RelationalDurablePreparationAdmission {
 
     pub(crate) fn admit_home_program_write(
         &self,
-        step: Option<&crate::runtime::AdmittedRelationalHomeProgramStep>,
-        codec: Option<&crate::durability::RecoveredCodecPublicationCustody>,
+        step: Option<&crate::branch::home_program_step::AdmittedRelationalHomeProgramStep>,
+        codec: Option<&crate::durability::authority::RecoveredCodecPublicationCustody>,
     ) -> Result<(), super::RelationalHomeProgramWriteDenial> {
         match &self.home {
             None => Ok(()),

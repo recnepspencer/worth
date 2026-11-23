@@ -1,7 +1,7 @@
 //! Dictionary-specific closure admission and persistent snapshot carry.
 use super::*;
 impl RuntimeSymbolResidency {
-    pub(in crate::runtime::state::subsystems::services) fn demand_region(
+    pub(crate) fn demand_region(
         &self,
         owner: &RuntimeSymbolTable,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -13,7 +13,7 @@ impl RuntimeSymbolResidency {
         )>,
         ids: impl FnOnce() -> Result<(BTreeSet<Symbol>, u64), Failure>,
     ) -> Result<(), Failure> {
-        crate::execution::check_request(execution).map_err(Failure::Request)?;
+        crate::execution::request_custody::check_request(execution).map_err(Failure::Request)?;
         let admitted = owner.admissions_snapshot();
         if admitted.contains_key(&region) {
             return Ok(());
@@ -43,10 +43,7 @@ impl RuntimeSymbolResidency {
         Ok(())
     }
 
-    pub(in crate::runtime::state::subsystems::services) fn shares_directory(
-        &self,
-        previous: &Self,
-    ) -> bool {
+    pub(crate) fn shares_directory(&self, previous: &Self) -> bool {
         self.by_id.shares_backing(&previous.by_id)
             && self.by_value.shares_backing(&previous.by_value)
     }

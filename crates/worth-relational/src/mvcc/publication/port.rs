@@ -20,7 +20,7 @@ pub struct RelationalPublicationPort {
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
     history: crate::runtime::RelationalPreparationHistory,
     index_definitions: crate::runtime::IndexDefinitionReadBinding,
-    medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+    medium: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
 }
 
 pub(crate) struct PreparedCanonicalBranchMovement {
@@ -45,7 +45,7 @@ struct PreparedBranchPublicationPreflight {
     candidate_retention: Option<crate::history::retention::RelationalCandidateRetentionObligation>,
     control: crate::mvcc::RelationalOperationControl,
     branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
-    medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+    medium: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
 }
 
 impl RelationalPublicationPort {
@@ -57,7 +57,7 @@ impl RelationalPublicationPort {
         branch_head_versions: crate::runtime::BranchHeadVersionIndexAuthority,
         history: crate::runtime::RelationalPreparationHistory,
         index_definitions: crate::runtime::IndexDefinitionReadBinding,
-        medium: Option<Arc<crate::durability::medium::RelationalDurableMediumBinding>>,
+        medium: Option<Arc<crate::durability::published_medium::RelationalDurableMediumBinding>>,
     ) -> Self {
         Self {
             runtime_instance_id,

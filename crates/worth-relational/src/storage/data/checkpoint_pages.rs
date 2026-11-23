@@ -1,6 +1,6 @@
 //! Intrinsic custody of the actual RelationalCheckpointPage directory backing.
-use super::RelationalCheckpointPage;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use super::checkpoint_page::RelationalCheckpointPage;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{alloc::Layout, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
@@ -41,7 +41,7 @@ impl CheckpointPages {
         capacity: usize,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<CheckpointPagesBuilder, Cause> {
-        crate::execution::check_request(request)?;
+        crate::execution::request_custody::check_request(request)?;
         if capacity == 0 {
             return Ok(CheckpointPagesBuilder {
                 rows: Vec::new(),

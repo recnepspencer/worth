@@ -60,7 +60,9 @@ impl RelationalDurableRecoverySource {
         transitions: ExecutionArray<ExecutionImmutableBytes>,
         bounds: super::super::RelationalDurableReadBounds,
         source: Arc<dyn super::super::RelationalDurableColdSource>,
-        world_selection: Option<Arc<crate::durability::RelationalWorldSourceCatalog>>,
+        world_selection: Option<
+            Arc<crate::durability::home_world_catalog::RelationalWorldSourceCatalog>,
+        >,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<Self, Refusal> {
         let covered = checkpoint.as_ref().map_or(0, |source| source.covered().0);
@@ -128,7 +130,9 @@ impl RelationalDurableRecoverySource {
 
     fn preflight_home(
         &mut self,
-        world_selection: Option<Arc<crate::durability::RelationalWorldSourceCatalog>>,
+        world_selection: Option<
+            Arc<crate::durability::home_world_catalog::RelationalWorldSourceCatalog>,
+        >,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Refusal> {
         let complete = self
@@ -148,7 +152,7 @@ impl RelationalDurableRecoverySource {
                 let checkpoint = crate::durability::log::native_checkpoint_codec::decode_checkpoint_with_image(
                     request, source.checkpoint().bytes(), self.cold_source.clone(), image,
                 ).map_err(Refusal::Native)?.checkpoint;
-                if crate::durability::access::checkpoint_coverage(&checkpoint) != source.covered()
+                if crate::durability::checkpoint_coverage::checkpoint_coverage(&checkpoint) != source.covered()
                     || checkpoint.coverage.up_to_branch_transition != source.covered_transitions()
                 {
                     return Err(Refusal::Malformed);

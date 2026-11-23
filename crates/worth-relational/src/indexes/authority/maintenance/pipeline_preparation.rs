@@ -3,13 +3,13 @@ use super::{
     candidate_publication::PreparedCandidateIndexPublication, owner::IndexMaintenanceOwner,
     request_payment, root_view::IndexRootView,
 };
+use crate::branch::maintenance::CommitChange;
 use crate::branch::RelationalBranchRoot;
 use crate::indexes::data::{
     DerivedIndexBuildRequest, DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
     DerivedIndexMaintenanceDenialKind as Denial,
 };
 use crate::runtime::{IndexDefinitionReadBinding, PreparedRelationalIndexDefinitions};
-use crate::storage::substrate::maintenance::CommitChange;
 use std::sync::Arc;
 
 impl IndexDefinitionReadBinding {
@@ -176,13 +176,13 @@ impl IndexDefinitionReadBinding {
                             crate::storage::substrate::maintenance::ReconstructionWork::from_change_work(
                                 shared,
                             );
-                        crate::storage::substrate::maintenance::Maintained::cold(
+                        crate::branch::maintenance::Maintained::cold(
                             &mut maintainer,
                             lane,
                             &mut cold_work,
                         )
                     } else {
-                        crate::storage::substrate::maintenance::apply_change(
+                        crate::branch::maintenance::apply_change(
                             &mut maintainer,
                             previous.as_ref(),
                             change,

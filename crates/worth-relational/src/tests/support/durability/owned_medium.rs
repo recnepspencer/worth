@@ -23,8 +23,10 @@ use crate::durability::data::{
 };
 use crate::durability::medium::{
     DurablePublicationFate as Fate, OpaqueCapturedCheckpointSubject as CheckpointSubject,
-    RelationalDurableCheckpointSource as CheckpointSrc, RelationalDurableMedium as DurableMedium,
     RelationalDurableOwnedReadRefusal as ReadRefusal,
+};
+use crate::durability::published_medium::{
+    RelationalDurableCheckpointSource as CheckpointSrc, RelationalDurableMedium as DurableMedium,
     RelationalDurableRecoverySource as RecoverySrc,
 };
 use crate::durability::source_initial_inputs::RelationalSourceInitialInputsArtifact as InitArt;
@@ -194,7 +196,11 @@ impl OwnedTestDurableMedium {
         if let Some(scripted) = contents.scripted.pop_front() {
             return apply_scripted(
                 scripted,
-                || contents.commits.publish(artifact.position().0, artifact.as_bytes()),
+                || {
+                    contents
+                        .commits
+                        .publish(artifact.position().0, artifact.as_bytes())
+                },
                 "commit",
             );
         }

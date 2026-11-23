@@ -7,8 +7,8 @@ use crate::durability::data::NativeDirectoryRetirementHandoff;
 use crate::durability::medium::{
     NativeMemberSlotDenial, RelationalCheckpointAcknowledgementDenial, RelationalDurableColdSource,
     RelationalDurableMemberRetirementRefusal, RelationalMediumRetirementDenial,
-    SealedRelationalMediumBinding,
 };
+use crate::durability::published_medium::SealedRelationalMediumBinding;
 use crate::storage::residency::{
     NativeRegionSourceRetirement, NativeRegionSourceRetirementDenial,
     NativeRegionSourceRetirementProgress, NativeSourcePass,

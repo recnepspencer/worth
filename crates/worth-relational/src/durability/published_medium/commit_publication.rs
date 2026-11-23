@@ -8,8 +8,8 @@ use super::{
     RelationalDurableColdSource, RelationalDurableCommitReadmission,
     RelationalDurableMediumBinding, RelationalDurableStepStop,
 };
+use crate::history::commit::RetainedCanonicalIndex;
 use crate::history::data::PositionedCanonicalCommit;
-use crate::history::RetainedCanonicalIndex;
 
 pub(crate) enum RelationalCommitPublication {
     MemoryOnly {

@@ -1,11 +1,12 @@
 //! Join the sealed storage journal to its original canonical envelope once.
+use super::maintenance::CommitChange;
 use super::root::{RelationalBranchRoot, RelationalBranchRootCaptureDenial as Denial};
 use crate::history::data::{CanonicalCommitEnvelope, RelationalDescriptiveTouch as Touch};
 use crate::identity::data::PartitionId;
 use crate::storage::residency::{PartitionHeadProbe, RelationalRegionHeadView};
 use crate::storage::substrate::maintenance::{
-    partition_records::project_records, ChangeWork, ChangedRecord, CommitChange,
-    MaintenanceRefusal, MaintenanceRoute, PartitionChange,
+    partition_records::project_records, ChangeWork, ChangedRecord, MaintenanceRefusal,
+    MaintenanceRoute, PartitionChange,
 };
 use crate::storage::RelationalPublishedPartitionDelta;
 use crate::transactions::data::primitives::RecordRef;

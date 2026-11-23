@@ -27,7 +27,8 @@ pub(crate) struct RelationalPreparationOwnerBinding {
     diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
     index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
     mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
-    durability_admission: crate::durability::medium::RelationalDurablePreparationAdmission,
+    durability_admission:
+        crate::durability::published_medium::RelationalDurablePreparationAdmission,
 }
 
 /// Narrow cloneable state used only for validation and candidate preparation.
@@ -53,7 +54,7 @@ pub(crate) struct RelationalPreparationRuntime {
     pub(crate) index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
     pub(crate) mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
     pub(crate) durability_admission:
-        crate::durability::medium::RelationalDurablePreparationAdmission,
+        crate::durability::published_medium::RelationalDurablePreparationAdmission,
     pub(crate) history: RelationalPreparationHistory,
     pub(crate) record_identity: RecordIdentitySubsystem,
     pub(crate) services: RuntimeServices,
@@ -84,7 +85,7 @@ impl RelationalPreparationOwnerBinding {
             diagnostics: runtime.publication.diagnostics.clone(),
             index_definitions: runtime.indexes.definition_read_binding(),
             durability_admission:
-                crate::durability::medium::RelationalDurablePreparationAdmission::new(
+                crate::durability::published_medium::RelationalDurablePreparationAdmission::new(
                     runtime.durability.medium(),
                 ),
             mirror_residency: runtime

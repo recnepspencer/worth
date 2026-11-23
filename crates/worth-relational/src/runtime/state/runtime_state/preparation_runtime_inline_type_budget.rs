@@ -34,7 +34,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<crate::runtime::RelationalDiagnosticArtifactStore>("diagnostics");
         owner.field::<crate::runtime::state::IndexDefinitionReadBinding>("index_definitions");
         owner.field::<crate::runtime::MirrorResidencyDemandBinding>("mirror_residency");
-        owner.field::<crate::durability::medium::RelationalDurablePreparationAdmission>(
+        owner.field::<crate::durability::published_medium::RelationalDurablePreparationAdmission>(
             "durability_admission",
         );
         owner.field::<RelationalPreparationHistory>("history");

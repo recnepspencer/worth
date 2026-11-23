@@ -32,7 +32,7 @@ pub(crate) struct RuntimeExtensions {
     managed_sources: Vec<crate::validation::candidate_source::ManagedIndexSourceProgram>,
     commit_strategy_executors: Vec<CommitStrategyExecutionRegistration>,
     post_commit_consumer: Option<std::sync::Arc<dyn crate::publication::PostCommitConsumer>>,
-    durable_medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
+    durable_medium: Option<Box<dyn crate::durability::published_medium::RelationalDurableMedium>>,
 }
 
 impl RuntimeExtensions {
@@ -75,7 +75,9 @@ impl RuntimeExtensions {
 
     pub(crate) fn with_durable_medium(
         mut self,
-        durable_medium: Option<Box<dyn crate::durability::medium::RelationalDurableMedium>>,
+        durable_medium: Option<
+            Box<dyn crate::durability::published_medium::RelationalDurableMedium>,
+        >,
     ) -> Self {
         self.durable_medium = durable_medium;
         self

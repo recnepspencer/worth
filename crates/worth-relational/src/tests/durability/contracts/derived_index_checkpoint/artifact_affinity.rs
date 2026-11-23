@@ -34,7 +34,11 @@ fn digest_valid_join_checkpoint_requires_complete_rows_and_leg_state() {
     release_test_commit_snapshot(&runtime, &committed);
     medium.file_embedded_checkpoint(execution, &runtime);
     let lawful = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     let control_medium = OwnedTestDurableMedium::new();
     let mut control = durable_runtime_for_medium(&control_medium);
@@ -100,7 +104,11 @@ fn digest_valid_basis_binding_cannot_carry_an_obsolete_generation_across_an_edit
     release_test_commit_snapshot(&runtime, &second);
     medium.file_embedded_checkpoint(execution, &runtime);
     let mut plan = medium
-        .recovery_plan(execution, &runtime, RecoveryMode::NormalRecoveryVerification)
+        .recovery_plan(
+            execution,
+            &runtime,
+            RecoveryMode::NormalRecoveryVerification,
+        )
         .unwrap();
     let checkpoint = plan.checkpoint.as_mut().unwrap();
     let artifact = checkpoint.derived_index_checkpoint.as_ref().unwrap();
@@ -221,4 +229,86 @@ fn envelope_index_affinity_requires_admission_before_installation() {
         runtime.indexes.generation(id).unwrap().as_ref(),
         actual.as_ref()
     );
+}
+
+#[test]
+fn residency_cold_index_frontier_prevents_reissue_before_any_image_demand() {
+    use std::sync::{atomic::Ordering, Arc};
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    for (bulk, admitted) in [(false, false), (true, false), (false, true), (true, true)] {
+        let producer =
+            runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
+        let index = name_index(&producer).index_id;
+        let committed = create_entity_outcome(execution, &producer, "frontier-index-value");
+        let generation_id = build(execution, &producer, index, &committed);
+        let generation = producer.indexes.generation(generation_id).unwrap();
+        let (runtime, source) = reopen_cold_index_members(execution, &producer);
+        let owner = &runtime.indexes;
+        let reserved = if bulk {
+            owner.reserve_generation_ids(1).unwrap()[0]
+        } else {
+            crate::indexes::data::DerivedIndexGenerationId(owner.next_generation_id().unwrap())
+        };
+        assert!(reserved.0 > generation.generation_id.0);
+        assert_eq!(source.1.load(Ordering::Relaxed), 0);
+        let mut published = generation.as_ref().clone();
+        published.generation_id = reserved;
+        if admitted {
+            let mut total = 0u64;
+            let mut funding = execution.reserve_retained_memory(0).unwrap();
+            let mut pay = |work: u64, bytes: u64| {
+                crate::durability::artifact_payload_emission::request::account_work(
+                    execution, work,
+                )
+                .unwrap();
+                total = total.checked_add(bytes).unwrap();
+                if let Some(funding) = &mut funding {
+                    funding.resize(total).unwrap();
+                }
+                Ok::<_, ()>(())
+            };
+            let mut prepared = owner
+                .prepare_generation_batch(vec![published.clone()], None, &mut pay)
+                .unwrap();
+            prepared.admit_actual_geometry(&mut pay).unwrap();
+            prepared.publish_admitted();
+        } else {
+            owner.publish_generation(published.clone());
+        }
+        assert_eq!(owner.snapshot().generation_frontier(), reserved.0 + 1);
+        assert_eq!(source.1.load(Ordering::Relaxed), 0);
+        owner
+            .definition_read_binding()
+            .demand_checkpoint_image(execution)
+            .unwrap();
+        assert!(source.1.load(Ordering::Relaxed) > 0);
+        let (_, basis) = runtime
+            .observe_branch(&runtime.main_branch_identity())
+            .unwrap();
+        assert_eq!(
+            runtime
+                .index_access()
+                .read_published_generation_for_observation(execution, index, &basis.observation())
+                .unwrap()
+                .unwrap()
+                .generation_id,
+            reserved
+        );
+        let loaded = owner.all_generations();
+        assert_eq!(
+            loaded
+                .iter()
+                .find(|g| g.generation_id == generation.generation_id)
+                .map(Arc::as_ref),
+            Some(generation.as_ref())
+        );
+        assert_eq!(
+            loaded
+                .iter()
+                .find(|g| g.generation_id == reserved)
+                .map(Arc::as_ref),
+            Some(&published)
+        );
+    }
 }

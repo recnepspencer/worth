@@ -110,3 +110,11 @@ pub struct ChunkDiagnostics {
     pub relation_chunks_with_visible_records: usize,
     pub relation_chunks_with_retained_records: usize,
 }
+
+pub(crate) mod checkpoint_page;
+pub(crate) mod checkpoint_pages;
+pub(crate) mod checkpoint_symbol_buckets;
+pub(crate) mod member_frame;
+pub(crate) mod symbol_page_readmission;
+pub(crate) mod symbol_page_roster;
+pub(crate) mod symbol_residency;

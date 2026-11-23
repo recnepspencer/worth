@@ -6,7 +6,7 @@ use std::collections::BTreeSet;
 
 pub(super) fn select(
     routes: &crate::indexes::data::InstalledIndexRouting,
-    change: &crate::storage::substrate::maintenance::CommitChange,
+    change: &crate::branch::maintenance::CommitChange,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     changes: &ChangedRecords,
     before: &IndexRootView,

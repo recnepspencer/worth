@@ -7,7 +7,7 @@ impl RelationalPreparationRuntime {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         branch: &crate::history::data::coordinates::BranchId,
         root: &crate::branch::RelationalBranchRoot,
-        publication: &crate::storage::residency::SymbolPublicationAdmission,
+        publication: &crate::branch::symbol_publication::SymbolPublicationAdmission,
         clone_mode: crate::storage::overlay::PartitionCloneMode,
         committed: std::collections::BTreeMap<
             crate::identity::data::PartitionId,
@@ -65,7 +65,7 @@ impl RelationalPreparationRuntime {
 
 fn prepare_symbol_readmission(
     root: &crate::branch::RelationalBranchRoot,
-    publication: &crate::storage::residency::SymbolPublicationAdmission,
+    publication: &crate::branch::symbol_publication::SymbolPublicationAdmission,
     symbols: &crate::runtime::RuntimeSymbolTable,
     id: crate::identity::data::PartitionId,
 ) -> Result<

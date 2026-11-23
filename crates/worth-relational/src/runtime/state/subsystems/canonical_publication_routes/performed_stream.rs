@@ -12,7 +12,9 @@ use super::patch_position_reservation::{
     RelationalPatchPositionReservationCounters,
 };
 use super::{CanonicalPublicationRecordError, CanonicalPublicationRoute};
-use crate::durability::medium::{RelationalCommitPublication, RelationalDurableMediumBinding};
+use crate::durability::published_medium::{
+    RelationalCommitPublication, RelationalDurableMediumBinding,
+};
 
 #[path = "performed_stream/cutover_deadline.rs"]
 mod cutover_deadline;

@@ -1,5 +1,6 @@
 //! Ordinary dispatch preserves untouched state and refuses a missing predecessor.
-use super::{ChangeWork, CommitChange, Maintained, MaintenanceRefusal};
+use super::{CommitChange, Maintained};
+use crate::storage::substrate::maintenance::{ChangeWork, MaintenanceRefusal};
 use std::sync::Arc;
 
 /// Cost: change routes times installed-route lookup, then the owner's delta.
@@ -13,12 +14,7 @@ pub fn apply_change<M: Maintained>(
     let previous = previous.ok_or(MaintenanceRefusal::MissingPredecessor)?;
     let mut relevant = false;
     for route in change.routes() {
-        let levels = owner
-            .routes()
-            .len()
-            .checked_ilog2()
-            .map_or(1, |bits| u64::from(bits) + 1);
-        work.prepare(11 * levels + 1, 0)?;
+        work.prepare_route_lookup(owner.routes().len())?;
         if owner.routes().contains(route) {
             relevant = true;
             break;

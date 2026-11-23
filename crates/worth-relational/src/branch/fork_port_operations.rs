@@ -1,3 +1,4 @@
+use crate::durability::published_medium::live_transition::LiveBranchTransitionStep;
 #[path = "fork_port_operations/source_observation.rs"]
 mod source_observation;
 use super::{RelationalForkDenial, RelationalForkOutcome};
@@ -6,7 +7,7 @@ use crate::branch::fork_source_basis::{
     AdmittedRelationalForkSourceBasis, RelationalForkSourceDescriptor,
 };
 use crate::branch::{
-    AdmittedRelationalBranchBasis, LiveBranchTransitionStep, RelationalBranchLifecyclePosture,
+    AdmittedRelationalBranchBasis, RelationalBranchLifecyclePosture,
     RelationalBranchTransitionDurableStep, RelationalBranchTransitionStop, RelationalForkPort,
     RelationalForkTargetReservation,
 };

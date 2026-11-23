@@ -1,7 +1,7 @@
 //! Dictionary export uses the same per-member damage ledger as symbol admission.
 use super::*;
-use crate::durability::log::native_checkpoint_codec::member_frame::{self, MemberKind};
 use crate::durability::medium::RelationalDurableMemberCustody;
+use crate::storage::data::member_frame::{self, MemberKind};
 
 impl RuntimeSymbolResidency {
     fn member_subjects(
@@ -32,7 +32,7 @@ struct SymbolMemberExport {
     subject: RelationalStorageSubject,
 }
 impl RuntimeSymbolResidency {
-    pub(in crate::runtime::state::subsystems::services) fn export_sources(
+    pub(crate) fn export_sources(
         self: &Arc<Self>,
     ) -> BTreeMap<
         RelationalDurableMemberLocator,

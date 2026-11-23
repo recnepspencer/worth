@@ -323,13 +323,12 @@ pub(super) fn prepare_publication_phase(
         .map_err(|error| error.with_commit_log(commit_log.clone()))?;
 
         let symbol_publication =
-            crate::storage::residency::SymbolPublicationAdmission::prepare(prepared_history.root())
-                .map_err(|failure| {
-                    crate::authority::commit::preparation::storage_read_denial(
-                        &branch_basis,
-                        failure,
-                    )
-                })?;
+            crate::branch::symbol_publication::SymbolPublicationAdmission::prepare(
+                prepared_history.root(),
+            )
+            .map_err(|failure| {
+                crate::authority::commit::preparation::storage_read_denial(&branch_basis, failure)
+            })?;
         let mirror_publication = crate::execution::transaction_stage(
             execution,
             runtime.commit_work_budget.as_ref(),

@@ -1,7 +1,7 @@
 //! Request-bound readmission of one authenticated symbol page.
-use crate::durability::data::RelationalRecoveryStop;
-use crate::durability::log::native_checkpoint_codec::member_frame::{self, MemberKind};
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableMemberLocator;
+use crate::storage::data::member_frame::{self, MemberKind};
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable,
     RelationalStorageUnavailableCause as Cause,

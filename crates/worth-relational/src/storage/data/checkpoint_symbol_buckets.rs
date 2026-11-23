@@ -1,6 +1,6 @@
 //! Intrinsic custody of the actual RelationalCheckpointSymbolBucket directory backing.
-use super::RelationalCheckpointSymbolBucket;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use super::symbol_page_roster::RelationalCheckpointSymbolBucket;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{alloc::Layout, sync::Arc};
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
@@ -42,7 +42,7 @@ impl CheckpointSymbolBuckets {
         capacity: usize,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<CheckpointSymbolBucketsBuilder, Cause> {
-        crate::execution::check_request(request)?;
+        crate::execution::request_custody::check_request(request)?;
         if capacity == 0 {
             return Ok(CheckpointSymbolBucketsBuilder {
                 rows: Vec::new(),
@@ -82,7 +82,7 @@ impl CheckpointSymbolBucketsBuilder {
         bytes: usize,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Cause> {
-        crate::execution::check_request(request)?;
+        crate::execution::request_custody::check_request(request)?;
         let total = self
             .bytes
             .checked_add(u64::try_from(bytes).map_err(|_| Cause::ChargedBytesOverflow)?)
@@ -152,12 +152,12 @@ impl CheckpointSymbolBucketsBuilder {
     pub(crate) fn push(
         &mut self,
         bucket: u8,
-        pages: &[super::super::medium::RelationalDurableMemberLocator],
+        pages: &[crate::durability::medium::RelationalDurableMemberLocator],
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), Cause> {
         self.room()?;
         let bytes =
-            Layout::array::<super::super::medium::RelationalDurableMemberLocator>(pages.len())
+            Layout::array::<crate::durability::medium::RelationalDurableMemberLocator>(pages.len())
                 .map_err(|_| Cause::ChargedBytesOverflow)?
                 .size();
         self.admit_nested(bytes, request)?;

@@ -3,10 +3,11 @@ use super::{
     RelationalBranchDeletionOutcome, RelationalBranchDeletionPending,
 };
 use crate::branch::{
-    LiveBranchTransitionStep, RelationalBranchIdentity, RelationalBranchLifecyclePosture,
-    RelationalBranchPublicationCell, RelationalBranchTransition,
-    RelationalBranchTransitionDurableStep, RelationalBranchTransitionStop,
+    RelationalBranchIdentity, RelationalBranchLifecyclePosture, RelationalBranchPublicationCell,
+    RelationalBranchTransition, RelationalBranchTransitionDurableStep,
+    RelationalBranchTransitionStop,
 };
+use crate::durability::published_medium::live_transition::LiveBranchTransitionStep;
 use crate::history::retention::RelationalRetentionAcquisitionDenial;
 use crate::runtime::BranchTransitionRecordError;
 

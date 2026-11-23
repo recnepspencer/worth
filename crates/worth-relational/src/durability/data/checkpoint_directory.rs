@@ -87,3 +87,14 @@ impl RelationalCheckpointDirectory {
         }))
     }
 }
+
+impl RelationalCheckpointDirectory {
+    pub(crate) fn symbol_member_custody(
+        &self,
+    ) -> crate::durability::medium::NativeSourceMemberState {
+        crate::durability::medium::NativeSourceMemberState::new(
+            self.source.clone(),
+            self.member_basis(),
+        )
+    }
+}

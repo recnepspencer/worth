@@ -179,7 +179,7 @@ impl RecoveryPlan {
         restore_authoritative_envelope_commit_ids.dedup();
         let checkpoint_covered_position = checkpoint
             .as_ref()
-            .map(crate::durability::access::checkpoint_coverage);
+            .map(crate::durability::checkpoint_coverage::checkpoint_coverage);
         Self {
             home_world_selection: None,
             original_source: None,

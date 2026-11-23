@@ -1,6 +1,6 @@
 //! Original ACK evidence leaves Native only after its real transition cutover.
 use super::PositionedBranchTransition;
-use crate::durability::medium::RelationalDurableTransitionPublication;
+use super::RelationalDurableTransitionPublication;
 
 /// An owner-issued original subject, not decodable permission or an installed-target proxy.
 #[derive(Debug)]

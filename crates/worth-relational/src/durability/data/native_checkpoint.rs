@@ -32,7 +32,7 @@ pub struct RelationalNativeCheckpoint {
     manifest_publication: Option<crate::runtime::RelationalCheckpointManifestPublication>,
     canonical_publication:
         Option<crate::durability::checkpoint_history::publication::CanonicalCheckpointPublication>,
-    publication: Option<Arc<crate::durability::medium::CheckpointPublication>>,
+    publication: Option<Arc<crate::durability::published_medium::CheckpointPublication>>,
 }
 
 /// What a captured checkpoint covers: its last commit position and its last

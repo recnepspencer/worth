@@ -20,7 +20,7 @@ pub enum RelationalMediumRetirementProgress {
     Complete,
 }
 
-pub(super) fn unsupported(
+pub(crate) fn unsupported(
     request: &ExecutionRequest<'_, '_>,
     _source: &dyn RelationalDurableColdSource,
 ) -> Result<(), RelationalMediumRetirementDenial> {
