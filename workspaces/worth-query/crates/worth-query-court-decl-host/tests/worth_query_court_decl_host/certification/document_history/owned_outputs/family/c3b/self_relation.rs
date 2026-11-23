@@ -16,7 +16,23 @@ thread_local! {
     /// Only traverse to the model's outputs, never read their values (per
     /// court, on the court's own thread).
     pub static TRAVERSE_ONLY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    /// Read model `a`'s outputs' models through the derived `FirstSiblings`
+    /// instead of `FirstOf` (#277 court 8): Native's derived traversal reads the
+    /// current image and is not overlay-aware (per court).
+    pub static DERIVED_READ: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+    /// With `DERIVED_READ`, ignore the derived read's denial (per court).
+    pub static SWALLOW_DERIVED: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
 }
+/// A model's outputs' models: `FirstOf` reversed, then `FirstOf`. Its
+/// traversal from model `a` probes `a`'s incoming `FirstOf` list.
+pub struct FirstSiblings;
+impl FirstSiblings {
+    pub fn reference() -> ApplicationDerivedRelationRef<Schema, Self, SourceEntity, SourceEntity> {
+        ApplicationDerivedRelationRef::from_schema_identifiers("FirstSiblings", "Model", "Model")
+    }
+}
+impl OperationReads<initial::Operation> for FirstSiblings {}
+impl OperationReads<preserve::Operation> for FirstSiblings {}
 pub fn output_key(row: &query::Row) -> String {
     format!("first:{}", row.key)
 }
@@ -81,7 +97,25 @@ phase!(
 pub fn declare(
     schema: ApplicationSchemaDeclarationBuilder<Schema>,
 ) -> ApplicationSchemaDeclarationBuilder<Schema> {
+    use worth_query_decl::facade::application_schema::{
+        ApplicationDerivedRelation, ApplicationRelationGraphLaws,
+    };
     preserve::declare(initial::declare(schema))
+        .derived_relation(
+            FirstSiblings::reference(),
+            ApplicationDerivedRelation::relation(FirstOf::reference())
+                .reversed()
+                .then(FirstOf::reference()),
+            ApplicationRelationGraphLaws::unbounded(),
+        )
+        .operation_read_derived_relation(
+            initial::Operation::reference(),
+            FirstSiblings::reference(),
+        )
+        .operation_read_derived_relation(
+            preserve::Operation::reference(),
+            FirstSiblings::reference(),
+        )
 }
 pub fn contracts(
     contracts: &mut WorthQueryApplicationContributionContracts<Schema>,

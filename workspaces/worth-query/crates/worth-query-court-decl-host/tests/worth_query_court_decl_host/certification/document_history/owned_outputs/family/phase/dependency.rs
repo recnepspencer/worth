@@ -96,9 +96,17 @@ macro_rules! producer_decision_dependency {
     (SelfRelationPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@self_relation $reader, $source) };
     // Member `m`, and every output the source model owns (`FirstOf`, read
     // at the current image), each of which must have its value.
+    // With `DERIVED_READ`, the same outputs' models through a derived read.
     (@self_relation $reader:ident, $source:ident) => {{
         let m = producer_decision_dependency!(@member_read $reader);
-        for link in $reader.relations_to(FirstOf::reference(), &$source).map_err(HandlerExecutionDenial::new)? {
+        let derived = super::super::self_relation::DERIVED_READ.with(std::cell::Cell::get);
+        if derived {
+            let siblings = $reader.derived_relations_from(super::super::self_relation::FirstSiblings::reference(), &$source);
+            if !super::super::self_relation::SWALLOW_DERIVED.with(std::cell::Cell::get) {
+                siblings.map_err(HandlerExecutionDenial::new)?;
+            }
+        }
+        for link in (!derived).then(|| $reader.relations_to(FirstOf::reference(), &$source)).transpose().map_err(HandlerExecutionDenial::new)?.into_iter().flatten() {
             if super::super::self_relation::TRAVERSE_ONLY.with(std::cell::Cell::get) {
                 continue;
             }

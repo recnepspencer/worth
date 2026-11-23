@@ -173,3 +173,76 @@ fn own_output_relation_commits(idempotency: &str) {
     assert_rederived_first(&request);
     assert_ne!(courts::native_head(&host), head);
 }
+
+/// The same edit, the successor reading model `a`'s outputs' models through
+/// the derived `FirstSiblings` (#277 court 8, A6; deviation §1). Native's
+/// derived traversal reads the current image, not the own-output view, and
+/// its probe of `a`'s incoming `FirstOf` list crosses the chain's own link to
+/// `first:a`. That answer holds the chain's effect, so the view is marked
+/// incoherent at `a` (an anchor the chain never wrote) and the traversal
+/// denies; the round stops typed and nothing publishes. It never commits on
+/// the unmerged answer and never ends untyped.
+#[test]
+fn a_successor_derived_traversal_over_its_own_link_refuses_typed() {
+    family::c3b::self_relation::DERIVED_READ.store(true, std::sync::atomic::Ordering::Relaxed);
+    own_output_relation_refuses_typed("own-output-derived");
+}
+
+/// As above, but the handler ignores the derived read's denial and goes on
+/// to decide. The failed derived read is recorded before any decision fact,
+/// so the decision cannot seal: the round still stops typed.
+#[test]
+fn a_successor_swallowing_its_derived_traversal_denial_still_refuses_typed() {
+    use std::sync::atomic::Ordering::Relaxed;
+    family::c3b::self_relation::DERIVED_READ.store(true, Relaxed);
+    family::c3b::self_relation::SWALLOW_DERIVED.store(true, Relaxed);
+    own_output_relation_refuses_typed("own-output-derived-swallowed");
+}
+
+fn own_output_relation_refuses_typed(idempotency: &str) {
+    let _execution = WorthQueryExecutionObservation::install_on_this_thread();
+    let host = world::install_program_with_other_model::<Program>(
+        host_limits(worth_query_host::facade::admission::authenticated_principal::WorthQueryAdmissionClock::system()),
+        2,
+        Some(7),
+    );
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let head = courts::native_head(&host);
+    let mut edit = request
+        .edit_envelope()
+        .idempotency(idempotency.to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
+        .unwrap();
+    edit.push_stage::<Tree, _>(edit::Intent {
+        key: "b".into(),
+        value: 8,
+    })
+    .unwrap();
+    let outcome = edit
+        .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+        .unwrap();
+    let events = _execution.wave_events_for_test();
+    let detail = format!("{outcome:?}");
+    assert!(
+        detail.contains(
+            "CoupledContinuationProvenancePostponed { issue: 119, reason: PriorEffectRead }"
+        ),
+        "{detail}; {events:#?}"
+    );
+    // The stop names anchor `a`, which the chain never wrote: the derived
+    // guard caught the crossing, not a later fact on the chain's own record.
+    let anchor = request
+        .query(query::producer_model::Read::from("a".to_owned()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .native_id;
+    assert!(
+        detail.contains(&format!("affected_records: [Entity({anchor:?})]")),
+        "{detail}"
+    );
+    assert_eq!(courts::native_head(&host), head);
+}
