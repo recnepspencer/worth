@@ -129,7 +129,7 @@ pub(crate) fn ensure_state(
         .instrumentation
         .count(|counters| counters.visibility_exact_state_materializations += 1);
     let state = crate::visibility::snapshot_states::build_visibility_state(
-        runtime,
+        runtime.runtime_instance_id(),
         basis.clone(),
         SnapshotId(0),
         SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
@@ -169,7 +169,7 @@ pub(crate) fn materialize_exact_state_for_basis(
         .instrumentation
         .count(|counters| counters.visibility_exact_state_materializations += 1);
     Some(crate::visibility::snapshot_states::build_visibility_state(
-        runtime,
+        runtime.runtime_instance_id(),
         basis,
         SnapshotId(0),
         SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,

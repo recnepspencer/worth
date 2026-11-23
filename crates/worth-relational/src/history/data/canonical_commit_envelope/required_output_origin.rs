@@ -16,6 +16,7 @@ pub(crate) use coupled_authored::{
     CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources,
 };
 mod authored_restoration;
+mod authored_restoration_install;
 mod historical_selection;
 mod history_request;
 pub(crate) use historical_selection::CanonicalHistoricalOutputSelection;
@@ -34,13 +35,15 @@ mod members;
 mod payload_coverage;
 mod producer_retirement_header;
 mod readmission;
+mod relation_installation;
 mod relations;
 mod restoration_candidate;
 pub(crate) use restoration_candidate::validate as validate_authored_restoration_candidate;
 mod restoration_header;
 mod retention;
+mod retention_budget;
 pub(crate) use relations::CanonicalRequiredOutputRelation;
-use retention::{origin_request, origin_retention_bytes};
+use retention::origin_request;
 
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum CanonicalOutputPublication {

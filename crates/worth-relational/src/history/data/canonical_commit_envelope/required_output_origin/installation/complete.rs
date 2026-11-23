@@ -1,5 +1,6 @@
 //! Complete one live required-output publication against the admitted branch.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn install_required_output_origin(
@@ -102,7 +103,7 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
         selections,
     } = publication
     {
-        return super::super::historical_selection::install(
+        return super::super::historical_selection::install::install(
             envelope, basis, state, installed, &admission, selections, lease, context,
         );
     }
@@ -128,7 +129,7 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
         restoration,
     } = publication
     {
-        return super::super::authored_restoration::install(
+        return super::super::authored_restoration_install::install(
             envelope,
             runtime,
             basis,
@@ -239,7 +240,7 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
         ..
     } = &publication
         && let Some(prior) = previous
-        && let Some(closure) = producer_cascade::prepare(
+        && let Some(closure) = producer_cascade_install::prepare(
             envelope,
             execution,
             basis,
@@ -252,7 +253,8 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
             context,
         )?
     {
-        return envelope.install_producer_cascade(
+        return producer_cascade_install::install(
+            envelope,
             runtime,
             basis,
             created,
@@ -303,7 +305,8 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
             }
         },
     );
-    envelope.install_route(
+    route_completion::install_route(
+        envelope,
         runtime,
         basis,
         created,

@@ -1,5 +1,6 @@
 //! Install the authored prefix's actual posture without inventing a retirement.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::RequiredOutputPublicationPositions;
 use crate::mvcc::CoupledSource;
 use crate::mvcc::RelationalAuthoredRetirement;
@@ -28,7 +29,7 @@ pub(super) fn install_empty(
 ) -> Result<RequiredOutputPublicationPositions, TransactionCommitError> {
     let custody = &group.binding.owners;
     if let Some(plan) = custody.source.restoration() {
-        return super::authored_restoration::install(
+        return super::authored_restoration_install::install(
             envelope,
             runtime,
             basis,
@@ -112,7 +113,7 @@ pub(super) fn install(
         }),
         CoupledSource::Restoration { plan, .. }
         | CoupledSource::MemberEditRestoration { plan, .. } => {
-            super::authored_restoration::install(
+            super::authored_restoration_install::install(
                 envelope,
                 runtime,
                 basis,

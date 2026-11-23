@@ -103,7 +103,7 @@ fn resolve_published_snapshot_state(
     let state = materialize_exact_state_for_basis(runtime, binding.basis.clone(), true)
         .unwrap_or_else(|| {
             build_visibility_state(
-                runtime,
+                runtime.runtime_instance_id(),
                 binding.basis,
                 handle.snapshot_id,
                 binding.read_policy,

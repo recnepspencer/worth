@@ -1,4 +1,3 @@
-use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::{SnapshotHandle, SnapshotId, SnapshotReadPolicy};
 use crate::storage::overlay::PartitionAccess;
 use crate::storage::partition::DenseSlotBitSet;
@@ -7,7 +6,7 @@ use super::pin_assembly::{assemble_snapshot_state, SelectedRelationSlots};
 use super::{SnapshotState, SnapshotStateBasis, VisibilitySnapshotBasis};
 
 pub(crate) fn build_visibility_state(
-    runtime: &RelationalRuntime,
+    runtime_instance_id: u64,
     basis: VisibilitySnapshotBasis,
     snapshot_id: SnapshotId,
     read_policy: SnapshotReadPolicy,
@@ -24,7 +23,7 @@ pub(crate) fn build_visibility_state(
         );
     }
     let handle = SnapshotHandle {
-        runtime_instance_id: runtime.runtime_instance_id(),
+        runtime_instance_id,
         branch_id: basis.branch_id().clone(),
         snapshot_id,
         version_id: basis.version_id(),
@@ -54,7 +53,7 @@ fn exact_entity_slots(
         .collect()
 }
 
-fn exact_relation_slots(root: &crate::branch::RelationalBranchRoot) -> Vec<SelectedRelationSlots> {
+fn exact_relation_slots(root: &impl PartitionAccess) -> Vec<SelectedRelationSlots> {
     root.partition_ids()
         .into_iter()
         .filter_map(|partition_id| {

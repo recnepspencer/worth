@@ -1,5 +1,6 @@
 //! Selection effects must equal the actual retained producer-owned versions.
-use super::*;
+use super::super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::identity::data::EntityId;
 use crate::identity::data::RelationId;
 use crate::identity::data::VersionId;
@@ -10,7 +11,9 @@ use crate::storage::overlay::record_observation::{
 };
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::overlay::OverlayStateView;
+use crate::storage::overlay::WorkingState;
 use crate::transactions::data::primitives::RecordRef;
+use worth_execution::MapKernelContext;
 
 pub(super) fn validate(
     original: &CanonicalRequiredOutputOrigin,

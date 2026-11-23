@@ -294,6 +294,19 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "history/data/required_output_positions/presence/completion.rs" = "mutation"
 "history/mod.rs" = "runtime"
 "history/data/canonical_commit_envelope/required_output_origin/installation/complete.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade/roster.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/members.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/relation_installation.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/retention_budget.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/source_scope_ownership.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/route_completion.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/predecessor.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/scope_dependents.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/authored_restoration_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/absence/install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/records.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/authored_cascade_install.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/coupled_authored_install.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/coupled_source.rs" = "publication"
@@ -679,6 +692,19 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Publication completes live origins and passes filled canonical facts to Branch.
 "history/data/canonical_commit_envelope/required_output_origin/installation/complete.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/producer_cascade/roster.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/members.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/relation_installation.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/retention_budget.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/source_scope_ownership.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/route_completion.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/predecessor.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/installation/scope_dependents.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/authored_restoration_install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/absence/install.rs" = "publication"
+"history/data/canonical_commit_envelope/required_output_origin/historical_selection/records.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/authored_cascade_install.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/coupled_authored_install.rs" = "publication"
 "history/data/canonical_commit_envelope/required_output_origin/coupled_source.rs" = "publication"
@@ -907,3 +933,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Preparation Runtime binds exact contracts before Publication assembles the candidate.
 "runtime/publication_capture.rs" = "runtime"
+
+# The published lineage batch is installed by its state owner.
+"runtime/state/subsystems/lineage/published_batch.rs" = "lineage"

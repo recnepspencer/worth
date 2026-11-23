@@ -1,5 +1,6 @@
 //! Admit complete dynamic membership from native allocations and prior live rows.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
 use crate::publication::patch::data::RecordStructuralChange;

@@ -1,5 +1,6 @@
 //! Complete the group and stage the applied pins for the performed publication routes.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::RequiredOutputPublicationPositions;
 use crate::history::data::RequiredOutputRoutePosition;
 use crate::mvcc::RelationalCoupledAuthoredPublication;

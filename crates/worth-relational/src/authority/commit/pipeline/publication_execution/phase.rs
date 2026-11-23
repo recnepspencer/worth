@@ -101,7 +101,7 @@ pub(super) fn finalize_publication_phase(
             envelope_cell,
         },
     );
-    runtime.lineage_authority().install_published_lineage(
+    runtime.lineage.install_published_lineage(
         validated_lineage_events,
         commit_id,
         lineage_nodes,

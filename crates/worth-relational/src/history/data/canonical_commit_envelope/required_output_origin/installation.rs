@@ -8,6 +8,7 @@ use worth_execution::{ExecutionRequest, MapKernelContext};
 pub(crate) mod complete;
 mod predecessor;
 mod producer_cascade;
+mod producer_cascade_install;
 pub(crate) use producer_cascade::CanonicalProducerRetirement;
 mod relation_failure;
 mod route_completion;

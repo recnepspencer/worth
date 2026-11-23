@@ -13,7 +13,7 @@ pub(super) struct RemovedOwningScopes {
 pub(super) fn require_retained_sources(
     candidate: &CanonicalCommitEnvelopeBody,
     runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
-    installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
+    installed: &crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
     context: &mut MapKernelContext<'_, '_>,
@@ -30,7 +30,7 @@ pub(super) fn require_retained_sources(
 pub(super) fn select_removed_owning_scopes(
     candidate: &CanonicalCommitEnvelopeBody,
     runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
-    installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
+    installed: &crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
     prior: &CanonicalRequiredOutputOrigin,
     roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
     context: &mut MapKernelContext<'_, '_>,

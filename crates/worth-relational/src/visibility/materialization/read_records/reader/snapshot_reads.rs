@@ -165,7 +165,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             .demand_all_full(execution, &self.runtime.services.symbols)
             .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         let state = build_visibility_state(
-            self.runtime,
+            self.runtime.runtime_instance_id(),
             crate::visibility::snapshot_states::VisibilitySnapshotBasis::from_observation(
                 observation,
             ),

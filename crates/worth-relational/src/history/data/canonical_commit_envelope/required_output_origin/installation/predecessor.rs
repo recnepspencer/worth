@@ -1,11 +1,12 @@
 //! Selected Native predecessor, exact before-image and complete relation custody.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 
 pub(super) fn validate<'a>(
     candidate: &CanonicalCommitEnvelopeBody,
     runtime: &crate::history::data::canonical_commit_envelope::required_output_origin::history_request::PreparationRuntimeRequest<'_, '_, '_>,
     basis: &AdmittedRelationalBranchBasis,
-    predecessor: &'a crate::mvcc::RelationalRequiredOutputPublication,
+    predecessor: &'a crate::mvcc::publication::application_publication::RelationalRequiredOutputPublication,
     meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
     lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     validated_history: &mut OutputOriginHistory,

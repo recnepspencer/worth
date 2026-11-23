@@ -1,5 +1,6 @@
 //! Install the selected Native authored retirement, including its producer completions.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::RequiredOutputPublicationPositions;
 use crate::mvcc::RelationalAuthoredRetirement;
 use crate::mvcc::RequiredOutputPublication;

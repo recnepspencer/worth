@@ -1,7 +1,8 @@
 //! An opted-in publication is scoped by a live entity of its installed source kind.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
-use crate::mvcc::RelationalInstalledApplicationPublicationAuthority;
+use crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::overlay::OverlayStateView;
 use crate::storage::overlay::WorkingState;
@@ -19,8 +20,8 @@ pub(super) fn validate(
     state: &WorkingState,
     retiring: bool,
     source_input: Option<
-        &crate::runtime::RelationalPinnedRead<
-            crate::runtime::RelationalAppliedCandidateReadIdentity,
+        &crate::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead<
+            crate::visibility::materialization::read_records::reader::pinned_read::RelationalAppliedCandidateReadIdentity,
         >,
     >,
     context: &mut MapKernelContext<'_, '_>,
