@@ -101,7 +101,10 @@ pub mod history {
         RelationalReplayRetentionDenial, RelationalTouchAdjacencyDirection,
         SharedCanonicalCommitEnvelope, VersionGraphPolicy,
     };
-    pub use crate::history::{BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority};
+    pub use crate::history::{
+        BoundedCanonicalCommitPatchDenial, HistoryAccess, HistoryAuthority,
+        OutputOriginHeaderCorruptionForTest,
+    };
     pub use crate::history::{
         RelationalAuthoredEntityIndexDefinition, RelationalAuthoredManagedSourceImpact,
         RelationalAuthoredManagedSourceMaterial, RelationalAuthoredManagedSourcePayloads,

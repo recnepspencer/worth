@@ -3,6 +3,7 @@ mod certification;
 mod observation;
 pub use certification::CurrentOwnershipContactsForTest;
 mod cold_checkpoint_source;
+mod cold_pairing_court;
 mod locality_court;
 pub use locality_court::CurrentOwnershipLocalityForTest;
 mod completion;

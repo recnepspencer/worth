@@ -10,17 +10,13 @@ pub(crate) struct OrderedSourceRecipe {
 }
 
 impl RelationalSchemaRegistry {
-    /// Bind birth sharing through this membership's own to-one order relation.
-    /// Neither a predecessor coordinate nor a provider root can be supplied here.
-    pub fn bind_ordered_predecessor_managed_index_source(
+    /// The literal predecessor/introduced/retired leaves of an ordered-events
+    /// membership, inline or behind one derived relation. Binding an ordered
+    /// Source and proving an applied candidate's alignment share this reader.
+    pub(crate) fn ordered_events_recipe(
         &self,
         path: &DerivedRelationHandle,
-        fields: Vec<ManagedIndexSourceField>,
-        routes: Vec<ManagedIndexSourceProjectionRoute>,
-    ) -> Result<ManagedIndexSourceProgram, Denial> {
-        if !self.admits_derived_relation(path) {
-            return Err(Denial::ForeignDefinition);
-        }
+    ) -> Result<OrderedSourceRecipe, Denial> {
         let membership = ordered_membership(self, path)?;
         let Some(Node::OrderedEvents {
             predecessor,
@@ -37,11 +33,25 @@ impl RelationalSchemaRegistry {
             Node::Stored { relation, .. } => Ok(relation),
             _ => Err(Denial::OrderedPredecessorMembershipRequired),
         };
-        let ordered = OrderedSourceRecipe {
+        Ok(OrderedSourceRecipe {
             predecessor: relation,
             introduced: leaf(*introduced)?,
             retired: leaf(*retired)?,
-        };
+        })
+    }
+    /// Bind birth sharing through this membership's own to-one order relation.
+    /// Neither a predecessor coordinate nor a provider root can be supplied here.
+    pub fn bind_ordered_predecessor_managed_index_source(
+        &self,
+        path: &DerivedRelationHandle,
+        fields: Vec<ManagedIndexSourceField>,
+        routes: Vec<ManagedIndexSourceProjectionRoute>,
+    ) -> Result<ManagedIndexSourceProgram, Denial> {
+        if !self.admits_derived_relation(path) {
+            return Err(Denial::ForeignDefinition);
+        }
+        let ordered = self.ordered_events_recipe(path)?;
+        let relation = ordered.predecessor;
         let registration = self
             .relation_registration(relation)
             .map_err(|_| Denial::InvalidPhysicalSource(relation))?;

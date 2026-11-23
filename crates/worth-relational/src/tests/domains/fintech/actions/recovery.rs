@@ -9,7 +9,11 @@ pub(crate) fn checkpoint_world(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     world: &mut FintechWorld,
 ) -> Result<DurableCheckpoint, crate::durability::data::RelationalRecoveryStop> {
-    world.runtime.durability_authority().checkpoint(execution)
+    let checkpoint = world.runtime.durability_authority().checkpoint(execution)?;
+    if let Some(medium) = world.medium.as_ref() {
+        medium.file_embedded_checkpoint(execution, &world.runtime);
+    }
+    Ok(checkpoint)
 }
 
 pub(crate) fn recover_checkpointed_world(

@@ -47,7 +47,12 @@ impl ColdCheckpointSource {
         if self.damaged.load(Ordering::SeqCst) {
             return Err(Refusal::Storage(Cause::Damaged));
         }
-        if self.unavailable.load(Ordering::SeqCst) {
+        if self.unavailable.load(Ordering::SeqCst)
+            && !(self
+                .allow_reopen_metadata_while_unavailable
+                .load(Ordering::SeqCst)
+                && self.is_reopen_metadata_member(locator))
+        {
             return Err(Refusal::Storage(Cause::SourceUnavailable));
         }
         let bytes = snapshot

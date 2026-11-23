@@ -237,3 +237,38 @@ fn native_field_text_configuration_requires_current_explicit_readmission() {
         assert_eq!(symbols.resolve(symbols.symbol(JSON).unwrap()), Some(JSON))
     });
 }
+
+#[test]
+fn native_field_text_prior_checkpoint_format_refuses_before_managed_text() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let medium = OwnedTestDurableMedium::new();
+    let source = durable_runtime_for_medium(&medium);
+    let committed = commit_text(execution, &source).unwrap();
+    release_test_commit_snapshot(&source, &committed);
+    let native = source
+        .durability_authority()
+        .native_checkpoint(execution, execution.allocation_policy())
+        .unwrap();
+    let unframed = native
+        .bytes()
+        .strip_prefix(crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC)
+        .unwrap();
+    let error =
+        crate::durability::log::native_checkpoint_codec::decode_checkpoint(execution, unframed)
+            .unwrap_err();
+    assert!(matches!(
+        error,
+        RelationalRecoveryStop::Durability(ref error)
+            if error.class == RecoveryFailureClass::UnsupportedLegacySemantics
+    ));
+    assert!(
+        crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+            execution,
+            native.bytes()
+        )
+        .is_ok()
+    );
+}
+
+mod missing_dictionary;

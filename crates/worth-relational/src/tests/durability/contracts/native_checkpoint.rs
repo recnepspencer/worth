@@ -136,3 +136,25 @@ fn memory_runtime_with_builder_invariant() -> crate::runtime::RelationalRuntime 
         .build()
         .expect("valid native runtime configuration")
 }
+
+#[test]
+fn corrupt_native_checkpoint_is_denied_without_publishing_recovered_state() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut bytes = crate::durability::log::native_checkpoint_codec::CHECKPOINT_MAGIC.to_vec();
+    bytes.extend([0xc1, 0x00, 0xff]);
+    let corrupt = crate::facade::durability::RelationalNativeCheckpoint::from_untrusted_bytes(
+        bytes.into_boxed_slice(),
+    );
+    let medium = OwnedTestDurableMedium::new();
+    let mut recovered = durable_runtime_for_medium(&medium);
+    let error = recovered
+        .durability_recovery()
+        .restore_native_checkpoint(execution, &corrupt)
+        .expect_err("corrupt native bytes cannot become runtime authority");
+    let error = crate::tests::support::expect_durability_failure(error);
+
+    assert_eq!(error.class, RecoveryFailureClass::CorruptCheckpoint);
+    assert_eq!(recovered.history().immutable_commit_count(), 0);
+}

@@ -32,6 +32,7 @@ fn read<S, B>(
     plan: BoundPlan<'_, S, B>,
     native: &mut ApplicationQueryNativeAccess<'_>,
     allocation: &Arc<SourceFactsAllocation>,
+    applied: Option<super::AppliedManagedIndexRead<'_>>,
 ) -> Result<CompletedOneShotRead<B::Query, ResultValue<S, B>>, Denial>
 where
     S: ApplicationSchema + 'static,
@@ -41,6 +42,18 @@ where
     let application = access.application;
     let storage = MaterialCompletion::new(execution, allocation);
     let association = admit_parent::<S, B>(execution, access, &plan, native, allocation)?;
+    // An applied candidate's own unpublished Source change refuses before
+    // the provider sees the admitted before basis.
+    if let Some(applied) = applied {
+        applied.require_aligned(
+            execution,
+            application,
+            &association,
+            plan.scope.entity_id(),
+            plan.query.read_graph(),
+            &worth_query_declaration::facade::application_query::ApplicationQueryBindingReference::of::<S, B>(),
+        )?;
+    }
     let selector = retain_scope(execution, plan.scope, plan.query.name()).map_err(|cause| {
         SourceQueryObservationStop::Read(super::super::WorthQueryAdmittedOneShotStop::Execution(
             cause,
@@ -176,8 +189,12 @@ pub fn read_decision<S, B>(
     context: &std::cell::Cell<
         crate::domain_computation::primary_graph::handler::DecisionContextUse,
     >,
-    operation_scope: &crate::domain_computation::authorization::WorthQueryOperationScopeBinding,
+    admit_scope: &mut dyn FnMut(
+        worth_relational::facade::identity::EntityId,
+        worth_relational::facade::identity::EntityId,
+    ) -> bool,
     native: &mut ApplicationQueryNativeAccess<'_>,
+    applied: Option<super::AppliedManagedIndexRead<'_>>,
 ) -> Result<
     (
         Vec<ResultValue<S, B>>,
@@ -202,11 +219,12 @@ where
         .map_err(|cause| managed_index_denial(ReceiverCause::Execution(cause), None))?;
     let result =
         access.with_plan::<B, _, Denial>(execution, intent, context, native, |plan, native| {
-            if crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(plan.scope.entity_id()) != operation_scope.scope()
-                || crate::domain_computation::authorization::WorthQueryOperationScopeEntityBinding::from_entity(plan.graph_work.principal()) != operation_scope.principal() {
+            // The resolved scope and principal are admitted by the operation's
+            // declared authority before any Parent or provider work.
+            if !admit_scope(plan.scope.entity_id(), plan.graph_work.principal()) {
                 return Err(Denial::ForeignAssociation);
             }
-            let completed = read::<S, B>(execution, access, plan, native, &allocation)?;
+            let completed = read::<S, B>(execution, access, plan, native, &allocation, applied)?;
             let dependency = completed
                 .read
                 .result_set_observation()
@@ -238,7 +256,7 @@ where
             SourceQueryObservationStop::Read(crate::domain_computation::primary_graph::application_query::WorthQueryAdmittedOneShotStop::Admission(worth_relational::facade::mvcc::CompanionPreflightStop::Execution(cause)))
         };
     let allocation = SourceFactsAllocation::open(execution).map_err(storage_stop)?;
-    read::<S, B>(execution, access, plan, native, &allocation).map_err(|cause| {
+    read::<S, B>(execution, access, plan, native, &allocation, None).map_err(|cause| {
         match managed_index_denial(ReceiverCause::Provider(cause), Some(allocation))
             .retain(execution)
         {

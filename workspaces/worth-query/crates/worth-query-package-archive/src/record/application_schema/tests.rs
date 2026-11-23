@@ -21,6 +21,7 @@ mod resource;
 mod resource_path;
 mod retired_fact_budget;
 mod scalar_storage;
+mod shared_owner_read;
 
 use worth_query_declaration::facade::application_schema::{
     ApplicationRelationIntegrity, ApplicationSchemaMember,

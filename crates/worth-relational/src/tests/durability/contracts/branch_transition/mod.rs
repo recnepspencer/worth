@@ -1,11 +1,20 @@
 //! Durable branch lifecycle admission, interruption and reconstruction.
 
+mod checkpoint_state;
+mod fates;
 mod reconstruction;
+mod tampering;
 
+use std::sync::Arc;
+
+use crate::branch::{
+    RelationalBranchTransitionSequence as Sequence, RelationalBranchTransitionStop as Stop,
+};
+use crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifact as Artifact;
 use crate::facade::history::BranchId;
 use crate::runtime::RelationalRuntime;
 use crate::tests::support::*;
-use worth_execution::ExecutionRequest;
+use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};
 
 fn fork(execution: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime, name: &str) {
     let (_, basis) = runtime
@@ -14,4 +23,21 @@ fn fork(execution: &ExecutionRequest<'_, '_>, runtime: &RelationalRuntime, name:
     runtime
         .fork_branch(execution, BranchId(name.into()), basis)
         .unwrap();
+}
+
+fn artifacts(runtime: &RelationalRuntime) -> Vec<Vec<u8>> {
+    runtime
+        .durability()
+        .branch_transition_artifacts(ExecutionAllocationPolicy::SystemAllocation)
+        .map(|artifact| artifact.unwrap().as_bytes().to_vec())
+        .collect()
+}
+
+fn reopen(
+    execution: &ExecutionRequest<'_, '_>,
+    medium: &Arc<OwnedTestDurableMedium>,
+) -> RelationalRuntime {
+    let mut recovered = durable_runtime_for_medium(medium);
+    recover_runtime_from_medium(execution, &mut recovered, medium);
+    recovered
 }

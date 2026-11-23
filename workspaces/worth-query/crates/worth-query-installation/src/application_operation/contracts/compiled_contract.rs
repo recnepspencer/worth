@@ -24,6 +24,7 @@ use crate::domain_operation::{
 pub struct WorthQueryCompiledApplicationOperationContracts {
     pub(super) managed_index_reads:
         Vec<worth_query_declaration::facade::application_query::ApplicationQueryBindingReference>,
+    pub(super) shared_owner_managed_index_reads: Vec<super::WorthQuerySharedOwnerManagedIndexRead>,
     pub(super) signing_lifecycle: super::SigningLifecycleClosure,
     pub(super) body: Option<ApplicationOperationBodyProgram>,
     pub(super) authorization: WorthQueryInstalledApplicationOperationAuthorization,
@@ -56,6 +57,16 @@ impl WorthQueryCompiledApplicationOperationContracts {
             &self.managed_index_reads,
             self.graph_reads.roles(),
         )
+    }
+    /// Every declared peer-scope read of `parent`, one per governing relation.
+    /// None declared, a read outside the operation's own scope stays refused.
+    pub fn shared_owner_managed_index_reads<'a>(
+        &'a self,
+        parent: &'a worth_query_declaration::facade::application_query::ApplicationQueryBindingReference,
+    ) -> impl Iterator<Item = &'a super::WorthQuerySharedOwnerManagedIndexRead> + 'a {
+        self.shared_owner_managed_index_reads
+            .iter()
+            .filter(move |read| read.parent() == parent)
     }
     /// Native publication closure; it does not enlarge a product handler's writer contract.
     pub fn publication_touches(&self) -> &WorthQueryOperationTouchContract {

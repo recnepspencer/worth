@@ -290,6 +290,8 @@ where
             candidate,
             own_outputs,
             None,
+            // Input capture lends no source-query posture.
+            None,
             |reader, scope| {
                 (owner.capture)(
                     runtime,

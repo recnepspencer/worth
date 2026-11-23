@@ -64,6 +64,8 @@ pub(super) struct WorthQueryApplicationOperationCompilation<'a> {
 pub(in crate::application_operation) struct WorthQuerySealedOperationContractCompilation {
     managed_index_reads:
         Vec<worth_query_declaration::facade::application_query::ApplicationQueryBindingReference>,
+    shared_owner_managed_index_reads:
+        Vec<crate::application_operation::WorthQuerySharedOwnerManagedIndexRead>,
     body: Option<ApplicationOperationBodyProgram>,
     authorization: WorthQueryInstalledApplicationOperationAuthorization,
     ability_requirements: Vec<WorthQueryInstalledAbilityRequirement>,
@@ -261,6 +263,12 @@ impl<'a> WorthQueryApplicationOperationCompilation<'a> {
             managed_index_reads: self.members.iter()
                 .filter_map(|member| match member {
                     ApplicationSchemaMember::OperationDecisionRead { operation, target: ApplicationOperationDecisionReadTarget::ManagedIndex { parent } } if operation == &self.operation => Some(parent.clone()), _ => None,
+                }).collect(),
+            shared_owner_managed_index_reads: self.members.iter()
+                .filter_map(|member| match member {
+                    ApplicationSchemaMember::OperationDecisionRead { operation, target: ApplicationOperationDecisionReadTarget::SharedOwnerManagedIndex { parent, relation, owner, member } } if operation == &self.operation =>
+                        Some(crate::application_operation::WorthQuerySharedOwnerManagedIndexRead::new(parent.clone(), relation.clone(), owner.clone(), member.clone())),
+                    _ => None,
                 }).collect(),
             body: self.portable_contract.body().cloned(),
             authorization,

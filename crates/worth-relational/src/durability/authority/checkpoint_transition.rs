@@ -144,3 +144,6 @@ fn acknowledged(
     );
     RecoveredCheckpointTransition { recovered, commit }
 }
+
+#[cfg(test)]
+mod tests;

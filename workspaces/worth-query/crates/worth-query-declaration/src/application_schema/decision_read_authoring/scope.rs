@@ -18,6 +18,12 @@ impl ApplicationDecisionReadScopeMeaning {
         mut targets: Vec<Target>,
         mut derived_relations: Vec<String>,
     ) -> Result<Self, Denial> {
+        if targets
+            .iter()
+            .any(|target| matches!(target, Target::SharedOwnerManagedIndex { .. }))
+        {
+            return Err(Denial::SharedScopePeerRead);
+        }
         targets.sort();
         targets.dedup();
         derived_relations.sort();

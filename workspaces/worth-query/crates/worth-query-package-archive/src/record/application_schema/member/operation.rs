@@ -2,8 +2,7 @@ use worth_foundational::facade::{BoundaryProtocolIdentity, BoundaryProtocolVersi
 use worth_query_declaration::facade::application_schema::{
     ApplicationExternalEffectProtocol, ApplicationInboundOccurrenceLimits,
     ApplicationInboundOccurrenceProtocol, ApplicationMutationPreconditionFamily,
-    ApplicationMutationPreconditionTarget, ApplicationOperationDecisionReadTarget,
-    ApplicationOperationProgramTarget, ApplicationSchemaMember,
+    ApplicationMutationPreconditionTarget, ApplicationOperationProgramTarget, ApplicationSchemaMember,
     WorthQueryExternalEffectCorrelationFamily,
 };
 
@@ -19,6 +18,8 @@ use super::super::wire_vocabulary::{
 };
 
 mod aftermath;
+mod decision_read_target;
+pub(super) use decision_read_target::{decode_decision_read_target, write_decision_read_target};
 
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
@@ -277,55 +278,6 @@ fn decode_program_target(
         8 => ApplicationOperationProgramTarget::RemoveAspect {
             entity: input.text()?.into(),
             aspect: input.text()?.into(),
-        },
-        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    })
-}
-
-pub(super) fn write_decision_read_target(
-    output: &mut dyn BinaryEncodingSink,
-    target: &ApplicationOperationDecisionReadTarget,
-) -> Result<(), Denial> {
-    match target {
-        ApplicationOperationDecisionReadTarget::ManagedIndex { parent } => {
-            output.u16(4)?;
-            super::super::query_binding_reference::write(output, parent)
-        }
-        ApplicationOperationDecisionReadTarget::Entity { entity } => tagged_text(output, 1, entity),
-        ApplicationOperationDecisionReadTarget::Field {
-            entity,
-            aspect,
-            field,
-        } => {
-            output.u16(2)?;
-            write_three_texts(output, entity, aspect, field)
-        }
-        ApplicationOperationDecisionReadTarget::Relation { relation, from, to } => {
-            output.u16(3)?;
-            write_three_texts(output, relation, from, to)
-        }
-    }
-}
-
-pub(super) fn decode_decision_read_target(
-    input: &mut BinaryInput<'_>,
-) -> Result<ApplicationOperationDecisionReadTarget, Denial> {
-    Ok(match input.u16()? {
-        4 => ApplicationOperationDecisionReadTarget::ManagedIndex {
-            parent: super::super::query_binding_reference::decode(input)?,
-        },
-        1 => ApplicationOperationDecisionReadTarget::Entity {
-            entity: input.text()?.to_owned(),
-        },
-        2 => ApplicationOperationDecisionReadTarget::Field {
-            entity: input.text()?.to_owned(),
-            aspect: input.text()?.to_owned(),
-            field: input.text()?.to_owned(),
-        },
-        3 => ApplicationOperationDecisionReadTarget::Relation {
-            relation: input.text()?.to_owned(),
-            from: input.text()?.to_owned(),
-            to: input.text()?.to_owned(),
         },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })

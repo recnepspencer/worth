@@ -61,7 +61,7 @@ pub(crate) use publication::{
     PreparedRelationalPublicationAccelerators, PublicationPreparationDenial,
 };
 pub use publication::{
-    RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
+    ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
     RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
     RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAppendTouches,
     RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,

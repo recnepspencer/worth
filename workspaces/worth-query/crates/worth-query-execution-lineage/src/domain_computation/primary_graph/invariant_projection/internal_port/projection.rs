@@ -72,6 +72,7 @@ pub trait ApplicationInvariantProjectionExecutionInternalPort<Schema: Applicatio
         >,
         own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         predecessor_access: Option<&dyn SourceQueryReaderPort>,
+        source_context_use: Option<&std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<
                 '_,
@@ -221,6 +222,7 @@ impl<Schema: ApplicationSchema> ApplicationInvariantProjectionExecutionInternalP
         >,
         own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         predecessor_access: Option<&dyn SourceQueryReaderPort>,
+        source_context_use: Option<&std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<
                 '_,
@@ -250,6 +252,7 @@ impl<Schema: ApplicationSchema> ApplicationInvariantProjectionExecutionInternalP
             candidate,
             own_outputs,
             predecessor_access,
+            source_context_use,
             projection,
             allocation,
         )
