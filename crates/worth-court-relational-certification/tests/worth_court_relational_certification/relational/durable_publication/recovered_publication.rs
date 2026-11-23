@@ -325,7 +325,23 @@ fn validate_recorded_publication_predecessor_accepts_exact_and_rejects_mismatche
         wrong_posture["descriptor"]["posture"] = serde_json::json!("Archived");
         let wrong_posture: Recorded = serde_json::from_value(wrong_posture).unwrap();
 
-        for bad_after in [&wrong_truth, &wrong_gen, &wrong_posture] {
+        let before_val = serde_json::to_value(&before).unwrap();
+        let mut wrong_ref_prev = serde_json::to_value(&after).unwrap();
+        wrong_ref_prev["descriptor"]["reference"]["target"] =
+            before_val["descriptor"]["reference"]["target"].clone();
+        let wrong_ref_prev: Recorded = serde_json::from_value(wrong_ref_prev).unwrap();
+
+        let mut wrong_ref_empty = serde_json::to_value(&after).unwrap();
+        wrong_ref_empty["descriptor"]["reference"]["target"] = serde_json::json!("Empty");
+        let wrong_ref_empty: Recorded = serde_json::from_value(wrong_ref_empty).unwrap();
+
+        for bad_after in [
+            &wrong_truth,
+            &wrong_gen,
+            &wrong_posture,
+            &wrong_ref_prev,
+            &wrong_ref_empty,
+        ] {
             assert!(matches!(
                 authority.validate_recorded_publication_predecessor(
                     execution,

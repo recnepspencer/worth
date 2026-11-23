@@ -59,17 +59,7 @@ pub(super) fn validate(
                 .map_err(Cause::AdmissionImage)?;
         }
     }
-    let Target::Canonical(target) = successor.target() else {
-        return Err(Cause::SubjectMismatch);
-    };
-    if target.receipt() != effect.subject().receipt()
-        || target.position() != effect.subject().position()
-        || target.artifact_digest() != effect.subject().artifact_digest()
-        || target.roots() != effect.subject().roots()
-    {
-        return Err(Cause::SubjectMismatch);
-    }
-    Ok(())
+    validate_successor_target(effect, successor)
 }
 
 pub(super) fn validate_pruned_predecessor(
@@ -137,13 +127,38 @@ pub(super) fn validate_pruned_predecessor(
                 .map_err(Cause::AdmissionImage)?;
         }
     }
+    validate_successor_target(effect, successor)
+}
+
+fn validate_successor_target(
+    effect: &ReadmittedRelationalAssociatedEffect,
+    successor: &Recorded,
+) -> Result<(), Cause> {
     let Target::Canonical(target) = successor.target() else {
         return Err(Cause::SubjectMismatch);
     };
-    if target.receipt() != effect.subject().receipt()
+    let receipt = effect.subject().receipt();
+    if target.receipt() != receipt
         || target.position() != effect.subject().position()
         || target.artifact_digest() != effect.subject().artifact_digest()
         || target.roots() != effect.subject().roots()
+    {
+        return Err(Cause::SubjectMismatch);
+    }
+    let worth_foundational::FoundationalBranchTarget::Basis(ref_target) =
+        successor.descriptor().reference().target()
+    else {
+        return Err(Cause::SubjectMismatch);
+    };
+    if successor.descriptor().branch_id() != &receipt.branch_id
+        || ref_target.selected_commit_id() != receipt.commit_id.0
+        || ref_target.version_id() != receipt.version_id.0
+        || ref_target.roots() != effect.subject().roots()
+        || ref_target
+            .parent_commit_ids()
+            .iter()
+            .copied()
+            .ne(receipt.parents.iter().map(|id| id.0))
     {
         return Err(Cause::SubjectMismatch);
     }
