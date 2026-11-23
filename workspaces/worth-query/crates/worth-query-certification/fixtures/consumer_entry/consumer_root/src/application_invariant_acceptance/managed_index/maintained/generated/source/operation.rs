@@ -15,7 +15,9 @@ worth_query_structured_value_binding!(pub InputBinding for RequestItem { identit
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "maintained-generated.request-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-generated.request-denial.v1" });
 worth_query_operation!(pub RequestGeneratedItem for Catalog, input InputBinding);
-worth_query_operation_reads!(RequestGeneratedItem => [Directory]);
+worth_query_operation_reads!(RequestGeneratedItem => [Directory, Item]);
+worth_query_operation_creates!(RequestGeneratedItem => [Item]);
+worth_query_operation_links!(RequestGeneratedItem => [Contains]);
 
 fn scope(input: &RequestItem) -> String {
     input.directory.clone()
@@ -75,6 +77,9 @@ where
                     input.name.clone(),
                 )
                 .map_err(HandlerExecutionDenial::new)?;
+            if let Some(identity) = super::super::super::peer_scope::SOURCE_CREATES.get() {
+                create_item(writer, &directory, identity)?;
+            }
             Ok(Changed)
         })())
     }
@@ -96,5 +101,45 @@ pub(in super::super) fn declare(
         .operation_read_field(operation, DirectoryIdentity::at("DirectoryIdentity"))
         .operation_read_field(operation, DirectoryNote::at("DirectoryNote"))
         .operation_write(operation, DirectoryNote::at("DirectoryNote"))
+        .operation_create(operation, Item::reference())
+        .operation_link(operation, Contains::reference())
+        .operation_write(operation, ItemIdentity::at("ItemIdentity"))
+        .operation_write(operation, ItemName::at("ItemName"))
+        .operation_write(operation, ItemEnabled::at("ItemEnabled"))
+        .operation_write(operation, super::super::super::bounds::ItemBounds::at("ItemBounds"))
         .application_mutation_binding::<Binding>()
+}
+
+/// An authored Item the source action adds beside its note, when armed.
+fn create_item<B: ApplicationMutationBinding<Catalog, Operation = RequestGeneratedItem>>(
+    writer: &mut CandidateWriter<'_, Catalog, B>,
+    directory: &WorthQueryApplicationEffectEntity<Catalog, Directory>,
+    identity: &str,
+) -> Result<(), HandlerExecutionDenial> {
+    let item = writer
+        .create_entity_in_context(
+            directory,
+            Item::reference(),
+            WorthQueryApplicationEntityKey::new(identity).unwrap(),
+        )
+        .map_err(HandlerExecutionDenial::new)?;
+    writer
+        .initialize_field(&item, ItemIdentity::at("ItemIdentity"), identity.to_owned())
+        .map_err(HandlerExecutionDenial::new)?;
+    writer
+        .initialize_field(&item, ItemName::at("ItemName"), identity.to_owned().into())
+        .map_err(HandlerExecutionDenial::new)?;
+    writer
+        .initialize_field(&item, ItemEnabled::at("ItemEnabled"), true)
+        .map_err(HandlerExecutionDenial::new)?;
+    writer
+        .initialize_field(
+            &item,
+            super::super::super::bounds::ItemBounds::at("ItemBounds"),
+            super::super::super::bounds::Coordinates::new(0, 0, 0, 0),
+        )
+        .map_err(HandlerExecutionDenial::new)?;
+    writer
+        .link(Contains::reference(), &format!("{identity}-source"), directory, &item)
+        .map_err(HandlerExecutionDenial::new)
 }

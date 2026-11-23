@@ -60,10 +60,12 @@ impl IndexDecisionFailure {
 /// Why a partitioned computation's managed index read was refused.
 ///
 /// The read is the operation's issued decision read: its Parent must be
-/// declared with `operation_managed_index_read`, its projected fields must be
-/// declared reads, its resolved scope must equal the operation's admitted
-/// scope, and it reads only the committed admitted basis. Each refusal keeps
-/// its original typed cause.
+/// declared with `operation_managed_index_read` (or, at a peer scope, with
+/// `operation_shared_owner_managed_index_read`), its projected fields must be
+/// declared reads, and its resolved scope must be the operation's admitted
+/// scope or a declared shared-owner peer. It reads the committed admitted
+/// basis, or a producer's applied candidate's aligned before basis. Each
+/// refusal keeps its original typed cause.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct WorthQueryComputationManagedIndexDenial {
     cause: Box<Cause>,
@@ -83,8 +85,8 @@ enum Cause {
 /// The phase that refused a computation's managed index read.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryComputationManagedIndexDenialKind {
-    /// The reader has no committed admitted source-query posture: an
-    /// inspection reader, or an authored stage reading an applied candidate.
+    /// The reader has no admitted source-query posture: an inspection reader,
+    /// or an applied reader without its issuing coupled assembly.
     ContextUnavailable,
     /// The reader's snapshot or selected product is not the borrowed basis.
     SourceMismatch,

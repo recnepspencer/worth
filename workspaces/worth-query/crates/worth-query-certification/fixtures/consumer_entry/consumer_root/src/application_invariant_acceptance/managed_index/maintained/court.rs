@@ -17,6 +17,7 @@ mod correction;
 mod decision_scope;
 mod exact_refinement;
 mod membership;
+mod producer_read;
 pub(super) mod prefix_growth;
 mod realized_footprint;
 mod retirement;

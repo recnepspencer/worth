@@ -8600,6 +8600,40 @@ Ordinary row/result-set expectations use `expect_source` and `expect_result_set`
                 });
 ```
 
+A producer's own coupled decision, and the partitioned computations it
+prepares, make the same `index_query` read on its applied candidate. The read
+uses the admitted before basis the candidate was built on, and only while the
+live coupled assembly proves that the candidate left the Parent's Source
+unchanged: no created or removed entity of the Source's scope, row or path
+kinds, no projected field write and no change to a physical Source relation.
+Otherwise the read refuses with
+`WorthQueryManagedIndexRefusal::UnpublishedSourceChange` before any provider
+call; the unpublished change is never hidden behind the committed image. The
+Source fact is recorded with the producer's decision or computation call, so a
+committed change to that Source before publication turns the commit stale.
+Input capture readers have no managed index read.
+
+To read the Parent at a peer scope, declare the governing relation:
+`schema.operation_shared_owner_managed_index_read::<PrefixBinding, _, _, _, _, _>(op, ModelFeature::reference())`.
+A peer is any scope that shares an owner with the operation's own scope through
+that relation (`owner -relation-> own scope` and `owner -relation-> peer`); the
+relation's `to` endpoint must be the Parent's input-named scope entity, and the
+operation's own scope still needs `operation_managed_index_read`. Both owner
+sets are read as recorded decision facts, and each probed scope records its own
+managed Source fact, so an edit to the relation or to any probed peer's Source
+invalidates the decision. Any other scope, a foreign principal, or a peer with
+no such declaration refuses as `ForeignAssociation` before any provider call.
+A shared decision-read scope cannot lend a peer read.
+
+<!-- compiled: managed_peer_decision.rs -->
+```rust
+        .operation_managed_index_read::<query::PrefixBinding, _, _>(op)
+        .operation_shared_owner_managed_index_read::<query::PrefixBinding, _, _, _, _, _>(
+            op,
+            GrantResource::reference(),
+        )
+```
+
 Resolve the index with `resolver.typed_managed_index(Index::reference())` in its
 installed rule factory. Retain `planner.retain_managed_index(&binding)` in the
 rule's `Scope`, then use `context.managed_index(&prepared)` during evaluation.

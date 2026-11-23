@@ -18,6 +18,9 @@ where
         input: &Generate,
         reader: &mut DecisionReader<'_, '_, '_, Catalog, B>,
     ) -> HandlerResult<Decision, Denial> {
+        if let Err(cause) = super::super::super::peer_scope::probe(reader, &input.directory) {
+            return HandlerResult::ExecutionDenied(cause);
+        }
         HandlerResult::from_result((|| {
             let a = reader.resolve_entity(
                 DirectoryIdentity::at("DirectoryIdentity"),
