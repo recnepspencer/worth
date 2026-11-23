@@ -1,6 +1,8 @@
 //! One installed operation whose handler executes an authored plan through
 //! the ordinary candidate writer: creates, deletes and seam links, plus the
-//! persistent-name births and postures the plan declares over them.
+//! persistent-name births and postures the plan declares over them. Its
+//! decision reads the names it acts on: members by `name_of`, seams by
+//! `relation_name_of`.
 //!
 //! The plan lives in a token-keyed registry because a court authors it from
 //! names held by earlier operations; the handler itself only uses the public
@@ -10,9 +12,10 @@ use std::sync::Mutex;
 
 use super::super::*;
 use worth_query_host::facade::application_naming::{
-    ExecutionNamingDenial, WorthQueryName, WorthQueryOutputBirth, WorthQueryOutputMergeKeeper,
-    WorthQueryOutputNameDenial,
+    ExecutionNamingDenial, WorthQueryName, WorthQueryOutputBirth, WorthQueryOutputNameDenial,
 };
+
+mod execute;
 
 /// A held member name: one read by this run's decision, or one a court holds.
 #[derive(Clone, Debug)]
@@ -28,10 +31,51 @@ pub enum Keeper {
     MintNew(String, WorthQueryOutputBirth),
 }
 
+/// A held seam name: one this run's decision read under a label, or one a
+/// court holds.
+#[derive(Clone, Debug)]
+pub enum HeldSeam {
+    Read(String),
+    Name(WorthQueryName<Seam>),
+}
+
+#[derive(Clone, Debug)]
+pub enum SeamKeeper {
+    InPlace(HeldSeam),
+    Onto(HeldSeam, String),
+    MintNew(String, WorthQueryOutputBirth),
+}
+
 #[derive(Clone, Debug)]
 pub enum Step {
     Birth(String, WorthQueryOutputBirth),
     SeamBirth(String, WorthQueryOutputBirth),
+    /// Names created member `key` as the `side` piece cut by `of`, a member
+    /// this run created and named: the birth references its same-commit name.
+    BirthCutBy {
+        key: String,
+        birth: WorthQueryOutputBirth,
+        side: u64,
+        of: String,
+    },
+    /// Names created member `key` as the `side` piece cut along `seam`, a
+    /// seam this run linked and named.
+    BirthAlong {
+        key: String,
+        birth: WorthQueryOutputBirth,
+        side: u64,
+        seam: String,
+    },
+    /// Names created seam `key`, told apart by created member `of`.
+    SeamBirthOf {
+        key: String,
+        birth: WorthQueryOutputBirth,
+        index: u64,
+        of: String,
+    },
+    SeamRetire(HeldSeam),
+    SeamSplit(HeldSeam, Vec<(String, WorthQueryOutputBirth)>),
+    SeamMerge(Vec<HeldSeam>, SeamKeeper),
     /// Names a fresh `ModelMember` link (an unschemed relation) to `key`.
     NameOwnerLink(String, WorthQueryOutputBirth),
     Retire(Held),
@@ -41,9 +85,11 @@ pub enum Step {
 
 /// What one run does. `reads` are resolved (and named) in the decision;
 /// `deletes` must be among them; `unlinks` remove the seams read `(from, to)`
-/// members hold; `seams` link `(key, from, to)` members.
+/// members hold; `seams` link `(key, from, to)` members; `seam_reads` name
+/// the seam between read `(label, from, to)` members in the decision.
 #[derive(Clone, Debug, Default)]
 pub struct Plan {
+    pub seam_reads: Vec<(String, String, String)>,
     pub reads: Vec<String>,
     pub creates: Vec<String>,
     pub deletes: Vec<String>,
@@ -56,6 +102,7 @@ pub struct Plan {
 struct Run {
     plan: Plan,
     names: BTreeMap<String, WorthQueryName<Member>>,
+    seam_names: BTreeMap<String, WorthQueryName<Seam>>,
     refused: Option<Refusal>,
 }
 
@@ -65,7 +112,18 @@ struct Run {
 pub enum Refusal {
     Unschemed(String),
     NotCreated,
-    MissingSplitDiscriminator { role: String },
+    MissingSplitDiscriminator {
+        role: String,
+    },
+    /// A same-commit reference to a role that is not strictly earlier.
+    NonPrecedingRole {
+        role: String,
+        referenced: String,
+    },
+    /// A same-commit reference into another occurrence.
+    CrossOccurrence,
+    /// A same-commit name requested for an output the run has not named.
+    UnnamedReference(String),
     Other(String),
 }
 
@@ -81,6 +139,20 @@ impl Refusal {
             ) => Self::MissingSplitDiscriminator {
                 role: role_path.clone(),
             },
+            WorthQueryOutputNameDenial::Assembly(
+                ExecutionNamingDenial::NonPrecedingSameOccurrenceRole {
+                    role_path,
+                    referenced_role,
+                    ..
+                },
+            ) => Self::NonPrecedingRole {
+                role: role_path.clone(),
+                referenced: referenced_role.clone(),
+            },
+            WorthQueryOutputNameDenial::CrossOccurrenceReference { .. } => Self::CrossOccurrence,
+            WorthQueryOutputNameDenial::UnnamedOutputReference { subject_name, .. } => {
+                Self::UnnamedReference(subject_name.clone())
+            }
             other => Self::Other(other.to_string()),
         }
     }
@@ -143,6 +215,7 @@ impl OperationHandler<Schema, Binding> for Handler {
         let result = (|| {
             let model = reader.resolve_entity(ModelKey::at("ModelKey"), "a".to_owned())?;
             let mut names = BTreeMap::new();
+            let mut members = BTreeMap::new();
             for key in plan.reads {
                 let member = reader.resolve_entity(MemberKey::at("MemberKey"), key.clone())?;
                 reader.entity(&member, Member::reference())?;
@@ -155,10 +228,26 @@ impl OperationHandler<Schema, Binding> for Handler {
                     .reader()
                     .name_of(&member)
                     .map_err(HandlerExecutionDenial::new)?;
-                names.insert(key, name);
+                names.insert(key.clone(), name);
+                members.insert(key, member);
+            }
+            let mut seam_names = BTreeMap::new();
+            for (label, from, to) in plan.seam_reads {
+                let seam = reader
+                    .relations_from(Seam::reference(), &members[&from])
+                    .map_err(HandlerExecutionDenial::new)?
+                    .into_iter()
+                    .find(|seam| seam.to() == &members[&to])
+                    .unwrap_or_else(|| panic!("no seam `{label}` from `{from}` to `{to}`"));
+                let name = reader
+                    .reader()
+                    .relation_name_of(&seam)
+                    .map_err(HandlerExecutionDenial::new)?;
+                seam_names.insert(label, name);
             }
             if let Some(run) = runs().get_mut(&input.token) {
                 run.names = names;
+                run.seam_names = seam_names;
             }
             reader.mutation_target(&model)
         })();
@@ -174,12 +263,12 @@ impl OperationHandler<Schema, Binding> for Handler {
         model: WorthQueryInvariantMutationTarget<Schema, Model>,
         writer: &mut CandidateWriter<'_, Schema, Binding>,
     ) -> HandlerResult<edit::Edited, edit::Denial> {
-        let (plan, names) = {
+        let (plan, names, seam_names) = {
             let runs = runs();
             let run = runs.get(&input.token).expect("authored plan");
-            (run.plan.clone(), run.names.clone())
+            (run.plan.clone(), run.names.clone(), run.seam_names.clone())
         };
-        match execute(&plan, &names, &model, writer) {
+        match execute::execute(&plan, &names, &seam_names, &model, writer) {
             Ok(()) => HandlerResult::Completed(edit::Edited),
             Err(cause) => {
                 if let Some(run) = runs().get_mut(&input.token) {
@@ -189,99 +278,6 @@ impl OperationHandler<Schema, Binding> for Handler {
             }
         }
     }
-}
-
-fn execute(
-    plan: &Plan,
-    names: &BTreeMap<String, WorthQueryName<Member>>,
-    model: &WorthQueryInvariantMutationTarget<Schema, Model>,
-    writer: &mut CandidateWriter<'_, Schema, Binding>,
-) -> Result<(), WorthQueryApplicationAttemptDenial> {
-    let held = |held: &Held| match held {
-        Held::Read(key) => *names.get(key).expect("decision read the held member"),
-        Held::Name(name) => *name,
-    };
-    let context = writer.projected_entity(model)?;
-    let mut members = BTreeMap::new();
-    for key in &plan.creates {
-        let created = writer.create_entity_in_context(
-            &context,
-            Member::reference(),
-            WorthQueryApplicationEntityKey::new(key).unwrap(),
-        )?;
-        writer.initialize_field(&created, MemberKey::at("MemberKey"), key.clone())?;
-        writer.initialize_field(&created, MemberValue::at("MemberValue"), 7)?;
-        writer.link(
-            ModelMember::reference(),
-            format!("owns:{key}"),
-            &context,
-            &created,
-        )?;
-        members.insert(key.clone(), created);
-    }
-    for key in &plan.reads {
-        let existing = writer.resolve_entity(MemberKey::at("MemberKey"), key.clone())?;
-        members.entry(key.clone()).or_insert(existing);
-    }
-    for (from, to) in &plan.unlinks {
-        writer.unlink(Seam::reference(), &members[from], &members[to])?;
-    }
-    for key in &plan.deletes {
-        writer.delete_entity(Member::reference(), &members[key])?;
-    }
-    let mut seams = BTreeMap::new();
-    for (key, from, to) in &plan.seams {
-        let seam = writer.link_for_initialization(
-            Seam::reference(),
-            key.clone(),
-            &members[from],
-            &members[to],
-        )?;
-        seams.insert(key.clone(), seam);
-    }
-    for step in &plan.steps {
-        match step {
-            Step::Birth(key, birth) => writer.name_created_entity(&members[key], birth.clone())?,
-            Step::SeamBirth(key, birth) => {
-                writer.name_created_relation(&seams[key], birth.clone())?
-            }
-            Step::NameOwnerLink(key, birth) => {
-                let link = writer.link_for_initialization(
-                    ModelMember::reference(),
-                    format!("named-owner:{key}"),
-                    &context,
-                    &members[key],
-                )?;
-                writer.name_created_relation(&link, birth.clone())?
-            }
-            Step::Retire(name) => writer.retire_entity_name(held(name))?,
-            Step::Split(parent, children) => {
-                let children = children
-                    .iter()
-                    .map(|(key, birth)| (&members[key], birth.clone()))
-                    .collect();
-                writer.split_entity_name(held(parent), children)?
-            }
-            Step::Merge(parents, keeper) => {
-                let parents: Vec<_> = parents.iter().map(held).collect();
-                let keeper = match keeper {
-                    Keeper::InPlace(name) => {
-                        WorthQueryOutputMergeKeeper::KeepParentInPlace(held(name))
-                    }
-                    Keeper::Onto(name, key) => WorthQueryOutputMergeKeeper::KeepParentOnto {
-                        keeper: held(name),
-                        target: &members[key],
-                    },
-                    Keeper::MintNew(key, birth) => WorthQueryOutputMergeKeeper::MintNew {
-                        target: &members[key],
-                        birth: birth.clone(),
-                    },
-                };
-                writer.merge_entity_names(&parents, keeper)?
-            }
-        }
-    }
-    Ok(())
 }
 
 pub fn declare(

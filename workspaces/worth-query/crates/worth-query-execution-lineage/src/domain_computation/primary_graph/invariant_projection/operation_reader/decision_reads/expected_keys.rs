@@ -50,6 +50,15 @@ impl ExpectedFactKeys {
         self.components
             .get(key, admission, contracts, snapshot.into())
     }
+    pub fn applied_source(
+        &self,
+        key: &crate::domain_computation::primary_graph::application_query::observed_source::fact_conversion::source_fact_locator::SourceFactLocator,
+        admission: crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity,
+        contracts: &Arc<worth_query_installation::facade::WorthQueryCompiledApplicationOperationContracts>,
+        origin: crate::domain_computation::primary_graph::projection_read_origin::ProjectionReadOriginRef<'_>,
+    ) -> Option<&crate::domain_computation::primary_graph::application_attempt::WorthQueryApplicationObservedFact> {
+        self.managed_sources.applied(key, admission, contracts, origin)
+    }
     pub fn source_authorization(
         &self,
         key: &crate::domain_computation::primary_graph::application_attempt::SourceReadAuthorizationKey,

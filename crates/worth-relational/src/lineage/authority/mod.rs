@@ -2,6 +2,7 @@ mod commit_births;
 mod commit_finalization;
 use crate::lineage::data::discriminator_scan;
 mod event_emission;
+mod mint_order;
 mod name_minting;
 mod name_readmission;
 mod posture_allocation_drafts;
@@ -16,7 +17,11 @@ mod selection_continuity;
 mod staged_effects;
 
 #[cfg(test)]
+mod mint_order_tests;
+#[cfg(test)]
 mod name_minting_tests;
+#[cfg(test)]
+mod pending_birth_identity;
 
 pub(crate) use commit_births::extract_committed_name_births;
 #[cfg(test)]

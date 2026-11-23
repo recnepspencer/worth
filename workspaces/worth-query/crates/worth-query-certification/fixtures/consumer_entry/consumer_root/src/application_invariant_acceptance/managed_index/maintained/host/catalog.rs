@@ -60,6 +60,12 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
             registration.with_refinement()
         };
         registration.install()?;
+        setup
+            .managed_index_provider::<super::super::ordered_decision::Index, _>(
+                prefix::Provider(Arc::new(prefix_observation::Calls::default())),
+            )
+            .with_predicate_routing()
+            .install()?;
         correction::configure(setup)?;
         let probe = setup.partitioned_computation::<Feature, super::super::probe::Computation, _>(
             super::super::probe::Owner,
@@ -202,6 +208,16 @@ impl worth_query_decl::facade::application_schema::fragment::Registration<Catalo
             .operation_shared_owner_managed_index_read::<query::PrefixBinding, _, _, _, _, _>(
                 mutation::RenameItem::reference(),
                 Shelves::reference(),
+            )
+            .operation_managed_index_read::<query::PrefixBinding, _, _>(
+                super::super::authoring::AuthorCatalog::reference(),
+            )
+            .operation_managed_index_read::<source_authorization::NativeBinding, _, _>(
+                super::super::authoring::AuthorCatalog::reference(),
+            )
+            .operation_read_field(
+                super::super::authoring::AuthorCatalog::reference(),
+                ItemName::at("ItemName"),
             )
             .operation_managed_index_read::<super::super::refinement::ExactBinding, _, _>(
                 mutation::RenameItem::reference(),

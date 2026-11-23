@@ -1,5 +1,8 @@
 //! This actual source action owns the generated feature's fixed output discharge.
-use super::super::super::schema::*;
+use super::super::super::{
+    ordered_decision::{Entries, Previous},
+    schema::*,
+};
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
 #[derive(Clone, Debug, serde::Serialize)]
@@ -17,7 +20,7 @@ worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "
 worth_query_operation!(pub RequestGeneratedItem for Catalog, input InputBinding);
 worth_query_operation_reads!(RequestGeneratedItem => [Directory, Item]);
 worth_query_operation_creates!(RequestGeneratedItem => [Item, Directory]);
-worth_query_operation_links!(RequestGeneratedItem => [Contains]);
+worth_query_operation_links!(RequestGeneratedItem => [Contains, Entries, Previous]);
 
 fn scope(input: &RequestItem) -> String {
     input.directory.clone()
@@ -78,10 +81,32 @@ where
                 )
                 .map_err(HandlerExecutionDenial::new)?;
             if let Some(identity) = super::super::super::peer_scope::SOURCE_CREATES.get() {
-                create_item(writer, &directory, identity)?;
+                create_item(writer, &directory, &directory, identity)?;
             }
             if let Some(identity) = super::super::super::peer_scope::SOURCE_SIBLING.get() {
                 create_sibling(writer, &directory, identity)?;
+            }
+            if let Some((successor, item)) =
+                super::super::super::peer_scope::ORDERED_SUCCESSOR.get()
+            {
+                let sibling = create_sibling(writer, &directory, successor)?;
+                writer
+                    .link(
+                        Previous::reference(),
+                        "ordered-successor",
+                        &sibling,
+                        &directory,
+                    )
+                    .map_err(HandlerExecutionDenial::new)?;
+                let created = create_item(writer, &directory, &sibling, item)?;
+                writer
+                    .link(
+                        Entries::reference(),
+                        "ordered-child-row",
+                        &sibling,
+                        &created,
+                    )
+                    .map_err(HandlerExecutionDenial::new)?;
             }
             Ok(Changed)
         })())
@@ -108,22 +133,28 @@ pub(in super::super) fn declare(
         .operation_create(operation, Directory::reference())
         .operation_write(operation, DirectoryIdentity::at("DirectoryIdentity"))
         .operation_link(operation, Contains::reference())
+        .operation_link(operation, Previous::reference())
+        .operation_link(operation, Entries::reference())
         .operation_write(operation, ItemIdentity::at("ItemIdentity"))
         .operation_write(operation, ItemName::at("ItemName"))
         .operation_write(operation, ItemEnabled::at("ItemEnabled"))
-        .operation_write(operation, super::super::super::bounds::ItemBounds::at("ItemBounds"))
+        .operation_write(
+            operation,
+            super::super::super::bounds::ItemBounds::at("ItemBounds"),
+        )
         .application_mutation_binding::<Binding>()
 }
 
 /// An authored Item the source action adds beside its note, when armed.
 fn create_item<B: ApplicationMutationBinding<Catalog, Operation = RequestGeneratedItem>>(
     writer: &mut CandidateWriter<'_, Catalog, B>,
+    context: &WorthQueryApplicationEffectEntity<Catalog, Directory>,
     directory: &WorthQueryApplicationEffectEntity<Catalog, Directory>,
     identity: &str,
-) -> Result<(), HandlerExecutionDenial> {
+) -> Result<WorthQueryApplicationEffectEntity<Catalog, Item>, HandlerExecutionDenial> {
     let item = writer
         .create_entity_in_context(
-            directory,
+            context,
             Item::reference(),
             WorthQueryApplicationEntityKey::new(identity).unwrap(),
         )
@@ -145,8 +176,14 @@ fn create_item<B: ApplicationMutationBinding<Catalog, Operation = RequestGenerat
         )
         .map_err(HandlerExecutionDenial::new)?;
     writer
-        .link(Contains::reference(), &format!("{identity}-source"), directory, &item)
-        .map_err(HandlerExecutionDenial::new)
+        .link(
+            Contains::reference(),
+            &format!("{identity}-source"),
+            directory,
+            &item,
+        )
+        .map_err(HandlerExecutionDenial::new)?;
+    Ok(item)
 }
 
 /// A sibling Directory the source action adds beside its note, when armed: a
@@ -155,7 +192,7 @@ fn create_sibling<B: ApplicationMutationBinding<Catalog, Operation = RequestGene
     writer: &mut CandidateWriter<'_, Catalog, B>,
     directory: &WorthQueryApplicationEffectEntity<Catalog, Directory>,
     identity: &str,
-) -> Result<(), HandlerExecutionDenial> {
+) -> Result<WorthQueryApplicationEffectEntity<Catalog, Directory>, HandlerExecutionDenial> {
     let sibling = writer
         .create_entity_in_context(
             directory,
@@ -172,5 +209,6 @@ fn create_sibling<B: ApplicationMutationBinding<Catalog, Operation = RequestGene
         .map_err(HandlerExecutionDenial::new)?;
     writer
         .initialize_field(&sibling, DirectoryNote::at("DirectoryNote"), String::new())
-        .map_err(HandlerExecutionDenial::new)
+        .map_err(HandlerExecutionDenial::new)?;
+    Ok(sibling)
 }

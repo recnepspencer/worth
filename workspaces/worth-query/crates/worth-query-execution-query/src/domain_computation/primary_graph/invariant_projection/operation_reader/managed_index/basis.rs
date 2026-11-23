@@ -1,11 +1,8 @@
-//! The basis an issued decision index read uses. A committed decision reads
-//! its committed admitted basis through the reader's own Native borrow. An
-//! applied producer decision reads the admitted before basis its candidate was
-//! built on, and only with the live assembly that can prove the candidate left
-//! the Parent's Source unchanged; without it the read stays unavailable.
+//! The committed basis or live coupled assembly that issued this decision.
 use super::*;
 use crate::domain_computation::primary_graph::application_query::managed_index::AppliedManagedIndexRead;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
+use worth_query_execution_lineage::facade::primary_graph::invariant_projection::read_basis::NativeProjectionRead;
 use worth_query_execution_runtime::facade::ports::ProductBranchLeaseInternalPort as _;
 use worth_relational::facade::runtime::RelationalRuntime;
 
@@ -33,21 +30,30 @@ impl<'r> DecisionReadBasis<'r> {
             return Err(Failure::ForeignProjection);
         }
         let native = reader.reader().native();
-        let basis = match (native.committed_runtime_lent(), native.applied_pin_lent()) {
-            (Some(runtime), None) => Self::Committed(runtime),
-            (None, Some(candidate)) => {
+        let basis = match *native {
+            NativeProjectionRead::Committed(runtime) => Self::Committed(runtime),
+            NativeProjectionRead::Applied {
+                before,
+                candidate,
+                own_outputs,
+            } => {
                 // The candidate must be built on exactly the borrowed basis.
-                if candidate.candidate_identity().proposal().branch_observation()
+                if candidate
+                    .candidate_identity()
+                    .proposal()
+                    .branch_observation()
                     != selected.product().relational_basis_descriptor().reference()
                 {
                     return Err(Failure::ForeignProjection);
                 }
                 Self::Applied(AppliedManagedIndexRead {
-                    alignment: access.applied_managed_sources.ok_or_else(unavailable)?,
+                    assembly: access.applied_managed_sources.ok_or_else(unavailable)?,
+                    participants: access.applied_participants.ok_or_else(unavailable)?,
+                    before,
                     candidate,
+                    own: own_outputs,
                 })
             }
-            _ => return Err(unavailable()),
         };
         let snapshot = reader.reader().snapshot();
         let borrowed = selected.application_basis().snapshot_handle();
@@ -96,7 +102,8 @@ impl<'r> DecisionReadBasis<'r> {
                     .runtime
                     .primary_graph()
                     .ok_or_else(unavailable)?;
-                ApplicationQueryNativeAccess::borrowed(graph, runtime).map_err(Failure::NativeAccess)
+                ApplicationQueryNativeAccess::borrowed(graph, runtime)
+                    .map_err(Failure::NativeAccess)
             }
             Self::Applied(_) => Ok(ApplicationQueryNativeAccess::acquire()),
         }

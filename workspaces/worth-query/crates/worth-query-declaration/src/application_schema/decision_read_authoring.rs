@@ -11,6 +11,8 @@ mod resolution;
 pub(crate) use resolution::operation_declares_decision_read;
 mod scope;
 #[cfg(test)]
+mod shared_owner_tests;
+#[cfg(test)]
 mod tests;
 pub use reference::ApplicationDecisionReadScopeRef;
 pub use resolution::{
@@ -44,10 +46,19 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
     /// Declares the managed Parent readable at a peer scope: any `Member` that
     /// shares an `Owner` with the operation's own scope through `relation`.
     /// A read at any other scope, or for another principal, stays refused as
-    /// `ForeignAssociation` before any provider call. The governing relation is
-    /// declared as this operation's decision read too: reaching the peer reads
-    /// it, so its edits invalidate the decision.
-    pub fn operation_shared_owner_managed_index_read<Binding, Operation, Input, Relation, Owner, Member>(
+    /// `ForeignAssociation` before any provider call. Finalization emits one
+    /// canonical decision read on the governing relation when not already
+    /// declared: reaching the peer reads it, so its edits invalidate the
+    /// decision, while multiple Parents on the same governing relation share
+    /// that read without `DuplicateMember`.
+    pub fn operation_shared_owner_managed_index_read<
+        Binding,
+        Operation,
+        Input,
+        Relation,
+        Owner,
+        Member,
+    >(
         self,
         operation: ApplicationOperationRef<Schema, Operation, Input>,
         relation: ApplicationRelationRef<Schema, Relation, Owner, Member>,
@@ -57,12 +68,7 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         Binding: crate::application_query::ApplicationQueryBinding<Schema>,
         Relation: OperationReads<Operation>,
     {
-        let relation_read = ApplicationOperationDecisionReadTarget::Relation {
-            relation: relation.name().to_string(),
-            from: relation.from().to_string(),
-            to: relation.to().to_string(),
-        };
-        self.decision_read(operation.name(), relation_read).decision_read(
+        self.decision_read(
             operation.name(),
             ApplicationOperationDecisionReadTarget::SharedOwnerManagedIndex {
                 parent: crate::application_query::ApplicationQueryBindingReference::of::<

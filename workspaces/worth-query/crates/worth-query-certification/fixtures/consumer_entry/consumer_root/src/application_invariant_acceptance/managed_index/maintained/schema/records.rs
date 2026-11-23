@@ -74,7 +74,11 @@ pub struct Directory;
 impl fragment::Entity for Directory {
     const NAME: &'static str = "Directory";
     type Aspects = (DirectoryFacts,);
-    type Relations = (Contains, super::geometry::schema::ContainsEdge, Shelves);
+    type Relations = (
+        Contains, super::geometry::schema::ContainsEdge, Shelves,
+        super::super::ordered_decision::Previous, super::super::ordered_decision::Retires,
+        super::super::ordered_decision::Entries,
+    );
 }
 impl Directory {
     pub fn reference() -> ApplicationEntityRef<Catalog, Self> {

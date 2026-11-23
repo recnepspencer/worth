@@ -38,6 +38,11 @@ pub(super) struct SourceRelevance<'p> {
     born: BTreeSet<EntityId>,
     key_of: ScopeKeyReader<'p>,
     probed_key: Option<worth_foundational::facade::AspectValue>,
+    /// The endpoints of every edge this candidate linked or unlinked.
+    edges: std::collections::BTreeMap<crate::identity::data::RelationId, (EntityId, EntityId)>,
+    /// What the probed scope's Source read before the judged member, when
+    /// known: a relevant kind is then relevant only on what it read.
+    reach: Option<super::reach::Reach>,
 }
 
 impl<'p> SourceRelevance<'p> {
@@ -133,7 +138,23 @@ impl<'p> SourceRelevance<'p> {
             born,
             key_of,
             probed_key: key_of(probed),
+            edges: effect
+                .adjacency
+                .deltas
+                .iter()
+                .map(|delta| {
+                    let (AdjacencyDeltaKind::Created { source, target }
+                    | AdjacencyDeltaKind::Deleted { source, target }) = delta.kind;
+                    (delta.relation_id, (source, target))
+                })
+                .collect(),
+            reach: None,
         }
+    }
+
+    pub(super) fn reached_by(mut self, reach: Option<super::reach::Reach>) -> Self {
+        self.reach = reach;
+        self
     }
 
     pub(super) fn adjacency(&self, delta: &AdjacencyDelta) -> bool {
@@ -148,27 +169,36 @@ impl<'p> SourceRelevance<'p> {
             return match delta.kind {
                 AdjacencyDeltaKind::Created { source, .. } => !self.born.contains(&source),
                 AdjacencyDeltaKind::Deleted { .. } => true,
-            };
+            } && self.reads_relation(delta.relation_id, delta.kind_id);
         }
-        self.physical(delta.kind_id)
+        self.physical(delta.kind_id) && self.reads_relation(delta.relation_id, delta.kind_id)
     }
 
     pub(super) fn delta(&self, delta: &CanonicalRecordAspectDelta) -> bool {
         let kind = delta.kind_id;
         match delta.target {
-            RecordRef::Relation(_) => {
+            RecordRef::Relation(relation) => {
                 if self.footprint.relations.contains(&kind) {
                     return true;
                 }
-                match &self.ordered {
+                (match &self.ordered {
                     // Its edge was judged with its endpoints as an adjacency.
                     Some(ordered) if kind == ordered.predecessor => {
                         !matches!(delta.structural_change, Change::Created | Change::Updated)
                     }
                     _ => self.physical(kind),
-                }
+                }) && self.reads_relation(relation, kind)
             }
             RecordRef::Entity(id) => {
+                // Another scope taking the probed key is the probed scope's
+                // change wherever that scope lies.
+                if self.takes_probed_key(delta, id) {
+                    return true;
+                }
+                // Nothing the probed scope's Source read: not its change.
+                if !self.reads_entity(id) {
+                    return false;
+                }
                 if delta.structural_change == Change::Updated && self.parent_field_changed(delta) {
                     return true;
                 }
@@ -203,14 +233,21 @@ impl<'p> SourceRelevance<'p> {
         match (record, kind) {
             (_, None) => true,
             (RecordRef::Entity(id), Some(kind)) => {
+                if self.may_hold_probed_key(*id, kind) {
+                    return true;
+                }
+                if !self.reads_entity(*id) {
+                    return false;
+                }
                 if self.footprint.fields.iter().any(|(field, _, _)| *field == kind) {
                     return true;
                 }
                 !self.other_root(*id, kind)
                     && (self.entity(kind) || self.footprint.entities.contains(&kind))
             }
-            (RecordRef::Relation(_), Some(kind)) => {
-                self.physical(kind) || self.footprint.relations.contains(&kind)
+            (RecordRef::Relation(relation), Some(kind)) => {
+                self.footprint.relations.contains(&kind)
+                    || (self.physical(kind) && self.reads_relation(*relation, kind))
             }
         }
     }
@@ -311,5 +348,6 @@ fn field_changed(delta: &CanonicalRecordAspectDelta, aspect: &AspectKey, field: 
     }
 }
 
+mod narrowing;
 #[cfg(test)]
 mod tests;

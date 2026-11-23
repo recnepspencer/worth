@@ -352,6 +352,27 @@ An unnamed program carries no naming plan at all.
   otherwise). A relation's name never includes its endpoints: two
   same-role relations of one occurrence collide (`DuplicateBirth`) unless
   their discriminators differ.
+- **References to names born by the same commit.** An output of a later
+  role may tell itself apart by an output the same candidate named earlier
+  in the same occurrence. `writer.same_commit_entity_name(&created)` (or
+  `same_commit_relation_name`) returns a `WorthQuerySameCommitName<K>` for
+  an output the candidate created and has already named, whatever its
+  posture (a plain birth, a split piece or a minted merge survivor). It is
+  only a discriminator value (a field of that type in a
+  `worth_query_name_discriminator!` type): it is not a name, resolves
+  nothing and reveals no digest. At commit the referenced name is written
+  into the discriminator, in the same wire form a committed
+  `WorthQueryName<K>` takes, so the resulting name is the one the output
+  would have if the referenced record had been born by an earlier commit.
+  The scheme of the referencing output must list the referenced role
+  earlier in its `role_order` and declare
+  `role_depends_on(role, referenced_role)`; a reference across schemes (a
+  seam told apart by a member, or a member told apart by a seam) declares
+  the referenced role in the referencing output's scheme. References may
+  chain (a member, a seam told apart by it, a piece told apart by the
+  seam): Relational mints each birth after the births it references,
+  whatever their schemes. Pieces of one split cannot reference each other:
+  a reference designates an output named by an earlier call.
 - **Regeneration (`Preserve`).** `writer.retire_entity_name(held)` (or
   `retire_relation_name`) beside the deletion of the holder, plus a birth of
   the same occurrence and role, keeps the exact name on the regenerated
@@ -374,7 +395,14 @@ An unnamed program carries no naming plan at all.
   (`WorthQueryApplicationAttemptDenial::persistent_name_denial()` returns the
   typed `WorthQueryOutputNameDenial`; a split piece or minted merge survivor
   without its discriminator is its
-  `Assembly(ExecutionNamingDenial::MissingSplitDiscriminator)`). A held name
+  `Assembly(ExecutionNamingDenial::MissingSplitDiscriminator)`). A
+  same-commit reference refuses the same way: to an output the candidate
+  has not named (`UnnamedOutputReference`), from another candidate
+  (`ForeignOutputReference`), into another occurrence
+  (`CrossOccurrenceReference`), to a role that is not strictly earlier
+  (`Assembly(NonPrecedingSameOccurrenceRole)`) or to an earlier role the
+  scheme declares no dependency on
+  (`Assembly(UndeclaredSameOccurrenceDependency)`). A held name
   that no longer designates one live record at the commit basis refuses
   before staging
   (`WorthQueryApplicationCommitDenial::persistent_name_output_denial()`).
@@ -392,12 +420,17 @@ An unnamed program carries no naming plan at all.
 
 Limits: coupled synchronous producers and authored-edit stages cannot yet
 declare output names; a part that does refuses (`ProviderUnsupported`) rather
-than commit its names unnamed. Decision readers do not read relation names,
-so an installed operation holds no relation name to split, merge or retire
-by name (it can still name relations it creates, and unlinking a named
-relation retires its name). Courts:
-[installed operation output names](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/outputs/mod.rs)
-and [relation output postures](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_operation_outputs.rs).
+than commit its names unnamed. A merge keeping a parent in place refuses
+`LineagePostureMismatch` (`Merge parent must exist at commit basis`) when
+the operation changes no other record stored with the kept one (records one
+operation created are stored together); `KeepParentOnto` and `MintNew` have
+no such limit. An installed operation splits, merges and
+retires a relation by the name its decision reader read
+([holding and resolving names](#holding-and-resolving-names)); unlinking a
+named relation with no declared posture still retires its name. Courts:
+[installed operation output names](../workspaces/worth-query/crates/worth-query-court-decl-host-persistent-naming/tests/worth_query_court_decl_host_persistent_naming/persistent_naming/outputs/mod.rs),
+[relation output postures](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_operation_outputs.rs)
+and [same-commit references](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_same_commit_names.rs).
 
 #### Holding and resolving names
 
@@ -432,14 +465,28 @@ replay:
   name-read refusal other than the stable `RecordNotNamed` (including a
   pruned basis and a resolved record that cannot be admitted as a local
   identity), and any answer that also rested on ended names (which a later
-  `Restore` revives), on a held name not yet born, or on a relation record,
-  has no decision fact key: the projection refuses to seal with
+  `Restore` revives) or on a held name not yet born, has no decision fact
+  key: the projection refuses to seal with
   `FailedDecisionRead::PersistentName` instead, even when the handler
   swallowed the result (`PersistentNameReadVeto::for_name_of` and
   `for_resolve` state the classification). A handler reaches these reads
-  through `DecisionReader::reader()`. Group names
-  do not resolve at runtime yet: group transitions are not part of the
-  commit envelope.
+  through `DecisionReader::reader()`.
+- Relations are read the same way. `reader.relation_name_of(&relation)`
+  takes the handle the decision reader's own traversal returned
+  (`relations_from` / `relations_to`), never a raw relation identity, and
+  `reader.resolve_relation(Relation::reference(), &held, &selection)`
+  returns the resolved relations as such handles with their endpoints.
+  Both require the relation kind to be a declared decision read
+  (`Relation: OperationReads<Operation>`). Every live relation the answer
+  rested on is admitted with its endpoints into the read scope and keyed as
+  the relation between that endpoint pair, so a later operation unlinking,
+  retiring, splitting or merging it (or deleting an endpoint) invalidates
+  the decision. The same veto applies: a refused read other than
+  `RecordNotNamed`, an ended name on the walked path or an unborn held name
+  never seals. The handler then passes the names it read to
+  `retire_relation_name`, `split_relation_name` and `merge_relation_names`.
+- Group names do not resolve at runtime yet: group transitions are not part
+  of the commit envelope.
 - Name reads refuse `SettlementInFlight` while any commit at or before the
   reader's basis is published but not yet settled, and read a runtime with
   no installed name schemes, including a cold-restored one, as having no
@@ -8818,7 +8865,7 @@ Inside a mutation handler, read a managed Parent through
 operation's reads and register its exact binding with
 `schema.operation_managed_index_read::<PrefixBinding, _, _>(RenameItem::reference())`.
 Installation rejects a Parent whose scope mapping differs from that mutation;
-execution requires the resolved scope to equal the operation's admitted scope.
+the intent resolves to the operation's admitted scope or a declared shared-owner peer.
 Parent admission and the Source's own fresh principal, scope
 and READ checks still run. The decision retains the same qualified candidate
 influence or conservative whole-Source expectation described above, including
@@ -8833,27 +8880,34 @@ Ordinary row/result-set expectations use `expect_source` and `expect_result_set`
                 });
 ```
 
-A producer's own coupled decision, and the partitioned computations it
-prepares, make the same `index_query` read on its applied candidate. The read
-uses the admitted before basis the candidate was built on, and only while the
-live coupled assembly proves that the candidate left the Parent's Source at
-the probed scope unchanged: no created or removed row or path entity, no
-projected field write, no change to a physical Source relation, and no
-creation or removal of the probed scope itself. When the Source's scope kind
-is only its root anchor, a new or removed sibling scope (a feature created in
-the same envelope) does not touch an already-committed peer's Source. For an
-ordered-events Source (inline or behind one `forward_derived` relation) a scope
-created in the envelope may also gain a predecessor edge: only its own chain
-can follow it. Everything else the Parent reads is covered too: its projected,
-filtered and ordered fields, its nested result relations, and the scope-key
-field that resolved the probed scope, which is checked on every scope entity
-(field by field where Native kept old and new values).
-Otherwise the read refuses with
-`WorthQueryManagedIndexRefusal::UnpublishedSourceChange` before any provider
-call; the unpublished change is never hidden behind the committed image. The
-Source fact is recorded with the producer's decision or computation call, so a
-committed change to that Source before publication turns the commit stale.
-Input capture readers have no managed index read.
+A coupled producer decision, the partitioned computations it prepares, and a
+later authored decision with an applied candidate can make the same
+`index_query` read. When the live assembly proves that the probed scope, the
+Parent's Source, and the Parent's other reads are unchanged, the read reuses
+the admitted before-basis index. Otherwise it probes a temporary managed index
+from the exact applied candidate. A newly created scope can contribute its own
+rows and inherit rows from its ordered-events predecessor. A declared peer
+read sees Source writes already applied by earlier stages of the envelope.
+The scope key resolves on the applied candidate: a scope an earlier stage
+retired refuses as an unknown scope, and a key an earlier stage gave to a new
+record names that record.
+
+A read that reused the before-basis index keeps candidate support. When a
+later member of the same envelope changes a record or adjacency list the
+probed scope's Source read, or one of the Parent's other reads, an owned route
+derives again; any other reader's edit refuses (`CoupledReadSupportChanged`)
+and publishes nothing. A later member that writes the same kinds under
+another scope does not disturb the read. A derived-again round whose probe would read a record its own
+earlier round wrote refuses the probe (`PriorEffectRead`) and the round stops
+with that cause.
+
+The temporary index is local to the read. Only successful commit publication
+can advance the published index. Parent and Source READ permissions still run
+under the original admitted request, and the operation must declare the
+managed Parent and its projected fields. The Source and projection dependencies
+are recorded with the decision or computation call and participate in coupled
+read-support validation. Cancellation, deadlines, and work exhaustion retain
+their typed causes. Input capture readers have no managed index read.
 
 To read the Parent at a peer scope, declare the governing relation:
 `schema.operation_shared_owner_managed_index_read::<PrefixBinding, _, _, _, _, _>(op, ModelFeature::reference())`.
