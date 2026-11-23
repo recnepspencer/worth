@@ -41,7 +41,12 @@ pub(super) fn finalize_published_commit(
         published_snapshot_basis,
         published_snapshot_slot,
     } = input;
-    publish_storage(runtime, mirror_publication, phase_timing);
+    publish_storage(
+        &runtime.partitions,
+        &runtime.services.instrumentation.complexity_counters,
+        mirror_publication,
+        phase_timing,
+    );
     let started = std::time::Instant::now();
     prepared_history.install(&runtime.history, patch_position);
     phase_timing.history_publish_micros = phase_timing
@@ -60,9 +65,14 @@ pub(super) fn finalize_published_commit(
     if branch_id == &runtime.history.main_branch {
         reconcile_published_retention(runtime, changed_records, version_id, phase_timing);
     }
-    compact_durability(runtime, phase_timing);
+    compact_durability(
+        &runtime.durability.commit_log(),
+        &runtime.config.durability.policy.log,
+        phase_timing,
+    );
+    let publication = runtime.publication_authority();
     let snapshot_id = publish_artifacts(
-        runtime,
+        &publication,
         version_id,
         artifacts,
         patch_position,
@@ -71,7 +81,7 @@ pub(super) fn finalize_published_commit(
         phase_timing,
     );
     consume_post_commit_artifacts(
-        runtime,
+        &publication,
         PostCommitArtifactInput {
             commit_id,
             snapshot_id,
@@ -85,14 +95,15 @@ pub(super) fn finalize_published_commit(
 }
 
 fn publish_storage(
-    runtime: &crate::runtime::RelationalRuntime,
-    prepared: crate::storage::PreparedMirrorPublication,
+    partitions: &crate::runtime::state::subsystems::storage::StorageSubsystem,
+    counters: &std::sync::Mutex<
+        crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
+    >,
+    prepared: crate::storage::mirror_plan::PreparedMirrorPublication,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
     let started = std::time::Instant::now();
-    runtime
-        .storage_authority()
-        .publish_prepared_mirror(prepared);
+    crate::storage::mirror_publication::publish_prepared_mirror(partitions, counters, prepared);
     timing.storage_commit_micros = started.elapsed().as_micros() as u64;
 }
 
@@ -129,16 +140,17 @@ fn reconcile_published_retention(
 }
 
 fn compact_durability(
-    runtime: &crate::runtime::RelationalRuntime,
+    log: &crate::runtime::state::subsystems::durability::commit_log::DurabilityCommitLog<'_>,
+    policy: &crate::config::data::DurableLogPolicy,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
     let started = std::time::Instant::now();
-    runtime.durability_authority().compact_log_if_needed();
+    log.compact_if_needed(policy);
     timing.compaction_micros = started.elapsed().as_micros() as u64;
 }
 
 fn publish_artifacts(
-    runtime: &crate::runtime::RelationalRuntime,
+    publication: &crate::publication::authority::PublicationAuthority<'_>,
     version_id: crate::identity::data::VersionId,
     artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
     patch_position: crate::publication::patch::data::PatchStreamPosition,
@@ -147,13 +159,8 @@ fn publish_artifacts(
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) -> crate::snapshots::data::SnapshotId {
     let started = std::time::Instant::now();
-    let snapshot_id = runtime.publication_authority().publish_artifacts(
-        version_id,
-        artifacts,
-        patch_position,
-        basis,
-        slot,
-    );
+    let snapshot_id =
+        publication.publish_artifacts(version_id, artifacts, patch_position, basis, slot);
     timing.bundle_publish_micros = started.elapsed().as_micros() as u64;
     snapshot_id
 }
@@ -168,20 +175,18 @@ struct PostCommitArtifactInput<'a> {
 }
 
 fn consume_post_commit_artifacts(
-    runtime: &crate::runtime::RelationalRuntime,
+    publication: &crate::publication::authority::PublicationAuthority<'_>,
     input: PostCommitArtifactInput<'_>,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {
     let started = std::time::Instant::now();
-    runtime
-        .publication_authority()
-        .consume_post_commit_artifacts(
-            input.commit_id,
-            input.snapshot_id,
-            input.branch_id.clone(),
-            &input.commit_reference.parents,
-            input.merge_parent_branches,
-            input.merge_base_commits,
-        );
+    publication.consume_post_commit_artifacts(
+        input.commit_id,
+        input.snapshot_id,
+        input.branch_id.clone(),
+        &input.commit_reference.parents,
+        input.merge_parent_branches,
+        input.merge_base_commits,
+    );
     timing.post_commit_consumer_micros = started.elapsed().as_micros() as u64;
 }

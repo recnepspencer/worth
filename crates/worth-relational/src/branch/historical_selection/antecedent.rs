@@ -1,7 +1,8 @@
 //! A historical verifier admits only source commits on the selected basis's ancestry.
 use super::*;
 use crate::execution::request_stage::checkpoint;
-use crate::runtime::{PositionedRelationalSnapshot, RelationalRuntime};
+use crate::runtime::RelationalRuntime;
+use crate::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
 use std::collections::BTreeSet;
 impl RelationalHistoricalSelectionRead {
     /// Branch names are not ancestry. Read actual canonical parents, including

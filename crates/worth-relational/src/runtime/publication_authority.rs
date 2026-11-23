@@ -49,17 +49,6 @@ impl RelationalRuntime {
 }
 
 impl RelationalRuntime {
-    pub(crate) fn push_preparation_diagnostic_artifact(
-        &self,
-        artifact: RelationalDiagnosticArtifact,
-    ) {
-        let _ = emit_filtered_artifact(
-            &self.config.diagnostics.profile,
-            &self.publication.diagnostics,
-            artifact,
-        );
-    }
-
     pub(crate) fn push_bounded_preparation_diagnostic(
         &self,
         scope: DiagnosticsScope,

@@ -6,8 +6,9 @@ use super::{
     RelationalPublicationFailure, RelationalPublicationFailureKind, RelationalPublicationOutcome,
 };
 use crate::branch::{
-    AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor,
-    RelationalBranchPublicationCell, RelationalBranchReferenceMutableState, RelationalBranchRoot,
+    basis::AdmittedRelationalBranchBasis, basis_descriptor::RelationalBranchBasisDescriptor,
+    reference::RelationalBranchReferenceMutableState,
+    reference_publication_cell::RelationalBranchPublicationCell, root::RelationalBranchRoot,
 };
 use crate::history::retention::{
     RelationalBranchRetentionBinding, RelationalHeadRetirementCapacity,

@@ -1,6 +1,7 @@
 use super::super::rejection::elapsed_micros;
 use super::preparation::PreparedPublicationCompletion;
 use crate::history::data::CommitId;
+use crate::runtime::state::subsystems::durability::commit_log::DurabilityCommitLog;
 use crate::runtime::RelationalRuntime;
 use crate::transactions::data::commit_log::CommitLog;
 use crate::transactions::data::commit_log::CommitPhase;
@@ -37,8 +38,8 @@ pub(super) struct CanonicalLogPhaseInput<'a> {
 
 /// Record the settled commit in the runtime's own canonical log. A durable
 /// medium already holds the commit, so this step has no failure to report.
-pub(super) fn record_canonical_log_phase(
-    runtime: &RelationalRuntime,
+fn record_canonical_log_phase(
+    durability: &DurabilityCommitLog<'_>,
     input: CanonicalLogPhaseInput<'_>,
 ) {
     let CanonicalLogPhaseInput {
@@ -56,9 +57,7 @@ pub(super) fn record_canonical_log_phase(
         &branch_id.0,
         positioned_commit.position(),
     );
-    runtime
-        .durability_authority()
-        .append_commit(positioned_commit, envelope_cell);
+    durability.append(positioned_commit, envelope_cell);
     commit_log.complete_phase(CommitPhase::DurableAppend);
     phase_timing.durable_append_micros = elapsed_micros(phase_started);
 }
@@ -92,7 +91,7 @@ pub(super) fn finalize_publication_phase(
     } = prepared;
     commit_log.record_publication_position(positioned_commit.position());
     record_canonical_log_phase(
-        runtime,
+        &runtime.durability.commit_log(),
         CanonicalLogPhaseInput {
             commit_log,
             phase_timing,

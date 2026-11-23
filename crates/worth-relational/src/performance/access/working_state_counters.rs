@@ -22,20 +22,6 @@ impl PerformanceAccess<'_> {
         });
     }
 
-    pub(crate) fn count_aosoa_publish_soa_merge(&self, chunk_count: usize, slot_count: usize) {
-        self.counters.count(|counters| {
-            counters.aosoa_entity_chunks_published += chunk_count;
-            counters.aosoa_entity_slot_soa_merges += slot_count;
-            counters.aosoa_publish_soa_merge_count += 1;
-        });
-    }
-
-    pub(crate) fn count_aosoa_publish_chunks(&self, chunk_count: usize) {
-        self.counters.count(|counters| {
-            counters.aosoa_entity_chunks_published += chunk_count;
-        });
-    }
-
     pub(crate) fn count_bulk_mutation_plan(
         &self,
         locality: &BulkMutationLocalityFootprint,

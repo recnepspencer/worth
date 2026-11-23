@@ -8,7 +8,7 @@ use crate::history::data::CommitId;
 use crate::history::data::SelectedOutputPublication;
 use crate::identity::data::EntityId;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
-use crate::mvcc::RelationalInstalledApplicationPublicationAuthority;
+use crate::schema::installed_source_scopes::InstalledSourceScopeOwnership;
 use std::sync::Arc;
 use worth_execution::MapKernelContext;
 mod coupled;
@@ -19,7 +19,6 @@ pub(crate) use coupled::tests::assert_exact_owner_refusals;
 pub(crate) fn historical_positions(
     mut next: Option<CommitId>,
     bound: usize,
-    installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
     load: &mut dyn FnMut(CommitId) -> Result<Option<Arc<CanonicalCommitEnvelope>>, Stop>,
     validate: &mut dyn FnMut(
         &CanonicalCommitEnvelope,
@@ -60,25 +59,6 @@ pub(crate) fn historical_positions(
                 if latest.len() >= bound {
                     return Err("source-scope catalog bound exceeded".into());
                 }
-                if let Some(installed) = installed {
-                    charge(
-                        context,
-                        installed
-                            .source_scope_ownership
-                            .lookup_work(&origin.producer),
-                    )?;
-                    if installed
-                        .source_scope_ownership
-                        .scope_kind(&origin.producer)
-                        .is_some()
-                        != origin.source_scope_owned
-                    {
-                        return Err(Failure::at_source(
-                            origin.meaning.source_scope,
-                            "source-scope publication differs from installed ownership".into(),
-                        ));
-                    }
-                }
                 latest.push(SelectedOutputPublication {
                     evidence: crate::publication::ownership::PublicationEvidence::Canonical(
                         Arc::clone(&envelope),
@@ -106,7 +86,7 @@ pub(crate) fn historical_positions(
 pub(crate) fn current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
-    installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
+    ownership: Option<&InstalledSourceScopeOwnership>,
     records: &[crate::transactions::data::primitives::RecordRef],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<
@@ -135,7 +115,7 @@ pub(crate) fn current(
         let roster = Arc::new(crate::publication::ownership::read(
             execution, basis, &selectors, context,
         )?);
-        for publication in from_current(roster, installed, context)? {
+        for publication in from_current(roster, ownership, context)? {
             charge(context, latest.len() + 1).map_err(super::authored_cascade::stopped)?;
             if !latest
                 .iter()
@@ -172,7 +152,7 @@ pub(crate) fn current(
 
 pub(crate) fn from_current(
     roster: Arc<crate::publication::ownership::CurrentPublicationRoster>,
-    installed: Option<&RelationalInstalledApplicationPublicationAuthority>,
+    ownership: Option<&InstalledSourceScopeOwnership>,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<
     Vec<SelectedOutputPublication>,
@@ -182,12 +162,7 @@ pub(crate) fn from_current(
     for (origin, ordinal) in roster.coordinates() {
         crate::execution::request_stage::checkpoint(context, origin.producer.len() as u64 + 1)
             .map_err(crate::publication::ownership::read_request::request)?;
-        if installed.is_some_and(|installed| {
-            installed
-                .source_scope_ownership
-                .scope_kind(&origin.producer)
-                .is_none()
-        }) {
+        if ownership.is_some_and(|ownership| ownership.scope_kind(&origin.producer).is_none()) {
             return Err(
                 crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                     crate::publication::data::PublicationError::authored_retirement(
@@ -297,7 +272,6 @@ pub(super) fn validate_historical_prefix(
             historical_positions(
                 Some(envelope.commit.commit_id),
                 runtime.runtime.history.catalog_len(),
-                None,
                 &mut |commit| runtime.commit(commit),
                 &mut |envelope, context| {
                     if envelope.required_output_materialization.is_some() {

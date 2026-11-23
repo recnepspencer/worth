@@ -11,6 +11,7 @@ use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 use crate::runtime::RelationalRuntimeConfig;
 
 pub(crate) mod checkpoint_selection;
+pub(crate) mod commit_log;
 mod source_retirement;
 mod state;
 pub(crate) use checkpoint_selection::{
@@ -91,15 +92,8 @@ impl DurabilitySubsystem {
         medium.map(|medium| medium.transition_history()).or(reader)
     }
 
-    pub(crate) fn push_log_envelope(
-        &self,
-        commit: (
-            CommitId,
-            crate::publication::patch::data::PatchStreamPosition,
-            Arc<crate::history::RelationalCommitEnvelopeResidency>,
-        ),
-    ) {
-        self.state.write().push_log_envelope(commit);
+    pub(crate) fn commit_log(&self) -> commit_log::DurabilityCommitLog<'_> {
+        commit_log::DurabilityCommitLog::new(&self.state)
     }
 
     pub(crate) fn push_checkpoint(&self, checkpoint: DurableCheckpoint) {
@@ -121,14 +115,6 @@ impl DurabilitySubsystem {
     #[cfg(test)]
     pub(crate) fn remove_log_commit(&self, commit_id: CommitId) -> bool {
         self.state.write().remove_log_commit(commit_id)
-    }
-
-    pub(crate) fn retain_log_after(&self, commit_id: CommitId) {
-        self.state.write().retain_log_after(commit_id);
-    }
-
-    pub(crate) fn trim_log_front(&self, count: usize) {
-        self.state.write().trim_log_front(count);
     }
 
     pub(crate) fn durable_log_envelope(

@@ -2,8 +2,16 @@
 use super::VisibilityProjectionView;
 use crate::identity::data::VersionId;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
-use crate::runtime::RelationalPinnedRead;
 use crate::visibility::snapshot_states::{ResidentVisibilitySnapshotBasis, SnapshotStateBasis};
+pub(in crate::visibility::materialization::read_records) struct PinnedProjectionSource<'a> {
+    pub(in crate::visibility::materialization::read_records) resident:
+        &'a ResidentVisibilitySnapshotBasis,
+    pub(in crate::visibility::materialization::read_records) runtime_identity: u64,
+    pub(in crate::visibility::materialization::read_records) current_version: VersionId,
+    pub(in crate::visibility::materialization::read_records) instrumentation:
+        &'a RuntimeInstrumentation,
+}
+
 impl VisibilityProjectionView {
     pub(crate) fn from_resident_basis(
         resident: &ResidentVisibilitySnapshotBasis,
@@ -22,13 +30,15 @@ impl VisibilityProjectionView {
         }
     }
 
-    // The protected structural-walk lane still uses this call shape.
-    pub(crate) fn from_pinned<Snapshot>(read: &RelationalPinnedRead<Snapshot>) -> Self {
+    pub(in crate::visibility::materialization::read_records) fn from_pinned<'a>(
+        read: impl Into<PinnedProjectionSource<'a>>,
+    ) -> Self {
+        let source = read.into();
         Self::from_resident_basis(
-            read.resident_basis(),
-            read.runtime_instance_id(),
-            read.pinned_current_version(),
-            read.pinned_instrumentation(),
+            source.resident,
+            source.runtime_identity,
+            source.current_version,
+            source.instrumentation,
         )
     }
 }

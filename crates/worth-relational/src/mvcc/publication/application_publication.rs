@@ -68,7 +68,8 @@ pub struct RelationalInstalledApplicationPublicationAuthority {
     pub(crate) runtime_instance_id: u64,
     pub(crate) custom_invariant_generation: u64,
     pub(crate) schema_digest: [u8; 32],
-    pub(crate) source_scope_ownership: scope_ownership::InstalledSourceScopeOwnership,
+    pub(crate) source_scope_ownership:
+        crate::schema::installed_source_scopes::InstalledSourceScopeOwnership,
     pub(crate) authority: worth_proof::InstalledApplicationPublicationAuthority,
 }
 

@@ -27,7 +27,7 @@ pub use field_support::RelationalFieldSupportComparisonDenial;
 mod frontier_adjacency;
 mod historical_basis_reads;
 mod kind_scans;
-mod pinned;
+pub(in crate::visibility::materialization::read_records) mod pinned;
 pub(crate) mod projection_records;
 pub(crate) mod query_locus_projection;
 mod read_record_identity_ordering;

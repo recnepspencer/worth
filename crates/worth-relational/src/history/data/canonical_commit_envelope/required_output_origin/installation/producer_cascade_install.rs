@@ -55,7 +55,7 @@ pub(super) fn prepare(
     let closure = source_scope_closure::current(
         execution,
         basis,
-        Some(installed),
+        Some(&installed.source_scope_ownership),
         &anchors
             .iter()
             .copied()
@@ -69,7 +69,7 @@ pub(super) fn prepare(
                 "producer cascade requires current Native ownership",
             )
         })?),
-        Some(installed),
+        Some(&installed.source_scope_ownership),
         context,
     )?;
     for publication in closure {

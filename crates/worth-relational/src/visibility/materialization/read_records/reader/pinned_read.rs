@@ -243,15 +243,23 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
     }
 }
 
+impl<'a, Snapshot> From<&'a RelationalPinnedRead<Snapshot>>
+    for super::super::projection::pinned::PinnedProjectionSource<'a>
+{
+    fn from(read: &'a RelationalPinnedRead<Snapshot>) -> Self {
+        Self {
+            resident: read.resident_basis(),
+            runtime_identity: read.runtime_instance_id(),
+            current_version: read.pinned_current_version(),
+            instrumentation: read.pinned_instrumentation(),
+        }
+    }
+}
+
 impl<Snapshot> RelationalPinnedRead<Snapshot> {
     /// Project the exact retained physical root without a snapshot claim.
     pub fn project_read(&self) -> super::super::projection::VisibilityProjectionView {
-        super::super::projection::VisibilityProjectionView::from_resident_basis(
-            self.resident_basis(),
-            self.runtime_instance_id(),
-            self.pinned_current_version(),
-            self.pinned_instrumentation(),
-        )
+        super::super::projection::VisibilityProjectionView::from_pinned(self)
     }
 }
 

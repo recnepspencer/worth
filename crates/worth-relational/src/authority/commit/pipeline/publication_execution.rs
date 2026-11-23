@@ -205,7 +205,12 @@ pub(crate) fn publish_commit_execution(
             .map(|trace| trace.publish(patch_position))
             .collect();
     runtime.publish_invariant_preparation_diagnostics(&invariant_executions);
-    publish_prepared_trace_diagnostics(runtime, &aspect_evaluation_traces, &aspect_emission_traces);
+    publish_prepared_trace_diagnostics(
+        &runtime.publication_authority(),
+        runtime.config.diagnostics.profile.detailed_traces_enabled,
+        &aspect_evaluation_traces,
+        &aspect_emission_traces,
+    );
     if let Some(accounting) = admitted.value_mut().take_merge_accounting() {
         runtime.performance_access().count_merge_execution_request(
             accounting.admitted_records,
@@ -230,18 +235,19 @@ pub(crate) fn publish_commit_execution(
 }
 
 fn publish_prepared_trace_diagnostics(
-    runtime: &crate::runtime::RelationalRuntime,
+    publication: &crate::publication::authority::PublicationAuthority<'_>,
+    detailed_traces_enabled: bool,
     evaluation_traces: &[crate::transactions::data::aspect_traces::AspectEvaluationTrace],
     emission_traces: &[crate::transactions::data::aspect_traces::AspectEmissionTrace],
 ) {
-    if !runtime.config.diagnostics.profile.detailed_traces_enabled {
+    if !detailed_traces_enabled {
         return;
     }
     for trace in evaluation_traces {
-        runtime.push_preparation_diagnostic_artifact(trace.diagnostic_artifact());
+        publication.push_diagnostic_artifact(trace.diagnostic_artifact());
     }
     for trace in emission_traces {
-        runtime.push_preparation_diagnostic_artifact(trace.diagnostic_artifact());
+        publication.push_diagnostic_artifact(trace.diagnostic_artifact());
     }
 }
 

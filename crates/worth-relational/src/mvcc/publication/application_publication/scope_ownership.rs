@@ -1,10 +1,8 @@
 //! Immutable installed producer declarations; source references do not opt in.
 use super::RelationalInstalledApplicationPublicationAuthority;
-use crate::{identity::data::KindId, storage::overlay::PartitionAccess};
-use std::{collections::BTreeMap, sync::Arc};
-
-#[derive(Clone, Debug, Default)]
-pub(crate) struct InstalledSourceScopeOwnership(Arc<BTreeMap<String, KindId>>);
+use crate::identity::data::KindId;
+use crate::schema::installed_source_scopes::InstalledSourceScopeOwnership;
+use crate::storage::overlay::PartitionAccess;
 
 impl RelationalInstalledApplicationPublicationAuthority {
     pub(crate) fn require_current_ownership_storage(
@@ -41,8 +39,7 @@ impl RelationalInstalledApplicationPublicationAuthority {
         mut self,
         producers: impl IntoIterator<Item = (String, KindId)>,
     ) -> Self {
-        self.source_scope_ownership =
-            InstalledSourceScopeOwnership(Arc::new(producers.into_iter().collect()));
+        self.source_scope_ownership = InstalledSourceScopeOwnership::new(producers);
         self
     }
 
@@ -50,27 +47,6 @@ impl RelationalInstalledApplicationPublicationAuthority {
     /// then can a graph selection meet producer custody that it must restore.
     pub fn owns_source_scopes(&self) -> bool {
         !self.source_scope_ownership.is_empty()
-    }
-}
-
-impl InstalledSourceScopeOwnership {
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
-    }
-    pub(crate) fn lookup_work(&self, producer: &str) -> usize {
-        if self.0.is_empty() {
-            return 0;
-        }
-        let height = usize::BITS as usize - self.0.len().max(1).leading_zeros() as usize;
-        self.0
-            .len()
-            .min(11)
-            .saturating_mul(height)
-            .saturating_add(1)
-            .saturating_mul(producer.len().saturating_add(1))
-    }
-    pub(crate) fn scope_kind(&self, producer: &str) -> Option<KindId> {
-        self.0.get(producer).copied()
     }
 }
 

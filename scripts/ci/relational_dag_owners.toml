@@ -486,6 +486,8 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "runtime/state/subsystems/canonical_publication_routes/retained_position.rs" = "branch"
 "runtime/state/subsystems/canonical_publication_routes/position_retention.rs" = "runtime"
 "runtime/state/subsystems/durability/checkpoint_selection" = "durability"
+"runtime/state/subsystems/durability/commit_log.rs" = "durability"
+"runtime/state/subsystems/durability/state.rs" = "durability"
 "runtime/state/subsystems/history.rs" = "branch"
 "runtime/state/subsystems/history_branch_cells" = "branch"
 # Runtime publishes the accepted schema cutover using Branch-prepared cells and heads.
@@ -828,6 +830,8 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "runtime/state/subsystems/canonical_publication_routes/position_retention.rs" = "runtime"
 "runtime/state/subsystems/canonical_publication_routes/retained_position.rs" = "branch"
 "runtime/state/subsystems/durability/checkpoint_selection" = "durability"
+"runtime/state/subsystems/durability/commit_log.rs" = "durability"
+"runtime/state/subsystems/durability/state.rs" = "durability"
 "runtime/state/subsystems/history_branch_cells/initial_schema.rs" = "runtime"
 "runtime/state/subsystems/history_branch_lifecycle.rs" = "branch"
 "runtime/state/subsystems/history_branch_transition.rs" = "publication"
@@ -941,3 +945,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Runtime binds the original certification controls to their Publication owners.
 "runtime/ownership_certification.rs" = "runtime"
+
+# The ordinary mirror publisher owns partition installation and copy counters.
+"storage/mirror_publication.rs" = "storage"

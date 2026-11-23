@@ -122,7 +122,7 @@ impl RelationalRuntime {
                 let current = crate::history::data::source_scope_closure::current(
                     execution,
                     &restoration.before,
-                    Some(installed),
+                    Some(&installed.source_scope_ownership),
                     &group
                         .participants
                         .iter()

@@ -1,8 +1,5 @@
-mod append;
-
 use super::diagnostics::checkpoint_created;
 use super::DurabilityAuthority;
-use crate::capabilities::RuntimeConfigSource;
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::durability::data::{
     DurabilityError, DurableCheckpoint, RelationalNativeCheckpointCaptureDenial as CaptureDenial,
@@ -186,32 +183,6 @@ impl<'runtime> DurabilityAuthority<'runtime> {
                 .compact_branch_transitions_through(checkpoint.coverage.up_to_branch_transition);
         }
         Ok(checkpoint)
-    }
-
-    pub(crate) fn compact_log_if_needed(&self) {
-        use crate::config::data::DurableLogRetentionMode;
-
-        let policy = self.runtime.runtime_config().durability.policy.log.clone();
-        if self.runtime.durability.log_len() <= policy.max_in_memory_envelopes {
-            return;
-        }
-
-        match policy.retention_mode {
-            DurableLogRetentionMode::RetainAllInMemory => {}
-            DurableLogRetentionMode::CompactAfterCheckpoint => {
-                if let Some(checkpoint) = self.runtime.durability.latest_checkpoint()
-                    && let Some(commit) = checkpoint.coverage.up_to_commit.as_ref()
-                {
-                    self.runtime.durability.retain_log_after(commit.commit_id);
-                }
-                let log_len = self.runtime.durability.log_len();
-                if log_len > policy.max_in_memory_envelopes {
-                    self.runtime
-                        .durability
-                        .trim_log_front(log_len - policy.max_in_memory_envelopes);
-                }
-            }
-        }
     }
 
     #[cfg(test)]

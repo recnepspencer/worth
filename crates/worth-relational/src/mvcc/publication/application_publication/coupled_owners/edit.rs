@@ -49,7 +49,7 @@ impl RelationalRuntime {
                 crate::history::data::source_scope_closure::current(
                     execution,
                     basis,
-                    Some(installed),
+                    Some(&installed.source_scope_ownership),
                     &[RecordRef::Entity(source)],
                     context,
                 )

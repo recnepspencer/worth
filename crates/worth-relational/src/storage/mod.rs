@@ -8,4 +8,5 @@ pub(crate) mod substrate;
 
 pub(crate) use overlay::published_delta::RelationalPublishedPartitionDelta;
 pub(crate) mod mirror_plan;
+pub(crate) mod mirror_publication;
 pub(crate) use mirror_plan::PreparedMirrorPublication;

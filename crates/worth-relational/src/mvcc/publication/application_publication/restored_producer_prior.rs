@@ -75,7 +75,7 @@ impl RelationalRuntime {
                         checkpoint(context, 1).map_err(custody::execution_stop)?;
                         let meaning = origin.meaning.clone();
                         current = crate::history::data::historical_producer_antecedent(
-                            self,
+                            &self.history,
                             execution,
                             &current,
                             &origin,
