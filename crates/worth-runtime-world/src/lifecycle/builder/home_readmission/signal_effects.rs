@@ -4,9 +4,6 @@ use crate::durability::{
     WorldRecoveredJournalState,
 };
 use std::ops::ControlFlow;
-use worth_foundational::facade::{
-    CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,
-};
 use worth_signal::facade::durability::SignalDurableBranchSourcePort;
 
 type Points = worth_execution::ExecutionOrderedMap<
@@ -50,12 +47,6 @@ where
     let result = signal
         .inspect_associated_advances(request, |effect, point| {
             let association = effect.association().expect("associated original visitor");
-            let unclean = || {
-                D::UncleanRecoveryUnsupported(UncleanRecoveryUnsupported {
-                    owner: DurableOwnerFamily::Signal,
-                    effect: CanonicalDigestId::new(effect.digest()),
-                })
-            };
             if association.attempt().owner() != binding.owner() {
                 return ControlFlow::Break(D::ForeignOwner);
             }
@@ -90,7 +81,7 @@ where
                 return ControlFlow::Continue(());
             }
             let Some(open) = recovered.opens.get(&association.attempt()) else {
-                return ControlFlow::Break(unclean());
+                return ControlFlow::Break(D::OrphanSignalAssociation);
             };
             if &open.association != association {
                 return ControlFlow::Break(D::ConflictingOpenAttempt);

@@ -392,9 +392,7 @@ pub use crate::application_home::{
 pub use crate::source_custody::{
     WorthQuerySourceCustody, WorthQuerySourceCustodyPending, WorthQuerySourceCustodyStep,
 };
-pub use worth_foundational::facade::{
-    CanonicalDigestId, DurableOwnerFamily, UncleanRecoveryUnsupported,
-};
+pub use worth_foundational::facade::{CanonicalDigestId, DurableOwnerFamily};
 /// Typed refusal from fresh authored-program installation before Home service.
 pub use worth_query_execution::facade::application_home_integration::QueryHomeSignalProgramPreparationDenial;
 pub use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServiceDenial};

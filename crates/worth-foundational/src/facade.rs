@@ -432,7 +432,7 @@ pub use crate::durability::{
     SignalBranchAdvanceIdentity, SignalBranchAdvanceReference, SignalBranchEffectKind,
     SignalConditionalDefinitionOwnerMismatch, SignalDefinitionProjectionOutcome,
     SignalDefinitionTransitionIdentity, SignalDefinitionTransitionReference, SignalDurableJournal,
-    SignalOwnerSlotIdentity, UncleanRecoveryUnsupported, UnsupportedDurableOwnerTag,
+    SignalOwnerSlotIdentity, UnsupportedDurableOwnerTag,
     WorkflowEndingActorDecodeDenial, WorkflowEndingActorProvenance, WorldDurableJournal,
     WorldOwnerCoordinate, WorldOwnerSlotIdentity,
 };

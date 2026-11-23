@@ -85,7 +85,7 @@ fn world_source(cause: worth_runtime_world::facade::WorldReadmissionDenial) -> D
         Source::NativeCustody { cause, custody: _ } => world_source(*cause),
         Source::SignalSource(_)
         | Source::SignalDiscovery(_)
-        | Source::UncleanRecoveryUnsupported(_)
+        | Source::OrphanSignalAssociation
         | Source::AuthoredSignalRequired => Denial::Unavailable,
         Source::BridgeBaseline(cause) => bridge(cause),
         Source::NativeFreshSource(RelationalRecoveryStop::Request(cause)) => {
