@@ -1,4 +1,10 @@
-use super::*;
+use super::context::VisibilityReadContext;
+use crate::query::data::snapshot_pinned_plan::SnapshotPinnedQueryPlan;
+use crate::query::data::{
+    PlannedQueryPacket, QueryParallelLegality, QueryParallelProfitability, QueryScope,
+    QuerySerialReason,
+};
+use crate::snapshots::data::SnapshotHandle;
 
 impl<'runtime> VisibilityReadContext<'runtime> {
     /// Metadata read: planning examines descriptors and supplied targets, never stored rows; no execution request is needed.

@@ -156,7 +156,7 @@ impl<'view> HistoricalProjectionReader<'view> {
             self.registry(),
             partition,
             kind,
-            super::super::reader::KindScanVisibility::for_selected_version(
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::for_selected_version(
                 self.view.current_version,
                 self.view.version_id(),
             ),
@@ -248,7 +248,7 @@ impl<'view> HistoricalProjectionReader<'view> {
             self.registry(),
             partition,
             kind,
-            super::super::reader::KindScanVisibility::for_selected_version(
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::for_selected_version(
                 self.view.current_version,
                 self.view.version_id(),
             ),

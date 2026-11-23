@@ -199,9 +199,9 @@ pub(crate) trait ProjectionRecordSource {
                 });
         }
         let visibility = if self.is_exact_basis() {
-            super::super::reader::KindScanVisibility::Live
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live
         } else {
-            super::super::reader::KindScanVisibility::AtVersion(self.version_id())
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::AtVersion(self.version_id())
         };
         super::super::read_work::record_quote::entity_for_id(
             root.as_ref(),
@@ -230,9 +230,9 @@ pub(crate) trait ProjectionRecordSource {
                 });
         }
         let visibility = if self.is_exact_basis() {
-            super::super::reader::KindScanVisibility::Live
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live
         } else {
-            super::super::reader::KindScanVisibility::AtVersion(self.version_id())
+            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::AtVersion(self.version_id())
         };
         super::super::read_work::record_quote::relation_for_id(
             root.as_ref(),

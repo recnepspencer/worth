@@ -12,7 +12,7 @@ mod performance_profiles;
 mod performance_support;
 mod profiles;
 mod publication;
-mod query;
+pub(crate) mod query;
 mod schema;
 pub(crate) mod support;
 mod transactions;

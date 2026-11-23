@@ -1,7 +1,6 @@
-use crate::visibility::materialization::read_records::{
-    read_work::{record_memory, record_quote},
-    KindScanVisibility,
-};
+use crate::visibility::materialization::read_records::read_work::record_memory;
+use crate::visibility::materialization::read_records::read_work::record_quote;
+use crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility;
 use std::collections::BTreeMap;
 
 use crate::runtime::RelationalRuntime;
@@ -109,7 +108,7 @@ fn retained_historical_relations(
             state,
             registry,
             relation_id,
-            KindScanVisibility::for_version(runtime, version_id),
+            KindScanVisibility::for_selected_version(runtime.current_version_id(), version_id),
         )?;
         record_memory::claim(memory, clone_bytes)?;
         let record = reader.authoritative_relation_record_for_id_at_version_with_registry(

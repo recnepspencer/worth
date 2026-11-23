@@ -5,7 +5,7 @@ pub(crate) mod read_footprint;
 pub(crate) mod read_prices;
 pub(crate) mod read_request;
 pub(crate) mod read_work;
-mod reader;
+pub(crate) mod reader;
 mod visibility;
 
 pub(crate) use projection::{
@@ -55,5 +55,3 @@ impl RelationalRuntime {
 pub(crate) mod read_stop;
 
 pub use reader::BoundedFrontierReadStop;
-
-pub(crate) use reader::KindScanVisibility;

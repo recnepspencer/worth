@@ -34,14 +34,12 @@ pub(crate) mod position_admission;
 mod recovered_source;
 pub(crate) use authored_writes::commit_denial as authored_write_commit_denial;
 pub(crate) use authored_writes::AuthoredWriteGeneration;
+#[path = "canonical_publication_routes/indexed_catalog.rs"]
+mod indexed_catalog;
 #[path = "canonical_publication_routes/position_retention.rs"]
 mod position_retention;
 #[path = "canonical_publication_routes/retained_position.rs"]
 pub(crate) mod retained_position;
-#[cfg(test)]
-pub(crate) use retained_position::RetainedCanonicalPosition;
-#[path = "canonical_publication_routes/indexed_catalog.rs"]
-mod indexed_catalog;
 #[path = "canonical_publication_routes/source_retirement.rs"]
 mod source_retirement;
 pub(crate) use crate::branch::transition::BranchTransitionRecordError;

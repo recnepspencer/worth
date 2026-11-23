@@ -28,14 +28,8 @@ pub use custom_rule::{
     StructuralRelationView, StructuralWalkDenial, StructuralWalkDenialKind, StructuralWalkReads,
     StructuralWalkStep,
 };
-pub(crate) use custom_rule::{
-    CustomInvariantFailure, CustomInvariantFailureKind, CustomInvariantRuntimePhase,
-    PreparedCustomInvariantExecution, PreparedCustomInvariantExecutionOutcome,
-    PreparedCustomInvariantScope,
-};
-pub(crate) use custom_rule::{
-    CustomInvariantTraversalError, PlannedEntityCreate, PlannedRelationCreate, TouchedStructuralSet,
-};
+pub(crate) use custom_rule::{PlannedEntityCreate, PlannedRelationCreate, TouchedStructuralSet};
+pub(crate) use custom_rule::{PreparedCustomInvariantExecution, PreparedCustomInvariantScope};
 pub use descriptor::{
     CustomInvariantAccessContract, CustomInvariantDescriptor, CustomInvariantOperationalMetadata,
 };

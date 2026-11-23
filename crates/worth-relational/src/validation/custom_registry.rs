@@ -44,7 +44,7 @@ impl FrozenCustomInvariantRegistry {
         &self,
     ) -> Option<(
         &CustomInvariantRegistration,
-        &crate::branch::RelationalModelOwnership,
+        &crate::branch::model_ownership::RelationalModelOwnership,
     )> {
         let registration = self.registrations.get(self.model_ownership_index?)?;
         Some((registration, registration.model_ownership.as_deref()?))

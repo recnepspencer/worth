@@ -161,3 +161,5 @@ impl IndexProjectionSource<'_> {
 
 #[cfg(test)]
 mod navigation_tests;
+#[cfg(test)]
+pub(crate) use navigation_tests::verify_native_field_navigation;

@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
+use crate::branch::basis_registry::RelationalBranchBasisRegistryMetrics;
 use crate::branch::reference::RelationalBranchReferenceCell;
 use crate::branch::registry::RelationalBranchReferenceRegistry;
 use crate::branch::registry::RelationalForkTargetReservation;
 use crate::branch::registry::RelationalForkTargetReservationDenial;
-use crate::branch::RelationalBranchBasisRegistryMetrics;
 use crate::history::data::BranchId;
 use crate::history::retention::{
     RelationalBranchRetentionBinding, RelationalRetentionAcquisitionDenial,

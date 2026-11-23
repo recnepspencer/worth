@@ -60,7 +60,7 @@ pub use branch_creation::{BranchCreateError, BranchCreateErrorClass};
 pub(crate) use canonical_commit_envelope::EmbeddedCheckpointEnvelopeRef;
 pub(crate) use canonical_commit_envelope::{
     AuthoritativeArtifactEnvelopeRef, CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites,
-    CanonicalIndexDefinitionDelta, CommittedRecordChange,
+    CanonicalIndexDefinitionDelta,
 };
 pub(crate) use canonical_commit_envelope::{
     CanonicalAuthoredRestoration, CanonicalAuthoredRetirement, CanonicalCodecRetirementKind,

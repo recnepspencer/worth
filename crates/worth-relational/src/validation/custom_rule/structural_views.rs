@@ -1,3 +1,4 @@
+use crate::validation::data::custom_rule::errors::CustomInvariantTraversalError;
 use worth_foundational::facade::AuthoritativeRecordAspectState;
 
 use crate::identity::data::{EntityId, KindId, RelationId};
@@ -300,20 +301,20 @@ impl<'runtime> StructuralRelationView<'runtime> {
     pub fn outgoing_relations_for_entity(
         &self,
         entity_id: EntityId,
-    ) -> Result<Vec<RelationId>, crate::validation::data::CustomInvariantTraversalError> {
+    ) -> Result<Vec<RelationId>, CustomInvariantTraversalError> {
         self.adjacency(entity_id, true)
     }
     pub fn incoming_relations_for_entity(
         &self,
         entity_id: EntityId,
-    ) -> Result<Vec<RelationId>, crate::validation::data::CustomInvariantTraversalError> {
+    ) -> Result<Vec<RelationId>, CustomInvariantTraversalError> {
         self.adjacency(entity_id, false)
     }
     fn adjacency(
         &self,
         entity_id: EntityId,
         outgoing: bool,
-    ) -> Result<Vec<RelationId>, crate::validation::data::CustomInvariantTraversalError> {
+    ) -> Result<Vec<RelationId>, CustomInvariantTraversalError> {
         if !self.work.try_charge(1) {
             return Err(work_exhausted());
         }
@@ -342,7 +343,7 @@ impl<'runtime> StructuralRelationView<'runtime> {
     pub fn all_relations_for_entity(
         &self,
         entity_id: EntityId,
-    ) -> Result<Vec<RelationId>, crate::validation::data::CustomInvariantTraversalError> {
+    ) -> Result<Vec<RelationId>, CustomInvariantTraversalError> {
         let outgoing = self.outgoing_relations_for_entity(entity_id)?;
         let incoming = self.incoming_relations_for_entity(entity_id)?;
         if !self
@@ -360,8 +361,6 @@ impl<'runtime> StructuralRelationView<'runtime> {
     }
 }
 
-fn work_exhausted() -> crate::validation::data::CustomInvariantTraversalError {
-    crate::validation::data::CustomInvariantTraversalError::new(
-        "custom invariant adjacency read exceeded its work budget",
-    )
+fn work_exhausted() -> CustomInvariantTraversalError {
+    CustomInvariantTraversalError::new("custom invariant adjacency read exceeded its work budget")
 }

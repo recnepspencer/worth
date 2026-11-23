@@ -1,5 +1,12 @@
 //! Materialize one identity from explicitly carried storage and schema.
-use super::*;
+use super::super::materialization::{
+    materialize_authoritative_entity_record_at_version,
+    materialize_authoritative_relation_record_at_version,
+    materialize_current_authoritative_entity_record,
+    materialize_current_authoritative_relation_record,
+};
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::storage::overlay::PartitionAccess;
 
 pub(crate) fn authoritative_entity_record_for_id_from_exact_state(
     state: &(impl PartitionAccess + ?Sized),

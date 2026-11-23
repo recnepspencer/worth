@@ -1,4 +1,9 @@
-use super::*;
+use super::{context::VisibilityReadContext, projection_record_reader::ProjectionRecordReader};
+use crate::storage::{
+    data::{EntityReadRecord, RelationReadRecord},
+    overlay::PartitionAccess,
+    partition::DenseSlotBitSet,
+};
 
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub(crate) fn authoritative_entity_record_for_id_from_exact_state(

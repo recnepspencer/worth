@@ -1,6 +1,18 @@
 //! Request-funded record walks have no independent work limit.
+use super::super::materialization::{
+    materialize_authoritative_entity_record_at_version,
+    materialize_authoritative_relation_record_at_version,
+};
 use super::super::read_prices::{EXAMINE_SLOT, RESERVE_RECORD};
-use super::*;
+use super::super::visibility::{
+    entity_slot_matches_kind_at_version, relation_slot_matches_kind_at_version,
+};
+use super::context::VisibilityReadContext;
+use super::{
+    kind_scan_visibility::KindScanVisibility, projection_record_reader::ProjectionRecordReader,
+};
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
+use crate::storage::overlay::PartitionAccess;
 impl ProjectionRecordReader<'_> {
     pub(crate) fn paid_entities_in_partition(
         &self,

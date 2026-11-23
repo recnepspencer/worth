@@ -121,7 +121,8 @@ impl<'runtime> LineageAccess<'runtime> {
     ) -> Result<bool, crate::execution::RelationalExecutionDenialCause> {
         if self.runtime.lineage.has_paged_events() {
             let ancestry = reachable_scope.ancestry(self);
-            self.demand_historical_events(
+            super::event_demand::demand_historical_events(
+                &self.runtime.lineage,
                 execution,
                 lineage_id,
                 ancestry.authoring_branches(),

@@ -19,7 +19,7 @@ fn finite_native_row_refuses_before_cloning_and_accepts_its_owned_quote() {
         &state,
         &runtime.config.schema.registry,
         entity,
-        crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::for_version(&runtime, version),
+        crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::for_selected_version(runtime.current_version_id(), version),
     )
     .unwrap();
     assert!(heap > 0, "the native schema names have an owned clone");

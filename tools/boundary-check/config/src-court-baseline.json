@@ -203,6 +203,7 @@
 {"source":"crates/worth-relational/src/inspection/tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/lineage/access/aspect_history.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/lineage/access/divergence.rs","module":"file","roots":["ExecutionRequest"]},
+{"source":"crates/worth-relational/src/lineage/access/graph.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/mvcc/publication/application_publication/absent_optional_field.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/mvcc/publication/application_publication/continuity_tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime"]},
 {"source":"crates/worth-relational/src/mvcc/publication/application_publication/continuity_tests/dynamic.rs","module":"file","roots":["ExecutionRequest"]},

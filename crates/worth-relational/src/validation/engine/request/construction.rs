@@ -8,8 +8,8 @@ use super::relation_integrity_scopes::prepare_relation_integrity_scopes;
 use super::InvariantExecutionRequest;
 use crate::validation::engine::{InvariantObservation, InvariantRequestProfile};
 
+#[cfg(test)]
 impl<'state> InvariantExecutionRequest<'state> {
-    #[cfg(test)]
     pub(crate) fn from_profile_with_contract<'runtime>(
         profile: InvariantRequestProfile,
         runtime: &'runtime crate::runtime::RelationalRuntime,
@@ -22,7 +22,7 @@ impl<'state> InvariantExecutionRequest<'state> {
         'runtime: 'state,
     {
         let view = crate::validation::engine::InvariantRuntimeView::from_runtime(runtime);
-        let backing = crate::test_execution_policy::serial_request();
+        let backing = crate::execution::test_policy::serial_request();
         let execution = worth_execution::ExecutionRequest::serial(&backing);
         Self::from_profile_with_contract_at_current_version(
             &execution,
@@ -33,15 +33,13 @@ impl<'state> InvariantExecutionRequest<'state> {
             view.current_version_id(),
             merged_plan,
             plan_contract,
-            &InvariantPreparationControl::new(
-                crate::mvcc::RelationalOperationControl::uninterrupted(),
-                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
-                crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::ProposalValidation,
-            ),
+            &InvariantPreparationControl::uninterrupted_proposal_validation(),
         )
         .expect("uninterrupted System scope preparation")
     }
+}
 
+impl<'state> InvariantExecutionRequest<'state> {
     pub(crate) fn from_profile_with_contract_at_current_version<'runtime>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         profile: InvariantRequestProfile,

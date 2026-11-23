@@ -2,11 +2,13 @@
 
 use crate::validation::custom_rule::CustomInvariantExecutionContext;
 use crate::validation::custom_rule::CustomInvariantProvenance;
+use crate::validation::data::custom_rule::errors::{
+    CustomInvariantExecutionError, CustomInvariantFailure, CustomInvariantFailureKind,
+    CustomInvariantRuntimePhase, CustomInvariantVerdict,
+    PreparedCustomInvariantExecutionOutcome as Outcome,
+};
 use crate::validation::data::execution::InvariantReportedRule;
 use crate::validation::data::execution::InvariantVerdict;
-use crate::validation::data::CustomInvariantFailure;
-use crate::validation::data::CustomInvariantFailureKind;
-use crate::validation::data::CustomInvariantRuntimePhase;
 use crate::validation::engine::budget::InvariantBudget;
 use crate::validation::engine::context::InvariantExecutionContext;
 use crate::validation::engine::evaluator::evaluate_rule;
@@ -166,9 +168,7 @@ fn evaluate_custom_registration<'state>(
             .as_ref()
             .is_some_and(|budget| budget.stop().is_some())
     {
-        crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
-            crate::validation::data::CustomInvariantVerdict::Pass,
-        )
+        Outcome::Verdict(CustomInvariantVerdict::Pass)
     } else if let Some(budget) = budget {
         match prepared_execution.evaluate_checked(&context, budget.custom_meter()) {
             Some(outcome) => outcome,
@@ -179,20 +179,18 @@ fn evaluate_custom_registration<'state>(
             }
             None => {
                 budget.deny_unchecked_custom();
-                crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
-                    crate::validation::data::CustomInvariantVerdict::Pass,
-                )
+                Outcome::Verdict(CustomInvariantVerdict::Pass)
             }
         }
     } else {
         prepared_execution.evaluate(&context)
     };
     let mut verdicts = match outcome {
-        crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
-            crate::validation::data::CustomInvariantVerdict::Pass,
+        Outcome::Verdict(
+            CustomInvariantVerdict::Pass,
         ) => vec![InvariantVerdict::Pass],
-        crate::validation::data::PreparedCustomInvariantExecutionOutcome::Verdict(
-            crate::validation::data::CustomInvariantVerdict::Violation(refusal),
+        Outcome::Verdict(
+            CustomInvariantVerdict::Violation(refusal),
         ) => vec![InvariantVerdict::Violation(
             crate::validation::data::results::InvariantViolation {
                 class: registration.execution_point().class(),
@@ -208,7 +206,7 @@ fn evaluate_custom_registration<'state>(
                     },
             },
         )],
-        crate::validation::data::PreparedCustomInvariantExecutionOutcome::Failure(failure) => {
+        Outcome::Failure(failure) => {
             if failure.kind == CustomInvariantFailureKind::Panic
                 && failure.phase == CustomInvariantRuntimePhase::Execution
             {
@@ -232,7 +230,7 @@ fn evaluate_custom_registration<'state>(
                 registration.execution_point().class(),
                 &CustomInvariantFailure::execution_error(
                     &registration.descriptor().identity,
-                    crate::validation::data::CustomInvariantExecutionError::new(
+                    CustomInvariantExecutionError::new(
                         "custom invariant exceeded its installed work budget",
                     ),
                 ),

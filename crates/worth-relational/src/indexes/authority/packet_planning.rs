@@ -12,7 +12,7 @@ use crate::runtime::state::subsystems::indexing::IndexingSubsystem;
 use crate::validation::data::groups::InvariantGroupSet;
 
 mod checked;
-pub(super) use checked::plan_index_packets_checked;
+pub(super) use checked::{plan_index_packets_checked, PlannedIndexPackets};
 
 pub(super) fn planned_index_definitions(
     indexes: &IndexingSubsystem,
