@@ -1,5 +1,5 @@
 //! Installed catalog operations issue the records and memberships used by the court.
-use super::{bounds, schema::*};
+use super::{bounds, ordered_decision::Entries, schema::*};
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
 
@@ -58,7 +58,7 @@ worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "
 worth_query_operation!(pub AuthorCatalog for Catalog, input InputBinding);
 worth_query_operation_reads!(AuthorCatalog => [Directory,Item,Contains]);
 worth_query_operation_creates!(AuthorCatalog => [Directory, Item]);
-worth_query_operation_links!(AuthorCatalog => [Contains]);
+worth_query_operation_links!(AuthorCatalog => [Contains, Entries]);
 worth_query_operation_deletes!(AuthorCatalog => [Item]);
 
 fn scope(_: &Edit) -> String {
@@ -94,6 +94,7 @@ pub(super) fn declare(
         .operation_create(op, Directory::reference())
         .operation_create(op, Item::reference())
         .operation_link(op, Contains::reference())
+        .operation_link(op, Entries::reference())
         .operation_delete(op, Item::reference())
         .operation_write(op, DirectoryIdentity::at("DirectoryIdentity"))
         .operation_write(op, DirectoryNote::at("DirectoryNote"))

@@ -39,10 +39,7 @@ pub enum WorthQueryManagedIndexRefusal {
     ForeignReadIntent,
     InstallationAccountingOverflow,
     CapacityAccountingOverflow,
-    /// A producer decision's applied candidate changed what the Parent's
-    /// Source sees and that change is not yet published: reading the admitted
-    /// before basis would not be the candidate's truth.
-    UnpublishedSourceChange,
+
 }
 
 /// The actual original cause, borrowed from the owned operation denial.

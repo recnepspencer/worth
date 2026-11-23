@@ -155,6 +155,10 @@ impl OperationHandler<Catalog, Binding> for Handler {
                                 &created,
                             )
                             .map_err(HandlerExecutionDenial::new)?;
+                        if super::super::ordered_decision::SEED_ENTRY.get() {
+                            writer.link(Entries::reference(), format!("ordered-{identity}"), &directory, &created)
+                                .map_err(HandlerExecutionDenial::new)?;
+                        }
                     }
                 }
                 Edit::RetireItem { .. } => {

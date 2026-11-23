@@ -60,6 +60,12 @@ impl WorthQueryApplicationContribution<Catalog> for Contribution {
             registration.with_refinement()
         };
         registration.install()?;
+        setup
+            .managed_index_provider::<super::super::ordered_decision::Index, _>(
+                prefix::Provider(Arc::new(prefix_observation::Calls::default())),
+            )
+            .with_predicate_routing()
+            .install()?;
         correction::configure(setup)?;
         let probe = setup.partitioned_computation::<Feature, super::super::probe::Computation, _>(
             super::super::probe::Owner,

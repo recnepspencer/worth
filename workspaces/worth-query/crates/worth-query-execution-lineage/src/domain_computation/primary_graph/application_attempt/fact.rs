@@ -58,6 +58,7 @@ pub enum WorthQueryApplicationFactKey {
     ComponentSelection(super::super::component_selection::ComponentSelectionKey),
     SourcePublication(SourcePublicationRead),
     ManagedIndexSource(ManagedSourceReadKey),
+    AppliedSource(std::sync::Arc<crate::domain_computation::primary_graph::application_query::observed_source::fact_conversion::source_fact_locator::SourceFactLocator>),
     SourceReadAuthorization(SourceReadAuthorizationKey),
     Entity {
         entity: String,

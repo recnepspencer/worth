@@ -85,6 +85,7 @@ where
         before_pin: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
+        assembly: &worth_relational::facade::mvcc::RelationalAuthoredCoupledCandidate<'_>,
     ) -> Result<InspectedAuthoredApplication<'run>, WorthQueryOutputDemandDenial> {
         // An abandoned cold candidate's successful value is provisional. Keep
         // a real refusal sticky, but never let an old success hide a later stop.
@@ -149,7 +150,7 @@ where
                     &self.principal,
                     admission.operation,
                     before,
-                    Some((before_pin, candidate, participants)),
+                    Some((before_pin, candidate, participants, assembly)),
                     coordination,
                     execution.allocation_policy(),
                 )

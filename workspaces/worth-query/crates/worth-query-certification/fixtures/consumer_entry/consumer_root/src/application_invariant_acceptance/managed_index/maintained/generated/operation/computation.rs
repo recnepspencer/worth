@@ -3,9 +3,9 @@
 //! a peer Directory — the `ContactOwner::partitions` shape. It is installed on
 //! the root Catalog feature beside the operation computation, leaving the
 //! producer's own output feature undecorated.
+use super::super::super::host::Feature;
 use super::super::super::peer_scope::{self, ProbeRefusal, OBSERVED, PRODUCER_PROBE};
 use super::super::super::{query, schema::*};
-use super::super::super::host::Feature;
 use super::{GenerateItem, ResultBinding};
 use worth_query_decl::facade::application_program::*;
 use worth_query_host::facade::application_contribution::*;
@@ -82,9 +82,13 @@ pub type Installed =
 type Reader<'a, 'b, 'c> = WorthQueryComputationReader<'a, 'b, 'c, Catalog, GenerateItem>;
 type InputDenial = WorthQueryComputationInputDenial<Refused>;
 fn identity(row: &Row) -> PartitionItemId {
-    PartitionItemId(row.identity.bytes().fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
-        (hash ^ u64::from(byte)).wrapping_mul(0x0000_0100_0000_01b3)
-    }))
+    PartitionItemId(
+        row.identity
+            .bytes()
+            .fold(0xcbf2_9ce4_8422_2325, |hash, byte| {
+                (hash ^ u64::from(byte)).wrapping_mul(0x0000_0100_0000_01b3)
+            }),
+    )
 }
 impl WorthQueryPartitionedComputationOwner<Catalog, Feature, Computation> for Owner {
     type Operation = GenerateItem;
@@ -98,15 +102,24 @@ impl WorthQueryPartitionedComputationOwner<Catalog, Feature, Computation> for Ow
         reader: &mut Reader<'_, '_, '_>,
         input: &Request,
     ) -> Result<WorthQueryComputationPartitionPlan<Row>, InputDenial> {
-        let directory = PRODUCER_PROBE
-            .get()
-            .map_or_else(|| input.directory.clone(), |probe| peer_scope::probed(probe, &input.directory));
-        let rows = reader.index_query::<query::PrefixBinding>(query::FindPrefix {
-            directory,
-            prefix: String::new(),
-        });
+        use peer_scope::ProducerProbe;
+        let probe = PRODUCER_PROBE.get().unwrap_or(ProducerProbe::Own);
+        let directory = peer_scope::probed(probe, &input.directory);
+        let rows = match probe {
+            ProducerProbe::OrderedOwn => reader.index_query::<
+                super::super::super::ordered_decision::ParentBinding,
+            >(super::super::super::ordered_decision::Find { directory, prefix: String::new() }),
+            ProducerProbe::Undeclared => reader.index_query::<query::PrefixAliasBinding>(
+                crate::application_invariant_acceptance::managed_index::prefix_alias_input::FindPrefixAlias { directory, prefix: String::new() },
+            ),
+            _ => reader.index_query::<query::PrefixBinding>(query::FindPrefix {
+                directory, prefix: String::new(),
+            }),
+        };
         let observed = match &rows {
             Ok(rows) => Ok(rows.iter().map(|row| row.identity.clone()).collect()),
+            Err(WorthQueryComputationReadDenial::ManagedIndex(denial)) if denial.decision_plan_denial().is_some_and(|cause| cause.kind() ==
+                worth_query_host::facade::primary_graph::WorthQueryInvariantDecisionPlanDenialKind::UndeclaredDecisionTarget) => Err(ProbeRefusal::Undeclared),
             Err(WorthQueryComputationReadDenial::ManagedIndex(denial)) => Err(denial
                 .managed_index_denial()
                 .map_or(ProbeRefusal::Other, |denial| peer_scope::refusal(denial.cause()))),
@@ -118,7 +131,12 @@ impl WorthQueryPartitionedComputationOwner<Catalog, Feature, Computation> for Ow
         });
         Ok(WorthQueryComputationPartitionPlan::keyed(rows, identity))
     }
-    fn partition_key(&self, _: &mut Reader<'_, '_, '_>, _: &Request, item: &Row) -> Result<Row, InputDenial> {
+    fn partition_key(
+        &self,
+        _: &mut Reader<'_, '_, '_>,
+        _: &Request,
+        item: &Row,
+    ) -> Result<Row, InputDenial> {
         Ok(item.clone())
     }
     fn gather(
@@ -138,7 +156,9 @@ impl WorthQueryPartitionedComputationOwner<Catalog, Feature, Computation> for Ow
         Ok(format!("{};", partition.gathered().identity).into_bytes())
     }
     fn reducer(&self) -> WorthQueryDeterministicReducer<Vec<u8>> {
-        WorthQueryDeterministicReducer::canonical(Vec::new, |a, b| a.iter().chain(b).copied().collect())
+        WorthQueryDeterministicReducer::canonical(Vec::new, |a, b| {
+            a.iter().chain(b).copied().collect()
+        })
     }
     fn complete(&self, reduced: Vec<u8>) -> Result<Self::Output, Refused> {
         let reduced = String::from_utf8(reduced).expect("authored identities are text");

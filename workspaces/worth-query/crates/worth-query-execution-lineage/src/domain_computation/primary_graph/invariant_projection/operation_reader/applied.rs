@@ -126,11 +126,8 @@ impl<Schema: ApplicationSchema> WorthQueryApplicationInvariantProjectionAuthorit
                         projection,
                         super::admitted::SourceAccess {
                             source_query: predecessor_access,
-                            // Only the coupled producer posture lends its context:
-                            // the sealed predecessor reader checks C itself, and a
-                            // managed index read admits its applied basis only with
-                            // the live assembly's proof of an unchanged Source.
-                            // Readers needing a committed runtime still refuse.
+                            // Managed decision reads borrow the live assembly
+                            // while all source-query permission stays at C.
                             source_context_use,
                         },
                     )

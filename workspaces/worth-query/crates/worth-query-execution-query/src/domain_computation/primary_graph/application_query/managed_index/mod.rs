@@ -2,9 +2,9 @@
 mod adapter;
 mod admitted_read;
 pub mod applied_alignment;
-pub use applied_alignment::{AppliedManagedIndexRead, AppliedManagedSourceAlignment};
+pub use applied_alignment::AppliedManagedIndexRead;
 pub mod certification;
-pub use admitted_read::read_decision;
+pub use admitted_read::{read_decision, DecisionSource};
 pub use admitted_read::read_source_admitted;
 mod build;
 mod candidates;

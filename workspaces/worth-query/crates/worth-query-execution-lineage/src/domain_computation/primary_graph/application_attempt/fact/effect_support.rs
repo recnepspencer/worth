@@ -155,7 +155,7 @@ impl Fact {
                 if let Some(equal) = retired(*anchor)? {
                     return Ok(equal);
                 }
-                a.compare_adjacency_support(execution, &b, *anchor, *relation_kind, *direction)
+                a.compare_live_source_adjacency_support(execution, &b, *anchor, *relation_kind, *direction)
                     .map_err(|cause| match cause {
                         EdgeStop::Execution(cause) => physical(cause),
                         EdgeStop::Allocation(cause) => {

@@ -8743,7 +8743,7 @@ Inside a mutation handler, read a managed Parent through
 operation's reads and register its exact binding with
 `schema.operation_managed_index_read::<PrefixBinding, _, _>(RenameItem::reference())`.
 Installation rejects a Parent whose scope mapping differs from that mutation;
-execution requires the resolved scope to equal the operation's admitted scope.
+the intent resolves to the operation's admitted scope or a declared shared-owner peer.
 Parent admission and the Source's own fresh principal, scope
 and READ checks still run. The decision retains the same qualified candidate
 influence or conservative whole-Source expectation described above, including
@@ -8758,27 +8758,22 @@ Ordinary row/result-set expectations use `expect_source` and `expect_result_set`
                 });
 ```
 
-A producer's own coupled decision, and the partitioned computations it
-prepares, make the same `index_query` read on its applied candidate. The read
-uses the admitted before basis the candidate was built on, and only while the
-live coupled assembly proves that the candidate left the Parent's Source at
-the probed scope unchanged: no created or removed row or path entity, no
-projected field write, no change to a physical Source relation, and no
-creation or removal of the probed scope itself. When the Source's scope kind
-is only its root anchor, a new or removed sibling scope (a feature created in
-the same envelope) does not touch an already-committed peer's Source. For an
-ordered-events Source (inline or behind one `forward_derived` relation) a scope
-created in the envelope may also gain a predecessor edge: only its own chain
-can follow it. Everything else the Parent reads is covered too: its projected,
-filtered and ordered fields, its nested result relations, and the scope-key
-field that resolved the probed scope, which is checked on every scope entity
-(field by field where Native kept old and new values).
-Otherwise the read refuses with
-`WorthQueryManagedIndexRefusal::UnpublishedSourceChange` before any provider
-call; the unpublished change is never hidden behind the committed image. The
-Source fact is recorded with the producer's decision or computation call, so a
-committed change to that Source before publication turns the commit stale.
-Input capture readers have no managed index read.
+A coupled producer decision, the partitioned computations it prepares, and a
+later authored decision with an applied candidate can make the same
+`index_query` read. When the live assembly proves that the probed scope, the
+Parent's Source, and the Parent's other reads are unchanged, the read reuses
+the admitted before-basis index. Otherwise it probes a temporary managed index
+from the exact applied candidate. A newly created scope can contribute its own
+rows and inherit rows from its ordered-events predecessor. A declared peer
+read sees Source writes already applied by earlier stages of the envelope.
+
+The temporary index is local to the read. Only successful commit publication
+can advance the published index. Parent and Source READ permissions still run
+under the original admitted request, and the operation must declare the
+managed Parent and its projected fields. The Source and projection dependencies
+are recorded with the decision or computation call and participate in coupled
+read-support validation. Cancellation, deadlines, and work exhaustion retain
+their typed causes. Input capture readers have no managed index read.
 
 To read the Parent at a peer scope, declare the governing relation:
 `schema.operation_shared_owner_managed_index_read::<PrefixBinding, _, _, _, _, _>(op, ModelFeature::reference())`.

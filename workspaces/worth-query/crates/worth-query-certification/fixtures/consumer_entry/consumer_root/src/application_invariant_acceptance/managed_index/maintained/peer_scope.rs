@@ -17,6 +17,8 @@ pub enum ProducerProbe {
     Own,
     /// Another Directory, by identity.
     Peer(&'static str),
+    OrderedOwn,
+    Undeclared,
 }
 
 /// One probe's observed outcome: the selected identities, or its refusal.
@@ -28,6 +30,7 @@ pub enum ProbeRefusal {
     /// The original request's cancellation, inside the read.
     Cancelled,
     /// Any other refusal.
+    Undeclared,
     Other,
 }
 
@@ -41,6 +44,7 @@ std::thread_local! {
     pub static SOURCE_CREATES: Cell<Option<&'static str>> = const { Cell::new(None) };
     /// The generated source action also creates this sibling Directory: a new
     /// scope entity in the same coupled envelope.
+    pub static ORDERED_SUCCESSOR: Cell<Option<(&'static str, &'static str)>> = const { Cell::new(None) };
     pub static SOURCE_SIBLING: Cell<Option<&'static str>> = const { Cell::new(None) };
     /// The producer probes through its partitioned computation's reader.
     pub static THROUGH_COMPUTATION: Cell<bool> = const { Cell::new(false) };
@@ -114,7 +118,7 @@ where
 /// The Directory a probe names, from the operation's own.
 pub fn probed(probe: ProducerProbe, own: &str) -> String {
     match probe {
-        ProducerProbe::Own => own.to_owned(),
+        ProducerProbe::Own | ProducerProbe::OrderedOwn | ProducerProbe::Undeclared => own.to_owned(),
         ProducerProbe::Peer(peer) => peer.to_owned(),
     }
 }
