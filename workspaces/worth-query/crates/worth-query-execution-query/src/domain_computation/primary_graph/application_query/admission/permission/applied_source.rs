@@ -40,6 +40,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             before,
             candidate,
             request,
+            None,
             &mut native,
         )
     }
@@ -56,6 +57,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         before: &'a RelationalPinnedRead,
         candidate: &'a RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        current: Option<crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControl<'_>>,
         native:&mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<
         super::super::WorthQueryAdmittedApplicationQueryPlan<'a, S, Q, P, R, A, I, E>,
@@ -75,6 +77,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             before,
             candidate,
             request,
+            current,
             native,
         )
     }
@@ -91,6 +94,7 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
         before: &'a RelationalPinnedRead,
         candidate: &'a RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
         request: &worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope,
+        current: Option<crate::domain_computation::primary_graph::product_operation::current_read::CurrentReadControl<'_>>,
         native:&mut crate::domain_computation::primary_graph::application_query::ApplicationQueryNativeAccess<'_>,
     ) -> Result<
         super::super::WorthQueryAdmittedApplicationQueryPlan<'a, S, Q, P, R, A, I, E>,
@@ -119,6 +123,10 @@ impl<S: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<S> {
             },
             native,
         )?;
+        // The same current principal the committed admission requires.
+        if let Some(control) = current {
+            permission.require_current_principal(control)?;
+        }
         self.finish_prepared_application_query_permission_with_native_access(
             execution, permission, native,
         )

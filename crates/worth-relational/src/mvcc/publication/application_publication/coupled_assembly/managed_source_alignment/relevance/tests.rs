@@ -12,6 +12,7 @@ use crate::schema::data::{
     RelationalSchemaRegistry,
 };
 mod footprint;
+mod reach;
 
 const SCOPE: KindId = KindId(1);
 const MEMBER: KindId = KindId(3);
@@ -19,9 +20,14 @@ const PREDECESSOR: KindId = KindId(4);
 const INTRODUCES: KindId = KindId(5);
 const ROW: KindId = KindId(6);
 
+/// The base managed-cache fixture shared by the alignment unit tests.
+pub(super) fn managed_cache_schema() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
+    crate::tests::support::managed_cache_schema()
+}
+
 /// The registry with a row kind and the relations an event chain needs.
 fn event_registry() -> RelationalSchemaRegistry {
-    let (registry, _) = crate::tests::support::managed_cache_schema();
+    let (registry, _) = managed_cache_schema();
     let template = registry.relation_registration(MEMBER).unwrap().clone();
     let mut order = template.clone();
     order.kind_id = PREDECESSOR;

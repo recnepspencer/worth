@@ -6,7 +6,7 @@ use worth_foundational::facade::{AspectValue, FieldKey, InternedString, StructAs
 
 /// A forward stored Source rooted only at the scope: other scopes root
 /// their own Sources.
-fn root_only() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
+pub(super) fn root_only() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
     let registry = event_registry();
     let (_, template) = crate::tests::support::managed_cache_schema();
     let mut source = template.0.path.parts().clone();
@@ -21,16 +21,16 @@ fn root_only() -> (RelationalSchemaRegistry, ManagedIndexSourceProgram) {
     (registry, program)
 }
 
-fn key() -> (KindId, AspectKey, FieldKey) {
+pub(super) fn key() -> (KindId, AspectKey, FieldKey) {
     (SCOPE, AspectKey::new("facts").unwrap(), FieldKey::new("key".to_string()).unwrap())
 }
 
-fn text(value: &str) -> AspectValue {
+pub(super) fn text(value: &str) -> AspectValue {
     AspectValue::String(InternedString::from(value))
 }
 
 /// An update whose aspect evidence keeps the old and new struct values.
-fn updated(entity: EntityId, key_before: &str, key_after: &str, note_after: &str) -> CanonicalRecordAspectDelta {
+pub(super) fn updated(entity: EntityId, key_before: &str, key_after: &str, note_after: &str) -> CanonicalRecordAspectDelta {
     let (_, aspect, field) = key();
     let note = FieldKey::new("note".to_string()).unwrap();
     let value = |key: &str, note_value: &str| {

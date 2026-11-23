@@ -121,6 +121,7 @@ pub(super) fn declare(
             GrantResource::reference(),
         )
         // compiled-example: end
+        .operation_managed_index_read::<super::super::ordered_decision::ParentBinding, _, _>(op)
         .operation_create(op, Item::reference())
         .operation_link(op, Contains::reference())
         .operation_write(op, ItemIdentity::at("ItemIdentity"))
