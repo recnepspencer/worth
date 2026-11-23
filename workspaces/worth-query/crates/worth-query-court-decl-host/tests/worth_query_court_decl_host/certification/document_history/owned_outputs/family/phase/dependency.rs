@@ -99,7 +99,7 @@ macro_rules! producer_decision_dependency {
     (@self_relation $reader:ident, $source:ident) => {{
         let m = producer_decision_dependency!(@member_read $reader);
         for link in $reader.relations_to(FirstOf::reference(), &$source).map_err(HandlerExecutionDenial::new)? {
-            if super::super::self_relation::TRAVERSE_ONLY.load(std::sync::atomic::Ordering::Relaxed) {
+            if super::super::self_relation::TRAVERSE_ONLY.with(std::cell::Cell::get) {
                 continue;
             }
             if $reader.field(link.from(), FirstValue::at("FirstValue"))?.is_none() {
