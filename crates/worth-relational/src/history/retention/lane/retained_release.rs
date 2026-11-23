@@ -4,7 +4,7 @@ use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
-pub(crate) use tests::assert_external_cut_and_lane_busy;
+pub(crate) use tests::{assert_external_cut_and_lane_busy, assert_recovered_cut_and_lane_busy};
 
 #[derive(Debug, Default)]
 pub(crate) struct RelationalRetentionRetirementCustody {

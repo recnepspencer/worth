@@ -171,3 +171,42 @@ fn caller_association_bounds_and_rebinding_refuse_without_retaining_publication(
     );
     assert!(runtime.record_identity.pending_snapshot().is_empty());
 }
+
+#[test]
+fn caller_association_survives_embedded_checkpoint_and_refuses_old_semantics() {
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let medium = OwnedTestDurableMedium::new();
+    let runtime = durable_runtime_for_medium(&medium);
+    let association = Association::from_bytes(b"embedded-checkpoint-owner").unwrap();
+    let artifact = publish(execution, &runtime, "embedded", &association);
+    let native = runtime
+        .durability_authority()
+        .native_checkpoint(execution, execution.allocation_policy())
+        .unwrap();
+    let decoded = crate::durability::log::native_checkpoint_codec::decode_checkpoint(
+        execution,
+        native.bytes(),
+    )
+    .unwrap();
+    let commit = decoded
+        .checkpoint
+        .envelopes
+        .iter()
+        .find(|commit| commit.position() == artifact.position())
+        .unwrap();
+    assert_eq!(commit.envelope().caller_association(), Some(&association));
+    let reencoded = Artifact::from_positioned(commit, execution.allocation_policy()).unwrap();
+    assert_eq!(reencoded.as_bytes(), artifact.as_bytes());
+    for prefix in [b"WORTH-REL-CHK13\n", b"WORTH-REL-CHK14\n"] {
+        let mut old = native.bytes().to_vec();
+        old[..prefix.len()].copy_from_slice(prefix);
+        let stop =
+            crate::durability::log::native_checkpoint_codec::decode_checkpoint(execution, &old)
+                .unwrap_err();
+        assert_eq!(
+            expect_durability_failure(stop).class,
+            crate::durability::data::RecoveryFailureClass::UnsupportedLegacySemantics
+        );
+    }
+}

@@ -31,8 +31,11 @@ use crate::durability::source_initial_inputs::{
 };
 use crate::storage::data::RelationalStorageUnavailableCause as StorageCause;
 
+#[path = "durability/canonical_commit_frame.rs"]
+mod canonical_commit_frame;
 #[path = "durability/owned_medium.rs"]
 mod owned_medium;
+pub(crate) use canonical_commit_frame::reseal_canonical_commit_frame;
 use owned_medium::{bounded_bytes, downcast_snapshot, map_owned_denial, OwnedMediumAttachment};
 pub(crate) use owned_medium::{OwnedTestDurableMedium, ScriptedPublication};
 
@@ -172,6 +175,8 @@ impl ColdSource for OwnedTestDurableMedium {
         member: MemberLoc,
         length: usize,
     ) -> Result<ImmBytes, ReadRefusal> {
+        self.check_and_record_member_read(member.sha256)
+            .map_err(ReadRefusal::Storage)?;
         downcast_snapshot(original)?
             .member_prefix(request, member.sha256, member.length, length)
             .map_err(map_owned_denial)
@@ -207,10 +212,7 @@ impl ColdSource for OwnedTestDurableMedium {
             snapshot,
         ))
     }
-    fn checkpoint_selected_read_protection(
-        &self,
-        request: &Req<'_, '_>,
-    ) -> Result<ReadPayload, ReadRefusal> {
+    fn checkpoint_selected_read_protection(&self, request: &Req<'_, '_>) -> Result<ReadPayload, ReadRefusal> {
         let contents = self.lock();
         OwnedNativeReadSnapshot::capture(
             request,
@@ -222,78 +224,35 @@ impl ColdSource for OwnedTestDurableMedium {
         .map(|original| original as ReadPayload)
         .map_err(map_owned_denial)
     }
-    fn read_commit_owned(
-        &self,
-        request: &Req<'_, '_>,
-        original: &(dyn Any + Send + Sync),
-        position: PatchStreamPosition,
-        limit: u64,
-    ) -> Result<ImmBytes, ReadRefusal> {
-        downcast_snapshot(original)?
-            .canonical(request, position.0, limit)
-            .map_err(map_owned_denial)
+    fn read_commit_owned(&self, request: &Req<'_, '_>, original: &(dyn Any + Send + Sync), position: PatchStreamPosition, limit: u64) -> Result<ImmBytes, ReadRefusal> {
+        downcast_snapshot(original)?.canonical(request, position.0, limit).map_err(map_owned_denial)
     }
-    fn read_transition_owned(
-        &self,
-        request: &Req<'_, '_>,
-        original: &(dyn Any + Send + Sync),
-        sequence: Seq,
-        limit: u64,
-    ) -> Result<ImmBytes, ReadRefusal> {
-        downcast_snapshot(original)?
-            .transition(request, sequence.0, limit)
-            .map_err(map_owned_denial)
+    fn read_transition_owned(&self, request: &Req<'_, '_>, original: &(dyn Any + Send + Sync), sequence: Seq, limit: u64) -> Result<ImmBytes, ReadRefusal> {
+        downcast_snapshot(original)?.transition(request, sequence.0, limit).map_err(map_owned_denial)
     }
-    fn read_member_owned(
-        &self,
-        request: &Req<'_, '_>,
-        original: &(dyn Any + Send + Sync),
-        locator: MemberLoc,
-        limit: u64,
-    ) -> Result<ImmBytes, ReadRefusal> {
-        downcast_snapshot(original)?
-            .member(request, locator.sha256, locator.length, limit)
-            .map_err(map_owned_denial)
+    fn read_member_owned(&self, request: &Req<'_, '_>, original: &(dyn Any + Send + Sync), locator: MemberLoc, limit: u64) -> Result<ImmBytes, ReadRefusal> {
+        self.check_and_record_member_read(locator.sha256).map_err(ReadRefusal::Storage)?;
+        downcast_snapshot(original)?.member(request, locator.sha256, locator.length, limit).map_err(map_owned_denial)
     }
-    fn validate_member_custody_retirement(
-        &self,
-        original: &(dyn Any + Send + Sync),
-    ) -> Result<(), RetireRefusal> {
-        if original.is::<()>() || original.is::<OwnedNativeReadSnapshot>() {
-            Ok(())
-        } else {
-            Err(RetireRefusal::ForeignCustody)
-        }
+    fn validate_member_custody_retirement(&self, original: &(dyn Any + Send + Sync)) -> Result<(), RetireRefusal> {
+        if original.is::<()>() || original.is::<OwnedNativeReadSnapshot>() { Ok(()) } else { Err(RetireRefusal::ForeignCustody) }
     }
-    fn advance_member_custody_retirement(
-        &self,
-        _: &Req<'_, '_>,
-        original: &mut (dyn Any + Send + Sync),
-    ) -> RetireObs {
+    fn advance_member_custody_retirement(&self, _: &Req<'_, '_>, original: &mut (dyn Any + Send + Sync)) -> RetireObs {
         match self.validate_member_custody_retirement(original) {
             Ok(()) => RetireObs::Complete,
             Err(cause) => RetireObs::Refused(cause),
         }
     }
-    fn retain_members_for_request(
-        &self,
-        request: &Req<'_, '_>,
-        _: &[MemberLoc],
-        issuer: Weak<dyn ColdSource>,
-    ) -> Result<MemberCustody, ReadRefusal> {
+    fn retain_members_for_request(&self, request: &Req<'_, '_>, _: &[MemberLoc], issuer: Weak<dyn ColdSource>) -> Result<MemberCustody, ReadRefusal> {
         MemberCustody::try_new_from_source_for_request(issuer, request, || Ok(()))
     }
-    fn retain_members(&self, _: &[MemberLoc]) -> Result<MemberCustody, StorageCause> {
-        Ok(MemberCustody::new(()))
-    }
+    fn retain_members(&self, _: &[MemberLoc]) -> Result<MemberCustody, StorageCause> { Ok(MemberCustody::new(())) }
     fn read_member(&self, locator: MemberLoc, limit: u64) -> Result<Vec<u8>, StorageCause> {
+        self.check_and_record_member_read(locator.sha256)?;
         bounded_bytes(self.lock().members.get(locator.sha256, locator.length), limit)
     }
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, StorageCause> {
-        bounded_bytes(
-            self.lock().commits.entries.get(&position.0).map(AsRef::as_ref),
-            limit,
-        )
+        bounded_bytes(self.lock().commits.entries.get(&position.0).map(AsRef::as_ref), limit)
     }
 }
 
@@ -383,5 +342,22 @@ impl OwnedTestDurableMedium {
         )
         .expect("a rewritten envelope still encodes");
         self.replace_commit_bytes(position, Box::from(rewritten.as_bytes()));
+    }
+    pub(crate) fn rewrite_commit_envelope(
+        &self,
+        execution: &Req<'_, '_>,
+        commit_id: crate::history::data::CommitId,
+        edit: impl FnOnce(&mut crate::history::data::CanonicalCommitEnvelopeBody),
+    ) {
+        let position = self
+            .positions()
+            .into_iter()
+            .find(|p| {
+                self.artifact_bytes(*p)
+                    .and_then(|b| CommitArt::from_untrusted_bytes(b).ok())
+                    .is_some_and(|a| a.commit_id() == commit_id)
+            })
+            .unwrap_or_else(|| panic!("medium holds no artifact for {commit_id:?}"));
+        self.rewrite_artifact_envelope(execution, position, edit);
     }
 }
