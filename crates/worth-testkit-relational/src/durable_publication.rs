@@ -35,8 +35,11 @@ pub fn durable_runtime(medium: &Arc<TestDurableMedium>) -> RelationalRuntime {
         .unwrap()
 }
 pub fn memory_runtime() -> RelationalRuntime {
+    memory_runtime_with_profile(RelationalRuntimeProfile::CertificationCore)
+}
+pub fn memory_runtime_with_profile(profile: RelationalRuntimeProfile) -> RelationalRuntime {
     RelationalRuntimeApi::builder()
-        .profile(RelationalRuntimeProfile::CertificationCore)
+        .profile(profile)
         .schema_registry(schema())
         .build()
         .unwrap()

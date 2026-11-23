@@ -1,0 +1,288 @@
+# Stage 1 physical source seeds under crates/worth-relational/src.
+# Longest path wins. A module prefix matches both name.rs and name/.
+# Mixed-file splits land in Stage 2. Court seeds carry no production crate.
+court_seed = "courts"
+
+[owners.contracts]
+crate = "worth-relational-contracts"
+layer = 0
+cap = 68000
+floor = 38300
+depends = []
+
+[owners.storage]
+crate = "worth-relational-storage"
+layer = 1
+cap = 58000
+floor = 25400
+depends = ["contracts"]
+
+[owners.branch]
+crate = "worth-relational-branch"
+layer = 2
+cap = 98000
+floor = 56400
+depends = ["contracts", "storage"]
+
+[owners.lineage]
+crate = "worth-relational-lineage"
+layer = 3
+cap = 17000
+floor = 7100
+depends = ["contracts", "storage", "branch"]
+
+[owners.mutation]
+crate = "worth-relational-mutation"
+layer = 3
+cap = 98000
+floor = 51000
+depends = ["contracts", "storage", "branch"]
+
+[owners.merge]
+crate = "worth-relational-merge"
+layer = 3
+cap = 24000
+floor = 9900
+depends = ["contracts", "storage", "branch"]
+
+[owners.indexes]
+crate = "worth-relational-indexes"
+layer = 3
+cap = 27000
+floor = 13000
+depends = ["contracts", "storage", "branch"]
+
+[owners.durability]
+crate = "worth-relational-durability"
+layer = 4
+cap = 84000
+floor = 45400
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes"]
+
+[owners.publication]
+crate = "worth-relational-publication"
+layer = 5
+cap = 60000
+floor = 26600
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability"]
+
+[owners.runtime]
+crate = "worth-relational"
+layer = 6
+cap = 78000
+floor = 32000
+depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
+
+[paths]
+# Composition owns the legacy export routers spanning virtual packages.
+"branch/mod.rs" = "runtime"
+"durability/mod.rs" = "runtime"
+"execution/mod.rs" = "runtime"
+"history/mod.rs" = "runtime"
+"merge/data/mod.rs" = "runtime"
+"publication/mod.rs" = "runtime"
+"replay/mod.rs" = "runtime"
+"runtime/state/subsystems/history.rs" = "runtime"
+"transactions/data/mod.rs" = "runtime"
+"transactions/data/outcomes/mod.rs" = "runtime"
+"validation/data/custom_rule.rs" = "runtime"
+"validation/data/mod.rs" = "runtime"
+"validation/mod.rs" = "runtime"
+"visibility/materialization/read_records/mod.rs" = "runtime"
+"visibility/materialization/read_records/reader/mod.rs" = "runtime"
+
+"aggregate_identity" = "mutation"
+"aspect_truth_flow.md" = "runtime"
+"aspect_wire" = "contracts"
+"authority" = "mutation"
+"authority/commit" = "publication"
+"authority/intent_merge" = "merge"
+"authorization" = "mutation"
+"authorization/tests" = "runtime"
+"branch" = "branch"
+"branch/basis_observation" = "runtime"
+"branch/basis_readmission" = "runtime"
+"branch/basis_retention" = "branch"
+"branch/fork_port" = "runtime"
+"branch/fork_runtime_adapters" = "runtime"
+"branch/identity" = "contracts"
+"branch/lifecycle_archive" = "runtime"
+"branch/lifecycle_delete" = "runtime"
+"branch/model_ownership" = "mutation"
+"branch/owner_services" = "runtime"
+"branch/record_advance" = "runtime"
+"branch/recorded_basis" = "branch"
+"branch/reference_state" = "branch"
+"branch/root_runtime_access" = "runtime"
+"branch/target" = "contracts"
+"branch/transition" = "branch"
+"branch/version" = "contracts"
+"canonical_basis_ready_sequence.rs" = "runtime"
+"capabilities" = "runtime"
+"change_source" = "runtime"
+"commit_strategies" = "mutation"
+"commit_strategies/data" = "contracts"
+"commit_strategies/facade" = "runtime"
+"commit_strategies/facade_tests" = "runtime"
+"config" = "contracts"
+"content" = "storage"
+"content/registry" = "contracts"
+"derived_relation" = "mutation"
+"diagnostics" = "contracts"
+"diagnostics/data" = "contracts"
+"durability" = "durability"
+"durability/access" = "runtime"
+"durability/authority/recovery" = "durability"
+"durability/authority/runtime_rebuild" = "durability"
+"durability/capture_custody_census" = "runtime"
+"durability/cold_residency_census" = "runtime"
+"durability/medium" = "storage"
+"durability/naming" = "lineage"
+"durability/recovery" = "durability"
+"errors" = "contracts"
+"execution" = "contracts"
+"execution/request_work" = "runtime"
+"facade" = "runtime"
+"facade.rs" = "runtime"
+"graph_member" = "contracts"
+"history" = "branch"
+"history/access" = "branch"
+"history/access/ancestry" = "runtime"
+"history/access/branch_envelope_reads" = "runtime"
+"history/access/commit_surfaces" = "runtime"
+"history/access/envelope_reads" = "runtime"
+"history/access/patch_stream_commit" = "runtime"
+"history/authority" = "runtime"
+"history/commit" = "branch"
+"history/data" = "branch"
+"history/data/aspect_history" = "branch"
+"history/data/canonical_commit_envelope/live_publication_inputs" = "publication"
+"history/data/merge_branch_basis" = "branch"
+"history/retention" = "branch"
+"history/retention/head_cell" = "branch"
+"history/retention/reclamation" = "branch"
+"identity" = "contracts"
+"identity_authority" = "contracts"
+"indexes" = "branch"
+"indexes/access/bounded_entity_field_lookup" = "branch"
+"indexes/authority" = "indexes"
+"indexes/data" = "contracts"
+"indexes/projected_field_values" = "indexes"
+"indexes/retained_definition" = "branch"
+"inline_type_sizes.rs" = "runtime"
+"inspection" = "runtime"
+"lib.rs" = "runtime"
+"lib_inline_type_budget.rs" = "runtime"
+"lineage" = "publication"
+"lineage/access" = "lineage"
+"lineage/authority" = "lineage"
+"lineage/data" = "contracts"
+"lineage/index" = "lineage"
+"merge" = "merge"
+"merge/data" = "contracts"
+"mvcc" = "runtime"
+"mvcc/observation" = "branch"
+"mvcc/publication" = "publication"
+"mvcc/publication/companion/cell/managed_source/rebuild" = "publication"
+"mvcc/transaction/normalized_plan" = "mutation"
+"mvcc/validation" = "mutation"
+"mvcc/validation.rs" = "runtime"
+"performance" = "runtime"
+"presentation" = "runtime"
+"presentation/harness" = "courts"
+"projected_member_domain" = "contracts"
+"publication" = "branch"
+"publication/access" = "runtime"
+"publication/authority" = "publication"
+"publication/bundle" = "publication"
+"publication/canonical_history" = "publication"
+"publication/cdc" = "runtime"
+"publication/data" = "branch"
+"publication/ownership" = "publication"
+"publication/patch" = "branch"
+"query" = "branch"
+"query/data" = "contracts"
+"replay" = "durability"
+"replay/access" = "runtime"
+"replay/authority" = "runtime"
+"runtime" = "runtime"
+"runtime/state/runtime_state/publication_lifecycle" = "publication"
+"runtime/state/runtime_state/publication_settlement_registry" = "publication"
+"runtime/state/subsystems/canonical_publication_routes" = "publication"
+"runtime/state/subsystems/canonical_publication_routes/position_admission" = "branch"
+"runtime/state/subsystems/history" = "branch"
+"runtime/state/subsystems/history_branch_cells" = "branch"
+"runtime/state/subsystems/history_canonical_routes" = "publication"
+"runtime/state/subsystems/history_construction" = "branch"
+"runtime/state/subsystems/history_fork_binding" = "branch"
+"runtime/state/subsystems/history_head_versions" = "branch"
+"runtime/state/subsystems/history_identity_allocation" = "branch"
+"runtime/state/subsystems/history_ledger" = "branch"
+"runtime/state/subsystems/history_ledger_access" = "branch"
+"runtime/state/subsystems/history_memory_close" = "branch"
+"runtime/state/subsystems/history_preparation_binding" = "publication"
+"runtime/state/subsystems/history_publication" = "publication"
+"runtime/state/subsystems/history_retention" = "branch"
+"runtime/state/subsystems/history_root_capture" = "branch"
+"runtime/state/subsystems/history_source_retirement" = "branch"
+"runtime/state/subsystems/indexing" = "indexes"
+"runtime/state/subsystems/lineage" = "lineage"
+"runtime/state/subsystems/lineage_identity" = "lineage"
+"runtime/state/subsystems/owned_state" = "branch"
+"runtime/state/subsystems/publication" = "publication"
+"runtime/state/subsystems/record_identity" = "storage"
+"runtime/state/subsystems/services/symbol_table" = "storage"
+"runtime/state/subsystems/storage" = "storage"
+"runtime/state/subsystems/visibility" = "branch"
+"schema" = "contracts"
+"schema/current_publication_ownership" = "runtime"
+"schema/registry_custody" = "runtime"
+"schema/source_catalog" = "runtime"
+"simulation" = "runtime"
+"snapshots" = "branch"
+"storage" = "storage"
+"storage/access" = "runtime"
+"storage/authority" = "runtime"
+"storage/residency/checkpoint_capture" = "storage"
+"storage/residency/checkpoint_kind_images" = "storage"
+"storage/residency/region_capture" = "storage"
+"structural_traversal.rs" = "contracts"
+"symbols" = "contracts"
+"test_execution_policy.rs" = "runtime"
+"tests" = "courts"
+"transactions" = "mutation"
+"transactions/data" = "contracts"
+"transactions/data/outcomes/commit_result" = "publication"
+"validation" = "mutation"
+"validation/candidate_source/authored_history" = "branch"
+"validation/data" = "contracts"
+"validation/invariant_access" = "runtime"
+"validation/invariant_authority" = "runtime"
+"visibility" = "branch"
+"visibility/authority" = "runtime"
+"visibility/materialization/read_records/reader/pinned_read" = "publication"
+"visibility/retention" = "runtime"
+# Arrows in allowed follow caller to dependency. The reverse Branch directions
+# and both Mutation directions are ratcheted. Ordinary checkpoint cannot reach
+# reconstruction, including when an import is routed through a re-export.
+[[boundaries]]
+owner = "branch"
+allowed = [["root_custody", "envelope"], ["root_custody", "projection_view"], ["envelope", "projection_view"]]
+[boundaries.paths]
+root_custody = ["branch", "runtime/state/subsystems/owned_state"]
+envelope = ["branch/envelope", "history/data/canonical_commit_envelope", "history/commit", "publication/patch"]
+projection_view = ["branch/projection_view", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
+
+[[boundaries]]
+owner = "mutation"
+allowed = []
+[boundaries.paths]
+authorization_and_derivation = ["authorization", "derived_relation"]
+candidate_source = ["validation/candidate_source"]
+
+[[boundaries]]
+owner = "durability"
+allowed = [["reconstruction", "ordinary_checkpoint"]]
+[boundaries.paths]
+ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints", "durability/checkpoint_history", "durability/checkpoint_admission", "durability/authority/checkpoint_capture", "durability/authority/checkpoint_complete", "durability/authority/checkpoint_components", "durability/authority/checkpointing", "durability/authority/checkpoint_native_capture"]
+reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
