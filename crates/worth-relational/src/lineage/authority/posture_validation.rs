@@ -5,11 +5,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::identity::data::{LineageId, VersionId};
 use crate::lineage::data::{
-    LineageCommitPostureInput, LineageNameDenial, LineagePostureClaim, LineagePostureKind,
-    LineageRecordTarget, LineageSubject, PersistentNameBirthRecord, PersistentNameBirthRequest,
-    PersistentNameIdentity,
+    InstalledPersistentNameSchemeRegistry, LineageBasisView, LineageNameDenial,
+    LineagePostureClaim, LineagePostureKind, LineageRecordTarget, LineageSubject,
+    PersistentNameBirthRecord, PersistentNameBirthRequest, PersistentNameIdentity,
 };
 use crate::runtime::WorkingState;
+use crate::schema::data::RelationalSchemaRegistry;
 use crate::transactions::data::RecordRef;
 
 use super::posture_continuity::{classify_minted_births, validate_explicit_restores};
@@ -17,7 +18,7 @@ use super::posture_merge_validation::validate_merge_claim;
 use super::posture_split_validation::validate_split_claim;
 use super::staged_effects::{
     basis_lineage_id, existed_at_basis, is_created_in_commit, is_live_after_commit,
-    is_retired_in_commit,
+    is_retired_in_commit, target_kind_id,
 };
 
 pub(super) enum ValidatedMergeTarget {
@@ -81,13 +82,19 @@ pub(super) struct ValidatedPostureBatch {
 ///
 /// Pure and fail-closed: performs zero allocator reservations and zero
 /// mutations to `staged`.
+#[allow(clippy::too_many_arguments)]
 pub(super) fn validate_commit_postures(
     staged: &WorkingState,
     version_id: VersionId,
     changed_records: &[RecordRef],
-    input: &LineageCommitPostureInput,
+    scheme_registry: &InstalledPersistentNameSchemeRegistry,
+    schema_registry: Option<&RelationalSchemaRegistry>,
+    basis: &dyn LineageBasisView,
+    postures: &[LineagePostureClaim],
 ) -> Result<ValidatedPostureBatch, LineageNameDenial> {
-    if input.postures.is_empty() {
+    let check_missing_births =
+        schema_registry.is_some_and(RelationalSchemaRegistry::has_kind_name_schemes);
+    if postures.is_empty() && !check_missing_births {
         return Ok(ValidatedPostureBatch {
             postures: Vec::new(),
             minted_births: BTreeMap::new(),
@@ -120,9 +127,9 @@ pub(super) fn validate_commit_postures(
     let mut explicit_restores = Vec::new();
     let mut kept_names_in_commit = BTreeSet::new();
     let mut births_to_mint = BTreeMap::new();
-    let mut validated = Vec::with_capacity(input.postures.len());
+    let mut validated = Vec::with_capacity(postures.len());
 
-    for claim in &input.postures {
+    for claim in postures {
         match claim {
             LineagePostureClaim::Create { target, birth } => {
                 if !created_targets.contains(target) {
@@ -143,7 +150,7 @@ pub(super) fn validate_commit_postures(
                     LineagePostureKind::Create,
                     *target,
                     birth,
-                    input,
+                    scheme_registry,
                 )?;
                 create_claimed_targets.insert(*target);
                 births_to_mint.insert(*target, birth.clone());
@@ -170,7 +177,7 @@ pub(super) fn validate_commit_postures(
                 require_live_holder_and_lineage(
                     LineagePostureKind::Preserve,
                     staged,
-                    input,
+                    basis,
                     *target,
                     *name,
                 )?;
@@ -196,7 +203,7 @@ pub(super) fn validate_commit_postures(
                 let source_lineage = require_live_holder_and_lineage(
                     LineagePostureKind::Retire,
                     staged,
-                    input,
+                    basis,
                     *target,
                     *name,
                 )?;
@@ -233,7 +240,8 @@ pub(super) fn validate_commit_postures(
                 let validated_split = validate_split_claim(
                     staged,
                     version_id,
-                    input,
+                    scheme_registry,
+                    basis,
                     &created_targets,
                     *parent_target,
                     *parent_name,
@@ -253,7 +261,8 @@ pub(super) fn validate_commit_postures(
                 let validated_merge = validate_merge_claim(
                     staged,
                     version_id,
-                    input,
+                    scheme_registry,
+                    basis,
                     &created_targets,
                     parents,
                     *target,
@@ -269,20 +278,39 @@ pub(super) fn validate_commit_postures(
         }
     }
 
+    // Fail closed if any schemed created record lacks a birth/posture or claims a different kind's scheme.
+    if let Some(schema) = schema_registry {
+        for &target in &created_targets {
+            let Some(kind_id) = target_kind_id(staged, target) else {
+                continue;
+            };
+            let Some(scheme_id) = schema.scheme_id_for_kind(target.subject_kind(), kind_id) else {
+                continue;
+            };
+            if !claimed_created_targets.contains(&target) {
+                return Err(LineageNameDenial::MissingBirth { target, scheme_id: scheme_id.to_owned() });
+            }
+            if let Some(birth) = births_to_mint.get(&target) && birth.scheme_id != scheme_id {
+                return Err(mismatch(
+                    LineagePostureKind::Create,
+                    target,
+                    &format!("birth scheme `{}` does not match kind's installed scheme `{scheme_id}`", birth.scheme_id),
+                ));
+            }
+        }
+    }
+
     let (explicit_restore_postures, restored_names_in_commit, restored_created_targets) =
-        validate_explicit_restores(input, &retired_names_in_commit, &explicit_restores)?;
-    let previously_retired: BTreeSet<PersistentNameIdentity> =
-        input.retired_lineages.keys().copied().collect();
+        validate_explicit_restores(basis, &retired_names_in_commit, &explicit_restores)?;
     let mut minted_births = super::name_minting::mint_target_births(
-        &input.scheme_registry,
-        &input.live_holders,
+        scheme_registry,
+        basis,
         &retired_names_in_commit,
-        &previously_retired,
         &created_targets,
         &births_to_mint,
     )?;
     let classified = classify_minted_births(
-        input,
+        basis,
         validated,
         &explicit_retires,
         &retired_names_in_commit,
@@ -306,7 +334,7 @@ pub(super) fn validate_birth_holder_and_subject(
     posture: LineagePostureKind,
     target: LineageRecordTarget,
     birth: &PersistentNameBirthRequest,
-    input: &LineageCommitPostureInput,
+    scheme_registry: &InstalledPersistentNameSchemeRegistry,
 ) -> Result<(), LineageNameDenial> {
     if birth.holder != target.to_holder() {
         return Err(mismatch(
@@ -315,7 +343,7 @@ pub(super) fn validate_birth_holder_and_subject(
             "birth request holder does not match posture target record",
         ));
     }
-    if let Some(scheme) = input.scheme_registry.get(&birth.scheme_id)
+    if let Some(scheme) = scheme_registry.get(&birth.scheme_id)
         && scheme.subject_kind() != target.subject_kind()
     {
         return Err(mismatch(
@@ -330,18 +358,18 @@ pub(super) fn validate_birth_holder_and_subject(
 pub(super) fn require_live_holder_and_lineage(
     posture: LineagePostureKind,
     staged: &WorkingState,
-    input: &LineageCommitPostureInput,
+    basis: &dyn LineageBasisView,
     target: LineageRecordTarget,
     name: PersistentNameIdentity,
 ) -> Result<LineageId, LineageNameDenial> {
-    if input.live_holders.get(&name) != Some(&target.to_holder()) {
+    if basis.live_holder(&name) != Some(&target.to_holder()) {
         return Err(mismatch(
             posture,
             target,
             "persistent name does not match a live basis holder for this target",
         ));
     }
-    basis_lineage_id(staged, &input.live_lineages, target).ok_or_else(|| {
+    basis_lineage_id(staged, basis, target).ok_or_else(|| {
         mismatch(
             posture,
             target,

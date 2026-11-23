@@ -7,8 +7,9 @@ use std::collections::BTreeMap;
 use crate::facade::lineage::{
     admit_persisted_name, rebuild_name_index_from_durable_log, LineageEventKind,
     PersistentNameDurabilityError, PersistentNameHolder, PersistentNameIdentity, PersistentNameKey,
-    PersistentNameMintingAuthority, PersistentNameReferenceRole, PersistentNameSubjectKind,
+    PersistentNameReferenceRole, PersistentNameSubjectKind,
 };
+use crate::lineage::authority::PersistentNameMintingAuthority;
 use crate::identity::data::{EntityId, PartitionId};
 
 use super::name_durable_world::durable_naming_history;

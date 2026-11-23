@@ -55,6 +55,19 @@ impl ReadmittedSchemas {
             Self::Original(rows) => rows.rows.get(digest),
         }
     }
+
+    pub(crate) fn has_persistent_name_schemes(&self) -> bool {
+        match self {
+            Self::Source(catalog) => catalog
+                .rows
+                .iter()
+                .any(|(_, schema)| !schema.registry().persistent_name_schemes().is_empty()),
+            Self::Original(rows) => rows
+                .rows
+                .values()
+                .any(|schema| !schema.registry().persistent_name_schemes().is_empty()),
+        }
+    }
 }
 
 impl ReadmittedRegionDirectory {
@@ -62,7 +75,7 @@ impl ReadmittedRegionDirectory {
         directory: Arc<RelationalCheckpointDirectory>,
         symbols: crate::runtime::RuntimeSymbolTable,
         request: &ExecutionRequest<'_, '_>,
-        content_formats: &crate::content::RelationalContentFormatRegistry,
+        configured_schema: &crate::schema::data::RelationalSchemaRegistry,
     ) -> Result<Self, RelationalRecoveryStop> {
         if let Some(catalog) = directory.source_schemas.get() {
             let schemas = ReadmittedSchemas::Source(catalog.clone());
@@ -103,15 +116,15 @@ impl ReadmittedRegionDirectory {
         let mut schemas = BTreeMap::new();
         for (index, image) in directory.manifest.schemas.iter().enumerate() {
             let (mut registry, contracts) = image.readmit_registry().map_err(corrupt)?;
-            registry.content_formats = registry
-                .content_formats
-                .bind_recorded(content_formats)
-                .map_err(RelationalRecoveryStop::from)?;
             let expected = registry
                 .snapshot_for_compilation(crate::schema::SchemaCompilationControl::Request(
                     *request,
                 ))
                 .map_err(RelationalRecoveryStop::Request)?;
+            registry.content_formats = registry
+                .content_formats
+                .bind_recorded(&configured_schema.content_formats)
+                .map_err(RelationalRecoveryStop::from)?;
             let authority = RelationalBranchRootSchemaAuthority::readmit_exact(
                 index as u64 + 1,
                 registry,

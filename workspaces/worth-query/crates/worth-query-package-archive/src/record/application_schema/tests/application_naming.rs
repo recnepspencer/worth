@@ -1,6 +1,8 @@
-//! Round-trip and malformed-byte refusal proofs for `ApplicationNameScheme` (tag 57).
+//! Round-trip and malformed-byte refusal proofs for `ApplicationNameScheme` (tag 57)
+//! and `ApplicationGroupNameScheme` (tag 58).
 use worth_query_declaration::facade::application_naming::{
-    ApplicationNameRoleDependency, ApplicationNameSubjectKind, ErasedApplicationNameScheme,
+    ApplicationGroupContinuityRule, ApplicationNameRoleDependency, ApplicationNameSubjectKind,
+    ErasedApplicationGroupNameScheme, ErasedApplicationNameScheme,
 };
 use worth_query_declaration::facade::application_schema::{
     ApplicationSchemaMember as Member, WorthQueryPortableApplicationSchemaParts,
@@ -162,6 +164,154 @@ fn application_name_scheme_refuses_malformed_version_subject_kind_bool_and_trunc
     }
 
     // 5. Nesting depth 1 is refused by tag 57.
+    let mut input = BinaryInput::new(&valid);
+    let narrow = WorthQueryPackageArchiveLimits::DEFAULT.with_maximum_nesting_depth(1);
+    let mut attempt =
+        RecordDecodeAttempt::begin(Default::default(), valid.len() as u64, narrow).unwrap();
+    assert_eq!(
+        super::super::member::decode(&mut input, &mut attempt)
+            .unwrap_err()
+            .kind(),
+        Kind::NestingDepthBudgetExceeded
+    );
+}
+
+fn populated_group_scheme(
+    rule: ApplicationGroupContinuityRule,
+    subject: &str,
+    anchor_role: Option<&str>,
+    boundary_role: Option<&str>,
+) -> Member {
+    Member::ApplicationGroupNameScheme {
+        definition: ErasedApplicationGroupNameScheme::from_untrusted_parts(
+            ErasedApplicationNameScheme::from_untrusted_parts(
+                format!("worth.cad.group.{}.v1", subject.to_lowercase()),
+                ApplicationNameSubjectKind::Group,
+                subject.to_owned(),
+                vec!["host".to_owned(), "wall".to_owned(), "member".to_owned()],
+                Vec::new(),
+                false,
+                None,
+                Vec::new(),
+                true,
+            ),
+            rule,
+            anchor_role.map(str::to_owned),
+            boundary_role.map(str::to_owned),
+        ),
+    }
+}
+
+#[test]
+fn application_group_name_scheme_round_trips_all_continuity_rules_and_payload() {
+    for (rule, subject, anchor, boundary) in [
+        (
+            ApplicationGroupContinuityRule::Anchor,
+            "FaceLoop",
+            Some("host"),
+            None,
+        ),
+        (
+            ApplicationGroupContinuityRule::Boundary,
+            "RoomSpace",
+            None,
+            Some("wall"),
+        ),
+        (
+            ApplicationGroupContinuityRule::ProducerRole,
+            "BodyShell",
+            Some("host"),
+            Some("wall"),
+        ),
+    ] {
+        let member = populated_group_scheme(rule, subject, anchor, boundary);
+        let bytes = encode_member(&member);
+        assert_eq!(&bytes[..4], &[0, 58, 0, 1]);
+        assert_eq!(decode_member(&bytes), member);
+    }
+
+    let mut members = vec![
+        Member::Entity {
+            entity: "Face".to_owned(),
+        },
+        populated_group_scheme(
+            ApplicationGroupContinuityRule::Boundary,
+            "RoomSpace",
+            None,
+            Some("wall"),
+        ),
+    ];
+    members.sort();
+    let record = WorthQueryPortableApplicationSchemaRecord::from_untrusted_parts(
+        WorthQueryPortableApplicationSchemaParts {
+            owner: "worth.tests.archive".to_owned(),
+            name: "GroupNamingArchive".to_owned(),
+            major: 1,
+            minor: 0,
+            members,
+            contributions: Vec::new(),
+        },
+    );
+    let limits = WorthQueryPackageArchiveLimits::DEFAULT;
+    let payload = encode_payload(&record, limits);
+    let mut input = BinaryInput::new(&payload);
+    let mut attempt =
+        RecordDecodeAttempt::begin(Default::default(), payload.len() as u64, limits).unwrap();
+    let WorthQueryPortablePackageRecord::ApplicationSchema(decoded) =
+        super::super::decode_payload(&mut input, &mut attempt).unwrap()
+    else {
+        panic!("expected application schema payload");
+    };
+    assert!(input.is_finished());
+    assert_eq!(decoded, record);
+}
+
+#[test]
+fn application_group_name_scheme_refuses_tampered_version_rule_bool_truncation_and_depth() {
+    assert_eq!(
+        try_decode_member(&[0, 58, 0, 2]).unwrap_err().kind(),
+        Kind::UnsupportedRecordVersion
+    );
+
+    let valid = encode_member(&populated_group_scheme(
+        ApplicationGroupContinuityRule::ProducerRole,
+        "BodyShell",
+        Some("host"),
+        Some("wall"),
+    ));
+    // Corrupt continuity-rule byte (immediately before the optional anchor_role flag) to 0 and 4.
+    let prefix_len = encode_member(&populated_group_scheme(
+        ApplicationGroupContinuityRule::Anchor,
+        "BodyShell",
+        None,
+        None,
+    ))
+    .len()
+        - 3; // trailing 3 bytes are: continuity_rule(1), anchor_flag(0), boundary_flag(0)
+    for bad_rule in [0_u8, 4_u8] {
+        let mut tampered = valid.clone();
+        tampered[prefix_len] = bad_rule;
+        assert_eq!(
+            try_decode_member(&tampered).unwrap_err().kind(),
+            Kind::InvalidRecordShape
+        );
+    }
+
+    // Corrupt optional anchor_role presence boolean to 2.
+    let mut bad_opt = valid.clone();
+    bad_opt[prefix_len + 1] = 2;
+    assert_eq!(
+        try_decode_member(&bad_opt).unwrap_err().kind(),
+        Kind::InvalidBooleanEncoding
+    );
+
+    for cut in [4, prefix_len + 1, valid.len() - 1] {
+        assert_eq!(
+            try_decode_member(&valid[..cut]).unwrap_err().kind(),
+            Kind::Truncated
+        );
+    }
+
     let mut input = BinaryInput::new(&valid);
     let narrow = WorthQueryPackageArchiveLimits::DEFAULT.with_maximum_nesting_depth(1);
     let mut attempt =

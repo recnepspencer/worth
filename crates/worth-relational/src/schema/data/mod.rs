@@ -31,6 +31,10 @@ pub use authority_snapshot::{
     schema_authority_snapshot_digest_bytes, SchemaAuthorityKindSnapshot,
     SchemaAuthorityRelationSnapshot, SchemaAuthoritySnapshot, SchemaAuthoritySnapshotParts,
 };
+pub(crate) use naming_schemes::update_naming_layout_digest;
+pub use naming_schemes::{
+    SchemaAuthorityKindNamingBindingSnapshot, SchemaAuthorityNamingSchemeSnapshot,
+};
 pub use continuity::{
     runtime_descriptor_canonical_basis_policy, runtime_descriptor_semantics_policy,
     DescriptorCanonicalBasisSupportPolicy, DescriptorCanonicalBasisVersion,
@@ -119,6 +123,15 @@ pub struct RelationalSchemaRegistry {
     pub(crate) projected_member_domains: BTreeMap<
         crate::projected_member_domain::ProjectedMemberDomainIdentity,
         std::sync::Arc<crate::projected_member_domain::RegisteredProjectedMemberDomain>,
+    >,
+    pub(crate) persistent_name_schemes:
+        crate::lineage::data::InstalledPersistentNameSchemeRegistry,
+    pub(crate) kind_name_schemes: BTreeMap<
+        (
+            crate::lineage::data::PersistentNameSubjectKind,
+            KindId,
+        ),
+        String,
     >,
 }
 
@@ -343,5 +356,7 @@ impl RelationalSchemaRegistry {
         Ok(Some((schema_id.clone(), schema_version_id)))
     }
 }
+
+mod naming_schemes;
 
 pub(crate) use continuity::{SchemaTextReadmissionMemory, SchemaTransitionReadmissionMemory};

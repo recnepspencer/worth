@@ -5,7 +5,11 @@ use serde::{Serialize, Serializer};
 
 impl Serialize for SchemaAuthoritySnapshotParts {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut output = serializer.serialize_struct("SchemaAuthoritySnapshotParts", 7)?;
+        let has_naming =
+            !self.persistent_name_schemes.is_empty() || !self.kind_name_schemes.is_empty();
+        let field_count = if has_naming { 9 } else { 7 };
+        let mut output =
+            serializer.serialize_struct("SchemaAuthoritySnapshotParts", field_count)?;
         output.serialize_field("primary_schema_id", &self.primary_schema_id)?;
         output.serialize_field("primary_schema_version_id", &self.primary_schema_version_id)?;
         output.serialize_field("entity_kinds", &self.entity_kinds)?;
@@ -13,6 +17,10 @@ impl Serialize for SchemaAuthoritySnapshotParts {
         output.serialize_field("derived_relations", &self.derived_relations)?;
         output.serialize_field("projected_member_domains", &self.projected_member_domains)?;
         output.serialize_field("content_formats", &self.content_formats)?;
+        if has_naming {
+            output.serialize_field("persistent_name_schemes", &self.persistent_name_schemes)?;
+            output.serialize_field("kind_name_schemes", &self.kind_name_schemes)?;
+        }
         output.end()
     }
 }

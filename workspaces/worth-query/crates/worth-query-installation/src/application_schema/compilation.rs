@@ -39,7 +39,7 @@ pub(crate) enum ApplicationSchemaCompilationDenial {
     Query(WorthQueryApplicationQueryInstallationDenial),
     Operation(crate::application_operation::WorthQueryApplicationOperationInstallationDenial),
     ValueBinding(WorthQueryApplicationValueBindingInstallationDenial),
-    Naming(worth_query_declaration::facade::application_naming::ApplicationNameSchemeDenial),
+    Naming(worth_query_declaration::facade::application_naming::ApplicationGroupSchemeDenial),
     DerivedSourceUnavailable(String),
 }
 

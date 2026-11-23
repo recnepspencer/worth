@@ -1,4 +1,4 @@
-use crate::application_naming::ErasedApplicationNameScheme;
+use crate::application_naming::{ErasedApplicationGroupNameScheme, ErasedApplicationNameScheme};
 use crate::application_schema::canonical_basis::ApplicationSchemaCanonicalBasis;
 
 pub(super) fn append(
@@ -7,6 +7,29 @@ pub(super) fn append(
     definition: &ErasedApplicationNameScheme,
 ) {
     basis.text(format!("{prefix}.kind"), "application-name-scheme");
+    append_scheme_fields(basis, prefix, definition);
+}
+
+pub(super) fn append_group(
+    basis: &mut ApplicationSchemaCanonicalBasis,
+    prefix: &str,
+    definition: &ErasedApplicationGroupNameScheme,
+) {
+    basis.text(format!("{prefix}.kind"), "application-group-name-scheme");
+    basis.text(
+        format!("{prefix}.continuity-rule"),
+        definition.continuity_rule().canonical_name(),
+    );
+    basis.optional_text(format!("{prefix}.anchor-role"), definition.anchor_role());
+    basis.optional_text(format!("{prefix}.boundary-role"), definition.boundary_role());
+    append_scheme_fields(basis, prefix, definition.name_scheme());
+}
+
+fn append_scheme_fields(
+    basis: &mut ApplicationSchemaCanonicalBasis,
+    prefix: &str,
+    definition: &ErasedApplicationNameScheme,
+) {
     basis.text(format!("{prefix}.scheme-id"), definition.scheme_id());
     basis.text(
         format!("{prefix}.subject-kind"),

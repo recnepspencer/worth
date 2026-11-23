@@ -18,6 +18,10 @@ pub(in crate::authority::commit::pipeline::publication_execution) struct Prepare
         crate::runtime::ValidatedLineageEventBatch,
     pub(in crate::authority::commit::pipeline::publication_execution) lineage_nodes:
         Vec<crate::lineage::data::LineageNode>,
+    pub(in crate::authority::commit::pipeline::publication_execution) relation_lineages: Vec<(
+        crate::identity::data::RelationId,
+        crate::identity::data::LineageId,
+    )>,
     pub(in crate::authority::commit::pipeline::publication_execution) artifacts:
         crate::storage::overlay::PublicationArtifacts,
     pub(in crate::authority::commit::pipeline::publication_execution) changed_records:
@@ -49,6 +53,10 @@ pub(in crate::authority::commit::pipeline::publication_execution) struct Prepare
         crate::runtime::ValidatedLineageEventBatch,
     pub(in crate::authority::commit::pipeline::publication_execution) lineage_nodes:
         Vec<crate::lineage::data::LineageNode>,
+    pub(in crate::authority::commit::pipeline::publication_execution) relation_lineages: Vec<(
+        crate::identity::data::RelationId,
+        crate::identity::data::LineageId,
+    )>,
     pub(in crate::authority::commit::pipeline::publication_execution) artifacts:
         crate::storage::overlay::PublicationArtifacts,
     pub(in crate::authority::commit::pipeline::publication_execution) changed_records:
@@ -130,6 +138,7 @@ impl PreparedPublicationPhase {
             prepared_history,
             validated_lineage_events: self.validated_lineage_events,
             lineage_nodes: self.lineage_nodes,
+            relation_lineages: self.relation_lineages,
             artifacts: self.artifacts,
             changed_records: self.changed_records,
             version_id: self.version_id,
@@ -143,4 +152,41 @@ impl PreparedPublicationPhase {
         };
         (movement, completion)
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn complete_deferred_lineage(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    runtime: &RelationalPreparationRuntime,
+    working_state: &mut crate::storage::overlay::WorkingState,
+    envelope: &mut crate::history::data::CanonicalCommitEnvelopeDraft,
+    changed_records: &[crate::transactions::data::RecordRef],
+    created_entities: &crate::transactions::data::CommitCreatedEntityBindings,
+    created_relations: &crate::transactions::data::CommitCreatedRelationBindings,
+    naming_plan: Option<&crate::lineage::data::CommitNamingPlan>,
+) -> Result<
+    (
+        Vec<crate::lineage::data::LineageNode>,
+        Vec<(
+            crate::identity::data::RelationId,
+            crate::identity::data::LineageId,
+        )>,
+    ),
+    TransactionCommitError,
+> {
+    let prepared = runtime
+        .lineage_preparation_authority()
+        .ensure_lineage_for_commit(
+            execution,
+            working_state,
+            &envelope.commit,
+            &envelope.merged_plan.merged_intents,
+            changed_records,
+            created_entities,
+            created_relations,
+            naming_plan,
+        )?;
+    let (lineage, nodes, relations) = prepared.into_parts();
+    envelope.complete_lineage(lineage)?;
+    Ok((nodes, relations))
 }

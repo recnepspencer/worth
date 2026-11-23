@@ -300,4 +300,9 @@ pub enum ApplicationSchemaMember {
     ApplicationNameScheme {
         definition: crate::application_naming::ErasedApplicationNameScheme,
     },
+    /// Declared persistent group name scheme with continuity rules validated
+    /// and lowered at installation.
+    ApplicationGroupNameScheme {
+        definition: crate::application_naming::ErasedApplicationGroupNameScheme,
+    },
 }

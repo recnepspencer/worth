@@ -32,6 +32,7 @@ pub use discriminator::{
     ApplicationNameDiscriminatorValue, NestedDiscriminator, NAME_DISCRIMINATOR_DOMAIN_TAG,
 };
 pub use erased::ErasedWorthQueryName;
+pub(crate) use group::validate_erased_group_scheme_identifiers;
 pub use group::{
     ApplicationGroupContinuityRule, ApplicationGroupMemberRole, ApplicationGroupNameScheme,
     ApplicationGroupNameSchemeBuilder, ApplicationGroupSchemeDenial,

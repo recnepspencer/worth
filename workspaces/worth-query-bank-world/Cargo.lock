@@ -3884,6 +3884,7 @@ dependencies = [
  "worth-query-execution-foundation",
  "worth-query-execution-layout",
  "worth-query-execution-lineage",
+ "worth-query-execution-naming",
  "worth-query-execution-obligations",
  "worth-query-execution-query",
  "worth-query-execution-runtime",
@@ -4008,6 +4009,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "worth-query-execution-naming"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-declaration",
+ "worth-query-installation",
+ "worth-relational",
+]
+
+[[package]]
 name = "worth-query-execution-obligations"
 version = "0.1.0"
 dependencies = [
@@ -4045,6 +4056,7 @@ dependencies = [
  "worth-query-execution-foundation",
  "worth-query-execution-layout",
  "worth-query-execution-lineage",
+ "worth-query-execution-naming",
  "worth-query-execution-obligations",
  "worth-query-execution-runtime",
  "worth-query-installation",

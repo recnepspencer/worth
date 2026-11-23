@@ -14,6 +14,7 @@ pub struct RelationalForkPort {
     pub(super) medium: Option<Arc<RelationalDurableMediumBinding>>,
     pub(super) indexes: crate::runtime::IndexDefinitionReadBinding,
     pub(super) publication: crate::runtime::RelationalRuntimePublicationBinding,
+    pub(super) lineage_naming: crate::runtime::LineageNamingBasisBinding,
 }
 
 impl RelationalForkPort {
@@ -48,6 +49,7 @@ impl RelationalForkPort {
         medium: Option<Arc<RelationalDurableMediumBinding>>,
         publication: crate::runtime::RelationalRuntimePublicationBinding,
         indexes: crate::runtime::IndexDefinitionReadBinding,
+        lineage_naming: crate::runtime::LineageNamingBasisBinding,
     ) -> Self {
         Self {
             runtime_instance_id,
@@ -56,6 +58,7 @@ impl RelationalForkPort {
             medium,
             publication,
             indexes,
+            lineage_naming,
         }
     }
 }

@@ -86,4 +86,6 @@ pub(super) fn matches(
             .values()
             .map(|entry| &entry.parts)
             .eq(expected.projected_member_domains.iter())
+        && registry.persistent_name_scheme_snapshots() == expected.persistent_name_schemes
+        && registry.kind_name_scheme_snapshots() == expected.kind_name_schemes
 }

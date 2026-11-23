@@ -1,10 +1,10 @@
 //! Staged `WorkingState` inspection and lineage-slot installation helpers
 //! shared between default commit finalization and Phase 2 posture validation.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use crate::identity::data::{EntityId, KindId, LineageId, PartitionId, RelationId, VersionId};
-use crate::lineage::data::{LineageRecordTarget, PersistentNameHolder};
+use crate::lineage::data::{LineageBasisView, LineageRecordTarget, PersistentNameHolder};
 use crate::runtime::WorkingState;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::transactions::data::{RecordRef, TransactionCommitError};
@@ -77,18 +77,28 @@ pub(super) fn entity_lineage(staged: &WorkingState, entity_id: EntityId) -> Opti
 
 pub(super) fn basis_lineage_id(
     staged: &WorkingState,
-    live_lineages: &BTreeMap<PersistentNameHolder, LineageId>,
+    basis: &dyn LineageBasisView,
     target: LineageRecordTarget,
 ) -> Option<LineageId> {
     match target {
-        LineageRecordTarget::Entity(entity_id) => entity_lineage(staged, entity_id).or_else(|| {
-            live_lineages
-                .get(&PersistentNameHolder::Entity(entity_id))
-                .copied()
-        }),
-        LineageRecordTarget::Relation(relation_id) => live_lineages
-            .get(&PersistentNameHolder::Relation(relation_id))
-            .copied(),
+        LineageRecordTarget::Entity(entity_id) => entity_lineage(staged, entity_id)
+            .or_else(|| basis.live_lineage(&PersistentNameHolder::Entity(entity_id))),
+        LineageRecordTarget::Relation(relation_id) => {
+            basis.live_lineage(&PersistentNameHolder::Relation(relation_id))
+        }
+    }
+}
+
+pub(super) fn target_kind_id(staged: &WorkingState, target: LineageRecordTarget) -> Option<KindId> {
+    match target {
+        LineageRecordTarget::Entity(id) => staged
+            .get_current_partition(id.partition_id)
+            .and_then(|p| p.entity_arena().get(&id))
+            .and_then(|slot| slot.kind_id()),
+        LineageRecordTarget::Relation(id) => staged
+            .get_current_partition(id.partition_id)
+            .and_then(|p| p.relation_arena().get(&id))
+            .and_then(|slot| slot.kind_id()),
     }
 }
 

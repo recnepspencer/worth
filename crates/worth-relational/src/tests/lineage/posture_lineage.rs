@@ -2,10 +2,11 @@ use std::collections::BTreeMap;
 
 use crate::facade::identity::VersionId;
 use crate::facade::lineage::{
-    LineageCommitPostureInput, LineageDecisionKind, LineageEventKind, LineageMergeKeeper,
+    LineageDecisionKind, LineageEventKind, LineageMergeKeeper,
     LineagePostureClaim, LineageRecordTarget, LineageSplitChild, LineageSubject,
     PersistentNameHolder,
 };
+use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::{
     DeleteRelationIntent, MutationIntent, RecordRef, RelationMutationIntent,
 };

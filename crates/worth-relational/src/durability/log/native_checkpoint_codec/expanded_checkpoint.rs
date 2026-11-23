@@ -190,6 +190,10 @@ pub(super) fn expand(
     let manifest = manifest.ordinary_owned_draft();
     let (runtime_name, branch_cells, branch_lifecycle, retired_branch_names) =
         manifest.branch_data.ordinary_owned_parts();
+    let relation_lineages: Vec<_> = envelopes
+        .iter()
+        .flat_map(|envelope| envelope.envelope().lineage_relation_lineages().iter().copied())
+        .collect();
     Ok(DurableCheckpoint {
         recorded_components: manifest
             .roots
@@ -225,7 +229,8 @@ pub(super) fn expand(
         lineage: crate::lineage::data::LineageCheckpointArtifact::new(
             manifest.lineage_basis.ordinary_owned_copy(),
             lineage_nodes,
-        ),
+        )
+        .with_relation_lineages(relation_lineages),
         index_generation_frontier: manifest.index_generation_frontier,
         index_definition_frontier: manifest.index_definition_frontier,
         index_definitions: manifest.index_definitions.ordinary_owned_copy(),

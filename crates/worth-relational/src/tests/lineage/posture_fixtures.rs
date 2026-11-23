@@ -182,11 +182,10 @@ pub(super) fn seed_two_faces_and_parallel_seams() -> (
     RelationId,
     RelationId,
     Vec<crate::facade::transactions::RecordRef>,
-    crate::facade::lineage::LineageCommitPostureInput,
+    crate::lineage::data::LineageCommitPostureInput,
 ) {
-    use crate::facade::lineage::{
-        LineageCommitPostureInput, LineagePostureClaim, LineageRecordTarget,
-    };
+    use crate::facade::lineage::{LineagePostureClaim, LineageRecordTarget};
+    use crate::lineage::data::LineageCommitPostureInput;
     use crate::facade::transactions::RecordRef;
 
     let mut staged = empty_working_state();

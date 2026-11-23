@@ -67,7 +67,7 @@ impl RecoveredRootInventory {
                 directory.clone(),
                 runtime.services.symbols.clone(),
                 execution,
-                &runtime.config.schema.registry.content_formats,
+                &runtime.config.schema.registry,
             )?;
         let root = match recorded.target() {
             Target::Empty => {

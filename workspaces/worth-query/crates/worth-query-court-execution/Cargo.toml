@@ -16,6 +16,7 @@ worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-query-admission = { path = "../worth-query-admission" }
 worth-query-declaration = { path = "../worth-query-declaration" }
 worth-query-execution = { path = "../worth-query-execution" }
+worth-query-execution-naming = { path = "../worth-query-execution-naming" }
 worth-query-installation = { path = "../worth-query-installation" }
 worth-query-testkit-execution-primary-graph-application-attempt = { path = "../worth-query-testkit-execution-primary-graph-application-attempt" }
 worth-query-testkit-execution-primary-graph-application-attempt-2 = { path = "../worth-query-testkit-execution-primary-graph-application-attempt-2" }

@@ -205,6 +205,7 @@ impl crate::runtime::RelationalRuntime {
             client_key_symbol_policy: self.config.identity.client_key_symbol_policy,
             retention: std::sync::Arc::new(retention),
             control,
+            naming_plan: None,
         })
     }
 

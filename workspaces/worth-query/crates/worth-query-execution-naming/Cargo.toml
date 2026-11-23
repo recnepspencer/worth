@@ -1,0 +1,17 @@
+[package]
+name = "worth-query-execution-naming"
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+description = "Installed Query execution persistent-naming lowering, birth-plan assembly, admission, and Relational commit wiring."
+publish = false
+
+[dependencies]
+worth-execution = { path = "../../../../crates/worth-execution" }
+worth-relational = { path = "../../../../crates/worth-relational" }
+worth-query-declaration = { path = "../worth-query-declaration" }
+worth-query-installation = { path = "../worth-query-installation" }
+
+[lints]
+workspace = true

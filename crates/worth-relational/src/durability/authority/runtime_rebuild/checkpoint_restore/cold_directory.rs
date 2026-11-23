@@ -54,7 +54,7 @@ pub(super) fn restore(
         directory.clone(),
         paged_symbols.clone(),
         execution,
-        &runtime.config.schema.registry.content_formats,
+        &runtime.config.schema.registry,
     )?;
     let mut head_ids = worth_execution::ExecutionOrderedMap::default();
     for cell in &checkpoint.branch_cells {
@@ -174,12 +174,47 @@ pub(super) fn restore(
         None => return Err(corrupt("mirror has no schema carrier").into()),
     };
     let record_identity = super::record_identity::prepare_record_identity(checkpoint)?;
+    let has_naming_schemes = !runtime.config.schema.registry.persistent_name_schemes().is_empty()
+        || regions.schemas.has_persistent_name_schemes();
     let runtime = super::super::unshared_state(runtime)?;
     runtime.services.symbols = paged_symbols;
     runtime.record_identity = record_identity;
     runtime.partitions.install_cells(mirror);
     runtime.history = history;
     runtime.lineage.install_cold_pages(&directory)?;
+    for cell in &checkpoint.branch_cells {
+        if let (Some(source_branch), Some(provenance)) =
+            (&cell.fork_source_branch_id, &cell.fork_provenance)
+            && let worth_foundational::FoundationalBranchTarget::Basis(target) = provenance.target()
+        {
+            runtime.lineage.record_fork_ancestry_metadata(
+                cell.branch_id.clone(),
+                source_branch.clone(),
+                crate::history::data::CommitId(target.selected_commit_id()),
+            );
+        }
+    }
+    for &(relation_id, lineage_id) in checkpoint.lineage.relation_lineages() {
+        runtime
+            .lineage
+            .record_relation_lineage(relation_id, lineage_id);
+    }
+    for envelope in &checkpoint.envelopes {
+        for &(relation_id, lineage_id) in envelope.envelope().lineage_relation_lineages() {
+            runtime
+                .lineage
+                .record_relation_lineage(relation_id, lineage_id);
+        }
+    }
+    if has_naming_schemes {
+        for page in &directory.manifest.lineage {
+            runtime
+                .lineage
+                .demand_node(execution, crate::identity::data::LineageId(page.first))?;
+        }
+        let _event_leases = runtime.lineage.demand_event_pages(execution, None, None)?;
+        runtime.lineage.finalize_cold_naming_basis(lane);
+    }
     runtime
         .durability
         .checkpoint_selection()

@@ -120,3 +120,67 @@ fn group_scheme_ids_share_relationals_dotted_grammar() {
         );
     }
 }
+
+#[test]
+fn schema_builder_carries_group_name_scheme_with_sensitive_canonical_identity() {
+    use crate::application_schema::{
+        ApplicationSchema, ApplicationSchemaDeclaration, ApplicationSchemaDeclarationBuilder,
+        ApplicationSchemaDeclarationDenial, ApplicationSchemaMember,
+    };
+
+    struct GroupSchemaA;
+    impl ApplicationSchema for GroupSchemaA {
+        const OWNER: &'static str = "worth.tests.naming";
+        const NAME: &'static str = "GroupSchema";
+
+        fn declaration(
+        ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+            let group = Builder::<Self, Space>::new("cad.space.v1", "Space", Rule::Boundary)
+                .role_order(&["wall", "producer", "void"])
+                .boundary_role("wall")
+                .anchor_role("producer")
+                .build()
+                .expect("valid boundary group scheme");
+            ApplicationSchemaDeclarationBuilder::for_schema()
+                .application_group_name_scheme::<Space>(group)?
+                .build()
+        }
+    }
+
+    struct GroupSchemaB;
+    impl ApplicationSchema for GroupSchemaB {
+        const OWNER: &'static str = "worth.tests.naming";
+        const NAME: &'static str = "GroupSchema";
+
+        fn declaration(
+        ) -> Result<ApplicationSchemaDeclaration<Self>, ApplicationSchemaDeclarationDenial> {
+            let group = Builder::<Self, Space>::new("cad.space.v1", "Space", Rule::ProducerRole)
+                .role_order(&["wall", "producer", "void"])
+                .anchor_role("producer")
+                .build()
+                .expect("valid producer-role group scheme");
+            ApplicationSchemaDeclarationBuilder::for_schema()
+                .application_group_name_scheme::<Space>(group)?
+                .build()
+        }
+    }
+
+    let decl_a = GroupSchemaA::declaration().expect("decl A builds");
+    let decl_a2 = GroupSchemaA::declaration().expect("decl A rebuilds");
+    let decl_b = GroupSchemaB::declaration().expect("decl B builds");
+
+    assert!(decl_a.erased().members().iter().any(|member| matches!(
+        member,
+        ApplicationSchemaMember::ApplicationGroupNameScheme { definition }
+            if definition.name_scheme().scheme_id() == "cad.space.v1"
+                && definition.continuity_rule() == Rule::Boundary
+                && definition.boundary_role() == Some("wall")
+                && definition.anchor_role() == Some("producer")
+    )));
+    assert_eq!(decl_a.identity(), decl_a2.identity());
+    assert_ne!(
+        decl_a.identity(),
+        decl_b.identity(),
+        "changing group continuity rule must change canonical schema identity"
+    );
+}

@@ -11,6 +11,11 @@ impl CanonicalCommitEnvelope {
     pub fn lineage_events(&self) -> &[LineageEventRecord] {
         self.lineage.lineage_events()
     }
+    pub fn lineage_relation_lineages(
+        &self,
+    ) -> &[(crate::identity::data::RelationId, crate::identity::data::LineageId)] {
+        self.lineage.relation_lineages()
+    }
     pub fn lineage_decision_log(&self) -> &[LineageDecisionRecord] {
         self.lineage.lineage_decision_log()
     }

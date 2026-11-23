@@ -23,6 +23,8 @@ fn digest_distinguishes_variable_length_registry_boundaries() {
         relation_kinds: Vec::new(),
         derived_relations: Vec::new(),
         projected_member_domains: Vec::new(),
+        persistent_name_schemes: Vec::new(),
+        kind_name_schemes: Vec::new(),
     }
     .into();
     let two_kinds = crate::schema::data::SchemaAuthoritySnapshotParts {
@@ -33,6 +35,8 @@ fn digest_distinguishes_variable_length_registry_boundaries() {
         relation_kinds: Vec::new(),
         derived_relations: Vec::new(),
         projected_member_domains: Vec::new(),
+        persistent_name_schemes: Vec::new(),
+        kind_name_schemes: Vec::new(),
     }
     .into();
 
@@ -239,6 +243,8 @@ fn snapshot_with_relation(relation: SchemaAuthorityRelationSnapshot) -> SchemaAu
         relation_kinds: vec![relation],
         derived_relations: Vec::new(),
         projected_member_domains: Vec::new(),
+        persistent_name_schemes: Vec::new(),
+        kind_name_schemes: Vec::new(),
     }
     .into()
 }

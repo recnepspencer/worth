@@ -233,6 +233,26 @@ fn prepare_lineage(
         .cloned()
         .map(|node| (node.lineage_id, node))
         .collect();
+    for cell in &checkpoint.branch_cells {
+        if let (Some(source_branch), Some(provenance)) =
+            (&cell.fork_source_branch_id, &cell.fork_provenance)
+            && let worth_foundational::FoundationalBranchTarget::Basis(target) = provenance.target()
+        {
+            lineage.record_fork_ancestry_metadata(
+                cell.branch_id.clone(),
+                source_branch.clone(),
+                crate::history::data::CommitId(target.selected_commit_id()),
+            );
+        }
+    }
+    for &(relation_id, lineage_id) in checkpoint.lineage.relation_lineages() {
+        lineage.record_relation_lineage(relation_id, lineage_id);
+    }
+    for envelope in &checkpoint.envelopes {
+        for &(relation_id, lineage_id) in envelope.envelope().lineage_relation_lineages() {
+            lineage.record_relation_lineage(relation_id, lineage_id);
+        }
+    }
     let events = checkpoint
         .envelopes
         .iter()

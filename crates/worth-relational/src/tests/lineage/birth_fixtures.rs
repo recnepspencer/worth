@@ -104,10 +104,9 @@ pub(super) fn staged_entity_lineage_id(
 pub(super) fn create_postures_input(
     scheme_registry: InstalledPersistentNameSchemeRegistry,
     births: Vec<(EntityId, PersistentNameBirthRequest)>,
-) -> crate::facade::lineage::LineageCommitPostureInput {
-    use crate::facade::lineage::{
-        LineageCommitPostureInput, LineagePostureClaim, LineageRecordTarget,
-    };
+) -> crate::lineage::data::LineageCommitPostureInput {
+    use crate::facade::lineage::{LineagePostureClaim, LineageRecordTarget};
+    use crate::lineage::data::LineageCommitPostureInput;
 
     LineageCommitPostureInput {
         scheme_registry,

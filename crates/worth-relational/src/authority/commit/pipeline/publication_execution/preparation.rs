@@ -24,6 +24,7 @@ pub(super) struct PreparePublicationPhaseInput<'a> {
     pub(super) validation: &'a [crate::validation::engine::InvariantExecutionResult],
     pub(super) caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
     pub(super) lineage_deferred: bool,
+    pub(super) naming_plan: Option<&'a crate::lineage::data::CommitNamingPlan>,
     pub(super) source_interpretation:
         &'a crate::validation::candidate_source::NativeManagedSourceInterpretation,
     pub(super) recovered_codec_publication_custody:
@@ -57,6 +58,7 @@ pub(super) fn prepare_publication_phase(
     let result = {
         let PreparePublicationPhaseInput {
             lineage_deferred,
+            naming_plan,
             structural,
             validation,
             caller_association,
@@ -86,6 +88,7 @@ pub(super) fn prepare_publication_phase(
             mut canonical_commit_envelope,
             adjacency_deltas,
             mut lineage_nodes,
+            mut relation_lineages,
             deferred_diagnostic_artifacts,
             target_schema_registry,
         ) = publication.into_inner().into_finalize().into_parts();
@@ -178,18 +181,10 @@ pub(super) fn prepare_publication_phase(
                 &mut output_positions,
             )?;
         if lineage_deferred {
-            let prepared = runtime
-                .lineage_preparation_authority()
-                .ensure_lineage_for_commit(
-                    execution,
-                    &mut working_state,
-                    &canonical_commit_envelope.commit,
-                    &canonical_commit_envelope.merged_plan.merged_intents,
-                    &changed_records,
-                )?;
-            let (lineage, nodes) = prepared.into_parts();
-            canonical_commit_envelope.complete_lineage(lineage)?;
-            lineage_nodes = nodes;
+            (lineage_nodes, relation_lineages) = prepared_phase::complete_deferred_lineage(
+                execution, runtime, &mut working_state, &mut canonical_commit_envelope,
+                &changed_records, created_entities, created_relations, naming_plan,
+            )?;
         }
         crate::authority::commit::phases::publication::enforce_patch_budget(
             runtime,
@@ -379,6 +374,7 @@ pub(super) fn prepare_publication_phase(
             prepared_history,
             validated_lineage_events,
             lineage_nodes,
+            relation_lineages,
             artifacts,
             changed_records,
             version_id,

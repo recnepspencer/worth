@@ -110,3 +110,8 @@ pub mod correction_material {
         QUERY_CORRECTION_JOURNAL_PROTOCOL, QUERY_CORRECTION_JOURNAL_VERSION,
     };
 }
+
+/// Thin forwarding surface for installed execution persistent naming.
+pub mod application_naming {
+    pub use worth_query_execution_naming::facade::*;
+}

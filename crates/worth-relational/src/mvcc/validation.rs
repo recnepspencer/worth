@@ -65,6 +65,7 @@ pub(crate) struct RelationalTransactionValidationInput {
     retention:
         Option<std::sync::Arc<crate::history::retention::RelationalTransactionRetentionObligation>>,
     control: crate::mvcc::RelationalOperationControl,
+    naming_plan: Option<std::sync::Arc<crate::lineage::data::CommitNamingPlan>>,
 }
 
 impl PartialEq for RelationalTransactionValidationInput {
@@ -93,6 +94,7 @@ impl PartialEq for RelationalTransactionValidationInput {
             && self.schema_origin == other.schema_origin
             && self.schema_authority.allocation_id() == other.schema_authority.allocation_id()
             && self.footprint == other.footprint
+            && self.naming_plan == other.naming_plan
     }
 }
 
@@ -128,6 +130,7 @@ impl RelationalTransactionValidationInput {
             footprint: transaction.footprint.clone(),
             retention: Some(std::sync::Arc::clone(&transaction.retention)),
             control: transaction.control.clone(),
+            naming_plan: transaction.naming_plan.clone(),
         }
     }
 
@@ -149,7 +152,12 @@ impl RelationalTransactionValidationInput {
             footprint: crate::mvcc::RelationalTransactionFootprint::for_basis(basis),
             retention: None,
             control: crate::mvcc::RelationalOperationControl::uninterrupted(),
+            naming_plan: None,
         }
+    }
+
+    pub(crate) fn naming_plan(&self) -> Option<&crate::lineage::data::CommitNamingPlan> {
+        self.naming_plan.as_deref()
     }
 
     pub(crate) fn appendix_adoption(
@@ -328,6 +336,7 @@ impl RelationalTransactionValidationInput {
             transaction.retention = retention;
         }
         transaction.control = self.control;
+        transaction.naming_plan = self.naming_plan;
     }
 
     pub(crate) fn release_transaction_retention(&mut self) {

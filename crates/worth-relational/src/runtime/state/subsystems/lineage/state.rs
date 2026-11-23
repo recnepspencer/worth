@@ -2,16 +2,24 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use crate::history::data::{BranchId, CommitId};
-use crate::identity::data::{EntityId, LineageId};
+use crate::identity::data::{EntityId, LineageId, RelationId};
 use crate::lineage::data::{LineageEventRecord, LineageNode};
 
+use super::naming_basis::{
+    rebuild_all_branch_naming_states, AuthoritativeBranchNamingState,
+};
 use super::resolution_indexes::LineageResolutionIndexes;
 
 /// The lineage subsystem's authoritative contents.
 #[derive(Debug)]
 pub(crate) struct LineageState {
     pub(crate) nodes: BTreeMap<crate::identity::data::LineageId, LineageNode>,
-    published_events: Vec<PublishedLineageEvent>,
+    pub(super) relation_lineages: BTreeMap<RelationId, LineageId>,
+    pub(super) relation_lineage_holders: BTreeMap<LineageId, RelationId>,
+    pub(super) branch_forks: BTreeMap<BranchId, (BranchId, CommitId)>,
+    pub(super) branch_naming_states: BTreeMap<BranchId, AuthoritativeBranchNamingState>,
+    pub(super) naming_rebuilt_event_frontier: Option<u64>,
+    pub(super) published_events: Vec<PublishedLineageEvent>,
     published_event_positions: BTreeMap<u64, usize>,
     resolution_indexes: LineageResolutionIndexes,
     pub(crate) identity_allocator: crate::runtime::state::subsystems::LineageIdentityAllocator,
@@ -20,9 +28,9 @@ pub(crate) struct LineageState {
 /// One published lineage event, held by shared ownership so a reader can carry
 /// it out of the subsystem lock without copying it.
 #[derive(Debug, Clone)]
-struct PublishedLineageEvent {
-    event: Arc<LineageEventRecord>,
-    publication_commit_id: CommitId,
+pub(super) struct PublishedLineageEvent {
+    pub(super) event: Arc<LineageEventRecord>,
+    pub(super) publication_commit_id: CommitId,
 }
 
 pub(crate) struct ValidatedLineageEventBatch {
@@ -39,6 +47,11 @@ impl LineageState {
     pub(super) fn empty() -> Self {
         Self {
             nodes: BTreeMap::new(),
+            relation_lineages: BTreeMap::new(),
+            relation_lineage_holders: BTreeMap::new(),
+            branch_forks: BTreeMap::new(),
+            branch_naming_states: BTreeMap::new(),
+            naming_rebuilt_event_frontier: None,
             published_events: Vec::new(),
             published_event_positions: BTreeMap::new(),
             resolution_indexes: LineageResolutionIndexes::default(),
@@ -47,13 +60,14 @@ impl LineageState {
     }
 
     fn record_event(&mut self, event: LineageEventRecord, publication_commit_id: CommitId) {
-        self.record_shared_event(Arc::new(event), publication_commit_id);
+        self.record_shared_event(Arc::new(event), publication_commit_id, true);
     }
 
     fn record_shared_event(
         &mut self,
         event: Arc<LineageEventRecord>,
         publication_commit_id: CommitId,
+        apply_naming: bool,
     ) {
         let event_position = self.published_events.len();
         assert!(
@@ -63,7 +77,23 @@ impl LineageState {
                 .is_none(),
             "validated lineage event id must remain unique until installation"
         );
+        if let Some(relation_id) = event.relation_id()
+            && let Some(&lineage_id) = event.targets().first()
+        {
+            self.record_relation_lineage(relation_id, lineage_id);
+        }
         self.resolution_indexes.append_event(event_position, &event);
+        if apply_naming {
+            self.branch_naming_states
+                .entry(event.branch_id().clone())
+                .or_default()
+                .apply_event(
+                    &event,
+                    publication_commit_id,
+                    &self.nodes,
+                    &self.relation_lineage_holders,
+                );
+        }
         self.published_events.push(PublishedLineageEvent {
             event,
             publication_commit_id,
@@ -91,12 +121,20 @@ impl LineageState {
         self.published_events
             .try_reserve(fresh)
             .map_err(|_| Cause::MemoryExhausted)?;
+        let prior_max_event_id = self
+            .published_event_positions
+            .last_key_value()
+            .map(|(&id, _)| id);
         for (event, publication_commit_id) in rows {
             if !self
                 .published_event_positions
                 .contains_key(&event.event_id())
             {
-                self.record_shared_event(event, publication_commit_id);
+                let in_order = self
+                    .naming_rebuilt_event_frontier
+                    .is_none_or(|frontier| event.event_id() > frontier)
+                    && prior_max_event_id.is_none_or(|max_id| event.event_id() > max_id);
+                self.record_shared_event(event, publication_commit_id, in_order);
             }
         }
         Ok(())
@@ -247,6 +285,19 @@ impl LineageState {
         &mut self,
         lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     ) {
+        let relation_bindings: Vec<_> = self
+            .published_events
+            .iter()
+            .filter_map(|published| {
+                Some((
+                    published.event.relation_id()?,
+                    *published.event.targets().first()?,
+                ))
+            })
+            .collect();
+        for (relation_id, lineage_id) in relation_bindings {
+            self.record_relation_lineage(relation_id, lineage_id);
+        }
         self.published_event_positions = self
             .published_events
             .iter()
@@ -259,6 +310,25 @@ impl LineageState {
             .iter()
             .map(|published| published.event.as_ref());
         self.resolution_indexes.rebuild(lane, nodes, events);
+        self.branch_naming_states = rebuild_all_branch_naming_states(
+            &self.published_events,
+            &self.nodes,
+            &self.relation_lineage_holders,
+            &self.branch_forks,
+        );
+    }
+
+    pub(crate) fn finalize_cold_naming_basis(
+        &mut self,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    ) {
+        self.published_events
+            .sort_by_key(|published| published.event.event_id());
+        self.rebuild_derived_indexes(lane);
+        self.naming_rebuilt_event_frontier = self
+            .published_events
+            .last()
+            .map(|published| published.event.event_id());
     }
 
     pub(crate) fn replace_events(
@@ -274,12 +344,17 @@ impl LineageState {
             })
             .collect();
         self.rebuild_derived_indexes(lane);
+        self.naming_rebuilt_event_frontier = self
+            .published_events
+            .last()
+            .map(|published| published.event.event_id());
     }
 
     pub(crate) fn drain_events(
         &mut self,
     ) -> impl Iterator<Item = (LineageEventRecord, CommitId)> + use<> {
         self.published_event_positions.clear();
+        self.branch_naming_states.clear();
         std::mem::take(&mut self.published_events)
             .into_iter()
             .map(|published| {
@@ -302,6 +377,11 @@ impl Clone for LineageState {
     fn clone(&self) -> Self {
         Self {
             nodes: self.nodes.clone(),
+            relation_lineages: self.relation_lineages.clone(),
+            relation_lineage_holders: self.relation_lineage_holders.clone(),
+            branch_forks: self.branch_forks.clone(),
+            branch_naming_states: self.branch_naming_states.clone(),
+            naming_rebuilt_event_frontier: self.naming_rebuilt_event_frontier,
             published_events: self.published_events.clone(),
             published_event_positions: self.published_event_positions.clone(),
             resolution_indexes: self.resolution_indexes.clone(),

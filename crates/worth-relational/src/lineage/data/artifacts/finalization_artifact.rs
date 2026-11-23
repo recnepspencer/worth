@@ -24,6 +24,8 @@ pub(crate) struct LineageFinalizationArtifact {
     decision_log: LineageDecisionLog,
     digest_basis: LineageDigestBasis,
     counters: LineageArtifactCounters,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    relation_lineages: Vec<(RelationId, LineageId)>,
 }
 
 impl LineageFinalizationArtifact {
@@ -50,7 +52,16 @@ impl LineageFinalizationArtifact {
             decision_log,
             digest_basis,
             counters,
+            relation_lineages: Vec::new(),
         }
+    }
+
+    pub(crate) fn with_relation_lineages(
+        mut self,
+        relation_lineages: Vec<(RelationId, LineageId)>,
+    ) -> Self {
+        self.relation_lineages = relation_lineages;
+        self
     }
 
     pub(crate) fn event_batch(&self) -> &FinalizedLineageEventBatch {
@@ -82,6 +93,7 @@ impl LineageFinalizationArtifact {
             self.digest_basis().clone(),
             *self.counters(),
         )
+        .with_relation_lineages(self.relation_lineages.clone())
     }
 }
 
@@ -113,7 +125,7 @@ impl PreparedLineageFinalization {
         &self.artifact
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub(crate) fn relation_lineages(&self) -> &BTreeMap<RelationId, LineageId> {
         &self.new_relation_lineages
     }
@@ -128,7 +140,12 @@ impl PreparedLineageFinalization {
     ) -> (
         LineageFinalizationArtifact,
         Vec<crate::lineage::data::LineageNode>,
+        Vec<(RelationId, LineageId)>,
     ) {
-        (self.artifact, self.new_nodes)
+        (
+            self.artifact,
+            self.new_nodes,
+            self.new_relation_lineages.into_iter().collect(),
+        )
     }
 }

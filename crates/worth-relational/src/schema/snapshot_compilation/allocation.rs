@@ -70,6 +70,32 @@ pub(super) fn retained(
             size(domain.parts.clone_allocation_bytes(control)?)?,
         )?;
     }
+    if !registry.persistent_name_schemes.is_empty() {
+        add(
+            &mut bytes,
+            array::<SchemaAuthorityNamingSchemeSnapshot>(registry.persistent_name_schemes.len())?,
+        )?;
+        for scheme in registry.persistent_name_schemes.iter() {
+            control.checkpoint()?;
+            add(&mut bytes, size(scheme.scheme_id().len())?)?;
+            add(&mut bytes, size(scheme.subject_name().len())?)?;
+            let roles = scheme.ordered_roles();
+            add(&mut bytes, array::<String>(roles.len())?)?;
+            for role in &roles {
+                add(&mut bytes, size(role.len())?)?;
+            }
+        }
+    }
+    if !registry.kind_name_schemes.is_empty() {
+        add(
+            &mut bytes,
+            array::<SchemaAuthorityKindNamingBindingSnapshot>(registry.kind_name_schemes.len())?,
+        )?;
+        for scheme_id in registry.kind_name_schemes.values() {
+            control.checkpoint()?;
+            add(&mut bytes, size(scheme_id.len())?)?;
+        }
+    }
     Ok(bytes)
 }
 

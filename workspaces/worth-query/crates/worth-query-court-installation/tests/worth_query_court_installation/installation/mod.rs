@@ -6,4 +6,5 @@ pub(crate) mod managed_index_parent_profiles;
 
 mod content_binding;
 mod naming;
+mod naming_groups;
 mod program_transition_requirements;

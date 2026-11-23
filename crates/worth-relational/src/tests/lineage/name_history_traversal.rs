@@ -163,9 +163,8 @@ fn independent_occurrences_produce_distinct_names() {
         receipt_at, seam_birth,
     };
     use crate::facade::identity::VersionId;
-    use crate::facade::lineage::{
-        LineageCommitPostureInput, LineagePostureClaim, LineageRecordTarget, LineageSubject,
-    };
+    use crate::facade::lineage::{LineagePostureClaim, LineageRecordTarget, LineageSubject};
+    use crate::lineage::data::LineageCommitPostureInput;
     use crate::facade::transactions::RecordRef;
     use crate::lineage::authority::finalize_postures_in_working_state;
     use crate::runtime::LineageIdentityAllocator;

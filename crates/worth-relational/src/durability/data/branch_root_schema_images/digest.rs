@@ -37,6 +37,12 @@ impl SchemaImageData {
         output.0.update(b"worth.native.content-schema-carrier.v1\0");
         self.content_formats
             .serialize(&mut rmp_serde::Serializer::new(&mut output))?;
+        crate::schema::data::update_naming_layout_digest(
+            &mut output.0,
+            b"worth.native.naming-schema-carrier.v1\0",
+            &self.persistent_name_schemes,
+            &self.kind_name_schemes,
+        );
         Ok(output.0.finalize().into())
     }
 }
