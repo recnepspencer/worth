@@ -212,6 +212,9 @@ impl worth_query_decl::facade::application_schema::fragment::Registration<Catalo
             .operation_managed_index_read::<query::PrefixBinding, _, _>(
                 super::super::authoring::AuthorCatalog::reference(),
             )
+            .operation_managed_index_read::<source_authorization::NativeBinding, _, _>(
+                super::super::authoring::AuthorCatalog::reference(),
+            )
             .operation_read_field(
                 super::super::authoring::AuthorCatalog::reference(),
                 ItemName::at("ItemName"),

@@ -157,39 +157,6 @@ impl<'p> SourceRelevance<'p> {
         self
     }
 
-    /// Whether the Source read `entity`. Without a reach, or where a nested
-    /// Parent relation or a projection route reads records the reach does
-    /// not hold, every record of a relevant kind counts.
-    fn reads_entity(&self, entity: EntityId) -> bool {
-        match &self.reach {
-            Some(reach)
-                if self.footprint.relations.is_empty()
-                    && self.program.projection_routes().is_empty() =>
-            {
-                entity == self.probed || reach.entities.contains(&entity)
-            }
-            _ => true,
-        }
-    }
-
-    /// Whether membership read an adjacency list the edge lies on.
-    fn reads_edge(&self, kind: KindId, source: EntityId, target: EntityId) -> bool {
-        match &self.reach {
-            Some(reach) => {
-                reach.anchors.contains(&(source, kind, true))
-                    || reach.anchors.contains(&(target, kind, false))
-            }
-            None => true,
-        }
-    }
-
-    fn reads_relation(&self, relation: crate::identity::data::RelationId, kind: KindId) -> bool {
-        match self.edges.get(&relation) {
-            Some(&(source, target)) => self.reads_edge(kind, source, target),
-            None => true,
-        }
-    }
-
     pub(super) fn adjacency(&self, delta: &AdjacencyDelta) -> bool {
         if self.footprint.relations.contains(&delta.kind_id) {
             return true;
@@ -223,7 +190,9 @@ impl<'p> SourceRelevance<'p> {
                 }) && self.reads_relation(relation, kind)
             }
             RecordRef::Entity(id) => {
-                if self.other_root(id, kind) && self.appears_with_probed_key(delta, id) {
+                // Another scope taking the probed key is the probed scope's
+                // change wherever that scope lies.
+                if self.takes_probed_key(delta, id) {
                     return true;
                 }
                 // Nothing the probed scope's Source read: not its change.
@@ -240,7 +209,7 @@ impl<'p> SourceRelevance<'p> {
                     return true;
                 }
                 if self.other_root(id, kind) {
-                    return false;
+                    return self.appears_with_probed_key(delta, id);
                 }
                 if !self.entity(kind) {
                     return false;
@@ -264,6 +233,9 @@ impl<'p> SourceRelevance<'p> {
         match (record, kind) {
             (_, None) => true,
             (RecordRef::Entity(id), Some(kind)) => {
+                if self.may_hold_probed_key(*id, kind) {
+                    return true;
+                }
                 if !self.reads_entity(*id) {
                     return false;
                 }
@@ -376,5 +348,6 @@ fn field_changed(delta: &CanonicalRecordAspectDelta, aspect: &AspectKey, field: 
     }
 }
 
+mod narrowing;
 #[cfg(test)]
 mod tests;

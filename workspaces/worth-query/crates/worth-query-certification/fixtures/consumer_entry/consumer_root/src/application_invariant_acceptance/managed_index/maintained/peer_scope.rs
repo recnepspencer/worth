@@ -45,6 +45,9 @@ std::thread_local! {
     pub static PRODUCER_TRIGGER: Cell<Option<&'static str>> = const { Cell::new(None) };
     /// An authoring stage's own decision probes this Directory.
     pub static STAGE_PROBE: Cell<Option<&'static str>> = const { Cell::new(None) };
+    /// The stage probe reads the Parent whose Source READ the watch grant
+    /// governs, instead of the public one.
+    pub static STAGE_PROBE_PROTECTED: Cell<bool> = const { Cell::new(false) };
     pub static OBSERVED: RefCell<Vec<Observed>> = const { RefCell::new(Vec::new()) };
     /// The generated source action also creates this Item in its Directory:
     /// an unpublished change the Parent's Source sees.
@@ -148,11 +151,20 @@ where
     let Some(directory) = STAGE_PROBE.get() else {
         return Ok(());
     };
-    observe(reader.index_query::<query::PrefixBinding>(query::FindPrefix {
-        directory: directory.to_owned(),
-        prefix: String::new(),
-    }))
-    .map(|_| ())
+    let rows = if STAGE_PROBE_PROTECTED.get() {
+        reader.index_query::<super::source_authorization::NativeBinding>(
+            super::source_authorization::FindNative {
+                directory: directory.to_owned(),
+                prefix: String::new(),
+            },
+        )
+    } else {
+        reader.index_query::<query::PrefixBinding>(query::FindPrefix {
+            directory: directory.to_owned(),
+            prefix: String::new(),
+        })
+    };
+    observe(rows).map(|_| ())
 }
 
 /// The Directory a probe names, from the operation's own.

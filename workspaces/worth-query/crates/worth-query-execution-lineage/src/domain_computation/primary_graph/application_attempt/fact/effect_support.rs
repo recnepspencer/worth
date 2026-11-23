@@ -189,8 +189,10 @@ impl Fact {
                 observation.supports_final_candidate(execution, runtime, before, complete)
             }
             // A coupled decision's aligned read: current at C, no later
-            // append changed its Source or Parent reads, and its permission
-            // support is the same after the reader as at completion.
+            // append changed its Source or Parent reads, and the permission
+            // C granted keeps every locus at the image. That is judged from
+            // C, as for an applied Source read: neither an earlier member nor
+            // the reader's own effect may change the permission's support.
             Self::ManagedIndexSource { observation }
                 if observation.applied_alignment().is_some() =>
             {
@@ -200,9 +202,14 @@ impl Fact {
                         after_own.candidate_identity(),
                         complete.candidate_identity(),
                     )
-                    && observation
-                        .authorization()
-                        .permission_equal_between(execution, &a, &b)?)
+                    && observation.authorization().permission_equal_between(
+                        execution,
+                        &runtime
+                            .read_truth()
+                            .project_snapshot(before)
+                            .ok_or_else(unavailable)?,
+                        &b,
+                    )?)
             }
             Self::SourcePublication { observation }
                 if observation.applied_candidate().is_some() =>
