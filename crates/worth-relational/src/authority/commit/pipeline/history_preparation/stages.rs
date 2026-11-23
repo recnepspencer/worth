@@ -3,7 +3,7 @@ use super::super::phase_backing::CommitPhaseBacking;
 use super::super::{boundary_validation, history_binding, mutation_execution};
 use super::PreparedCommitExecution;
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::InvariantPreparationControl;
 use worth_execution::ExecutionRequest;
 

@@ -259,6 +259,14 @@ pub struct RuntimeComplexityCounters {
 }
 
 impl RuntimeComplexityCounters {
+    pub(crate) fn count_query_serial_strategy(&mut self) {
+        self.query_serial_strategy_count += 1;
+    }
+
+    pub(crate) fn count_query_staged_parallel_strategy(&mut self) {
+        self.query_staged_parallel_strategy_count += 1;
+    }
+
     pub(crate) fn count_query_index_attempt(&mut self) {
         self.query_index_attempt_count += 1;
     }

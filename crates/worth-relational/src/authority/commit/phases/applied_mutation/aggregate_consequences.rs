@@ -1,17 +1,19 @@
 //! Complete reversible Native aggregate writes before judging the proposed state.
 use super::AppliedMutationDraft;
 use crate::authority::mutation::{apply_plan_to_working_state, BranchLocalDeleteAllowance};
-use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 impl AppliedMutationDraft {
     pub(crate) fn complete_aggregate_draft(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         runtime: &crate::runtime::RelationalPreparationRuntime,
-        selected: &crate::branch::SelectedRelationalBranchRead<'_>,
+        selected: &crate::branch::selected_read::SelectedRelationalBranchRead<'_>,
         business: crate::authority::commit::semantic_plan::RelationalSemanticPlan<'_>,
         validation: &crate::mvcc::RelationalTransactionValidationInput,
-        identity: &crate::mvcc::RelationalMutationProposalIdentity,
+        identity: &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
     ) -> Result<Option<crate::aggregate_identity::AggregateAdmission>, TransactionCommitError> {
         let mut admission = None;
         let version_id = identity.proposed_version_id();
@@ -73,7 +75,7 @@ impl AppliedMutationDraft {
                 .map_err(|denial| match denial {
                     crate::authority::mutation::MutationApplyDenial::Commit(error) => error,
                     crate::authority::mutation::MutationApplyDenial::Symbols(cause) => {
-                        crate::transactions::data::TransactionCommitError::publication(
+                        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                             crate::publication::data::PublicationError::new(
                                 crate::publication::bundle::PublicationStage::BundleAssembly,
                                 format!("aggregate consequence symbol admission: {cause:?}"),

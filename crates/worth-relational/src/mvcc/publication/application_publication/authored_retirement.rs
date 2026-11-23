@@ -1,11 +1,10 @@
 //! Ordinary mutation retirement under current Native custody.
 use super::*;
 use crate::authority::commit::pipeline::{consult_stage, CommitStage};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::execution::request_stage::checkpoint;
-use crate::{
-    branch::AdmittedRelationalBranchBasis, runtime::RelationalRuntime,
-    transactions::data::EntityReference,
-};
+use crate::runtime::RelationalRuntime;
+use crate::transactions::data::primitives::EntityReference;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 mod current_retirement;

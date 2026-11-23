@@ -22,7 +22,7 @@ pub(crate) use read::{
 
 pub(crate) fn select_current(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    basis: &crate::branch::AdmittedRelationalBranchBasis,
+    basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     records: &[RecordRef],
 ) -> Result<std::sync::Arc<CurrentPublicationRoster>, TransactionCommitError> {
     let mut answer = None;
@@ -39,7 +39,7 @@ pub(crate) fn select_current(
 
 pub(crate) fn reserve_symbols(
     registry: &crate::schema::data::RelationalSchemaRegistry,
-    symbols: &mut crate::runtime::PendingSymbolMeanings,
+    symbols: &mut crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings,
 ) -> Result<(), crate::authority::mutation::MutationApplyDenial> {
     if registry.current_publication_storage.is_some() {
         use crate::schema::current_publication_ownership::{
@@ -60,7 +60,8 @@ pub(crate) fn reserve_symbols(
     Ok(())
 }
 
-use crate::transactions::data::{RecordRef, TransactionCommitError};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(crate) mod read_request;
 use read_request::corrupt;

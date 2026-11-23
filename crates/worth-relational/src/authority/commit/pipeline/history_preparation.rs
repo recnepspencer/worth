@@ -4,7 +4,7 @@ use super::draft_execution::PreparedCommitExecution;
 use super::history_binding::HistoryBoundCommitExecution;
 use super::phase_backing::CommitPhaseBacking;
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 mod stages;
 
 #[inline(never)]

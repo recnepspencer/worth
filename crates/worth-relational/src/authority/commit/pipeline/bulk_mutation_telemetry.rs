@@ -1,8 +1,11 @@
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{
-    BulkMutationLocalityFootprint, CreateIntent, EntityMutationIntent, MergedCommitPlan,
-    MutationIntent, ProvenanceCompleteBulkMutationBatch, RelationMutationIntent,
-};
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::BulkMutationLocalityFootprint;
+use crate::transactions::data::primitives::ProvenanceCompleteBulkMutationBatch;
 
 #[derive(Debug, Clone)]
 pub(super) struct BulkMutationPlanTelemetry {
@@ -120,10 +123,10 @@ impl BulkMutationTelemetryAccumulator {
                 self.lineage_transition_count += 1;
             }
             MutationIntent::Materialization(intent) => match intent.record() {
-                crate::transactions::data::RecordRef::Entity(_) => {
+                crate::transactions::data::primitives::RecordRef::Entity(_) => {
                     self.entity_target_count += 1;
                 }
-                crate::transactions::data::RecordRef::Relation(_) => {
+                crate::transactions::data::primitives::RecordRef::Relation(_) => {
                     self.relation_target_count += 1;
                 }
             },

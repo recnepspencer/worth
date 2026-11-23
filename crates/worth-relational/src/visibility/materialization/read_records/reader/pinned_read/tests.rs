@@ -1,6 +1,9 @@
 use super::*;
-use crate::facade::indexes::{DerivedIndexBuildRequest, DerivedIndexKind};
-use crate::facade::{config::CascadeDeletePolicy, history::BranchId, identity::VersionId};
+use crate::config::data::CascadeDeletePolicy;
+use crate::history::data::coordinates::BranchId;
+use crate::identity::data::VersionId;
+use crate::indexes::data::definition::DerivedIndexKind;
+use crate::indexes::data::DerivedIndexBuildRequest;
 use crate::tests::support::*;
 use worth_execution::ExecutionRequest;
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
@@ -9,7 +12,7 @@ use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, Locator
 fn pinned_read_shares_native_custody_and_outlives_the_runtime() {
     fn send_sync<T: Send + Sync>() {}
     send_sync::<RelationalPinnedRead>();
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let request = ExecutionRequest::serial(&host);
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);
     let created = create_entity_outcome(&request, &runtime, "before");

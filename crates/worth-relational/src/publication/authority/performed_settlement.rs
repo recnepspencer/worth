@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use crate::publication::data::PublicationSettlementRepairError;
 use crate::runtime::RelationalRuntime;
-use crate::transactions::data::{CommitResult, TransactionCommitError};
+use crate::transactions::data::outcomes::commit_result::CommitResult;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 use super::pending_settlement::{RelationalSettlementCompletion, RelationalSettlementResultOwner};
 
@@ -18,7 +19,7 @@ impl RelationalRuntime {
     /// the sole owner of the work.
     pub fn settle_performed_publication(
         &self,
-        performed: crate::mvcc::PerformedRelationalCommit,
+        performed: crate::mvcc::publication::outcome::PerformedRelationalCommit,
     ) -> Result<CommitResult, TransactionCommitError> {
         let (positioned, record) = performed.into_settlement_parts();
         debug_assert_eq!(
@@ -28,7 +29,7 @@ impl RelationalRuntime {
         );
         if record.runtime_instance_id() != self.runtime_instance_id() {
             return Err(TransactionCommitError::publication_denied(
-                crate::mvcc::RelationalPublicationDenial::ForeignRuntime {
+                crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::ForeignRuntime {
                     expected_runtime_instance_id: self.runtime_instance_id(),
                     actual_runtime_instance_id: record.runtime_instance_id(),
                 },

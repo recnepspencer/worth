@@ -1,12 +1,11 @@
 //! Real Native publications, selected predecessors and final opaque cleanup.
 use super::*;
-use crate::{
-    mvcc::{
-        PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
-        RelationalPublicationCompanion,
-    },
-    tests::support::{create_entity, snapshot_for_owner_identity, test_schema_registry},
-};
+use crate::mvcc::publication::companion::preflight::PreparedPublicationCompanionEffect;
+use crate::mvcc::publication::companion::preflight::PublicationCompanionPreflight;
+use crate::mvcc::publication::companion::preflight::RelationalPublicationCompanion;
+use crate::tests::support::create_entity;
+use crate::tests::support::snapshot_for_owner_identity;
+use crate::tests::support::test_schema_registry;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
@@ -69,10 +68,13 @@ fn public_cache_cancelled_preflight_preserves_old_material_and_successful_twin_i
     let mut transaction = crate::tests::support::test_owner_begin_transaction_for_main(&runtime);
     transaction
         .push_batch(
-            crate::transactions::data::WorkerIntentBatch::new("public-cancelled-preflight").push(
-                crate::transactions::data::MutationIntent::Create(
-                    crate::transactions::data::CreateIntent::Entity(
-                        crate::transactions::data::EntitySpec {
+            crate::transactions::data::primitives::WorkerIntentBatch::new(
+                "public-cancelled-preflight",
+            )
+            .push(
+                crate::transactions::data::intents::mutation_intent::MutationIntent::Create(
+                    crate::transactions::data::intents::mutation_intent::CreateIntent::Entity(
+                        crate::transactions::data::primitives::EntitySpec {
                             partition_id: crate::identity::data::PartitionId::main(),
                             kind_id: crate::identity::data::KindId(1),
                             client_key: crate::symbols::data::ClientKey::raw(
@@ -94,8 +96,8 @@ fn public_cache_cancelled_preflight_preserves_old_material_and_successful_twin_i
         .commit(&ExecutionRequest::serial(&denied), &runtime)
         .unwrap_err();
     assert!(
-        matches!(failure, crate::transactions::data::TransactionCommitError::Execution { denial, .. }
-        if matches!(denial.kind, crate::transactions::data::CommitExecutionDenialKind::Cause(crate::execution::RelationalExecutionDenialCause::Cancelled))),
+        matches!(failure, crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution { denial, .. }
+        if matches!(denial.kind, crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(crate::execution::RelationalExecutionDenialCause::Cancelled))),
         "{failure:?}"
     );
     assert_eq!(owner.prepared_cancellations.load(Ordering::SeqCst), 1);
@@ -126,7 +128,7 @@ fn public_cache_cancelled_preflight_preserves_old_material_and_successful_twin_i
 fn install() -> (
     crate::runtime::RelationalRuntime,
     Arc<Owner>,
-    crate::mvcc::PublicationCompanionRegistration,
+    crate::mvcc::publication::companion::registration::PublicationCompanionRegistration,
 ) {
     // No invariant Source program or audience exists in this schema.
     let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
@@ -215,7 +217,7 @@ fn public_cache_native_successor_is_cold_and_selected_predecessor_keeps_its_own_
 struct Probe {
     core: Weak<CompanionBranchCellCore>,
     image: Weak<ManagedIndexBranchImage>,
-    port: crate::mvcc::PublicationCompanionRegistrationPort,
+    port: crate::mvcc::publication::companion::registration::PublicationCompanionRegistrationPort,
     drops: Arc<AtomicUsize>,
 }
 impl Drop for Probe {

@@ -4,7 +4,7 @@ impl PreparedRelationalCommitCandidate {
     pub fn require_managed_source(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        observed: &crate::mvcc::ManagedIndexSourceObservation,
+        observed: &crate::mvcc::publication::companion::ManagedIndexSourceObservation,
     ) -> Result<(), super::super::CompanionPreflightStop> {
         use super::super::CompanionPreflightStop as Stop;
         crate::authority::commit::pipeline::consult_stage(

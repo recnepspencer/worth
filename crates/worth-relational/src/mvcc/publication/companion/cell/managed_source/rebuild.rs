@@ -1,7 +1,7 @@
 //! A genuine selected Source loan retains basis custody, never an Execution request.
 use super::*;
 use crate::validation::candidate_source::ManagedIndexPublishedSourceRoot;
-use crate::visibility::materialization::read_records::VisibilityProjectionView;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use worth_execution::ExecutionRequest;
 
 pub struct ManagedIndexSourceRebuild {

@@ -1,6 +1,6 @@
 //! The admitted publication supplies selectors, never ownership facts.
 use super::*;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 impl RequiredOutputPublication {
     /// The distinguished source for an admission failure, without walking a roster.
     pub(crate) fn ownership_subject(

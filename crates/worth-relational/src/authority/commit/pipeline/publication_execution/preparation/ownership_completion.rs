@@ -5,13 +5,13 @@ use super::*;
 pub(super) fn complete(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
-    basis: &crate::branch::AdmittedRelationalBranchBasis,
-    selected: &crate::branch::SelectedRelationalBranchState,
+    basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
+    selected: &crate::branch::root_selection::SelectedRelationalBranchState,
     working: &mut crate::storage::overlay::WorkingState,
     identities: &mut crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     canonical: &mut crate::history::data::CanonicalCommitEnvelopeDraft,
     artifacts: &mut crate::publication::authority::artifacts::PublicationArtifacts,
-    changed: &mut Vec<crate::transactions::data::RecordRef>,
+    changed: &mut Vec<crate::transactions::data::primitives::RecordRef>,
     positions: &mut Option<crate::history::data::RequiredOutputPublicationPositions>,
 ) -> Result<
     (
@@ -126,8 +126,8 @@ pub(super) fn complete(
     crate::authority::commit::phases::publication::canonicalize_changed_records(changed);
     canonical.install_record_allocations(identities.records.canonical().to_vec());
     identities.records.finish_mutation().map_err(|denial| {
-        TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
-            crate::transactions::data::ConflictClass::RecordAllocationDenied { denial },
+        TransactionCommitError::conflict(crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+            crate::transactions::data::outcomes::conflict_class::ConflictClass::RecordAllocationDenied { denial },
         ))
     })?;
     canonical.revision_symbol_references = identities
@@ -146,7 +146,7 @@ pub(super) fn complete(
                 canonical.revision_symbol_references.iter().copied(),
             )
         })
-        .map_err(crate::mvcc::origin_denial)?;
+        .map_err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial)?;
     artifacts.patch = canonical.patch.clone();
     Ok((
         Some((completed.funding, roster_funding)),

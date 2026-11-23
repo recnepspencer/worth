@@ -1,6 +1,6 @@
 //! Validate the selected rows and touched incidence; cold admission owns region-local pairing.
 use super::*;
-use crate::mvcc::RequiredOutputRolePosture as Posture;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
 use std::collections::{HashMap, HashSet};
 
 pub(super) fn validate(

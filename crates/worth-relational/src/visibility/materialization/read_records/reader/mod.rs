@@ -18,7 +18,7 @@ mod native_output_probe;
 mod paid_current_record_walk;
 mod paid_record_walk;
 mod pin_denial;
-mod pinned_read;
+pub(crate) mod pinned_read;
 mod positioned_snapshot;
 mod projection_record_reader;
 mod public_managed_cache;

@@ -3,10 +3,7 @@ use std::sync::Arc;
 
 use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::history::data::{
-    canonical_commit_envelope::{
-        live_managed_source_history::backing_bytes, live_publication_inputs::bind_live_envelope,
-    },
-    CanonicalCommitEnvelope,
+    canonical_commit_envelope::live_managed_source_history::backing_bytes, CanonicalCommitEnvelope,
 };
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::candidate_source::{
@@ -41,7 +38,6 @@ pub(super) fn freeze(
         }
         Err(frozen) => frozen,
     };
-    bind_live_envelope(&frozen);
     Ok(frozen)
 }
 

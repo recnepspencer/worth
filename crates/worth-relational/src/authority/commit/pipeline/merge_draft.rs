@@ -3,9 +3,9 @@ use super::authority_context::PreparedAuthorityScope;
 use super::execution_admission::AdmittedCommitState;
 use crate::authority::commit::phases::applied_mutation::apply_mutation_draft;
 use crate::authority::commit::phases::prepare::prepare_authoritative_working_state_scope_for_base;
-use crate::branch::SelectedRelationalBranchRead;
+use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::{InvariantExecutionResult, InvariantPreparationControl};
 
 pub(super) struct AcceptedMergeDraft {
@@ -16,12 +16,12 @@ pub(super) struct AcceptedMergeDraft {
 // This provisional result can still be discarded by the outer head probe.
 // It is not PreparedAuthorityScope until that probe and mirror admission finish.
 struct PendingMergeDraft {
-    selected_branch_state: crate::branch::SelectedRelationalBranchState,
+    selected_branch_state: crate::branch::root_selection::SelectedRelationalBranchState,
     structural_summary: crate::authority::commit::structural_summary::CommitStructuralSummary,
-    working_state: crate::runtime::WorkingState,
-    identity: crate::mvcc::RelationalMutationProposalIdentity,
+    working_state: crate::storage::overlay::WorkingState,
+    identity: crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
     mutation: crate::authority::commit::phases::applied_mutation::AppliedDraftCustody,
-    phase_timing: crate::transactions::data::CommitPhaseTiming,
+    phase_timing: crate::transactions::data::outcomes::commit_result::CommitPhaseTiming,
     invariants: InvariantExecutionResult,
 }
 
@@ -134,7 +134,7 @@ fn prepare_symbol_round(
             let control = InvariantPreparationControl::for_transaction(
                 input,
                 execution.allocation_policy(),
-                crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation,
+                crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::CandidatePreparation,
             );
             let pending = candidate.invariant_authority().begin_proposed_state(
                 &selected,

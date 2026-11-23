@@ -60,7 +60,7 @@ fn new_roles(targets: &[CreatedEntityRef; 2]) -> Vec<RequiredOutputRoleTarget> {
 
 #[test]
 fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_movement() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -174,8 +174,10 @@ fn all_retired_then_disjoint_create_rejects_stale_complete_predecessor_before_mo
             &basis,
             "native-preserver",
             &[5; 32],
-            &crate::mvcc::native_meaning_fixture("retirement-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &crate::mvcc::publication::application_publication::native_meaning_fixture(
+                "retirement-creator",
+            ),
+            &crate::mvcc::publication::application_publication::native_roles_fixture(
                 &replacement_ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),
@@ -208,7 +210,9 @@ fn cold_replacement(
         .unwrap();
     let (owner, installed) = receipt.issue_application_publication_owner();
     let basis = test_owner_main_basis(&runtime).unwrap();
-    let meaning = crate::mvcc::native_meaning_fixture("retirement-creator");
+    let meaning = crate::mvcc::publication::application_publication::native_meaning_fixture(
+        "retirement-creator",
+    );
     let denied = runtime
         .readmit_required_output_publication(
             execution,

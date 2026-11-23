@@ -127,7 +127,7 @@ impl RelationalCanonicalPublicationRoutes {
         &self,
         source: Arc<
             worth_proof::VerifiedHomeWorldSelection<
-                Arc<crate::durability::RelationalWorldSourceCatalog>,
+                Arc<crate::durability::home_world_catalog::RelationalWorldSourceCatalog>,
             >,
         >,
     ) {

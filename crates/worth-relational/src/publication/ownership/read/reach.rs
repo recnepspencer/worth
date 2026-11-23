@@ -265,7 +265,11 @@ pub(in crate::publication::ownership) fn claims(
         .registry()
         .current_publication_storage
         .as_ref()
-        .ok_or_else(|| crate::mvcc::origin_denial("publication claims require current storage"))?;
+        .ok_or_else(|| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "publication claims require current storage",
+            )
+        })?;
     let view = InvariantStateView::new(
         basis.inner.root.as_ref(),
         crate::identity::data::VersionId(basis.inner.root.axes().map_or(0, |a| a.storage_version)),

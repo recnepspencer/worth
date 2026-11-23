@@ -8,7 +8,8 @@ use crate::runtime::{
     RelationalRuntime, RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding,
     RelationalRuntimeState,
 };
-use crate::transactions::data::{CommitResult, TransactionCommitError};
+use crate::transactions::data::outcomes::commit_result::CommitResult;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 /// Cloneable settlement and repair service bound to one live relational runtime
 /// owner.
@@ -54,11 +55,11 @@ impl RelationalSettlementPort {
     /// the one executor gate.
     pub fn settle_performed_publication(
         &self,
-        performed: crate::mvcc::PerformedRelationalCommit,
+        performed: crate::mvcc::publication::outcome::PerformedRelationalCommit,
     ) -> Result<CommitResult, TransactionCommitError> {
         let Some(owner) = self.owner() else {
             return Err(TransactionCommitError::publication_denied(
-                crate::mvcc::RelationalPublicationDenial::OwnerUnavailable {
+                crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::OwnerUnavailable {
                     runtime_instance_id: self.runtime_instance_id,
                 },
             ));

@@ -118,14 +118,14 @@ pub(crate) fn resolve_schema_continuity(
 }
 
 fn request_denial(
-    cause: crate::branch::RelationalBranchRootCaptureDenial,
-    basis: &crate::branch::AdmittedRelationalBranchBasis,
+    cause: crate::branch::root::RelationalBranchRootCaptureDenial,
+    basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
 ) -> TransactionCommitError {
-    use crate::mvcc::PublicationPreparationDenial as Denial;
-    use crate::transactions::data::{
-        CommitExecutionDenial, CommitExecutionDenialKind, CommitPreparationError,
-    };
-    if cause == crate::branch::RelationalBranchRootCaptureDenial::AllocationLayoutOverflow {
+    use crate::mvcc::publication::PublicationPreparationDenial as Denial;
+    use crate::transactions::data::outcomes::commit_preparation::CommitPreparationError;
+    use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial;
+    use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+    if cause == crate::branch::root::RelationalBranchRootCaptureDenial::AllocationLayoutOverflow {
         return TransactionCommitError::execution(CommitExecutionDenial {
             kind: CommitExecutionDenialKind::Cause(
                 crate::execution::RelationalExecutionDenialCause::MemoryOverflow,

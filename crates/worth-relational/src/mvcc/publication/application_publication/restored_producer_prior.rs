@@ -1,16 +1,13 @@
 //! A Native-restored publication and its actual producer antecedent, without replay inputs.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::execution::request_stage::checkpoint;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::{
-        CanonicalOutputPublication, CanonicalRequiredOutputOrigin,
-        CodecRetirementClosureStop as Stop,
-    },
-    identity::data::EntityId,
-    runtime::RelationalRuntime,
-    transactions::data::RecordRef,
-};
+use crate::history::data::CanonicalOutputPublication;
+use crate::history::data::CanonicalRequiredOutputOrigin;
+use crate::history::data::CodecRetirementClosureStop as Stop;
+use crate::identity::data::EntityId;
+use crate::runtime::RelationalRuntime;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 

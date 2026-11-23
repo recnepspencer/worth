@@ -63,7 +63,7 @@ fn birth_with_edge(
 }
 
 fn retire_roles(ids: [EntityId; 2]) -> Vec<RequiredOutputRoleTarget> {
-    crate::mvcc::native_roles_fixture(
+    crate::mvcc::publication::application_publication::native_roles_fixture(
         &ids.map(|id| (id, KindId(1))),
         RequiredOutputRolePosture::Retire,
     )
@@ -100,7 +100,7 @@ fn deletes(ids: [EntityId; 2], relation: RelationId) -> WorkerIntentBatch {
 
 #[test]
 fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_cold_successors() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     for cold in [false, true] {
         let mut runtime = runtime_with_test_schema();
@@ -177,7 +177,9 @@ fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_co
             "canonical authored succession survives real checkpoint reconstruction"
         );
         let basis = test_owner_main_basis(runtime).unwrap();
-        let meaning = crate::mvcc::native_meaning_fixture("authored-creator");
+        let meaning = crate::mvcc::publication::application_publication::native_meaning_fixture(
+            "authored-creator",
+        );
         assert!(
             runtime
                 .readmit_required_output_route_absence(execution, installed, &basis, &meaning)
@@ -241,7 +243,7 @@ fn ordinary_authored_complete_retirement_reissues_only_through_exact_warm_and_co
 
 #[test]
 fn relation_refusal_returns_exact_predecessor_relation_origin_and_before_candidate_context() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime

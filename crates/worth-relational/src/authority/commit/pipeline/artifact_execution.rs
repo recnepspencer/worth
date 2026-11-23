@@ -15,20 +15,20 @@ pub(super) struct AssembledCommitExecution {
     source_interpretation:
         std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
     admitted: super::execution_admission::AdmittedCommitState,
-    selected_branch_state: crate::branch::SelectedRelationalBranchState,
-    public_structural_summary: crate::transactions::data::CommitStructuralSummary,
+    selected_branch_state: crate::branch::root_selection::SelectedRelationalBranchState,
+    public_structural_summary: crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
     working_state: crate::storage::overlay::WorkingState,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
     version_id: crate::identity::data::VersionId,
-    created_entities: crate::transactions::data::CommitCreatedEntityBindings,
-    created_relations: crate::transactions::data::CommitCreatedRelationBindings,
+    created_entities: crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    created_relations: crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     mutation_identities:
         crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
     merge_parent_branches: Vec<crate::history::data::BranchId>,
     publication: CommitPhaseBacking<PublicationPreparation>,
     publication_snapshot: crate::snapshots::data::SnapshotHandle,
-    aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
+    aspect_evaluation_traces: Vec<crate::transactions::data::aspect_traces::AspectEvaluationTrace>,
     aspect_emission_traces: Vec<preparation::PreparedAspectEmissionTrace>,
 }
 
@@ -38,23 +38,23 @@ impl AssembledCommitExecution {
         self,
     ) -> (
         super::execution_admission::AdmittedCommitState,
-        crate::branch::SelectedRelationalBranchState,
-        crate::transactions::data::CommitStructuralSummary,
+        crate::branch::root_selection::SelectedRelationalBranchState,
+        crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
         crate::storage::overlay::WorkingState,
         Vec<crate::validation::engine::InvariantExecutionResult>,
         crate::identity::data::VersionId,
-        crate::transactions::data::CommitCreatedEntityBindings,
-        crate::transactions::data::CommitCreatedRelationBindings,
+        crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+        crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
         crate::authority::commit::phases::applied_mutation::PendingMutationIdentities,
         crate::authority::commit::phases::history::ResolvedCommitHistory,
         Vec<crate::history::data::BranchId>,
         CommitPhaseBacking<PublicationPreparation>,
         crate::snapshots::data::SnapshotHandle,
-        Vec<crate::transactions::data::AspectEvaluationTrace>,
+        Vec<crate::transactions::data::aspect_traces::AspectEvaluationTrace>,
         Vec<preparation::PreparedAspectEmissionTrace>,
         std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
         bool,
-    ) {
+    ){
         (
             self.admitted,
             self.selected_branch_state,
@@ -84,7 +84,7 @@ pub(super) fn assemble_commit_artifacts(
     lineage_deferred: bool,
 ) -> Result<
     CommitPhaseBacking<AssembledCommitExecution>,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     // Producer temporaries retire before funding the retained successor,
     // matching the former caller-side allocation boundary.

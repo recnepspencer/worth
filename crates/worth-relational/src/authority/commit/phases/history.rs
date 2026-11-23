@@ -1,4 +1,4 @@
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::diagnostics::data::{
     DiagnosticsArtifactKind, DiagnosticsScope, RelationalDiagnosticFields,
     RelationalDiagnosticValue, RelationalDiagnosticsEntry,
@@ -7,9 +7,9 @@ use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::VersionId;
 use crate::mvcc::RelationalTransactionValidationInput;
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{
-    CommitHistorySummary, MergeCommitMutationPlan, TransactionCommitError,
-};
+use crate::transactions::data::commit_log::CommitHistorySummary;
+use crate::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 pub(crate) struct ResolvedCommitHistory {
     pub(crate) commit_id: CommitId,
@@ -46,8 +46,8 @@ pub(crate) fn resolve_commit_history(
     let branch_id = branch_basis.identity().branch_id().clone();
     if !branch_basis.is_current() {
         return Err(TransactionCommitError::conflict(
-            crate::transactions::data::CommitConflict::new(
-                crate::transactions::data::ConflictClass::StaleValidationBasis {
+            crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                crate::transactions::data::outcomes::conflict_class::ConflictClass::StaleValidationBasis {
                     detail: "owner-issued branch binding is foreign or no longer current"
                         .to_owned(),
                 },
@@ -85,7 +85,7 @@ fn resolve_parent_commits(
     options: &RelationalTransactionValidationInput,
     branch_id: &BranchId,
 ) -> Result<(Vec<CommitId>, Vec<CommitId>), TransactionCommitError> {
-    use crate::transactions::data::ConflictClass;
+    use crate::transactions::data::outcomes::conflict_class::ConflictClass;
     let mut parents = Vec::new();
     let mut merge_bases = std::collections::BTreeSet::new();
     let target_head = options
@@ -171,9 +171,9 @@ fn merge_parent_conflict(
     runtime: &RelationalPreparationRuntime,
     options: &RelationalTransactionValidationInput,
     branch_id: &BranchId,
-    class: crate::transactions::data::ConflictClass,
+    class: crate::transactions::data::outcomes::conflict_class::ConflictClass,
 ) -> TransactionCommitError {
-    let conflict = crate::transactions::data::CommitConflict::new(class);
+    let conflict = crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(class);
     emit_history_failure_diagnostic(
         runtime,
         DiagnosticsScope::History,
@@ -217,8 +217,10 @@ fn resolve_commit_history_for_runtime<F>(
 where
     F: FnOnce(
         &BranchId,
-    )
-        -> Result<(Vec<CommitId>, Vec<CommitId>), crate::transactions::data::CommitConflict>,
+    ) -> Result<
+        (Vec<CommitId>, Vec<CommitId>),
+        crate::transactions::data::outcomes::commit_conflict::CommitConflict,
+    >,
 {
     let branch_id = merge_plan
         .map(|plan| plan.target_branch.clone())
@@ -232,8 +234,8 @@ where
     let branch_basis = options.basis().clone();
     if branch_basis.identity().branch_id() != &branch_id {
         return Err(TransactionCommitError::conflict(
-            crate::transactions::data::CommitConflict::new(
-                crate::transactions::data::ConflictClass::InvalidMergeParent {
+            crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                crate::transactions::data::outcomes::conflict_class::ConflictClass::InvalidMergeParent {
                     detail: format!(
                         "owner-issued branch binding does not match target branch: {}",
                         branch_id.0
@@ -244,8 +246,8 @@ where
     }
     if !branch_basis.is_current() {
         return Err(TransactionCommitError::conflict(
-            crate::transactions::data::CommitConflict::new(
-                crate::transactions::data::ConflictClass::StaleValidationBasis {
+            crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                crate::transactions::data::outcomes::conflict_class::ConflictClass::StaleValidationBasis {
                     detail: "owner-issued branch binding is foreign or no longer current"
                         .to_owned(),
                 },

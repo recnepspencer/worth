@@ -3,7 +3,9 @@ use crate::schema::data::{
     SchemaReconciliationDescriptor, SchemaTransitionArtifact,
 };
 use crate::schema::{lower_schema_transition, validate_schema_transition};
-use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 #[path = "schema_continuity_diagnostics/mod.rs"]
 mod diagnostics;
 pub(crate) use diagnostics::prepare_schema_continuity_diagnostics;
@@ -16,7 +18,8 @@ use prior::SchemaContinuityPrior;
 
 #[derive(Debug, Clone)]
 pub(crate) struct SchemaContinuityPlan {
-    pub(crate) target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
+    pub(crate) target_schema_registry:
+        Option<crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
     pub(crate) target_schema_version: crate::schema::data::SchemaVersionId,
     pub(crate) target_schema_authority: crate::schema::data::SchemaAuthoritySnapshot,
     pub(crate) descriptor_semantics_version: DescriptorSemanticsVersion,

@@ -1,5 +1,5 @@
 mod publication_appendix;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 pub use publication_appendix::{
     RelationalPublicationAdoptionRequest, RelationalPublicationAppendix,
     RelationalPublicationBodySelection,
@@ -34,7 +34,7 @@ pub use coupled_assembly::{
 };
 pub(crate) use coupled_owners::CoupledSource;
 pub use coupled_owners::{RelationalAuthoredCoupledOwners, RelationalDeclaredCoupledOwner};
-mod predecessor_basis;
+pub(crate) mod predecessor_basis;
 mod predecessor_observation;
 pub use predecessor_basis::{
     RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
@@ -146,7 +146,7 @@ pub(crate) use crate::transactions::data::outcomes::transaction_commit_error::or
 #[cfg(test)]
 pub(crate) fn native_birth_fixture(
     admission: worth_proof::AdmittedRequiredOutputPublication,
-    targets: Vec<crate::transactions::data::CreatedEntityRef>,
+    targets: Vec<crate::transactions::data::primitives::CreatedEntityRef>,
 ) -> RequiredOutputPublication {
     // Closed native fixtures declare a distinct family for each independent
     // producer; continuation fixtures retain the original family's meaning.
@@ -163,7 +163,7 @@ pub(crate) fn native_birth_fixture(
                 entity_name: "native-unit-output".into(),
                 kind: target.kind_id,
                 posture: RequiredOutputRolePosture::Create,
-                target: crate::transactions::data::EntityReference::Created(target),
+                target: crate::transactions::data::primitives::EntityReference::Created(target),
             })
             .collect(),
     }
@@ -188,7 +188,7 @@ pub(crate) fn native_roles_fixture(
             entity_name: "native-unit-output".into(),
             kind: *kind,
             posture,
-            target: crate::transactions::data::EntityReference::Existing(*id),
+            target: crate::transactions::data::primitives::EntityReference::Existing(*id),
         })
         .collect()
 }
@@ -213,3 +213,5 @@ pub(crate) fn native_meaning_fixture(family: &str) -> RequiredOutputPublicationM
 #[cfg(test)]
 #[path = "application_publication_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+pub(crate) use publication_appendix::prepare_publication_appendix;

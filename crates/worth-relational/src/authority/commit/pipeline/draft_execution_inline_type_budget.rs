@@ -1,7 +1,7 @@
 //! Unit-only layout evidence; constructs no runtime, proof or authority.
 use super::*;
 
-pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
+pub(crate) fn collect(census: &mut crate::inline_type_sizes::census::Census) {
     {
         let mut owner = census.owner::<PreparedCommitState>(
             "crates/worth-relational/src/authority/commit/pipeline/draft_execution.rs",
@@ -9,10 +9,10 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
             128 * 1024,
         );
         owner.field::<AdmittedCommitState>("admitted");
-        owner.field::<crate::transactions::data::CommitStructuralSummary>(
+        owner.field::<crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary>(
             "public_structural_summary",
         );
-        owner.field::<crate::mvcc::RelationalMutationProposalIdentity>("proposal_identity");
+        owner.field::<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>("proposal_identity");
     }
     {
         let mut owner = census.owner::<PreparedCommitExecution>(

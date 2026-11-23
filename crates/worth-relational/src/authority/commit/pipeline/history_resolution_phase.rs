@@ -5,10 +5,12 @@ use crate::authority::commit::phases::history::{
 use crate::identity::data::VersionId;
 use crate::mvcc::RelationalTransactionValidationInput;
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{
-    CommitLog, CommitPhase, CommitPhaseTiming, MergeCommitMutationPlan, TransactionCommitError,
-    TransactionId,
-};
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::commit_log::CommitPhase;
+use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
+use crate::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::TransactionId;
 
 pub(super) fn resolve_authoritative_history_phase(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

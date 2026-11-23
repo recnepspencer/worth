@@ -7,7 +7,7 @@ use crate::identity::data::{EntityId, PartitionId};
 use crate::publication::patch::data::{
     PatchDetail, PublishedAuthoritativeRecordPatch, RecordStructuralChange,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::num::NonZeroUsize;
 use worth_execution::{CancellationToken, LeaseRequest};
 use worth_foundational::{
@@ -102,7 +102,7 @@ fn fragment(
 }
 
 fn publication_lease(work: u64) -> worth_execution::ExecutionResourceLease<'static> {
-    crate::tests::support::test_execution_authority()
+    crate::execution::test_authority::test_execution_authority()
         .request_lease(LeaseRequest {
             policy: ExecutionRequestPolicy::new(
                 ExecutionPosture::Automatic,
@@ -148,9 +148,9 @@ fn leased_publication_stops_inside_large_packet_without_publishing() {
     assert!(matches!(
         result,
         Err(
-            crate::transactions::data::TransactionCommitError::Execution {
-                denial: crate::transactions::data::CommitExecutionDenial {
-                    kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::Execution {
+                denial: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                    kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                         crate::execution::RelationalExecutionDenialCause::WorkExhausted
                     ),
                     ..

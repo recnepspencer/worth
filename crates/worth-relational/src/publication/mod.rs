@@ -4,6 +4,7 @@ pub mod bundle;
 mod canonical_history;
 pub mod cdc;
 pub mod data;
+pub(crate) mod live_publication_inputs;
 pub(crate) mod ownership;
 pub mod patch;
 

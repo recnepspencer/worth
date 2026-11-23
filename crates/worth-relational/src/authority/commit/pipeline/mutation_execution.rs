@@ -35,11 +35,11 @@ pub(super) fn mutate_commit_execution(
     _control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<
     CommitPhaseBacking<MutatedCommitExecution>,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     let result = {
         let validated = validated.into_inner();
-        use crate::transactions::data::CommitPhase;
+        use crate::transactions::data::commit_log::CommitPhase;
         super::consult_stage(execution, super::CommitStage::Mutation)?;
         let (prepared, invariant_executions) = validated.into_parts();
         let (

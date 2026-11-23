@@ -1,8 +1,7 @@
 //! Descriptive history selection comes from the actual retained observation.
 use super::ManagedIndexSourceObservation;
-use crate::history::{
-    RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteDenial as Denial,
-};
+use crate::history::access::relevant_writes::RelationalAuthoredManagedSourceSelector;
+use crate::history::access::relevant_writes::RelationalAuthoredWriteDenial as Denial;
 use crate::runtime::RelationalRuntime;
 use worth_execution::ExecutionRequest;
 impl ManagedIndexSourceObservation {
@@ -12,8 +11,11 @@ impl ManagedIndexSourceObservation {
         &self,
         runtime: &RelationalRuntime,
         execution: ExecutionRequest<'_, '_>,
-        occurrence: &crate::history::RelationalAuthoredWriteOccurrence,
-    ) -> Result<crate::history::RelationalAuthoredManagedSourceImpact, Denial> {
+        occurrence: &crate::history::access::relevant_writes::RelationalAuthoredWriteOccurrence,
+    ) -> Result<
+        crate::history::access::relevant_writes::RelationalAuthoredManagedSourceImpact,
+        Denial,
+    > {
         execution.consult().map_err(Denial::Request)?;
         let width = occurrence
             .receipt()
@@ -24,8 +26,8 @@ impl ManagedIndexSourceObservation {
             .and_then(|bytes| bytes.checked_add(1))
             .and_then(|bytes| u64::try_from(bytes).ok())
             .ok_or(Denial::SizeOverflow)?;
-        crate::history::run_authored_write_stage(execution, |context| {
-            crate::history::admit_authored_write_work(context, width)?;
+        crate::history::access::relevant_writes::run(execution, |context| {
+            crate::history::access::relevant_writes::admit_work(context, width)?;
             if occurrence.receipt().branch_id != *self.selected.branch_id() {
                 return Err(Denial::ForeignOwner);
             }
@@ -71,7 +73,7 @@ impl super::ManagedSourceRootImage {
         execution: &ExecutionRequest<'_, '_>,
         program: &super::ManagedIndexSourceProgram,
         scope: crate::identity::data::EntityId,
-        budget: &crate::validation::CustomPreparationBudget,
+        budget: &crate::validation::custom_rule::work_meter::CustomPreparationBudget,
     ) -> Result<
         Option<crate::validation::candidate_source::opaque_custody::FundedSourceMaterialReceipt>,
         super::Denial,

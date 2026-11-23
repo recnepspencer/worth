@@ -9,7 +9,7 @@ use crate::authority::commit::phases::publication::canonical_commit_envelope;
 pub(super) struct PublicationAuthorityInput<'a> {
     pub(super) index_definition_delta: crate::history::data::CanonicalIndexDefinitionDelta,
     pub(super) defer_lineage: bool,
-    pub(super) working_state: &'a mut crate::runtime::WorkingState,
+    pub(super) working_state: &'a mut crate::storage::overlay::WorkingState,
     pub(super) content: crate::content::publication::ContentPublication,
     pub(super) patch: &'a CanonicalAuthoritativePatch,
     pub(super) commit_reference: &'a RelationalCommitReceipt,
@@ -18,8 +18,8 @@ pub(super) struct PublicationAuthorityInput<'a> {
     pub(super) merge_parent_branches: &'a [crate::history::data::BranchId],
     pub(super) merge_base_commits: &'a [crate::history::data::CommitId],
     pub(super) merged_plan: RelationalSemanticPlan<'a>,
-    pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
-    pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
+    pub(super) created_entities: &'a crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    pub(super) created_relations: &'a crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     pub(super) naming_plan: Option<&'a crate::lineage::data::CommitNamingPlan>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_artifacts:

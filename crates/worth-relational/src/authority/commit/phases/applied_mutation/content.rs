@@ -4,11 +4,11 @@ use super::*;
 pub(crate) fn prepare(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
-    before: &crate::branch::RelationalBranchRoot,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    before: &crate::branch::root::RelationalBranchRoot,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
     attachments: &crate::content::RelationalContentAttachments,
     state: &WorkingState,
-    changed: &[crate::transactions::data::RecordRef],
+    changed: &[crate::transactions::data::primitives::RecordRef],
     version: crate::identity::data::VersionId,
     source: Option<&crate::content::ContentDirectory>,
 ) -> Result<crate::content::publication::ContentPublication, MutationApplyDenial> {

@@ -9,9 +9,12 @@ pub(crate) struct InstalledSourceScopeOwnership(Arc<BTreeMap<String, KindId>>);
 impl RelationalInstalledApplicationPublicationAuthority {
     pub(crate) fn require_current_ownership_storage(
         &self,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
         source: crate::identity::data::EntityId,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         if basis
             .inner
             .root
@@ -20,10 +23,10 @@ impl RelationalInstalledApplicationPublicationAuthority {
             .current_publication_storage
             .is_none()
         {
-            return Err(crate::transactions::data::TransactionCommitError::publication(
+            return Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                 crate::publication::data::PublicationError::authored_retirement(
                     crate::publication::data::AuthoredRetirementRefusal::CurrentOwnershipStorageMissing,
-                    crate::transactions::data::RecordRef::Entity(source),
+                    crate::transactions::data::primitives::RecordRef::Entity(source),
                 ),
             ));
         }
@@ -75,9 +78,12 @@ impl RelationalInstalledApplicationPublicationAuthority {
     pub(crate) fn demand_source_scope(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
         publication: &super::RequiredOutputPublication,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         use super::RequiredOutputPublication as Publication;
         let meaning = match publication {
             Publication::Birth { meaning, .. } | Publication::Preserve { meaning, .. } => meaning,

@@ -1,7 +1,7 @@
 //! Named safe points of one borrowed commit request; no stage fee is charged.
-use crate::transactions::data::{
-    CommitExecutionDenial, CommitExecutionDenialKind, TransactionCommitError,
-};
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial;
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum CommitStage {

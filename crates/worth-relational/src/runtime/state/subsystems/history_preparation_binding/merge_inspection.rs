@@ -1,6 +1,6 @@
 //! Merge-parent conflict discovery demands every metadata-selected envelope.
 use super::RelationalPreparationHistory;
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::{CommitId, MergeConflictRecord, MergeInspection};
 use crate::storage::residency::RelationalResidencyDemandFailure as Failure;
 use std::collections::BTreeSet;
@@ -97,10 +97,10 @@ impl RelationalPreparationHistory {
                     .touched_record_refs()
                     .into_iter()
                     .map(|record| match record {
-                        crate::transactions::data::RecordRef::Entity(id) => {
+                        crate::transactions::data::primitives::RecordRef::Entity(id) => {
                             MergeConflictRecord::Entity(id)
                         }
-                        crate::transactions::data::RecordRef::Relation(id) => {
+                        crate::transactions::data::primitives::RecordRef::Relation(id) => {
                             MergeConflictRecord::Relation(id)
                         }
                     }),

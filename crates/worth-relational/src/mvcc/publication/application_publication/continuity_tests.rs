@@ -20,9 +20,10 @@ fn publish(
         .validate(execution, runtime)?
         .bind_required_output_publication(installed, publication)?;
     let candidate = runtime.prepare_validated_proposal(execution, proposal)?;
-    let crate::mvcc::RelationalPublicationOutcome::Performed(performed) = runtime
-        .publication_port()
-        .compare_and_publish(execution, candidate)
+    let crate::mvcc::publication::outcome::RelationalPublicationOutcome::Performed(performed) =
+        runtime
+            .publication_port()
+            .compare_and_publish(execution, candidate)
     else {
         panic!("native completion must perform")
     };
@@ -63,7 +64,7 @@ fn preserve(
 #[test]
 fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and_refuse_intervening_equal_write(
 ) {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -173,10 +174,10 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
             &basis,
             "native-preserver",
             &[4; 32],
-            &crate::mvcc::native_meaning_fixture("native-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &crate::mvcc::publication::application_publication::native_meaning_fixture("native-creator"),
+            &crate::mvcc::publication::application_publication::native_roles_fixture(
                 &ids.map(|id| (id, KindId(1))),
-                crate::mvcc::RequiredOutputRolePosture::Preserve,
+                crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve,
             ),
         )
         .unwrap();
@@ -185,7 +186,9 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
         "membership wins over two different latest member writes"
     );
     for (build, edition) in [([0x33; 16], [0x22; 32]), ([0x11; 16], [0x44; 32])] {
-        let mut wrong = crate::mvcc::native_meaning_fixture("native-creator");
+        let mut wrong = crate::mvcc::publication::application_publication::native_meaning_fixture(
+            "native-creator",
+        );
         wrong.implementation =
             RequiredOutputProducingImplementation::from_checkpoint(build, edition).unwrap();
         assert!(
@@ -197,9 +200,9 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
                     "native-preserver",
                     &[4; 32],
                     &wrong,
-                    &crate::mvcc::native_roles_fixture(
+                    &crate::mvcc::publication::application_publication::native_roles_fixture(
                         &ids.map(|id| (id, KindId(1))),
-                        crate::mvcc::RequiredOutputRolePosture::Preserve
+                        crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve
                     ),
                 )
                 .is_err(),
@@ -214,15 +217,15 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
                 &basis,
                 "native-preserver",
                 &[4; 32],
-                &crate::mvcc::native_meaning_fixture("native-creator"),
-                &crate::mvcc::native_roles_fixture(
+                &crate::mvcc::publication::application_publication::native_meaning_fixture("native-creator"),
+                &crate::mvcc::publication::application_publication::native_roles_fixture(
                     &subset.iter().map(|id| (*id, KindId(1))).collect::<Vec<_>>(),
-                    crate::mvcc::RequiredOutputRolePosture::Preserve
+                    crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve
                 )
             )
             .is_err());
     }
-    let loci = [crate::runtime::CodecFieldLocus {
+    let loci = [crate::schema::codec_field_comparison::CodecFieldLocus {
         kind_id: KindId(1),
         aspect_key: aspect_key("name"),
         field_key: field_key("name"),
@@ -282,10 +285,10 @@ fn complete_partial_and_executed_no_data_publications_keep_unpatched_members_and
             &basis,
             "native-preserver",
             &[4; 32],
-            &crate::mvcc::native_meaning_fixture("native-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &crate::mvcc::publication::application_publication::native_meaning_fixture("native-creator"),
+            &crate::mvcc::publication::application_publication::native_roles_fixture(
                 &ids.map(|id| (id, KindId(1))),
-                crate::mvcc::RequiredOutputRolePosture::Preserve
+                crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve
             )
         )
         .is_err());

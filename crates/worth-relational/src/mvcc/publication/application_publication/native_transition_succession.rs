@@ -1,10 +1,10 @@
 //! Current canonical route succession, including independent ordinary producers.
 use super::*;
 use crate::authority::commit::pipeline::{consult_stage, CommitStage};
-use crate::{
-    branch::AdmittedRelationalBranchBasis, history::data::RequiredOutputRoutePosition,
-    runtime::RelationalRuntime, transactions::data::EntityReference,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::RequiredOutputRoutePosition;
+use crate::runtime::RelationalRuntime;
+use crate::transactions::data::primitives::EntityReference;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 mod independent;

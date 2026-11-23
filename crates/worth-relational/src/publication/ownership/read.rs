@@ -1,14 +1,15 @@
 //! Read and authenticate the current private roster without historical members.
 use super::{checkpoint, corrupt, read_request::damaged, record};
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::CommitId,
-    identity::data::{EntityId, KindId, RelationId},
-    schema::data::CurrentPublicationStorage,
-    storage::overlay::CurrentPartitionAccess,
-    transactions::data::{RecordRef, TransactionCommitError},
-    validation::engine::state_view::InvariantStateView,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::CommitId;
+use crate::identity::data::EntityId;
+use crate::identity::data::KindId;
+use crate::identity::data::RelationId;
+use crate::schema::data::CurrentPublicationStorage;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 mod coverage;
 mod entity;
@@ -30,7 +31,7 @@ pub(crate) struct CurrentPublicationRoster {
     pub(super) reached_scopes: std::collections::BTreeSet<EntityId>,
     pub(super) reached_entities: std::collections::BTreeSet<EntityId>,
     pub(super) reached_relations: std::collections::BTreeSet<RelationId>,
-    pub(crate) basis: Option<crate::branch::RelationalBranchBasisDescriptor>,
+    pub(crate) basis: Option<crate::branch::basis::RelationalBranchBasisDescriptor>,
     pub(in crate::publication::ownership) publications: Vec<PublicationRow>,
     pub(in crate::publication::ownership) codec_retired: Vec<PublicationRow>,
     pub(in crate::publication::ownership) catalogs: Vec<(EntityId, record::Catalog)>,
@@ -144,7 +145,7 @@ pub(crate) fn read_selected(
 /// A candidate observation cannot be reused as admitted current publication custody.
 pub(crate) fn read_candidate(
     execution: &ExecutionRequest<'_, '_>,
-    root: &crate::branch::RelationalBranchRoot,
+    root: &crate::branch::root::RelationalBranchRoot,
     records: &[RecordRef],
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<CurrentPublicationRoster, TransactionCommitError> {

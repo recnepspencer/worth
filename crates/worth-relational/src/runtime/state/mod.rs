@@ -12,7 +12,7 @@ pub use subsystems::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
     RelationalIndexDefinitionPreparationDenial,
 };
-mod runtime_state;
+pub(crate) mod runtime_state;
 pub(crate) use runtime_state::indexing::RuntimeIndexDefinitionReadBinding;
 pub(crate) mod subsystems;
 

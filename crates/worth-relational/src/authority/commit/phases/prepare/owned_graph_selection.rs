@@ -1,9 +1,8 @@
 //! Prepare only the full-generation records in the two owned closures.
 use super::*;
-use crate::mvcc::{
-    owned_graph_selection::PreparedOwnedGraphSelection, BranchBoundRelationalTransaction,
-};
-use crate::transactions::data::RecordRef;
+use crate::mvcc::owned_graph_selection::prepared::PreparedOwnedGraphSelection;
+use crate::mvcc::BranchBoundRelationalTransaction;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 
 pub(crate) fn prepare(
@@ -67,7 +66,9 @@ pub(crate) fn prepare(
         None,
     );
     let plan = PreparedRelationalCommitPlan::OwnedGraphSelection {
-        commands: crate::mvcc::OwnedNormalizedPlan::empty(transaction.transaction_id),
+        commands: crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan::empty(
+            transaction.transaction_id,
+        ),
         retained: retained.clone(),
     };
     Ok(PreparedWorkingStateScope {

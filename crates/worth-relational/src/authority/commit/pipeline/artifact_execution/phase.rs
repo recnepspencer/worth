@@ -13,16 +13,18 @@ use crate::diagnostics::data::RelationalDiagnosticsEntry;
 use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
 use crate::identity::data::VersionId;
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{
-    CommitLog, CommitPatchBudgetSummary, CommitPhase, CommitPhaseTiming,
-    PublishedMergeExecutionAuthority, TransactionCommitError,
-};
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::commit_log::CommitPatchBudgetSummary;
+use crate::transactions::data::commit_log::CommitPhase;
+use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) defer_lineage: bool,
     pub(super) working_state: &'a mut crate::storage::overlay::WorkingState,
     pub(super) content: crate::content::publication::ContentPublication,
-    pub(super) selected_branch_state: &'a crate::branch::SelectedRelationalBranchState,
+    pub(super) selected_branch_state: &'a crate::branch::root_selection::SelectedRelationalBranchState,
     pub(super) effect: MutationEffect,
     pub(super) commit_reference: &'a RelationalCommitReceipt,
     pub(super) branch_id: &'a BranchId,
@@ -30,8 +32,8 @@ pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) merge_parent_branches: &'a [BranchId],
     pub(super) merge_base_commits: &'a [CommitId],
     pub(super) merged_plan: RelationalSemanticPlan<'a>,
-    pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
-    pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
+    pub(super) created_entities: &'a crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    pub(super) created_relations: &'a crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     pub(super) naming_plan: Option<&'a crate::lineage::data::CommitNamingPlan>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_commit_artifacts: Option<StrategyCommitArtifactBundle>,

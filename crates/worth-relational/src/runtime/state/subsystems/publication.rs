@@ -1,6 +1,7 @@
 use crate::publication::bundle::PublicationBundle;
 use crate::replay::data::RelationalReplayRecord;
-use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
+use crate::runtime::state::subsystems::RuntimeSubsystem;
+use crate::storage::substrate::owned_state::RuntimeOwnedState;
 use std::collections::VecDeque;
 use std::sync::Arc;
 
@@ -22,7 +23,7 @@ struct PublishedBundles {
 pub(crate) struct PublicationSubsystem {
     pub(crate) diagnostics: super::publication_diagnostics::RelationalDiagnosticArtifactStore,
     bundles: RuntimeOwnedState<PublishedBundles>,
-    pub(crate) post_commit_consumer: Arc<dyn crate::publication::PostCommitConsumer>,
+    pub(crate) post_commit_consumer: Arc<dyn crate::publication::authority::PostCommitConsumer>,
 }
 
 impl Default for PublicationSubsystem {
@@ -30,7 +31,7 @@ impl Default for PublicationSubsystem {
         Self {
             diagnostics: Default::default(),
             bundles: RuntimeOwnedState::default(),
-            post_commit_consumer: crate::publication::production_post_commit_consumer(),
+            post_commit_consumer: crate::publication::authority::production_post_commit_consumer(),
         }
     }
 }

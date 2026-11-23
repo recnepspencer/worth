@@ -1,9 +1,11 @@
 //! Translate a pre-effect refusal using the candidate's original branch basis.
-use crate::branch::AdmittedRelationalBranchBasis;
-use crate::mvcc::PublicationPreparationDenial;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::mvcc::publication::PublicationPreparationDenial;
 use crate::publication::bundle::PublicationStage;
 use crate::publication::data::PublicationError;
-use crate::transactions::data::{CommitLog, CommitPreparationError, TransactionCommitError};
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::outcomes::commit_preparation::CommitPreparationError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 pub(super) fn transaction_error(
     denial: PublicationPreparationDenial,
@@ -12,8 +14,8 @@ pub(super) fn transaction_error(
 ) -> TransactionCommitError {
     let error = match denial {
         PublicationPreparationDenial::Execution(cause) => {
-            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+            TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause),
                 partition_identity: None,
             })
         }
@@ -35,18 +37,18 @@ pub(super) fn transaction_error(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::branch::RelationalBranchRootCaptureDenial;
+    use crate::branch::root::RelationalBranchRootCaptureDenial;
     use crate::storage::data::{
         RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
     };
     use crate::tests::support::{
         create_entity, runtime_with_test_schema, test_owner_begin_transaction_for_main,
     };
-    use crate::transactions::data::CommitPreparationReason;
+    use crate::transactions::data::outcomes::commit_preparation::CommitPreparationReason;
 
     #[test]
     fn root_storage_refusal_preserves_its_subject_cause_and_original_branch_basis() {
-        let host = crate::test_execution_policy::serial_request();
+        let host = crate::execution::test_policy::serial_request();
         let execution = &worth_execution::ExecutionRequest::serial(&host);
         let runtime = runtime_with_test_schema();
         let entity = create_entity(execution, &runtime, "typed-root-refusal");

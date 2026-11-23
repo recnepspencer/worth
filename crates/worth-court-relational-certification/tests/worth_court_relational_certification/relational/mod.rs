@@ -34,3 +34,6 @@ mod snapshot_retention;
 mod same_commit_relation_endpoints;
 
 mod commit_strategies;
+
+mod commit_result_publication;
+mod pinned_read_publication;

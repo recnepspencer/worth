@@ -84,9 +84,9 @@ impl std::fmt::Debug for RelationalCanonicalPublicationRoutes {
 }
 
 struct CanonicalPublicationRoute {
-    envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    envelope: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
     commit: crate::history::data::RelationalCommitReceipt,
-    roots: crate::branch::RelationalBranchRootDescriptor,
+    roots: crate::branch::target::RelationalBranchRootDescriptor,
     handoff: Mutex<Option<CanonicalPublicationHandoff>>,
     performed_position: AtomicU64,
     performed: AtomicBool,
@@ -94,7 +94,7 @@ struct CanonicalPublicationRoute {
 }
 
 struct CanonicalPublicationHandoff {
-    root: Arc<crate::branch::RelationalBranchRoot>,
+    root: Arc<crate::branch::root::RelationalBranchRoot>,
     publication_cell: Option<crate::branch::RelationalBranchPublicationCell>,
 }
 
@@ -156,8 +156,8 @@ impl RelationalCanonicalPublicationRoutes {
     pub(crate) fn install_recovered(
         &self,
         positioned: Arc<PositionedCanonicalCommit>,
-        envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
-        roots: crate::branch::RelationalBranchRootDescriptor,
+        envelope: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+        roots: crate::branch::target::RelationalBranchRootDescriptor,
     ) -> Result<(), &'static str> {
         let (positioned, route) = recovered_source::prepare_route(positioned, envelope, roots)?;
         let installs_version_route = positioned.envelope().authority_kind().advances_version();
@@ -187,8 +187,8 @@ impl RelationalCanonicalPublicationRoutes {
 
     pub(crate) fn reserve(
         routes: &Arc<Self>,
-        envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
-        root: Arc<crate::branch::RelationalBranchRoot>,
+        envelope: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+        root: Arc<crate::branch::root::RelationalBranchRoot>,
         authored_writes: Option<AuthoredWriteGeneration>,
         original_payload: crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload,
     ) -> Result<PreparedCanonicalPublicationRoute, &'static str> {
@@ -282,7 +282,7 @@ impl PreparedCanonicalPublicationRoute {
     /// without waiting for the route to perform.
     pub(crate) fn envelope_residency(
         &self,
-    ) -> Arc<crate::history::RelationalCommitEnvelopeResidency> {
+    ) -> Arc<crate::history::commit::RelationalCommitEnvelopeResidency> {
         Arc::clone(&self.route.envelope)
     }
 

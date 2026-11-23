@@ -1,11 +1,12 @@
 //! Current ownership alone fences destruction, including relation endpoint changes.
-use crate::{
-    history::data::{CanonicalCommitEnvelopeBody, CodecRetirementClosureStop as Stop},
-    publication::data::{AuthoredRetirementRefusal as Cause, PublicationError},
-    publication::patch::data::RecordStructuralChange as Change,
-    runtime::RelationalPreparationRuntime,
-    transactions::data::{RecordRef, TransactionCommitError},
-};
+use crate::history::data::CanonicalCommitEnvelopeBody;
+use crate::history::data::CodecRetirementClosureStop as Stop;
+use crate::publication::data::AuthoredRetirementRefusal as Cause;
+use crate::publication::data::PublicationError;
+use crate::publication::patch::data::RecordStructuralChange as Change;
+use crate::runtime::RelationalPreparationRuntime;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
 mod candidate;
 
@@ -67,7 +68,7 @@ pub(super) fn require(
             Err(failure) => Err(match failure.stop {
                 Stop::Request(cause) => request(cause),
                 Stop::Payload(_) => failure.source.map_or_else(
-                    || crate::mvcc::origin_denial("current ownership selection lost its source"),
+                    || crate::transactions::data::outcomes::transaction_commit_error::origin_denial("current ownership selection lost its source"),
                     |source| {
                         TransactionCommitError::publication(PublicationError::authored_retirement(
                             Cause::CorruptPublication,
@@ -88,8 +89,8 @@ pub(super) fn require(
 fn request(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }

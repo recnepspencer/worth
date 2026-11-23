@@ -1,6 +1,6 @@
 //! Graph selection uses the same Source, content, aggregate and identity owners.
 use super::*;
-use crate::mvcc::owned_graph_selection::PreparedOwnedGraphSelection;
+use crate::mvcc::owned_graph_selection::prepared::PreparedOwnedGraphSelection;
 
 pub(crate) fn apply(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -8,8 +8,8 @@ pub(crate) fn apply(
     selected_state: &SelectedRelationalBranchRead<'_>,
     working_state: &WorkingState,
     retained: &PreparedOwnedGraphSelection,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
-    identity: &crate::mvcc::RelationalMutationProposalIdentity,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
+    identity: &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
     mut symbols: PendingSymbolMeanings,
     source_interpretation: std::sync::Arc<
         crate::validation::candidate_source::NativeManagedSourceInterpretation,

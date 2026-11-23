@@ -4,7 +4,7 @@ use crate::authority::commit::pipeline::{stage_observation as observation, Commi
 
 #[test]
 fn authored_retirement_readmission_checkpoints_keep_original_cancellation_and_head() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -122,7 +122,7 @@ fn assert_cancelled(denied: TransactionCommitError) {
 #[test]
 fn cascade_refuses_tampered_carried_origin_and_membership_records() {
     for change_origin in [true, false] {
-        let request = crate::test_execution_policy::serial_request();
+        let request = crate::execution::test_policy::serial_request();
         let execution = &ExecutionRequest::serial(&request);
         let original = runtime_with_test_schema();
         let registry = original.config().schema.registry.clone();
@@ -158,7 +158,7 @@ fn cascade_refuses_tampered_carried_origin_and_membership_records() {
         let ids = targets.map(|target| born.created_entity(&target).unwrap());
         release_test_commit_snapshot(&runtime, &born);
         let before = test_owner_main_basis(&runtime).unwrap();
-        let roles = crate::mvcc::native_roles_fixture(
+        let roles = crate::mvcc::publication::application_publication::native_roles_fixture(
             &[anchor, ids[0], ids[1]].map(|id| (id, KindId(1))),
             RequiredOutputRolePosture::Retire,
         );

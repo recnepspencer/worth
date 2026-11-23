@@ -18,7 +18,7 @@ impl RelationalRuntime {
             TransactionCommitError::publication(
                 crate::publication::data::PublicationError::authored_retirement(
                     crate::publication::data::AuthoredRetirementRefusal::ForeignCoupledOwner,
-                    crate::transactions::data::RecordRef::Entity(meaning.source_scope),
+                    crate::transactions::data::primitives::RecordRef::Entity(meaning.source_scope),
                 ),
             )
         };

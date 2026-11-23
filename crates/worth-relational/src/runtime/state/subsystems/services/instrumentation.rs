@@ -87,6 +87,14 @@ impl RuntimeInstrumentation {
         });
     }
 
+    pub(crate) fn count_query_serial_strategy(&self) {
+        self.count(RuntimeComplexityCounters::count_query_serial_strategy);
+    }
+
+    pub(crate) fn count_query_staged_parallel_strategy(&self) {
+        self.count(RuntimeComplexityCounters::count_query_staged_parallel_strategy);
+    }
+
     pub(crate) fn count_query_index_attempt(&self) {
         self.count(RuntimeComplexityCounters::count_query_index_attempt);
     }

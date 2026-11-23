@@ -22,7 +22,7 @@ fn controller_memory() -> u64 {
 
 #[test]
 fn original_empty_schemas_survive_archived_installation_and_stream_replacement() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let request = ExecutionRequest::serial(&host);
     let mut runtime = runtime_with_test_schema();
     let birth = runtime
@@ -99,10 +99,10 @@ fn original_empty_schemas_survive_archived_installation_and_stream_replacement()
         let different = PositionedBranchTransition::admit(
             head,
             original_transition.positioned.follows(),
-            crate::branch::RelationalBranchTransition::Archive {
+            crate::branch::transition::RelationalBranchTransition::Archive {
                 branch: crate::history::data::BranchId("different-original-prefix".to_owned()),
                 prior_generation: FoundationalBranchReferenceGeneration::initial(),
-                prior_truth_version: crate::branch::RelationalBranchVersion::initial(),
+                prior_truth_version: crate::branch::version::RelationalBranchVersion::initial(),
             },
         );
         assert!(matches!(
@@ -118,7 +118,7 @@ fn original_empty_schemas_survive_archived_installation_and_stream_replacement()
 
 #[test]
 fn fresh_recovery_receiver_discards_only_its_unobserved_construction_seed() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let request = ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
     let birth = runtime
@@ -152,7 +152,7 @@ fn fresh_recovery_receiver_discards_only_its_unobserved_construction_seed() {
 
 #[test]
 fn original_schema_capture_retains_exact_roster_and_refuses_before_copy() {
-    let ordinary = crate::test_execution_policy::serial_request();
+    let ordinary = crate::execution::test_policy::serial_request();
     let ordinary_request = ExecutionRequest::serial(&ordinary);
     let mut runtime = runtime_with_test_schema();
     let identity = runtime.main_branch_identity();
@@ -239,7 +239,7 @@ fn transition_backing_refusal_precedes_archive_and_retains_its_own_grant() {
     let identity = runtime.main_branch_identity();
     // Isolate the stream backing bill from the producer's independently owned
     // original schema carrier, now required before every transition durable step.
-    let setup = crate::test_execution_policy::serial_request();
+    let setup = crate::execution::test_policy::serial_request();
     runtime
         .history
         .branch_cell(identity.branch_id())
@@ -262,7 +262,7 @@ fn transition_backing_refusal_precedes_archive_and_retains_its_own_grant() {
         CancellationSource::new().token(),
         None,
     );
-    let Err(crate::branch::RelationalBranchTransitionStop::RequestStopped(cause)) =
+    let Err(crate::branch::transition::RelationalBranchTransitionStop::RequestStopped(cause)) =
         runtime.archive_branch(&ExecutionRequest::serial(&denied_host), &identity)
     else {
         panic!("actual transition backing must refuse before archive");

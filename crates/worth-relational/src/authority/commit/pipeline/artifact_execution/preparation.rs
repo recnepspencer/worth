@@ -7,10 +7,13 @@ use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::diagnostics::data::RelationalDiagnosticsEntry;
 use crate::history::data::RelationalCommitReceipt;
 use crate::publication::patch::data::CanonicalAuthoritativePatch;
-use crate::transactions::data::{
-    AspectEvaluationTrace, CommitAspectSummary, CommitChangeSummary, CommitPublicationSummary,
-    PublishedMergeExecutionAuthority, RecordRef, TransactionCommitError,
-};
+use crate::transactions::data::aspect_traces::AspectEvaluationTrace;
+use crate::transactions::data::commit_log::CommitAspectSummary;
+use crate::transactions::data::commit_log::CommitChangeSummary;
+use crate::transactions::data::commit_log::CommitPublicationSummary;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use authoritative_publication::{
     prepare_authoritative_publication, PreparedPublicationAuthority, PublicationAuthorityInput,
 };
@@ -41,14 +44,15 @@ pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
         crate::identity::data::LineageId,
     )>,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-    target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
+    target_schema_registry:
+        Option<crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
 }
 
 pub(super) struct PublicationPreparationInput<'a> {
     pub(super) defer_lineage: bool,
-    pub(super) working_state: &'a mut crate::runtime::WorkingState,
+    pub(super) working_state: &'a mut crate::storage::overlay::WorkingState,
     pub(super) content: crate::content::publication::ContentPublication,
-    pub(super) selected_branch_state: &'a crate::branch::SelectedRelationalBranchState,
+    pub(super) selected_branch_state: &'a crate::branch::root_selection::SelectedRelationalBranchState,
     pub(super) patch: CanonicalAuthoritativePatch,
     pub(super) commit_reference: &'a RelationalCommitReceipt,
     pub(super) branch_id: &'a crate::history::data::BranchId,
@@ -56,8 +60,8 @@ pub(super) struct PublicationPreparationInput<'a> {
     pub(super) merge_parent_branches: &'a [crate::history::data::BranchId],
     pub(super) merge_base_commits: &'a [crate::history::data::CommitId],
     pub(super) merged_plan: RelationalSemanticPlan<'a>,
-    pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
-    pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
+    pub(super) created_entities: &'a crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    pub(super) created_relations: &'a crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     pub(super) naming_plan: Option<&'a crate::lineage::data::CommitNamingPlan>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_artifacts:
@@ -217,7 +221,8 @@ struct PublicationCompletionInput<'a> {
     traces: PublicationTraceCapture,
     authority: CommitPhaseBacking<PreparedPublicationAuthority>,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-    target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
+    target_schema_registry:
+        Option<crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
 }
 
 fn finish_publication_preparation(
@@ -320,7 +325,7 @@ impl PublicationFinalizeArtifacts {
             crate::identity::data::LineageId,
         )>,
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-        Option<crate::branch::RetainedRelationalSchemaRegistry>,
+        Option<crate::branch::root::schema::compiled_retention::RetainedRelationalSchemaRegistry>,
     ) {
         (
             self.artifacts,

@@ -19,7 +19,7 @@ impl PreparedPublicationCompanionEffect {
     /// No caller-provided image or root identity is interpreted as association.
     pub(in crate::mvcc) fn attach_managed_source_root(
         &self,
-        root: &crate::branch::RelationalBranchRoot,
+        root: &crate::branch::root::RelationalBranchRoot,
     ) -> Result<(), CompanionPreflightStop> {
         if root.id() != self.binding.next_root_id
             || root.commit_id() != Some(self.binding.next_commit_id)

@@ -26,13 +26,16 @@ fn succession(
         admission,
         predecessor: previous,
         meaning,
-        roles: crate::mvcc::native_roles_fixture(members, RequiredOutputRolePosture::Preserve),
+        roles: crate::mvcc::publication::application_publication::native_roles_fixture(
+            members,
+            RequiredOutputRolePosture::Preserve,
+        ),
     }
 }
 
 #[test]
 fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_and_cold_custody() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = schema::runtime();
     let receipt = runtime
@@ -254,8 +257,13 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
             &basis,
             "generic-preserver",
             &[3; 32],
-            &crate::mvcc::native_meaning_fixture("generic-creator"),
-            &crate::mvcc::native_roles_fixture(&members, RequiredOutputRolePosture::Preserve),
+            &crate::mvcc::publication::application_publication::native_meaning_fixture(
+                "generic-creator",
+            ),
+            &crate::mvcc::publication::application_publication::native_roles_fixture(
+                &members,
+                RequiredOutputRolePosture::Preserve,
+            ),
         )
         .unwrap();
     assert_eq!(readmitted.origin.commit.commit_id, completed_at);
@@ -291,8 +299,10 @@ fn query_shaped_struct_birth_optional_clear_and_fieldless_incidence_keep_warm_an
             &basis,
             "generic-creator",
             &[1; 32],
-            &crate::mvcc::native_meaning_fixture("generic-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &crate::mvcc::publication::application_publication::native_meaning_fixture(
+                "generic-creator"
+            ),
+            &crate::mvcc::publication::application_publication::native_roles_fixture(
                 &[(ordinary_id, KindId(1))],
                 RequiredOutputRolePosture::Create
             )

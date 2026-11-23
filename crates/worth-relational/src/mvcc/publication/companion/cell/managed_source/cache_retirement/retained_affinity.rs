@@ -1,8 +1,8 @@
 //! Real Native deletion and retained cache custody; no projected-row READ claim.
 use super::*;
-use crate::branch::RelationalBranchDeletionOutcome;
+use crate::branch::lifecycle::RelationalBranchDeletionOutcome;
 use crate::history::data::BranchId;
-use crate::mvcc::ManagedIndexSourceForkPreparation;
+use crate::mvcc::publication::companion::managed_fork::ManagedIndexSourceForkPreparation;
 
 #[derive(Debug)]
 struct ForkOwner(Owner);

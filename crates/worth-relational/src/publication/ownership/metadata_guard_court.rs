@@ -1,8 +1,9 @@
 //! Closed Native ordinary-write preflights, starting from Query's real publication.
-use crate::{
-    branch::AdmittedRelationalBranchBasis, identity::data::*, runtime::RelationalRuntime,
-    storage::overlay::CurrentPartitionAccess, transactions::data::*,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::identity::data::*;
+use crate::runtime::RelationalRuntime;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::transactions::data::*;
 use worth_execution::ExecutionRequest;
 impl RelationalRuntime {
     #[doc(hidden)]
@@ -21,7 +22,9 @@ impl RelationalRuntime {
             .current_publication_storage
             .as_ref()
             .ok_or_else(|| {
-                crate::mvcc::origin_denial("real owned publication has its installed storage")
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "real owned publication has its installed storage",
+                )
             })?;
         let mut rows = Vec::new();
         rows.extend(
@@ -90,12 +93,12 @@ impl RelationalRuntime {
                         .map(|(_, record)| record)
                         .find(|record| matches!(record, RecordRef::Relation(_)))
                         .ok_or_else(|| {
-                            crate::mvcc::origin_denial("court producer must realize a private link")
+                            crate::transactions::data::outcomes::transaction_commit_error::origin_denial("court producer must realize a private link")
                         })?,
                     0..1,
                 ),
                 None => {
-                    return Err(crate::mvcc::origin_denial(
+                    return Err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                         "court producer must realize every private kind",
                     ))
                 }
@@ -129,7 +132,7 @@ impl RelationalRuntime {
                             .and_then(|p| p.relation_arena().get(id))
                             .and_then(|r| r.extra().endpoints.clone())
                             .ok_or_else(|| {
-                                crate::mvcc::origin_denial("actual metadata link has endpoints")
+                                crate::transactions::data::outcomes::transaction_commit_error::origin_denial("actual metadata link has endpoints")
                             })?;
                         match verb {
                             0 => MutationIntent::Create(CreateIntent::Relation(RelationSpec {
@@ -161,7 +164,7 @@ impl RelationalRuntime {
                         basis,
                         crate::mvcc::RelationalTransactionIntent::ordinary(),
                     )
-                    .map_err(|e| crate::mvcc::origin_denial(format!("court transaction: {e:?}")))?;
+                    .map_err(|e| crate::transactions::data::outcomes::transaction_commit_error::origin_denial(format!("court transaction: {e:?}")))?;
                 tx.push_batch(
                     WorkerIntentBatch::new("ordinary-private-write").push(intent),
                     execution.allocation_policy(),

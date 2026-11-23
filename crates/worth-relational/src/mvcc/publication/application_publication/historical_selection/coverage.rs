@@ -1,6 +1,6 @@
 //! A graph selection cannot silently keep or discard publication custody.
 use super::*;
-use crate::branch::RelationalOwnedModelGraphSelection;
+use crate::branch::model_ownership::RelationalOwnedModelGraphSelection;
 
 pub(crate) fn require_graph_coverage(
     execution: &ExecutionRequest<'_, '_>,

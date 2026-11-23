@@ -13,7 +13,7 @@ use crate::publication::patch::data::{
     CanonicalAuthoritativePatch, PatchOrdering, PatchPublicationMode,
     PublishedAuthoritativeRecordPatch,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeSet;
 use worth_execution::ExecutionResourceLease;
 use worth_foundational::PartitionIdentity;
@@ -26,7 +26,10 @@ pub(super) fn assemble_patch(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     fragments: Vec<FoundationalPatchFragment>,
     lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<CanonicalAuthoritativePatch, crate::transactions::data::TransactionCommitError> {
+) -> Result<
+    CanonicalAuthoritativePatch,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     let records = prepare_patch_fragments(runtime, fragments, lease)?;
     Ok(CanonicalAuthoritativePatch {
         ordering: PatchOrdering::CanonicalCommitOrder,
@@ -39,8 +42,10 @@ fn prepare_patch_fragments(
     runtime: &crate::runtime::RelationalPreparationRuntime,
     fragments: Vec<FoundationalPatchFragment>,
     lease: Option<&ExecutionResourceLease<'_>>,
-) -> Result<Vec<PublishedAuthoritativeRecordPatch>, crate::transactions::data::TransactionCommitError>
-{
+) -> Result<
+    Vec<PublishedAuthoritativeRecordPatch>,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+> {
     if fragments.is_empty() {
         return Ok(Vec::new());
     }
@@ -163,7 +168,7 @@ fn prepare_patch_fragments(
             })
         },
     )
-    .map_err(|stop| crate::transactions::data::TransactionCommitError::execution(stop.into()))?;
+    .map_err(|stop| crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(stop.into()))?;
     crate::authority::commit::preparation::reduction::merge::canonical_merge_values_checked(
         streams,
         lease,

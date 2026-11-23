@@ -2,13 +2,15 @@
 use super::*;
 use crate::execution::request_stage::checkpoint;
 mod changes;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    mvcc::RelationalMutationProposalIdentity,
-    runtime::{PendingSymbolMeanings, RelationalPreparationRuntime, RuntimeServices},
-    storage::overlay::{CurrentPartitionAccess, WorkingState},
-    transactions::data::TransactionCommitError,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
+use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
+use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::runtime::RelationalPreparationRuntime;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 pub(super) use changes::AppliedReadChanges;
 
 /// The real applied proposal and assembly revision that supplied every row.
@@ -78,23 +80,27 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         state: &WorkingState,
         content: &crate::content::publication::ContentPublication,
         symbols: &PendingSymbolMeanings,
-        changed_records: &[crate::transactions::data::RecordRef],
+        changed_records: &[crate::transactions::data::primitives::RecordRef],
         aggregate: Option<crate::aggregate_identity::AggregateCandidateRead>,
         previous: Option<&Self>,
     ) -> Result<Self, TransactionCommitError> {
         let previous_root = if let Some(previous) = previous {
             let CandidateReadPhase::AssemblyRevision(prior_revision) = previous.snapshot.phase
             else {
-                return Err(crate::mvcc::origin_denial(
-                    "prepared read is not an assembly predecessor",
-                ));
+                return Err(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "prepared read is not an assembly predecessor",
+                    ),
+                );
             };
             if !identity.same_proposal_sequence(&previous.snapshot.proposal)
                 || prior_revision.checked_add(1) != Some(revision)
             {
-                return Err(crate::mvcc::origin_denial(
-                    "applied revision has a foreign or stale predecessor",
-                ));
+                return Err(
+                    crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                        "applied revision has a foreign or stale predecessor",
+                    ),
+                );
             }
             previous.resident_basis().root()
         } else {
@@ -129,13 +135,13 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                 // this exact dictionary owner. Carry that same owner into the
                 // pin; another detached binding loses the new admission marks
                 // and a cold dictionary then refuses its otherwise valid read.
-                let mut services = runtime.with_candidate_symbols(symbols).services;
+                let mut dictionary = symbols.binding();
                 if let Some(previous) = previous {
                     // The verified prior revision owns admission of its D root.
                     // Starting again from C loses that root's predecessor mark.
-                    services.symbols = symbols
+                    dictionary = symbols
                         .binding_from_applied_predecessor(previous.resident_basis().symbols())
-                        .map_err(crate::mvcc::origin_denial)?;
+                        .map_err(crate::transactions::data::outcomes::transaction_commit_error::origin_denial)?;
                 }
                 let root = runtime
                     .history
@@ -144,16 +150,18 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
                         previous_root,
                         state,
                         content,
-                        &services.symbols,
+                        &dictionary,
                     )
                     .map_err(|failure| {
-                        crate::mvcc::origin_denial(format!(
+                        crate::transactions::data::outcomes::transaction_commit_error::origin_denial(format!(
                             "applied candidate root capture failed: {failure:?}"
                         ))
                     })?;
                 Self::capture_root(
                     execution,
-                    &services,
+                    &dictionary,
+                    &runtime.services.instrumentation,
+                    runtime.runtime_instance_id(),
                     basis,
                     RelationalAppliedCandidateReadIdentity {
                         proposal: identity.clone(),
@@ -170,16 +178,20 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
     }
     pub(crate) fn capture_prepared(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        services: &RuntimeServices,
+        dictionary: &RuntimeSymbolTable,
+        instrumentation: &RuntimeInstrumentation,
+        runtime_instance_id: u64,
         basis: &AdmittedRelationalBranchBasis,
         proposal: &RelationalMutationProposalIdentity,
         candidate_id: u64,
-        root: Arc<crate::branch::RelationalBranchRoot>,
-        changed_records: &[crate::transactions::data::RecordRef],
+        root: Arc<crate::branch::root::RelationalBranchRoot>,
+        changed_records: &[crate::transactions::data::primitives::RecordRef],
     ) -> Result<Self, TransactionCommitError> {
         Self::capture_root(
             execution,
-            services,
+            dictionary,
+            instrumentation,
+            runtime_instance_id,
             basis,
             RelationalAppliedCandidateReadIdentity {
                 proposal: proposal.clone(),
@@ -194,11 +206,13 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
 
     fn capture_root(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        services: &RuntimeServices,
+        dictionary: &RuntimeSymbolTable,
+        instrumentation: &RuntimeInstrumentation,
+        runtime_instance_id: u64,
         basis: &AdmittedRelationalBranchBasis,
         identity: RelationalAppliedCandidateReadIdentity,
-        root: Arc<crate::branch::RelationalBranchRoot>,
-        changed_records: &[crate::transactions::data::RecordRef],
+        root: Arc<crate::branch::root::RelationalBranchRoot>,
+        changed_records: &[crate::transactions::data::primitives::RecordRef],
         aggregate: Option<crate::aggregate_identity::AggregateCandidateRead>,
         previous_changes: Option<&AppliedReadChanges>,
     ) -> Result<Self, TransactionCommitError> {
@@ -218,7 +232,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             }
         };
         let context = QueryPlanContextId {
-            runtime_instance_id: services.runtime_instance_id(),
+            runtime_instance_id,
             snapshot_id: crate::snapshots::data::SnapshotId(0),
             version_id: identity.proposal.proposed_version_id(),
             schema_version: schema.schema_version(),
@@ -239,7 +253,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
             identity.proposal.proposed_version_id(),
             root,
         );
-        let resident = ResidentVisibilitySnapshotBasis::admit(source, execution, &services.symbols)
+        let resident = ResidentVisibilitySnapshotBasis::admit(source, execution, dictionary)
             .map_err(request_stop)?;
         let applied_changes = changes::capture(
             execution,
@@ -251,7 +265,7 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
         Ok(Self {
             applied_changes: Some(applied_changes),
             current_version: identity.proposal.proposed_version_id(),
-            instrumentation: services.instrumentation.clone(),
+            instrumentation: instrumentation.clone(),
             snapshot: identity,
             basis: resident,
             context,
@@ -263,8 +277,8 @@ impl RelationalPinnedRead<RelationalAppliedCandidateReadIdentity> {
 fn request_stop(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }

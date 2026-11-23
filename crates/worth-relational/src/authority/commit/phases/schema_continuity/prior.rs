@@ -2,10 +2,10 @@
 pub(super) struct SchemaContinuityPrior<'a> {
     pub(super) schema_version: crate::schema::data::SchemaVersionId,
     pub(super) descriptor_semantics_version: crate::schema::data::DescriptorSemanticsVersion,
-    pub(super) authority: &'a crate::branch::RelationalBranchRootSchemaAuthority,
+    pub(super) authority: &'a crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 }
 impl<'a> SchemaContinuityPrior<'a> {
-    pub(super) fn from_root(root: &'a crate::branch::RelationalBranchRoot) -> Option<Self> {
+    pub(super) fn from_root(root: &'a crate::branch::root::RelationalBranchRoot) -> Option<Self> {
         let evidence = root.commit_evidence()?;
         let authority = root.schema_authority();
         Some(Self {

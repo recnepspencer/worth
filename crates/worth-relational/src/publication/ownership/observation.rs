@@ -16,7 +16,7 @@ pub(super) fn install(observer: Observer) -> Guard {
 }
 pub(super) fn record(
     current: &CurrentPublicationRoster,
-    basis: &crate::branch::AdmittedRelationalBranchBasis,
+    basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
 ) {
     OBSERVER.with(|slot| {
         if let Some(observer) = slot.borrow().as_ref() {

@@ -1,9 +1,11 @@
+use crate::history::data::canonical_commit_envelope::RelationalReplayRecord;
+use crate::history::data::replay_version::ReplaySchemaVersion;
 use crate::history::data::RelationalCommitReceipt;
 use crate::identity::data::VersionId;
 use crate::publication::authority::artifacts::PublicationArtifacts;
+use crate::publication::authority::PublicationAuthority;
+use crate::publication::authority::PublicationPreparationAuthority;
 use crate::publication::bundle::{PublicationBundle, PublicationStatus};
-use crate::publication::{PublicationAuthority, PublicationPreparationAuthority};
-use crate::runtime::{RelationalReplayRecord, ReplaySchemaVersion};
 use crate::snapshots::data::{SnapshotHandle, SnapshotId, SnapshotReadPolicy};
 
 impl<'runtime> PublicationPreparationAuthority<'runtime> {
@@ -14,10 +16,13 @@ impl<'runtime> PublicationPreparationAuthority<'runtime> {
         patch: crate::publication::patch::data::CanonicalAuthoritativePatch,
         diagnostics_summary: crate::diagnostics::data::RelationalDiagnosticArtifact,
         schema_authority: crate::schema::data::SchemaAuthoritySnapshot,
-    ) -> Result<PublicationArtifacts, crate::mvcc::RelationalPublicationFailure> {
+    ) -> Result<
+        PublicationArtifacts,
+        crate::mvcc::publication::outcome::failure::RelationalPublicationFailure,
+    > {
         let snapshot_id = self.runtime.allocate_snapshot_id().ok_or_else(|| {
-            crate::mvcc::RelationalPublicationFailure::new(
-                crate::mvcc::RelationalPublicationFailureKind::SnapshotIdentityExhausted,
+            crate::mvcc::publication::outcome::failure::RelationalPublicationFailure::new(
+                crate::mvcc::publication::outcome::failure::RelationalPublicationFailureKind::SnapshotIdentityExhausted,
                 "snapshot identity space is exhausted",
             )
         })?;

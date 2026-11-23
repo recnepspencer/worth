@@ -1,9 +1,9 @@
 //! Cache cleanup protocol only; public Source semantics have their own court.
 use super::*;
-use crate::mvcc::{
-    PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
-    PublicationCompanionRegistrationPort, RelationalPublicationCompanion,
-};
+use crate::mvcc::publication::companion::preflight::PreparedPublicationCompanionEffect;
+use crate::mvcc::publication::companion::preflight::PublicationCompanionPreflight;
+use crate::mvcc::publication::companion::preflight::RelationalPublicationCompanion;
+use crate::mvcc::publication::companion::registration::PublicationCompanionRegistrationPort;
 use crate::tests::support::{create_entity, managed_cache_schema, snapshot_for_owner_identity};
 use std::sync::{
     atomic::{AtomicUsize, Ordering},

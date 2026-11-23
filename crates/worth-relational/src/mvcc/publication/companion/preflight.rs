@@ -4,7 +4,8 @@ use std::sync::Arc;
 
 use crate::history::data::{BranchId, CanonicalCommitEnvelope, CommitId};
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::{RelationalInterruptionBoundary, RelationalOperationControl};
+use crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary;
+use crate::runtime::RelationalOperationControl;
 
 use super::cell::publication_admission::PublicationCellAdmission;
 use super::cell::{CompanionBranchCellCore, CompanionRootImage};

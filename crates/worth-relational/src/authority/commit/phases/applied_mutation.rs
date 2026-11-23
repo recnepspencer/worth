@@ -3,9 +3,12 @@ use crate::authority::commit::phases::mutation::branch_local_delete_allowance_fo
 use crate::authority::mutation::{
     apply_plan_with_publication_edges, MutationApplyDenial, MutationApplyOutcome,
 };
-use crate::branch::SelectedRelationalBranchRead;
-use crate::runtime::{PendingSymbolMeanings, RelationalPreparationRuntime, WorkingState};
-use crate::transactions::data::{AuthoritativeApplyPlan, MergedCommitPlan};
+use crate::branch::selected_read::SelectedRelationalBranchRead;
+use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
+use crate::runtime::RelationalPreparationRuntime;
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::outcomes::plan_artifacts::AuthoritativeApplyPlan;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 
 pub(crate) use crate::authority::mutation::pending_identities::PendingMutationIdentities;
 
@@ -91,8 +94,8 @@ pub(crate) fn apply_mutation_draft(
     selected_state: &SelectedRelationalBranchRead<'_>,
     working_state: &WorkingState,
     merged_plan: &MergedCommitPlan,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
-    identity: &crate::mvcc::RelationalMutationProposalIdentity,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
+    identity: &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
     mut symbols: PendingSymbolMeanings,
     source_interpretation: std::sync::Arc<
         crate::validation::candidate_source::NativeManagedSourceInterpretation,
@@ -102,9 +105,9 @@ pub(crate) fn apply_mutation_draft(
     require_original_source_interpretation(identity, &source_interpretation)?;
     let materialization = source_interpretation.materialization_mode();
     let version_id = identity.proposed_version_id();
-    let _apply_memory = crate::mvcc::plan_copy_admission::reserve_copy(
+    let _apply_memory = crate::mvcc::transaction::normalized_plan::reserve_copy(
         execution,
-        crate::mvcc::plan_copy_admission::intent_bytes(&merged_plan.merged_intents),
+        crate::mvcc::transaction::normalized_plan::intent_bytes(&merged_plan.merged_intents),
     )?;
     let apply_plan = AuthoritativeApplyPlan {
         transaction_id: merged_plan.transaction_id,
@@ -164,8 +167,8 @@ pub(crate) fn apply_retained_entity_selection_draft(
     selected_state: &SelectedRelationalBranchRead<'_>,
     working_state: &WorkingState,
     retained: &crate::authority::commit::semantic_plan::PreparedRetainedEntityPayload,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
-    identity: &crate::mvcc::RelationalMutationProposalIdentity,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
+    identity: &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
     mut symbols: PendingSymbolMeanings,
     source_interpretation: std::sync::Arc<
         crate::validation::candidate_source::NativeManagedSourceInterpretation,
@@ -246,7 +249,7 @@ pub(crate) fn apply_retained_entity_selection_draft(
 }
 
 fn require_original_source_interpretation(
-    identity: &crate::mvcc::RelationalMutationProposalIdentity,
+    identity: &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
     source: &std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
 ) -> Result<(), MutationApplyDenial> {
     if identity
@@ -255,9 +258,9 @@ fn require_original_source_interpretation(
     {
         return Ok(());
     }
-    Err(crate::transactions::data::TransactionCommitError::conflict(
-        crate::transactions::data::CommitConflict::new(
-            crate::transactions::data::ConflictClass::StaleValidationBasis {
+    Err(crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::conflict(
+        crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+            crate::transactions::data::outcomes::conflict_class::ConflictClass::StaleValidationBasis {
                 detail: "candidate Source belongs to another proposal owner".into(),
             },
         ),

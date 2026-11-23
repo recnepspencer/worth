@@ -1,21 +1,25 @@
 //! Prepared canonical movement and its post-publication completion custody.
 use super::*;
+use crate::history::data::{BranchId, CommitId, RelationalCommitReceipt};
+use crate::identity::data::VersionId;
 
 pub(in crate::authority::commit::pipeline::publication_execution) struct PreparedPublicationPhase {
+    pub(in crate::authority::commit::pipeline::publication_execution) live_inputs:
+        Option<crate::publication::live_publication_inputs::BoundLivePublicationInputs>,
     pub(in crate::authority::commit::pipeline::publication_execution) application_unchanged: bool,
     pub(in crate::authority::commit::pipeline::publication_execution) record_allocations:
-        crate::runtime::PendingRecordAllocations,
+        crate::runtime::state::subsystems::record_identity::PendingRecordAllocations,
     pub(in crate::authority::commit::pipeline::publication_execution) symbol_meanings:
-        crate::runtime::PreparedSymbolPublication,
+        crate::runtime::state::subsystems::services::symbol_table::PreparedSymbolPublication,
     // Keep the same symbol-owner share until this prepared phase is consumed.
     pub(in crate::authority::commit::pipeline::publication_execution) _candidate_symbols:
-        crate::runtime::RuntimeSymbolTable,
+        crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     pub(in crate::authority::commit::pipeline::publication_execution) mirror_publication:
         crate::storage::PreparedMirrorPublication,
     pub(in crate::authority::commit::pipeline::publication_execution) prepared_history:
-        crate::mvcc::PreparedRelationalPublication,
+        crate::mvcc::publication::authority::PreparedRelationalPublication,
     pub(in crate::authority::commit::pipeline::publication_execution) validated_lineage_events:
-        crate::runtime::ValidatedLineageEventBatch,
+        crate::runtime::state::subsystems::lineage::ValidatedLineageEventBatch,
     pub(in crate::authority::commit::pipeline::publication_execution) lineage_nodes:
         Vec<crate::lineage::data::LineageNode>,
     pub(in crate::authority::commit::pipeline::publication_execution) relation_lineages: Vec<(
@@ -25,7 +29,7 @@ pub(in crate::authority::commit::pipeline::publication_execution) struct Prepare
     pub(in crate::authority::commit::pipeline::publication_execution) artifacts:
         crate::publication::authority::artifacts::PublicationArtifacts,
     pub(in crate::authority::commit::pipeline::publication_execution) changed_records:
-        Vec<crate::transactions::data::RecordRef>,
+        Vec<crate::transactions::data::primitives::RecordRef>,
     pub(in crate::authority::commit::pipeline::publication_execution) version_id: VersionId,
     pub(in crate::authority::commit::pipeline::publication_execution) previous_branch_head_version:
         Option<VersionId>,
@@ -40,7 +44,7 @@ pub(in crate::authority::commit::pipeline::publication_execution) struct Prepare
     pub(in crate::authority::commit::pipeline::publication_execution) deferred_diagnostic_artifacts:
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
     pub(in crate::authority::commit::pipeline::publication_execution) canonical_publication_route:
-        crate::runtime::PreparedCanonicalPublicationRoute,
+        crate::runtime::state::subsystems::history::canonical_publication_routes::PreparedCanonicalPublicationRoute,
 }
 
 pub(in crate::authority::commit::pipeline::publication_execution) struct PreparedPublicationCompletion
@@ -48,9 +52,9 @@ pub(in crate::authority::commit::pipeline::publication_execution) struct Prepare
     pub(in crate::authority::commit::pipeline::publication_execution) mirror_publication:
         crate::storage::PreparedMirrorPublication,
     pub(in crate::authority::commit::pipeline::publication_execution) prepared_history:
-        crate::mvcc::PreparedRelationalPublicationAccelerators,
+        crate::mvcc::publication::authority::PreparedRelationalPublicationAccelerators,
     pub(in crate::authority::commit::pipeline::publication_execution) validated_lineage_events:
-        crate::runtime::ValidatedLineageEventBatch,
+        crate::runtime::state::subsystems::lineage::ValidatedLineageEventBatch,
     pub(in crate::authority::commit::pipeline::publication_execution) lineage_nodes:
         Vec<crate::lineage::data::LineageNode>,
     pub(in crate::authority::commit::pipeline::publication_execution) relation_lineages: Vec<(
@@ -60,7 +64,7 @@ pub(in crate::authority::commit::pipeline::publication_execution) struct Prepare
     pub(in crate::authority::commit::pipeline::publication_execution) artifacts:
         crate::publication::authority::artifacts::PublicationArtifacts,
     pub(in crate::authority::commit::pipeline::publication_execution) changed_records:
-        Vec<crate::transactions::data::RecordRef>,
+        Vec<crate::transactions::data::primitives::RecordRef>,
     pub(in crate::authority::commit::pipeline::publication_execution) version_id: VersionId,
     pub(in crate::authority::commit::pipeline::publication_execution) previous_branch_head_version:
         Option<VersionId>,
@@ -79,7 +83,7 @@ pub(in crate::authority::commit::pipeline::publication_execution) struct Prepare
 impl PreparedPublicationPhase {
     pub(in crate::authority::commit::pipeline::publication_execution) fn caller_association(
         &self,
-    ) -> Option<crate::mvcc::RelationalCallerAssociation> {
+    ) -> Option<crate::history::data::RelationalCallerAssociation> {
         self.prepared_history.caller_association().cloned()
     }
     pub(in crate::authority::commit::pipeline::publication_execution) fn canonical_envelope(
@@ -107,7 +111,7 @@ impl PreparedPublicationPhase {
 
     pub(in crate::authority::commit::pipeline::publication_execution) fn prepared_root(
         &self,
-    ) -> &Arc<crate::branch::RelationalBranchRoot> {
+    ) -> &Arc<crate::branch::root::RelationalBranchRoot> {
         self.prepared_history.root()
     }
 
@@ -121,12 +125,12 @@ impl PreparedPublicationPhase {
     pub(crate) fn split(
         self,
     ) -> (
-        crate::mvcc::PreparedCanonicalBranchMovement,
+        crate::mvcc::publication::PreparedCanonicalBranchMovement,
         PreparedPublicationCompletion,
     ) {
         let (next_cell, root, _envelope, prepared_history) =
             self.prepared_history.into_canonical_parts();
-        let movement = crate::mvcc::PreparedCanonicalBranchMovement::new(
+        let movement = crate::mvcc::publication::PreparedCanonicalBranchMovement::new(
             self.record_allocations,
             self.symbol_meanings,
             next_cell,
@@ -160,9 +164,9 @@ pub(super) fn complete_deferred_lineage(
     runtime: &RelationalPreparationRuntime,
     working_state: &mut crate::storage::overlay::WorkingState,
     envelope: &mut crate::history::data::CanonicalCommitEnvelopeDraft,
-    changed_records: &[crate::transactions::data::RecordRef],
-    created_entities: &crate::transactions::data::CommitCreatedEntityBindings,
-    created_relations: &crate::transactions::data::CommitCreatedRelationBindings,
+    changed_records: &[crate::transactions::data::primitives::RecordRef],
+    created_entities: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    created_relations: &crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     naming_plan: Option<&crate::lineage::data::CommitNamingPlan>,
 ) -> Result<
     (

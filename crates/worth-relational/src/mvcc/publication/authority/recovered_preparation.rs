@@ -25,7 +25,7 @@ impl RelationalPublicationAuthority<'_> {
             .readmit_unchanged_root(execution, &binding.inner.root)
             .map_err(|cause| {
                 PublicationPreparationDenial::from(
-                    crate::branch::RelationalBranchRootCaptureDenial::Content(cause),
+                    crate::branch::root::RelationalBranchRootCaptureDenial::Content(cause),
                 )
             })?;
         let prepared = prepare_versioned_publication(
@@ -45,7 +45,7 @@ impl RelationalPublicationAuthority<'_> {
         )?;
         Ok(PreparedRecoveredRelationalPublication {
             publication:
-                crate::runtime::PreparedRecoveredVersionedArtifactPublication::from_recovery_readmission(
+                crate::runtime::state::subsystems::history::PreparedRecoveredVersionedArtifactPublication::from_recovery_readmission(
                     prepared,
                 ).map_err(|detail| PublicationPreparationDenial::Invalid(detail.to_owned()))?,
         })

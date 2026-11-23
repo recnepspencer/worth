@@ -9,7 +9,9 @@ use crate::diagnostics::data::{
 };
 use crate::schema::data::{SchemaTransitionArtifact, SchemaTransitionSummary};
 use crate::schema::SchemaContinuityBundleIssue;
-use crate::transactions::data::{CommitConflict, ConflictClass, TransactionCommitError};
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 use super::{SchemaContinuityPlan, SchemaContinuityPrior};
 use diagnostic_fields::diagnostics_fields;

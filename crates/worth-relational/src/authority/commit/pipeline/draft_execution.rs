@@ -6,12 +6,16 @@ use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
 
 pub(super) struct PreparedCommitState {
     pub(super) admitted: AdmittedCommitState,
-    pub(super) public_structural_summary: crate::transactions::data::CommitStructuralSummary,
-    pub(super) proposal_identity: crate::mvcc::RelationalMutationProposalIdentity,
+    pub(super) public_structural_summary:
+        crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
+    pub(super) proposal_identity:
+        crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
 }
 
 impl PreparedCommitState {
-    pub(super) fn selected_branch_state(&self) -> &crate::branch::SelectedRelationalBranchState {
+    pub(super) fn selected_branch_state(
+        &self,
+    ) -> &crate::branch::root_selection::SelectedRelationalBranchState {
         self.admitted.selected_branch_state()
     }
     pub(super) fn version_id(&self) -> crate::identity::data::VersionId {
@@ -31,7 +35,7 @@ impl PreparedCommitExecution {
         &mut AdmittedCommitState,
         &crate::storage::overlay::WorkingState,
         crate::identity::data::VersionId,
-        &crate::mvcc::RelationalMutationProposalIdentity,
+        &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
         Option<crate::aggregate_identity::AggregateProposalBorrow<'_>>,
     ) {
         (
@@ -46,7 +50,9 @@ impl PreparedCommitExecution {
         )
     }
 
-    pub(super) fn candidate_symbols(&self) -> &crate::runtime::PendingSymbolMeanings {
+    pub(super) fn candidate_symbols(
+        &self,
+    ) -> &crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings {
         self.mutation.candidate_symbols()
     }
 
@@ -61,7 +67,7 @@ pub(super) fn prepare_commit_execution(
     admitted: AdmittedCommitExecution,
 ) -> Result<
     CommitPhaseBacking<PreparedCommitExecution>,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     // Producer temporaries retire before funding the retained successor,
     // matching the former caller-side allocation boundary.

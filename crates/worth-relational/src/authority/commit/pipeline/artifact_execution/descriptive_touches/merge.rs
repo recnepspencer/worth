@@ -15,9 +15,9 @@ use super::{Failure, TouchBudget};
 /// inherited from a parent that had no local patch fragment.
 pub(super) fn append(
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
-    selected: &crate::branch::SelectedRelationalBranchState,
-    working: &crate::runtime::WorkingState,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
+    selected: &crate::branch::root_selection::SelectedRelationalBranchState,
+    working: &crate::storage::overlay::WorkingState,
     adjacency: &[AdjacencyDelta],
     touches: &mut Vec<Touch>,
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,

@@ -5,15 +5,16 @@ use super::{record, CurrentPublicationRoster};
 use crate::authority::mutation::current_records::{
     CompletedCurrentRecords as CompletedOwnership, Writer,
 };
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::root_selection::SelectedRelationalBranchState;
+use crate::history::data::CanonicalCommitEnvelopeBody;
+use crate::history::data::CommitId;
+use crate::runtime::RelationalPreparationRuntime;
 use crate::schema::current_publication_ownership::{CATALOG, PUBLICATION};
-use crate::{
-    branch::{AdmittedRelationalBranchBasis, SelectedRelationalBranchState},
-    history::data::{CanonicalCommitEnvelopeBody, CommitId},
-    runtime::RelationalPreparationRuntime,
-    storage::overlay::{OverlayStateView, WorkingState},
-    transactions::data::*,
-    validation::engine::state_view::InvariantStateView,
-};
+use crate::storage::overlay::OverlayStateView;
+use crate::storage::overlay::WorkingState;
+use crate::transactions::data::*;
+use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 
 pub(crate) fn complete(
@@ -34,9 +35,11 @@ pub(crate) fn complete(
         .registry()
         .current_publication_storage
     else {
-        return Err(crate::mvcc::origin_denial(
-            "current ownership completion requires its Native storage grammar",
-        ));
+        return Err(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "current ownership completion requires its Native storage grammar",
+            ),
+        );
     };
     let mut writer = Writer::in_stage(
         execution,
@@ -145,7 +148,7 @@ pub(crate) fn complete(
                         == crate::publication::patch::data::RecordStructuralChange::Deleted
             });
         let successors = successors::select(candidate, scope, scope_deleted, &mut writer)?;
-        let replaced = |meaning: &crate::mvcc::RequiredOutputPublicationMeaning| {
+        let replaced = |meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning| {
             scope_deleted
                 || candidate
                     .historical_absent_routes()
@@ -154,7 +157,7 @@ pub(crate) fn complete(
                     .output_origins()
                     .any(|origin| origin.source_scope_owned && origin.meaning.same_route(meaning))
         };
-        let changed = |meaning: &crate::mvcc::RequiredOutputPublicationMeaning| {
+        let changed = |meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning| {
             replaced(meaning)
                 || candidate
                     .required_output_codec_retirements

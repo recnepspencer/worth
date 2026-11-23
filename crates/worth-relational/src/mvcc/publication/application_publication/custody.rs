@@ -16,7 +16,7 @@ pub struct RelationalRequiredOutputPublication {
     pub(crate) evidence: crate::publication::ownership::PublicationEvidence,
     pub(crate) origin: Arc<crate::history::data::CanonicalRequiredOutputOrigin>,
     pub(crate) authority: worth_proof::RequiredOutputPublicationAuthority,
-    pub(crate) readmitted_at: Option<crate::branch::AdmittedRelationalBranchBasis>,
+    pub(crate) readmitted_at: Option<crate::branch::basis::AdmittedRelationalBranchBasis>,
 }
 
 impl RelationalRequiredOutputPublication {
@@ -74,7 +74,7 @@ impl RelationalRequiredOutputPublication {
     }
 }
 
-impl crate::transactions::data::CommitResult {
+impl crate::transactions::data::outcomes::commit_result::CommitResult {
     pub fn required_output_publication(
         &self,
         installed: &super::RelationalInstalledApplicationPublicationAuthority,
@@ -112,7 +112,7 @@ impl crate::transactions::data::CommitResult {
     ) -> impl Iterator<
         Item = Result<
             RelationalRequiredOutputPublication,
-            crate::transactions::data::TransactionCommitError,
+            crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
         >,
     > + 'a {
         let envelope = &self.publication().envelope;
@@ -162,14 +162,14 @@ impl crate::runtime::RelationalRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         installed: &super::RelationalInstalledApplicationPublicationAuthority,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
         producer: &str,
         dependency: &[u8; 32],
-        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
-        roles: &[crate::mvcc::RequiredOutputRoleTarget],
+        meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
+        roles: &[crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget],
     ) -> Result<
         RelationalRequiredOutputPublication,
-        crate::transactions::data::TransactionCommitError,
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
     > {
         if installed
             .source_scope_ownership
@@ -224,10 +224,10 @@ impl crate::runtime::RelationalRuntime {
             != origin.source_scope_owned
         {
             return Err(
-                crate::transactions::data::TransactionCommitError::publication(
+                crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::publication(
                     crate::publication::data::PublicationError::authored_retirement(
                         crate::publication::data::AuthoredRetirementRefusal::CorruptPublication,
-                        crate::transactions::data::RecordRef::Entity(origin.meaning.source_scope),
+                        crate::transactions::data::primitives::RecordRef::Entity(origin.meaning.source_scope),
                     ),
                 ),
             );
@@ -256,7 +256,7 @@ impl crate::runtime::RelationalRuntime {
 
 pub(super) fn cold_stop(
     stop: crate::history::data::CodecRetirementClosureStop,
-) -> crate::transactions::data::TransactionCommitError {
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
     match stop {
         crate::history::data::CodecRetirementClosureStop::Request(cause) => execution_stop(cause),
         crate::history::data::CodecRetirementClosureStop::Payload(detail) => {
@@ -267,16 +267,16 @@ pub(super) fn cold_stop(
 
 pub(super) fn execution_stop(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
-) -> crate::transactions::data::TransactionCommitError {
-    crate::transactions::data::TransactionCommitError::execution(
-        crate::transactions::data::CommitExecutionDenial {
-            kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+) -> crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError {
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError::execution(
+        crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+            kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
             partition_identity: None,
         },
     )
 }
 
-impl crate::transactions::data::CommitResult {
+impl crate::transactions::data::outcomes::commit_result::CommitResult {
     /// Descriptive roles of this commit's canonical primary publication. Closure
     /// witnesses used to admit a succession are not members of that publication.
     /// This view grants no publication or succession custody.

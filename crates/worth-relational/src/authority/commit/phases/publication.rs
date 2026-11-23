@@ -10,9 +10,10 @@ use crate::lineage::data::LineageFinalizationArtifact;
 use crate::publication::bundle::PublicationStage;
 use crate::publication::data::PublicationError;
 use crate::publication::patch::data::CanonicalAuthoritativePatch;
-use crate::transactions::data::{
-    MergedCommitPlan, PublishedMergeExecutionAuthority, RecordRef, TransactionCommitError,
-};
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 
 pub(crate) fn enforce_patch_budget(
     runtime: &(impl DiagnosticArtifactSink + PublicationPolicySource),
@@ -119,7 +120,8 @@ pub(crate) fn canonical_commit_envelope(
         })?;
     // The envelope records process-local identities in the canonical runtime
     // frame, so its bytes do not depend on which process produced it (D11).
-    envelope.merged_plan.transaction_id = crate::branch::CANONICAL_TRANSACTION_ID;
+    envelope.merged_plan.transaction_id =
+        crate::branch::reference_checkpoint_data::CANONICAL_TRANSACTION_ID;
     envelope.branch_cell_checkpoint = runtime
         .history
         .branch_cell(branch_id)

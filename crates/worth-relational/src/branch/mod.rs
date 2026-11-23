@@ -14,6 +14,7 @@ mod basis_currentness;
 pub(crate) mod basis_denial;
 mod basis_descriptor_resolution;
 mod basis_identity_validation;
+pub(crate) mod basis_issuance;
 mod basis_observation;
 mod basis_readmission;
 mod basis_registry;
@@ -66,7 +67,7 @@ pub use recorded_basis::{
     RecordedRelationalCanonicalComponent, RecordedRelationalComponentReference,
     RecordedRelationalComponentTarget, RelationalRecordedComponentRefusal,
 };
-mod reference_publication_cell;
+pub(crate) mod reference_publication_cell;
 mod reference_state;
 pub(crate) mod registry;
 pub(crate) use registry::RelationalSourceRootSlot;
@@ -109,7 +110,7 @@ pub(crate) use basis::{AdmittedRelationalBranchBasisInner, CheckpointComponentDe
 pub use basis_admission_identity::RelationalBranchBasisAdmissionIdentity;
 pub use basis_counters::RelationalBranchBasisCostCounters;
 pub use basis_denial::{RelationalBranchBasisDenial, RelationalBranchBasisMismatchAxis};
-pub(crate) use basis_observation::{
+pub(crate) use basis_issuance::{
     descriptor_for_cell, issue_admitted_relational_branch_basis_with_retention,
 };
 pub(crate) use basis_registry::{

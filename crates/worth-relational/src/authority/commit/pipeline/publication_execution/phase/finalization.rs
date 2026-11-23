@@ -1,7 +1,8 @@
 pub(super) struct FinalizationInput<'a> {
     pub(super) mirror_publication: crate::storage::PreparedMirrorPublication,
-    pub(super) prepared_history: crate::mvcc::PreparedRelationalPublicationAccelerators,
-    pub(super) changed_records: &'a [crate::transactions::data::RecordRef],
+    pub(super) prepared_history:
+        crate::mvcc::publication::authority::PreparedRelationalPublicationAccelerators,
+    pub(super) changed_records: &'a [crate::transactions::data::primitives::RecordRef],
     pub(super) version_id: crate::identity::data::VersionId,
     pub(super) previous_branch_head_version: Option<crate::identity::data::VersionId>,
     pub(super) commit_id: crate::history::data::CommitId,
@@ -116,7 +117,7 @@ fn advance_visibility(
 
 fn reconcile_published_retention(
     runtime: &crate::runtime::RelationalRuntime,
-    changed_records: &[crate::transactions::data::RecordRef],
+    changed_records: &[crate::transactions::data::primitives::RecordRef],
     version_id: crate::identity::data::VersionId,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) {

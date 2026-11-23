@@ -1,7 +1,7 @@
 //! Move the original history proof into candidate registration after early frames expire.
 use super::authority_context::AuthoritativeCommitContext;
 use super::history_preparation::prepare_bound_history;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 mod registration;
 mod stages;
 use super::phase_backing::CommitPhaseBacking;
@@ -12,19 +12,22 @@ struct HistoryPreparedCandidate<'scope, 'authority> {
     history_bound: CommitPhaseBacking<super::history_binding::HistoryBoundCommitExecution>,
     runtime_instance_id: u64,
     publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
-    transaction_id: crate::transactions::data::TransactionId,
+    transaction_id: crate::transactions::data::primitives::TransactionId,
     branch_id: crate::history::data::BranchId,
     control: crate::mvcc::RelationalOperationControl,
     retention_binding: crate::history::retention::RelationalBranchRetentionBinding,
-    decision_basis: crate::branch::AdmittedRelationalBranchBasis,
-    coupled_proposal: Option<crate::mvcc::RelationalMutationProposalIdentity>,
-    expected_basis: crate::branch::RelationalBranchBasisDescriptor,
-    expected_root: std::sync::Arc<crate::branch::RelationalBranchRoot>,
+    decision_basis: crate::branch::basis::AdmittedRelationalBranchBasis,
+    coupled_proposal:
+        Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
+    expected_basis: crate::branch::basis::RelationalBranchBasisDescriptor,
+    expected_root: std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
     publication_cell: crate::branch::RelationalBranchPublicationCell,
-    required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
+    required_output_publication: Option<
+        crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
+    >,
     required_output_materialization:
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
-    caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
+    caller_association: Option<crate::history::data::RelationalCallerAssociation>,
     diagnostic_capture: crate::runtime::RelationalDiagnosticOperationCapture,
 }
 
@@ -32,13 +35,13 @@ pub(crate) fn prepare_consulted_authoritative_commit(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     context: AuthoritativeCommitContext,
-) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+) -> Result<crate::mvcc::publication::PreparedRelationalCommitCandidate, TransactionCommitError> {
     if matches!(&context.authority_input,
         super::authority_context::CommitAuthorityInput::Mutation(plan) if plan.retained().is_some())
         && runtime.durability_admission.has_attached_medium()
     {
         return Err(TransactionCommitError::publication_denied(
-            crate::mvcc::RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported,
+            crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::RetainedEntitySelectionDurabilityUnsupported,
         ));
     }
     runtime
@@ -55,7 +58,7 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         )
         .map_err(|cause| {
             TransactionCommitError::publication_denied(
-                crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(cause),
+                crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::HomeProgramTransition(cause),
             )
         })?;
     if let Some(step) = context.validation_input.home_step()
@@ -65,7 +68,7 @@ pub(crate) fn prepare_consulted_authoritative_commit(
             .is_some_and(|association| step.admits_association(association.as_bytes()))
     {
         return Err(TransactionCommitError::publication_denied(
-            crate::mvcc::RelationalPublicationDenial::HomeProgramTransition(
+            crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::HomeProgramTransition(
                 crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial::TransitionRequired,
             ),
         ));
@@ -99,7 +102,7 @@ fn prepare_history<'scope, 'authority>(
     let scope_control = crate::validation::engine::InvariantPreparationControl::for_transaction(
         &context.validation_input,
         allocation_policy,
-        crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation,
+        crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::CandidatePreparation,
     );
     scope_control.check()?;
     let runtime_instance_id = runtime.runtime_instance_id();
@@ -118,7 +121,7 @@ fn prepare_history<'scope, 'authority>(
     let expected_basis = decision_basis.descriptor().clone();
     let expected_root = std::sync::Arc::clone(&context.validation_input.basis().inner.root);
     if let Some(interruption) =
-        control.observe(crate::mvcc::RelationalInterruptionBoundary::CandidatePreparation)
+        control.observe(crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::CandidatePreparation)
     {
         retention_binding.record_interruption(interruption);
         return Err(TransactionCommitError::interrupted(interruption));
@@ -166,7 +169,7 @@ fn prepare_history<'scope, 'authority>(
 
 fn require_parent_publication_settled(
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    expected_root: &std::sync::Arc<crate::branch::RelationalBranchRoot>,
+    expected_root: &std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
 ) -> Result<(), TransactionCommitError> {
     let Some(parent) = expected_root.commit_receipt() else {
         return Ok(());

@@ -1,8 +1,8 @@
 //! A real Query publication, recaptured as damaged external current content.
-use crate::{
-    branch::AdmittedRelationalBranchBasis, identity::data::EntityId, runtime::RelationalRuntime,
-    transactions::data::*,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::identity::data::EntityId;
+use crate::runtime::RelationalRuntime;
+use crate::transactions::data::*;
 use worth_execution::ExecutionRequest;
 impl RelationalRuntime {
     #[doc(hidden)]
@@ -13,8 +13,11 @@ impl RelationalRuntime {
         owner: EntityId,
         unrelated: EntityId,
     ) -> Result<Vec<Result<(), TransactionCommitError>>, TransactionCommitError> {
-        let fail =
-            |detail| crate::mvcc::origin_denial(format!("actual cold ownership court: {detail:?}"));
+        let fail = |detail| {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(format!(
+                "actual cold ownership court: {detail:?}"
+            ))
+        };
         let current = super::select_current(execution, basis, &[RecordRef::Entity(owner)])?;
         let publication = current
             .origins()

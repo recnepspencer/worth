@@ -70,9 +70,9 @@ pub(super) fn entity_kind(
 }
 
 fn missing_restoration(record: RecordRef) -> TransactionCommitError {
-    use crate::transactions::data::{
-        CommitConflict, ConflictClass, MutationStateInconsistencyEvidence,
-    };
+    use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+    use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+    use crate::transactions::data::outcomes::conflict_class::MutationStateInconsistencyEvidence;
     let mut conflict = CommitConflict::new(ConflictClass::MutationStateInconsistency {
         detail: "unavailable custody selector requires its restored candidate metadata".into(),
         evidence: MutationStateInconsistencyEvidence::MaterializationTransition {

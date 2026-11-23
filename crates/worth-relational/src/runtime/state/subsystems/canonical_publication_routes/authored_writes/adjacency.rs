@@ -1,12 +1,15 @@
 //! Authored endpoint intent gates canonical full-generation membership effects.
 use super::{AuthoredWriteGeneration, Denial};
+use crate::history::access::relevant_writes::posting_key::AuthoredWritePostingKey;
+use crate::history::access::relevant_writes::RelationalAuthoredWriteSelector as Key;
 use crate::history::data::{
     CanonicalCommitEnvelope, RelationalDescriptiveTouch as Touch,
     RelationalTouchAdjacencyDirection as Direction,
 };
-use crate::history::{AuthoredWritePostingKey, RelationalAuthoredWriteSelector as Key};
 use crate::identity::data::RelationId;
-use crate::transactions::data::{MutationIntent, RecordRef, RelationMutationIntent};
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest, MapKernelContext};
 
 pub(super) fn append(
@@ -30,7 +33,7 @@ pub(super) fn append(
     };
     let mut affected = authored_relations(execution, context, envelope, touches)?;
     for touch in touches {
-        crate::history::visit_authored_write(context)?;
+        crate::history::access::relevant_writes::visit(context)?;
         let Touch::RelationMembership {
             relation,
             kind,
@@ -40,7 +43,7 @@ pub(super) fn append(
         else {
             continue;
         };
-        crate::history::visit_authored_write_lookup(context, affected.len())?;
+        crate::history::access::relevant_writes::ordered_visit(context, affected.len())?;
         if affected.get(relation).is_none() {
             continue;
         }
@@ -80,7 +83,7 @@ pub(super) fn append(
         }
     }
     for (relation, covered) in affected.iter() {
-        crate::history::visit_authored_write(context)?;
+        crate::history::access::relevant_writes::visit(context)?;
         if !covered {
             // Dense patch detail cannot supply missing full generations.
             // Preserve the actual offending relation and any known kind,
@@ -117,7 +120,7 @@ fn authored_relations(
         }
     }
     for intent in &envelope.merged_plan.merged_intents {
-        crate::history::visit_authored_write(context)?;
+        crate::history::access::relevant_writes::visit(context)?;
         let relation = match intent {
             MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(value)) => {
                 value.relation_id
@@ -134,7 +137,7 @@ fn authored_relations(
         mark(&mut affected, execution, context, relation, false)?;
     }
     for touch in touches {
-        crate::history::visit_authored_write(context)?;
+        crate::history::access::relevant_writes::visit(context)?;
         if let Touch::RelationLifecycle { relation, .. } = touch {
             // Includes cascade retirement, not merely explicit relation intents.
             mark(&mut affected, execution, context, *relation, false)?;
@@ -150,7 +153,7 @@ fn uncovered_kind(
     relation: RelationId,
 ) -> Result<Option<crate::identity::data::KindId>, Denial> {
     for touch in touches {
-        crate::history::visit_authored_write(context)?;
+        crate::history::access::relevant_writes::visit(context)?;
         if let Touch::RelationLifecycle {
             relation: actual,
             kind,
@@ -161,7 +164,7 @@ fn uncovered_kind(
         }
     }
     for patch in &envelope.patch.authoritative_record_patches {
-        crate::history::visit_authored_write(context)?;
+        crate::history::access::relevant_writes::visit(context)?;
         if patch.target == RecordRef::Relation(relation)
             && let Some(birth) = patch.relation_birth
         {
@@ -169,7 +172,7 @@ fn uncovered_kind(
         }
     }
     for intent in &envelope.merged_plan.merged_intents {
-        crate::history::visit_authored_write(context)?;
+        crate::history::access::relevant_writes::visit(context)?;
         if let MutationIntent::Relation(RelationMutationIntent::UpdateEndpoints(value)) = intent
             && value.relation_id == relation
         {
@@ -186,7 +189,7 @@ fn mark(
     relation: RelationId,
     covered: bool,
 ) -> Result<(), Denial> {
-    crate::history::visit_authored_write_lookup(context, affected.len())?;
+    crate::history::access::relevant_writes::ordered_visit(context, affected.len())?;
     affected.insert_cloned_native_for_request(&relation, &covered, execution)?;
     Ok(())
 }
@@ -197,7 +200,10 @@ fn incomplete(
     context: &mut MapKernelContext<'_, '_>,
     gap: super::AdjacencyHistoryGap,
 ) -> Result<(), Denial> {
-    crate::history::visit_authored_write_lookup(context, generation.incomplete_adjacency.len())?;
+    crate::history::access::relevant_writes::ordered_visit(
+        context,
+        generation.incomplete_adjacency.len(),
+    )?;
     generation
         .incomplete_adjacency
         .insert_cloned_native_for_request(&generation.ordinal, &gap, execution)?;

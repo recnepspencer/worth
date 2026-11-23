@@ -15,19 +15,19 @@ use preparation::{
 
 pub(crate) struct PublishedCommitExecution {
     admitted: CommitPhaseBacking<super::execution_admission::AdmittedCommitState>,
-    public_structural_summary: crate::transactions::data::CommitStructuralSummary,
+    public_structural_summary: crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
-    version_id: crate::identity::data::VersionId,
-    created_entities: crate::transactions::data::CommitCreatedEntityBindings,
-    created_relations: crate::transactions::data::CommitCreatedRelationBindings,
-    history: crate::authority::commit::phases::history::ResolvedCommitHistory,
+    created_entities: crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    created_relations: crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
+    // Keep the admitted branch basis and work output alive through settlement diagnostics.
+    _history: crate::authority::commit::phases::history::ResolvedCommitHistory,
+    _changed_records: Vec<crate::transactions::data::primitives::RecordRef>,
     canonical_commit_envelope: std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>,
     patch_position: crate::publication::patch::data::PatchStreamPosition,
-    changed_records: Vec<crate::transactions::data::RecordRef>,
     publication_snapshot: crate::snapshots::data::SnapshotHandle,
-    source_effects: Option<crate::mvcc::RelationalCoupledAuthoredSourceEffects>,
-    aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
-    aspect_emission_traces: Vec<crate::transactions::data::AspectEmissionTrace>,
+    source_effects: Option<crate::mvcc::publication::application_publication::RelationalCoupledAuthoredSourceEffects>,
+    aspect_evaluation_traces: Vec<crate::transactions::data::aspect_traces::AspectEvaluationTrace>,
+    aspect_emission_traces: Vec<crate::transactions::data::aspect_traces::AspectEmissionTrace>,
 }
 
 mod published;
@@ -37,14 +37,16 @@ pub(super) fn prepare_commit_publication_execution(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &crate::runtime::RelationalPreparationRuntime,
     assembled: CommitPhaseBacking<AssembledCommitExecution>,
-    required_output_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
+    required_output_publication: Option<
+        crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
+    >,
     required_output_materialization: Option<
         std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>,
     >,
-    caller_association: Option<crate::mvcc::RelationalCallerAssociation>,
+    caller_association: Option<crate::history::data::RelationalCallerAssociation>,
 ) -> Result<
     CommitPhaseBacking<PreparedCommitPublicationExecution>,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     // Producer temporaries retire before funding the retained successor,
     // matching the former caller-side allocation boundary.
@@ -52,7 +54,7 @@ pub(super) fn prepare_commit_publication_execution(
         required_output_publication
             .as_ref()
             .and_then(|admission| match &admission.publication {
-                crate::mvcc::RequiredOutputPublication::CoupledAuthored { group } => {
+                crate::mvcc::publication::application_publication::RequiredOutputPublication::CoupledAuthored { group } => {
                     Some(group.source_effects.clone())
                 }
                 _ => None,
@@ -142,7 +144,6 @@ pub(super) fn prepare_commit_publication_execution(
             admitted: CommitPhaseBacking::new(execution, admitted)?,
             public_structural_summary,
             invariant_executions,
-            version_id,
             created_entities,
             created_relations,
             history,
@@ -162,14 +163,13 @@ pub(crate) fn publish_commit_execution(
     prepared: PreparedCommitPublicationCompletion,
     published_snapshot_basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
     positioned: std::sync::Arc<crate::history::data::PositionedCanonicalCommit>,
-    envelope_cell: std::sync::Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    envelope_cell: std::sync::Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
 ) -> PublishedCommitExecution {
     let PreparedCommitPublicationCompletion {
         source_interpretation,
         mut admitted,
         public_structural_summary,
         invariant_executions,
-        version_id,
         created_entities,
         created_relations,
         history,
@@ -201,7 +201,7 @@ pub(crate) fn publish_commit_execution(
     }
     let patch_position = positioned_commit.position();
     let canonical_commit_envelope = std::sync::Arc::clone(positioned_commit.canonical_arc());
-    let aspect_emission_traces: Vec<crate::transactions::data::AspectEmissionTrace> =
+    let aspect_emission_traces: Vec<crate::transactions::data::aspect_traces::AspectEmissionTrace> =
         aspect_emission_traces
             .into_iter()
             .map(|trace| trace.publish(patch_position))
@@ -218,13 +218,12 @@ pub(crate) fn publish_commit_execution(
         admitted,
         public_structural_summary,
         invariant_executions,
-        version_id,
         created_entities,
         created_relations,
-        history,
+        _history: history,
+        _changed_records: changed_records,
         canonical_commit_envelope,
         patch_position,
-        changed_records,
         publication_snapshot,
         source_effects,
         aspect_evaluation_traces,
@@ -234,8 +233,8 @@ pub(crate) fn publish_commit_execution(
 
 fn publish_prepared_trace_diagnostics(
     runtime: &crate::runtime::RelationalRuntime,
-    evaluation_traces: &[crate::transactions::data::AspectEvaluationTrace],
-    emission_traces: &[crate::transactions::data::AspectEmissionTrace],
+    evaluation_traces: &[crate::transactions::data::aspect_traces::AspectEvaluationTrace],
+    emission_traces: &[crate::transactions::data::aspect_traces::AspectEmissionTrace],
 ) {
     if !runtime.config.diagnostics.profile.detailed_traces_enabled {
         return;
@@ -252,16 +251,15 @@ pub(crate) struct PreparedCommitPublicationExecution {
     source_interpretation:
         std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
     admitted: CommitPhaseBacking<super::execution_admission::AdmittedCommitState>,
-    public_structural_summary: crate::transactions::data::CommitStructuralSummary,
+    public_structural_summary: crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
-    version_id: crate::identity::data::VersionId,
-    created_entities: crate::transactions::data::CommitCreatedEntityBindings,
-    created_relations: crate::transactions::data::CommitCreatedRelationBindings,
+    created_entities: crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    created_relations: crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
     publication: CommitPhaseBacking<PreparedPublicationPhase>,
     publication_snapshot: crate::snapshots::data::SnapshotHandle,
-    source_effects: Option<crate::mvcc::RelationalCoupledAuthoredSourceEffects>,
-    aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
+    source_effects: Option<crate::mvcc::publication::application_publication::RelationalCoupledAuthoredSourceEffects>,
+    aspect_evaluation_traces: Vec<crate::transactions::data::aspect_traces::AspectEvaluationTrace>,
     aspect_emission_traces:
         Vec<super::artifact_execution::preparation::PreparedAspectEmissionTrace>,
     prepared_indexes: Option<crate::indexes::authority::PreparedCandidateIndexPublication>,
@@ -271,16 +269,15 @@ pub(crate) struct PreparedCommitPublicationCompletion {
     pub(crate) source_interpretation:
         std::sync::Arc<crate::validation::candidate_source::NativeManagedSourceInterpretation>,
     admitted: CommitPhaseBacking<super::execution_admission::AdmittedCommitState>,
-    public_structural_summary: crate::transactions::data::CommitStructuralSummary,
+    public_structural_summary: crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
     invariant_executions: Vec<crate::validation::engine::InvariantExecutionResult>,
-    version_id: crate::identity::data::VersionId,
-    created_entities: crate::transactions::data::CommitCreatedEntityBindings,
-    created_relations: crate::transactions::data::CommitCreatedRelationBindings,
+    created_entities: crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    created_relations: crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     history: crate::authority::commit::phases::history::ResolvedCommitHistory,
     publication: PreparedPublicationCompletion,
     publication_snapshot: crate::snapshots::data::SnapshotHandle,
-    source_effects: Option<crate::mvcc::RelationalCoupledAuthoredSourceEffects>,
-    aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
+    source_effects: Option<crate::mvcc::publication::application_publication::RelationalCoupledAuthoredSourceEffects>,
+    aspect_evaluation_traces: Vec<crate::transactions::data::aspect_traces::AspectEvaluationTrace>,
     aspect_emission_traces:
         Vec<super::artifact_execution::preparation::PreparedAspectEmissionTrace>,
     published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
@@ -303,7 +300,7 @@ impl PreparedCommitPublicationCompletion {
     pub(crate) fn admit_prepared_indexes(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::mvcc::RelationalPublicationOutcome> {
+    ) -> Result<(), crate::mvcc::publication::outcome::RelationalPublicationOutcome> {
         if let Some(indexes) = &mut self.prepared_indexes {
             indexes.admit_catalog(execution).map_err(
                 crate::mvcc::publication::outcome::RelationalPublicationOutcome::RequestStopped,

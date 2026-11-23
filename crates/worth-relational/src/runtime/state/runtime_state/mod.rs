@@ -30,7 +30,7 @@ pub use publication_close_custody::{
     RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
     RelationalPublicationRegistryCustody,
 };
-mod publication_settlement_registry;
+pub(crate) mod publication_settlement_registry;
 mod tenure;
 #[cfg(test)]
 mod test_support;

@@ -3,11 +3,13 @@ pub(crate) use publication::CoupledSource;
 pub(crate) mod observation;
 pub use crate::history::data::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) mod publication;
+pub use publication::port::{
+    PreparedMemoryRelationalCutover, RelationalPublicationPort, ScopedRelationalPublication,
+};
 pub use publication::RelationalPublicationReadDependencyDenial;
 pub use publication::{
-    PreparedMemoryRelationalCutover, RecordedRequiredOutputRole,
-    RelationalPublicationAdoptionRequest, RelationalPublicationAppendix,
-    RelationalPublicationBodySelection, ScopedRelationalPublication,
+    RecordedRequiredOutputRole, RelationalPublicationAdoptionRequest,
+    RelationalPublicationAppendix, RelationalPublicationBodySelection,
 };
 pub(crate) mod owned_graph_selection;
 pub(crate) mod retained_entity_selection;
@@ -49,7 +51,7 @@ pub use publication::{
     PublishRelationalCommit, RelationalCurrentOutputAdoption, RelationalPublicationCompanion,
     RelationalPublicationDeferred, RelationalPublicationDenial,
     RelationalPublicationDurabilityPosture, RelationalPublicationFailure,
-    RelationalPublicationFailureKind, RelationalPublicationOutcome, RelationalPublicationPort,
+    RelationalPublicationFailureKind, RelationalPublicationOutcome,
     RelationalPublicationProjectionPosture, ReservedCompanionBranchCell,
     RetiredPublicationCompanionRegistration, StaleRelationalBranchObservation,
 };

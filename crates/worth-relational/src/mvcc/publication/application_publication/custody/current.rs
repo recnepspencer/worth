@@ -1,13 +1,15 @@
 //! Current custody is readmitted from Native's durable roster, without history.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::execution::request_stage::checkpoint;
+use crate::history::data::CanonicalRequiredOutputOrigin;
+use crate::identity::data::KindId;
 use crate::publication::data::{AuthoredRetirementRefusal as Cause, PublicationError};
+use crate::publication::ownership::CurrentPublicationRoster;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{EntityReference, RecordRef, TransactionCommitError};
-use crate::{
-    branch::AdmittedRelationalBranchBasis, history::data::CanonicalRequiredOutputOrigin,
-    identity::data::KindId, publication::ownership::CurrentPublicationRoster,
-};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
 mod comparison;
 
@@ -15,7 +17,7 @@ mod comparison;
 pub(super) fn readmit(
     execution: &ExecutionRequest<'_, '_>,
     installed: &super::super::RelationalInstalledApplicationPublicationAuthority,
-    basis: &crate::branch::AdmittedRelationalBranchBasis,
+    basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     producer: &str,
     dependency: &[u8; 32],
     meaning: &super::super::RequiredOutputPublicationMeaning,

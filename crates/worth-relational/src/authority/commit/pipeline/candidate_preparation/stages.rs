@@ -3,7 +3,7 @@ use super::super::{artifact_execution, publication_execution, snapshot_validatio
 use super::registration::CandidateRegistration;
 use super::{CommitPhaseBacking, HistoryPreparedCandidate};
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::ExecutionRequest;
 
 struct CandidateContext {
@@ -12,10 +12,12 @@ struct CandidateContext {
     diagnostic: crate::runtime::RelationalDiagnosticOperationCapture,
 }
 struct PublicationInputs {
-    publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
+    publication: Option<
+        crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
+    >,
     materialization:
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
-    caller: Option<crate::mvcc::RelationalCallerAssociation>,
+    caller: Option<crate::history::data::RelationalCallerAssociation>,
 }
 pub(super) struct ValidatedCandidate {
     context: CandidateContext,
@@ -162,7 +164,7 @@ pub(super) fn publish(
 pub(super) fn register(
     request: &ExecutionRequest<'_, '_>,
     source: CommitPhaseBacking<PublishedCandidate>,
-) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+) -> Result<crate::mvcc::publication::PreparedRelationalCommitCandidate, TransactionCommitError> {
     let PublishedCandidate {
         runtime,
         registration,

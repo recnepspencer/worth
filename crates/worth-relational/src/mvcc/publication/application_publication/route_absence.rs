@@ -1,7 +1,7 @@
 //! Exact native negative observation for an otherwise unindexed recovered route.
 use super::*;
 use crate::authority::commit::pipeline::{consult_stage, CommitStage};
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, ExecutionWorkCeiling};
 
 #[derive(Debug)]

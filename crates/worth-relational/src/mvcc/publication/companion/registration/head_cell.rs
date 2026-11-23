@@ -4,7 +4,7 @@ use super::{
     CompanionRegistrationState, PendingCompanionRegistration, PublicationCompanionRegistration,
     PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop as Stop,
 };
-use crate::branch::RelationalBranchIdentity;
+use crate::branch::identity::RelationalBranchIdentity;
 use crate::runtime::{PositionedRelationalSnapshot, RelationalRuntime};
 use std::sync::Arc;
 

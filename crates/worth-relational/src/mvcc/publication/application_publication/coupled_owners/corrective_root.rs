@@ -1,7 +1,7 @@
 //! An authenticated correction's root mapping does not depend on a cascade event.
 use super::*;
 use crate::storage::overlay::{CurrentPartitionAccess, PartitionAccess};
-use crate::transactions::data::CreatedEntityRef;
+use crate::transactions::data::primitives::CreatedEntityRef;
 
 impl RelationalRuntime {
     /// Retain correspondence for the actual corrective prefix. The caller has
@@ -22,7 +22,8 @@ impl RelationalRuntime {
         let refuse = || origin_denial("corrective root correspondence differs from its original");
         let allocation_stop = |cause: worth_execution::ExecutionAllocationDenial| {
             crate::execution::denial::allocation_commit_error(TransactionCommitError::conflict(
-                crate::mvcc::RelationalTransactionStagingDenial::from(cause).into_conflict(),
+                crate::mvcc::transaction::staging::RelationalTransactionStagingDenial::from(cause)
+                    .into_conflict(),
             ))
         };
         if installed.runtime_instance_id != self.runtime_instance_id()

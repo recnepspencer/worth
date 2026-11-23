@@ -5,6 +5,8 @@ pub(crate) use state::{
     OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub mod builder;
+mod candidate_consumption;
+mod candidate_preparation;
 mod construction;
 mod construction_denial;
 pub use construction_denial::RelationalRuntimeConstructionDenial;
@@ -28,7 +30,10 @@ pub(crate) mod commit_strategy_validation;
 mod interruption_counters;
 mod lineage_commit;
 pub(crate) mod operation_control;
+mod predecessor_publication;
 pub(crate) mod prepared_merge_execution;
+mod publication_authority;
+mod publication_body;
 mod published_lineage;
 mod schema_transition_admission;
 pub(crate) mod state;

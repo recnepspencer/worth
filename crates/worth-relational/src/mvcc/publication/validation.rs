@@ -1,6 +1,6 @@
-use crate::branch::{
-    AdmittedRelationalBranchBasis, RelationalBranchReferenceCell, RelationalBranchTarget,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::target::RelationalBranchTarget;
 use crate::history::data::BranchId;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, RelationalCommitReceipt};
 use crate::runtime::RelationalRuntime;

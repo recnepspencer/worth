@@ -1,5 +1,5 @@
 use crate::runtime::RelationalRuntime;
-use crate::transactions::data::TransactionCommitError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 impl RelationalRuntime {
     /// Convert one owner-validated proposal into the opaque, single-use
@@ -8,7 +8,10 @@ impl RelationalRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         proposal: crate::mvcc::ValidatedRelationalProposal,
-    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    ) -> Result<
+        crate::mvcc::publication::candidate::PreparedRelationalCommitCandidate,
+        TransactionCommitError,
+    > {
         worth_execution::run_with_execution_stack(move || {
             self.prepare_validated_proposal_on_execution_stack(execution, proposal)
         })
@@ -19,7 +22,10 @@ impl RelationalRuntime {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         proposal: crate::mvcc::ValidatedRelationalProposal,
-    ) -> Result<crate::mvcc::PreparedRelationalCommitCandidate, TransactionCommitError> {
+    ) -> Result<
+        crate::mvcc::publication::candidate::PreparedRelationalCommitCandidate,
+        TransactionCommitError,
+    > {
         crate::authority::commit::pipeline::consult_stage(
             execution,
             crate::authority::commit::pipeline::CommitStage::Admission,

@@ -10,7 +10,7 @@ impl BranchTransitionStream {
     pub(super) fn prepare_append(
         &self,
         request: &ExecutionRequest<'_, '_>,
-        positioned: &crate::branch::PositionedBranchTransition,
+        positioned: &crate::branch::transition::PositionedBranchTransition,
     ) -> Result<Option<usize>, OriginalBranchSchemaInputsDenial> {
         let mut state = self.state();
         request

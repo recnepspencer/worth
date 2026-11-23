@@ -6,8 +6,9 @@ use crate::authority::commit::touched_scope::{
 use crate::identity::data::PartitionId;
 use crate::mvcc::bulk_reservations_for_plan;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{CommitTopology, MergedCommitPlan};
-use crate::validation::data::InvariantPlanContract;
+use crate::transactions::data::mutation_planning::CommitTopology;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::validation::data::contracts::InvariantPlanContract;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct CommitStructuralSummary {
@@ -53,8 +54,8 @@ impl CommitStructuralSummary {
     pub(crate) fn public_summary(
         &self,
         descriptor_semantics_version: crate::schema::data::DescriptorSemanticsVersion,
-    ) -> crate::transactions::data::CommitStructuralSummary {
-        crate::transactions::data::CommitStructuralSummary {
+    ) -> crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary {
+        crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary {
             invariant_groups: self.invariant_contract.may_invalidate_groups(),
             commit_topology: self.commit_topology,
             touched_partitions: self.touched_partitions.iter().copied().collect(),

@@ -1,10 +1,11 @@
 //! Admit the declared input footprint before a draft can issue identities.
 use std::collections::BTreeSet;
 
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::identity::data::PartitionId;
-use crate::runtime::RuntimeSymbolTable;
-use crate::transactions::data::{MutationIntent, TransactionCommitError};
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 /// An input partition is known independently of provisional mutation results.
 /// Demand it before identity issuance; genuinely discovered reads still use

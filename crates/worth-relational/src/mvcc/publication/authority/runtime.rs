@@ -15,7 +15,10 @@ pub(super) trait PublicationPreparationRuntime {
         envelope: &Arc<CanonicalCommitEnvelope>,
         content: &crate::content::publication::ContentPublication,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
-    ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>;
+    ) -> Result<
+        crate::branch::root::PreparedRelationalBranchRootCapture,
+        PublicationPreparationDenial,
+    >;
 
     fn publication_runtime_instance_id(&self) -> u64;
     fn publication_mutation_config(&self) -> crate::config::data::MutationConfig;
@@ -37,8 +40,10 @@ impl PublicationPreparationRuntime for RelationalRuntime {
         envelope: &Arc<CanonicalCommitEnvelope>,
         content: &crate::content::publication::ContentPublication,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
-    ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>
-    {
+    ) -> Result<
+        crate::branch::root::PreparedRelationalBranchRootCapture,
+        PublicationPreparationDenial,
+    > {
         let previous_root = selected_branch_state.root().cloned();
         self.history
             .prepare_branch_root_capture(
@@ -84,8 +89,10 @@ impl PublicationPreparationRuntime for crate::runtime::RelationalPreparationRunt
         envelope: &Arc<CanonicalCommitEnvelope>,
         content: &crate::content::publication::ContentPublication,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
-    ) -> Result<crate::branch::PreparedRelationalBranchRootCapture, PublicationPreparationDenial>
-    {
+    ) -> Result<
+        crate::branch::root::PreparedRelationalBranchRootCapture,
+        PublicationPreparationDenial,
+    > {
         let previous_root = selected_branch_state.root().cloned();
         self.history
             .prepare_branch_root_capture(

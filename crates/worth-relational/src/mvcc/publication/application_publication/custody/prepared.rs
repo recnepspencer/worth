@@ -1,7 +1,8 @@
 //! Fund canonical origin traversal and Native custody before the World transition.
 use super::*;
-use crate::mvcc::RelationalInstalledApplicationPublicationAuthority;
-use crate::transactions::data::{CommitResult, TransactionCommitError};
+use crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority;
+use crate::transactions::data::outcomes::commit_result::CommitResult;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionArray, ExecutionRequest, ExecutionRequestArrayBuilder};
 struct PreparedOrigin {
     ordinal: usize,
@@ -94,11 +95,11 @@ impl RelationalPreparedOutputPublications {
             Item = (
                 &str,
                 &str,
-                crate::mvcc::RequiredOutputRolePosture,
+                crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture,
                 crate::identity::data::EntityId,
             ),
         >,
-    > {
+    >{
         self.envelope.required_output_origin.as_ref().map(|origin| {
             origin
                 .members
@@ -111,17 +112,17 @@ impl RelationalPreparedOutputPublications {
     pub fn output_members_for(
         &self,
         producer: &str,
-        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
     ) -> Option<
         impl ExactSizeIterator<
             Item = (
                 &str,
                 &str,
-                crate::mvcc::RequiredOutputRolePosture,
+                crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture,
                 crate::identity::data::EntityId,
             ),
         >,
-    > {
+    >{
         self.selected
             .elements()
             .iter()
@@ -187,8 +188,8 @@ fn array_stop(cause: worth_execution::ExecutionRequestArrayDenial) -> Transactio
     match cause {
         worth_execution::ExecutionRequestArrayDenial::Request(cause) => execution_stop(cause),
         worth_execution::ExecutionRequestArrayDenial::Allocation(denial) => {
-            TransactionCommitError::conflict(crate::transactions::data::CommitConflict::new(
-                crate::transactions::data::ConflictClass::ExecutionAllocationDenied { denial },
+            TransactionCommitError::conflict(crate::transactions::data::outcomes::commit_conflict::CommitConflict::new(
+                crate::transactions::data::outcomes::conflict_class::ConflictClass::ExecutionAllocationDenied { denial },
             ))
         }
     }

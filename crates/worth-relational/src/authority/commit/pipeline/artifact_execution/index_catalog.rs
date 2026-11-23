@@ -1,7 +1,8 @@
 //! Freeze one actual catalog for both durable declarations and authored writes.
 use crate::history::data::CanonicalIndexDefinitionDelta;
-use crate::runtime::{CapturedIndexDefinitionCatalog, RelationalPreparationRuntime};
-use crate::transactions::data::TransactionCommitError;
+use crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog;
+use crate::runtime::RelationalPreparationRuntime;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use worth_execution::{ExecutionRequest, MapKernelStop, WorkCeilingDenial};
 
 pub(super) fn prepare(

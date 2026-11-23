@@ -16,8 +16,6 @@ mod candidate;
 mod commit_tests;
 mod derived_source;
 mod frontier_reads;
-#[cfg(test)]
-mod historical_relations_tests;
 mod index_lookups;
 mod pinning;
 use crate::indexes::data::applied_candidate_qualification::CandidateReadPhase;
@@ -67,7 +65,8 @@ mod tests;
 pub struct RelationalPinnedRead<Snapshot = SnapshotHandle> {
     pub(super) applied_changes: Option<Arc<candidate::AppliedReadChanges>>,
     pub(super) current_version: crate::identity::data::VersionId,
-    pub(super) instrumentation: crate::runtime::RuntimeInstrumentation,
+    pub(super) instrumentation:
+        crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     pub(super) snapshot: Snapshot,
     pub(super) basis: ResidentVisibilitySnapshotBasis,
     pub(super) context: QueryPlanContextId,
@@ -189,16 +188,13 @@ impl<Snapshot> RelationalPinnedRead<Snapshot> {
     pub(crate) fn pinned_current_version(&self) -> crate::identity::data::VersionId {
         self.current_version
     }
-    pub(crate) fn pinned_instrumentation(&self) -> &crate::runtime::RuntimeInstrumentation {
+    pub(crate) fn pinned_instrumentation(
+        &self,
+    ) -> &crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation {
         &self.instrumentation
     }
 }
 
-impl<Snapshot> RelationalPinnedRead<Snapshot> {
-    pub(crate) fn performance_access(&self) -> crate::performance::PerformanceAccess<'_> {
-        crate::performance::PerformanceAccess::from_instrumentation(&self.instrumentation)
-    }
-}
 impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPinnedRead<Snapshot> {
     // A pin retains the exact root and its dictionary. Each operation admits
     // only the regions it reaches before borrowing their materialized rows.
@@ -238,7 +234,7 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
     fn selected_storage(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess> {
         Some(&self.basis)
     }
-    fn selected_root(&self) -> Option<&Arc<crate::branch::RelationalBranchRoot>> {
+    fn selected_root(&self) -> Option<&Arc<crate::branch::root::RelationalBranchRoot>> {
         Some(self.basis.root())
     }
     fn is_exact_basis(&self) -> bool {

@@ -29,9 +29,10 @@ pub(super) fn append_aspect(
 }
 
 pub(super) struct FieldDifference<'a> {
-    pub(super) catalog: &'a crate::runtime::CapturedIndexDefinitionCatalog,
-    pub(super) selected: &'a crate::branch::SelectedRelationalBranchState,
-    pub(super) working: &'a crate::runtime::WorkingState,
+    pub(super) catalog:
+        &'a crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
+    pub(super) selected: &'a crate::branch::root_selection::SelectedRelationalBranchState,
+    pub(super) working: &'a crate::storage::overlay::WorkingState,
     pub(super) symbols: (Symbol, Symbol),
     pub(super) old_record: Option<&'a RecordRef>,
     pub(super) new_record: Option<&'a RecordRef>,

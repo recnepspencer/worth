@@ -1,12 +1,17 @@
 //! The single original semantic producer; no publication or measured work is recorded.
 use crate::history::data::CanonicalCommitEnvelopeBody;
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{
-    CommitCreatedEntityBindings, CommitCreatedRelationBindings, CommitLog, CommitSchemaSummary,
-    CommitStructuralSummary, RecordRef, RelationalCommitPublicationMeaning,
-    RelationalCommitSemanticResult, RelationalCommitSemanticResultRefusal as Refusal,
-    RelationalCommitStructuralMeaning, TransactionCommitError,
-};
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitPublicationMeaning;
+use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult;
+use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultRefusal as Refusal;
+use crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitStructuralMeaning;
+use crate::transactions::data::outcomes::commit_summaries::CommitSchemaSummary;
+use crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary;
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
+use crate::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use crate::validation::engine::InvariantExecutionResult;
 use std::sync::Arc;
 
@@ -24,8 +29,11 @@ pub(super) fn prepare_semantic_result(
     runtime: &RelationalPreparationRuntime,
     input: SemanticResultInput<'_>,
 ) -> Result<Arc<RelationalCommitSemanticResult>, TransactionCommitError> {
-    let denied =
-        |refusal| crate::mvcc::origin_denial(format!("original semantic result: {refusal:?}"));
+    let denied = |refusal| {
+        crate::transactions::data::outcomes::transaction_commit_error::origin_denial(format!(
+            "original semantic result: {refusal:?}"
+        ))
+    };
     let original = input.log.summary();
     let history = original
         .history_summary

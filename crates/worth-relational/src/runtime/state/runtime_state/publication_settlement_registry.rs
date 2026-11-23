@@ -190,7 +190,9 @@ impl RelationalPendingSettlementReservation {
         mut self,
         positioned: Arc<crate::history::data::PositionedCanonicalCommit>,
         settlement_retention: crate::history::retention::RelationalPerformedSettlementObligation,
-        late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
+        late_interruption: Option<
+            crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+        >,
     ) -> Arc<PendingRelationalPublicationSettlement> {
         assert!(
             /* Proof: The non-Clone RelationalPendingSettlementReservation owns the newly inserted Reserved record. Only its consuming authorize can transition Reserved to Performed; repair claim leaves Reserved unchanged, and Drop removes only an unconsumed reservation. */

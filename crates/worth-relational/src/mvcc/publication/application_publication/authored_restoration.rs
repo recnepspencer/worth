@@ -1,11 +1,10 @@
 //! Native-owned inverse preparation for one exact recorded cascade retirement.
 use super::*;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::CanonicalCommitEnvelope,
-    identity::data::{EntityId, RelationId},
-    transactions::data::*,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::CanonicalCommitEnvelope;
+use crate::identity::data::EntityId;
+use crate::identity::data::RelationId;
+use crate::transactions::data::*;
 use std::sync::Arc;
 
 #[derive(Clone)]

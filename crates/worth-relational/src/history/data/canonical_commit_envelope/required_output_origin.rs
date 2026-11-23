@@ -6,8 +6,10 @@ use crate::identity::data::{EntityId, KindId, VersionId};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use serde::{Deserialize, Serialize};
 mod authored_cascade;
+mod authored_cascade_install;
 mod coupled_authored;
 mod coupled_authored_header;
+mod coupled_authored_install;
 mod coupled_source;
 pub(crate) use coupled_authored::{
     CanonicalCoupledAuthoredPublication, CanonicalCoupledAuthoredSources,
@@ -17,7 +19,7 @@ mod historical_selection;
 mod history_request;
 pub(crate) use historical_selection::CanonicalHistoricalOutputSelection;
 mod inputs;
-mod installation;
+pub(crate) mod installation;
 pub(crate) use authored_cascade::CanonicalAuthoredRetirement;
 pub(crate) use authored_restoration::CanonicalAuthoredRestoration;
 pub(crate) use installation::CanonicalProducerRetirement;

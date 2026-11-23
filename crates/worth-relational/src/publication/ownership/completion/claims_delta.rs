@@ -1,7 +1,7 @@
 //! The desired origin is truth; only absent, new or changed claims write rows.
 use super::*;
 use crate::history::data::CanonicalRequiredOutputOrigin;
-use crate::mvcc::RequiredOutputRolePosture::Retire;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire;
 use crate::publication::ownership::{read::PublicationRow, record};
 use crate::schema::{current_publication_ownership::EDGE, data::CurrentPublicationStorage};
 

@@ -1,14 +1,15 @@
 //! Native custody for the surviving writers that consume an authored retirement.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::execution::request_stage::checkpoint;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::{CommitId, SelectedAuthoredRetirement},
-    identity::data::{EntityId, RelationId},
-    publication::data::{AuthoredRetirementRefusal as Cause, PublicationError},
-    runtime::RelationalRuntime,
-    transactions::data::RecordRef,
-};
+use crate::history::data::CommitId;
+use crate::history::data::SelectedAuthoredRetirement;
+use crate::identity::data::EntityId;
+use crate::identity::data::RelationId;
+use crate::publication::data::AuthoredRetirementRefusal as Cause;
+use crate::publication::data::PublicationError;
+use crate::runtime::RelationalRuntime;
+use crate::transactions::data::primitives::RecordRef;
 use std::{collections::BTreeSet, sync::Arc};
 use worth_execution::ExecutionRequest;
 mod corrective_root;
@@ -19,7 +20,12 @@ mod stages;
 // Request-local correspondence only. It never admits a retirement or publication.
 pub(crate) type AuthoredRootCorrespondence = (
     CommitId,
-    Arc<worth_execution::ExecutionArray<(EntityId, crate::transactions::data::CreatedEntityRef)>>,
+    Arc<
+        worth_execution::ExecutionArray<(
+            EntityId,
+            crate::transactions::data::primitives::CreatedEntityRef,
+        )>,
+    >,
 );
 
 /// Canonical predecessor facts, issued only after the shared closure selection.

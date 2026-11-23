@@ -6,14 +6,14 @@ pub(crate) use retained_entity_payload::PreparedRetainedEntityPayload;
 
 #[derive(Debug)]
 pub(crate) enum PreparedRelationalCommitPlan {
-    Mutation(crate::mvcc::OwnedNormalizedPlan),
+    Mutation(crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan),
     OwnedGraphSelection {
-        commands: crate::mvcc::OwnedNormalizedPlan,
-        retained: crate::mvcc::owned_graph_selection::PreparedOwnedGraphSelection,
+        commands: crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan,
+        retained: crate::mvcc::owned_graph_selection::prepared::PreparedOwnedGraphSelection,
     },
     RetainedEntitySelection {
         // Native consequences may add commands; none stand in for selection.
-        commands: crate::mvcc::OwnedNormalizedPlan,
+        commands: crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan,
         retained: PreparedRetainedEntityPayload,
     },
 }
@@ -45,7 +45,7 @@ impl PreparedRelationalCommitPlan {
     }
     pub(crate) fn owned_graph(
         &self,
-    ) -> Option<&crate::mvcc::owned_graph_selection::PreparedOwnedGraphSelection> {
+    ) -> Option<&crate::mvcc::owned_graph_selection::prepared::PreparedOwnedGraphSelection> {
         match self {
             Self::OwnedGraphSelection { retained, .. } => Some(retained),
             Self::Mutation(_) | Self::RetainedEntitySelection { .. } => None,

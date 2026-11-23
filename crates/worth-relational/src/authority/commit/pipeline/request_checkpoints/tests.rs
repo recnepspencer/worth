@@ -1,8 +1,8 @@
 use super::{observation, CommitStage};
 use crate::tests::support::runtime_with_test_schema;
-use crate::transactions::data::{
-    CommitExecutionDenialKind, TransactionCommitError, WorkerIntentBatch,
-};
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use std::sync::{
     atomic::{AtomicUsize, Ordering},
     Arc,

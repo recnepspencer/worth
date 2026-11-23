@@ -22,13 +22,11 @@ use crate::transactions::data::primitives::RecordRef;
 mod authored_index_writes;
 mod index_catalog;
 pub(crate) mod live_managed_source_history;
-pub(crate) mod live_publication_inputs;
 pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAuthoredIndexWrites};
 pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod descriptive_decode;
 mod original_inputs;
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
-pub(crate) use live_publication_inputs::{AppliedPublicationInputAccess, LivePublicationInputs};
 pub use original_inputs::{
     RelationalIntroducedSchemaObservation, RelationalOriginalInputObservation,
 };
@@ -53,7 +51,7 @@ mod descriptive_touches;
 mod payload_encoding;
 mod required_output_codec_retirement;
 mod required_output_materialization;
-mod required_output_origin;
+pub(crate) mod required_output_origin;
 pub use descriptive_touches::{
     RelationalDescriptiveTouch, RelationalDescriptiveTouchGraph,
     RelationalDescriptiveTouchPrecision, RelationalTouchAdjacencyDirection,

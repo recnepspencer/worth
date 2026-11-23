@@ -3,14 +3,14 @@ use crate::runtime::state::subsystems::history::history_canonical_routes::{
 };
 use std::sync::Arc;
 
-use crate::authority::commit::pipeline::{assemble_commit_result, publish_commit_execution};
+use crate::authority::commit::pipeline::publish_commit_execution;
 use crate::history::data::{CommitId, RelationalCommitReceipt};
 use crate::publication::data::PublicationSettlementRepairError;
 use crate::runtime::{
     PendingRelationalPublicationSettlement, PerformedRelationalSettlement, RelationalRuntime,
     RelationalSettlementClaim,
 };
-use crate::transactions::data::CommitResult;
+use crate::transactions::data::outcomes::commit_result::CommitResult;
 
 /// Terminal answer produced by the one executor of a pending settlement.
 pub(crate) enum RelationalSettlementCompletion {
@@ -124,13 +124,24 @@ impl RelationalRuntime {
         );
         published.append_diagnostics(diagnostic_capture.finish());
         let late_interruption = late_interruption.or_else(|| {
-            let event = control.observe(crate::runtime::RelationalInterruptionBoundary::Settlement);
+            let event = control.observe(crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::Settlement);
             if let Some(event) = event {
                 settlement_retention.record_interruption(event);
             }
             event
         });
-        let committed = assemble_commit_result(self, published, late_interruption);
+        let complexity_after = self.performance_access().complexity_counters_snapshot();
+        let snapshot_release = self
+            .visibility
+            .published_release_observation(published.snapshot_id())
+            .expect("the newly installed snapshot is private until the commit result is sealed");
+        let committed =
+            crate::transactions::data::outcomes::commit_result::assembly::assemble_commit_result(
+                published,
+                complexity_after,
+                late_interruption,
+                snapshot_release,
+            );
         mark_publication_settled(&self.history, commit_id);
         let receipt = positioned.envelope().commit.clone();
         // A receipt-only executor keeps the published snapshot open, because a

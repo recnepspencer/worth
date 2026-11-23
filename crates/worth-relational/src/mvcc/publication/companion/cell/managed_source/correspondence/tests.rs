@@ -1,9 +1,8 @@
 //! Receiver protocol only. The public court proves actual correspondence issuance.
 use super::*;
-use crate::mvcc::{
-    PreparedPublicationCompanionEffect, PublicationCompanionPreflight,
-    RelationalPublicationCompanion,
-};
+use crate::mvcc::publication::companion::preflight::PreparedPublicationCompanionEffect;
+use crate::mvcc::publication::companion::preflight::PublicationCompanionPreflight;
+use crate::mvcc::publication::companion::preflight::RelationalPublicationCompanion;
 use crate::tests::support::{create_entity, managed_cache_schema, snapshot_for_owner_identity};
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
@@ -12,7 +11,7 @@ struct Owner {
     scope: EntityId,
     payload: Arc<dyn Any + Send + Sync>,
     available: std::sync::atomic::AtomicBool,
-    slots: std::sync::Mutex<Vec<crate::mvcc::CompanionBranchCellSlot<ManagedIndexBranchImage>>>,
+    slots: std::sync::Mutex<Vec<crate::mvcc::publication::companion::cell::publication_admission::CompanionBranchCellSlot<ManagedIndexBranchImage>>>,
 }
 impl std::fmt::Debug for Owner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

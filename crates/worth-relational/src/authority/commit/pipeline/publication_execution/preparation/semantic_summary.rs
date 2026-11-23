@@ -1,15 +1,21 @@
 //! Original semantic summaries include the actual late Native ownership effects.
 use crate::history::data::CanonicalCommitEnvelopeDraft;
-use crate::transactions::data::{CommitChangeSummary, CommitLog, TransactionCommitError};
+use crate::transactions::data::commit_log::CommitChangeSummary;
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 pub(super) fn complete(
     log: &mut CommitLog,
     envelope: &CanonicalCommitEnvelopeDraft,
-    changed: &[crate::transactions::data::RecordRef],
+    changed: &[crate::transactions::data::primitives::RecordRef],
     additional_aspects: &[crate::authority::mutation::CanonicalRecordAspectDelta],
     additional_adjacency: usize,
 ) -> Result<(), TransactionCommitError> {
-    let denied = || crate::mvcc::origin_denial("original publication summaries are unavailable");
+    let denied = || {
+        crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+            "original publication summaries are unavailable",
+        )
+    };
     let original = log.summary();
     let change = original.change_summary.as_ref().ok_or_else(denied)?;
     let mut aspects = original.aspect_summary.clone().ok_or_else(denied)?;
@@ -18,8 +24,8 @@ pub(super) fn complete(
         .adjacency_delta_count
         .checked_add(additional_adjacency)
         .ok_or_else(|| {
-            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(
+            TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(
                     crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
                 ),
                 partition_identity: None,

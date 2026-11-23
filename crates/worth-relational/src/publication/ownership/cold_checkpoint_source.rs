@@ -118,7 +118,8 @@ impl RelationalDurableColdSource for Source {
             RelationalDurableReadBounds {
                 selected_checkpoint: true,
                 canonical,
-                transitions: crate::branch::RelationalBranchTransitionSequence(0),
+                transitions:
+                    crate::branch::transition::sequence::RelationalBranchTransitionSequence(0),
             },
             Box::new(()),
         ))

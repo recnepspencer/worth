@@ -60,7 +60,7 @@ pub(super) fn install_empty(
         Some(admission),
     ) = (&custody.source, &group.binding.retirement_admission)
     {
-        return super::authored_cascade::install(
+        return super::authored_cascade_install::install(
             envelope,
             execution,
             runtime,

@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
-use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::history::commit::RelationalCommitIdentity;
 use crate::history::data::{CanonicalCommitEnvelope, PositionedCanonicalCommit};
-use crate::history::RelationalCommitIdentity;
 
 pub(crate) mod failure;
 pub use failure::{RelationalPublicationFailure, RelationalPublicationFailureKind};
@@ -50,7 +51,8 @@ pub struct PerformedRelationalCommit {
         PerformedRelationalCommitData,
     >,
     capability: PerformedSettlementCapability,
-    late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
+    late_interruption:
+        Option<crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent>,
 }
 
 /// Borrowed view of the runtime-owned pending settlement record.
@@ -98,7 +100,9 @@ impl PerformedRelationalCommit {
         positioned_commit: Arc<PositionedCanonicalCommit>,
         next_basis: AdmittedRelationalBranchBasis,
         record: Arc<crate::runtime::PendingRelationalPublicationSettlement>,
-        late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
+        late_interruption: Option<
+            crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+        >,
     ) -> Self {
         Self {
             performed: worth_proof::Performed::record(
@@ -163,7 +167,10 @@ impl PerformedRelationalCommit {
         RelationalPublicationDurabilityPosture::OwnerAcknowledgementDeferred
     }
 
-    pub const fn late_interruption(&self) -> Option<crate::runtime::RelationalInterruptionEvent> {
+    pub const fn late_interruption(
+        &self,
+    ) -> Option<crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent>
+    {
         self.late_interruption
     }
 }
@@ -201,7 +208,7 @@ pub enum RelationalPublicationOutcome {
     Performed(PerformedRelationalCommit),
     Stale(StaleRelationalBranchObservation),
     Denied(RelationalPublicationDenial),
-    Interrupted(crate::runtime::RelationalInterruptionEvent),
+    Interrupted(crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent),
     Deferred(RelationalPublicationDeferred),
     Failed(RelationalPublicationFailure),
     /// The medium could not say whether the commit became durable. It was not
@@ -222,7 +229,9 @@ impl RelationalPublicationOutcome {
         Self::Denied(denial)
     }
 
-    pub(crate) fn interrupted(interruption: crate::runtime::RelationalInterruptionEvent) -> Self {
+    pub(crate) fn interrupted(
+        interruption: crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+    ) -> Self {
         Self::Interrupted(interruption)
     }
 

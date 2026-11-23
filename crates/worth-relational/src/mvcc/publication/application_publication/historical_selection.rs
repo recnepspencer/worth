@@ -1,12 +1,12 @@
 //! Exact selected-basis producer custody; a caller supplies no ownership roster.
 use super::*;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::publication::data::AuthoredRetirementRefusal as Cause;
+use crate::publication::data::PublicationError;
+use crate::runtime::RelationalRuntime;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    publication::data::{AuthoredRetirementRefusal as Cause, PublicationError},
-    runtime::RelationalRuntime,
-    transactions::data::{RecordRef, TransactionCommitError},
-};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 mod coverage;

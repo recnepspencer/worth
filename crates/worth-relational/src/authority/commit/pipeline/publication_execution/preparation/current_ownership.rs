@@ -1,10 +1,9 @@
 //! Select current custody once in the commit's original work account.
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    publication::ownership::{self, CurrentPublicationRoster},
-    runtime::RelationalPreparationRuntime,
-    transactions::data::TransactionCommitError,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::publication::ownership;
+use crate::publication::ownership::CurrentPublicationRoster;
+use crate::runtime::RelationalPreparationRuntime;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::sync::Arc;
 use worth_execution::ExecutionRequest;
 
@@ -13,10 +12,12 @@ pub(super) fn select(
     runtime: &RelationalPreparationRuntime,
     basis: &AdmittedRelationalBranchBasis,
     candidate: &crate::history::data::CanonicalCommitEnvelopeBody,
-    created: &crate::transactions::data::CommitCreatedEntityBindings,
+    created: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     adjacency: &[crate::authority::mutation::AdjacencyDelta],
     working: &crate::storage::overlay::WorkingState,
-    admission: Option<&crate::mvcc::RequiredOutputPublicationAdmission>,
+    admission: Option<
+        &crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
+    >,
 ) -> Result<Option<Arc<CurrentPublicationRoster>>, TransactionCommitError> {
     if basis
         .inner
@@ -30,7 +31,7 @@ pub(super) fn select(
     }
     let targets = candidate.patch.authoritative_record_patches.len();
     let bytes = targets
-        .checked_mul(4 * std::mem::size_of::<crate::transactions::data::RecordRef>())
+        .checked_mul(4 * std::mem::size_of::<crate::transactions::data::primitives::RecordRef>())
         .and_then(|n| {
             adjacency
                 .len()
@@ -65,7 +66,7 @@ pub(super) fn select(
         .filter(|p| match p.structural_change {
             crate::publication::patch::data::RecordStructuralChange::Created => false,
             crate::publication::patch::data::RecordStructuralChange::Updated => {
-                matches!(p.target, crate::transactions::data::RecordRef::Relation(id)
+                matches!(p.target, crate::transactions::data::primitives::RecordRef::Relation(id)
                     if retargeted.contains(&id))
             }
             _ => true,
@@ -76,7 +77,7 @@ pub(super) fn select(
         admission.publication.ownership_seeds(&mut scopes);
     }
     for event in &candidate.required_output_codec_retirements {
-        scopes.push(crate::transactions::data::RecordRef::Entity(
+        scopes.push(crate::transactions::data::primitives::RecordRef::Entity(
             event.meaning.source_scope,
         ));
     }
@@ -107,7 +108,7 @@ pub(super) fn select(
                 if admission.is_some_and(|admission| {
                     matches!(
                         admission.publication,
-                        crate::mvcc::RequiredOutputPublication::CoupledAuthored { .. }
+                        crate::mvcc::publication::application_publication::RequiredOutputPublication::CoupledAuthored { .. }
                     )
                 }) {
                     // A historical Created patch alone is insufficient proof.
@@ -148,13 +149,13 @@ pub(super) fn select(
 }
 
 fn retain_existing_scopes(
-    scopes: &mut Vec<crate::transactions::data::RecordRef>,
-    created: &crate::transactions::data::CommitCreatedEntityBindings,
+    scopes: &mut Vec<crate::transactions::data::primitives::RecordRef>,
+    created: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     context: &mut worth_execution::MapKernelContext<'_, '_>,
 ) -> Result<(), TransactionCommitError> {
     let mut kept = 0;
     for next in 0..scopes.len() {
-        if let crate::transactions::data::RecordRef::Entity(id) = scopes[next]
+        if let crate::transactions::data::primitives::RecordRef::Entity(id) = scopes[next]
             && created
                 .created_here(id, context)
                 .map_err(ownership::request)?

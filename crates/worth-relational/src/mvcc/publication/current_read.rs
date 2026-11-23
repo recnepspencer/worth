@@ -1,8 +1,8 @@
 //! Ordered owner-cell guards for a readonly source and a publication target.
-use crate::branch::{
-    AdmittedRelationalBranchBasis, RelationalBranchCoordinationGuard,
-    RelationalBranchPublicationCell, RelationalBranchPublicationStateGuard,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::RelationalBranchCoordinationGuard;
+use crate::branch::RelationalBranchPublicationCell;
+use crate::branch::RelationalBranchPublicationStateGuard;
 
 pub use super::read_dependency_denial::RelationalPublicationReadDependencyDenial;
 

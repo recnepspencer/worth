@@ -2,7 +2,7 @@ use crate::diagnostics::data::{
     DeterminismExpectation, DiagnosticsArtifactKind, DiagnosticsScope,
     RelationalDiagnosticArtifact, RelationalDiagnosticFields, RelationalDiagnosticsEntry,
 };
-use crate::publication::PublicationAuthority;
+use crate::publication::authority::PublicationAuthority;
 use crate::runtime::RelationalRuntime;
 
 pub(crate) struct DiagnosticArtifactBuilder<'runtime> {

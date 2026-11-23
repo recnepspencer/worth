@@ -95,7 +95,10 @@ impl Output {
         resize(&mut self.memory, retained)
     }
 
-    pub(super) fn finish(self, coverage: crate::runtime::IndexCatalogCoverage) -> Evidence {
+    pub(super) fn finish(
+        self,
+        coverage: crate::runtime::state::subsystems::indexing::catalog_coverage::IndexCatalogCoverage,
+    ) -> Evidence {
         Evidence::prepared(self.entries, self.memory, coverage)
     }
 }

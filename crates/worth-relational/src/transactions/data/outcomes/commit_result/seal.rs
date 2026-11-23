@@ -2,9 +2,7 @@
 use super::CommitResult;
 
 impl CommitResult {
-    pub(crate) fn from_authoritative_commit(
-        seal: crate::authority::commit::CommitResultSeal,
-    ) -> Self {
+    pub(crate) fn from_authoritative_commit(seal: super::assembly::CommitResultSeal) -> Self {
         let (
             snapshot_release,
             semantic_result,

@@ -50,7 +50,7 @@ impl PublicationBasisRoutes {
         }
         None
     }
-    pub(super) fn insert(
+    pub(crate) fn insert(
         &mut self,
         key: PublicationBasisRoute,
         value: Arc<RetainedPublicationBasis>,
@@ -62,7 +62,7 @@ impl PublicationBasisRoutes {
         self.len += usize::from(added);
         Ok(())
     }
-    pub(super) fn remove(
+    pub(crate) fn remove(
         &mut self,
         key: &PublicationBasisRoute,
         execution: &ExecutionRequest<'_, '_>,

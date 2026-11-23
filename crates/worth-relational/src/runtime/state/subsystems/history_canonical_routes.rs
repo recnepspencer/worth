@@ -36,7 +36,7 @@ impl HistorySubsystem {
         &self,
     ) -> Vec<(
         CommitId,
-        Arc<crate::history::RelationalCommitEnvelopeResidency>,
+        Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
     )> {
         self.canonical_publication_routes
             .performed_effect_residencies()
@@ -44,8 +44,8 @@ impl HistorySubsystem {
 
     pub(crate) fn associated_effect_settlement(
         &self,
-        entry: &crate::history::RelationalCommitIndexEntry,
-        residency: &Arc<crate::history::RelationalCommitEnvelopeResidency>,
+        entry: &crate::history::commit::RelationalCommitIndexEntry,
+        residency: &Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
     ) -> Option<crate::durability::authority::RelationalAssociatedEffectSettlement> {
         self.canonical_publication_routes
             .associated_effect_settlement(entry, residency)
@@ -53,7 +53,7 @@ impl HistorySubsystem {
     pub(crate) fn discard_authored_write_generation(
         &self,
         commit: CommitId,
-    ) -> Result<(), crate::history::RelationalAuthoredWriteDenial> {
+    ) -> Result<(), crate::history::access::relevant_writes::RelationalAuthoredWriteDenial> {
         self.canonical_publication_routes
             .discard_authored_generation(commit)
     }
@@ -62,7 +62,7 @@ impl HistorySubsystem {
         lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         commit: CommitId,
-    ) -> Result<usize, crate::history::RelationalAuthoredWriteDenial> {
+    ) -> Result<usize, crate::history::access::relevant_writes::RelationalAuthoredWriteDenial> {
         self.canonical_publication_routes
             .rebuild_authored_generation(lane, execution, commit)
     }
@@ -76,7 +76,7 @@ impl HistorySubsystem {
     pub(crate) fn performed_envelope_residency(
         &self,
         id: CommitId,
-    ) -> Option<Arc<crate::history::RelationalCommitEnvelopeResidency>> {
+    ) -> Option<Arc<crate::history::commit::RelationalCommitEnvelopeResidency>> {
         self.canonical_publication_routes
             .performed_envelope_residency(id)
     }
@@ -216,7 +216,7 @@ impl HistorySubsystem {
 
     pub(crate) fn restore_branch_transition_coverage(
         &self,
-        covered: crate::branch::RelationalBranchTransitionSequence,
+        covered: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     ) {
         self.canonical_publication_routes
             .restore_branch_transition_coverage(covered);
@@ -224,7 +224,7 @@ impl HistorySubsystem {
 
     pub(crate) fn compact_branch_transitions_through(
         &self,
-        covered: crate::branch::RelationalBranchTransitionSequence,
+        covered: crate::branch::transition::sequence::RelationalBranchTransitionSequence,
     ) {
         self.canonical_publication_routes
             .compact_branch_transitions_through(covered);
@@ -233,8 +233,8 @@ impl HistorySubsystem {
     pub(crate) fn retained_branch_transitions(
         &self,
     ) -> (
-        crate::branch::RelationalBranchTransitionSequence,
-        Vec<Arc<crate::branch::PositionedBranchTransition>>,
+        crate::branch::transition::sequence::RelationalBranchTransitionSequence,
+        Vec<Arc<crate::branch::transition::PositionedBranchTransition>>,
     ) {
         self.canonical_publication_routes
             .retained_branch_transitions()
@@ -277,15 +277,15 @@ pub(crate) fn pending_canonical_publication_route_count(history: &HistorySubsyst
 
 pub(crate) fn retain_original_empty_birth(
     history: &HistorySubsystem,
-    schema: Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+    schema: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
 ) {
     history
         .canonical_publication_routes
         .retain_original_empty_birth(
             super::canonical_publication_routes::OriginalEmptySchemaObservation {
                 generation: worth_foundational::FoundationalBranchReferenceGeneration::initial(),
-                truth_version: crate::branch::RelationalBranchVersion::initial(),
-                lifecycle: crate::branch::RelationalBranchLifecyclePosture::Live,
+                truth_version: crate::branch::version::RelationalBranchVersion::initial(),
+                lifecycle: crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live,
                 schema,
             },
         );

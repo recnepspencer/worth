@@ -12,7 +12,7 @@ mod schema_contract_runtime;
 pub(crate) mod services;
 pub(crate) mod storage;
 mod storage_lifecycle;
-mod visibility;
+pub(crate) mod visibility;
 
 pub(crate) trait RuntimeSubsystem: Sized {
     type Config;

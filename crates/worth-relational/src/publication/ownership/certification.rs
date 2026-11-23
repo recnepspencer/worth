@@ -1,8 +1,8 @@
 //! Closed preflight of an external native-only verb against actual current custody.
-use crate::{
-    branch::AdmittedRelationalBranchBasis, identity::data::EntityId, runtime::RelationalRuntime,
-    transactions::data::*,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::identity::data::EntityId;
+use crate::runtime::RelationalRuntime;
+use crate::transactions::data::*;
 use worth_execution::ExecutionRequest;
 impl RelationalRuntime {
     /// Remove both current fact families from the real selected read image. The
@@ -113,7 +113,7 @@ impl RelationalRuntime {
             .flat_map(|origin| &origin.relations)
             .find(|edge| !registry.native_private_kinds.contains(&edge.kind))
             .ok_or_else(|| {
-                crate::mvcc::origin_denial(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
                     "owned edge retarget court requires a real business edge",
                 )
             })?;
@@ -128,7 +128,9 @@ impl RelationalRuntime {
         let mut transaction = self
             .begin_branch_transaction(basis, crate::mvcc::RelationalTransactionIntent::ordinary())
             .map_err(|cause| {
-                crate::mvcc::origin_denial(format!("actual endpoint probe admission: {cause:?}"))
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    format!("actual endpoint probe admission: {cause:?}"),
+                )
             })?;
         transaction
             .push_batch(
@@ -191,7 +193,7 @@ impl RelationalRuntime {
     pub fn probe_current_history_contradiction_for_test(
         &self,
         execution: &ExecutionRequest<'_, '_>,
-        installed: &crate::mvcc::RelationalInstalledApplicationPublicationAuthority,
+        installed: &crate::mvcc::publication::application_publication::RelationalInstalledApplicationPublicationAuthority,
         basis: &AdmittedRelationalBranchBasis,
         publication: crate::history::data::CommitId,
         source: EntityId,
@@ -200,13 +202,19 @@ impl RelationalRuntime {
             .history
             .canonical_envelope(publication)
             .ok_or_else(|| {
-                crate::mvcc::origin_denial("real Query publication history unavailable")
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "real Query publication history unavailable",
+                )
             })?;
         let meaning = envelope
             .output_origins()
             .find(|o| o.meaning.source_scope == source && o.source_scope_owned)
             .map(|o| o.meaning.clone())
-            .ok_or_else(|| crate::mvcc::origin_denial("actual owned Query route missing"))?;
+            .ok_or_else(|| {
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "actual owned Query route missing",
+                )
+            })?;
         let absence = self
             .readmit_required_output_route_absence(execution, installed, basis, &meaning)
             .map(|_| ());

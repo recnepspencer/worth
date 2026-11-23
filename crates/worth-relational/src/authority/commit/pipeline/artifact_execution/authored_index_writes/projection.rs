@@ -3,13 +3,15 @@ use super::*;
 use crate::identity::data::EntityId;
 use crate::indexes::data::DerivedIndexKind;
 use crate::storage::data::AuthoritativeFieldComparisonKey as Comparison;
-use crate::transactions::data::{EntityMutationIntent as Entity, MutationIntent};
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent as Entity;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
 use worth_foundational::facade::{PortableAspectPatchOperation, PortableRecordAspectPatch};
 
 pub(super) struct Projection<'a, 'kernel, 'controls, 'request, 'authority> {
     pub(super) execution: ExecutionRequest<'request, 'authority>,
     pub(super) runtime: &'a RelationalPreparationRuntime,
-    pub(super) catalog: &'a crate::runtime::CapturedIndexDefinitionCatalog,
+    pub(super) catalog:
+        &'a crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
     pub(super) unavailable: bool,
     pub(super) selected: &'a SelectedRelationalBranchState,
     pub(super) working: &'a WorkingState,

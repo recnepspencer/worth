@@ -1,9 +1,11 @@
 //! Locality court: real Query custody, ordinary private-branch edits and cold recovery.
 use super::cold_checkpoint_source as source;
-use crate::{
-    branch::AdmittedRelationalBranchBasis, history::data::BranchId, identity::data::*,
-    runtime::RelationalRuntime, storage::overlay::CurrentPartitionAccess, transactions::data::*,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::BranchId;
+use crate::identity::data::*;
+use crate::runtime::RelationalRuntime;
+use crate::storage::overlay::CurrentPartitionAccess;
+use crate::transactions::data::*;
 use worth_execution::ExecutionRequest;
 #[derive(Debug)]
 pub struct CurrentOwnershipLocalityForTest {
@@ -25,7 +27,9 @@ impl RelationalRuntime {
         value_fields: impl Fn(u64) -> AspectFieldPatch,
     ) -> Result<CurrentOwnershipLocalityForTest, TransactionCommitError> {
         let fail = |detail| {
-            crate::mvcc::origin_denial(format!("current ownership locality court: {detail}"))
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(format!(
+                "current ownership locality court: {detail}"
+            ))
         };
         let kind = basis
             .inner

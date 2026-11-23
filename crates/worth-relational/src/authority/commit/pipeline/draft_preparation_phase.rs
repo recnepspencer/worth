@@ -1,6 +1,8 @@
 use super::rejection::elapsed_micros;
 use crate::authority::commit::phases::prepare::record_preparation_counters;
-use crate::transactions::data::{CommitLog, CommitPhase, CommitPhaseTiming};
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::commit_log::CommitPhase;
+use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
 
 pub(super) fn record_draft_preparation_phase(
     runtime: &crate::runtime::RelationalPreparationRuntime,
@@ -8,7 +10,7 @@ pub(super) fn record_draft_preparation_phase(
     phase_timing: &mut CommitPhaseTiming,
     working_state: &crate::storage::overlay::WorkingState,
     structural_summary: &crate::authority::commit::structural_summary::CommitStructuralSummary,
-    public_structural_summary: &crate::transactions::data::CommitStructuralSummary,
+    public_structural_summary: &crate::transactions::data::outcomes::commit_summaries::CommitStructuralSummary,
 ) {
     commit_log.begin_phase(CommitPhase::DraftPreparation);
     let phase_started = std::time::Instant::now();

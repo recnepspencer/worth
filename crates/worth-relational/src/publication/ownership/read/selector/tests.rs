@@ -51,11 +51,9 @@ fn image() -> (
     )
 }
 fn damage(error: TransactionCommitError) {
-    use crate::{
-        execution::RelationalExecutionDenialCause,
-        storage::data::RelationalStorageUnavailableCause,
-        transactions::data::CommitExecutionDenialKind,
-    };
+    use crate::execution::RelationalExecutionDenialCause;
+    use crate::storage::data::RelationalStorageUnavailableCause;
+    use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
     assert!(
         matches!(error,TransactionCommitError::Execution{denial,..}
         if matches!(denial.kind,CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::StorageUnavailable(f)) if f.cause==RelationalStorageUnavailableCause::Damaged)),
@@ -127,7 +125,7 @@ fn suspended_selectors_use_only_restored_candidate_metadata() {
     ] {
         assert!(
             matches!(&error,TransactionCommitError::Conflict{error:conflict,..}
-            if matches!(&conflict.class,crate::transactions::data::ConflictClass::MutationStateInconsistency{evidence:crate::transactions::data::MutationStateInconsistencyEvidence::MaterializationTransition{..},..})),
+            if matches!(&conflict.class,crate::transactions::data::outcomes::conflict_class::ConflictClass::MutationStateInconsistency{evidence:crate::transactions::data::outcomes::conflict_class::MutationStateInconsistencyEvidence::MaterializationTransition{..},..})),
             "{error:?}"
         );
     }

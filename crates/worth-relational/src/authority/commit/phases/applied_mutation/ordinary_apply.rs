@@ -8,7 +8,9 @@ pub(crate) struct AppliedMutationCore {
     pub(crate) outcome: MutationApplyOutcome,
     pub(crate) identities: PendingMutationIdentities,
     pub(crate) aggregate: Option<crate::aggregate_identity::AggregateProposal>,
-    pub(crate) coupled_publication: Option<crate::mvcc::RequiredOutputPublicationAdmission>,
+    pub(crate) coupled_publication: Option<
+        crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
+    >,
 }
 
 impl AppliedMutationCore {
@@ -28,10 +30,10 @@ pub(crate) fn apply(
     merged_plan: &MergedCommitPlan,
     apply_plan: &AuthoritativeApplyPlan,
     config: &crate::config::data::MutationConfig,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
-    identity: &crate::mvcc::RelationalMutationProposalIdentity,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
+    identity: &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
     mut symbols: PendingSymbolMeanings,
-    materialization: Option<crate::mvcc::RelationalMaterializationTransactionMode>,
+    materialization: Option<crate::mvcc::transaction::intent::materialization_mode::RelationalMaterializationTransactionMode>,
 ) -> Result<AppliedMutationCore, MutationApplyDenial> {
     let version_id = identity.proposed_version_id();
     crate::aggregate_identity::guard::ordinary_plan(
@@ -98,15 +100,15 @@ pub(crate) fn apply_authored_prefix(
     selected: &SelectedRelationalBranchRead<'_>,
     prepared: &super::super::prepare::PreparedWorkingStateScope,
     commands: &MergedCommitPlan,
-    identity: &crate::mvcc::RelationalMutationProposalIdentity,
+    identity: &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
     symbols: PendingSymbolMeanings,
     content: &crate::content::RelationalContentAttachments,
 ) -> Result<AppliedMutationCore, MutationApplyDenial> {
     // This apply owner needs its own copied intent storage. The authored plan
     // retains its original reservation independently until coupled completion.
-    let _plan_memory = crate::mvcc::plan_copy_admission::reserve_copy(
+    let _plan_memory = crate::mvcc::transaction::normalized_plan::reserve_copy(
         execution,
-        crate::mvcc::plan_copy_admission::intent_bytes(&commands.merged_intents),
+        crate::mvcc::transaction::normalized_plan::intent_bytes(&commands.merged_intents),
     )?;
     let plan = AuthoritativeApplyPlan {
         transaction_id: commands.transaction_id,

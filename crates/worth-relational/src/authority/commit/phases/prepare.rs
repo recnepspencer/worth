@@ -1,18 +1,21 @@
 // Diagnostic counters keep their valid numeric prefix on unwind; they grant no authority.
 use crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan;
 use crate::authority::commit::structural_summary::CommitStructuralSummary;
-use crate::branch::{SelectedRelationalBranchRead, SelectedRelationalBranchState};
+use crate::branch::root_selection::SelectedRelationalBranchState;
+use crate::branch::selected_read::SelectedRelationalBranchRead;
 use crate::runtime::RelationalPreparationRuntime;
 use crate::storage::overlay::summarize_entity_chunk_plan;
 use crate::storage::overlay::CurrentPartitionAccess;
 use crate::storage::overlay::EntityWorkingSetLayout;
 use crate::storage::overlay::PartitionCloneMode;
 use crate::storage::overlay::WorkingState;
-use crate::transactions::data::CommitPhaseTiming;
-use crate::transactions::data::{
-    CommitTopology, CreateIntent, EntityMutationIntent, MergedCommitPlan, MutationIntent,
-    TransactionCommitError,
-};
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::mutation_planning::CommitTopology;
+use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
 #[path = "prepare/owned_graph_selection.rs"]
@@ -27,7 +30,8 @@ pub(crate) struct PreparedWorkingStateScope {
     pub(crate) working_state: WorkingState,
     pub(crate) phase_timing: CommitPhaseTiming,
     pub(crate) footprint: crate::mvcc::RelationalTransactionFootprint,
-    pub(crate) schema_authority: std::sync::Arc<crate::branch::RelationalBranchRootSchemaAuthority>,
+    pub(crate) schema_authority:
+        std::sync::Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,
 }
 
 const AOSOA_ENTITY_CHUNK_WIDTH_SMALL: usize = 128;
@@ -102,7 +106,7 @@ fn sparse_entity_slots_for_plan(
     if let Some(footprint) = footprint {
         for read in footprint.reads() {
             if let crate::mvcc::RelationalTransactionReadLocus::Existing(
-                crate::transactions::data::RecordRef::Entity(entity),
+                crate::transactions::data::primitives::RecordRef::Entity(entity),
             ) = read
             {
                 slots_by_partition
@@ -153,7 +157,7 @@ fn sparse_relation_overlay_partitions_for_plan(
     if let Some(footprint) = footprint {
         for read in footprint.reads() {
             if let crate::mvcc::RelationalTransactionReadLocus::Existing(
-                crate::transactions::data::RecordRef::Relation(relation),
+                crate::transactions::data::primitives::RecordRef::Relation(relation),
             ) = read
             {
                 partitions.insert(relation.partition_id);
@@ -222,7 +226,7 @@ pub(crate) fn prepare_lowered_working_state_scope(
     runtime: &RelationalPreparationRuntime,
     transaction: &crate::mvcc::BranchBoundRelationalTransaction,
     selected: SelectedRelationalBranchRead<'_>,
-    merged_plan: crate::mvcc::OwnedNormalizedPlan,
+    merged_plan: crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan,
 ) -> PreparedWorkingStateScope {
     let (structural_summary, working_state, phase_timing) =
         prepare_authoritative_working_state_scope_for_base(

@@ -4,7 +4,7 @@ use super::*;
 impl ManagedSourceRootImage {
     pub(crate) fn admit_predecessor_material(
         &self,
-        basis: &crate::branch::AdmittedRelationalBranchBasis,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
         program: &ManagedIndexSourceProgram,
         scope: EntityId,
         payload: &Arc<dyn Any + Send + Sync>,

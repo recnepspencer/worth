@@ -4,7 +4,7 @@ use super::{
     },
     basis_descriptor_resolution::resolve_relational_branch_basis_descriptor,
     basis_identity_validation::identity_denial,
-    basis_observation::issue_admitted_relational_branch_basis_with_retention,
+    basis_issuance::issue_admitted_relational_branch_basis_with_retention,
     AdmittedRelationalBranchBasis, RelationalBranchBasisDenial, RelationalBranchBasisDescriptor,
     RelationalBranchRoot,
 };

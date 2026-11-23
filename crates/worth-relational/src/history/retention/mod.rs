@@ -13,7 +13,7 @@ pub use lane::{RelationalRetentionCensusForTest, RelationalRetentionGateForTest}
 mod lease;
 mod obligation;
 mod owner;
-mod publication_basis;
+pub(crate) mod publication_basis;
 mod publication_basis_tree;
 mod publication_reclamation;
 pub(crate) use publication_basis::{
@@ -30,6 +30,7 @@ pub(crate) use head_cell::RelationalBranchHeadRetentionCell;
 pub(crate) use head_obligation::RelationalHeadRetentionObligation;
 pub(crate) use head_retirement::{
     RelationalHeadRetirementCapacity, RelationalHeadRetirementReservation,
+    TransferredHeadRetirement,
 };
 pub(crate) use lane::{
     RelationalBranchRetentionBinding, RelationalRetentionGuard,

@@ -1,6 +1,6 @@
-use crate::transactions::data::{
-    CommitExecutionDenialKind, TransactionCommitError, WorkerIntentBatch,
-};
+use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 #[test]
 fn strategy_consults_before_its_stale_basis_check() {

@@ -4,10 +4,13 @@ use super::rejection::stale_strategy_validation_basis;
 use crate::authority::commit::semantic_plan::RelationalSemanticPlan;
 use crate::mvcc::RelationalTransactionValidationInput;
 use crate::runtime::RelationalPreparationRuntime;
-use crate::transactions::data::{
-    CommitConflict, CommitLog, CommitPhaseTiming, ConflictClass, MergedCommitPlan,
-    TransactionCommitError, TransactionId,
-};
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::outcomes::commit_conflict::CommitConflict;
+use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
+use crate::transactions::data::outcomes::conflict_class::ConflictClass;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::TransactionId;
 
 /// Admission owns the exact draft only until the consuming Draft handoff.
 pub(super) struct AdmittedCommitExecution {
@@ -29,7 +32,7 @@ impl AdmittedCommitExecution {
 pub(super) struct AdmittedCommitState {
     transaction_id: TransactionId,
     validation_input: RelationalTransactionValidationInput,
-    selected_branch_state: crate::branch::SelectedRelationalBranchState,
+    selected_branch_state: crate::branch::root_selection::SelectedRelationalBranchState,
     phase_timing: CommitPhaseTiming,
     commit_log: CommitLog,
     authority_input: super::authority_context::CommitAuthorityInput,
@@ -38,8 +41,10 @@ pub(super) struct AdmittedCommitState {
     prevalidated_invariants: Option<crate::validation::engine::InvariantExecutionResult>,
     strategy_commit_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
     diagnostics: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-    complexity_before: crate::performance::data::RuntimeComplexityCounters,
-    prior_complexity_delta: crate::performance::data::RuntimeComplexityCounters,
+    complexity_before:
+        crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
+    prior_complexity_delta:
+        crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
 }
 
 pub(super) struct AdmittedCommitPhaseView<'a> {
@@ -57,7 +62,7 @@ impl<'a> AdmittedCommitPhaseView<'a> {
         TransactionId,
         &'a RelationalTransactionValidationInput,
         RelationalSemanticPlan<'a>,
-        Option<&'a crate::transactions::data::MergeCommitMutationPlan>,
+        Option<&'a crate::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan>,
         &'a mut CommitLog,
         &'a mut CommitPhaseTiming,
     ) {
@@ -103,13 +108,15 @@ impl AdmittedCommitState {
         }
     }
 
-    pub(super) fn selected_branch_state(&self) -> &crate::branch::SelectedRelationalBranchState {
+    pub(super) fn selected_branch_state(
+        &self,
+    ) -> &crate::branch::root_selection::SelectedRelationalBranchState {
         &self.selected_branch_state
     }
 
     pub(super) fn merge_history_plan(
         &self,
-    ) -> Option<&crate::transactions::data::MergeCommitMutationPlan> {
+    ) -> Option<&crate::transactions::data::outcomes::plan_artifacts::MergeCommitMutationPlan> {
         match &self.authority_input {
             super::authority_context::CommitAuthorityInput::Mutation(_) => None,
             super::authority_context::CommitAuthorityInput::Merge(plan) => Some(plan.plan()),
@@ -182,8 +189,8 @@ impl AdmittedCommitState {
         CommitLog,
         Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
-        crate::performance::data::RuntimeComplexityCounters,
-        crate::performance::data::RuntimeComplexityCounters,
+        crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
+        crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
     ) {
         (
             self.transaction_id,
@@ -272,8 +279,10 @@ fn enforce_validated_strategy_basis(
     validation_input: &crate::mvcc::RelationalTransactionValidationInput,
     validated_against_commit_id: Option<crate::history::data::CommitId>,
     validated_against_version_id: Option<crate::identity::data::VersionId>,
-    validated_against_branch_version: Option<crate::branch::RelationalBranchVersion>,
-    proposal_identity: Option<&crate::mvcc::RelationalMutationProposalIdentity>,
+    validated_against_branch_version: Option<crate::branch::version::RelationalBranchVersion>,
+    proposal_identity: Option<
+        &crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+    >,
 ) -> Result<(), TransactionCommitError> {
     let branch = validation_input.target_branch().clone();
     if validation_input.basis().identity().runtime_instance_id() != runtime.runtime_instance_id() {

@@ -12,7 +12,7 @@ fn current_group_survives_owned_birth_endpoint_replacement_retirement_and_omissi
 }
 
 fn run(replace_endpoint: bool) {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -174,8 +174,11 @@ fn run(replace_endpoint: bool) {
                 &basis,
                 producer,
                 &dependency,
-                &crate::mvcc::native_meaning_fixture(family),
-                &crate::mvcc::native_roles_fixture(&[(id, KindId(1))], posture),
+                &crate::mvcc::publication::application_publication::native_meaning_fixture(family),
+                &crate::mvcc::publication::application_publication::native_roles_fixture(
+                    &[(id, KindId(1))],
+                    posture,
+                ),
             )
             .expect(
                 "both complete groups retain custody, including the retained relation producer",
@@ -200,8 +203,10 @@ fn replace_birth_endpoint(
         kind_id: KindId(1),
         client_key: crate::symbols::data::ClientKey::raw("replacement-a"),
     };
-    let mut roles =
-        crate::mvcc::native_roles_fixture(&[(old, KindId(1))], RequiredOutputRolePosture::Preserve);
+    let mut roles = crate::mvcc::publication::application_publication::native_roles_fixture(
+        &[(old, KindId(1))],
+        RequiredOutputRolePosture::Preserve,
+    );
     roles.push(RequiredOutputRoleTarget {
         role: "joined-a".into(),
         entity_name: "native-unit-output".into(),
@@ -233,13 +238,17 @@ fn replace_birth_endpoint(
     .unwrap();
     let joined = moved.created_entity(&replacement).unwrap();
     release_test_commit_snapshot(runtime, &moved);
-    let mut roles =
-        crate::mvcc::native_roles_fixture(&[(old, KindId(1))], RequiredOutputRolePosture::Retire);
+    let mut roles = crate::mvcc::publication::application_publication::native_roles_fixture(
+        &[(old, KindId(1))],
+        RequiredOutputRolePosture::Retire,
+    );
     roles[0].role = "retired-a".into();
-    roles.extend(crate::mvcc::native_roles_fixture(
-        &[(joined, KindId(1))],
-        RequiredOutputRolePosture::Preserve,
-    ));
+    roles.extend(
+        crate::mvcc::publication::application_publication::native_roles_fixture(
+            &[(joined, KindId(1))],
+            RequiredOutputRolePosture::Preserve,
+        ),
+    );
     let retired = publish(
         runtime,
         execution,
@@ -264,7 +273,7 @@ fn replace_birth_endpoint(
         complete(
             owner,
             retired.required_output_publication(installed).unwrap(),
-            crate::mvcc::native_roles_fixture(
+            crate::mvcc::publication::application_publication::native_roles_fixture(
                 &[(joined, KindId(1))],
                 RequiredOutputRolePosture::Preserve,
             ),
@@ -280,8 +289,8 @@ fn replace_birth_endpoint(
             &test_owner_main_basis(runtime).unwrap(),
             "group-a-current",
             &[5; 32],
-            &crate::mvcc::native_meaning_fixture("group-a"),
-            &crate::mvcc::native_roles_fixture(
+            &crate::mvcc::publication::application_publication::native_meaning_fixture("group-a"),
+            &crate::mvcc::publication::application_publication::native_roles_fixture(
                 &[(joined, KindId(1))],
                 RequiredOutputRolePosture::Preserve,
             ),

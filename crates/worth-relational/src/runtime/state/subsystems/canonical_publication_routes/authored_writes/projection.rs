@@ -1,11 +1,14 @@
 //! Project canonical authored intents, never the semantic-delta-only patch.
 use super::{AuthoredWriteGeneration, Denial};
+use crate::history::access::relevant_writes::posting_key::AuthoredWritePostingKey;
+use crate::history::access::relevant_writes::RelationalAuthoredWriteScope as Scope;
+use crate::history::access::relevant_writes::RelationalAuthoredWriteSelector as Key;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
-use crate::history::RelationalAuthoredWriteScope as Scope;
-use crate::history::{AuthoredWritePostingKey, RelationalAuthoredWriteSelector as Key};
-use crate::transactions::data::{
-    AspectFieldPatch, EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent,
-};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::primitives::RecordRef;
 use worth_execution::{ExecutionRequest, MapKernelContext};
 use worth_foundational::facade::{
     AspectKey, CanonicalFieldPath, PortableAspectPatchOperation, PortableRecordAspectPatch,
@@ -27,7 +30,7 @@ pub(super) fn append(
         output.lifecycle(allocation.record())?;
     }
     for intent in &envelope.merged_plan.merged_intents {
-        crate::history::visit_authored_write(output.context)?;
+        crate::history::access::relevant_writes::visit(output.context)?;
         match intent {
             // New records already have their actual resolved identities above.
             MutationIntent::Create(_) => {}

@@ -1,9 +1,7 @@
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock, RwLockReadGuard, Weak};
 
-use crate::runtime::{
-    RelationalRuntime, RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding,
-};
+use crate::runtime::{RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding};
 
 use super::RelationalPublicationCompanion;
 
@@ -160,11 +158,15 @@ pub struct PublicationCompanionRegistration {
 }
 
 impl PublicationCompanionRegistrationPort {
-    pub(crate) fn new(runtime: &RelationalRuntime) -> Self {
+    pub(crate) fn new(
+        runtime_instance_id: u64,
+        owner: RelationalRuntimeOwnerBinding,
+        publication: RelationalRuntimePublicationBinding,
+    ) -> Self {
         Self {
-            runtime_instance_id: runtime.runtime_instance_id(),
-            owner: runtime.owner_binding(),
-            publication: runtime.publication_binding(),
+            runtime_instance_id,
+            owner,
+            publication,
         }
     }
 
@@ -284,11 +286,5 @@ impl PendingCompanionRegistration {
             }
             _ => Err(PublicationCompanionRegistrationStop::Superseded),
         }
-    }
-}
-
-impl RelationalRuntime {
-    pub fn publication_companion_port(&self) -> PublicationCompanionRegistrationPort {
-        PublicationCompanionRegistrationPort::new(self)
     }
 }

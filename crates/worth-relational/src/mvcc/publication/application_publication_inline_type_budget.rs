@@ -1,7 +1,7 @@
 //! Unit-only layout evidence; constructs no runtime, proof or authority.
 use super::*;
 
-pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
+pub(crate) fn collect(census: &mut crate::inline_type_sizes::census::Census) {
     {
         let mut owner = census.owner::<RelationalInstalledApplicationPublicationAuthority>(
             "crates/worth-relational/src/mvcc/publication/application_publication.rs",

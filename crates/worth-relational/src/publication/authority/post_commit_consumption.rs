@@ -1,7 +1,7 @@
 use crate::diagnostics::data::{DiagnosticsArtifactKind, DiagnosticsScope};
 use crate::history::data::{BranchId, CommitId};
 use crate::publication::authority::post_commit_diagnostics::build_publication_diagnostic_entries;
-use crate::publication::PublicationAuthority;
+use crate::publication::authority::PublicationAuthority;
 use crate::snapshots::data::SnapshotId;
 
 impl<'runtime> PublicationAuthority<'runtime> {

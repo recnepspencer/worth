@@ -15,18 +15,15 @@ mod mutation_execution;
 mod phase_backing;
 mod publication_execution;
 mod rejection;
-mod result_assembly;
 mod semantic_result;
 mod snapshot_validation;
 
 pub(crate) use crate::execution::request_custody::request_lease;
 pub(crate) use authority_context::AuthoritativeCommitContext;
 pub(crate) use execution::{execute_authoritative_commit, publish_prepared_authoritative_commit};
-pub(crate) use publication_execution::publish_commit_execution;
 pub(crate) use publication_execution::PreparedCommitPublicationCompletion;
 pub(crate) use publication_execution::PreparedCommitPublicationExecution;
-pub(crate) use result_assembly::assemble_commit_result;
-pub(crate) use result_assembly::CommitResultSeal;
+pub(crate) use publication_execution::{publish_commit_execution, PublishedCommitExecution};
 
 mod request_checkpoints;
 #[cfg(test)]

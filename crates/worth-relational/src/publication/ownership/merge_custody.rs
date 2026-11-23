@@ -1,11 +1,10 @@
 //! Actual merge and external-write preflight on an isolated fork of Query's current basis.
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::{BranchId, RelationalCommitReceipt},
-    identity::data::EntityId,
-    runtime::RelationalRuntime,
-    transactions::data::*,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::BranchId;
+use crate::history::data::RelationalCommitReceipt;
+use crate::identity::data::EntityId;
+use crate::runtime::RelationalRuntime;
+use crate::transactions::data::*;
 use worth_execution::ExecutionRequest;
 impl RelationalRuntime {
     /// Both bases and all publication facts come from real installed Query branches.
@@ -20,7 +19,9 @@ impl RelationalRuntime {
     ) -> Result<(RelationalCommitReceipt, Result<(), TransactionCommitError>), TransactionCommitError>
     {
         let setup = |detail| {
-            crate::mvcc::origin_denial(format!("actual ownership merge court: {detail:?}"))
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(format!(
+                "actual ownership merge court: {detail:?}"
+            ))
         };
         let shadow = BranchId(format!(
             "owned-merge-court-{}-{}",

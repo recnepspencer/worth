@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::history::data::{CommitId, PositionedCanonicalCommit, RelationalCommitReceipt};
-use crate::transactions::data::CommitResult;
+use crate::transactions::data::outcomes::commit_result::CommitResult;
 
 /// Precomputed settlement input captured before the publication critical
 /// section. Holding it here is what lets a lost performed witness stay
@@ -12,7 +12,7 @@ pub(crate) struct ReservedRelationalSettlement {
     pub(crate) published_snapshot_basis:
         crate::visibility::snapshot_states::VisibilitySnapshotBasis,
     pub(crate) control: crate::runtime::RelationalOperationControl,
-    pub(crate) envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    pub(crate) envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
 }
 
 /// The same input after the branch reference moved, authorized against the
@@ -23,10 +23,11 @@ pub(crate) struct PerformedRelationalSettlement {
         crate::visibility::snapshot_states::VisibilitySnapshotBasis,
     pub(crate) control: crate::runtime::RelationalOperationControl,
     pub(crate) positioned: Arc<PositionedCanonicalCommit>,
-    pub(crate) envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    pub(crate) envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
     pub(crate) settlement_retention:
         crate::history::retention::RelationalPerformedSettlementObligation,
-    pub(crate) late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
+    pub(crate) late_interruption:
+        Option<crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent>,
 }
 
 /// The one terminal answer for a settled commit identity. Every later caller
@@ -147,7 +148,9 @@ impl PendingRelationalPublicationSettlement {
         &self,
         positioned: Arc<PositionedCanonicalCommit>,
         settlement_retention: crate::history::retention::RelationalPerformedSettlementObligation,
-        late_interruption: Option<crate::runtime::RelationalInterruptionEvent>,
+        late_interruption: Option<
+            crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
+        >,
     ) -> bool {
         let mut state = self.state();
         if !matches!(&*state, PendingRelationalSettlementState::Reserved(_)) {

@@ -2,7 +2,9 @@ use super::super::rejection::elapsed_micros;
 use super::preparation::PreparedPublicationCompletion;
 use crate::history::data::CommitId;
 use crate::runtime::RelationalRuntime;
-use crate::transactions::data::{CommitLog, CommitPhase, CommitPhaseTiming};
+use crate::transactions::data::commit_log::CommitLog;
+use crate::transactions::data::commit_log::CommitPhase;
+use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
 use std::sync::Arc;
 
 mod finalization;
@@ -11,7 +13,7 @@ use finalization::{finalize_published_commit, FinalizationInput};
 
 pub(super) struct FinalizedPublicationPhase {
     positioned_commit: Arc<crate::history::data::PositionedCanonicalCommit>,
-    changed_records: Vec<crate::transactions::data::RecordRef>,
+    changed_records: Vec<crate::transactions::data::primitives::RecordRef>,
 }
 
 impl FinalizedPublicationPhase {
@@ -19,7 +21,7 @@ impl FinalizedPublicationPhase {
         self,
     ) -> (
         Arc<crate::history::data::PositionedCanonicalCommit>,
-        Vec<crate::transactions::data::RecordRef>,
+        Vec<crate::transactions::data::primitives::RecordRef>,
     ) {
         (self.positioned_commit, self.changed_records)
     }
@@ -30,7 +32,7 @@ pub(super) struct CanonicalLogPhaseInput<'a> {
     pub(super) phase_timing: &'a mut CommitPhaseTiming,
     pub(super) positioned_commit: &'a crate::history::data::PositionedCanonicalCommit,
     pub(super) commit_id: CommitId,
-    pub(super) envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    pub(super) envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
 }
 
 /// Record the settled commit in the runtime's own canonical log. A durable
@@ -69,7 +71,7 @@ pub(super) fn finalize_publication_phase(
     published_snapshot_basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
     published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
     positioned_commit: Arc<crate::history::data::PositionedCanonicalCommit>,
-    envelope_cell: Arc<crate::history::RelationalCommitEnvelopeResidency>,
+    envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
 ) -> FinalizedPublicationPhase {
     let PreparedPublicationCompletion {
         mirror_publication,

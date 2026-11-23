@@ -3,12 +3,15 @@ use super::{
     RelationalInstalledApplicationPublicationAuthority, RelationalRequiredOutputPublication,
     RequiredOutputProducingImplementation, RequiredOutputRolePosture, RequiredOutputRoleTarget,
 };
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::storage::overlay::CurrentPartitionAccess;
-use crate::transactions::data::{
-    CreateIntent, EntityMutationIntent, EntityReference, EntitySpec, MutationIntent,
-    TransactionCommitError, WorkerIntentBatch,
-};
+use crate::transactions::data::intents::mutation_intent::CreateIntent;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::EntitySpec;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 
 /// A publication appendix can allocate its own single entity. It cannot update
 /// a producer record, acquire a relation, or carry an arbitrary effect batch.
@@ -39,91 +42,100 @@ pub struct RelationalPublicationBodySelection {
     basis: AdmittedRelationalBranchBasis,
 }
 impl RelationalPublicationBodySelection {
+    pub(crate) fn into_parts(
+        self,
+    ) -> (
+        WorkerIntentBatch,
+        Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputOrigin>>,
+        AdmittedRelationalBranchBasis,
+    ) {
+        (self.batch, self.adoption, self.basis)
+    }
+
     pub fn omitted_appendix(&self) -> bool {
         self.adoption.is_some()
     }
 }
 
-impl crate::runtime::RelationalRuntime {
-    /// The judgment allocates no record or symbol identities. A real publication
-    /// stages the original receipt in its original place and follows the normal
-    /// canonical plan, retaining that plan's allocation and byte ordering.
-    pub fn prepare_publication_appendix(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        basis: &AdmittedRelationalBranchBasis,
-        mut body: WorkerIntentBatch,
-        content: &crate::content::RelationalContentAttachments,
-        appendix: RelationalPublicationAppendix,
-        adoption: Option<RelationalPublicationAdoptionRequest<'_>>,
-    ) -> Result<RelationalPublicationBodySelection, TransactionCommitError> {
-        if appendix.position > body.intents.len() {
-            return Err(super::origin_denial(
-                "publication appendix position is outside its body",
-            ));
-        }
-        let prior = adoption
-            .as_ref()
-            .map(|request| std::sync::Arc::clone(&request.previous.origin));
-        let selected = crate::branch::SelectedRelationalBranchState::from_admitted_basis(basis);
-        let omitted = match adoption {
-            Some(adoption)
-                if basis.is_current()
-                    && content.is_empty()
-                    && adoption.previous.runtime_instance_id == self.runtime_instance_id()
-                    && adoption.previous.origin.producer == adoption.producer
-                    && adoption.previous.origin.meaning.implementation
-                        == *adoption.implementation
-                    && adoption.previous.matches_current_ownership_at(
-                        execution,
-                        adoption.installed,
-                        basis,
-                    )? =>
-            {
-                crate::storage::residency::probe_head(
-                    execution, &selected.with_symbol_admission(&self.services.symbols), |partitions| {
-                        let read = crate::branch::SelectedRelationalBranchRead::in_round(&selected, partitions);
-                        execution.run_native_with_checkpoint(|context| -> Result<bool, TransactionCommitError> {
-                            if !matches_live_members(context, &read, &adoption, execution.allocation_policy())? { return Ok(false); }
-                            let schema = basis.inner.root.retained_schema_authority();
-                            let plans = schema.aspect_plans();
-                            for intent in &body.intents {
-                                crate::execution::request_stage::checkpoint(context, 1).map_err(super::custody::execution_stop)?;
-                                match intent {
-                                    MutationIntent::Entity(EntityMutationIntent::UpdateFields(intent)) => {
-                                        let prepared = crate::authority::mutation::intents::entity_aspect_preparation::prepare_fields(execution, intent, &read, plans)?;
-                                        if prepared.changes_state(context)? { return Ok(false); }
-                                    }
-                                    MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(intent)) => {
-                                        let prepared = crate::authority::mutation::intents::entity_aspect_preparation::prepare_portable(execution, intent, &read, plans)?;
-                                        if prepared.changes_state(context)? { return Ok(false); }
-                                    }
-                                    // Revalidation has no mutation effect; actual validation still
-                                    // checks its full identity and installed invariants.
-                                    MutationIntent::Entity(EntityMutationIntent::Revalidate(_))
-                                    | MutationIntent::Relation(crate::transactions::data::RelationMutationIntent::Revalidate(_)) => {}
-                                    _ => return Ok(false),
-                                }
-                            }
-                            Ok(true)
-                        }).map_err(super::custody::execution_stop)?.0
-                    },
-                ).map_err(|failure| crate::authority::commit::preparation::storage_read_denial(basis, failure))??
-            }
-            _ => false,
-        };
-        if !omitted {
-            body.intents.insert(
-                appendix.position,
-                MutationIntent::Create(CreateIntent::Entity(appendix.entity)),
-            );
-        }
-        Ok(RelationalPublicationBodySelection {
-            batch: body,
-            adoption: if omitted { prior } else { None },
-            basis: basis.clone(),
-        })
+/// The judgment allocates no record or symbol identities. A real publication
+/// stages the original receipt in its original place and follows the normal
+/// canonical plan, retaining that plan's allocation and byte ordering.
+pub(crate) fn prepare_publication_appendix(
+    runtime_instance_id: u64,
+    dictionary: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    basis: &AdmittedRelationalBranchBasis,
+    mut body: WorkerIntentBatch,
+    content: &crate::content::RelationalContentAttachments,
+    appendix: RelationalPublicationAppendix,
+    adoption: Option<RelationalPublicationAdoptionRequest<'_>>,
+) -> Result<RelationalPublicationBodySelection, TransactionCommitError> {
+    if appendix.position > body.intents.len() {
+        return Err(super::origin_denial(
+            "publication appendix position is outside its body",
+        ));
     }
+    let prior = adoption
+        .as_ref()
+        .map(|request| std::sync::Arc::clone(&request.previous.origin));
+    let selected =
+        crate::branch::root_selection::SelectedRelationalBranchState::from_admitted_basis(basis);
+    let omitted = match adoption {
+        Some(adoption)
+            if basis.is_current()
+                && content.is_empty()
+                && adoption.previous.runtime_instance_id == runtime_instance_id
+                && adoption.previous.origin.producer == adoption.producer
+                && adoption.previous.origin.meaning.implementation == *adoption.implementation
+                && adoption.previous.matches_current_ownership_at(
+                    execution,
+                    adoption.installed,
+                    basis,
+                )? =>
+        {
+            crate::storage::residency::probe_head(
+                execution, &selected.with_symbol_admission(dictionary), |partitions| {
+                    let read = crate::branch::selected_read::SelectedRelationalBranchRead::in_round(&selected, partitions);
+                    execution.run_native_with_checkpoint(|context| -> Result<bool, TransactionCommitError> {
+                        if !matches_live_members(context, &read, &adoption, execution.allocation_policy())? { return Ok(false); }
+                        let schema = basis.inner.root.retained_schema_authority();
+                        let plans = schema.aspect_plans();
+                        for intent in &body.intents {
+                            crate::execution::request_stage::checkpoint(context, 1).map_err(super::custody::execution_stop)?;
+                            match intent {
+                                MutationIntent::Entity(EntityMutationIntent::UpdateFields(intent)) => {
+                                    let prepared = crate::authority::mutation::intents::entity_aspect_preparation::prepare_fields(execution, intent, &read, plans)?;
+                                    if prepared.changes_state(context)? { return Ok(false); }
+                                }
+                                MutationIntent::Entity(EntityMutationIntent::ApplyAspectPatch(intent)) => {
+                                    let prepared = crate::authority::mutation::intents::entity_aspect_preparation::prepare_portable(execution, intent, &read, plans)?;
+                                    if prepared.changes_state(context)? { return Ok(false); }
+                                }
+                                // Revalidation has no mutation effect; actual validation still
+                                // checks its full identity and installed invariants.
+                                MutationIntent::Entity(EntityMutationIntent::Revalidate(_))
+                                | MutationIntent::Relation(crate::transactions::data::intents::mutation_intent::RelationMutationIntent::Revalidate(_)) => {}
+                                _ => return Ok(false),
+                            }
+                        }
+                        Ok(true)
+                    }).map_err(super::custody::execution_stop)?.0
+                },
+            ).map_err(|failure| crate::authority::commit::preparation::storage_read_denial(basis, failure))??
+        }
+        _ => false,
+    };
+    if !omitted {
+        body.intents.insert(
+            appendix.position,
+            MutationIntent::Create(CreateIntent::Entity(appendix.entity)),
+        );
+    }
+    Ok(RelationalPublicationBodySelection {
+        batch: body,
+        adoption: if omitted { prior } else { None },
+        basis: basis.clone(),
+    })
 }
 
 fn matches_live_members(
@@ -201,28 +213,9 @@ fn matches_live_members(
     Ok(true)
 }
 
-impl crate::mvcc::BranchBoundRelationalTransaction {
-    /// Consume Native's exact body/appendix phase. An omitted appendix can only
-    /// be adopted; it can never accidentally become an ordinary publication.
-    pub fn push_publication_body(
-        &mut self,
-        selection: RelationalPublicationBodySelection,
-        policy: worth_execution::ExecutionAllocationPolicy<'_, '_>,
-    ) -> Result<(), TransactionCommitError> {
-        if self.basis != selection.basis || self.appendix_adoption.is_some() {
-            return Err(super::origin_denial(
-                "publication body belongs to another transaction basis",
-            ));
-        }
-        self.push_batch(selection.batch, policy)
-            .map_err(|stop| TransactionCommitError::conflict(stop.into_conflict()))?;
-        self.appendix_adoption = selection.adoption;
-        Ok(())
-    }
-}
-
 fn allocation_stop(cause: worth_execution::ExecutionAllocationDenial) -> TransactionCommitError {
     TransactionCommitError::conflict(
-        crate::mvcc::RelationalTransactionStagingDenial::from(cause).into_conflict(),
+        crate::mvcc::transaction::staging::RelationalTransactionStagingDenial::from(cause)
+            .into_conflict(),
     )
 }

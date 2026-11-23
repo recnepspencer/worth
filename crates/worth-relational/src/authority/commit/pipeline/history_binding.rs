@@ -4,7 +4,8 @@ use super::phase_backing::CommitPhaseBacking;
 use crate::authority::commit::phases::schema_continuity::{
     prepare_schema_continuity_diagnostics, resolve_schema_continuity,
 };
-use crate::transactions::data::{CommitPhase, PublishedMergeExecutionAuthority};
+use crate::transactions::data::commit_log::CommitPhase;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 
 pub(super) struct HistoryBoundCommitExecution {
     mutated: MutatedCommitExecution,
@@ -21,7 +22,9 @@ impl HistoryBoundCommitExecution {
         &mut self.mutated
     }
 
-    pub(super) fn candidate_symbols(&self) -> &crate::runtime::PendingSymbolMeanings {
+    pub(super) fn candidate_symbols(
+        &self,
+    ) -> &crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings {
         &self.mutated.mutation_identities.symbols
     }
 
@@ -55,7 +58,7 @@ pub(super) fn bind_commit_history(
     mutated: CommitPhaseBacking<MutatedCommitExecution>,
 ) -> Result<
     CommitPhaseBacking<HistoryBoundCommitExecution>,
-    crate::transactions::data::TransactionCommitError,
+    crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
 > {
     // Producer temporaries retire before funding the retained successor,
     // matching the former caller-side allocation boundary.

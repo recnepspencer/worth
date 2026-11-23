@@ -11,7 +11,7 @@ fn genuine_whole_clear_can_leave_a_live_member_without_stored_payload() {
         aspects, AbsenceLaw, AspectBinding, AspectEquivalenceBasis, AspectEvolutionPolicy,
         AspectIdentity, AspectMaskContract, ScalarAspectType,
     };
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let contract = aspects()
         .contract()
@@ -115,8 +115,10 @@ fn genuine_whole_clear_can_leave_a_live_member_without_stored_payload() {
             &basis,
             "native-preserver",
             &[2; 32],
-            &crate::mvcc::native_meaning_fixture("native-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &crate::mvcc::publication::application_publication::native_meaning_fixture(
+                "native-creator",
+            ),
+            &crate::mvcc::publication::application_publication::native_roles_fixture(
                 &ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),
@@ -126,7 +128,7 @@ fn genuine_whole_clear_can_leave_a_live_member_without_stored_payload() {
 
 #[test]
 fn cold_succession_applies_partial_field_clear_without_requiring_a_full_rewrite() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let binding = entity_summary_struct_aspect(aspect_key("summary"), field_key("summary"));
     let contract = binding.contract.clone();
@@ -222,8 +224,10 @@ fn cold_succession_applies_partial_field_clear_without_requiring_a_full_rewrite(
             &basis,
             "native-preserver",
             &[2; 32],
-            &crate::mvcc::native_meaning_fixture("native-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &crate::mvcc::publication::application_publication::native_meaning_fixture(
+                "native-creator",
+            ),
+            &crate::mvcc::publication::application_publication::native_roles_fixture(
                 &ids.map(|id| (id, KindId(1))),
                 RequiredOutputRolePosture::Preserve,
             ),

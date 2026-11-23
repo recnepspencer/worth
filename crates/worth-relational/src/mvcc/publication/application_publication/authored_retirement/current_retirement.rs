@@ -18,7 +18,7 @@ impl RelationalRuntime {
             .iter()
             .filter_map(|r| match r.target {
                 EntityReference::Existing(id) => {
-                    Some(crate::transactions::data::RecordRef::Entity(id))
+                    Some(crate::transactions::data::primitives::RecordRef::Entity(id))
                 }
                 _ => None,
             })

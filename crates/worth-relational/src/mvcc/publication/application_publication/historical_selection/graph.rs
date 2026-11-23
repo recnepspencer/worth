@@ -5,7 +5,7 @@ impl RelationalRuntime {
         &self,
         execution: &ExecutionRequest<'_, '_>,
         installed: &RelationalInstalledApplicationPublicationAuthority,
-        graph: &crate::branch::RelationalOwnedModelGraphSelection,
+        graph: &crate::branch::model_ownership::RelationalOwnedModelGraphSelection,
     ) -> Result<Vec<RelationalHistoricalOutputSelection>, TransactionCommitError> {
         let entities = graph.entities();
         let current = entities.current_basis();

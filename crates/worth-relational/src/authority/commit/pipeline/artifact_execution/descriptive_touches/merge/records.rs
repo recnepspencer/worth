@@ -7,16 +7,16 @@ use crate::history::data::{
 };
 use crate::identity::data::{EntityId, PartitionId, RelationId};
 use crate::storage::substrate::{EntityRecordKind, RecordKind, RelationRecordKind};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 use super::super::{Failure, TouchBudget};
 use super::push;
 
 pub(super) fn entity(
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
-    selected: &crate::branch::SelectedRelationalBranchState,
-    working: &crate::runtime::WorkingState,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
+    selected: &crate::branch::root_selection::SelectedRelationalBranchState,
+    working: &crate::storage::overlay::WorkingState,
     partition: PartitionId,
     slot: usize,
     old: Option<RelationalRecordHeadArenaView<'_, EntityRecordKind>>,
@@ -41,9 +41,9 @@ pub(super) fn entity(
 
 pub(super) fn relation(
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
-    selected: &crate::branch::SelectedRelationalBranchState,
-    working: &crate::runtime::WorkingState,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
+    selected: &crate::branch::root_selection::SelectedRelationalBranchState,
+    working: &crate::storage::overlay::WorkingState,
     partition: PartitionId,
     slot: usize,
     old: Option<RelationalRecordHeadArenaView<'_, RelationRecordKind>>,
@@ -139,9 +139,9 @@ pub(super) fn relation(
 
 fn record<K: RecordKind>(
     runtime: &crate::runtime::RelationalPreparationRuntime,
-    catalog: &crate::runtime::CapturedIndexDefinitionCatalog,
-    selected: &crate::branch::SelectedRelationalBranchState,
-    working: &crate::runtime::WorkingState,
+    catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
+    selected: &crate::branch::root_selection::SelectedRelationalBranchState,
+    working: &crate::storage::overlay::WorkingState,
     partition: PartitionId,
     slot: usize,
     old: Option<RelationalRecordHeadArenaView<'_, K>>,

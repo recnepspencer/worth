@@ -1,5 +1,5 @@
 use crate::tests::support::runtime_with_test_schema;
-use crate::transactions::data::WorkerIntentBatch;
+use crate::transactions::data::primitives::WorkerIntentBatch;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
 
 #[test]
@@ -51,7 +51,7 @@ fn split_publication_cancelled_request_releases_candidate_and_records_discard() 
     assert!(
         matches!(
             outcome,
-            crate::mvcc::RelationalPublicationOutcome::RequestStopped(
+            crate::mvcc::publication::outcome::RelationalPublicationOutcome::RequestStopped(
                 worth_execution::WorkCeilingDenial::Stopped(
                     worth_execution::MapKernelStop::Cancelled
                 ),
@@ -92,7 +92,7 @@ fn split_publication_cancelled_request_releases_candidate_and_records_discard() 
 fn foreign_candidate_leaves_the_target_owner_and_its_counters_unchanged() {
     let source = runtime_with_test_schema();
     let target = runtime_with_test_schema();
-    let backing = crate::test_execution_policy::serial_request();
+    let backing = crate::execution::test_policy::serial_request();
     let execution = ExecutionRequest::serial(&backing);
     let source_identity = source.main_branch_identity();
     let (source_head, basis) = source.observe_branch(&source_identity).unwrap();
@@ -119,8 +119,8 @@ fn foreign_candidate_leaves_the_target_owner_and_its_counters_unchanged() {
         .publication_port()
         .compare_and_publish(&execution, candidate);
     assert!(
-        matches!(outcome, crate::mvcc::RelationalPublicationOutcome::Denied(
-        crate::mvcc::RelationalPublicationDenial::ForeignRuntime {
+        matches!(outcome, crate::mvcc::publication::outcome::RelationalPublicationOutcome::Denied(
+        crate::mvcc::publication::outcome::refusals::RelationalPublicationDenial::ForeignRuntime {
             expected_runtime_instance_id, actual_runtime_instance_id,
         }
     ) if expected_runtime_instance_id == target.runtime_instance_id()

@@ -1,13 +1,14 @@
 //! A symbol miss abandons a candidate before any bucket load can occur.
 use crate::authority::mutation::MutationApplyDenial;
-use crate::branch::AdmittedRelationalBranchBasis;
-use crate::runtime::{
-    PendingSymbolMeanings, RelationalPreparationRuntime, SymbolReservationDenial,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
+use crate::runtime::state::subsystems::services::symbol_table::SymbolReservationDenial;
+use crate::runtime::RelationalPreparationRuntime;
 use crate::storage::data::{
     RelationalStorageSubject, RelationalStorageUnavailable, RelationalStorageUnavailableCause,
 };
-use crate::transactions::data::{CommitPreparationError, TransactionCommitError};
+use crate::transactions::data::outcomes::commit_preparation::CommitPreparationError;
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 pub(crate) fn probe_symbol_rounds<T>(
     execution: &worth_execution::ExecutionRequest<'_, '_>,

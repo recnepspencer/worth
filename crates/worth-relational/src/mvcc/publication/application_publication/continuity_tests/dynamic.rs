@@ -3,7 +3,7 @@ use super::*;
 
 #[test]
 fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_coverage() {
-    let request = crate::test_execution_policy::serial_request();
+    let request = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&request);
     let mut runtime = runtime_with_test_schema();
     let receipt = runtime
@@ -163,7 +163,7 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
     cold_roles[2].target = EntityReference::Existing(joined_id);
     release_test_commit_snapshot(&runtime, &changed);
     let basis = test_owner_main_basis(&runtime).unwrap();
-    let loci = [crate::runtime::CodecFieldLocus {
+    let loci = [crate::schema::codec_field_comparison::CodecFieldLocus {
         kind_id: KindId(1),
         aspect_key: aspect_key("name"),
         field_key: field_key("name"),
@@ -183,7 +183,9 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &basis,
             "dynamic-preserver",
             &[2; 32],
-            &crate::mvcc::native_meaning_fixture("dynamic-creator"),
+            &crate::mvcc::publication::application_publication::native_meaning_fixture(
+                "dynamic-creator",
+            ),
             &cold_roles,
         )
         .unwrap();
@@ -215,7 +217,9 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &fresh_basis,
             "dynamic-preserver",
             &[2; 32],
-            &crate::mvcc::native_meaning_fixture("dynamic-creator"),
+            &crate::mvcc::publication::application_publication::native_meaning_fixture(
+                "dynamic-creator",
+            ),
             &cold_roles,
         )
         .unwrap();
@@ -237,8 +241,10 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &renewed_basis,
             "native-preserver",
             &[3; 32],
-            &crate::mvcc::native_meaning_fixture("dynamic-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &crate::mvcc::publication::application_publication::native_meaning_fixture(
+                "dynamic-creator",
+            ),
+            &crate::mvcc::publication::application_publication::native_roles_fixture(
                 &[(ids[0], KindId(1)), (joined_id, KindId(1))],
                 RequiredOutputRolePosture::Preserve,
             ),
@@ -253,7 +259,9 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &basis,
             "dynamic-preserver",
             &[2; 32],
-            &crate::mvcc::native_meaning_fixture("dynamic-creator"),
+            &crate::mvcc::publication::application_publication::native_meaning_fixture(
+                "dynamic-creator"
+            ),
             &[cold_roles[0].clone(), cold_roles[2].clone()]
         )
         .is_err());
@@ -268,7 +276,9 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &basis,
             "dynamic-preserver",
             &[2; 32],
-            &crate::mvcc::native_meaning_fixture("dynamic-creator"),
+            &crate::mvcc::publication::application_publication::native_meaning_fixture(
+                "dynamic-creator"
+            ),
             &roles_with_wrong_posture
         )
         .is_err());
@@ -306,8 +316,10 @@ fn dynamic_create_preserve_retire_tracks_member_birth_and_requires_prior_live_co
             &basis,
             "native-preserver",
             &[3; 32],
-            &crate::mvcc::native_meaning_fixture("dynamic-creator"),
-            &crate::mvcc::native_roles_fixture(
+            &crate::mvcc::publication::application_publication::native_meaning_fixture(
+                "dynamic-creator",
+            ),
+            &crate::mvcc::publication::application_publication::native_roles_fixture(
                 &[(ids[0], KindId(1)), (joined_id, KindId(1))],
                 RequiredOutputRolePosture::Preserve,
             ),
