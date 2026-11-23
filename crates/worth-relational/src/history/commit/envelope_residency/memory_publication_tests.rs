@@ -239,7 +239,7 @@ fn memory_frame_quota_and_cancel_refuse_before_position_or_head() {
         position: crate::publication::patch::data::PatchStreamPosition,
         canonical: crate::history::data::AuthoritativeArtifactEnvelopeRef<'a>,
         original_inputs:
-            Option<&'a crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
+            Option<&'a crate::history::data::canonical_commit_envelope::recorded_inputs::RecordedCanonicalInputs>,
     }
     let position = runtime
         .history

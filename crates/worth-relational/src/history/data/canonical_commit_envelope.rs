@@ -26,6 +26,8 @@ pub(crate) use authored_index_writes::{CanonicalAuthoredIndexWrite, CanonicalAut
 pub(crate) use index_catalog::CanonicalIndexDefinitionDelta;
 mod descriptive_decode;
 mod original_inputs;
+pub(crate) mod recorded_inputs;
+pub(crate) mod schema_carrier;
 pub(crate) use live_managed_source_history::LiveManagedSourceHistory;
 pub use original_inputs::{
     RelationalIntroducedSchemaObservation, RelationalOriginalInputObservation,
@@ -100,9 +102,7 @@ pub(crate) use wire_projection::EnvelopeProjection;
 /// ```
 #[derive(Debug)]
 pub struct CanonicalCommitEnvelope {
-    original_inputs: std::sync::OnceLock<
-        Option<crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs>,
-    >,
+    original_inputs: std::sync::OnceLock<Option<recorded_inputs::RecordedCanonicalInputs>>,
     /// Live exact-envelope acceleration; deep Clone and all codecs omit it.
     pub(crate) live_managed_source_history: LiveManagedSourceHistory,
     body: CanonicalCommitEnvelopeBody,

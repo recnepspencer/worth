@@ -22,6 +22,8 @@ use std::time::Instant;
 pub(crate) mod owned_graph_selection;
 #[path = "prepare/retained_entity_selection.rs"]
 pub(crate) mod retained_entity_selection;
+pub(crate) mod working_state_inputs;
+pub(crate) mod working_state_metrics;
 
 pub(crate) struct PreparedWorkingStateScope {
     pub(crate) selected_branch_state: SelectedRelationalBranchState,
@@ -248,13 +250,14 @@ pub(crate) fn prepare_lowered_working_state_scope(
     }
 }
 
-pub(crate) fn prepare_authoritative_working_state_scope_for_base(
-    runtime: &RelationalPreparationRuntime,
+pub(crate) fn prepare_authoritative_working_state_scope_for_base<'a>(
+    inputs: impl Into<working_state_inputs::WorkingStatePreparation<'a>>,
     base_state: &impl CurrentPartitionAccess,
     merged_plan: &MergedCommitPlan,
     merge_parent_count: usize,
     footprint: Option<&crate::mvcc::RelationalTransactionFootprint>,
 ) -> (CommitStructuralSummary, WorkingState, CommitPhaseTiming) {
+    let inputs = inputs.into();
     let mut phase_timing = CommitPhaseTiming::default();
     let summary_started = Instant::now();
     let mut structural_summary =
@@ -327,7 +330,7 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
     let working_state = WorkingState::from_touched_partitions_with_layout_and_sparse_slots(
         base_state,
         structural_summary.touched_partitions.iter().copied(),
-        runtime.config.storage.adjacency_policy.clone(),
+        inputs.adjacency_policy.clone(),
         clone_mode,
         entity_working_set_layout,
         sparse_entity_slots.as_ref(),
@@ -335,7 +338,8 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
     );
     phase_timing.draft_working_state_clone_micros = clone_started.elapsed().as_micros() as u64;
     if matches!(clone_mode, PartitionCloneMode::Full) {
-        runtime.performance_access().count_working_state_clone(
+        working_state_metrics::count_working_state_clone(
+            inputs.instrumentation,
             cloned_partition_count,
             cloned_entity_slots,
             cloned_relation_slots,
@@ -344,7 +348,8 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
     match working_state.entity_working_set_layout() {
         EntityWorkingSetLayout::CanonicalSoA => {}
         EntityWorkingSetLayout::AoSoACandidate { .. } => {
-            runtime.performance_access().count_aosoa_prepare_chunks(
+            working_state_metrics::count_aosoa_prepare_chunks(
+                inputs.instrumentation,
                 candidate_chunk_plan.chunk_count,
                 candidate_chunk_plan.slot_count,
             )
@@ -352,45 +357,6 @@ pub(crate) fn prepare_authoritative_working_state_scope_for_base(
     }
 
     (structural_summary, working_state, phase_timing)
-}
-
-pub(crate) fn record_preparation_counters(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
-    working_state: &WorkingState,
-    structural_summary: &CommitStructuralSummary,
-) {
-    let mut counters = runtime
-        .services
-        .instrumentation
-        .complexity_counters
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    counters.commit_topology_flags = structural_summary.commit_topology.mask();
-    counters.partitions_touched_by_commit = working_state.touched_partition_count();
-    counters.bulk_entity_slots_reserved = structural_summary.bulk_entity_slots_reserved;
-    counters.bulk_relation_slots_reserved = structural_summary.bulk_relation_slots_reserved;
-}
-
-pub(crate) fn record_mutation_counters(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
-    working_state: &WorkingState,
-) {
-    let mut counters = runtime
-        .services
-        .instrumentation
-        .complexity_counters
-        .lock()
-        .unwrap_or_else(|error| error.into_inner());
-    counters.entity_slots_touched_by_commit = working_state
-        .mutation_journal()
-        .values()
-        .map(|journal| journal.entity_slots.len())
-        .sum();
-    counters.relation_slots_touched_by_commit = working_state
-        .mutation_journal()
-        .values()
-        .map(|journal| journal.relation_slots.len())
-        .sum();
 }
 
 #[cfg(test)]

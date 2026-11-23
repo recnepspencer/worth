@@ -2,35 +2,32 @@
 use super::*;
 use serde::{Deserialize, Deserializer};
 
-impl DurableBranchRootSchemaImage {
+impl RecordedBranchSchemaImage {
     pub(crate) fn capture_for_request(
-        authority: &crate::branch::RelationalBranchRootSchemaAuthority,
+        source: SchemaImageSource<'_>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Self, crate::durability::data::RelationalRecoveryStop> {
-        use crate::durability::data::{
-            DurabilityError, RecoveryFailureClass, RelationalRecoveryStop,
-        };
+    ) -> Result<Self, crate::durability::data::recovery_stop::RelationalRecoveryStop> {
+        use crate::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
+        use crate::durability::data::recovery_stop::RelationalRecoveryStop;
         crate::execution::check_request(execution).map_err(RelationalRecoveryStop::Request)?;
-        let bytes = super::capture_memory::quote(authority, execution)?;
+        let bytes = super::capture_memory::quote(source, execution)?;
         let memory = execution
             .reserve_retained_memory(bytes as u64)
             .map_err(|stop| RelationalRecoveryStop::Request(stop.into()))?;
-        Self::capture_owned(authority, memory).map_err(|error| {
+        Self::capture_owned(source, memory).map_err(|error| {
             DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, error.to_string()).into()
         })
     }
 
-    pub(crate) fn capture(
-        authority: &crate::branch::RelationalBranchRootSchemaAuthority,
-    ) -> Result<Self, rmp_serde::encode::Error> {
-        Self::capture_owned(authority, None)
+    pub(crate) fn capture(source: SchemaImageSource<'_>) -> Result<Self, rmp_serde::encode::Error> {
+        Self::capture_owned(source, None)
     }
 
     fn capture_owned(
-        authority: &crate::branch::RelationalBranchRootSchemaAuthority,
+        source: SchemaImageSource<'_>,
         memory: Option<worth_execution::ExecutionMemoryReservation>,
     ) -> Result<Self, rmp_serde::encode::Error> {
-        let registry = authority.registry();
+        let registry = source.registry;
         let entity_registrations = registry
             .entity_kinds
             .values()
@@ -44,8 +41,8 @@ impl DurableBranchRootSchemaImage {
         let mut image = SchemaImageData {
             format_version: ROOT_SCHEMA_IMAGE_VERSION,
             carrier_digest: [0; 32],
-            schema_root: authority.authority_digest(),
-            descriptor_semantics_version: authority.descriptor_semantics_version(),
+            schema_root: source.schema_root,
+            descriptor_semantics_version: source.descriptor_semantics_version,
             entity_registrations,
             relation_registrations,
             derived_relations: registry.derived_parts(),
@@ -54,8 +51,8 @@ impl DurableBranchRootSchemaImage {
             persistent_name_schemes: registry.persistent_name_scheme_snapshots(),
             kind_name_schemes: registry.kind_name_scheme_snapshots(),
             _memory: memory,
-            retained_aspect_contracts: authority
-                .retained_aspect_contracts()
+            retained_aspect_contracts: source
+                .retained_aspect_contracts
                 .iter()
                 .map(PortableAspectContract::from_contract)
                 .collect(),
@@ -65,7 +62,7 @@ impl DurableBranchRootSchemaImage {
     }
 }
 
-impl PartialEq for DurableBranchRootSchemaImage {
+impl PartialEq for RecordedBranchSchemaImage {
     fn eq(&self, other: &Self) -> bool {
         let (left, right) = (&self.0, &other.0);
         left.format_version == right.format_version
@@ -82,9 +79,9 @@ impl PartialEq for DurableBranchRootSchemaImage {
             && left.kind_name_schemes == right.kind_name_schemes
     }
 }
-impl Eq for DurableBranchRootSchemaImage {}
+impl Eq for RecordedBranchSchemaImage {}
 
-impl<'de> Deserialize<'de> for DurableBranchRootSchemaImage {
+impl<'de> Deserialize<'de> for RecordedBranchSchemaImage {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         SchemaImageData::deserialize(deserializer).map(|data| Self(std::sync::Arc::new(data)))
     }

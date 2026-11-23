@@ -1,9 +1,9 @@
 //! Required content authority fixes every preceding durable tail slot.
-use super::DurableBranchRootSchemaImage;
+use super::RecordedBranchSchemaImage;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
 
-impl Serialize for DurableBranchRootSchemaImage {
+impl Serialize for RecordedBranchSchemaImage {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         let has_naming =
             !self.0.persistent_name_schemes.is_empty() || !self.0.kind_name_schemes.is_empty();

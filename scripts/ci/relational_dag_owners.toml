@@ -217,6 +217,7 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "durability" = "durability"
 # Portable schema registration rows own meaning separate from their enclosing image.
 "durability/data/branch_root_schema_images/registrations" = "contracts"
+"durability/data/branch_root_schema_images/capture_tests.rs" = "branch"
 "durability/access" = "runtime"
 "durability/authority/recovery" = "durability"
 "durability/authority/runtime_rebuild" = "durability"
@@ -774,6 +775,13 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "durability/canonical_commit_artifact/frame_contract" = "contracts"
 "durability/data/branch_lifecycle_images.rs" = "branch"
 "durability/data/branch_root_schema_images/registrations" = "contracts"
+# The immutable canonical schema carrier is shared by commit and root custody.
+"history/data/canonical_commit_envelope/schema_carrier" = "branch"
+"history/data/canonical_commit_envelope/recorded_inputs.rs" = "branch"
+"durability/data/branch_root_schema_images/capture_tests.rs" = "branch"
+
+# Bound the working-state clone and metrics to its exact preparation policy.
+"authority/commit/phases/prepare/working_state_metrics.rs" = "publication"
 "durability/data/native_checkpoint_capture_denial" = "contracts"
 "execution/mod.rs" = "contracts"
 "history/access/aspect_history/live_admission.rs" = "runtime"

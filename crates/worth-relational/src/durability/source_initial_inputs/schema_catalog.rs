@@ -2,6 +2,7 @@
 use crate::branch::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoints::region_directory::corrupt;
 use crate::durability::data::RelationalRecoveryStop;
+use crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage;
 use crate::schema::data::{RelationalSchemaRegistry, SchemaAuthoritySnapshot};
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionRequest};
@@ -60,7 +61,7 @@ impl ReadmittedSourceSchemaCatalog {
     /// No missing executable format is resolved or manufactured here.
     pub(crate) fn insert_unbound_image(
         catalog: &mut Arc<Self>,
-        image: &crate::durability::data::DurableBranchRootSchemaImage,
+        image: &RecordedBranchSchemaImage,
         configured: &RelationalSchemaRegistry,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), RelationalRecoveryStop> {
@@ -75,7 +76,7 @@ impl ReadmittedSourceSchemaCatalog {
     /// Immediate executable admission for callers with installed receiver codecs.
     pub(crate) fn insert_image(
         catalog: &mut Arc<Self>,
-        image: &crate::durability::data::DurableBranchRootSchemaImage,
+        image: &RecordedBranchSchemaImage,
         configured: &RelationalSchemaRegistry,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), RelationalRecoveryStop> {
@@ -92,7 +93,7 @@ impl ReadmittedSourceSchemaCatalog {
 
     fn read_unseen_image(
         catalog: &Self,
-        image: &crate::durability::data::DurableBranchRootSchemaImage,
+        image: &RecordedBranchSchemaImage,
         configured: &RelationalSchemaRegistry,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<
@@ -130,7 +131,7 @@ impl ReadmittedSourceSchemaCatalog {
 
     fn retain_image(
         catalog: &mut Arc<Self>,
-        image: &crate::durability::data::DurableBranchRootSchemaImage,
+        image: &RecordedBranchSchemaImage,
         registry: RelationalSchemaRegistry,
         contracts: Vec<AspectContract>,
         expected: &SchemaAuthoritySnapshot,

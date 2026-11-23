@@ -54,8 +54,8 @@ pub(super) fn mutate_commit_execution(
             },
         ) = prepared.into_parts();
         telemetry::record_preparation_telemetry(runtime, outcome.preparation_telemetry);
-        crate::authority::commit::phases::prepare::record_mutation_counters(
-            runtime,
+        crate::authority::commit::phases::prepare::working_state_metrics::record_mutation_counters(
+            &runtime.services.instrumentation,
             &working_state,
         );
         let (_, _, _, _, commit_log, phase_timing) = prepared.admitted.phase_view().into_parts();

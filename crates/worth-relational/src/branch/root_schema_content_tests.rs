@@ -172,7 +172,7 @@ fn content_schema_compact_roundtrip_preserves_empty_and_nonempty_optional_tails(
 
 #[test]
 fn content_schema_carrier_named_and_compact_preserve_every_optional_tail_position() {
-    use crate::durability::data::DurableBranchRootSchemaImage;
+    use crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage;
     for registry in [RelationalSchemaRegistry::new(), registry(1, 4096, 2)] {
         let authority = RelationalBranchRootSchemaAuthority::capture(
             1,
@@ -182,10 +182,10 @@ fn content_schema_carrier_named_and_compact_preserve_every_optional_tail_positio
             None,
         )
         .unwrap();
-        let image = DurableBranchRootSchemaImage::capture(&authority).unwrap();
+        let image = RecordedBranchSchemaImage::capture(authority.schema_image_source()).unwrap();
         let mut json = serde_json::to_value(&image).unwrap();
         assert_eq!(
-            serde_json::from_value::<DurableBranchRootSchemaImage>(json.clone()).unwrap(),
+            serde_json::from_value::<RecordedBranchSchemaImage>(json.clone()).unwrap(),
             image
         );
         assert!(json
@@ -194,7 +194,7 @@ fn content_schema_carrier_named_and_compact_preserve_every_optional_tail_positio
             .remove("content_formats")
             .is_some());
         assert_eq!(
-            serde_json::from_value::<DurableBranchRootSchemaImage>(json)
+            serde_json::from_value::<RecordedBranchSchemaImage>(json)
                 .unwrap_err()
                 .to_string(),
             "missing field `content_formats`"
@@ -215,10 +215,10 @@ fn content_schema_carrier_named_and_compact_preserve_every_optional_tail_positio
             let mut missing = compact.clone();
             missing.truncate(missing.len() - 3);
             missing[0] = 0x99;
-            assert!(rmp_serde::from_slice::<DurableBranchRootSchemaImage>(&missing).is_err());
+            assert!(rmp_serde::from_slice::<RecordedBranchSchemaImage>(&missing).is_err());
         }
         for bytes in [compact, rmp_serde::to_vec_named(&image).unwrap()] {
-            let decoded: DurableBranchRootSchemaImage = rmp_serde::from_slice(&bytes).unwrap();
+            let decoded: RecordedBranchSchemaImage = rmp_serde::from_slice(&bytes).unwrap();
             assert_eq!(decoded, image);
             let (restored, _) = decoded.readmit_registry().unwrap();
             assert_eq!(restored.authority_snapshot(), registry.authority_snapshot());

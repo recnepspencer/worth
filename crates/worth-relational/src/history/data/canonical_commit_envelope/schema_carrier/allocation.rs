@@ -2,8 +2,8 @@
 use super::*;
 /// One decode's admissions for independently shared identity/policy leaves.
 pub(crate) struct DurableSchemaDeclarationMemory {
-    pub(crate) identities: Vec<crate::merge::data::MergeIdentityMemory>,
-    pub(crate) policies: Vec<Option<crate::merge::data::MergeLeafMemory>>,
+    pub(crate) identities: Vec<crate::merge::data::readmission_memory::MergeIdentityMemory>,
+    pub(crate) policies: Vec<Option<crate::merge::data::readmission_memory::MergeLeafMemory>>,
     pub(crate) _tree_memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl DurableSchemaDeclarationMemory {
@@ -34,13 +34,16 @@ impl DurableSchemaDeclarationMemory {
             .iter_mut()
             .zip(&actual.merge_policy_declarations)
         {
-            crate::merge::data::attach_policy_name(memory, &declaration.policy)?;
+            crate::merge::data::readmission_memory::attach_policy_name(
+                memory,
+                &declaration.policy,
+            )?;
         }
         Ok(())
     }
 }
 
-impl DurableBranchRootSchemaImage {
+impl RecordedBranchSchemaImage {
     pub(crate) fn decode_control_bytes() -> Option<usize> {
         std::alloc::Layout::new::<(usize, usize)>()
             .extend(std::alloc::Layout::new::<SchemaImageData>())

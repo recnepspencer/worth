@@ -1,6 +1,6 @@
 //! Authenticated complete codec-disposition claims; cold readers re-admit them.
+use super::schema_carrier::registrations::DurableEntitySchemaRegistration;
 use super::*;
-use crate::durability::data::branch_root_schema_images::registrations::DurableEntitySchemaRegistration;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) struct CanonicalCodecRetirementKind {

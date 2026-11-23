@@ -2,26 +2,6 @@ use super::PerformanceAccess;
 use crate::transactions::data::BulkMutationLocalityFootprint;
 
 impl PerformanceAccess<'_> {
-    pub(crate) fn count_working_state_clone(
-        &self,
-        partitions: usize,
-        entity_slots: usize,
-        relation_slots: usize,
-    ) {
-        self.counters.count(|counters| {
-            counters.partitions_cloned += partitions;
-            counters.entity_slots_cloned += entity_slots;
-            counters.relation_slots_cloned += relation_slots;
-        });
-    }
-
-    pub(crate) fn count_aosoa_prepare_chunks(&self, chunk_count: usize, slot_count: usize) {
-        self.counters.count(|counters| {
-            counters.aosoa_entity_chunks_staged += chunk_count;
-            counters.aosoa_entity_chunk_slots_materialized += slot_count;
-        });
-    }
-
     pub(crate) fn count_bulk_mutation_plan(
         &self,
         locality: &BulkMutationLocalityFootprint,

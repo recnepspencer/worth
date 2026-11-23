@@ -1,6 +1,6 @@
 //! Full portable graph recipes and finite domain names newly copied by capture.
 use super::*;
-use crate::derived_relation::{DerivedRelationDefinitionParts, DerivedRelationNode};
+use crate::derived_relation::definition::{DerivedRelationDefinitionParts, DerivedRelationNode};
 use crate::projected_member_domain::ProjectedMemberDomainParts;
 
 pub(super) fn quote(

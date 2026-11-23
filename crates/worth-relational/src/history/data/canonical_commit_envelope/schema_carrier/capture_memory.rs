@@ -1,6 +1,7 @@
 //! Concrete storage newly copied into one immutable schema-image owner.
 use super::*;
-use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
+use crate::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 use std::alloc::Layout;
 use worth_execution::ExecutionRequest;
 
@@ -38,7 +39,7 @@ fn overflow() -> RelationalRecoveryStop {
 }
 
 pub(super) fn quote(
-    authority: &crate::branch::RelationalBranchRootSchemaAuthority,
+    source: SchemaImageSource<'_>,
     execution: &ExecutionRequest<'_, '_>,
 ) -> Result<usize, RelationalRecoveryStop> {
     let layout = Layout::new::<(usize, usize)>()
@@ -50,7 +51,7 @@ pub(super) fn quote(
         execution,
         bytes: layout.size(),
     };
-    let registry = authority.registry();
+    let registry = source.registry;
     quote.array::<DurableEntitySchemaRegistration>(registry.entity_kinds.len())?;
     for registration in registry.entity_kinds.values() {
         quote.text(&registration.kind_name)?;
@@ -64,8 +65,8 @@ pub(super) fn quote(
         declarations::quote(&mut quote, &registration.aspect_contract_declarations)?;
         integrity::quote(&mut quote, &registration.relation_integrity)?;
     }
-    quote.array::<PortableAspectContract>(authority.retained_aspect_contracts().len())?;
-    for contract in authority.retained_aspect_contracts() {
+    quote.array::<PortableAspectContract>(source.retained_aspect_contracts.len())?;
+    for contract in source.retained_aspect_contracts {
         declarations::contract(&mut quote, contract)?;
     }
     recipes::quote(&mut quote, registry)?;

@@ -1,8 +1,7 @@
 //! Before-growth admission for the existing full schema-image grammar.
 use super::*;
-use crate::durability::data::{
-    DurableBranchRootSchemaImage, DurableEntitySchemaRegistration, DurableSchemaDeclarationMemory,
-};
+use crate::durability::data::{DurableEntitySchemaRegistration, DurableSchemaDeclarationMemory};
+use crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage;
 use worth_foundational::facade::PortableAspectContract;
 mod integrity;
 
@@ -13,10 +12,7 @@ pub(crate) struct SchemaImageDecodeAdmission {
     _transient: Option<worth_execution::ExecutionMemoryReservation>,
 }
 impl SchemaImageDecodeAdmission {
-    pub(crate) fn attach(
-        mut self,
-        image: &mut DurableBranchRootSchemaImage,
-    ) -> Result<(), Refusal> {
+    pub(crate) fn attach(mut self, image: &mut RecordedBranchSchemaImage) -> Result<(), Refusal> {
         image
             .retain_decode_memory(self.memory.take(), &mut self.declarations)
             .map_err(|detail| Refusal::PayloadDecode {
@@ -88,7 +84,7 @@ fn quote(
     request: &ExecutionRequest<'_, '_>,
 ) -> Result<OwnerAllocation, Refusal> {
     let mut total = OwnerAllocation::from(
-        u64::try_from(DurableBranchRootSchemaImage::decode_control_bytes().ok_or_else(malformed)?)
+        u64::try_from(RecordedBranchSchemaImage::decode_control_bytes().ok_or_else(malformed)?)
             .map_err(|_| malformed())?,
     );
     value.fields(request, |name, raw| {
@@ -108,7 +104,7 @@ fn quote(
                     )
                 })?;
                 let roster = u64::try_from(
-                    DurableBranchRootSchemaImage::decode_relation_roster_bytes(vector_capacity(
+                    RecordedBranchSchemaImage::decode_relation_roster_bytes(vector_capacity(
                         count,
                     )?)
                     .ok_or_else(malformed)?,

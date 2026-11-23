@@ -140,9 +140,10 @@ fn record(
     if identities.get(&identity).is_some() {
         return Ok(());
     }
-    let image = authority
+    let image: DurableBranchRootSchemaImage = authority
         .descriptive_image_for_request(request)
-        .map_err(crate::durability::checkpoint_history::capture::capture_stop)?;
+        .map_err(crate::durability::checkpoint_history::capture::capture_stop)?
+        .into();
     let carrier = CanonicalDigestId::new(image.carrier_digest());
     if let Some(previous) = images.get(&carrier) {
         if previous != &image {

@@ -358,3 +358,6 @@ pub(crate) mod inline_type_budget;
 
 #[path = "preparation_runtime/mirror_publication.rs"]
 mod mirror_publication;
+
+#[path = "preparation_runtime/working_state.rs"]
+mod working_state;

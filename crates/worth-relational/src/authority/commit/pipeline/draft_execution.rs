@@ -100,7 +100,7 @@ pub(super) fn prepare_commit_execution(
         );
         let (commit_log, phase_timing) = admitted.commit_phase_state();
         record_draft_preparation_phase(
-            runtime,
+            &runtime.services.instrumentation,
             commit_log,
             phase_timing,
             &working_state,

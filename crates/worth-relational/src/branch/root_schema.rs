@@ -72,7 +72,9 @@ pub(crate) struct RelationalBranchRootSchemaAuthority {
     // snapshot admission. Sharing this fixed DATA avoids recomputing integrity
     // plans and allocating a second snapshot during exact root checks.
     relation_integrity_revisions: Arc<[crate::schema::data::RelationIntegrityPlanRevision]>,
-    recorded_image: std::sync::OnceLock<crate::durability::data::DurableBranchRootSchemaImage>,
+    recorded_image: std::sync::OnceLock<
+        crate::history::data::canonical_commit_envelope::schema_carrier::RecordedBranchSchemaImage,
+    >,
     _funding: Option<Arc<compiled_retention::SchemaCompilationFunding>>,
 }
 

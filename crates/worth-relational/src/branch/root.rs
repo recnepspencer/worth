@@ -22,6 +22,8 @@ mod candidate;
 mod capture;
 #[path = "root_capture_preparation.rs"]
 mod capture_preparation;
+#[path = "root_checkpoint_projection.rs"]
+mod checkpoint_projection;
 #[path = "root_commit_evidence.rs"]
 mod commit_evidence;
 #[path = "root_completeness.rs"]

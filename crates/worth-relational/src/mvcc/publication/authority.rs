@@ -148,7 +148,7 @@ pub(crate) fn assemble_versioned_publication(
             mutation: inputs.mutation,
         };
         let recorded =
-            crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs::capture(
+            crate::durability::source_initial_inputs::recorded::capture_canonical_inputs(
                 &original, execution,
             )
             .map_err(|cause| match cause {

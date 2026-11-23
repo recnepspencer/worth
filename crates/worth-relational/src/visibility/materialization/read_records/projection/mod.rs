@@ -14,7 +14,7 @@ mod borrowed_records;
 mod checkpoint_context;
 pub(crate) mod contracts;
 mod creation;
-pub(crate) use checkpoint_context::CheckpointProjectionContext;
+pub(crate) use checkpoint_context::{CheckpointProjectionContext, RequestOwnedCheckpointBasis};
 mod current_adjacency;
 mod entity_adjacency;
 mod entity_projection;
