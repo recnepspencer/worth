@@ -185,6 +185,7 @@ impl PageSource<'_> {
             };
             let next_bytes = bytes
                 .checked_add(node.step.label().map_or(0, str::len))
+                .and_then(|bytes| bytes.checked_add(node.step.metadata().bytes().len()))
                 .ok_or(Failure::SizeOverflow)?;
             if next_bytes > limits.maximum_owned_bytes.get() {
                 return Err(Failure::StorageLimitExceeded);
@@ -219,6 +220,7 @@ impl PageSource<'_> {
                         use worth_query_execution_query::facade::ports::HistoryStepConstructionPort as _;
                         node.step.label_arc()
                     },
+                    metadata: node.step.metadata().clone(),
                     endpoint: node.step.endpoint().clone(),
                 },
             });

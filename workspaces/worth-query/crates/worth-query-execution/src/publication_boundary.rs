@@ -63,7 +63,8 @@ pub mod document_history {
         WorthQueryDocumentHistoryAttachmentFailure, WorthQueryDocumentHistoryCandidateDenial,
         WorthQueryDocumentHistoryCloseFailure, WorthQueryDocumentHistoryCloseReceipt,
         WorthQueryDocumentHistoryClosing, WorthQueryDocumentHistoryClosingDenial,
-        WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryGroupAborting,
+        WorthQueryDocumentHistoryDenial, WorthQueryDocumentHistoryEnvelopeConstraint,
+        WorthQueryDocumentHistoryEnvelopeIntent, WorthQueryDocumentHistoryGroupAborting,
         WorthQueryDocumentHistoryGroupAdoptionFailure, WorthQueryDocumentHistoryGroupPreparation,
         WorthQueryDocumentHistoryGroupReservation, WorthQueryDocumentHistoryNavigation,
         WorthQueryDocumentHistoryOperation, WorthQueryDocumentHistoryOperationConstraint,
@@ -80,7 +81,7 @@ pub mod document_history {
         WorthQueryHistoryPageRow, WorthQueryHistoryParentBoundary, WorthQueryHistoryPreview,
         WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices, WorthQueryHistoryReleaseOutcome,
         WorthQueryHistoryRetentionChangePauseForTest, WorthQueryHistoryRetentionStatus,
-        WorthQueryHistorySelection, WorthQueryHistoryStep,
+        WorthQueryHistorySelection, WorthQueryHistoryStep, WorthQueryHistoryStepMetadata,
     };
     pub use crate::domain_computation::primary_graph::{
         WorthQueryDocumentHistoryIdentity, WorthQueryHistoryGroupCandidateCreation,

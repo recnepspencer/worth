@@ -35,6 +35,12 @@ where
     fn intent(&self) -> ApplicationEditStageIntent {
         ApplicationEditStageIntent::new::<S, I::Binding, R>(&self.input)
     }
+    fn descriptor(
+        &self,
+    ) -> worth_query_declaration::facade::application_operation::ApplicationMutationBindingDescriptor
+    {
+        <I::Binding as ApplicationMutationBinding<S>>::descriptor()
+    }
     fn secondary(
         &self,
         context: &EnvelopeContext<'_, S>,
@@ -68,6 +74,7 @@ where
         let input = self.input.clone();
         let envelope_key = key.clone();
         let extension = self.commit_extension.clone();
+        let history = context.history.clone();
         let admit = move |context: &AuthoredEditStageContext<'_, '_, '_, S>| {
             let identities = envelope_key
                 .stage_with_encoded_input::<S, I::Binding>(&input, ordinal)
@@ -116,6 +123,24 @@ where
                     format!("stage admission: {cause:?}"),
                 )
             })?;
+            if let Some(restriction) = &history {
+                let access =
+                    worth_query_execution::publication_boundary::program_publication_access();
+                if let Err(denial) = context.application().validate_history_envelope_stage(
+                    context.phase(),
+                    &access,
+                    restriction,
+                    &prepared.admission,
+                ) {
+                    // Stage admission reports text; the typed reason stays with the history owner.
+                    restriction.record_refusal(ordinal, denial);
+                    return Err(stage_admission_refusal::<S, I::Binding>(
+                        &access,
+                        ordinal,
+                        "document history refused this stage".to_owned(),
+                    ));
+                }
+            }
             extension
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)

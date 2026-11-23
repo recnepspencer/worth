@@ -65,6 +65,11 @@ pub enum WorthQueryDocumentHistoryDenial {
     RecordingIdentityExhausted,
     AttemptInFlight,
     IntentDrift,
+    /// The step metadata exceeds the installed `maximum_step_metadata_bytes`.
+    StepMetadataTooLarge {
+        length: usize,
+        maximum: usize,
+    },
     ForeignRecording,
     UnsupportedOperation,
     EmptyGroup,

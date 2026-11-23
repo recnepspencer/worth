@@ -80,6 +80,11 @@ mod context;
 mod denial;
 mod edit;
 mod edit_builder;
+mod edit_envelope;
+pub use edit_envelope::{
+    WorthQueryHistoryEditEnvelope, WorthQueryHistoryEditEnvelopeDenial,
+    WorthQueryHistoryEditEnvelopeFailure, WorthQueryHistoryEditEnvelopeOutcome,
+};
 mod group;
 pub use group::{
     WorthQueryGroupedHistoryDocument, WorthQueryHistoryGestureCompletion,
@@ -158,7 +163,7 @@ pub use worth_query_execution::publication_boundary::document_history::{
     WorthQueryHistoryReleaseOutcome, WorthQueryHistoryRetentionStatus, WorthQueryHistoryStep,
 };
 pub use worth_query_execution::publication_boundary::document_history::{
-    WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices,
+    WorthQueryHistoryRedoChoice, WorthQueryHistoryRedoChoices, WorthQueryHistoryStepMetadata,
 };
 pub use worth_query_installation::facade::WorthQueryDocumentHistoryInstallationDenialKind;
 
