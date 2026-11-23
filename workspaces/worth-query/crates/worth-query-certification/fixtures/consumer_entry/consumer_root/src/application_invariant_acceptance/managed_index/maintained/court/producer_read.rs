@@ -6,6 +6,7 @@
 use super::super::generated::{program, source};
 use super::super::peer_scope::{
     ProbeRefusal, ProducerProbe, OBSERVED, PRODUCER_PROBE, SEED_PEERS, SOURCE_CREATES,
+    SOURCE_SIBLING, THROUGH_COMPUTATION,
 };
 use super::super::{authoring::Edit, host as world_host};
 use super::*;
@@ -106,6 +107,8 @@ fn run(
         );
     PRODUCER_PROBE.set(None);
     SOURCE_CREATES.set(None);
+    SOURCE_SIBLING.set(None);
+    THROUGH_COMPUTATION.set(false);
     let probes_during_run = provider.probe_validations.load(Ordering::SeqCst) - probes;
     for handle in handles {
         handle.close();
@@ -189,5 +192,63 @@ fn producer_decision_peer_read_carries_original_request_cancellation() {
         );
         assert_eq!(run.observed, vec![Err(ProbeRefusal::Cancelled)]);
         assert!(!run.performed, "the cancelled request publishes nothing");
+    });
+}
+
+#[test]
+fn producer_peer_read_admits_a_new_sibling_scope_but_not_an_unpublished_row() {
+    lifecycle::run(|| {
+        let scope = authentication::request_scope();
+        // The source action creates a brand-new sibling Directory in the same
+        // coupled envelope; it roots its own Source, never the committed peer's.
+        let (world, provider) = fresh_world();
+        author(&world, "peer", "p", 0x2820_0040);
+        SOURCE_SIBLING.set(Some("sibling"));
+        let sibling = run(&world, &provider, ProducerProbe::Peer("peer"), None, &scope, 0x2820_0041);
+        assert_eq!(sibling.observed, vec![Ok(vec!["p".to_owned()])]);
+        assert!(sibling.performed, "a new sibling scope leaves the peer's Source aligned");
+        // A new row is still an unpublished change the Parent's Source sees.
+        let (world, provider) = fresh_world();
+        author(&world, "peer", "p", 0x2820_0042);
+        SOURCE_SIBLING.set(Some("sibling"));
+        let row = run(&world, &provider, ProducerProbe::Peer("peer"), Some("fresh"), &scope, 0x2820_0043);
+        assert_eq!(
+            row.observed,
+            vec![Err(ProbeRefusal::Refused(
+                WorthQueryManagedIndexRefusal::UnpublishedSourceChange
+            ))]
+        );
+        assert!(!row.performed);
+        assert_eq!(row.probes_during_run, 0, "refusal precedes every provider probe");
+    });
+}
+
+#[test]
+fn producer_computation_reads_own_and_peer_parents_and_refuses_before_the_provider() {
+    lifecycle::run(|| {
+        let scope = authentication::request_scope();
+        let computed = |probe, creates, own: Option<(&str, &str)>, key| {
+            let (world, provider) = fresh_world();
+            if let Some((directory, identity)) = own {
+                author(&world, directory, identity, key);
+            }
+            THROUGH_COMPUTATION.set(true);
+            run(&world, &provider, probe, creates, &scope, key + 1)
+        };
+        let own = computed(ProducerProbe::Own, None, Some(("catalog", "c")), 0x2820_0050);
+        assert_eq!(own.observed, vec![Ok(vec!["c".to_owned()])]);
+        assert!(own.performed, "the computation's aligned own read publishes");
+        let peer = computed(ProducerProbe::Peer("peer"), None, Some(("peer", "p")), 0x2820_0052);
+        assert_eq!(peer.observed, vec![Ok(vec!["p".to_owned()])]);
+        assert!(peer.performed, "the computation's declared peer read publishes");
+        for (probe, creates, refusal) in [
+            (ProducerProbe::Peer("A"), None, WorthQueryManagedIndexRefusal::ForeignAssociation),
+            (ProducerProbe::Own, Some("fresh"), WorthQueryManagedIndexRefusal::UnpublishedSourceChange),
+        ] {
+            let refused = computed(probe, creates, None, 0x2820_0060);
+            assert_eq!(refused.observed, vec![Err(ProbeRefusal::Refused(refusal))]);
+            assert!(!refused.performed, "a refused computation read publishes nothing");
+            assert_eq!(refused.probes_during_run, 0, "refusal precedes every provider probe");
+        }
     });
 }

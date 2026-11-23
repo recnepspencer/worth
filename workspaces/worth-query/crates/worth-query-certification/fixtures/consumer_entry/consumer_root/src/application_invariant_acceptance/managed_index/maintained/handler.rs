@@ -10,6 +10,10 @@ pub(super) enum DecisionRead {
     Undeclared,
     /// The handler's partitioned computation probes the Parent instead.
     Partitioned(probe::Probe),
+    /// The declared shared-owner peer read of the Prefix Parent.
+    Peer(&'static str),
+    /// The Exact Parent, declared only for the operation's own scope, at a peer.
+    UndeclaredPeer(&'static str),
 }
 pub(super) struct Handler(pub DecisionRead, pub probe::Installed);
 impl OperationHandler<Catalog, mutation::Binding> for Handler {
@@ -63,6 +67,29 @@ impl OperationHandler<Catalog, mutation::Binding> for Handler {
         input: &mutation::Rename,
         reader: &mut DecisionReader<'_, '_, '_, Catalog, mutation::Binding>,
     ) -> HandlerResult<WorthQueryInvariantMutationTarget<Catalog, Item>, mutation::Denial> {
+        let peer = match self.0 {
+            DecisionRead::Peer(peer) => Some(reader.index_query::<query::PrefixBinding>(
+                query::FindPrefix {
+                    directory: peer.into(),
+                    prefix: String::new(),
+                },
+            )),
+            DecisionRead::UndeclaredPeer(peer) => Some(
+                reader.index_query::<super::refinement::ExactBinding>(
+                    super::refinement::FindExact {
+                        directory: peer.into(),
+                        name: String::new(),
+                    },
+                ),
+            ),
+            _ => None,
+        };
+        if let Some(rows) = peer {
+            return match super::peer_scope::observe(rows) {
+                Ok(_) => mutation::Handler.decide(input, reader),
+                Err(cause) => HandlerResult::ExecutionDenied(cause),
+            };
+        }
         let rows = match self.0 {
             DecisionRead::Declared | DecisionRead::TwoProbes => {
                 // compiled-example: begin
@@ -88,6 +115,7 @@ impl OperationHandler<Catalog, mutation::Binding> for Handler {
                 })
             }
             DecisionRead::Partitioned(_) => unreachable!("prepared through the computation"),
+            DecisionRead::Peer(_) | DecisionRead::UndeclaredPeer(_) => unreachable!("read above"),
             DecisionRead::Undeclared => {
                 reader.index_query::<query::SourceBinding>(query::ReadSource {
                     directory: input.directory.clone(),

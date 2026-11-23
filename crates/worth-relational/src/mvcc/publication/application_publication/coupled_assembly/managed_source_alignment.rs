@@ -12,7 +12,7 @@ use crate::validation::candidate_source::{
 };
 impl RelationalAuthoredCoupledCandidate<'_> {
     /// Whether no record this live assembly changed, through the retained
-    /// prefix `pin` reads, can reach `program`'s Source, for every scope.
+    /// prefix `pin` reads, can reach `program`'s Source at the probed `scope`.
     ///
     /// A relation change is relevant when its kind is a physical source of
     /// the program. An entity of the program's scope, row or path-endpoint
@@ -20,13 +20,17 @@ impl RelationalAuthoredCoupledCandidate<'_> {
     /// the Source projects (a row field, or a projection route's field). When
     /// a path could depend on member content (a lifted or derived step), or
     /// a changed record has no canonical aspect delta, Native's coarse kind
-    /// relevance applies instead. `true` is therefore never manufactured.
+    /// relevance applies instead. When the scope kind enters the Source only
+    /// as its root anchor, another scope entity's creation, removal or update
+    /// cannot reach the probed scope's Source; the probed scope's own creation
+    /// or removal always can. `true` is therefore never manufactured.
     /// Cost: O(changed records + adjacency deltas + program size).
     pub fn managed_source_unchanged_at(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         program: &ManagedIndexSourceProgram,
         pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        scope: crate::identity::data::EntityId,
     ) -> Result<bool, Denial> {
         let current = self.read.borrow();
         let Some(current) = current.as_ref() else {
@@ -40,7 +44,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         }
         let effect = &self.mutation.outcome.effect;
         let state = &self.mutation.state;
-        let relevance = SourceRelevance::of(program);
+        let relevance = SourceRelevance::of(program, scope);
         let (unchanged, _) = execution
             .run_native_with_checkpoint(|context| {
                 for delta in &effect.adjacency.deltas {
@@ -77,7 +81,9 @@ impl RelationalAuthoredCoupledCandidate<'_> {
                     };
                     let relevant = match (record, kind) {
                         (_, None) => true,
-                        (RecordRef::Entity(_), Some(kind)) => relevance.entity(kind),
+                        (RecordRef::Entity(id), Some(kind)) => {
+                            relevance.entity(kind) && !relevance.other_root(*id, kind)
+                        }
                         (RecordRef::Relation(_), Some(kind)) => relevance.relation(kind),
                     };
                     if relevant {
@@ -100,10 +106,13 @@ struct SourceRelevance<'p> {
     program: &'p ManagedIndexSourceProgram,
     /// Path membership depends only on stored relations and member lifecycle.
     structural_paths: bool,
+    /// The scope kind is only ever the root anchor of a forward stored chain.
+    root_only_scope: bool,
+    probed: crate::identity::data::EntityId,
 }
 
 impl<'p> SourceRelevance<'p> {
-    fn of(program: &'p ManagedIndexSourceProgram) -> Self {
+    fn of(program: &'p ManagedIndexSourceProgram, probed: crate::identity::data::EntityId) -> Self {
         let structural_paths = program.paths().all(|path| {
             let parts = path.parts();
             matches!(parts.from, NativeMemberDomain::Entity(_))
@@ -112,10 +121,32 @@ impl<'p> SourceRelevance<'p> {
                     !matches!(node, Node::Derived(_) | Node::CarrierLift { .. })
                 })
         });
+        // Forward stored chains only: a scope entity can then appear on the
+        // probed scope's paths only as their root, never downstream.
+        let scope = program.scope_kind();
+        let root_only_scope = structural_paths
+            && scope != program.row_kind()
+            && program.paths().all(|path| {
+                path.parts().nodes.iter().all(|node| {
+                    matches!(node, Node::Stored { to, .. } if *to != scope)
+                        || matches!(node, Node::Compose { .. })
+                })
+            })
+            && program
+                .projection_routes()
+                .iter()
+                .all(|route| route.endpoint_kind() != scope);
         Self {
             program,
             structural_paths,
+            root_only_scope,
+            probed,
         }
+    }
+    /// A scope entity other than the probed one, when the scope kind is only
+    /// a root anchor: it roots its own Source, never the probed scope's.
+    fn other_root(&self, entity: crate::identity::data::EntityId, kind: KindId) -> bool {
+        self.root_only_scope && kind == self.program.scope_kind() && entity != self.probed
     }
     fn relation(&self, kind: KindId) -> bool {
         self.program
@@ -149,6 +180,7 @@ impl<'p> SourceRelevance<'p> {
         match delta.target {
             RecordRef::Relation(_) => self.relation(delta.kind_id),
             RecordRef::Entity(_) if !self.entity(delta.kind_id) => false,
+            RecordRef::Entity(id) if self.other_root(id, delta.kind_id) => false,
             RecordRef::Entity(_) => match delta.structural_change {
                 RecordStructuralChange::Updated if self.structural_paths => {
                     delta.contains_opaque_aspect

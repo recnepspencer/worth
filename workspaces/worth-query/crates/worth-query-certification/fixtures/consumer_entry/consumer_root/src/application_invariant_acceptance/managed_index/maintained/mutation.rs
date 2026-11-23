@@ -25,7 +25,7 @@ worth_query_structured_value_binding!(pub InputBinding for Rename { identity: "m
 worth_query_structured_value_binding!(pub ResultBinding for Renamed { identity: "managed-catalog.rename.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "managed-catalog.rename.denial.v1" });
 worth_query_operation!(pub RenameItem for Catalog, input InputBinding);
-worth_query_operation_reads!(RenameItem => [DirectoryIdentity, ItemIdentity, ItemName]);
+worth_query_operation_reads!(RenameItem => [DirectoryIdentity, ItemIdentity, ItemName, super::protected::access::grants::GrantResource]);
 worth_query_operation_writes!(RenameItem => [ItemName]);
 
 pub struct Binding;

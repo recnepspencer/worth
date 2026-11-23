@@ -8603,9 +8603,12 @@ Ordinary row/result-set expectations use `expect_source` and `expect_result_set`
 A producer's own coupled decision, and the partitioned computations it
 prepares, make the same `index_query` read on its applied candidate. The read
 uses the admitted before basis the candidate was built on, and only while the
-live coupled assembly proves that the candidate left the Parent's Source
-unchanged: no created or removed entity of the Source's scope, row or path
-kinds, no projected field write and no change to a physical Source relation.
+live coupled assembly proves that the candidate left the Parent's Source at
+the probed scope unchanged: no created or removed row or path entity, no
+projected field write, no change to a physical Source relation, and no
+creation or removal of the probed scope itself. When the Source's scope kind
+is only its root anchor, a new or removed sibling scope (a feature created in
+the same envelope) does not touch an already-committed peer's Source.
 Otherwise the read refuses with
 `WorthQueryManagedIndexRefusal::UnpublishedSourceChange` before any provider
 call; the unpublished change is never hidden behind the committed image. The
@@ -8623,7 +8626,8 @@ sets are read as recorded decision facts, and each probed scope records its own
 managed Source fact, so an edit to the relation or to any probed peer's Source
 invalidates the decision. Any other scope, a foreign principal, or a peer with
 no such declaration refuses as `ForeignAssociation` before any provider call.
-A shared decision-read scope cannot lend a peer read.
+A shared decision-read scope cannot lend a peer read: its declaration and its
+archive record are refused.
 
 <!-- compiled: managed_peer_decision.rs -->
 ```rust

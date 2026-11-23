@@ -52,3 +52,47 @@ fn shared_owner_read_roundtrips_under_its_own_tag_and_refuses_a_truncated_relati
         );
     }
 }
+
+/// A shared decision-read scope record whose single target is `target`,
+/// written exactly as the scope codec writes one.
+fn scope_wire(target: &Target) -> Vec<u8> {
+    let mut output = crate::binary_output::BinaryOutput::with_capacity(1024);
+    output.u16(55);
+    output.u16(1);
+    crate::record::sequence::write_sequence(&mut output, std::slice::from_ref(target), |output, target| {
+        let bytes = encode_member(&Member::OperationDecisionRead {
+            operation: String::new(),
+            target: target.clone(),
+        });
+        output.raw_bytes(&bytes[6..])
+    })
+    .unwrap();
+    crate::record::sequence::write_sequence(&mut output, &[] as &[String], |output, name| {
+        output.text(name)
+    })
+    .unwrap();
+    output.into_bytes()
+}
+
+#[test]
+fn shared_decision_read_scope_carrying_a_peer_read_is_not_an_archive_member() {
+    let Member::OperationDecisionRead { target, .. } = member() else {
+        unreachable!()
+    };
+    let Target::SharedOwnerManagedIndex { parent, .. } = &target else {
+        unreachable!()
+    };
+    // The same scope with the own-scope read decodes; the peer read cannot be
+    // lent by a shared scope, so its record is refused before installation.
+    let own = Target::ManagedIndex {
+        parent: parent.clone(),
+    };
+    assert!(matches!(
+        decode_member(&scope_wire(&own)),
+        Member::DecisionReadScope { .. }
+    ));
+    assert_eq!(
+        try_decode_member(&scope_wire(&target)).unwrap_err().kind(),
+        crate::facade::WorthQueryPackageArchiveDenialKind::InvalidRecordShape
+    );
+}

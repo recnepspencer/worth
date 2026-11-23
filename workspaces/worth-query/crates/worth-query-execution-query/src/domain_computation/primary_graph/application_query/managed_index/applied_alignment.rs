@@ -8,6 +8,7 @@ use worth_execution::ExecutionRequest;
 use worth_query_execution_lineage::facade::ports::PrimaryGraphInternalPort as _;
 use worth_query_installation::facade::{ApplicationSchema, WorthQueryInstalledManagedIndexParent};
 use worth_relational::facade::{
+    identity::EntityId,
     mvcc::RelationalAuthoredCoupledCandidate,
     runtime::{
         ManagedIndexSourcePreparationDenial, ManagedIndexSourceProgram,
@@ -23,6 +24,7 @@ pub trait AppliedManagedSourceAlignment {
         execution: &ExecutionRequest<'_, '_>,
         program: &ManagedIndexSourceProgram,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        scope: EntityId,
     ) -> Result<bool, ManagedIndexSourcePreparationDenial>;
 }
 
@@ -32,8 +34,9 @@ impl AppliedManagedSourceAlignment for RelationalAuthoredCoupledCandidate<'_> {
         execution: &ExecutionRequest<'_, '_>,
         program: &ManagedIndexSourceProgram,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        scope: EntityId,
     ) -> Result<bool, ManagedIndexSourcePreparationDenial> {
-        Self::managed_source_unchanged_at(self, execution, program, candidate)
+        Self::managed_source_unchanged_at(self, execution, program, candidate, scope)
     }
 }
 
@@ -46,13 +49,15 @@ pub struct AppliedManagedIndexRead<'a> {
 }
 
 impl AppliedManagedIndexRead<'_> {
-    /// Refuses unless the candidate left the Parent's Source unchanged, so the
-    /// admitted before basis is exactly the candidate's Source image.
+    /// Refuses unless the candidate left the Parent's Source at the probed
+    /// `scope` unchanged, so the admitted before basis is exactly the
+    /// candidate's Source image there.
     pub fn require_aligned<S: ApplicationSchema>(
         &self,
         execution: &ExecutionRequest<'_, '_>,
         application: &WorthQueryPrimaryGraphApplicationRuntime<S>,
         association: &WorthQueryInstalledManagedIndexParent,
+        scope: EntityId,
     ) -> Result<(), Denial> {
         let graph = application
             .runtime
@@ -64,7 +69,7 @@ impl AppliedManagedIndexRead<'_> {
             .ok_or(Denial::ForeignAssociation)?;
         if self
             .alignment
-            .managed_source_unchanged_at(execution, program, self.candidate)
+            .managed_source_unchanged_at(execution, program, self.candidate, scope)
             .map_err(Denial::NativeSource)?
         {
             Ok(())

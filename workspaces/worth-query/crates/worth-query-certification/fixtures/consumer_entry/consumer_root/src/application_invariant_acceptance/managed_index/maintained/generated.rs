@@ -32,7 +32,12 @@ pub(super) fn configure(
     setup: &mut WorthQueryApplicationContributionSetup<'_, Catalog>,
 ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
     indexed::configure(setup)?;
-    setup.handler::<operation::Binding, _>(operation::Handler)?;
+    let computation = setup.partitioned_computation::<
+        super::host::Feature,
+        operation::computation::Computation,
+        _,
+    >(operation::computation::Owner)?;
+    setup.handler::<operation::Binding, _>(operation::ComputingHandler(computation))?;
     setup.handler::<source::operation::Binding, _>(source::operation::Handler)?;
     setup.producer::<producer::Producer>(producer::Provider)?;
     setup.conditional::<readiness::Readiness>(())?;

@@ -16,7 +16,7 @@ worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: 
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-generated.request-denial.v1" });
 worth_query_operation!(pub RequestGeneratedItem for Catalog, input InputBinding);
 worth_query_operation_reads!(RequestGeneratedItem => [Directory, Item]);
-worth_query_operation_creates!(RequestGeneratedItem => [Item]);
+worth_query_operation_creates!(RequestGeneratedItem => [Item, Directory]);
 worth_query_operation_links!(RequestGeneratedItem => [Contains]);
 
 fn scope(input: &RequestItem) -> String {
@@ -80,6 +80,9 @@ where
             if let Some(identity) = super::super::super::peer_scope::SOURCE_CREATES.get() {
                 create_item(writer, &directory, identity)?;
             }
+            if let Some(identity) = super::super::super::peer_scope::SOURCE_SIBLING.get() {
+                create_sibling(writer, &directory, identity)?;
+            }
             Ok(Changed)
         })())
     }
@@ -102,6 +105,8 @@ pub(in super::super) fn declare(
         .operation_read_field(operation, DirectoryNote::at("DirectoryNote"))
         .operation_write(operation, DirectoryNote::at("DirectoryNote"))
         .operation_create(operation, Item::reference())
+        .operation_create(operation, Directory::reference())
+        .operation_write(operation, DirectoryIdentity::at("DirectoryIdentity"))
         .operation_link(operation, Contains::reference())
         .operation_write(operation, ItemIdentity::at("ItemIdentity"))
         .operation_write(operation, ItemName::at("ItemName"))
@@ -141,5 +146,31 @@ fn create_item<B: ApplicationMutationBinding<Catalog, Operation = RequestGenerat
         .map_err(HandlerExecutionDenial::new)?;
     writer
         .link(Contains::reference(), &format!("{identity}-source"), directory, &item)
+        .map_err(HandlerExecutionDenial::new)
+}
+
+/// A sibling Directory the source action adds beside its note, when armed: a
+/// new scope entity with no Items, in the same coupled envelope.
+fn create_sibling<B: ApplicationMutationBinding<Catalog, Operation = RequestGeneratedItem>>(
+    writer: &mut CandidateWriter<'_, Catalog, B>,
+    directory: &WorthQueryApplicationEffectEntity<Catalog, Directory>,
+    identity: &str,
+) -> Result<(), HandlerExecutionDenial> {
+    let sibling = writer
+        .create_entity_in_context(
+            directory,
+            Directory::reference(),
+            WorthQueryApplicationEntityKey::new(identity).unwrap(),
+        )
+        .map_err(HandlerExecutionDenial::new)?;
+    writer
+        .initialize_field(
+            &sibling,
+            DirectoryIdentity::at("DirectoryIdentity"),
+            identity.to_owned(),
+        )
+        .map_err(HandlerExecutionDenial::new)?;
+    writer
+        .initialize_field(&sibling, DirectoryNote::at("DirectoryNote"), String::new())
         .map_err(HandlerExecutionDenial::new)
 }

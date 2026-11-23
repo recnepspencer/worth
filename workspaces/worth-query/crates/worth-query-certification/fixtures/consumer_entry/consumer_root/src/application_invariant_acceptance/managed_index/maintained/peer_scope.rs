@@ -39,6 +39,14 @@ std::thread_local! {
     /// The generated source action also creates this Item in its Directory:
     /// an unpublished change the Parent's Source sees.
     pub static SOURCE_CREATES: Cell<Option<&'static str>> = const { Cell::new(None) };
+    /// The generated source action also creates this sibling Directory: a new
+    /// scope entity in the same coupled envelope.
+    pub static SOURCE_SIBLING: Cell<Option<&'static str>> = const { Cell::new(None) };
+    /// The producer probes through its partitioned computation's reader.
+    pub static THROUGH_COMPUTATION: Cell<bool> = const { Cell::new(false) };
+    /// Runs once after the next successful recorded read.
+    #[allow(clippy::type_complexity)]
+    pub static AFTER_READ: RefCell<Option<Box<dyn FnOnce()>>> = const { RefCell::new(None) };
 }
 
 pub(super) fn seed(
@@ -65,7 +73,8 @@ pub(super) fn seed(
 }
 
 /// The armed probe through the decision's own `index_query`; its outcome is
-/// recorded and a refusal stops the decision with its typed cause.
+/// recorded and a refusal stops the decision with its typed cause. With
+/// `THROUGH_COMPUTATION` the producer's partitioned computation probes instead.
 pub fn probe<B>(
     reader: &mut DecisionReader<'_, '_, '_, Catalog, B>,
     own: &str,
@@ -73,58 +82,74 @@ pub fn probe<B>(
 where
     B: worth_query_decl::facade::application_operation::ApplicationMutationBinding<Catalog>,
 {
-    let Some(probe) = PRODUCER_PROBE.get() else {
+    let Some(probe) = PRODUCER_PROBE.get().filter(|_| !THROUGH_COMPUTATION.get()) else {
         return Ok(());
     };
-    let directory = match probe {
-        ProducerProbe::Own => own.to_owned(),
-        ProducerProbe::Peer(peer) => peer.to_owned(),
-    };
-    let result = reader.index_query::<query::PrefixBinding>(query::FindPrefix {
-        directory,
+    let rows = reader.index_query::<query::PrefixBinding>(query::FindPrefix {
+        directory: probed(probe, own),
         prefix: String::new(),
     });
-    let (observed, result) = match result {
+    observe(rows).map(|_| ())
+}
+
+/// The Directory a probe names, from the operation's own.
+pub fn probed(probe: ProducerProbe, own: &str) -> String {
+    match probe {
+        ProducerProbe::Own => own.to_owned(),
+        ProducerProbe::Peer(peer) => peer.to_owned(),
+    }
+}
+
+/// Records one decision read's outcome, runs the armed after-read hook on a
+/// success, and returns the rows or the original typed refusal.
+pub fn observe(
+    rows: Result<Vec<query::ItemRow>, HandlerExecutionDenial>,
+) -> Result<Vec<query::ItemRow>, HandlerExecutionDenial> {
+    let (observed, result) = match rows {
         Ok(rows) => (
-            Ok(rows.into_iter().map(|row| row.identity).collect()),
-            Ok(()),
+            Ok(rows.iter().map(|row| row.identity.clone()).collect()),
+            Ok(rows),
         ),
         Err(cause) => match cause.downcast::<WorthQueryManagedIndexDenial>() {
-            Ok(denial) => {
-                let refusal = match denial.cause() {
-                    WorthQueryManagedIndexDenialCause::Refused(refusal) => {
-                        ProbeRefusal::Refused(refusal)
-                    }
-                    WorthQueryManagedIndexDenialCause::Work(
-                        WorthQueryManagedIndexWorkDenial::Controlled(
-                            WorthQueryManagedIndexStop::Request(
-                                worth_execution::WorkCeilingDenial::Stopped(
-                                    worth_execution::MapKernelStop::Cancelled,
-                                ),
-                            ),
-                        ),
-                    ) => ProbeRefusal::Cancelled,
-                    // The producer's coordinated source-query control
-                    // observed the original request's cancellation.
-                    WorthQueryManagedIndexDenialCause::CurrentControl(control)
-                        if matches!(
-                            control.kind(),
-                            WorthQueryOutputDemandDenialKind::ExecutionRequest(
-                                WorthQueryAdvancementDenial::Interrupted(
-                                    WorthQueryManagedComputationInterruption::Cancelled
-                                )
-                            )
-                        ) =>
-                    {
-                        ProbeRefusal::Cancelled
-                    }
-                    _ => ProbeRefusal::Other,
-                };
-                (Err(refusal), Err(HandlerExecutionDenial::new(denial)))
-            }
+            Ok(denial) => (
+                Err(refusal(denial.cause())),
+                Err(HandlerExecutionDenial::new(denial)),
+            ),
             Err(cause) => (Err(ProbeRefusal::Other), Err(cause)),
         },
     };
     OBSERVED.with(|all| all.borrow_mut().push(observed));
+    if result.is_ok()
+        && let Some(hold) = AFTER_READ.with(|hold| hold.borrow_mut().take())
+    {
+        hold();
+    }
     result
+}
+
+/// Classifies a managed index refusal for a court's comparison.
+pub fn refusal(cause: WorthQueryManagedIndexDenialCause<'_>) -> ProbeRefusal {
+    match cause {
+        WorthQueryManagedIndexDenialCause::Refused(refusal) => ProbeRefusal::Refused(refusal),
+        WorthQueryManagedIndexDenialCause::Work(WorthQueryManagedIndexWorkDenial::Controlled(
+            WorthQueryManagedIndexStop::Request(worth_execution::WorkCeilingDenial::Stopped(
+                worth_execution::MapKernelStop::Cancelled,
+            )),
+        )) => ProbeRefusal::Cancelled,
+        // The producer's coordinated source-query control observed the
+        // original request's cancellation.
+        WorthQueryManagedIndexDenialCause::CurrentControl(control)
+            if matches!(
+                control.kind(),
+                WorthQueryOutputDemandDenialKind::ExecutionRequest(
+                    WorthQueryAdvancementDenial::Interrupted(
+                        WorthQueryManagedComputationInterruption::Cancelled
+                    )
+                )
+            ) =>
+        {
+            ProbeRefusal::Cancelled
+        }
+        _ => ProbeRefusal::Other,
+    }
 }

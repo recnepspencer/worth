@@ -12,6 +12,9 @@ pub enum ApplicationSchemaDeclarationDenial {
         operation: String,
         scope: String,
     },
+    /// A shared decision-read scope names a peer-scope Parent read; only the
+    /// reading operation's own declaration can grant one.
+    SharedScopePeerRead,
     InvalidCorrectionMechanism {
         correction: String,
         cause: crate::application_aftermath::DeclaredCorrectionMechanismDenial,

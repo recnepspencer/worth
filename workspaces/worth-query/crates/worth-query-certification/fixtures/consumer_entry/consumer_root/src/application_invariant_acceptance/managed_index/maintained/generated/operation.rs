@@ -3,7 +3,10 @@ use super::super::{bounds, protected::access::grants::GrantResource, query, sche
 use super::source;
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
+pub mod computation;
+mod computing_handler;
 mod handler;
+pub use computing_handler::ComputingHandler;
 pub use handler::Handler;
 
 #[derive(Clone, Debug, serde::Serialize)]
