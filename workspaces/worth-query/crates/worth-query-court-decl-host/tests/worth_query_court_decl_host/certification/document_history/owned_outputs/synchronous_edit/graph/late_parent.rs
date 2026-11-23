@@ -7,8 +7,10 @@ mod staged;
 mod alias;
 mod cross_write;
 mod outgoing;
+#[macro_use]
 mod own_output_drop;
 mod own_output_gap;
+mod own_output_ring;
 mod own_output_aspect;
 mod prerequisite;
 mod pending_current;

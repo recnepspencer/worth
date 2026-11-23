@@ -87,6 +87,9 @@ impl From<RelationalExecutionDenialCause> for PinnedStructuralWalkDenialKind {
 /// The original refusal with observations and private work already performed.
 pub struct PinnedStructuralWalkDenial {
     pub kind: PinnedStructuralWalkDenialKind,
+    /// The record the walk reached and found missing or not live, when that
+    /// is why it refused `EndpointUnavailable`.
+    pub endpoint: Option<crate::identity::data::EntityId>,
     pub reads: PinnedStructuralWalkReads,
     pub work: usize,
 }

@@ -152,21 +152,34 @@ impl OwnOutputOverlay {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity: EntityId,
     ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
-        if !self.covers(entity) {
-            return Ok(false);
-        }
-        self.head
-            .project_candidate()
-            .entity_record_with_projection_scope(
-                execution,
-                entity,
-                worth_relational::facade::runtime::ProjectionAspectScope::empty(),
-                |record| {
-                    (record.lifecycle()
-                        == worth_relational::facade::storage::RecordLifecycleState::Live)
-                        .then_some(())
-                },
-            )
-            .map(|present| present.is_none())
+        Ok(self.covers(entity) && !self.live_at_head(execution, entity)?)
     }
+
+    /// Whether `entity` is live at the head pre-pin. One charged point read.
+    pub fn live_at_head(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        entity: EntityId,
+    ) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+        live_in(&self.head.project_candidate(), execution, entity)
+    }
+}
+
+/// Whether `entity` is live in `view`, in one charged point read. Every
+/// guard of the own-output view means this by "live".
+pub fn live_in(
+    view: &worth_relational::facade::runtime::VisibilityProjectionView,
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    entity: EntityId,
+) -> Result<bool, worth_relational::facade::transactions::RelationalExecutionDenialCause> {
+    view.entity_record_with_projection_scope(
+        execution,
+        entity,
+        worth_relational::facade::runtime::ProjectionAspectScope::empty(),
+        |record| {
+            (record.lifecycle() == worth_relational::facade::storage::RecordLifecycleState::Live)
+                .then_some(())
+        },
+    )
+    .map(|present| present.is_some())
 }

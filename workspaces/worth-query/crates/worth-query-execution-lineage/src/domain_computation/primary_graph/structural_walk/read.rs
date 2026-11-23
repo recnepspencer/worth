@@ -54,6 +54,7 @@ impl StructuralWalkObservation {
         Self::retain(native, origin, execution, &query, context).map_err(|cause| {
             PinnedStructuralWalkDenial {
                 kind: PinnedStructuralWalkDenialKind::Read(cause),
+                endpoint: None,
                 reads,
                 work,
             }

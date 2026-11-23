@@ -96,6 +96,8 @@ macro_rules! producer_decision_dependency {
     (SelfRelationPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@self_relation $reader, $source) };
     (ChildDropInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     (ChildDropPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (RingDropInitial, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
+    (RingDropPreserve, $reader:ident, $source:ident) => { producer_decision_dependency!(@member_read $reader) };
     // Member `m`, and every output the source model owns (`FirstOf`, read
     // at the current image), each of which must have its value.
     // With `DERIVED_READ`, the same outputs' models through a derived read.

@@ -55,7 +55,13 @@ pub fn fact_keys(
         }
         Fact::SourceAspectRevision { aspect, .. } => vec![AnyKindAspect(aspect.clone())],
         Fact::SourceEntity { .. } => vec![AnyKindPresence],
-        // Observations over many records, managed sources, publications,
+        // A walk reads which records of its entity kind are live and the
+        // edges of its relation kind. A deletion marks it like every fact.
+        Fact::StructuralWalk { observation } => vec![
+            Kind(observation.key().entity_kind()),
+            Relation(observation.key().relation_kind()),
+        ],
+        // Other observations over many records, managed sources, publications,
         // authorization and workflow state: Native certifies no narrower key.
         _ => return None,
     })

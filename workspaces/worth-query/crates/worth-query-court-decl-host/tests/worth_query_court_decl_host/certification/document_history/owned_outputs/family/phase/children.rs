@@ -4,6 +4,16 @@ macro_rules! producer_role_families {
     (ChildDropPreserve) => { producer_role_families!(@kids) };
     (KidLinkerInitial) => { producer_role_families!(@kids) };
     (KidLinkerPreserve) => { producer_role_families!(@kids) };
+    (RingDropInitial) => { producer_role_families!(@ring) };
+    (RingDropPreserve) => { producer_role_families!(@ring) };
+    (RingPeerInitial) => { producer_role_families!(@ring_peer) };
+    (RingPeerPreserve) => { producer_role_families!(@ring_peer) };
+    (@ring_peer) => {
+        &[<super::Own<Outputs> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR]
+    };
+    (@ring) => {
+        &[<super::Ring<Outputs> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR]
+    };
     (@kids) => {
         &[<super::Kids<Outputs> as WorthQueryApplicationDeclaredOutputRoleFamily>::DESCRIPTOR]
     };

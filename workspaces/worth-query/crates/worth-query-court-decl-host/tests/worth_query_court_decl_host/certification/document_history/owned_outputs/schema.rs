@@ -9,7 +9,7 @@ pub use calibration::*;
 mod cap;
 pub use cap::*;
 mod owned_orbit;
-pub use owned_orbit::{Incidence, IncidenceKey, OwnedNext};
+pub use owned_orbit::{Beside, Incidence, IncidenceKey, OwnedNext};
 mod pending_child;
 pub use pending_child::PendingChildOf;
 mod records;
@@ -134,6 +134,8 @@ fn declare(
     let schema = family::c3b::self_relation::declare(schema);
     let schema = family::c3b::child_drop::declare(schema);
     let schema = family::c3b::kid_linker::declare(schema);
+    let schema = family::c3b::ring_drop::declare(schema);
+    let schema = family::c3b::ring_peer::declare(schema);
     let schema = family::c3b::aspect_probe::declare(schema);
     let schema = family::self_write::declare(schema);
     let schema = family::cross_reader::declare(schema);

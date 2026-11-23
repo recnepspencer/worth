@@ -57,6 +57,25 @@ macro_rules! producer_operation {
             creates: [$entity, ChildOutput]; links: [$of, ChildOfFirst];
         });
     };
+    (RingDropInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@ring_drop RingDropInitial, $entity, $key, $value, $of); };
+    (RingDropPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@ring_drop RingDropPreserve, $entity, $key, $value, $of); };
+    // The member read, plus the ring: members created and deleted, `OwnedNext` linked and unlinked, `Beside` walked.
+    (@ring_drop $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member, Incidence]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), IncidenceKey::at("IncidenceKey")];
+            read_relations: [$of, OwnedNext, Beside]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), IncidenceKey::at("IncidenceKey")];
+            creates: [$entity, Incidence]; deletes: [Incidence]; links: [$of, OwnedNext]; unlinks: [OwnedNext];
+        });
+    };
+    (RingPeerInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@ring_peer RingPeerInitial, $entity, $key, $value, $of); };
+    (RingPeerPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@ring_peer RingPeerPreserve, $entity, $key, $value, $of); };
+    // The member write, plus one record of its own (a ring of one) that it links `Beside` to `ring-drop(a)`'s ring.
+    (@ring_peer $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member, Incidence]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), IncidenceKey::at("IncidenceKey")];
+            read_relations: [$of, Beside]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), MemberValue::at("MemberValue"), IncidenceKey::at("IncidenceKey")]; creates: [$entity, Incidence]; links: [$of, Beside, OwnedNext];
+        });
+    };
     (DecisionInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputPreserve, $entity, $key, $value, $of); };
     (ParityInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputInitial, $entity, $key, $value, $of); };
     (ParityInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputPreserve, $entity, $key, $value, $of); };

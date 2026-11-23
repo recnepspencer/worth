@@ -8,39 +8,39 @@
 use super::super::super::super::program;
 use super::super::hierarchy;
 use super::*;
-use family::c3b::child_drop;
-/// `child-drop(a)` under the edit, and `$child(a)` discovered from `first:a`.
+/// `$root(a)` under the edit, and `$child(a)` discovered from `first:a`.
 macro_rules! drop_program {
-    ($($child:ident)::+, $slug:literal) => {
+    ($root:ident, $($child:ident)::+, $slug:literal) => {
         use super::*;
+        use family::c3b::$root as root;
         use family::$($child)::+ as child;
         pub struct Start;
         impl ApplicationConnectionIdentity for Start {
             const IDENTITY: &'static str = concat!("owned-outputs.late-parent.", $slug, "-start");
         }
-        impl ApplicationOccurrenceConnectionBinding<Schema, program::Entry, child_drop::Feature> for Start {}
+        impl ApplicationOccurrenceConnectionBinding<Schema, program::Entry, root::Feature> for Start {}
         pub type Connection = ApplicationConnectionRef<
             Schema,
             program::Entry,
             program::EntryOutput,
-            child_drop::Feature,
-            child_drop::InputPort,
+            root::Feature,
+            root::InputPort,
             Start,
         >;
         impl WorthQueryApplicationRequiredOutputConnection<Schema> for Start {
             type Source = edit::Binding;
-            type Demand = child_drop::Demand;
+            type Demand = root::Demand;
             const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
             fn demand_from_source(
                 _: &edit::Intent,
             ) -> Result<Self::Demand, WorthQueryRequiredOutputConnectionDenial> {
-                Ok(child_drop::Demand("a".into()))
+                Ok(root::Demand("a".into()))
             }
         }
         impl WorthQueryApplicationRequiredOutputSource<Schema, Start> for edit::Binding {
             fn demand_from_source(
                 input: &edit::Intent,
-            ) -> Result<child_drop::Demand, WorthQueryRequiredOutputConnectionDenial> {
+            ) -> Result<root::Demand, WorthQueryRequiredOutputConnectionDenial> {
                 <Start as WorthQueryApplicationRequiredOutputConnection<Schema>>::demand_from_source(input)
             }
         }
@@ -48,17 +48,17 @@ macro_rules! drop_program {
         impl ApplicationConnectionIdentity for Discover {
             const IDENTITY: &'static str = concat!("owned-outputs.late-parent.", $slug, "-discover");
         }
-        impl ApplicationOccurrenceConnectionBinding<Schema, child_drop::Feature, child::Feature> for Discover {}
+        impl ApplicationOccurrenceConnectionBinding<Schema, root::Feature, child::Feature> for Discover {}
         pub type ChildConnection = ApplicationConnectionRef<
             Schema,
-            child_drop::Feature,
-            child_drop::OutputPort,
+            root::Feature,
+            root::OutputPort,
             child::Feature,
             child::InputPort,
             Discover,
         >;
         impl WorthQueryApplicationDependentOutputConnection<Schema> for Discover {
-            type RootDemand = child_drop::Demand;
+            type RootDemand = root::Demand;
             type Discovery = query::first_output::Read;
             type Demand = child::Demand;
             const IDENTITY: &'static str = <Self as ApplicationConnectionIdentity>::IDENTITY;
@@ -104,11 +104,11 @@ macro_rules! drop_program {
 }
 /// The child only writes member `m`.
 mod writer {
-    drop_program!(decision_write, "own-drop");
+    drop_program!(child_drop, decision_write, "own-drop");
 }
 /// The child writes member `m` and links a child of its own under `first:a`.
 mod linker {
-    drop_program!(c3b::kid_linker, "own-drop-linker");
+    drop_program!(child_drop, c3b::kid_linker, "own-drop-linker");
 }
 /// One host on `$program`, and `$edit`: an edit of model `a` to a value, with
 /// the wave events it produced.
@@ -226,7 +226,7 @@ fn a_successor_whose_chain_deleted_refuses_typed_on_a_link_the_chain_did_not_mak
 }
 
 /// The value of `first:a` as a public read sees it.
-fn first(request: &family::Request<'_, '_, '_>) -> Option<u64> {
+pub(super) fn first(request: &family::Request<'_, '_, '_>) -> Option<u64> {
     let result = request
         .query(query::first_output::Read("first:a".into()))
         .execute()
