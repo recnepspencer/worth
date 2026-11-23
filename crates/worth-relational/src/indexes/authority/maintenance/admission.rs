@@ -1,75 +1,45 @@
+//! Bind Runtime's selected observation and predecessor snapshot to field refresh.
 use super::super::live_access::IndexAuthority;
-use super::work::{MaintenanceAdmissionRefusal, MaintenanceWork};
-
-use crate::branch::AdmittedRelationalBranchBasis;
-use crate::indexes::data::{
-    DerivedIndexBuildRequest, DerivedIndexMaintenanceAdmissionStop, DerivedIndexMaintenanceBudget,
-    DerivedIndexMaintenanceOutcome,
-};
+use super::field_refresh;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::indexes::data::*;
+use crate::snapshots::data::SnapshotHandle;
+use worth_execution::ExecutionRequest;
 
 impl IndexAuthority<'_> {
-    /// Maintains only selected field indexes on the original request's work and memory payer.
-    /// Reuses exact native generations, including a fork authoring root. Population reconstruction
-    /// is refused; the complete selected batch publishes atomically or not at all.
+    /// Maintain selected field indexes on the original request's work and memory payer.
     pub fn refresh_field_indexes_for_basis(
         &self,
         request: DerivedIndexBuildRequest,
         basis: &AdmittedRelationalBranchBasis,
-        before: Option<&crate::snapshots::data::SnapshotHandle>,
+        before: Option<&SnapshotHandle>,
         budget: DerivedIndexMaintenanceBudget,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<DerivedIndexMaintenanceOutcome, crate::indexes::data::DerivedIndexMaintenanceDenial>
-    {
-        let (prepared, counts) = super::request_payment::run(execution, budget, |work| {
-            work.restrict_to_field_indexes();
-            let prepared = self.prepare_basis_refresh(&request, basis, before, work, execution)?;
-            prepared.publish_admitted(&self.runtime.indexes, work)
-        })?;
-        Ok(DerivedIndexMaintenanceOutcome {
-            generations: prepared.value,
-            work: counts,
-        })
+        execution: &ExecutionRequest<'_, '_>,
+    ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceDenial> {
+        field_refresh::refresh_field_indexes_for_basis(
+            &self.runtime.indexes,
+            request,
+            budget,
+            execution,
+            |request, work| self.prepare_basis_refresh(request, basis, before, work, execution),
+        )
     }
 
-    /// Maintains selected field indexes through the original preparation payer.
-    /// Missing predecessor state refuses, independently of the cold-record budget.
-    /// The first caller refusal remains sticky and intact.
+    /// Maintain selected fields on the caller's original preparation payer.
     pub fn refresh_field_indexes_for_basis_admitted<Stop>(
         &self,
         request: DerivedIndexBuildRequest,
         basis: &AdmittedRelationalBranchBasis,
         budget: DerivedIndexMaintenanceBudget,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        mut prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
+        execution: &ExecutionRequest<'_, '_>,
+        prepare: impl FnMut(u64, u64) -> Result<(), Stop>,
     ) -> Result<DerivedIndexMaintenanceOutcome, DerivedIndexMaintenanceAdmissionStop<Stop>> {
-        let mut refused = None;
-        let result = (|| {
-            let mut relay = |work, bytes| {
-                if refused.is_some() {
-                    return Err(MaintenanceAdmissionRefusal);
-                }
-                prepare(work, bytes).map_err(|stop| {
-                    refused = Some(stop);
-                    MaintenanceAdmissionRefusal
-                })
-            };
-            let mut work = MaintenanceWork::admitted(budget, &mut relay);
-            work.restrict_to_field_indexes();
-            let prepared = self
-                .prepare_basis_refresh(&request, basis, None, &mut work, execution)
-                .map_err(|kind| work.deny(kind))?;
-            // A caught internal native error cannot bypass a caller refusal.
-            work.prepare(0, 0).map_err(|kind| work.deny(kind))?;
-            Ok(DerivedIndexMaintenanceOutcome {
-                generations: prepared
-                    .publish_admitted(&self.runtime.indexes, &mut work)
-                    .map_err(|kind| work.deny(kind))?,
-                work: work.counts(),
-            })
-        })();
-        match refused {
-            Some(stop) => Err(DerivedIndexMaintenanceAdmissionStop::Admission(stop)),
-            None => result.map_err(DerivedIndexMaintenanceAdmissionStop::Native),
-        }
+        field_refresh::refresh_field_indexes_for_basis_admitted(
+            &self.runtime.indexes,
+            request,
+            budget,
+            |request, work| self.prepare_basis_refresh(request, basis, None, work, execution),
+            prepare,
+        )
     }
 }

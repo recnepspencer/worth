@@ -2,10 +2,11 @@
 //! the fork's writes and never its parent's later ones.
 
 use crate::identity::data::KindId;
-use crate::visibility::materialization::read_records::reader::{
-    BoundedEntityKindTruthRead, BoundedRelationKindTruthRead, EntityKindTruthReadLimitExceeded,
-    KindScanVisibility, RelationKindTruthReadDenial,
-};
+use crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility;
+use crate::visibility::materialization::read_records::reader::truth_kind_scan::BoundedEntityKindTruthRead;
+use crate::visibility::materialization::read_records::reader::truth_kind_scan::EntityKindTruthReadLimitExceeded;
+use crate::visibility::materialization::read_records::reader::truth_relation_kind_scan::BoundedRelationKindTruthRead;
+use crate::visibility::materialization::read_records::reader::truth_relation_kind_scan::RelationKindTruthReadDenial;
 use crate::visibility::snapshot_states::SnapshotStateBasis;
 
 use super::historical_basis_reads::HistoricalProjectionReader;

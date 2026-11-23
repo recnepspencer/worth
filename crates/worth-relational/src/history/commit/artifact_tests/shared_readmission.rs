@@ -38,7 +38,7 @@ fn actual_weak_position_retains_only_the_fixed_original_control_bill_until_last_
     let request = ExecutionRequest::serial(&host);
     let artifact = owned_artifact(&source, &request);
     let positioned = artifact.readmit_framed(&request).unwrap().into_positioned();
-    let retained = crate::runtime::RetainedCanonicalPosition::from_positioned(&positioned);
+    let retained = crate::runtime::state::subsystems::history::canonical_publication_routes::retained_position::RetainedCanonicalPosition::from_positioned(&positioned);
     let same = retained.clone();
     let fixed = fixed_allocation_bill();
     drop(artifact);

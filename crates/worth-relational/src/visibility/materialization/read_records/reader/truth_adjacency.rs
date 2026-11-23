@@ -1,7 +1,8 @@
 use super::adjacency_work_ledger::AdjacencyLeaseLedger;
 use super::truth_record_access::sort_authoritative_relation_records;
-use super::*;
+use super::{context::VisibilityReadContext, kind_scan_visibility::KindScanVisibility};
 use crate::storage::partition::{AdjacencyDirection, AdjacencyKindBasis};
+use crate::{storage::data::RelationReadRecord, storage::overlay::PartitionAccess};
 
 #[derive(Debug)]
 pub struct BoundedAdjacencyTruthRead {
@@ -243,7 +244,10 @@ impl VisibilityReadContext<'_> {
                     edition,
                     &self.runtime.config.schema.registry,
                     id,
-                    KindScanVisibility::for_version(self.runtime, version_id),
+                    KindScanVisibility::for_selected_version(
+                        self.runtime.current_version_id(),
+                        version_id,
+                    ),
                 )
                 .map_err(request)?;
                 super::super::read_work::record_memory::claim(memory, clone_bytes)

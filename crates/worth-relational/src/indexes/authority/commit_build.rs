@@ -1,6 +1,7 @@
 use super::build_diagnostics::record_index_preparation_strategy_counters;
 use super::build_projection::IndexBuildProjection;
 use super::live_access::IndexAuthority;
+use super::reconstruction_build::IndexBuildPlan;
 use super::*;
 
 impl<'runtime> IndexAuthority<'runtime> {
@@ -10,18 +11,12 @@ impl<'runtime> IndexAuthority<'runtime> {
         request: DerivedIndexBuildRequest,
         lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     ) -> DerivedIndexBuildOutcome {
-        let lease = match execution.allocation_policy() {
-            worth_execution::ExecutionAllocationPolicy::Execution(lease) => Some(lease),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation => None,
-        };
-        let mut generations = Vec::new();
-        let mut failed_indexes = Vec::new();
         let Some((version_id, source_branch_id)) =
             self.source_commit_basis(request.source_commit_id)
         else {
             return failed_build_outcome(
                 request.source_commit_id,
-                generations,
+                Vec::new(),
                 request.index_ids,
                 None,
             );
@@ -29,7 +24,7 @@ impl<'runtime> IndexAuthority<'runtime> {
         if request.branch_id != source_branch_id {
             return failed_build_outcome(
                 request.source_commit_id,
-                generations,
+                Vec::new(),
                 request.index_ids,
                 Some(crate::branch::RelationalBranchBasisDenial::MixedAxis(
                     crate::branch::RelationalBranchBasisMismatchAxis::Branch,
@@ -40,59 +35,14 @@ impl<'runtime> IndexAuthority<'runtime> {
         if let Err(refusal) = self.demand_build_index_image(execution, &request) {
             return refusal;
         }
-        let work_budget = lease.map(|_| crate::execution::RequestWorkBudget::new());
-        let (definitions, checked_inputs, present_indexes, missing_indexes) = if let Some(lease) =
-            lease
-        {
-            match plan_index_packets_checked(
-                &self.runtime.indexes,
-                    &request.index_ids,
-                    lease,
-                    work_budget.as_ref().expect(/* Proof: The leased preparation branch creates its work account before this callback; the unleased branch does not invoke this callback. */ "leased index work account"),
-                ) {
-                    Ok(planned) => (
-                        Vec::new(),
-                        Some(planned.inputs),
-                        planned.present,
-                        planned.missing,
-                    ),
-                    Err(stop) => {
-                        return DerivedIndexBuildOutcome {
-                            source_commit_id: request.source_commit_id,
-                            generations,
-                            failed_indexes: request.index_ids,
-                            basis_denial: None,
-                            execution_denial: Some(index_execution_denial(stop)),
-                        };
-                    }
-                }
-        } else {
-            let (definitions, missing) =
-                planned_index_definitions(&self.runtime.indexes, &request.index_ids);
-            let present: Vec<_> = definitions
-                .iter()
-                .map(|definition| definition.index_id)
-                .collect();
-            (definitions, None, present, missing)
+        let plan = match self.plan_reconstruction(&request, execution) {
+            Ok(plan) => plan,
+            Err(refusal) => return refusal,
         };
-        failed_indexes.extend(missing_indexes);
-
-        let strategy =
-            crate::authority::commit::preparation::planning::strategy::strategy_for_parallel_packets(lease, present_indexes.len());
-        record_index_preparation_strategy_counters(self.runtime, present_indexes.len(), &strategy);
-
         let mut selected_projection =
             match IndexBuildProjection::select(self.runtime, &source_branch_id, version_id) {
                 Ok(projection) => projection,
-                Err(denial) => {
-                    failed_indexes.extend(present_indexes.iter().copied());
-                    return failed_build_outcome(
-                        request.source_commit_id,
-                        generations,
-                        failed_indexes,
-                        Some(denial),
-                    );
-                }
+                Err(denial) => return plan.unavailable(&request, Some(denial)),
             };
         if let Some(selected) = &mut selected_projection
             && let Err(cause) = selected.demand(execution)
@@ -103,88 +53,76 @@ impl<'runtime> IndexAuthority<'runtime> {
             .as_ref()
             .and_then(IndexBuildProjection::source)
         else {
-            failed_indexes.extend(present_indexes.iter().copied());
-            return failed_build_outcome(
-                request.source_commit_id,
-                generations,
-                failed_indexes,
-                None,
-            );
+            return plan.unavailable(&request, None);
         };
-        let Some(schema_version) = projection.schema_version() else {
-            failed_indexes.extend(present_indexes.iter().copied());
-            return failed_build_outcome(
-                request.source_commit_id,
-                generations,
-                failed_indexes,
-                None,
-            );
-        };
-        let results = match checked_inputs {
-            Some(inputs) => execute_index_inputs(
-                lane,
-                execution,
-                &projection,
-                inputs,
-                lease,
-                work_budget.as_ref(),
-            ),
-            None => execute_index_packets(
-                lane,
-                execution,
-                &projection,
-                plan_index_packets(definitions),
-                None,
-                None,
-            ),
-        };
-        let results = match results {
-            Ok(results) => results,
-            Err(execution_denial) => {
-                failed_indexes.extend(present_indexes.iter().copied());
-                return DerivedIndexBuildOutcome {
-                    source_commit_id: request.source_commit_id,
-                    generations,
-                    failed_indexes,
-                    basis_denial: None,
-                    execution_denial: Some(execution_denial),
-                };
-            }
-        };
+        self.publish_projected_reconstruction(
+            execution,
+            request,
+            lane,
+            (source_branch_id, version_id),
+            &projection,
+            plan,
+        )
+    }
 
-        if let (Some(digest), Some(plans)) = (
-            projection.schema_authority_digest(),
-            projection.aspect_plans(),
-        ) {
-            self.runtime.indexes.install_routing(digest, plans);
-        }
-        let publication_basis = IndexGenerationPublicationBasis::new(
-            &request,
-            source_branch_id,
-            version_id,
-            schema_version,
-        );
-        generations = publish_index_generations(
+    pub(super) fn reconstruct_projected_indexes(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: DerivedIndexBuildRequest,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        selected: (
+            crate::history::data::BranchId,
+            crate::identity::data::VersionId,
+        ),
+        projection: &IndexProjectionSource<'_>,
+    ) -> DerivedIndexBuildOutcome {
+        let plan = match self.plan_reconstruction(&request, execution) {
+            Ok(plan) => plan,
+            Err(refusal) => return refusal,
+        };
+        self.publish_projected_reconstruction(execution, request, lane, selected, projection, plan)
+    }
+
+    fn plan_reconstruction(
+        &self,
+        request: &DerivedIndexBuildRequest,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+    ) -> Result<IndexBuildPlan, DerivedIndexBuildOutcome> {
+        let plan = IndexBuildPlan::prepare(&self.runtime.indexes, request, execution)?;
+        let (count, strategy) = plan.strategy(execution);
+        record_index_preparation_strategy_counters(self.runtime, count, &strategy);
+        Ok(plan)
+    }
+
+    fn publish_projected_reconstruction(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        request: DerivedIndexBuildRequest,
+        lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+        selected: (
+            crate::history::data::BranchId,
+            crate::identity::data::VersionId,
+        ),
+        projection: &IndexProjectionSource<'_>,
+        plan: IndexBuildPlan,
+    ) -> DerivedIndexBuildOutcome {
+        let (outcome, published) = plan.reconstruct(
             &self.runtime.indexes,
-            &publication_basis,
-            results,
-            &mut failed_indexes,
-        );
-
-        self.publish_build_diagnostic(
+            execution,
+            lane,
             &request,
-            &publication_basis.branch_id,
-            &generations,
-            &failed_indexes,
+            selected,
+            projection,
         );
-
-        DerivedIndexBuildOutcome {
-            source_commit_id: request.source_commit_id,
-            generations,
-            failed_indexes,
-            basis_denial: None,
-            execution_denial: None,
+        if published {
+            self.publish_build_diagnostic(
+                &request,
+                &request.branch_id,
+                &outcome.generations,
+                &outcome.failed_indexes,
+            );
         }
+        outcome
     }
 
     fn source_commit_basis(

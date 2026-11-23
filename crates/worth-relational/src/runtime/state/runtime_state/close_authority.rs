@@ -81,7 +81,9 @@ impl RelationalRuntimeCloseAuthority {
         self.lifecycle.close();
         self.publication.close();
         #[cfg(test)]
-        crate::indexes::access::purge_index_query_scratch_hints(self.runtime_instance_id);
+        crate::tests::query::indexes::index_parity_scratch::purge_index_query_scratch_hints(
+            self.runtime_instance_id,
+        );
     }
 
     /// Issued only by the authentic memory owner after actual quiescence and

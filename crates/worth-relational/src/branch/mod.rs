@@ -7,24 +7,26 @@ mod authority;
 mod custody_witness;
 pub use custody_witness::{RelationalBasisCustodyReadDenial, RelationalBasisCustodyWitness};
 pub(crate) mod basis;
+pub(crate) mod basis_admission;
 pub(crate) mod basis_admission_identity;
 mod basis_axis_validation;
 pub(crate) mod basis_counters;
 mod basis_currentness;
+mod basis_currentness_runtime;
 pub(crate) mod basis_denial;
 mod basis_descriptor_resolution;
 mod basis_identity_validation;
 mod basis_observation;
 mod basis_readmission;
-mod basis_registry;
+pub(crate) mod basis_registry;
 pub(crate) mod home_program_step;
-pub(crate) use basis_registry::RelationalRetainedBasisSnapshotStop;
 #[cfg(test)]
 pub(crate) use basis_registry::{
     assert_original_registry_busy, assert_pruned_original_registration,
     assert_successor_registration_preserved,
 };
-mod basis_retention;
+pub(crate) mod basis_retention;
+mod basis_retention_runtime;
 mod canonical_runtime_frame;
 pub(crate) mod checkpoint_visibility;
 mod commit_change;
@@ -98,20 +100,17 @@ pub use authority::{
     RelationalBranchPublicationAuthority, RelationalBranchPublicationAuthorityMarker,
     RelationalForkSourceAuthority, RelationalForkSourceAuthorityMarker,
 };
+pub(crate) use basis::CheckpointComponentDescriptorView;
 pub use basis::{
     AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor, RelationalBranchBasisPosture,
     ResolvedRelationalBasisDescriptor, RELATIONAL_BRANCH_BASIS_DESCRIPTOR_VERSION,
 };
-pub(crate) use basis::{AdmittedRelationalBranchBasisInner, CheckpointComponentDescriptorView};
+pub(crate) use basis_admission::{
+    descriptor_for_cell, issue_admitted_relational_branch_basis_with_retention,
+};
 pub use basis_admission_identity::RelationalBranchBasisAdmissionIdentity;
 pub use basis_counters::RelationalBranchBasisCostCounters;
 pub use basis_denial::{RelationalBranchBasisDenial, RelationalBranchBasisMismatchAxis};
-pub(crate) use basis_observation::{
-    descriptor_for_cell, issue_admitted_relational_branch_basis_with_retention,
-};
-pub(crate) use basis_registry::{
-    RelationalBasisRegistryRetirementCustody, RelationalBranchBasisRegistryMetrics,
-};
 pub(crate) use canonical_runtime_frame::{CANONICAL_RUNTIME_INSTANCE_ID, CANONICAL_TRANSACTION_ID};
 pub use coordination::RelationalBranchCoordinationCellId;
 pub(crate) use coordination::RelationalBranchCoordinationGuard;
@@ -186,9 +185,6 @@ pub use version::RelationalBranchVersion;
 #[cfg(test)]
 #[path = "basis_admission_tests.rs"]
 mod basis_admission_tests;
-#[cfg(test)]
-#[path = "basis_registry_scale_tests.rs"]
-mod basis_registry_scale_tests;
 
 pub(crate) mod symbol_publication;
 mod symbol_read;

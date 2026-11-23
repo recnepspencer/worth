@@ -1,6 +1,7 @@
 //! Paid current-record walks consume Head views without opening history.
 use super::super::read_prices::{EXAMINE_SLOT, RESERVE_RECORD};
-use super::*;
+use super::projection_record_reader::ProjectionRecordReader;
+use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 impl ProjectionRecordReader<'_> {
     pub(super) fn paid_current_entities(
         &self,

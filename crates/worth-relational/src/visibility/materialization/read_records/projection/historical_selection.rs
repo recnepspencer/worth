@@ -1,11 +1,11 @@
 //! Original revisions across an actual committed graph selection; never write authority.
-use super::super::reader::VisibilityReadContext;
 use super::{RelationalBorrowedRecordReadDenial, VisibilityProjectionView};
 use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::history::data::CanonicalCommitAuthorityKind;
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::CommitId;
 use crate::mvcc::observation::RelationalBranchObservation;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 mod antecedent;

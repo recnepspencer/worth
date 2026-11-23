@@ -62,3 +62,6 @@ fn root_owned_artifact_keeps_fork_available_when_catalog_accelerator_is_missing(
     assert!(runtime.history.branch_cell(&target).is_some());
     assert_eq!(runtime.history.catalog_len(), before_catalog_count);
 }
+
+#[path = "../branch/basis_registry_scale_tests.rs"]
+mod basis_registry_scale;

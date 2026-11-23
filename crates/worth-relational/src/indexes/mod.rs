@@ -7,7 +7,9 @@ pub(crate) mod authority;
 pub(crate) use authority::at_next_charges;
 
 pub mod data;
-mod projected_field_values;
+pub(crate) mod projected_field_values;
+#[cfg(test)]
+pub(crate) use projected_field_values::verify_native_field_navigation;
 
 #[cfg(test)]
 pub(crate) use authority::last_allocation_bytes;

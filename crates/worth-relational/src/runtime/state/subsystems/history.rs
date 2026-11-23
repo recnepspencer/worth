@@ -3,10 +3,10 @@ use std::sync::atomic::AtomicBool;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 
+use crate::branch::basis_registry::RelationalBranchBasisRegistryMetrics;
 use crate::branch::reference::RelationalBranchReferenceCell;
 use crate::branch::registry::RelationalBranchReferenceRegistry;
 use crate::branch::root::RelationalBranchRootIdentityIssuer;
-use crate::branch::RelationalBranchBasisRegistryMetrics;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::VersionId;
 use crate::storage::substrate::owned_state::RuntimeOwnedState;

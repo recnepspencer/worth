@@ -1,15 +1,11 @@
 use std::collections::BTreeSet;
 
-use crate::history::data::CanonicalCommitEnvelope;
 use crate::history::data::{
-    AspectHistoryCommitSpan, AspectHistoryEntry, AspectHistoryLineageEventSpan,
-    AspectHistoryOrigin, AspectHistoryQueryResult, AspectHistoryResolutionTrace,
-    AspectResolutionContext, BranchId, HistoryAspectQueryTarget, LineageAspectHistory,
-    LineageAspectHistoryQueryResult,
+    AspectHistoryEntry, AspectHistoryQueryResult, BranchId, HistoryAspectQueryTarget,
+    LineageAspectHistory, LineageAspectHistoryQueryResult,
 };
 use crate::identity::data::{EntityId, LineageId, RelationId};
 use crate::lineage::data::HistoricalResolutionRequest;
-use crate::publication::patch::data::ordered_aspect_keys;
 use crate::transactions::data::RecordRef;
 use crate::visibility::materialization::read_records::ProjectionAspectFilter;
 
@@ -122,53 +118,15 @@ impl<'runtime> HistoryAccess<'runtime> {
             branch_id,
             ASPECT_HISTORY_COMMIT_CEILING,
         )?;
-        let entries = envelopes
-            .iter()
-            .flat_map(|envelope| {
-                envelope.committed_record_changes().filter_map(|change| {
-                    if filter.is_some_and(|aspect_filter| {
-                        !aspect_filter.matches_published_patch(&change.record.authoritative_patch)
-                    }) {
-                        return None;
-                    }
-                    match change.record.target {
-                        RecordRef::Entity(entity_id) if entity_scope.contains(&entity_id) => {
-                            Some(AspectHistoryEntry {
-                                origin: aspect_history_origin(change),
-                                resolution: AspectResolutionContext::ResolvedViaLineage {
-                                    start_lineage_id: resolution.start,
-                                    traversed_event_ids: resolution.traversed_event_ids.clone(),
-                                },
-                            })
-                        }
-                        _ => None,
-                    }
-                })
-            })
-            .collect::<Vec<_>>();
-        let trace = AspectHistoryResolutionTrace {
-            requested_target: HistoryAspectQueryTarget::Lineage(lineage_id),
-            branch_id: branch_id.clone(),
-            filter: filter.cloned(),
-            resolved_aspects: Self::resolved_aspects(entries.iter()),
-            searched_commit_span: Self::commit_span(&envelopes),
-            searched_lineage_event_span: Self::lineage_event_span(&resolution.traversed_event_ids),
-            returned_entries: entries.len() as u64,
-            traversed_commits: envelopes.len() as u64,
-            traversed_lineage_events: resolution.traversed_event_ids.len() as u64,
-        };
-        let history = if entries.is_empty() && lineage_scope.is_empty() {
-            None
-        } else {
-            Some(LineageAspectHistory {
-                requested_branch: branch_id.clone(),
-                start_lineage_id: resolution.start,
-                resolved_lineage_chain: resolution.resolved,
-                entries,
-                traversed_event_ids: resolution.traversed_event_ids,
-            })
-        };
-        Ok(LineageAspectHistoryQueryResult { history, trace })
+        Ok(super::aspect_history_projection::lineage_history(
+            &envelopes,
+            branch_id,
+            lineage_id,
+            &lineage_scope,
+            &entity_scope,
+            resolution,
+            filter,
+        ))
     }
 
     fn record_aspect_history_with_trace(
@@ -189,37 +147,13 @@ impl<'runtime> HistoryAccess<'runtime> {
             branch_id,
             ASPECT_HISTORY_COMMIT_CEILING,
         )?;
-        let entries = envelopes
-            .iter()
-            .flat_map(|envelope| {
-                envelope
-                    .committed_record_changes_for_target(&target)
-                    .filter(move |change| {
-                        filter.is_none_or(|aspect_filter| {
-                            aspect_filter
-                                .matches_published_patch(&change.record.authoritative_patch)
-                        })
-                    })
-                    .map(|change| AspectHistoryEntry {
-                        origin: aspect_history_origin(change),
-                        resolution: AspectResolutionContext::DirectRecordHistory,
-                    })
-            })
-            .collect::<Vec<_>>();
-        Ok(AspectHistoryQueryResult {
-            trace: AspectHistoryResolutionTrace {
-                requested_target,
-                branch_id: branch_id.clone(),
-                filter: filter.cloned(),
-                resolved_aspects: Self::resolved_aspects(entries.iter()),
-                searched_commit_span: Self::commit_span(&envelopes),
-                searched_lineage_event_span: None,
-                returned_entries: entries.len() as u64,
-                traversed_commits: envelopes.len() as u64,
-                traversed_lineage_events: 0,
-            },
-            entries,
-        })
+        Ok(super::aspect_history_projection::record_history(
+            &envelopes,
+            branch_id,
+            target,
+            requested_target,
+            filter,
+        ))
     }
 
     fn lineage_scope(
@@ -239,45 +173,5 @@ impl<'runtime> HistoryAccess<'runtime> {
             scope.extend(event.targets.iter().copied());
         }
         scope
-    }
-
-    fn resolved_aspects<'a>(
-        entries: impl IntoIterator<Item = &'a AspectHistoryEntry>,
-    ) -> Vec<worth_foundational::facade::AspectKey> {
-        ordered_aspect_keys(
-            entries
-                .into_iter()
-                .flat_map(|entry| entry.origin.changed_aspects.iter().cloned()),
-        )
-    }
-
-    fn commit_span(
-        envelopes: &[std::sync::Arc<CanonicalCommitEnvelope>],
-    ) -> Option<AspectHistoryCommitSpan> {
-        Some(AspectHistoryCommitSpan {
-            first_commit_id: envelopes.first()?.commit.commit_id,
-            last_commit_id: envelopes.last()?.commit.commit_id,
-        })
-    }
-
-    fn lineage_event_span(event_ids: &[u64]) -> Option<AspectHistoryLineageEventSpan> {
-        Some(AspectHistoryLineageEventSpan {
-            first_event_id: *event_ids.first()?,
-            last_event_id: *event_ids.last()?,
-        })
-    }
-}
-
-fn aspect_history_origin(
-    change: crate::replay::data::CommittedRecordChange<'_>,
-) -> AspectHistoryOrigin {
-    AspectHistoryOrigin {
-        commit_id: change.commit.commit_id,
-        version_id: change.commit.version_id,
-        branch_id: change.commit.branch_id.clone(),
-        target: change.record.target.clone(),
-        structural_change: change.record.structural_change,
-        changed_aspects: change.record.authoritative_changed_aspects(),
-        contains_opaque_aspect: change.record.contains_opaque_aspect,
     }
 }

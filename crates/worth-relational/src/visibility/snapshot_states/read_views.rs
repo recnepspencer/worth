@@ -1,10 +1,9 @@
 use crate::runtime::RelationalRuntime;
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::storage::overlay::PartitionAccess;
-use crate::visibility::materialization::read_records::{
-    read_work::{record_memory, record_quote},
-    KindScanVisibility,
-};
+use crate::visibility::materialization::read_records::read_work::record_memory;
+use crate::visibility::materialization::read_records::read_work::record_quote;
+use crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility;
 use crate::visibility::snapshot_read_view::RelationalReadView;
 
 use super::{SnapshotState, SnapshotStateBasis};
@@ -147,7 +146,7 @@ fn materialize_historical(
                 access,
                 registry,
                 crate::identity::data::EntityId::new(partition_id, slot as u64, 0),
-                KindScanVisibility::for_version(runtime, version_id),
+                KindScanVisibility::for_selected_version(runtime.current_version_id(), version_id),
             )
         },
         |partition_id, slot| {
@@ -155,7 +154,7 @@ fn materialize_historical(
                 access,
                 registry,
                 crate::identity::data::RelationId::new(partition_id, slot as u64, 0),
-                KindScanVisibility::for_version(runtime, version_id),
+                KindScanVisibility::for_selected_version(runtime.current_version_id(), version_id),
             )
         },
         charge,

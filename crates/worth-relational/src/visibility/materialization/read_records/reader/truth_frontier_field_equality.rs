@@ -2,8 +2,12 @@ use std::collections::BTreeSet;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
-use super::*;
+use super::{
+    context::VisibilityReadContext, frontier_admission::BoundedFrontierReadStop,
+    projection_record_reader::ProjectionRecordReader,
+};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
+use crate::storage::overlay::PartitionAccess;
 use crate::visibility::materialization::read_records::projection::query_locus_projection::entity_query_locus_comparison_key;
 
 #[derive(Debug)]

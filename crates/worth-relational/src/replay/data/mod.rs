@@ -4,7 +4,6 @@ mod parity;
 pub(crate) mod replay_errors;
 mod verification;
 
-pub(crate) use crate::history::data::CommittedRecordChange;
 pub use crate::history::data::{
     CanonicalCommitEnvelope, RelationalReplayRecord, ReplaySchemaVersion,
 };

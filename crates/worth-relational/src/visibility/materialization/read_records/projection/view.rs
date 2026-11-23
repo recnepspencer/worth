@@ -1,6 +1,6 @@
-use super::super::reader::VisibilityReadContext;
 use crate::identity::data::{KindId, VersionId};
 use crate::snapshots::data::SnapshotHandle;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
 use super::contracts::{
     admit_declared_projection_aspects, ProjectionAspectScope, ProjectionRecordDomain,
@@ -49,8 +49,8 @@ impl VisibilityProjectionView {
         self.basis.root().map(|root| root.schema_authority())
     }
 
-    pub(super) fn reader(&self) -> super::super::reader::ProjectionRecordReader<'_> {
-        super::super::reader::ProjectionRecordReader::new(
+    pub(super) fn reader(&self) -> crate::visibility::materialization::read_records::reader::projection_record_reader::ProjectionRecordReader<'_>{
+        crate::visibility::materialization::read_records::reader::projection_record_reader::ProjectionRecordReader::new(
             self.current_version,
             &self.instrumentation,
         )

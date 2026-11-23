@@ -91,8 +91,3 @@ pub use record_identity::{
 
 pub use services::RelationalSymbolTableForTest;
 pub(crate) use storage::TryPartitionMutationDenied;
-
-#[cfg(test)]
-pub(crate) use history::canonical_publication_routes::{
-    AuthoredWriteGeneration, RetainedCanonicalPosition,
-};

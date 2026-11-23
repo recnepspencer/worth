@@ -100,7 +100,7 @@ fn relink_rejects_schema_authority_mutation() {
     let denial = root
         .relink_canonical_envelope(
             execution,
-            crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence::prepare(
                 execution,
                 Arc::new(envelope),
             )
@@ -130,7 +130,7 @@ fn relink_rejects_visibility_tuple_mutation() {
     let denial = root
         .relink_canonical_envelope(
             execution,
-            crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence::prepare(
                 execution,
                 Arc::new(envelope),
             )
@@ -282,7 +282,7 @@ fn visibility_commitment_binds_every_visible_tuple_axis() {
         assert!(
             root.relink_canonical_envelope(
                 execution,
-                crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+                crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence::prepare(
                     execution,
                     Arc::new(mutant)
                 )
@@ -384,7 +384,7 @@ fn fork_target_materialization_overflow_refuses_before_installing_target() {
         .expect("overflowing materialized fork must refuse before installation");
     assert_eq!(
         denial,
-        crate::branch::RelationalForkDenial::AllocationAccountingOverflow
+        crate::branch::fork::RelationalForkDenial::AllocationAccountingOverflow
     );
     assert!(runtime.history.branch_cell(&target_branch).is_none());
     assert_eq!(

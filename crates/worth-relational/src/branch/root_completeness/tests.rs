@@ -6,7 +6,9 @@ use crate::history::data::{
 use crate::identity::data::{EntityId, PartitionId, VersionId};
 use crate::publication::patch::data::*;
 use crate::schema::data::*;
-use crate::transactions::data::{MergedCommitPlan, RecordRef, TransactionId};
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::RecordRef;
+use crate::transactions::data::primitives::TransactionId;
 
 #[test]
 fn completeness_recomputes_visibility_commitment() {

@@ -1,7 +1,7 @@
 //! Resolve an issued snapshot under the original native execution request.
-use super::super::reader::VisibilityReadContext;
 use super::VisibilityProjectionView;
 use crate::snapshots::data::SnapshotHandle;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 impl<'runtime> VisibilityReadContext<'runtime> {
     pub fn project_snapshot_in_request(
         &self,
