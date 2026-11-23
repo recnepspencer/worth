@@ -4,6 +4,7 @@ mod discriminator_scan;
 mod event_emission;
 mod name_minting;
 mod name_readmission;
+mod pending_birth_identity;
 mod posture_allocation_drafts;
 mod posture_continuity;
 mod posture_drafts;

@@ -13,12 +13,15 @@
 
 mod denial;
 mod lowering;
+mod same_commit;
 
 pub use denial::WorthQueryOutputNameDenial;
 pub use lowering::{admit_output_birth, OutputBirthPosture};
+pub use same_commit::admit_same_commit_names;
 
 use worth_query_declaration::facade::application_naming::{
-    ApplicationNameDiscriminator, ApplicationNameSubjectKind, WorthQueryName,
+    ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder, ApplicationNameSubjectKind,
+    SameCommitNameSlot, WorthQueryName,
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::lineage::PendingBirthTarget;
@@ -35,6 +38,9 @@ pub struct WorthQueryOutputBirth {
     role_path: String,
     canonical_discriminator: Vec<u8>,
     embedded_name_digests: Vec<[u8; 32]>,
+    /// Where the discriminator references names born by the same commit;
+    /// lowering writes each one once its referenced birth is known.
+    same_commit_names: Vec<SameCommitNameSlot>,
 }
 
 impl WorthQueryOutputBirth {
@@ -44,19 +50,26 @@ impl WorthQueryOutputBirth {
             role_path: role_path.into(),
             canonical_discriminator: Vec::new(),
             embedded_name_digests: Vec::new(),
+            same_commit_names: Vec::new(),
         }
     }
 
     /// Distinguishes siblings of one occurrence and role. Embedded
     /// `WorthQueryName` references must name records live at the basis and
-    /// not retired in the committing transaction.
+    /// not retired in the committing transaction. An embedded
+    /// `WorthQuerySameCommitName` must designate an output the same
+    /// candidate named earlier, in the same occurrence, under a role this
+    /// birth's role declares it depends on.
     pub fn with_discriminator<D: ApplicationNameDiscriminator>(
         mut self,
         discriminator: &D,
     ) -> Self {
-        let (bytes, references) = discriminator.canonical_bytes_with_references();
+        let mut encoder = ApplicationNameDiscriminatorEncoder::new(D::DISCRIMINATOR_IDENTITY);
+        discriminator.encode_canonical(&mut encoder);
+        let (bytes, references, same_commit_names) = encoder.finish_with_same_commit_names();
         self.canonical_discriminator = bytes;
         self.embedded_name_digests = references;
+        self.same_commit_names = same_commit_names;
         self
     }
 
@@ -193,9 +206,32 @@ pub type AuthoredOperationNaming = OperationNamingProgram<OperationOutputKey>;
 /// resolves against its commit allocations.
 pub type BoundOperationNaming = OperationNamingProgram<PendingBirthTarget>;
 
+impl<T> OperationNamingEntry<T> {
+    /// The outputs this entry names, in declaration order.
+    pub fn named_outputs(&self) -> &[OperationNamedOutput<T>] {
+        match self {
+            Self::Birth(output)
+            | Self::Merge {
+                keeper: OperationMergeKeeper::MintNew(output),
+                ..
+            } => std::slice::from_ref(output),
+            Self::Split { children, .. } => children,
+            Self::Retire { .. } | Self::Merge { .. } => &[],
+        }
+    }
+}
+
 impl<T> OperationNamingProgram<T> {
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
+    }
+
+    /// Every output the program names, in declaration order. An output's
+    /// position here is the ordinal a same-commit reference designates.
+    pub fn named_outputs(&self) -> impl Iterator<Item = &OperationNamedOutput<T>> {
+        self.entries
+            .iter()
+            .flat_map(|entry| entry.named_outputs().iter())
     }
 
     pub fn push(&mut self, entry: OperationNamingEntry<T>) {

@@ -13,6 +13,7 @@ mod erased;
 mod group;
 mod name;
 mod resolution;
+mod same_commit;
 mod scheme;
 mod selection;
 
@@ -20,6 +21,8 @@ mod selection;
 mod group_tests;
 #[cfg(test)]
 mod resolution_tests;
+#[cfg(test)]
+mod same_commit_tests;
 #[cfg(test)]
 mod tests;
 
@@ -40,6 +43,10 @@ pub use group::{
 };
 pub use name::WorthQueryName;
 pub use resolution::{NameResolutionDenial, ResolvedName};
+pub use same_commit::{
+    SameCommitNameReference, SameCommitNameSlot, WorthQuerySameCommitName,
+    SAME_COMMIT_NAME_PLACEHOLDER,
+};
 pub(crate) use scheme::validate_erased_scheme_identifiers;
 pub use scheme::{
     ApplicationNameRoleDependency, ApplicationNameScheme, ApplicationNameSchemeBuilder,

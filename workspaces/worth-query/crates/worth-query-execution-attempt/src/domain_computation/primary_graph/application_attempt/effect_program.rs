@@ -20,6 +20,7 @@ pub mod output_correspondence;
 pub mod persistent_names;
 pub mod relation_effects;
 pub mod relation_initialization;
+pub mod same_commit_names;
 pub mod target_admission;
 pub mod write_index;
 

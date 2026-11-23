@@ -1,5 +1,6 @@
 //! An installed operation whose decision reads persistent names through the
-//! tracked reader: `name_of` on live members and `resolve` on held names.
+//! tracked reader: `name_of` on live members and `resolve` on held names,
+//! and (`seams`) `relation_name_of` and `resolve_relation` on seams.
 //!
 //! The decision runs inside the real projected read attempt, so every read
 //! is admitted against the operation's realized scope and its dependency
@@ -12,6 +13,8 @@ use worth_query_decl::facade::application_naming::{
     NameResolutionDenial, NameSelection, ResolvedName, WorthQueryName,
 };
 use worth_query_host::facade::application_naming::ExecutionNameResolveDenial;
+
+pub mod seams;
 
 /// What one probe run observed.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -92,7 +95,8 @@ pub struct Intent {
 }
 worth_query_structured_value_binding!(pub Input for Intent { identity: "persistent-naming.probe.v1" });
 worth_query_operation!(pub ProbeNames for Schema, input Input; access {
-    read_entities: [Model, Member]; read_fields: [ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), MemberKey::at("MemberKey")]; writes: [ModelValue::at("ModelValue")];
+    read_entities: [Model, Member]; read_fields: [ModelKey::at("ModelKey"), ModelValue::at("ModelValue"), MemberKey::at("MemberKey")];
+    read_relations: [Seam]; writes: [ModelValue::at("ModelValue")];
 });
 fn scope(_: &Intent) -> String {
     "a".into()
@@ -185,6 +189,7 @@ impl OperationHandler<Schema, Binding> for Handler {
                 .entry(input.token.clone())
                 .or_default()
                 .observed = observed;
+            seams::observe(reader, &input.token, &live)?;
             reader.mutation_target(&model)
         })();
         match result {
