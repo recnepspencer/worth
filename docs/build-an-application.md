@@ -8771,10 +8771,11 @@ retired refuses as an unknown scope, and a key an earlier stage gave to a new
 record names that record.
 
 A read that reused the before-basis index keeps candidate support. When a
-later member of the same envelope writes a kind, field or relation the
-Parent's Source or its other reads use, the reader derives again where it can;
-otherwise the edit refuses (`CoupledReadSupportChanged`) and publishes
-nothing. A derived-again round whose probe would read a record its own
+later member of the same envelope changes a record or adjacency list the
+probed scope's Source read, or one of the Parent's other reads, an owned route
+derives again; any other reader's edit refuses (`CoupledReadSupportChanged`)
+and publishes nothing. A later member that writes the same kinds under
+another scope does not disturb the read. A derived-again round whose probe would read a record its own
 earlier round wrote refuses the probe (`PriorEffectRead`) and the round stops
 with that cause.
 
