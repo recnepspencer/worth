@@ -132,7 +132,7 @@ impl WorthQueryApplicationSnapshotLease {
     pub fn own_outputs(
         &self,
     ) -> Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>
-    {
+{
         self.own_outputs.as_ref()
     }
     pub fn applied_projection(

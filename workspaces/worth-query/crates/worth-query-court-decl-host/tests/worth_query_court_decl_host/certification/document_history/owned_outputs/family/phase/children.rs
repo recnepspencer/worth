@@ -28,9 +28,17 @@ macro_rules! child_drop_capture {
     ($reader:ident, $prior:ident) => {{
         let mut kids = Vec::new();
         if let Some(output) = &$prior {
-            for link in $reader.relations_from(ChildOfFirst::reference(), output).map_err(HandlerExecutionDenial::new)? {
-                $reader.entity(link.to(), ChildOutput::reference()).map_err(HandlerExecutionDenial::new)?;
-                if $reader.field(link.to(), ChildKey::at("ChildKey"))?.is_some_and(|key| key.starts_with("kid:")) {
+            for link in $reader
+                .relations_from(ChildOfFirst::reference(), output)
+                .map_err(HandlerExecutionDenial::new)?
+            {
+                $reader
+                    .entity(link.to(), ChildOutput::reference())
+                    .map_err(HandlerExecutionDenial::new)?;
+                if $reader
+                    .field(link.to(), ChildKey::at("ChildKey"))?
+                    .is_some_and(|key| key.starts_with("kid:"))
+                {
                     kids.push($reader.mutation_target(link.to())?);
                 }
             }
@@ -48,7 +56,13 @@ macro_rules! child_drop_publish {
             $writer.retire_member::<super::Kids<Outputs>>(&$input.0.key, &kid)?;
         }
         if $decision.output.is_none() {
-            create_kid!($writer, $decision, $input, super::child_key(&$input.0), &$output);
+            create_kid!(
+                $writer,
+                $decision,
+                $input,
+                super::child_key(&$input.0),
+                &$output
+            );
         }
     };
 }
@@ -58,10 +72,14 @@ macro_rules! child_drop_publish {
 // created `first:a`, behind `child-drop(a)`'s Preserve head round.
 macro_rules! kid_linker_capture {
     ($reader:ident, $prior:ident) => {{
-        let linked = $reader.resolve_optional_entity(ChildKey::at("ChildKey"), super::LINKED_KID.to_owned())?.is_some();
+        let linked = $reader
+            .resolve_optional_entity(ChildKey::at("ChildKey"), super::LINKED_KID.to_owned())?
+            .is_some();
         if $prior.is_some() && !linked {
             let first = $reader.resolve_entity(FirstKey::at("FirstKey"), "first:a".to_owned())?;
-            $reader.entity(&first, FirstOutput::reference()).map_err(HandlerExecutionDenial::new)?;
+            $reader
+                .entity(&first, FirstOutput::reference())
+                .map_err(HandlerExecutionDenial::new)?;
             Some($reader.mutation_target(&first)?)
         } else {
             None
@@ -72,7 +90,13 @@ macro_rules! kid_linker_publish {
     ($writer:ident, $decision:ident, $input:ident) => {
         if let Some(target) = &$decision.input_member {
             let first = $writer.projected_entity(target)?;
-            create_kid!($writer, $decision, $input, super::LINKED_KID.to_owned(), &first);
+            create_kid!(
+                $writer,
+                $decision,
+                $input,
+                super::LINKED_KID.to_owned(),
+                &first
+            );
         }
     };
 }
@@ -81,10 +105,19 @@ macro_rules! create_kid {
     ($writer:ident, $decision:ident, $input:ident, $key:expr, $parent:expr) => {{
         let owner = $writer.projected_entity(&$decision.source)?;
         let key: String = $key;
-        let kid = $writer.create_entity_in_context(&owner, ChildOutput::reference(), WorthQueryApplicationEntityKey::new(&key).unwrap())?;
+        let kid = $writer.create_entity_in_context(
+            &owner,
+            ChildOutput::reference(),
+            WorthQueryApplicationEntityKey::new(&key).unwrap(),
+        )?;
         $writer.initialize_field(&kid, ChildKey::at("ChildKey"), key.clone())?;
         $writer.initialize_field(&kid, ChildValue::at("ChildValue"), 0)?;
-        $writer.link(ChildOfFirst::reference(), format!("of:{key}"), $parent, &kid)?;
+        $writer.link(
+            ChildOfFirst::reference(),
+            format!("of:{key}"),
+            $parent,
+            &kid,
+        )?;
         $writer.create_member::<super::Kids<Outputs>>(&$input.0.key, &kid)?;
     }};
 }

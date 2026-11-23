@@ -81,7 +81,9 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for Discover {
         row: &query::Row,
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
         assert_eq!(row.key.as_str(), "first:a");
-        Ok(vec![decision_write::Demand(CHILD_SOURCE.with(std::cell::Cell::get).into())])
+        Ok(vec![decision_write::Demand(
+            CHILD_SOURCE.with(std::cell::Cell::get).into(),
+        )])
     }
 }
 pub type Tree = ApplicationOutputGraph<
@@ -174,7 +176,10 @@ fn a_successor_reaching_its_preserved_record_commits_the_sequential_world() {
     let scope = request_scope();
     let principal = authenticate_operator(host.installed_schema(), &scope);
     let request = host.request(&principal, &scope);
-    for (idempotency, value) in [("own-output-preserved-first", 8), ("own-output-preserved", 9)] {
+    for (idempotency, value) in [
+        ("own-output-preserved-first", 8),
+        ("own-output-preserved", 9),
+    ] {
         let head = courts::native_head(&host);
         let contacts = host.producer_contacts_on_this_thread_for_test();
         let mut edit = request
