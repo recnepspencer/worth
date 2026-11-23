@@ -51,4 +51,31 @@ impl PhysicalRecoveryFreshnessPort {
             maximum_manifest_cleanup_sampling_bytes,
         )
     }
+
+    /// Like `sample_binding`, and also enforces a caller-supplied total
+    /// sampling byte ceiling (`maximum_sampling_bytes`) across the primary
+    /// sampling backing and each co-live WAL member decode scratch grant before
+    /// reserving native backing or allocating sampling storage.
+    pub fn sample_binding_with_budget<'frame>(
+        coordination: &crate::physical_runtime::PhysicalRecoveryCoordination,
+        media: &AdmittedRecoveryFilesystemMedia,
+        basis: StoreRecoverySamplingBasis<'_>,
+        wal_frames: IntegrityAdmittedRecoveryWalFrameView<'frame>,
+        maximum_operation_bindings: u64,
+        maximum_redo_bytes: u64,
+        maximum_manifest_cleanup_sampling_bytes: u64,
+        maximum_sampling_bytes: u64,
+    ) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
+        binding::sample_binding_with_budget(
+            binding::CheckpointCoveredMembers::Skip,
+            coordination,
+            media,
+            basis,
+            wal_frames.iter(),
+            maximum_operation_bindings,
+            maximum_redo_bytes,
+            maximum_manifest_cleanup_sampling_bytes,
+            maximum_sampling_bytes,
+        )
+    }
 }

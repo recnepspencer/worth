@@ -19,7 +19,7 @@ use crate::{
 
 mod target;
 mod target_decode;
-use target_decode::decode_targets;
+use target_decode::{decode_targets, DistinctTargets};
 
 #[cfg(test)]
 #[path = "canonical_redo/tests.rs"]
@@ -114,7 +114,7 @@ pub fn decode_canonical_redo_v3(
         expected_start_lsn,
         expected_end_lsn_exclusive,
         maximum_targets,
-        distinct,
+        distinct.map(|(set, max)| DistinctTargets::Set(set, max)),
         projection_limits,
         format,
         &mut UnrestrictedDecodeStorage,
@@ -152,12 +152,42 @@ pub fn decode_canonical_redo_v3_with_storage<S: PhysicalRecoveryDecodeStorage>(
     )
 }
 
+/// Like [`decode_canonical_redo_v3_with_storage`], also bounding distinct
+/// targets in a caller-owned sorted `Vec` admitted through `storage`.
+#[allow(clippy::too_many_arguments)]
+pub fn decode_canonical_redo_v3_with_distinct_and_storage<S: PhysicalRecoveryDecodeStorage>(
+    bytes: &[u8],
+    expected_start_lsn: u64,
+    expected_end_lsn_exclusive: u64,
+    maximum_targets: u64,
+    distinct: &mut Vec<CanonicalRedoTargetIdentity>,
+    maximum_distinct: u64,
+    projection_limits: PhysicalRecoveryProjectionDecodeLimits,
+    format: PhysicalRecordFormatDeclaration,
+    storage: &mut S,
+) -> Result<
+    (Box<[CanonicalRedoWireRecord]>, PersistedPhysicalRecoveryProjection),
+    PhysicalRecoveryDecodeFailure<S::Denial>,
+> {
+    decode_in_storage(
+        bytes,
+        expected_start_lsn,
+        expected_end_lsn_exclusive,
+        maximum_targets,
+        Some(DistinctTargets::Bounded(distinct, maximum_distinct)),
+        projection_limits,
+        format,
+        storage,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
 fn decode_in_storage<S: PhysicalRecoveryDecodeStorage>(
     bytes: &[u8],
     expected_start_lsn: u64,
     expected_end_lsn_exclusive: u64,
     maximum_targets: u64,
-    mut distinct: Option<(&mut BTreeSet<CanonicalRedoTargetIdentity>, u64)>,
+    mut distinct: Option<DistinctTargets<'_>>,
     projection_limits: PhysicalRecoveryProjectionDecodeLimits,
     format: PhysicalRecordFormatDeclaration,
     storage: &mut S,

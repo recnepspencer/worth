@@ -10,7 +10,7 @@ use super::FailedIngestReclaimBasisV1;
 
 #[path = "drop_set_manifest/view.rs"]
 mod view;
-pub(super) use view::DropSetManifestV1View;
+pub(in crate::blob_record) use view::DropSetManifestV1View;
 
 pub const MAXIMUM_DROP_SET_RECORDS: usize = 1024;
 pub(super) const FIXED_PAYLOAD_BYTES: usize = 194;

@@ -104,12 +104,12 @@ pub(super) fn plan_identity(
         digest.update(copy.intent_lsn().to_le_bytes());
         digest.update(copy.intent_digest());
     }
-    for action in &staging.base.actions {
+    for action in staging.base.actions() {
         digest.update([u8::from(action.is_projected())]);
         digest.update(action.ordinal().to_le_bytes());
         hash_base_placement(&mut digest, action.placement());
     }
-    for action in &staging.base.segment_updates {
+    for action in staging.base.segment_updates() {
         let update = action.update();
         digest.update(action.ordinal().to_le_bytes());
         digest.update(update.page_cell().segment_id().get().to_le_bytes());
@@ -119,13 +119,13 @@ pub(super) fn plan_identity(
         digest.update(update.data_page_count().to_le_bytes());
         digest.update(update.frame_index().to_le_bytes());
     }
-    for action in &staging.base.manifests {
+    for action in staging.base.manifests() {
         digest.update(action.ordinal().to_le_bytes());
         digest.update(action.artifact().canonical_file_name().as_bytes());
         digest.update(action.coordinate().offset().to_le_bytes());
         digest.update(action.coordinate().length().to_le_bytes());
     }
-    for state in &staging.base.root_states {
+    for state in staging.base.root_states() {
         digest.update(state.root_publication_allocation_bytes().to_le_bytes());
         digest.update([state.manifest_capacity_transition()]);
         digest.update(state.successor_manifest_capacity().to_le_bytes());
@@ -144,8 +144,8 @@ pub(super) fn plan_identity(
             digest.update(segment.generation().get().to_le_bytes());
         }
     }
-    digest.update((staging.base.source_artifacts.len() as u64).to_le_bytes());
-    for artifact in &staging.base.source_artifacts {
+    digest.update((staging.base.source_artifacts().len() as u64).to_le_bytes());
+    for artifact in staging.base.source_artifacts() {
         hash_artifact(&mut digest, *artifact);
     }
     Ok(digest.finalize().into())

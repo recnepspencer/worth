@@ -82,6 +82,90 @@ impl BlobRecordV1<'_> {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ValidatedBlobRecordHeader {
+    kind: BlobRecordKind,
+    store: [u8; 16],
+}
+
+impl ValidatedBlobRecordHeader {
+    pub const fn kind(self) -> BlobRecordKind {
+        self.kind
+    }
+
+    pub const fn store(self) -> [u8; 16] {
+        self.store
+    }
+}
+
+/// Validates the full canonical v1 blob record representation in place without
+/// allocating, returning its authenticated kind and embedded store identity.
+pub fn validate_blob_record_header(
+    bytes: &[u8],
+) -> Result<ValidatedBlobRecordHeader, BlobRecordDenial> {
+    let frame = envelope::decode(bytes)?;
+    let store = match frame.kind {
+        BlobRecordKind::SessionDeclared => {
+            BlobSessionDeclarationV1::decode_payload(frame.payload)?.store()
+        }
+        BlobRecordKind::Chunk => {
+            DecodedBlobChunkFrameV1::decode_payload(frame.payload, frame.flags)?
+                .occurrence()
+                .store()
+        }
+        BlobRecordKind::TreeNode => {
+            BlobTreeNodeV1::validate_payload(frame.payload, frame.flags)?.store()
+        }
+        BlobRecordKind::GenerationPublished => {
+            BlobGenerationPublicationV1::decode_payload(frame.payload)?.store()
+        }
+        BlobRecordKind::SessionFrontier => {
+            BlobSessionFrontierV1::decode_payload(frame.payload)?.store()
+        }
+        BlobRecordKind::SessionAbandoned => {
+            BlobSessionAbandonedV1::decode_payload(frame.payload)?.store()
+        }
+        BlobRecordKind::DropSetManifest => {
+            reclaim::DropSetManifestV1View::decode_payload(frame.payload)?.store()
+        }
+        BlobRecordKind::DropSetManifestV2 => {
+            DropSetManifestV2View::decode_payload(frame.payload)?.store()
+        }
+        BlobRecordKind::OriginalDropReserved => {
+            OriginalDropReservedV1::decode_payload(frame.payload)?.store()
+        }
+        BlobRecordKind::ReclaimDescriptor => {
+            BlobReclaimDescriptorV1::decode_payload(frame.payload)?.store()
+        }
+        BlobRecordKind::ChunkReuseClaim => {
+            BlobChunkReuseClaimV1::decode_payload(frame.payload, frame.flags)?.store()
+        }
+        BlobRecordKind::ChunkReuseClaimV2 => {
+            BlobChunkReuseClaimV2::decode_payload(frame.payload, frame.flags)?
+                .claim()
+                .store()
+        }
+        BlobRecordKind::DedupeQuarantine => {
+            BlobDedupeQuarantineV1::decode_payload(frame.payload, frame.flags)?.store()
+        }
+        BlobRecordKind::DropSetManifestV3 => {
+            DropSetManifestV3View::decode_payload(frame.payload)?.store()
+        }
+        BlobRecordKind::ReclaimDescriptorV2 => {
+            BlobReclaimDescriptorV2::decode_payload(frame.payload)?.store()
+        }
+        BlobRecordKind::ReclaimDescriptorV3 => {
+            BlobReclaimDescriptorV3::decode_payload(frame.payload)?
+                .base()
+                .store()
+        }
+    };
+    Ok(ValidatedBlobRecordHeader {
+        kind: frame.kind,
+        store,
+    })
+}
+
 pub fn decode_blob_record(bytes: &[u8]) -> Result<BlobRecordV1<'_>, BlobRecordDenial> {
     let frame = envelope::decode(bytes)?;
     match frame.kind {

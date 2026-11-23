@@ -27,7 +27,7 @@ impl ExpectationBacking {
     ) -> Result<Self, PlanningMemoryDenial> {
         let bytes = PlanningResidentAllowance::slot_bytes::<ExpectationPayload>(1)?;
         let overflow = || PlanningMemoryDenial::RecoveryMemoryBytes { observed: u64::MAX };
-        let movement = (std::mem::size_of::<RecoveryPublicationPlan>() as u64)
+        let movement = (std::mem::size_of::<RecoveryPublicationPlanBody>() as u64)
             .checked_add(bytes.checked_mul(2).ok_or_else(overflow)?)
             .ok_or_else(overflow)?;
         allowance.transient(bytes.checked_add(movement).ok_or_else(overflow)?)?;
@@ -59,7 +59,7 @@ mod tests {
     #[test]
     fn expectation_slot_refuses_full_plan_conversion_before_allocating() {
         let payload = std::mem::size_of::<ExpectationPayload>() as u64;
-        let plan = std::mem::size_of::<RecoveryPublicationPlan>() as u64;
+        let plan = std::mem::size_of::<RecoveryPublicationPlanBody>() as u64;
         let required = 17 + payload + plan + 2 * payload;
         let mut allowance = PlanningResidentAllowance::new(17, required - 1).unwrap();
         assert!(
@@ -71,7 +71,7 @@ mod tests {
     #[test]
     fn expectation_slot_counts_actual_capacity_and_plan_conversion_overlap() {
         let payload = std::mem::size_of::<ExpectationPayload>() as u64;
-        let plan = std::mem::size_of::<RecoveryPublicationPlan>() as u64;
+        let plan = std::mem::size_of::<RecoveryPublicationPlanBody>() as u64;
         let mut allowance = PlanningResidentAllowance::new(17, u64::MAX).unwrap();
         let backing = ExpectationBacking::prepare(&mut allowance).unwrap();
         let actual = (backing.0.capacity() * std::mem::size_of::<ExpectationPayload>()) as u64;

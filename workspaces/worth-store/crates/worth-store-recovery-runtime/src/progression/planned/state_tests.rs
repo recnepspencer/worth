@@ -76,7 +76,9 @@ fn planned_backing_refuses_combined_construction_before_allocating() {
         >() as u64;
         let expectation = std::mem::size_of::<crate::progression::ExpectationPayload>() as u64;
         let publication_plan =
-            std::mem::size_of::<crate::progression::RecoveryPublicationPlan>() as u64;
+            std::mem::size_of::<super::super::RecoveryPublicationPlanBody>() as u64;
+        let core_body =
+            worth_store::physical_runtime::PreparedRecoveredRuntimeCoreBacking::required_bytes();
         let movement = (payload + extraction)
             .max(payload + 2 * input)
             .max(input + 2 * staged)
@@ -85,10 +87,11 @@ fn planned_backing_refuses_combined_construction_before_allocating() {
             .max(publication + 2 * namespace)
             .max(namespace + 2 * reopened + 2 * roster)
             .max(3 * namespace + 2 * roster)
-            .max(publication_plan + 2 * expectation);
-        let handoff = crate::orchestration::RecoveryHandoffBacking::required_bytes().unwrap();
+            .max(publication_plan + 2 * expectation)
+            .max(core_body);
+        let reopened_total = crate::progression::ReopenedBacking::required_bytes().unwrap();
         let required =
-            17 + payload + staged + input + namespace + publication + reopened + handoff + movement;
+            17 + payload + staged + input + namespace + publication + reopened_total + movement;
         let mut allowance = PlanningResidentAllowance::new(17, required - 1).unwrap();
         assert!(matches!(
             PlannedStateBacking::prepare(&mut allowance, extraction),
@@ -117,7 +120,9 @@ fn planned_backing_peak_keeps_actual_capacity_and_construction_overlap() {
         >() as u64;
         let expectation = std::mem::size_of::<crate::progression::ExpectationPayload>() as u64;
         let publication_plan =
-            std::mem::size_of::<crate::progression::RecoveryPublicationPlan>() as u64;
+            std::mem::size_of::<super::super::RecoveryPublicationPlanBody>() as u64;
+        let core_body =
+            worth_store::physical_runtime::PreparedRecoveredRuntimeCoreBacking::required_bytes();
         let movement = (payload + extraction)
             .max(payload + 2 * input)
             .max(input + 2 * staged)
@@ -126,7 +131,8 @@ fn planned_backing_peak_keeps_actual_capacity_and_construction_overlap() {
             .max(publication + 2 * namespace)
             .max(namespace + 2 * reopened + 2 * roster)
             .max(3 * namespace + 2 * roster)
-            .max(publication_plan + 2 * expectation);
+            .max(publication_plan + 2 * expectation)
+            .max(core_body);
         let input_backing = backing.input.backing_bytes().unwrap();
         let namespace_backing = backing.namespace.backing_bytes().unwrap();
         let publication_backing = backing.publication.backing_bytes().unwrap();
