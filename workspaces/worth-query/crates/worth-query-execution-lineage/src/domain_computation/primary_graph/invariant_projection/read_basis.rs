@@ -29,7 +29,7 @@ pub struct ProjectionResolvedEntity {
     pub phase: Option<RelationalAppliedCandidateReadQualification>,
 }
 
-impl NativeProjectionRead<'_> {
+impl<'r> NativeProjectionRead<'r> {
     pub fn origin<'a>(
         &self,
         snapshot: &'a SnapshotHandle,
@@ -69,6 +69,15 @@ impl NativeProjectionRead<'_> {
                 .proposed_version_id(),
         }
     }
+    /// The applied candidate this read borrows, for the read's whole life.
+    pub fn applied_pin_lent(
+        &self,
+    ) -> Option<&'r RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>> {
+        match self {
+            Self::Applied { candidate, .. } => Some(candidate),
+            Self::Committed(_) => None,
+        }
+    }
     pub fn applied_pin(
         &self,
     ) -> Option<&RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>> {
@@ -82,6 +91,14 @@ impl NativeProjectionRead<'_> {
         match self {
             Self::Applied { own_outputs, .. } => *own_outputs,
             Self::Committed(_) => None,
+        }
+    }
+    /// The committed runtime this read borrows, for the read's whole life:
+    /// a nested committed read lends it without holding the reader.
+    pub fn committed_runtime_lent(&self) -> Option<&'r RelationalRuntime> {
+        match self {
+            Self::Committed(runtime) => Some(runtime),
+            Self::Applied { .. } => None,
         }
     }
     pub fn committed_runtime(&self) -> Option<&RelationalRuntime> {

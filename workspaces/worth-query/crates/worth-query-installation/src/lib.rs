@@ -203,6 +203,7 @@ pub mod facade {
         WorthQueryInstalledMutationPrecondition, WorthQueryInstalledNamedClockConditionalNode,
         WorthQueryInstalledSigningLifecycleRule, WorthQueryInstalledTemporalConditionalOperation,
         WorthQueryOperationEmissionContract, WorthQueryOperationManagedIndexReadView,
+        WorthQuerySharedOwnerManagedIndexRead,
         WorthQueryPortableApplicationConditionalOperationBinding,
         WorthQueryPortableApplicationConditionalOperationBindingParts,
         APPLICATION_AUTHORIZATION_FACT_FAMILY, APPLICATION_DECISION_FACT_FAMILY,

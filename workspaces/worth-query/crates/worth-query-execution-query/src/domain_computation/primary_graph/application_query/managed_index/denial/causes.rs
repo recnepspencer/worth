@@ -100,6 +100,9 @@ pub fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
             SelectionDenial::ForeignSelection => Cause::Refused(Refusal::ForeignSelection),
         },
         ProviderExecutionDenial::ForeignAssociation => Cause::Refused(Refusal::ForeignAssociation),
+        ProviderExecutionDenial::UnpublishedSourceChange => {
+            Cause::Refused(Refusal::UnpublishedSourceChange)
+        }
     }
 }
 fn native_source(

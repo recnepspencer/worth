@@ -1,4 +1,5 @@
-//! Resolve declared Parent bindings against the genuine mutation scope before execution.
+//! Resolve declared Parent bindings, own-scope and shared-owner peer reads,
+//! against the genuine mutation scope before execution.
 use super::*;
 use worth_query_declaration::facade::{
     application_operation::ApplicationMutationScopeResolutionMode as MutationMode,
@@ -12,7 +13,11 @@ pub(super) fn validate<S: ApplicationSchema>(
 ) -> Result<(), WorthQueryApplicationOperationInstallationDenial> {
     for target in worth_query_declaration::facade::application_schema::application_operation_decision_read_targets(
         schema.installed_declaration().members(), mutation.operation_name()) {
-        let Read::ManagedIndex { parent } = target else { continue };
+        let (parent, peer_member) = match target {
+            Read::ManagedIndex { parent } => (parent, None),
+            Read::SharedOwnerManagedIndex { parent, member, .. } => (parent, Some(member)),
+            _ => continue,
+        };
         let query = schema
             .installed_query_binding_inventory()
             .find(|query| parent.matches_descriptor(query))
@@ -22,14 +27,24 @@ pub(super) fn validate<S: ApplicationSchema>(
                     mutation.identity(),
                 )
             })?;
-        let matching_mode = matches!(
-            (mutation.scope().mode(), query.scope().mode()),
-            (MutationMode::InputField, QueryMode::InputField)
-                | (
-                    MutationMode::PrincipalIdentity,
-                    QueryMode::PrincipalIdentity
-                )
-        );
+        // A peer scope is named by input and is the same kind as the
+        // operation's own scope: the governing relation's member endpoint.
+        let matching_mode = match peer_member {
+            None => matches!(
+                (mutation.scope().mode(), query.scope().mode()),
+                (MutationMode::InputField, QueryMode::InputField)
+                    | (
+                        MutationMode::PrincipalIdentity,
+                        QueryMode::PrincipalIdentity
+                    )
+            ),
+            Some(member) => {
+                matches!(
+                    (mutation.scope().mode(), query.scope().mode()),
+                    (MutationMode::InputField, QueryMode::InputField)
+                ) && query.scope().field().locus().entity() == member.as_str()
+            }
+        };
         if !matching_mode
             || mutation.scope().field() != query.scope().field()
             || mutation.principal().name() != query.principal().name()

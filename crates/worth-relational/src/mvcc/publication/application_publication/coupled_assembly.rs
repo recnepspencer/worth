@@ -21,6 +21,7 @@ mod authored_writes;
 mod completion;
 mod continuation;
 mod managed_source;
+mod managed_source_alignment;
 pub use continuation::RelationalCoupledProducerContinuation;
 mod contribution;
 mod source_effects;

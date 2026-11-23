@@ -33,6 +33,9 @@ pub enum ProviderExecutionDenial {
     Product(crate::basis::WorthQueryProductBranchAdmissionDenial),
     NativeAdmission(worth_relational::facade::mvcc::CompanionPreflightStop),
     ForeignAssociation,
+    /// The applied candidate carries an unpublished change the Parent's
+    /// Source can see; its admitted before basis is not the candidate's image.
+    UnpublishedSourceChange,
 }
 impl From<super::super::output_source_observation::SourceQueryObservationStop>
     for ProviderExecutionDenial

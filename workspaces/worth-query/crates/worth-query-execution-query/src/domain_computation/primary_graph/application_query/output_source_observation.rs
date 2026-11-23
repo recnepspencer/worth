@@ -57,6 +57,10 @@ pub struct SourceQueryReaderAccess<'a, Schema> {
     pub request: &'a WorthQueryRequestScope,
     pub applied_participants: Option<&'a dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants>,
     pub applied_source_publication: Option<applied::AppliedSourcePublicationLoan>,
+    /// The live coupled assembly a producer decision's applied candidate came
+    /// from; it alone certifies managed Sources unchanged for that candidate.
+    pub applied_managed_sources:
+        Option<&'a dyn super::managed_index::AppliedManagedSourceAlignment>,
     observation_refused: std::cell::RefCell<Option<crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::WorthQueryProducerObservationReadDenial>>,
     read_authorization: Option<crate::domain_computation::authorization::BorrowedReadOperationAdmission<'a>>,
     predecessor: Option<crate::domain_computation::primary_graph::application_contribution::producer::observation_reads::ProducerPredecessorReadAccess>,

@@ -9,6 +9,7 @@ use worth_query_installation::facade::{
     WorthQueryPortableDomainIdentity, WorthQueryPortableDomainPackage,
 };
 mod decision_read;
+mod shared_owner_read;
 pub(crate) mod model;
 pub(crate) mod queries;
 mod typed_lookup;

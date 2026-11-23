@@ -29,6 +29,7 @@ pub fn prepare<Schema, Binding>(
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
     own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
+    assembly: &dyn crate::domain_computation::primary_graph::application_query::managed_index::AppliedManagedSourceAlignment,
     erased: ErasedAppliedProducerSource,
     predecessor: Option<&worth_relational::facade::mvcc::RelationalRequiredOutputPublication>,
     edition: super::super::InstalledProducerEdition,
@@ -249,6 +250,7 @@ where
     ).map_err(super::denial::request_admission_rejected)?
         .with_producer_reads::<Binding>(read_admission, predecessor_reads)
         .with_applied_participants(participants)
+        .with_applied_managed_sources(assembly)
         .with_applied_source_publication(qualified, selected_publication);
     let prepared_inputs = match captured {
         Some((inputs, component)) => Some(inputs.into_mutation_inputs(
