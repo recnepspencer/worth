@@ -12,7 +12,7 @@ use crate::identity::data::VersionId;
 use crate::runtime::state::subsystems::RuntimeOwnedState;
 
 #[path = "canonical_publication_routes.rs"]
-mod canonical_publication_routes;
+pub(super) mod canonical_publication_routes;
 #[path = "history_branch_cells.rs"]
 mod history_branch_cells;
 #[path = "history_branch_lifecycle.rs"]
@@ -31,7 +31,7 @@ use history_identity_allocation::reserve_identity;
 #[path = "history_cost_recording.rs"]
 mod history_cost_recording;
 #[path = "history_costs.rs"]
-mod history_costs;
+pub(super) mod history_costs;
 #[path = "history_fork_binding.rs"]
 mod history_fork_binding;
 #[path = "history_head_versions.rs"]
@@ -66,6 +66,7 @@ mod history_recovery_validation;
 mod history_retention;
 #[path = "history_root_capture.rs"]
 mod history_root_capture;
+use canonical_publication_routes::RelationalPatchPositionReservationCounters;
 pub(crate) use canonical_publication_routes::{
     authored_write_commit_denial, readmit_positioned_canonical_commit, AuthoredWriteGeneration,
     BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
@@ -75,10 +76,7 @@ pub(crate) use canonical_publication_routes::{
     PerformedCheckpointSelection, PreparedCanonicalPublicationRoute,
     RelationalCanonicalPublicationRoutes, RetainedBranchTransition, RetainedCanonicalPosition,
 };
-pub use canonical_publication_routes::{
-    RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
-};
-pub use history_costs::RelationalBranchSharingCostCounters;
+use history_costs::RelationalBranchSharingCostCounters;
 pub(crate) use history_costs::RelationalForkMaterializationCost;
 pub(crate) use history_costs::RelationalPhase4ReferenceCostOwner;
 pub(crate) use history_publication::PreparedRecoveredVersionedArtifactPublication;

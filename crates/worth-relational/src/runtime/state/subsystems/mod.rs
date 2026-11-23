@@ -30,6 +30,11 @@ pub(crate) use durability::{
     DurabilitySubsystem, RelationalCheckpointManifestPublication,
     RelationalCheckpointManifestSelection,
 };
+pub use history::canonical_publication_routes::{
+    RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
+};
+pub use history::history_costs::RelationalBranchSharingCostCounters;
+pub use history::RelationalPhase4ReferenceCostCounters;
 pub(crate) use history::{authored_write_commit_denial, AuthoredWriteGeneration};
 pub(crate) use history::{
     readmit_positioned_canonical_commit, BranchHeadVersionIndexAuthority,
@@ -41,10 +46,6 @@ pub(crate) use history::{
     PreparedVersionedArtifactPublication, RelationalCanonicalPublicationRoutes,
     RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPerformedSourceWalk,
     RelationalPreparationHistory, RelationalSourceHistoryBinding, RetainedCanonicalPosition,
-};
-pub use history::{RelationalBranchSharingCostCounters, RelationalPhase4ReferenceCostCounters};
-pub use history::{
-    RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
 };
 pub(crate) use indexing::{
     CapturedIndexDefinitionCatalog, FrozenCheckpointIndexes, IndexCatalogCoverage,

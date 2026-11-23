@@ -50,19 +50,16 @@ class OwnerMap:
                 if self.owners[dep]['layer'] >= owner['layer']:
                     raise ValueError(f'cyclic owner rule {name} -> {dep}')
 
-    def assignment(self, source):
-        return self.assignment_relative(source.relative_to(self.root / SOURCE))
-
-    def assignment_relative(self, relative):
+    def rule(self, relative):
         for prefix in prefixes(relative):
             if prefix in self.paths:
-                return self.paths[prefix]
+                return prefix
         raise ValueError(f'unassigned source: {SOURCE / relative}')
 
     def locations(self, source):
         """The virtual package and, where governed, its internal responsibility."""
         relative = source.relative_to(self.root / SOURCE)
-        owner = self.assignment_relative(relative)
+        owner = self.paths[self.rule(relative)]
         if owner not in self.boundaries:
             return owner, None
         boundary = self.boundaries[owner]
@@ -90,7 +87,11 @@ class Audit:
         self.map = OwnerMap(self.root, config)
         base = self.root / SOURCE
         files = {p.resolve() for p in base.rglob('*') if p.is_file()}
-        self.file_owners = {p: self.map.assignment(p) for p in sorted(files)}
+        file_rules = {p: self.map.rule(p.relative_to(base)) for p in sorted(files)}
+        unused_rules = self.map.paths.keys() - set(file_rules.values())
+        if unused_rules:
+            raise ValueError(f'unused owner rules: {", ".join(sorted(unused_rules))}')
+        self.file_owners = {p: self.map.paths[rule] for p, rule in file_rules.items()}
         self.model = LibraryModel(base / 'lib.rs', self.root, production_view=RelationalProductionView)
         self.locations = {names: self.map.locations(node.source)
                           for names, node in self.model.index.items()}
@@ -248,6 +249,35 @@ class Audit:
         return sorted(set(walk(('facade',), 'facade', {('facade',)})))
 
 
+    def subordinate_test_export_tokens(self, exports):
+        """Public test tokens classified by the source that defines each export."""
+        result = set()
+        for path in exports:
+            *modules, token = path.split('::')
+            if not token.endswith('ForTest'):
+                continue
+            origin = resolved_origin(self.model.surface, (), ('crate', *modules, token))
+            if origin is None or origin[0] == '<external>':
+                raise ValueError(f'cannot resolve the defining owner for {path}')
+            source = self.model.index[origin[0]].source
+            if self.map.locations(source)[0] != 'runtime':
+                result.add(token)
+        return sorted(result)
+
+
+def facade_failures(audit, baseline):
+    exports = audit.exports()
+    frozen = set(baseline['facade_exports'])
+    current = set(exports)
+    unbudgeted = set(audit.subordinate_test_export_tokens(exports)) - set(
+        baseline['subordinate_test_export_tokens'])
+    return (
+        [f'facade export added: {name}' for name in sorted(current - frozen)]
+        + [f'facade export removed: {name}' for name in sorted(frozen - current)]
+        + [f'unbudgeted subordinate test export: {name}' for name in sorted(unbudgeted)]
+    )
+
+
 def totals(directions):
     return {direction: counts.total() for direction, counts in sorted(directions.items())}
 
@@ -275,11 +305,14 @@ def main():
         config = tomllib.loads((args.root / CONFIG).read_text())
         baseline = json.loads((args.root / BASELINE).read_text())
         audit = Audit(args.root, config)
+        failures = facade_failures(audit, baseline)
         audit.scan()
     except (OSError, ValueError, KeyError) as error:
         print(f'relational DAG: {error}', file=sys.stderr)
         return 1
-    failed = False
+    for failure in failures:
+        print(f'relational DAG: {failure}', file=sys.stderr)
+    failed = bool(failures)
     for projection, directions in audit.ledger.items():
         ceiling = baseline['ceilings'][projection]
         failures = compare(directions, ceiling, baseline['references'][projection])

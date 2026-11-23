@@ -5,7 +5,7 @@ import tempfile
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from check_relational_dag import Audit, SOURCE, compare, totals
+from check_relational_dag import Audit, SOURCE, compare, facade_failures, totals
 
 
 class RelationalDagTests(unittest.TestCase):
@@ -91,10 +91,13 @@ class RelationalDagTests(unittest.TestCase):
     def test_test_only_scope_including_associated_items_and_nested_use(self):
         self.write('lib.rs', '''
             mod low; mod high; mod runtime;
-            #[cfg(test)] mod tests {}
-            #[cfg(test)] mod test_execution_policy {}
-            mod presentation { #[cfg(test)] pub mod harness {} }
+            #[cfg(test)] mod tests;
+            #[cfg(test)] mod test_execution_policy;
+            mod presentation;
         ''')
+        self.write('tests.rs', '')
+        self.write('test_execution_policy.rs', '')
+        self.write('presentation.rs', '#[cfg(test)] pub mod harness {}')
         self.config['paths'].update(
             tests='courts', presentation='runtime', test_execution_policy='runtime')
         self.write('low.rs', '''
@@ -126,6 +129,50 @@ class RelationalDagTests(unittest.TestCase):
         self.write('unowned.rs', 'pub struct Unowned;')
         with self.assertRaisesRegex(ValueError, 'unassigned source:.*unowned.rs'):
             self.audit()
+
+    def test_owner_rule_must_win_for_at_least_one_file(self):
+        for dead in ('absent', 'low'):
+            with self.subTest(rule=dead):
+                self.config['paths']['low.rs'] = self.config['paths'].pop('low')
+                self.config['paths'][dead] = 'high'
+                with self.assertRaisesRegex(ValueError, f'unused owner rules: {dead}'):
+                    self.audit()
+                self.config['paths'].pop(dead)
+                self.config['paths']['low'] = self.config['paths'].pop('low.rs')
+
+    def test_facade_fails_on_added_and_removed_paths(self):
+        self.write('lib.rs', 'mod low; mod high; mod runtime; pub mod facade;')
+        self.config['paths']['facade'] = 'runtime'
+        self.write('facade.rs', 'pub use crate::high::Other as New;')
+        baseline = {'facade_exports': ['facade::Old'], 'subordinate_test_export_tokens': []}
+        self.assertEqual(facade_failures(self.audit(), baseline), [
+            'facade export added: facade::New',
+            'facade export removed: facade::Old',
+        ])
+
+    def test_subordinate_test_export_budget_follows_the_definition(self):
+        self.write('lib.rs', 'mod low; mod high; mod runtime; pub mod facade;')
+        self.config['paths']['facade'] = 'runtime'
+        self.write('facade.rs', 'pub use crate::runtime::{ControlForTest, LocalForTest};')
+        self.write('runtime.rs', 'pub struct ControlForTest; pub struct LocalForTest;')
+        baseline = {
+            'facade_exports': self.audit().exports(),
+            'subordinate_test_export_tokens': [],
+        }
+        self.assertEqual(facade_failures(self.audit(), baseline), [])
+
+        self.write('high.rs', 'pub struct Hook;')
+        self.write('runtime.rs', """
+            pub use crate::high::Hook as ControlForTest;
+            pub struct LocalForTest;
+        """)
+        audit = self.audit()
+        self.assertEqual(audit.subordinate_test_export_tokens(audit.exports()), ['ControlForTest'])
+        self.assertEqual(facade_failures(audit, baseline), [
+            'unbudgeted subordinate test export: ControlForTest',
+        ])
+        baseline['subordinate_test_export_tokens'] = ['ControlForTest', 'RetiredForTest']
+        self.assertEqual(facade_failures(audit, baseline), [])
 
     def test_unmounted_file_cannot_hide_under_an_assigned_prefix(self):
         self.write('low/hidden.rs', 'use crate::high::Other;')
