@@ -24,7 +24,7 @@ impl WorthQueryApplicationCommitReceipt {
             crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
         >,
     > {
-        &mut self.exact_output_settlement
+        &mut self.inner.exact_output_settlement
     }
 }
 

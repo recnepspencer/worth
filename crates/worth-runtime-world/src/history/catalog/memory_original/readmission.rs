@@ -15,7 +15,8 @@ impl CompositeHistoryCatalog {
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
         match records.receiver {
-            ReceiverAdmission::Available if records.slots.is_empty() => {}
+            ReceiverAdmission::Available
+                if records.slots.is_empty() && records.pending_reservations == 0 => {}
             ReceiverAdmission::Available => return Err(Stop::BindingMismatch),
             ReceiverAdmission::Preparing
             | ReceiverAdmission::Installed
@@ -53,7 +54,10 @@ impl MemoryRegistryReadmission {
             .registry
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if !matches!(records.receiver, ReceiverAdmission::Preparing) || !records.slots.is_empty() {
+        if !matches!(records.receiver, ReceiverAdmission::Preparing)
+            || !records.slots.is_empty()
+            || records.pending_reservations != 0
+        {
             return Err(Stop::BindingMismatch);
         }
         records.slots = slots;

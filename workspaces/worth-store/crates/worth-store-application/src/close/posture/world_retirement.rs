@@ -31,10 +31,11 @@ impl ApplicationHomeRecoveryCustody {
         &mut self,
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<(), ApplicationHomeCloseDenial> {
-        let WorldOwnerCloseCustody::Retiring(slot) = &mut self.world_owner else {
+        let body = self.body_mut();
+        let WorldOwnerCloseCustody::Retiring(slot) = &mut body.world_owner else {
             return Ok(());
         };
-        let NativeCloseCustody::Serving(native) = &self.native else {
+        let NativeCloseCustody::Serving(native) = &body.native else {
             return Err(ApplicationHomeCloseDenial::WorldCompositionRetained);
         };
         loop {
@@ -51,7 +52,7 @@ impl ApplicationHomeRecoveryCustody {
                         .expect("same completed World owner")
                         .into_retired()
                         .unwrap_or_else(|_| unreachable!("owner reported Complete"));
-                    self.world_owner = WorldOwnerCloseCustody::Retired(original);
+                    body.world_owner = WorldOwnerCloseCustody::Retired(original);
                     return Ok(());
                 }
             }

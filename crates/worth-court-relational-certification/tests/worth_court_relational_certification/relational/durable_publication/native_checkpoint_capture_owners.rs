@@ -1,23 +1,26 @@
-//! The original request controls capture; its surviving output restores editable truth.
+//! A durable capture retains every admitted capture owner until its last alias.
+//! Restored from f9a53a5d17:crates/worth-relational/src/tests/durability/contracts/native_checkpoint/allocation.rs.
+//! Fixture adaptations (C2.3): the source and recovered runtimes are bound to
+//! the testkit's `TestDurableMedium` (the original used the retired in-crate
+//! medium), so the capture binds its medium publication owner as before. The
+//! private `history().branch_head` reads become the public `current_head`
+//! receipt read. This court subsumes the former public subset
+//! `original_capture_request_refusals_and_escaped_output_preserve_editable_truth`.
 use super::branch_history_recovery::current_head;
+use super::*;
 use std::num::NonZeroUsize;
 use worth_execution::{
     CancellationSource, CancellationToken, ExecutionAllocationDenialClass,
-    ExecutionAllocationPolicy as Policy, ExecutionAuthority, ExecutionAuthorityConfig,
-    ExecutionRequest, LeaseRequest,
+    ExecutionAllocationPolicy as Policy, LeaseRequest, MemoryLimitDenial, MemoryLimitLevel,
 };
 use worth_foundational::{
     DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
 };
 use worth_relational::facade::{
     durability::RelationalNativeCheckpointCaptureDenial as Denial, history::BranchId,
-    indexes::RelationalExecutionDenialCause,
+    transactions::RelationalExecutionDenialCause,
 };
-use worth_testkit_relational::{
-    aspect_storage::publications::release_test_commit_snapshot,
-    durable_medium::TestDurableMedium,
-    durable_publication::{create_entity_outcome, durable_runtime},
-};
+
 fn request(bytes: u64, cancellation: CancellationToken) -> LeaseRequest {
     LeaseRequest {
         policy: ExecutionRequestPolicy::new(
@@ -29,10 +32,12 @@ fn request(bytes: u64, cancellation: CancellationToken) -> LeaseRequest {
         cancellation,
     }
 }
+
 #[test]
-fn original_capture_request_refusals_and_escaped_output_preserve_editable_truth() {
-    let host=worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let execution = &ExecutionRequest::serial(&host);
+fn native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_truth() {
+    let host_request = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host_request);
+
     let medium = TestDurableMedium::new();
     let runtime = durable_runtime(&medium);
     let committed = create_entity_outcome(execution, &runtime, "native-custody-source");
@@ -41,33 +46,35 @@ fn original_capture_request_refusals_and_escaped_output_preserve_editable_truth(
         .durability_authority()
         .native_checkpoint(execution, Policy::SystemAllocation)
         .unwrap();
+    let quote = u64::try_from(system.bytes().len()).unwrap();
     const FUNDED: u64 = 8 << 20;
-    let authority = ExecutionAuthority::try_construct(ExecutionAuthorityConfig {
-        max_workers: NonZeroUsize::new(8).unwrap(),
-        charged_memory_bytes: Some(512 * 1024 * 1024),
-    })
-    .unwrap();
+    let authority = crate::leased_preparation::ordinary_context::authority();
     let parent = authority
         .request_lease(request(FUNDED, CancellationToken::new()))
         .unwrap();
     let zero = parent.child(request(0, CancellationToken::new())).unwrap();
     let error = runtime
         .durability_authority()
-        .native_checkpoint(&ExecutionRequest::leased(&zero), Policy::Execution(&zero))
+        .native_checkpoint(
+            &worth_execution::ExecutionRequest::leased(&zero),
+            Policy::Execution(&zero),
+        )
         .unwrap_err();
     assert!(
-        matches!(error,Denial::Request(RelationalExecutionDenialCause::PolicyMemoryExhausted {requested,admitted:0,ancestor:0}) if requested>0),
+        matches!(error, Denial::Request(RelationalExecutionDenialCause::PolicyMemoryExhausted { requested, admitted: 0, ancestor: 0 }) if requested > 0),
         "{error:?}"
     );
+    assert_eq!(parent.charged_memory_bytes(), 0);
     assert_eq!(current_head(&runtime, &BranchId("main".into())), head);
     drop(zero);
+
     let cancellation = CancellationSource::new();
     let stopped = parent.child(request(FUNDED, cancellation.token())).unwrap();
     cancellation.cancel();
     let Denial::Allocation(error) = runtime
         .durability_authority()
         .native_checkpoint(
-            &ExecutionRequest::leased(&stopped),
+            &worth_execution::ExecutionRequest::leased(&stopped),
             Policy::Execution(&stopped),
         )
         .unwrap_err()
@@ -82,19 +89,39 @@ fn original_capture_request_refusals_and_escaped_output_preserve_editable_truth(
     );
     assert_eq!(error.requested_payload_bytes(), None);
     drop(stopped);
+
     let retained = {
         let child = parent
             .child(request(FUNDED, CancellationToken::new()))
             .unwrap();
         let captured = runtime
             .durability_authority()
-            .native_checkpoint(&ExecutionRequest::leased(&child), Policy::Execution(&child))
+            .native_checkpoint(
+                &worth_execution::ExecutionRequest::leased(&child),
+                Policy::Execution(&child),
+            )
             .unwrap();
         assert_eq!(captured.bytes(), system.bytes());
+        assert_eq!(captured.captured_sections(), system.captured_sections());
         let clone = captured.clone();
+        assert_eq!(clone.bytes().as_ptr(), captured.bytes().as_ptr());
         drop(captured);
         clone
     };
+    let retained_bytes = parent.charged_memory_bytes();
+    assert!(
+        retained_bytes >= quote,
+        "the checkpoint retains its frame and all original capture owners"
+    );
+    let remaining = parent.reserve_memory(FUNDED - retained_bytes).unwrap();
+    assert_eq!(
+        parent.reserve_memory(1).unwrap_err(),
+        MemoryLimitDenial::Capacity {
+            requested: 1,
+            admitted: 0,
+            level: MemoryLimitLevel::Policy { ancestor: 0 },
+        }
+    );
     let mut recovered = durable_runtime(&medium);
     let prior_owner = recovered.runtime_instance_id();
     let restored = recovered
@@ -109,4 +136,15 @@ fn original_capture_request_refusals_and_escaped_output_preserve_editable_truth(
         Some(&later.commit)
     );
     release_test_commit_snapshot(&recovered, &later);
+    drop(later);
+    drop(recovered);
+    drop(retained);
+    assert_eq!(parent.charged_memory_bytes(), FUNDED - retained_bytes);
+    drop(
+        parent
+            .reserve_memory(retained_bytes)
+            .expect("last actual captured/readmitted owner releases every original grant"),
+    );
+    drop(remaining);
+    assert_eq!(parent.charged_memory_bytes(), 0);
 }

@@ -106,7 +106,9 @@ impl WorldProgramActivationHistoryEntry<'_> {
             | WorldRecord::CreationIntent(_)
             | WorldRecord::CreationReleased { .. }
             | WorldRecord::Continued { .. }
-            | WorldRecord::PlannedSignalLeg(_) => {
+            | WorldRecord::PlannedSignalLeg(_)
+            | WorldRecord::BranchRetired { .. }
+            | WorldRecord::HistoryRetired { .. } => {
                 unreachable!("only admitted origins/opens own history entries")
             }
         }
@@ -137,7 +139,9 @@ impl WorldProgramActivationHistoryEntry<'_> {
             | WorldRecord::CreationIntent(_)
             | WorldRecord::CreationReleased { .. }
             | WorldRecord::Continued { .. }
-            | WorldRecord::PlannedSignalLeg(_) => {
+            | WorldRecord::PlannedSignalLeg(_)
+            | WorldRecord::BranchRetired { .. }
+            | WorldRecord::HistoryRetired { .. } => {
                 unreachable!("only admitted origins/opens own history entries")
             }
         }
@@ -153,7 +157,9 @@ impl WorldProgramActivationHistoryEntry<'_> {
             | WorldRecord::CreationIntent(_)
             | WorldRecord::CreationReleased { .. }
             | WorldRecord::Continued { .. }
-            | WorldRecord::PlannedSignalLeg(_) => {
+            | WorldRecord::PlannedSignalLeg(_)
+            | WorldRecord::BranchRetired { .. }
+            | WorldRecord::HistoryRetired { .. } => {
                 unreachable!("only admitted origins/opens own history entries")
             }
         }

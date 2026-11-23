@@ -23,6 +23,11 @@ impl RelationalRuntimeState {
         self.partitions.acquire()
     }
 
+    /// Pure read-only peek of the current partition map without counting an acquisition.
+    pub(crate) fn peek_partition_edition(&self) -> PartitionEdition {
+        self.partitions.acquire()
+    }
+
     /// Exclusive authority to install the next ordinary edition.
     ///
     /// Ordinary mutation copies the map spine only while a reader edition is

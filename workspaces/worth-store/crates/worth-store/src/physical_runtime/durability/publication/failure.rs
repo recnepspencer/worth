@@ -31,11 +31,11 @@ pub enum PhysicalRootPublicationPreparationOutcome {
 }
 
 pub struct PhysicalRootPublicationPreparationNotStarted {
-    failure: PhysicalRootPublicationPreparationFailure,
+    failure: Box<PhysicalRootPublicationPreparationFailure>,
 }
 
 pub struct IndeterminatePhysicalRootPublicationPreparation {
-    failure: PhysicalRootPublicationPreparationFailure,
+    failure: Box<PhysicalRootPublicationPreparationFailure>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -140,10 +140,10 @@ impl PhysicalRootPublicationPreparationOutcome {
         settled: DataSettledPhysicalMutationMembers,
     ) -> Self {
         Self::NotStarted(PhysicalRootPublicationPreparationNotStarted {
-            failure: PhysicalRootPublicationPreparationFailure::NotStarted {
+            failure: Box::new(PhysicalRootPublicationPreparationFailure::NotStarted {
                 settled,
                 cause: PhysicalRootPublicationPreparationNotStartedCause::RuntimeReleased,
-            },
+            }),
         })
     }
 
@@ -166,11 +166,11 @@ impl PhysicalRootPublicationPreparationOutcome {
                     ..
                 },
             ) => Self::InspectionRequired(IndeterminatePhysicalRootPublicationPreparation {
-                failure,
+                failure: Box::new(failure),
             }),
-            Err(failure) => {
-                Self::NotStarted(PhysicalRootPublicationPreparationNotStarted { failure })
-            }
+            Err(failure) => Self::NotStarted(PhysicalRootPublicationPreparationNotStarted {
+                failure: Box::new(failure),
+            }),
         }
     }
 }
@@ -181,7 +181,7 @@ impl PhysicalRootPublicationPreparationNotStarted {
     }
 
     pub fn settled_members(&self) -> Option<&DataSettledPhysicalMutationMembers> {
-        match &self.failure {
+        match self.failure.as_ref() {
             PhysicalRootPublicationPreparationFailure::NotStarted { settled, .. } => Some(settled),
             PhysicalRootPublicationPreparationFailure::ProjectionRejected { .. }
             | PhysicalRootPublicationPreparationFailure::PlanningAuthorityReleased { .. }
@@ -201,7 +201,7 @@ impl PhysicalRootPublicationPreparationNotStarted {
     }
 
     pub fn into_planning_members(self) -> Option<RootPublicationPlanningMembers> {
-        match self.failure {
+        match *self.failure {
             PhysicalRootPublicationPreparationFailure::ProjectionRejected { planning, .. }
             | PhysicalRootPublicationPreparationFailure::PlanningAuthorityReleased { planning }
             | PhysicalRootPublicationPreparationFailure::TransitionDenied { planning, .. }
@@ -219,7 +219,7 @@ impl PhysicalRootPublicationPreparationNotStarted {
     }
 
     pub fn into_settled_members(self) -> Option<DataSettledPhysicalMutationMembers> {
-        match self.failure {
+        match *self.failure {
             PhysicalRootPublicationPreparationFailure::NotStarted { settled, .. } => Some(settled),
             PhysicalRootPublicationPreparationFailure::ProjectionRejected { .. }
             | PhysicalRootPublicationPreparationFailure::PlanningAuthorityReleased { .. }
@@ -239,7 +239,7 @@ impl PhysicalRootPublicationPreparationNotStarted {
     }
 
     pub fn candidate_plan(&self) -> Option<&RootPublicationCandidatePlan> {
-        match &self.failure {
+        match self.failure.as_ref() {
             PhysicalRootPublicationPreparationFailure::CandidateAuthorityReleased { candidate }
             | PhysicalRootPublicationPreparationFailure::CandidateAdmission { candidate, .. }
             | PhysicalRootPublicationPreparationFailure::CandidateWriteNotStarted {
@@ -251,7 +251,7 @@ impl PhysicalRootPublicationPreparationNotStarted {
     }
 
     pub fn into_candidate_plan(self) -> Option<RootPublicationCandidatePlan> {
-        match self.failure {
+        match *self.failure {
             PhysicalRootPublicationPreparationFailure::CandidateAuthorityReleased { candidate }
             | PhysicalRootPublicationPreparationFailure::CandidateAdmission { candidate, .. }
             | PhysicalRootPublicationPreparationFailure::CandidateWriteNotStarted {
@@ -267,7 +267,7 @@ impl PhysicalRootPublicationPreparationNotStarted {
     }
 
     pub fn planning_error(&self) -> Option<&RecordAppendError> {
-        match &self.failure {
+        match self.failure.as_ref() {
             PhysicalRootPublicationPreparationFailure::Planning { cause, .. }
             | PhysicalRootPublicationPreparationFailure::CandidateAdmission { cause, .. } => {
                 Some(cause)
@@ -292,7 +292,7 @@ impl IndeterminatePhysicalRootPublicationPreparation {
     }
 
     pub fn settled_members(&self) -> &[RootPublicationPhysicalMutationMember] {
-        match &self.failure {
+        match self.failure.as_ref() {
             PhysicalRootPublicationPreparationFailure::CandidateWrite { candidate, .. } => {
                 candidate.settled_members()
             }
@@ -309,7 +309,7 @@ impl IndeterminatePhysicalRootPublicationPreparation {
     }
 
     pub fn candidate_artifacts(&self) -> Option<&[RecordArtifactFile]> {
-        match &self.failure {
+        match self.failure.as_ref() {
             PhysicalRootPublicationPreparationFailure::CandidateSynchronization {
                 candidate,
                 ..

@@ -73,35 +73,36 @@ impl PartitionState {
         self.relation_arena.clear_all_pins();
     }
 
-    pub(crate) fn allocation_inventory(&self) -> RelationalPartitionAllocationInventory {
-        let adjacency_bytes = self
-            .adjacency
-            .iter()
-            .chain(self.reverse_adjacency.iter())
-            .map(|(_, set)| set.authoritative_allocation_bytes())
-            .sum::<u64>();
+    pub(crate) fn allocation_inventory(
+        &self,
+    ) -> Result<
+        RelationalPartitionAllocationInventory,
+        crate::storage::substrate::StorageAllocationOverflow,
+    > {
+        use crate::storage::substrate::StorageAllocationOverflow;
+        let authoritative_bytes = self.unique_authoritative_allocation_bytes()?;
         let adjacency_cache_bytes = self
             .adjacency
             .iter()
             .chain(self.reverse_adjacency.iter())
-            .map(|(_, set)| set.optional_cache_allocation_bytes())
-            .sum::<u64>();
+            .try_fold(0_u64, |total, (_, set)| {
+                total.checked_add(set.optional_cache_allocation_bytes())
+            })
+            .ok_or(StorageAllocationOverflow)?;
         let arenas = self
             .entity_arena
-            .allocation_inventory()
-            .saturating_add(self.relation_arena.allocation_inventory());
-        let authoritative_bytes = arenas
-            .authoritative_bytes
-            .saturating_add(self.adjacency.allocation_bytes())
-            .saturating_add(self.reverse_adjacency.allocation_bytes())
-            .saturating_add(adjacency_bytes);
-        RelationalPartitionAllocationInventory {
+            .non_authoritative_allocation_inventory()?
+            .checked_add(
+                self.relation_arena
+                    .non_authoritative_allocation_inventory()?,
+            )?;
+        Ok(RelationalPartitionAllocationInventory {
             authoritative_bytes,
             diagnostic_bytes: arenas.diagnostic_bytes,
             retention_metadata_bytes: arenas.retention_metadata_bytes,
             allocator_bookkeeping_bytes: arenas.allocator_bookkeeping_bytes,
             optional_cache_bytes: adjacency_cache_bytes,
-        }
+        })
     }
 
     pub(crate) fn clone_for_overlay(&self, mode: PartitionCloneMode) -> Self {

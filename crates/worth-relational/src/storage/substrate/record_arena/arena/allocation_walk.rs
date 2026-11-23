@@ -12,7 +12,18 @@ impl<K: RecordKind> RecordArena<K> {
         visitor: &mut dyn StorageAllocationVisitor,
     ) {
         let mut union = super::extra_allocations::AllocationUnion::new(visitor);
-        let visitor: &mut dyn StorageAllocationVisitor = &mut union;
+        self.visit_authoritative_allocation_edges(unique, &mut union);
+    }
+
+    /// Raw edge traversal without an internal dedup set. Used by exact
+    /// refcount-closure reclamation so multiple internal edges to one shared
+    /// allocation (e.g. `extra` and `metadata_history`, or two slots sharing a
+    /// map) are each counted against that allocation's live `strong_count`.
+    pub(crate) fn visit_authoritative_allocation_edges(
+        &self,
+        unique: bool,
+        visitor: &mut dyn StorageAllocationVisitor,
+    ) {
 
         self.slots.visit_allocations(unique, visitor);
         self.partition_ids
@@ -41,9 +52,10 @@ impl<K: RecordKind> RecordArena<K> {
             },
         );
         self.extra
-            .visit_allocations(unique, visitor, &mut |extra, mut allocation, visitor| {
-                allocation.add_checked_nested_bound(K::extra_reachable_bound_bytes(extra));
-                allocation.visit(visitor);
+            .visit_allocations(unique, visitor, &mut |extra, allocation, visitor| {
+                if allocation.visit(visitor) {
+                    K::visit_extra_allocations(extra, allocation.unique, visitor);
+                }
             });
         self.aspect_versions.visit_allocations(
             unique,

@@ -25,6 +25,7 @@ where
     RootValue<S, R>: WorthQueryApplicationProjection<S, RootQuery<S, R>> + Clone,
     R::Dependents: ProgramOutputContinuationFactory<S, P, RootDemand<S, R>>,
 {
+    #[inline(never)]
     pub(super) fn advance_source(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -91,35 +92,35 @@ where
         let progress = match outcome {
             WorthQueryApplicationDiscoveredMutationOutcome::ProductUnpublished(partial) => {
                 self.initial_cause = Some(partial.initial_cause());
-                self.state = State::Unpublished(partial);
+                *self.state = State::Unpublished(partial);
                 Progress::SourceUnpublished
             }
             WorthQueryApplicationDiscoveredMutationOutcome::RequiredOutputDenied(failure) => {
-                self.state = State::Retention(failure);
+                *self.state = State::Retention(failure);
                 Progress::SourceRetentionDenied
             }
             WorthQueryApplicationDiscoveredMutationOutcome::Performed(performed) => {
-                self.state = State::Performed(performed);
+                *self.state = State::Performed(performed);
                 Progress::SourcePerformed
             }
             WorthQueryApplicationDiscoveredMutationOutcome::Blocked(blocked) => {
-                self.state = State::Blocked(blocked);
+                *self.state = State::Blocked(blocked);
                 return self.terminal(Denial::NativeTerminal);
             }
             WorthQueryApplicationDiscoveredMutationOutcome::NotPerformed(
                 WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt),
             ) => {
-                self.state = State::ReplayRecorded(receipt);
+                *self.state = State::ReplayRecorded(receipt);
                 Progress::SourceReplayObserved
             }
             WorthQueryApplicationDiscoveredMutationOutcome::NotPerformed(
                 WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt),
             ) => {
-                self.state = State::ReplayRetained(receipt);
+                *self.state = State::ReplayRetained(receipt);
                 Progress::SourceReplayObserved
             }
             WorthQueryApplicationDiscoveredMutationOutcome::NotPerformed(outcome) => {
-                self.state =
+                *self.state =
                     State::NotPerformed(self.cleanup.absorb_native_outcome(&self.runtime, outcome));
                 return self.terminal(Denial::NativeTerminal);
             }

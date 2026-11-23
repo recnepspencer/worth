@@ -49,7 +49,9 @@ impl RelationalOriginalRootCommitEvidence {
                 context,
                 refusal: None,
             };
-            let encoded = envelope.write_authoritative_payload(&mut writer);
+            let encoded = envelope
+                .write_authoritative_payload(&mut writer)
+                .map(|()| writer.retain_exact());
             answer = Some(match (encoded, writer.refusal.take()) {
                 (_, Some(cause)) => Err(cause),
                 (Err(_), None) => Err(Denial::CanonicalEnvelopeMismatch),
@@ -84,6 +86,29 @@ struct OriginalPayloadWriter<'context, 'scope, 'authority> {
     refusal: Option<Denial>,
 }
 impl OriginalPayloadWriter<'_, '_, '_> {
+    /// Growth doubles capacity; the root retains only the emitted payload. The
+    /// shrink may hold both buffers, so its peak is funded first.
+    fn retain_exact(&mut self) {
+        if self.refusal.is_some() || self.bytes.len() == self.bytes.capacity() {
+            return;
+        }
+        if let Some(memory) = &mut self.memory {
+            let Some(peak) = self.bytes.len().checked_add(self.bytes.capacity()) else {
+                self.refusal = Some(Denial::AllocationLayoutOverflow);
+                return;
+            };
+            if let Err(cause) = memory.grow_for_allocation(peak as u64) {
+                self.refusal = Some(backing_failure(cause));
+                return;
+            }
+        }
+        self.bytes.shrink_to_fit();
+        if let Some(memory) = &mut self.memory {
+            memory
+                .resize(self.bytes.capacity() as u64)
+                .expect("releasing transient shrink backing cannot exhaust memory");
+        }
+    }
     fn append(&mut self, input: &[u8]) -> Result<(), Denial> {
         let result = if self.context.has_accounting() {
             self.context.checkpoint(input.len() as u64)

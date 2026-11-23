@@ -93,3 +93,51 @@ fn quarantine_marker_roundtrips_and_retired_v1_directory_is_rejected() {
         Err(DerivedFamilyDirectoryDenial::UnsupportedVersion)
     );
 }
+
+#[test]
+fn validate_header_matches_decode_on_compound_corruption() {
+    let build_raw = |entries: &[(u16, u64)]| {
+        let mut bytes = DerivedFamilyRootDirectoryV1::new(vec![]).unwrap().encode();
+        bytes[9] = entries.len() as u8;
+        for &(tag, ordinal) in entries {
+            bytes.extend_from_slice(&tag.to_le_bytes());
+            bytes.extend_from_slice(&[7; 16]);
+            bytes.extend_from_slice(&ordinal.to_le_bytes());
+        }
+        bytes
+    };
+
+    // Duplicate tag followed by unknown family tag: owned decode validates all entries first.
+    let dup_then_unknown = build_raw(&[(1, 11), (1, 12), (3, 13)]);
+    assert_eq!(
+        DerivedFamilyRootDirectoryV1::validate_header(&dup_then_unknown),
+        Err(DerivedFamilyDirectoryDenial::UnknownFamily)
+    );
+    assert_eq!(
+        DerivedFamilyRootDirectoryV1::decode(&dup_then_unknown),
+        Err(DerivedFamilyDirectoryDenial::UnknownFamily)
+    );
+
+    // Duplicate tag followed by invalid record identity (ordinal 0): must return InvalidRecordIdentity.
+    let dup_then_bad_id = build_raw(&[(1, 11), (1, 12), (2, 0)]);
+    assert_eq!(
+        DerivedFamilyRootDirectoryV1::validate_header(&dup_then_bad_id),
+        Err(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)
+    );
+    assert_eq!(
+        DerivedFamilyRootDirectoryV1::decode(&dup_then_bad_id),
+        Err(DerivedFamilyDirectoryDenial::InvalidRecordIdentity)
+    );
+
+    // Valid entries in non-canonical order: both return NonCanonicalOrder.
+    for raw in [build_raw(&[(1, 11), (1, 12)]), build_raw(&[(2, 11), (1, 12)])] {
+        assert_eq!(
+            DerivedFamilyRootDirectoryV1::validate_header(&raw),
+            Err(DerivedFamilyDirectoryDenial::NonCanonicalOrder)
+        );
+        assert_eq!(
+            DerivedFamilyRootDirectoryV1::decode(&raw),
+            Err(DerivedFamilyDirectoryDenial::NonCanonicalOrder)
+        );
+    }
+}

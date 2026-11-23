@@ -117,3 +117,57 @@ fn caller_association_embedded_checkpoint_codec_preserves_original_bytes() {
     let reencoded = Artifact::from_positioned(commit, execution.allocation_policy()).unwrap();
     assert_eq!(reencoded.as_bytes(), artifact.as_bytes());
 }
+
+#[test]
+fn caller_association_bounds_and_rebinding_refuse_without_retaining_publication() {
+    use crate::facade::mvcc::RelationalCallerAssociationRefusal as Refusal;
+    fn transport<T: Send + Sync + 'static>() {}
+    transport::<Association>();
+    assert_eq!(Association::from_bytes(&[]), Err(Refusal::Empty));
+    let full = Association::from_bytes(&[0xff; Association::MAX_LEN]).unwrap();
+    assert_eq!(full.as_bytes().len(), Association::MAX_LEN);
+    let encoded = rmp_serde::to_vec_named(&full).unwrap();
+    assert_eq!(
+        rmp_serde::from_slice::<Association>(&encoded).unwrap(),
+        full
+    );
+    assert!(rmp_serde::from_slice::<Association>(&[0xc4, 0]).is_err());
+    let mut oversized_wire = vec![0xc5, 0x10, 0x01];
+    oversized_wire.extend_from_slice(&[0; Association::MAX_LEN + 1]);
+    assert!(rmp_serde::from_slice::<Association>(&oversized_wire).is_err());
+    assert_eq!(
+        Association::from_bytes(&[0; Association::MAX_LEN + 1]),
+        Err(Refusal::TooLong {
+            actual: Association::MAX_LEN + 1
+        })
+    );
+    let host = crate::test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let runtime = runtime_with_test_schema();
+    let routes = runtime.history.pending_canonical_publication_route_count();
+    let association = Association::from_bytes(b"opaque\0caller\xff").unwrap();
+    let proposal = propose(execution, &runtime, "rebound")
+        .bind_caller_association(association.clone())
+        .unwrap();
+    assert!(proposal
+        .bind_caller_association(association.clone())
+        .is_err());
+    assert!(runtime.record_identity.pending_snapshot().is_empty());
+    let proposal = propose(execution, &runtime, "discarded")
+        .bind_caller_association(association.clone())
+        .unwrap();
+    let candidate = runtime
+        .prepare_validated_proposal(execution, proposal)
+        .unwrap();
+    assert_eq!(candidate.caller_association().as_ref(), Some(&association));
+    assert_eq!(
+        runtime.history.pending_canonical_publication_route_count(),
+        routes + 1
+    );
+    drop(candidate);
+    assert_eq!(
+        runtime.history.pending_canonical_publication_route_count(),
+        routes
+    );
+    assert!(runtime.record_identity.pending_snapshot().is_empty());
+}

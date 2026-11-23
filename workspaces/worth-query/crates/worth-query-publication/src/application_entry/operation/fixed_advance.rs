@@ -73,7 +73,7 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
         if !matches!(
-            self.state,
+            &*self.state,
             FixedState::Initial | FixedState::Blocked(_) | FixedState::NotPerformed(_)
         ) {
             let admission = (|| {
@@ -98,7 +98,7 @@ where
                 };
             }
         }
-        match &self.state {
+        match &*self.state {
             FixedState::Initial => self.advance_initial_in_phase(phase, request),
             FixedState::ReplayRetained(_) | FixedState::ReplayRecorded(_) => self.advance_replay_in_phase(phase, request),
             FixedState::Unpublished(_) => self.advance_partial_in_phase(phase, request),

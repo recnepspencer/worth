@@ -64,6 +64,47 @@ where
         Ok(())
     }
 
+    /// Final pre-effect cutoff rechecked immediately before the first component
+    /// effect after fallible original admission completes.
+    pub(super) fn recheck_pre_effect_cutoff(
+        &self,
+        attempt: &ReservedCompositePublicationAttempt,
+        cancellation: &RuntimeWorldCancellationToken,
+    ) -> Result<(), NoEffectCause> {
+        self.check_pre_effect_cutoff(attempt.expected_head(), attempt.deadline(), cancellation)
+    }
+
+    /// Pre-effect World stop gate consulted immediately before crossing into
+    /// Native publication. Samples cancellation after reversible clock and
+    /// currentness checks so a stop raised during cutoff never slips through.
+    pub(in super::super) fn check_pre_effect_cutoff(
+        &self,
+        expected_head: &ProductBranchObservation,
+        deadline: Option<RuntimeWorldInstant>,
+        cancellation: &RuntimeWorldCancellationToken,
+    ) -> Result<(), NoEffectCause> {
+        let expired = self.deadline_expired(deadline);
+        if cancellation
+            .check(RuntimeWorldCancellationBoundary::BeforeFirstOwnerEffect)
+            .is_err()
+        {
+            return Err(NoEffectCause::CancelledBeforeEffect);
+        }
+        if expired {
+            return Err(NoEffectCause::DeadlineBeforeEffect);
+        }
+        if !self.current_product_head_is(expected_head) {
+            return Err(NoEffectCause::StaleExpectedProductHead);
+        }
+        if cancellation
+            .check(RuntimeWorldCancellationBoundary::BeforeFirstOwnerEffect)
+            .is_err()
+        {
+            return Err(NoEffectCause::CancelledBeforeEffect);
+        }
+        Ok(())
+    }
+
     /// The gate between a settled Relational effect and the Signal advance.
     /// Every denial here stops before the Signal owner is contacted.
     pub(super) fn pre_advance_signal_gate(

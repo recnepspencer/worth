@@ -76,14 +76,14 @@ where
         Ok(Self {
             readmitted_recovery: None,
             runtime: runtime.clone(),
-            installed_action: installed_action.clone(),
-            description,
-            state: State::Initial,
+            installed_action: Box::new(installed_action.clone()),
+            description: Box::new(description),
+            state: Box::new(State::Initial),
             initial_cause: None,
             result: None,
             recovered: None,
             prior_cleanup: Vec::new(),
-            cleanup: WorthQueryOperationCleanup::default(),
+            cleanup: Box::default(),
             action: std::marker::PhantomData,
         })
     }

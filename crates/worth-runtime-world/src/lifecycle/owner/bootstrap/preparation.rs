@@ -182,7 +182,7 @@ where
             checkpoint_origin
                 .as_mut()
                 .expect("durable construction prepays its original recipe link")
-                .bind(&basis, pins);
+                .bind(root.identity().ordinal(), &basis, pins);
         }
         if !self.owner_is_present() {
             return Err(RuntimeWorldBootstrapNoEffectCause::OwnerUnavailable);

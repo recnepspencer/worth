@@ -126,14 +126,39 @@ impl<'selected> ProductBranchCurrentnessScope<'selected> {
         self,
         cutover: worth_relational::facade::mvcc::PreparedMemoryRelationalCutover<'_, '_, '_>,
         deadline: Option<std::time::Instant>,
-    ) -> Result<(), crate::publication::CurrentProductReadDependencyDenial> {
-        self.while_locked(cutover, |cutover| match deadline {
-            Some(deadline) => cutover.perform_before(deadline),
-            None => cutover.perform(),
-        })
-        .map_err(|_failure| {
-            crate::publication::CurrentProductReadDependencyDenial::WorldHeadUnavailable
-        })
+        cutoff: &crate::publication::ProductMovementCutoff,
+    ) -> Result<(), crate::publication::NoEffectCause> {
+        let map_denial = |denial| match denial {
+            crate::publication::ProductMovementCutoffDenial::Cancelled => {
+                crate::publication::NoEffectCause::CancelledBeforeEffect
+            }
+            crate::publication::ProductMovementCutoffDenial::Deadline => {
+                crate::publication::NoEffectCause::DeadlineBeforeEffect
+            }
+        };
+        match self.while_locked(cutover, |cutover| {
+            if let Err(denial) = cutoff.check() {
+                return Err(map_denial(denial));
+            }
+            let mut native_cutoff_stop = None;
+            let mut allow_effect = || match cutoff.check() {
+                Ok(()) => true,
+                Err(denial) => {
+                    native_cutoff_stop = Some(map_denial(denial));
+                    false
+                }
+            };
+            cutover.perform_with_cutoff(deadline, &mut allow_effect);
+            match native_cutoff_stop {
+                Some(cause) => Err(cause),
+                None => Ok(()),
+            }
+        }) {
+            Ok(result) => result,
+            Err(_failure) => Err(crate::publication::NoEffectCause::CurrentReadDependency(
+                crate::publication::CurrentProductReadDependencyDenial::WorldHeadUnavailable,
+            )),
+        }
     }
 
     fn while_locked<Argument, Output>(

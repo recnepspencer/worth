@@ -290,6 +290,7 @@ impl AdjacencySet {
         target.extend(self.current_ids().iter().copied())
     }
 
+    #[cfg(test)]
     pub(crate) fn authoritative_allocation_bytes(&self) -> u64 {
         self.entries().current.allocation_bytes()
     }

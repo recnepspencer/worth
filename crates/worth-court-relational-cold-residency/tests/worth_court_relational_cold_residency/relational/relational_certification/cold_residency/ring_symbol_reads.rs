@@ -13,6 +13,13 @@ fn the_remote_ring_label_stays_cold_until_its_incoming_edge_is_read() {
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let cold = RingRecipe::new(execution, true).reopen(execution);
     let symbol = cold.remote_symbol.unwrap();
+    assert!(
+        cold.runtime
+            .observe_resident_symbol_dictionary()
+            .resolve(symbol)
+            .is_none(),
+        "reopen must not admit the remote field text"
+    );
 
     let member = cold
         .directory
@@ -26,6 +33,13 @@ fn the_remote_ring_label_stays_cold_until_its_incoming_edge_is_read() {
     transaction
         .read_entity(execution, cold.entities[0])
         .unwrap();
+    assert!(
+        cold.runtime
+            .observe_resident_symbol_dictionary()
+            .resolve(symbol)
+            .is_none(),
+        "the anchor's dictionary closure excludes the remote label"
+    );
 
     assert!(!cold.source.member_reads.lock().unwrap().contains(&member));
     cold.source

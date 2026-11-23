@@ -77,6 +77,86 @@ impl RelationalRuntime {
         self.history.sharing_costs_for_branch(branch_id)
     }
 
+    pub(crate) fn try_branch_sharing_cost_counters_for_branches(
+        &self,
+        branch_ids: &[crate::history::data::BranchId],
+    ) -> Result<
+        crate::runtime::RelationalBranchSharingCostCounters,
+        crate::storage::substrate::StorageAllocationOverflow,
+    > {
+        use crate::storage::substrate::StorageAllocationOverflow;
+        let mut total = crate::runtime::RelationalBranchSharingCostCounters::default();
+        for branch_id in branch_ids {
+            let costs = self.history.try_sharing_costs_for_branch(branch_id)?;
+            total.branch_population_scans = total
+                .branch_population_scans
+                .saturating_add(costs.branch_population_scans);
+            total.snapshot_root_reads = total
+                .snapshot_root_reads
+                .saturating_add(costs.snapshot_root_reads);
+            total.transaction_validation_attempts = total
+                .transaction_validation_attempts
+                .saturating_add(costs.transaction_validation_attempts);
+            total.retained_history_head_lookups = total
+                .retained_history_head_lookups
+                .saturating_add(costs.retained_history_head_lookups);
+            total.candidate_preparations = total
+                .candidate_preparations
+                .saturating_add(costs.candidate_preparations);
+            total.candidate_discards = total
+                .candidate_discards
+                .saturating_add(costs.candidate_discards);
+            total.publication_attempts = total
+                .publication_attempts
+                .saturating_add(costs.publication_attempts);
+            total.shared_root_acquisitions = total
+                .shared_root_acquisitions
+                .saturating_add(costs.shared_root_acquisitions);
+            total.copied_truth_bytes = total
+                .copied_truth_bytes
+                .checked_add(costs.copied_truth_bytes)
+                .ok_or(StorageAllocationOverflow)?;
+            total.copied_commit_envelopes = total
+                .copied_commit_envelopes
+                .saturating_add(costs.copied_commit_envelopes);
+            total.fork_materialized_entity_count = total
+                .fork_materialized_entity_count
+                .saturating_add(costs.fork_materialized_entity_count);
+            total.fork_materialized_relation_count = total
+                .fork_materialized_relation_count
+                .saturating_add(costs.fork_materialized_relation_count);
+            total.fork_materialized_authoritative_bytes = total
+                .fork_materialized_authoritative_bytes
+                .checked_add(costs.fork_materialized_authoritative_bytes)
+                .ok_or(StorageAllocationOverflow)?;
+            total.publication_touched_region_count = total
+                .publication_touched_region_count
+                .saturating_add(costs.publication_touched_region_count);
+            total.publication_reused_region_count = total
+                .publication_reused_region_count
+                .saturating_add(costs.publication_reused_region_count);
+            total.publication_persistent_index_path_nodes = total
+                .publication_persistent_index_path_nodes
+                .saturating_add(costs.publication_persistent_index_path_nodes);
+            total.publication_new_authoritative_bytes = total
+                .publication_new_authoritative_bytes
+                .checked_add(costs.publication_new_authoritative_bytes)
+                .ok_or(StorageAllocationOverflow)?;
+            total.publication_new_root_authoritative_bytes = total
+                .publication_new_root_authoritative_bytes
+                .checked_add(costs.publication_new_root_authoritative_bytes)
+                .ok_or(StorageAllocationOverflow)?;
+            total.publication_content_values_hashed = total
+                .publication_content_values_hashed
+                .saturating_add(costs.publication_content_values_hashed);
+            total.reclaimable_unique_bytes = total
+                .reclaimable_unique_bytes
+                .checked_add(costs.reclaimable_unique_bytes)
+                .ok_or(StorageAllocationOverflow)?;
+        }
+        Ok(total)
+    }
+
     pub(crate) fn branch_sharing_cost_counters_for_branches(
         &self,
         branch_ids: &[crate::history::data::BranchId],

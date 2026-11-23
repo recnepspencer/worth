@@ -26,8 +26,8 @@ fn fixed_patch_shares_untouched_state_and_preserves_the_prior_snapshot() {
     for size in [128, 256, 512] {
         let entries = (0..size).map(|i| entry(i, i as i64).into_parts().into_parts().0);
         let state = AuthoritativeRecordAspectState::from_validated_entries(entries).unwrap();
-        let cloned = state.aspects().cloned_entries();
-        assert!(cloned.ptr_eq(&state.aspects().entries));
+        let cloned = state.aspects().clone();
+        assert!(cloned.entries.shares_root(&state.aspects().entries));
         let TransitionOutcome::Success(patch) =
             AuthoritativeRecordAspectPatch::whole_aspect([entry(0, -1)], [])
         else {

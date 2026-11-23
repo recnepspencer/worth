@@ -2,6 +2,8 @@ use std::sync::Arc;
 use worth_execution::ExecutionImmutableBytes;
 
 mod component_custody;
+mod component_roster;
+pub use component_roster::RelationalCheckpointComponentRoster;
 mod publication_binding;
 mod region_publications;
 use region_publications::CapturedRegionPublications;
@@ -257,6 +259,12 @@ impl RelationalNativeCheckpoint {
     ) -> Option<&crate::runtime::RelationalCheckpointManifestPublication> {
         self.manifest_publication.as_ref()
     }
+    /// Count of captured region publications this capture's acknowledgement
+    /// places; a counted read-only observation of its DATA work.
+    pub fn region_publication_count(&self) -> usize {
+        self.publications.entries().len()
+    }
+
     pub(crate) fn region_publications(
         &self,
     ) -> &[crate::storage::residency::RelationalCheckpointRegionPublication] {

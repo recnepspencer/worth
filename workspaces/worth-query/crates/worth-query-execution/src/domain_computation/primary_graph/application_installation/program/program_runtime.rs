@@ -262,7 +262,6 @@ impl<Schema, Program> WorthQueryProgramApplicationRuntime<Schema, Program> {
                         | AdmissionRefusal::ForeignOwner
                         | AdmissionRefusal::StaleIncarnation
                         | AdmissionRefusal::ObservationRejected
-                        | AdmissionRefusal::DurableBranchPublicationRequired
                         | AdmissionRefusal::ObservationStaleSourceHead
                         | AdmissionRefusal::ObservationCapacityExhausted
                         | AdmissionRefusal::CustodyCapacityExhausted

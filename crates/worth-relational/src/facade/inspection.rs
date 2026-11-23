@@ -4,6 +4,7 @@ pub use crate::execution::phase_observation::{
     SymbolPreparationEvent,
 };
 pub use crate::history::retention::RelationalRetentionCostCounters;
+pub use crate::performance::data::RuntimeComplexityCounters;
 pub use crate::inspection::data::{
     CommitInspection, ConnectivityComponentSummary, ConnectivityInspectionBudget,
     ConnectivityInspectionRequest, ConnectivityInspectionSummary, GraphInspectionBudget,

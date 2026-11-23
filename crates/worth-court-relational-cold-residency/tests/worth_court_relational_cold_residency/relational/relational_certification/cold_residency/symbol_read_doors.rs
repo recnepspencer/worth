@@ -32,6 +32,11 @@ fn full_read_doors_preserve_history_symbol_refusals_and_current_head() {
                 door.run(execution, &fixture.runtime, fixture.entity)
                     .unwrap();
                 assert_eq!(fixture.source.reads.load(Ordering::Relaxed), reads);
+                assert!(fixture
+                    .runtime
+                    .observe_resident_symbol_dictionary()
+                    .resolve(fixture.historical)
+                    .is_none());
                 assert_eq!(
                     fixture.runtime.history().latest_patch_stream_position(),
                     frontier
@@ -61,6 +66,11 @@ fn full_read_doors_preserve_history_symbol_refusals_and_current_head() {
                         .count(),
                     history_reads_before
                 );
+                assert!(fixture
+                    .runtime
+                    .observe_resident_symbol_dictionary()
+                    .resolve(fixture.historical)
+                    .is_none());
                 assert_eq!(
                     fixture.runtime.history().latest_patch_stream_position(),
                     frontier
@@ -104,6 +114,14 @@ fn full_read_doors_preserve_history_symbol_refusals_and_current_head() {
             } else {
                 door.run(execution, &fixture.runtime, fixture.entity)
                     .unwrap();
+                assert_eq!(
+                    fixture
+                        .runtime
+                        .observe_resident_symbol_dictionary()
+                        .resolve(fixture.historical),
+                    Some("paged-view-value-0300"),
+                    "{door:?} must admit Full meanings into its own runtime"
+                );
             }
             assert_eq!(
                 fixture.runtime.history().latest_patch_stream_position(),

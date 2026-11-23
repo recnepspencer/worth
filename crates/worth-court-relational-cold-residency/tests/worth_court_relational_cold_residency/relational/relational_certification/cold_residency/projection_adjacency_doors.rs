@@ -80,6 +80,12 @@ impl Door {
                     let records = answer.unwrap().into_records();
                     if let Some(symbol)=cold.remote_symbol {
                         assert!(matches!(super::relation_field_values::label(&records[0]),Some(worth_foundational::facade::AspectValue::String(worth_foundational::facade::InternedString::Symbol(actual))) if actual.0==symbol.0));
+                        assert_eq!(
+                            cold.runtime
+                                .observe_resident_symbol_dictionary()
+                                .resolve(symbol),
+                            Some("remote-paged-edge")
+                        );
                     }
                     records.len()
                 }),

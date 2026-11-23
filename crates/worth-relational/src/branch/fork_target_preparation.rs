@@ -10,17 +10,17 @@ use crate::branch::{
 use crate::history::data::{BranchCreateError, CommitId};
 
 /// A target cell built from the validated source, not yet installed.
-pub(super) struct PreparedForkTarget {
-    pub(super) target_cell: RelationalBranchReferenceCell,
-    pub(super) source_root: Arc<RelationalBranchRoot>,
-    pub(super) target_observation: RelationalBranchReferenceObservation,
-    pub(super) fork_provenance: RelationalBranchReferenceObservation,
-    pub(super) target_truth_version: RelationalBranchVersion,
-    pub(super) shared_commit_id: Option<CommitId>,
-    pub(super) source_head_version: Option<crate::identity::data::VersionId>,
-    pub(super) reservation: RelationalForkTargetReservation,
-    pub(super) indexes: Option<crate::indexes::PreparedForkIndexSelection>,
-    pub(super) managed_source: Option<crate::mvcc::PreparedManagedIndexSourceFork>,
+pub(in crate::branch) struct PreparedForkTarget {
+    pub(in crate::branch) target_cell: RelationalBranchReferenceCell,
+    pub(in crate::branch) source_root: Arc<RelationalBranchRoot>,
+    pub(in crate::branch) target_observation: RelationalBranchReferenceObservation,
+    pub(in crate::branch) fork_provenance: RelationalBranchReferenceObservation,
+    pub(in crate::branch) target_truth_version: RelationalBranchVersion,
+    pub(in crate::branch) shared_commit_id: Option<CommitId>,
+    pub(in crate::branch) source_head_version: Option<crate::identity::data::VersionId>,
+    pub(in crate::branch) reservation: RelationalForkTargetReservation,
+    pub(in crate::branch) indexes: Option<crate::indexes::PreparedForkIndexSelection>,
+    pub(in crate::branch) managed_source: Option<crate::mvcc::PreparedManagedIndexSourceFork>,
 }
 
 impl RelationalForkPort {

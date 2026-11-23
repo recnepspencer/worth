@@ -22,9 +22,16 @@ fn a_recovered_runtime_publishes_its_next_commit_at_the_next_position() {
 
     let (recovery, recovered) =
         super::branch_history_recovery::recover(execution, &medium, durable_runtime(&medium));
+    let cold_witness = recovered
+        .observe_cold_source_witness()
+        .expect("recovery carries its read-only cold source");
     let cold: std::sync::Arc<
         dyn worth_relational::facade::durability::RelationalDurableColdSource,
     > = medium.clone();
+    assert!(
+        recovered.reads_durable_source(&cold),
+        "recovered runtime must read from the exact original medium allocation"
+    );
     assert_eq!(
         cold.read_commit(PatchStreamPosition(1), 1 << 24).unwrap(),
         medium
@@ -81,6 +88,17 @@ fn a_recovered_runtime_publishes_its_next_commit_at_the_next_position() {
     let (second, reopened_again) =
         super::branch_history_recovery::recover(execution, &medium, durable_runtime(&medium));
     assert_eq!(second.recovered_commits, 4);
+    let reopened_witness = reopened_again
+        .observe_cold_source_witness()
+        .expect("second reopen carries its read-only cold source");
+    assert!(
+        cold_witness.same_source(&reopened_witness),
+        "reopen preserves the original cold-source allocation identity"
+    );
+    assert!(
+        reopened_again.reads_durable_source(&cold),
+        "second reopen must also read from the exact original medium allocation"
+    );
     assert_eq!(
         current_head(&reopened_again, &BranchId("main".to_owned())),
         Some(next.commit.clone())

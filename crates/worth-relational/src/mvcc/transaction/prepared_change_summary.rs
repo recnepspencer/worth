@@ -24,7 +24,6 @@ pub enum PreparedRelationalChangeSummaryDenial {
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     OwnerUnavailable,
     ForeignCandidate,
-    CandidateLifetimeExpired,
     CandidateUnavailable,
     BasisMismatch,
     CanonicalEnvelopeMismatch,

@@ -2,9 +2,11 @@
 use worth_query_execution_runtime::facade::ports::ProductBranchInternalPort as _;
 pub mod recording;
 
+mod body;
 pub mod committed_changes;
 pub mod description;
 pub mod recorded_settlement;
+pub(crate) use body::CommitReceiptExtras;
 pub use committed_changes::WorthQueryApplicationCommittedChanges;
 #[cfg(doctest)]
 pub mod disclosure_fences;
@@ -42,43 +44,27 @@ pub use publication_source::WorthQueryApplicationCommitPublicationSource;
 /// is descriptive history only.
 #[derive(Debug, PartialEq)]
 pub struct WorthQueryApplicationCommitReceipt {
-    pub(crate) authoritative_provider_session:
-        crate::domain_computation::provider_session::WorthQueryProviderSessionTerminalBinding,
-    pub(crate) outcome_identity: Option<super::super::WorthQueryApplicationCommitOutcomeIdentity>,
+    pub(crate) outcome_identity:
+        Option<super::super::WorthQueryApplicationCommitOutcomeIdentity>,
     pub(crate) provider_runtime_instance_id: u64,
     pub(crate) commit: RelationalCommitReceipt,
     pub(crate) committed_product_publication: super::WorthQueryCommittedProductPublication,
-    pub(crate) basis_descriptor: worth_relational::facade::branch::RelationalBranchBasisDescriptor,
+    pub(crate) basis_descriptor:
+        worth_relational::facade::branch::RelationalBranchBasisDescriptor,
     pub(crate) changed_record_count: usize,
     pub(crate) emitted_effect_count: usize,
-    pub(crate) mutation_work:
-        Option<super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence>,
     pub(crate) precondition_comparison: WorthQueryMutationPreconditionComparisonEvidence,
     pub(crate) canonical_work: WorthQueryCanonicalWorkPhases,
     pub(crate) terminal: WorthQueryApplicationCommitTerminalEvidence,
-    pub(crate) committed_dispatch_outbox:
-        Option<super::super::super::provider::WorthQueryCommittedDispatchOutboxBinding>,
     pub(crate) external_dispatch: Option<WorthQueryExternalEffectDispatch>,
     pub(crate) external_dispatch_preparation_denial:
         Option<super::super::WorthQueryExternalDispatchPreparationDenial>,
-    /// R8.62 / C1 â€” derived from admission at construction; never caller-supplied.
+    /// R8.62 / C1 — derived from admission at construction; never caller-supplied.
     pub(crate) authority_binding: WorthQueryApplicationCommitAuthorityBinding,
-    /// R8.2 â€” exact inverse pre-image slice retained from the decision read-set.
-    pub(crate) retained_preimage: Option<WorthQueryRetainedPreImage>,
+    pub(crate) has_retained_preimage: bool,
     pub(crate) aftermath_causality: Option<WorthQueryCommittedAftermathCausality>,
-    pub(crate) performed_product_change: Option<
-        crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
-    >,
     pub(crate) committed_changes: WorthQueryApplicationCommittedChanges,
-    pub(crate) performed_input_facts: Option<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload>,
-    pub(crate) performed_output_fields: Option<Result<crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload, crate::domain_computation::primary_graph::application_attempt::OutputFieldCaptureFailure>>,
-    pub(crate) output_correspondence: std::sync::Arc<WorthQueryApplicationOutputCorrespondence>,
-    pub(crate) exact_output_settlement: Option<std::sync::Arc<
-        crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
-    >>,
-    /// Set where the rebase of this commit failed, so it retains no fact.
-    pub(crate) unrebased_own_effect:
-        Option<crate::domain_computation::primary_graph::provider::OwnEffectOnReads>,
+    pub(crate) inner: Box<CommitReceiptExtras>,
 }
 
 impl Eq for WorthQueryApplicationCommitReceipt {}
@@ -86,9 +72,9 @@ impl Eq for WorthQueryApplicationCommitReceipt {}
 /// Receipt copies are descriptive historical evidence. The unique performed
 /// product-change witness remains with the original fresh receipt.
 impl Clone for WorthQueryApplicationCommitReceipt {
+    #[inline(never)]
     fn clone(&self) -> Self {
         Self {
-            authoritative_provider_session: self.authoritative_provider_session.clone(),
             outcome_identity: self.outcome_identity,
             provider_runtime_instance_id: self.provider_runtime_instance_id,
             commit: self.commit.clone(),
@@ -96,23 +82,16 @@ impl Clone for WorthQueryApplicationCommitReceipt {
             basis_descriptor: self.basis_descriptor.clone(),
             changed_record_count: self.changed_record_count,
             emitted_effect_count: self.emitted_effect_count,
-            mutation_work: self.mutation_work.clone(),
             precondition_comparison: self.precondition_comparison.clone(),
             canonical_work: self.canonical_work,
             terminal: self.terminal.clone(),
-            committed_dispatch_outbox: self.committed_dispatch_outbox.clone(),
             external_dispatch: self.external_dispatch.clone(),
             external_dispatch_preparation_denial: self.external_dispatch_preparation_denial,
             authority_binding: self.authority_binding.clone(),
-            retained_preimage: self.retained_preimage.clone(),
+            has_retained_preimage: self.has_retained_preimage,
             aftermath_causality: self.aftermath_causality.clone(),
-            performed_product_change: None,
-            output_correspondence: self.output_correspondence.clone(),
-            exact_output_settlement: self.exact_output_settlement.clone(),
-            unrebased_own_effect: self.unrebased_own_effect,
             committed_changes: self.committed_changes.clone(),
-            performed_input_facts: self.performed_input_facts.clone(),
-            performed_output_fields: self.performed_output_fields.clone(),
+            inner: self.inner.clone_without_performed_change(),
         }
     }
 }
@@ -154,6 +133,10 @@ impl WorthQueryApplicationCommitReceipt {
         &self.committed_product_publication
     }
 
+    pub(crate) fn settle_for_ready_cache(&mut self) {
+        self.committed_product_publication.settle_for_ready_cache();
+    }
+
     /// What a commit that kept no fact answers at `observation`, and `None`
     /// for a commit that rebased: its facts answer. One whose effect moved a
     /// read is superseded at its own publication, as it is where its rebase
@@ -162,7 +145,7 @@ impl WorthQueryApplicationCommitReceipt {
         &self,
         observation: &worth_runtime_world::facade::ProductBranchObservation,
     ) -> Option<crate::domain_computation::primary_graph::provider::FactlessCurrentness> {
-        let own_effect = self.unrebased_own_effect?;
+        let own_effect = self.inner.unrebased_own_effect?;
         Some(
             own_effect.at_own_publication(
                 self.committed_product_publication
@@ -198,17 +181,17 @@ impl WorthQueryApplicationCommitReceipt {
         WorthQueryApplicationTypedOutputCorrespondence<'_, Contract>,
         WorthQueryApplicationOutputProjectionDenial,
     > {
-        self.output_correspondence.outputs_of()
+        self.inner.output_correspondence.outputs_of()
     }
 
     pub fn output_correspondence(&self) -> &WorthQueryApplicationOutputCorrespondence {
-        self.output_correspondence.as_ref()
+        self.inner.output_correspondence.as_ref()
     }
 
     pub(crate) fn retain_output_correspondence(
         &self,
     ) -> std::sync::Arc<WorthQueryApplicationOutputCorrespondence> {
-        std::sync::Arc::clone(&self.output_correspondence)
+        std::sync::Arc::clone(&self.inner.output_correspondence)
     }
 
     pub(crate) fn exact_output_settlement(
@@ -218,7 +201,7 @@ impl WorthQueryApplicationCommitReceipt {
             crate::domain_computation::primary_graph::output_lineage::RecordedSettlementIdentity,
         >,
     > {
-        self.exact_output_settlement.as_ref()
+        self.inner.exact_output_settlement.as_ref()
     }
 
     pub(crate) fn publication_source(&self) -> WorthQueryApplicationCommitPublicationSource {
@@ -228,7 +211,7 @@ impl WorthQueryApplicationCommitReceipt {
     pub fn mutation_work(
         &self,
     ) -> Option<&super::super::super::provider::WorthQueryPrimaryMutationWorkEvidence> {
-        self.mutation_work.as_ref()
+        self.inner.mutation_work.as_ref()
     }
 
     pub const fn precondition_comparison(
@@ -246,7 +229,8 @@ impl WorthQueryApplicationCommitReceipt {
     }
 
     pub fn dispatch_outbox(&self) -> Option<&WorthQueryDispatchOutboxRecord> {
-        self.committed_dispatch_outbox
+        self.inner
+            .committed_dispatch_outbox
             .as_ref()
             .map(super::super::super::provider::WorthQueryCommittedDispatchOutboxBinding::record)
     }
@@ -254,7 +238,7 @@ impl WorthQueryApplicationCommitReceipt {
     pub(crate) fn committed_dispatch_outbox(
         &self,
     ) -> Option<&super::super::super::provider::WorthQueryCommittedDispatchOutboxBinding> {
-        self.committed_dispatch_outbox.as_ref()
+        self.inner.committed_dispatch_outbox.as_ref()
     }
 
     pub const fn external_dispatch(&self) -> Option<&WorthQueryExternalEffectDispatch> {
@@ -281,7 +265,7 @@ impl WorthQueryApplicationCommitReceipt {
         self.authority_binding.runtime_authority()
     }
 
-    pub(crate) const fn installed_aftermath(
+    pub(crate) fn installed_aftermath(
         &self,
     ) -> Option<&worth_query_installation::facade::WorthQueryInstalledAftermathContract> {
         self.authority_binding.installed_aftermath()
@@ -291,19 +275,13 @@ impl WorthQueryApplicationCommitReceipt {
     pub const fn installed_recovery_contract(
         &self,
     ) -> Option<worth_query_installation::facade::InstalledAftermathRecoveryContract> {
-        match self.authority_binding.installed_aftermath() {
-            Some(aftermath) => Some(aftermath.recovery()),
-            None => None,
-        }
+        self.authority_binding.installed_recovery_contract()
     }
 
     pub const fn published_aftermath_posture(
         &self,
     ) -> Option<worth_query_installation::facade::PublishedAftermathPosture> {
-        match self.authority_binding.installed_aftermath() {
-            Some(aftermath) => Some(aftermath.published_posture()),
-            None => None,
-        }
+        self.authority_binding.published_aftermath_posture()
     }
 
     pub const fn principal_scope(
@@ -318,13 +296,13 @@ impl WorthQueryApplicationCommitReceipt {
         self.authority_binding.idempotency_binding()
     }
 
-    pub(crate) const fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
-        self.retained_preimage.as_ref()
+    pub(crate) fn retained_preimage(&self) -> Option<&WorthQueryRetainedPreImage> {
+        self.inner.retained_preimage.as_ref()
     }
 
     /// Whether the performed occurrence retained values for a declared correction.
     pub const fn has_retained_preimage(&self) -> bool {
-        self.retained_preimage.is_some()
+        self.has_retained_preimage
     }
 
     pub const fn aftermath_causality(&self) -> Option<&WorthQueryCommittedAftermathCausality> {
@@ -339,7 +317,7 @@ impl WorthQueryApplicationCommitReceipt {
     ) -> Option<
         crate::domain_computation::execution_runtime::product_world::WorthQueryPerformedRelationalProductChange,
     >{
-        self.performed_product_change.take()
+        self.inner.performed_product_change.take()
     }
 
     pub(crate) fn with_external_dispatch(

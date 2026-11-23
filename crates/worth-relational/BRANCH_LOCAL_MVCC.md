@@ -123,8 +123,9 @@ any effect: `prepare_branch_transaction` returns
 `RetentionBackpressure`.
 
 A `PreparedRelationalCommitCandidate` is opaque, runtime-affine, branch-bound,
-single-use, and retained. Preparing, discarding, expiring, or losing a
-candidate does not move a public reference; `discard_prepared_candidate` is the
+single-use, and retained until its holder publishes, discards or drops it; it
+has no wall-clock lifetime. Preparing, discarding, or losing a candidate does
+not move a public reference; `discard_prepared_candidate` is the
 explicit way to consume one without publishing, and the `preparation_port`
 doctest proves the branch does not move across it.
 
@@ -151,8 +152,8 @@ The terminal outcomes are intentionally distinct:
 - `Denied` means owner, runtime, branch, or lifecycle admission failed.
 - `Interrupted` means cancellation or timeout won before linearization.
 - `Deferred` means one bounded mechanical condition stopped this attempt:
-  `PatchPositionReservationContended` (memory-only runtimes), `RetentionBackpressure`, or
-  `CandidateLifetimeExpired`. The two capacity variants of
+  `PatchPositionReservationContended` (memory-only runtimes) or
+  `RetentionBackpressure`. The two capacity variants of
   `RelationalPublicationDeferred` are refused earlier, during preparation, and
   never arrive here.
 - `Failed` means an owner invariant or required publication step failed before

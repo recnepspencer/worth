@@ -25,8 +25,9 @@ impl BlobChunkReuseClaimV2 {
         source_publication: BlobGenerationPublicationV1,
         source_publication_frame_sha256: [u8; 32],
     ) -> Result<Self, BlobRecordDenial> {
-        let canonical = source_publication.encode();
-        let observed: [u8; 32] = Sha256::digest(canonical).into();
+        let mut hasher = Sha256::new();
+        source_publication.visit_canonical_frame(&mut |part| hasher.update(part));
+        let observed: [u8; 32] = hasher.finalize().into();
         let start = claim
             .source_ordinal()
             .checked_mul(u64::from(claim.chunk_size()))
@@ -143,10 +144,14 @@ mod tests {
         );
         let digest: [u8; 32] = Sha256::digest(publication.encode()).into();
         let v2 = BlobChunkReuseClaimV2::new(claim, publication, digest).unwrap();
-        assert_eq!(BlobChunkReuseClaimV2::decode(&v2.encode()), Ok(v2));
+        let v2_bytes = v2.encode();
+        assert_eq!(BlobChunkReuseClaimV2::decode(&v2_bytes), Ok(v2));
         assert!(
-            matches!(decode_blob_record(&v2.encode()), Ok(super::super::BlobRecordV1::ChunkReuseClaimV2(value)) if value == v2)
+            matches!(decode_blob_record(&v2_bytes), Ok(super::super::BlobRecordV1::ChunkReuseClaimV2(value)) if value == v2)
         );
+        let header = super::super::validate_blob_record_header(&v2_bytes).unwrap();
+        assert_eq!(header.kind(), BlobRecordKind::ChunkReuseClaimV2);
+        assert_eq!(header.store(), claim.store());
     }
 
     #[test]

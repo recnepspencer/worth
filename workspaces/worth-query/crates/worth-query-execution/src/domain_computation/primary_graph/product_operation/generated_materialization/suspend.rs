@@ -266,60 +266,84 @@ PublicationDenial::Stopped(stop) => {
             output_generation,
             observed_source_facts: exact.observed_source_facts,
         };
-        match prepared.execute(
-            phase
-                .execution_request_for(application.inner.runtime.product_runtime_ref())
-                .map_err(|cause| {
-                    WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
-                })?,
-        ) {
-            Ok(PublicationOutcome::Performed(performed)) => {
-                let commit = performed
-                    .component_results()
-                    .relational_commit_result()
-                    .cloned()
-                    .expect("a relational-only publication returns its relational result");
-                let mut publication = performed.consume();
-                let observation = publication
-                    .take_successor_observation()
-                    .expect("the requested successor observation is retained");
-                Ok(suspended_output(
-                    application.materialization_publication_binding(observation),
-                    branch,
-                    correspondence,
-                    producer,
-                    completion,
-                    commit,
-                ))
-            }
-            Err(PublicationDenial::ClockMismatch) => {
-                Err(WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(
-                    crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock),
-                ))
-            },
-Err(PublicationDenial::Stopped(stop)) => {
-                Err(WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(
-                    advancement_denial(stop),
-                ))
-            }
-            Err(PublicationDenial::Refused(no_effect)) => {
-                drop(no_effect);
-                Err(WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect)
-            }
-            Ok(PublicationOutcome::ProductUnpublished(effects)) => {
-                let product = application.unpublished_materialization(effects, &product);
-                Err(
-                    WorthQueryGeneratedOutputSuspensionFailure::ProductUnpublished(
-                        WorthQueryGeneratedOutputSuspensionRecovery::new(
-                            product,
-                            completion,
-                            branch,
-                            correspondence,
-                            producer,
-                        ),
+        execute_suspension_publication(
+            application,
+            phase,
+            &product,
+            prepared,
+            branch,
+            correspondence,
+            producer,
+            completion,
+        )
+    }
+}
+
+#[inline(never)]
+#[allow(clippy::too_many_arguments)]
+fn execute_suspension_publication<Schema: ApplicationSchema>(
+    application: &crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
+    product: &crate::basis::WorthQueryProductBranchLease,
+    prepared: crate::domain_computation::execution_runtime::product_world::WorthQueryPreparedProductPublication,
+    branch: crate::basis::WorthQueryProductBranch,
+    correspondence: Arc<WorthQueryApplicationOutputCorrespondence>,
+    producer: ProducerQualification,
+    completion: RelationalMaterializationSuspensionCompletion,
+) -> Result<WorthQuerySuspendedGeneratedOutput, WorthQueryGeneratedOutputSuspensionFailure> {
+    match prepared.execute(
+        phase
+            .execution_request_for(application.inner.runtime.product_runtime_ref())
+            .map_err(|cause| {
+                WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(cause.into())
+            })?,
+    ) {
+        Ok(PublicationOutcome::Performed(performed)) => {
+            let commit = performed
+                .component_results()
+                .relational_commit_result()
+                .cloned()
+                .expect("a relational-only publication returns its relational result");
+            let mut publication = performed.consume();
+            let observation = publication
+                .take_successor_observation()
+                .expect("the requested successor observation is retained");
+            Ok(suspended_output(
+                application.materialization_publication_binding(observation),
+                branch,
+                correspondence,
+                producer,
+                completion,
+                commit,
+            ))
+        }
+        Err(PublicationDenial::ClockMismatch) => Err(
+            WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(
+                crate::domain_computation::primary_graph::WorthQueryAdvancementDenial::Resource(
+                    crate::domain_computation::primary_graph::WorthQueryManagedComputationResourceDenial::ForeignAdmissionClock,
+                ),
+            ),
+        ),
+        Err(PublicationDenial::Stopped(stop)) => Err(
+            WorthQueryGeneratedOutputSuspensionFailure::ExecutionDenied(advancement_denial(stop)),
+        ),
+        Err(PublicationDenial::Refused(no_effect)) => {
+            drop(no_effect);
+            Err(WorthQueryGeneratedOutputSuspensionFailure::PublicationNoEffect)
+        }
+        Ok(PublicationOutcome::ProductUnpublished(effects)) => {
+            let product = application.unpublished_materialization(effects, product);
+            Err(
+                WorthQueryGeneratedOutputSuspensionFailure::ProductUnpublished(
+                    WorthQueryGeneratedOutputSuspensionRecovery::new(
+                        product,
+                        completion,
+                        branch,
+                        correspondence,
+                        producer,
                     ),
-                )
-            }
+                ),
+            )
         }
     }
 }

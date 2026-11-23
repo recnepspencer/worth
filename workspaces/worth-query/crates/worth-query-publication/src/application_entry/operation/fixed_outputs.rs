@@ -35,12 +35,13 @@ where
             Demand<Schema, Root>,
         >,
 {
+    #[inline(never)]
     pub(super) fn advance_preparation_in_phase(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
-        let FixedState::Preparation(preparation) = self.state else {
+        let FixedState::Preparation(preparation) = *self.state else {
             unreachable!("output dispatch owns its preparation")
         };
         let progress = {
@@ -51,13 +52,13 @@ where
                 WorthQueryOutputDemandControls::host_policy(),
             ) {
                 Ok(outputs) => {
-                    self.state = FixedState::Outputs(outputs);
+                    self.state = Box::new(FixedState::Outputs(outputs));
                     Progress::OutputsStarted
                 }
                 Err((preparation, denial)) => {
                     let terminal = denial.recovery_posture()
                         == WorthQueryRequiredOutputRecoveryPosture::Terminal;
-                    self.state = FixedState::Preparation(preparation);
+                    self.state = Box::new(FixedState::Preparation(preparation));
                     return if terminal {
                         Advance::Terminal {
                             operation: WorthQueryTerminalFixedOperation::new(self),
@@ -78,12 +79,13 @@ where
         }
     }
 
+    #[inline(never)]
     pub(super) fn advance_outputs_in_phase(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
-        let FixedState::Outputs(mut outputs) = self.state else {
+        let FixedState::Outputs(mut outputs) = *self.state else {
             unreachable!("output dispatch owns native output custody")
         };
         let progress = {
@@ -92,18 +94,18 @@ where
                     WorthQueryApplicationProgramOutputProgress::Pending
                     | WorthQueryApplicationProgramOutputProgress::Progressed,
                 ) => {
-                    self.state = FixedState::Outputs(outputs);
+                    self.state = Box::new(FixedState::Outputs(outputs));
                     Progress::OutputsPending
                 }
                 Ok(WorthQueryApplicationProgramOutputProgress::Settled(settlement)) => {
                     return Advance::Settled(WorthQuerySettledFixedOperation {
-                        delivery: FixedDeliveryCore {
-                            installed_action: self.installed_action,
-                            description: self.description,
+                        delivery: Box::new(FixedDeliveryCore {
+                            installed_action: *self.installed_action,
+                            description: *self.description,
                             settlement,
                             _action: self.action,
                             runtime: self.runtime,
-                        },
+                        }),
                         initial_cause: self.initial_cause,
                         recovered: self.recovered,
                         result: self.result,
@@ -116,7 +118,7 @@ where
                     }
                     let terminal = denial.recovery_posture()
                         == WorthQueryRequiredOutputRecoveryPosture::Terminal;
-                    self.state = FixedState::Outputs(outputs);
+                    self.state = Box::new(FixedState::Outputs(outputs));
                     return if terminal {
                         Advance::Terminal {
                             operation: WorthQueryTerminalFixedOperation::new(self).with_output_completion(

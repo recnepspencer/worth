@@ -65,13 +65,13 @@ impl AuthoritativeRecordAspectPatch {
             entries.remove(cleared_key);
         }
 
-        for (set_key, set_value) in self.whole_aspect_sets() {
-            entries.insert(set_key.clone(), set_value.clone());
+        for (_set_key, set_value) in self.whole_aspect_sets() {
+            entries.insert_value(set_value.clone());
         }
 
         for field_patch in self.field_patches.iter() {
             let updated_entry = apply_field_patch_to_entry(&entries, field_patch)?;
-            entries.insert(field_patch.key().clone(), updated_entry);
+            entries.insert_value(updated_entry);
         }
 
         Ok(AuthoritativeRecordAspectState::from_canonical_map(entries))
@@ -88,11 +88,7 @@ impl AuthoritativeRecordAspectPatch {
             );
         }
         Ok(AuthoritativeRecordAspectState::from_canonical_map(
-            CanonicalAspectStateMap::from_canonical_entries(
-                self.whole_aspect_sets
-                    .iter()
-                    .map(|value| (value.key().clone(), value.clone())),
-            ),
+            CanonicalAspectStateMap::from_sorted_values(self.whole_aspect_sets.iter().cloned()),
         ))
     }
 }

@@ -29,8 +29,8 @@ impl World {
             producer_contacts: None,
         };
         let mut authority = None;
-        // Bootstrap authors up to 30,006 bodies and their real source topology.
-        // Both locality sizes use the same original accounted request funding;
+        // Bootstrap authors up to 30,006 bodies and their real source topology
+        // in bounded seed batches (see `seed`). Both locality sizes use the same original accounted request funding;
         // the fixed split's measured business reads exclude that construction.
         let policy = worth_foundational::ExecutionRequestPolicy::new(
             worth_foundational::ExecutionPosture::Serial,
@@ -58,7 +58,7 @@ impl World {
                         limits,
                         |graph| {
                             authority = Some(graph.retain_invariant_projection_authority());
-                            seed::rings(graph, rings, coupling);
+                            seed::rings(&phase, graph, rings, coupling);
                         },
                         configuration,
                     )

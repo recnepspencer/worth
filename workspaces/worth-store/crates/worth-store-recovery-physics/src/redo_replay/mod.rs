@@ -14,8 +14,9 @@ pub use denial::{PhysicalRedoPlanningDenial, PhysicalRedoProjectionLimit};
 pub use plan::head_replay_limit_for_test;
 pub use plan::{
     admit_current_source_copy_publication, admit_physical_redo_members,
-    physical_redo_observation_target_identities, physical_redo_observation_targets,
-    physical_redo_target_identities, plan_physical_redo, AdmittedPhysicalRedoMembers,
+    admit_physical_redo_members_with_memory_budget, physical_redo_observation_target_identities,
+    physical_redo_observation_targets, physical_redo_target_identities, plan_physical_redo,
+    AdmittedPhysicalRedoMembers,
     AdmittedRootStepMemberView, ExceededHeadReplayBound, HeadReplayBound,
     HistoricalConsumedOperationSet, HistoricalRetirements, ImmutablePhysicalRedoPlan,
     PhysicalExtentCopyAdmission, PhysicalRedoAdmissionLimits, PhysicalRedoDecision,

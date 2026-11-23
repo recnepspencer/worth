@@ -38,7 +38,8 @@ pub use crate::durability::data::{
     RecoveryAuthorityContinuityMismatch, RecoveryAuthorityParity, RecoveryCoverage,
     RecoveryFailureClass, RecoveryOutcome, RecoveryPlan, RecoveryVerificationMode,
     RecoveryVerificationOutcome, RecoveryVerificationPlan, RelationIntegrityContractFamily,
-    RelationalCheckpointArtifactPolicy, RelationalCheckpointMember, RelationalNativeCheckpoint,
+    RelationalCheckpointArtifactPolicy, RelationalCheckpointComponentRoster,
+    RelationalCheckpointMember, RelationalNativeCheckpoint,
     RelationalNativeCheckpointCaptureDenial, RelationalRecoveryStop,
 };
 pub use crate::durability::medium::RelationalHomeProgramWriteDenial;
@@ -62,6 +63,15 @@ pub use crate::durability::source_initial_inputs::{
     RelationalSourceInitialInputsArtifact,
 };
 pub use crate::durability::{
+    RelationalAllocationWitness, RelationalCheckpointSelectionCensus, RelationalColdSourceWitness,
+    RelationalCommitEnvelopeCustody, RelationalCompleteCarriedIndexBasis,
+    RelationalCompleteIndexSelectionInspection, RelationalHistoryFoldBounds,
+    RelationalLineageResidencyObservation, RelationalPartitionSlotCensus,
+    RelationalRegionProbeStatus, RelationalRegionResidencyObservation,
+    RelationalReplayRetentionObservation, RelationalResidentSymbolDictionary,
+    RelationalSelectedCheckpointObservation,
+};
+pub use crate::durability::{
     RecoveredCheckpointTransition, RecoveredCheckpointTransitionDenial,
     RecoveredCheckpointTransitionError, RecoveredRelationalBranchBasis,
     RecoveredRelationalRuntimeAuthority, RefusedRecoveredCheckpointTransition,
@@ -71,6 +81,15 @@ pub use crate::runtime::CompleteRelationalCheckpointPreparation;
 pub use crate::runtime::RelationalCanonicalPositionAdmissionDenial;
 pub use crate::transactions::data::RecoveredRelationalSemanticResult;
 
+#[doc(hidden)]
+pub use crate::durability::authority::{
+    CapturedRelationalCheckpointBasisForTest, RelationalRetentionGateTrialForTest,
+};
+#[doc(hidden)]
+pub use crate::history::retention::{
+    RelationalExternalRetentionTerminalCounts, RelationalRetentionCensusForTest,
+    RelationalRetentionGateForTest,
+};
 pub use crate::durability::authority::{
     RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,
     RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,

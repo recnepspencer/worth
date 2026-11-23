@@ -123,3 +123,88 @@ pub(super) fn complete_clock_receipt(
     receipt.retention_capacity_backpressure = counts.retention_capacity_backpressure;
     receipt
 }
+
+pub(super) fn reset_retained_wakes_for_replay_for_test(
+    retained_wakes: &mut [crate::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::WorthQueryRetainedConditionalWake],
+    totals: &mut super::operation_totals::WorthQueryTemporalOperationTotals,
+) {
+    use WorthQueryRetainedConditionalDecision as D;
+    for wake in retained_wakes {
+        let prev = std::mem::replace(&mut wake.decision, D::InterruptedDuringReentry);
+        wake.decision = match prev {
+            D::Eligible(e)
+            | D::OperationRetryable(e, _)
+            | D::OperationCommitRetryable(e, _)
+            | D::OperationExecutionControlRetryable(e, _)
+            | D::OperationBackpressured(e, _)
+            | D::OperationControlStopped(e, _)
+            | D::OperationTerminalFailure(e, _)
+            | D::OperationNoEffect(e, _)
+            | D::OperationProductStale(e, _)
+            | D::OperationPreparationPending(e, _)
+            | D::OperationPreparationRefused(e, _)
+            | D::OperationIndeterminate(e, _) => D::Eligible(e),
+            other => other,
+        };
+        wake.attempt = 0;
+        wake.application_attempted = false;
+        wake.continuation_identity = None;
+    }
+    *totals = Default::default();
+}
+
+pub(super) fn complete_continuation_receipt_for_test(
+    counts: WorthQueryTemporalReentryCounts,
+    retained_wakes: &mut Vec<crate::domain_computation::primary_graph::conditional_operation::signal_decision_reentry::WorthQueryRetainedConditionalWake>,
+    totals: &mut super::operation_totals::WorthQueryTemporalOperationTotals,
+) -> ErasedClockObservationReceipt {
+    let decisions = retained_decision_counts(retained_wakes);
+    let shell = ErasedClockObservationReceipt {
+        sequence: 1,
+        observed_coordinate: 5,
+        due_wake_count: retained_wakes.len(),
+        due_work_remaining: false,
+        authoritative_commit_count: 0,
+        authoritative_work_remaining: false,
+        retained_due_wake_count: retained_wakes.len(),
+        retained_eligible_wake_count: decisions.eligible,
+        retained_suppressed_wake_count: decisions.suppressed,
+        retained_deferred_wake_count: decisions.deferred,
+        retained_failed_wake_count: decisions.failed,
+        committed_operation_count: 0,
+        already_committed_operation_count: 0,
+        failed_operation_count: 0,
+        indeterminate_operation_count: 0,
+        snapshot_capacity_backpressure: None,
+        retention_capacity_backpressure: false,
+        execution_provenance: Vec::new(),
+        granular_invalidations: Vec::new(),
+        granular_invalidation_coverage:
+            crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage::Exact,
+    };
+    complete_clock_receipt(
+        shell,
+        counts,
+        AuthoritativeClockProgress {
+            commit_count: 0,
+            work_remaining: false,
+            caught_up_to_latest: true,
+        },
+        super::pending_invalidations::WorthQueryReleasedGranularInvalidations {
+            deliveries: Vec::new(),
+            coverage: crate::domain_computation::primary_graph::WorthQueryGranularInvalidationCoverage::Exact,
+        },
+        retained_wakes,
+        totals,
+    )
+}
+
+pub(in crate::domain_computation::primary_graph::conditional_operation) fn prime_global_plateaus_for_test() {
+    let _ = worth_query_execution_foundation::facade::domain_computation::application_outcome_identity::WorthQueryApplicationOutcomeIdentity::restore(100_000);
+    crate::domain_computation::provider_session::protocol::prime_protocol_session_plateau_for_test();
+    crate::domain_computation::provider_session::execution_attempt_identity::prime_execution_attempt_plateau_for_test();
+    crate::domain_computation::managed_run::prime_managed_logical_run_plateau_for_test();
+    crate::domain_computation::artifact_owner::prime_artifact_occurrence_plateau_for_test();
+    crate::domain_computation::provider_session::graph_provider::bounded_step::prime_provider_checkpoint_plateau_for_test();
+    crate::domain_computation::authorization::WorthQueryOperationAdmissionIdentity::prime_plateau_for_test();
+}

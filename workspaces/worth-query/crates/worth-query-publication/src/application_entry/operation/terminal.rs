@@ -61,8 +61,8 @@ where
     Delivery<Schema, Intent, Action>:
         ApplicationFixedActionDelivery<Schema, Binding<Schema, Intent>, Root = Root>,
 {
-    output_completion: Option<crate::application_entry::mutation::program_output_continuation::ProgramOutputUnavailableCompletion<Schema, Program, Root>>,
-    pub(super) advance_denial: Option<WorthQueryOperationAdvanceDenial>,
+    output_completion: Option<Box<crate::application_entry::mutation::program_output_continuation::ProgramOutputUnavailableCompletion<Schema, Program, Root>>>,
+    pub(super) advance_denial: Option<Box<WorthQueryOperationAdvanceDenial>>,
     pub(super) operation: WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>,
 }
 impl<Schema, Intent, Program, Root, Action>
@@ -83,7 +83,7 @@ where
         mut operation: WorthQueryFixedOperation<Schema, Intent, Program, Root, Action>,
     ) -> Self {
         // Before promotion, the partial is the sole owner of its prior cleanup.
-        if let FixedState::Unpublished(partial) = &mut operation.state {
+        if let FixedState::Unpublished(partial) = &mut *operation.state {
             operation
                 .cleanup
                 .retain_original_failures(partial.take_prior_cleanup());
@@ -103,7 +103,7 @@ where
     /// The original advancement refusal, when transferred into this owner by
     /// an enclosing history edit. Retaining it does not authorize a retry.
     pub fn advance_denial(&self) -> Option<&WorthQueryOperationAdvanceDenial> {
-        self.advance_denial.as_ref()
+        self.advance_denial.as_deref()
     }
     /// Exact managed-run cleanup custody retained independently of business evidence.
     pub fn managed_cleanup_failures(
@@ -155,7 +155,7 @@ where
             <Binding<Schema, Intent> as ApplicationMutationBinding<Schema>>::Result,
         >,
     > {
-        match &self.operation.state {
+        match &*self.operation.state {
             FixedState::NotPerformed(outcome) => Some(outcome),
             FixedState::Blocked(blocked) => Some(blocked.outcome()),
             _ => None,
@@ -165,7 +165,7 @@ where
     /// Native recovered publication evidence, including terminal carrier refusal.
     /// This observation does not certify required-output settlement.
     pub fn recovered_progress(&self) -> Option<&WorthQueryManagedApplicationRecoveryPerformed> {
-        match &self.operation.state {
+        match &*self.operation.state {
             FixedState::Unpublished(partial) => partial.performed(),
             _ => self.operation.recovered.as_ref(),
         }
@@ -202,7 +202,7 @@ where
         {
             return Err(WorthQueryOperationCloseDenial::FreshRequestMismatch);
         }
-        let closable = match &self.operation.state {
+        let closable = match &*self.operation.state {
             FixedState::Initial => true,
             FixedState::NotPerformed(outcome) => super::close::terminal_outcome_can_close(outcome),
             _ => false,
@@ -210,7 +210,7 @@ where
         let result = request
             .application
             .with_application_advancement(request.scope, |phase| {
-                let terminal_carrier = match &mut self.operation.state {
+                let terminal_carrier = match &mut *self.operation.state {
                     FixedState::Unpublished(partial)
                         if partial.recovery_posture()
                             == WorthQueryRequiredOutputRecoveryPosture::Terminal =>

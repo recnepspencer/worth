@@ -62,7 +62,9 @@ pub(super) fn build_initial_regions_owned(
             partition,
             symbols,
         )?);
-        let observation = region.observation();
+        let observation = region
+            .observation()
+            .map_err(|_| RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(partition_id))?;
         content_values_hashed += region.content_values_hashed;
         new_region_authoritative_bytes = new_region_authoritative_bytes
             .saturating_add(observation.authoritative_bytes)
@@ -122,7 +124,11 @@ pub(super) fn build_incremental_regions(
                 crate::storage::residency::RegionCaptureBasis {
                     retention: &prior.partition,
                     directory: &prior.directory,
-                    inventory: prior.allocation_inventory(),
+                    inventory: prior.allocation_inventory().map_err(|_| {
+                        RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(
+                            partition_id,
+                        )
+                    })?,
                     unavailable_records: prior.materialization_unavailable_records(),
                     kind_commitment: prior.kind_commitment,
                 },
@@ -158,7 +164,9 @@ pub(super) fn build_incremental_regions(
             issuer.issue_region_id()?,
             prepared,
         ));
-        let observation = region.observation();
+        let observation = region
+            .observation()
+            .map_err(|_| RelationalBranchRootCaptureDenial::AllocationAccountingOverflow(partition_id))?;
         content_values_hashed += region.content_values_hashed;
         new_region_authoritative_bytes = new_region_authoritative_bytes
             .saturating_add(new_payload_bytes)

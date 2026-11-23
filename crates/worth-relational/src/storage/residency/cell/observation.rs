@@ -2,15 +2,24 @@
 use super::{RelationalRegionResidency, ResidencyState, ResidentRegion};
 
 impl RelationalRegionResidency {
-    pub(crate) fn reclaimable_unique_resident_payload_bytes(self: &std::sync::Arc<Self>) -> u64 {
-        self.lease_checkpoint_contents()
-            .ok()
-            .flatten()
-            .map_or(0, |lease| {
-                lease
-                    .checkpoint_contents()
-                    .reclaimable_unique_authoritative_bytes()
-            })
+    pub(crate) fn observe_reclaimable_resident_payload(
+        self: &std::sync::Arc<Self>,
+        reclaimable: &mut crate::storage::overlay::ReclaimableAllocations,
+    ) {
+        if let Ok(Some(lease)) = self.lease_checkpoint_contents() {
+            lease
+                .checkpoint_contents()
+                .visit_authoritative_allocation_edges(reclaimable);
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn reclaimable_unique_resident_payload_bytes(
+        self: &std::sync::Arc<Self>,
+    ) -> Result<u64, crate::storage::substrate::StorageAllocationOverflow> {
+        let mut reclaimable = crate::storage::overlay::ReclaimableAllocations::new();
+        self.observe_reclaimable_resident_payload(&mut reclaimable);
+        reclaimable.finish()
     }
     /// Slot directory cardinalities are eager manifest facts, including while
     /// member payloads are cold or damaged. Counting slots never reads storage.
@@ -34,7 +43,10 @@ impl RelationalRegionResidency {
     }
     pub(crate) fn resident_inventory(
         &self,
-    ) -> crate::storage::overlay::RelationalPartitionAllocationInventory {
+    ) -> Result<
+        crate::storage::overlay::RelationalPartitionAllocationInventory,
+        crate::storage::substrate::StorageAllocationOverflow,
+    > {
         let state = self
             .state
             .lock()
@@ -43,7 +55,7 @@ impl RelationalRegionResidency {
             ResidencyState::Head { region, .. } | ResidencyState::Full(region) => {
                 region.partition.allocation_inventory()
             }
-            _ => Default::default(),
+            _ => Ok(Default::default()),
         }
     }
 

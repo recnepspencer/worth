@@ -27,6 +27,7 @@ fn checkpoint_recovery_readmits_shared_root_once_for_sibling_heads() {
             RecoveryVerificationMode::NormalRecoveryVerification,
         )
         .unwrap();
+    assert_eq!(plan.checkpoint.as_ref().unwrap().branch_root_count(), 1);
 
     let mut recovered = durable_runtime(&medium);
     recovered
@@ -45,8 +46,21 @@ fn checkpoint_recovery_readmits_shared_root_once_for_sibling_heads() {
     let main = recovered
         .branch_reference_state(&BranchId("main".to_owned()))
         .unwrap();
-    let sibling = recovered.branch_reference_state(&sibling).unwrap();
-    assert_eq!(main.observation().target(), sibling.observation().target());
+    let sibling_state = recovered.branch_reference_state(&sibling).unwrap();
+    assert_eq!(
+        main.observation().target(),
+        sibling_state.observation().target()
+    );
+    let main_id = recovered.main_branch_identity();
+    let sibling_id = recovered.branch_identity(&sibling).unwrap();
+    let (_, main_basis) = recovered.observe_branch(&main_id).unwrap();
+    let (_, sibling_basis) = recovered.observe_branch(&sibling_id).unwrap();
+    assert!(
+        main_basis
+            .custody_witness()
+            .same_root(&sibling_basis.custody_witness()),
+        "sibling heads share one readmitted physical root allocation"
+    );
 }
 
 #[test]

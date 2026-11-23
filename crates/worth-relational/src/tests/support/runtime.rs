@@ -43,6 +43,8 @@ pub(crate) fn test_execution_lease() -> ExecutionResourceLease<'static> {
 pub(crate) enum PerfDiagnosticsPolicy {
     GeometryOperationalHotPath,
     GeometryRichCertification,
+    ChipOperationalHotPath,
+    ChipRichCertification,
 }
 
 pub(crate) fn apply_perf_diagnostics_policy(
@@ -55,6 +57,12 @@ pub(crate) fn apply_perf_diagnostics_policy(
         }
         PerfDiagnosticsPolicy::GeometryRichCertification => {
             RelationalDiagnosticsProfile::geometry_rich_certification()
+        }
+        PerfDiagnosticsPolicy::ChipOperationalHotPath => {
+            RelationalDiagnosticsProfile::chip_operational_hot_path()
+        }
+        PerfDiagnosticsPolicy::ChipRichCertification => {
+            RelationalDiagnosticsProfile::chip_rich_certification()
         }
     };
     runtime.configure_diagnostics_for_test(|configured| *configured = profile);
@@ -108,6 +116,21 @@ pub(crate) fn runtime_with_test_schema_profile(
         .expect("valid native runtime configuration")
 }
 
+pub(crate) fn runtime_with_extra_entity_aspects_profile(
+    profile: RelationalRuntimeProfile,
+    extra_entity_aspects: Vec<DeclaredAspectContractBinding>,
+) -> RelationalRuntime {
+    let mut fixture = AspectSchemaFixture::with_default_declared_aspects(
+        CascadeDeletePolicy::CascadeDeleteRelations,
+    );
+    fixture.entity_aspects.extend(extra_entity_aspects);
+    RelationalRuntimeApi::builder()
+        .profile(profile)
+        .schema_registry(fixture.build_registry())
+        .build()
+        .expect("valid native runtime configuration")
+}
+
 pub(crate) fn runtime_with_test_schema_profile_and_chunks(
     profile: RelationalRuntimeProfile,
     entity_chunk_size: usize,
@@ -116,6 +139,28 @@ pub(crate) fn runtime_with_test_schema_profile_and_chunks(
     RelationalRuntimeApi::builder()
         .profile(profile)
         .schema_registry(test_schema_registry())
+        .storage_layout(StorageLayoutConfig {
+            entity_chunk_size,
+            relation_chunk_size,
+            scan_packet_size: 256,
+        })
+        .build()
+        .expect("valid native runtime configuration")
+}
+
+pub(crate) fn runtime_with_extra_entity_aspects_profile_and_chunks(
+    profile: RelationalRuntimeProfile,
+    entity_chunk_size: usize,
+    relation_chunk_size: usize,
+    extra_entity_aspects: Vec<DeclaredAspectContractBinding>,
+) -> RelationalRuntime {
+    let mut fixture = AspectSchemaFixture::with_default_declared_aspects(
+        CascadeDeletePolicy::CascadeDeleteRelations,
+    );
+    fixture.entity_aspects.extend(extra_entity_aspects);
+    RelationalRuntimeApi::builder()
+        .profile(profile)
+        .schema_registry(fixture.build_registry())
         .storage_layout(StorageLayoutConfig {
             entity_chunk_size,
             relation_chunk_size,

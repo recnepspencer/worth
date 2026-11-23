@@ -28,7 +28,8 @@ pub(super) fn admission_denial(cause: &Native) -> World {
         | Native::DurablePublicationRefused(_)
         | Native::TransitionSequenceExhausted
         | Native::TransitionStorageExhausted
-        | Native::TransitionOriginalPrefixMismatch => World::OwnerUnavailable,
+        | Native::TransitionOriginalPrefixMismatch
+        | Native::AllocationAccountingOverflow => World::OwnerUnavailable,
     }
 }
 
@@ -48,7 +49,6 @@ fn index_preparation_denial(
         | Index::ColdReconstructionRequired
         | Index::WorkBudgetExceeded
         | Index::ForeignCandidate
-        | Index::CandidateLifetimeExpired { .. }
         | Index::CandidateUnavailable
         | Index::CandidateIndexesAlreadyPrepared
         | Index::GenerationIdentityExhausted => World::OwnerUnavailable,

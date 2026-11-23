@@ -58,6 +58,10 @@ impl ProductBranchReferenceGeneration {
         Self(0)
     }
 
+    pub(crate) const fn readmitted(generation: u64) -> Self {
+        Self(generation)
+    }
+
     /// Descriptive reference generation; this value cannot issue or advance a head.
     pub const fn get(self) -> u64 {
         self.0

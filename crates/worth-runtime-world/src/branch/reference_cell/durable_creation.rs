@@ -302,7 +302,9 @@ impl Drop for WorldProductCreationPermit {
             | ProductMovementPhase::MovementInFlight { .. }
             | ProductMovementPhase::RecoveryRequired { .. }
             | ProductMovementPhase::CreationInFlight(_)
-            | ProductMovementPhase::CreationRecoveryRequired(_)) => original,
+            | ProductMovementPhase::CreationRecoveryRequired(_)
+            | ProductMovementPhase::RetirementInFlight
+            | ProductMovementPhase::RetirementRecoveryRequired) => original,
         };
     }
 }

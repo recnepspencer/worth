@@ -175,6 +175,13 @@ fn residency_failure_matrix_full_read_subjects_cover_every_door_and_class() {
                         target_reads_before,
                         "lazy pins open no members; current scans open no historical member"
                     );
+                    if let Some(symbol) = fixture.expected_symbol {
+                        assert!(fixture
+                            .runtime
+                            .observe_resident_symbol_dictionary()
+                            .resolve(symbol)
+                            .is_none());
+                    }
                     assert_eq!(
                         fixture.runtime.history().latest_patch_stream_position(),
                         frontier

@@ -53,46 +53,70 @@ pub(super) fn transaction_for_update(
     transaction
 }
 
+/// A prepared candidate has no wall-clock lifetime: its publication is bounded
+/// by the publishing request's work ceiling. One unit short of the quoted
+/// publication stops typed before any index or commit is exposed.
 #[test]
-fn expired_native_candidate_defers_publication_without_exposing_indexes() {
+fn over_budget_native_candidate_publication_stops_before_exposing_indexes() {
     let host_request = crate::test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
     let runtime = RelationalRuntimeApi::builder()
         .schema_registry(declared_aspect_schema_registry(
             CascadeDeletePolicy::CascadeDeleteRelations,
         ))
-        .publication(crate::facade::config::PublicationConfig {
-            coherent_publication_required: true,
-            max_patch_records_per_commit: None,
-            max_published_snapshot_handles: Some(8),
-            max_active_snapshot_handles: Some(8),
-            max_transaction_savepoints: 8,
-            max_prepared_candidates: Some(1),
-            candidate_max_lifetime_millis: 0,
-        })
         .build()
         .expect("valid native runtime configuration");
     let _index_id = index(&runtime);
-    let mut transaction = test_owner_begin_transaction_for_main(&runtime);
-    transaction
-        .push_batch(
-            batch_create("expired-index-candidate"),
-            worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+    let prepare = |runtime: &RelationalRuntime| {
+        let mut transaction = test_owner_begin_transaction_for_main(runtime);
+        transaction
+            .push_batch(
+                batch_create("bounded-index-candidate"),
+                worth_execution::ExecutionAllocationPolicy::SystemAllocation,
+            )
+            .unwrap();
+        let candidate = runtime
+            .prepare_branch_transaction(execution, transaction)
+            .unwrap();
+        assert!(candidate.prepared_index_maintenance_work().is_some());
+        candidate
+    };
+    let quote = runtime.fork().unwrap();
+    let quoted_candidate = prepare(&quote);
+    let (quoted, report) = execution
+        .run(worth_execution::ExecutionWorkCeiling::new(None), |_| {
+            quote
+                .publication_port()
+                .compare_and_publish(execution, quoted_candidate)
+        })
+        .unwrap();
+    assert!(matches!(
+        quoted,
+        crate::mvcc::RelationalPublicationOutcome::Performed(_)
+    ));
+
+    let candidate = prepare(&runtime);
+    let (outcome, _) = execution
+        .run(
+            worth_execution::ExecutionWorkCeiling::new(Some(report.charged_work() - 1)),
+            |_| {
+                runtime
+                    .publication_port()
+                    .compare_and_publish(execution, candidate)
+            },
         )
         .unwrap();
-    let candidate = runtime
-        .prepare_branch_transaction(execution, transaction)
-        .unwrap();
-
-    assert!(candidate.prepared_index_maintenance_work().is_some());
-    let outcome = runtime
-        .publication_port()
-        .compare_and_publish(execution, candidate);
-    assert!(matches!(
-        outcome,
-        crate::mvcc::RelationalPublicationOutcome::Deferred(_)
-    ));
+    assert!(
+        matches!(
+            outcome,
+            crate::mvcc::RelationalPublicationOutcome::RequestStopped(
+                worth_execution::WorkCeilingDenial::Stopped(
+                    worth_execution::MapKernelStop::WorkCeiling
+                )
+            )
+        ),
+        "{outcome:?}"
+    );
     assert_eq!(runtime.index_access().generations_snapshot().len(), 0);
     assert_eq!(runtime.history().immutable_commit_count(), 0);
 }

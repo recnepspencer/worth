@@ -10,6 +10,10 @@ use super::{
 static NEXT_PROTOCOL_SESSION: AtomicU64 = AtomicU64::new(1);
 mod incarnation;
 
+pub fn prime_protocol_session_plateau_for_test() {
+    let _ = NEXT_PROTOCOL_SESSION.fetch_max(100_000, Ordering::Relaxed);
+}
+
 #[derive(Debug)]
 pub struct WorthQueryProviderSessionTokenAdmission {
     generation: u64,

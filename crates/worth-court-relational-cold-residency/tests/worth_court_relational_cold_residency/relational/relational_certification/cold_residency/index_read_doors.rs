@@ -171,6 +171,7 @@ impl IndexDoor {
                     .read_truth()
                     .project_observation(&basis.observation())
                     .unwrap();
+                assert!(view.is_exact_basis());
                 assert_eq!(view.version_id(), basis.observation().version_id());
                 match self {
                     Self::ViewPin => runtime

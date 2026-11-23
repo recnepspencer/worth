@@ -129,7 +129,7 @@ where
     > {
         match self.operation.close_cleanup(request) {
             Ok(closed) => {
-                let SourceState::<S, I>::RetainedPending(evidence) = self.operation.state else {
+                let SourceState::<S, I>::RetainedPending(evidence) = *self.operation.state else {
                     unreachable!("completed source owns its native evidence")
                 };
                 Ok((closed, evidence))
@@ -160,14 +160,14 @@ where
         self.operation.release_cleanup(request)
     }
     pub fn native_outcome(&self) -> Option<&NativeOutcome<S, I>> {
-        match &self.operation.state {
+        match &*self.operation.state {
             SourceState::<S, I>::Stopped(outcome) => Some(outcome),
             _ => None,
         }
     }
     /// Exact native preparation refusal retained without a manufactured commit outcome.
     pub fn native_admission_denial(&self) -> Option<&WorthQueryApplicationRequestMutationDenial> {
-        match &self.operation.state {
+        match &*self.operation.state {
             SourceState::<S, I>::AdmissionStopped(denial) => Some(denial),
             _ => None,
         }
@@ -177,13 +177,13 @@ where
     ) -> Option<
         &worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution,
     > {
-        self.operation.keyed_terminal.as_ref()
+        self.operation.keyed_terminal.as_deref()
     }
     pub fn native_advancement_failure(
         &self,
     ) -> Option<&worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial>
     {
-        match &self.operation.state {
+        match &*self.operation.state {
             SourceState::<S, I>::UnresolvedAdvancement(failure) => Some(failure),
             _ => None,
         }
@@ -212,9 +212,9 @@ where
             Ok(closed) => closed,
             Err(denial) => return Err((self, denial)),
         };
-        let evidence = match (self.operation.keyed_terminal.take(), self.operation.state) {
+        let evidence = match (self.operation.keyed_terminal.take(), *self.operation.state) {
             (Some(resolution), SourceState::<S, I>::Initial) => {
-                WorthQueryTerminalSourceEvidence::Keyed(resolution)
+                WorthQueryTerminalSourceEvidence::Keyed(*resolution)
             }
             (None, SourceState::<S, I>::Stopped(outcome)) => {
                 WorthQueryTerminalSourceEvidence::Outcome(outcome)
@@ -257,7 +257,7 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> Result<WorthQueryClosedOperation, WorthQueryOperationCloseDenial> {
         if !matches!(
-            self.state,
+            &*self.state,
             SourceState::<S, I>::Initial | SourceState::<S, I>::RetryableNoEffect(_)
         ) || !native_posture::can_close::<S, I>(&self.state)
         {

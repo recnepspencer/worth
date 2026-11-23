@@ -13,16 +13,30 @@ fn initializer_refusal_reopens_at_missing_world_origin_without_replaying_initial
     let build = ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID")).unwrap();
     let lease = checkpoint_capture::lease(128 * 1024 * 1024);
     let execution = worth_execution::ExecutionRequest::leased(&lease);
-    let called = callbacks.clone();
-    let request = fixture::request_with_initializer(
+    assert_initializer_panic_refuses_and_closes(
         location.clone(),
         build,
         contacts.clone(),
-        move |_, _, _| {
-            called.fetch_add(1, Ordering::SeqCst);
-            panic!("court initializer stopped before any seed publication")
-        },
+        callbacks.clone(),
+        execution,
     );
+    assert_missing_world_origin_holds_lease_against_competing(
+        location, build, contacts, callbacks, execution,
+    );
+}
+
+#[inline(never)]
+fn assert_initializer_panic_refuses_and_closes(
+    location: std::path::PathBuf,
+    build: ApplicationBuildIdentity,
+    contacts: Arc<AtomicUsize>,
+    callbacks: Arc<AtomicUsize>,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) {
+    let request = fixture::request_with_initializer(location, build, contacts, move |_, _, _| {
+        callbacks.fetch_add(1, Ordering::SeqCst);
+        panic!("court initializer stopped before any seed publication")
+    });
     let refused = with_bootstrap_advancement_from_request(execution, |phase| {
         request.open_in_advancement(&phase)
     })
@@ -39,6 +53,16 @@ fn initializer_refusal_reopens_at_missing_world_origin_without_replaying_initial
     refused
         .close(&execution)
         .unwrap_or_else(|refused| panic!("original owning close: {refused:?}"));
+}
+
+#[inline(never)]
+fn assert_missing_world_origin_holds_lease_against_competing(
+    location: std::path::PathBuf,
+    build: ApplicationBuildIdentity,
+    contacts: Arc<AtomicUsize>,
+    callbacks: Arc<AtomicUsize>,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) {
     let request =
         fixture::request_with_initializer(location.clone(), build, contacts.clone(), |_, _, _| {
             panic!("partial existing artifacts cannot replay initialization")
@@ -63,6 +87,19 @@ fn initializer_refusal_reopens_at_missing_world_origin_without_replaying_initial
     }
     assert_eq!(callbacks.load(Ordering::SeqCst), 1);
     assert_eq!(contacts.load(Ordering::SeqCst), 0);
+    assert_competing_request_contended_and_close(location, build, contacts, execution);
+    refused
+        .close(&execution)
+        .unwrap_or_else(|refused| panic!("existing owning close: {refused:?}"));
+}
+
+#[inline(never)]
+fn assert_competing_request_contended_and_close(
+    location: std::path::PathBuf,
+    build: ApplicationBuildIdentity,
+    contacts: Arc<AtomicUsize>,
+    execution: worth_execution::ExecutionRequest<'_, '_>,
+) {
     let competing = fixture::request_with_initializer(location, build, contacts, |_, _, _| {
         panic!("held lease cannot initialize")
     });
@@ -80,7 +117,4 @@ fn initializer_refusal_reopens_at_missing_world_origin_without_replaying_initial
     competing
         .close(&execution)
         .unwrap_or_else(|refused| panic!("competing request disposal: {refused:?}"));
-    refused
-        .close(&execution)
-        .unwrap_or_else(|refused| panic!("existing owning close: {refused:?}"));
 }

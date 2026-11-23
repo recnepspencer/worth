@@ -68,10 +68,7 @@ impl PlannedStateBacking {
         let publication_bytes = super::PlanningResidentAllowance::slot_bytes::<
             crate::orchestration::PublicationPayload,
         >(1)?;
-        let reopened_bytes =
-            super::PlanningResidentAllowance::slot_bytes::<crate::progression::ReopenedPayload>(1)?
-                .checked_add(crate::orchestration::RecoveryHandoffBacking::required_bytes()?)
-                .ok_or_else(overflow)?;
+        let reopened_bytes = crate::progression::ReopenedBacking::required_bytes()?;
         let backing = payload
             .checked_add(staged)
             .and_then(|bytes| bytes.checked_add(input_bytes))
@@ -155,7 +152,9 @@ fn construction_scratch(extraction_bytes: u64) -> Option<u64> {
     >() as u64;
     let expectation = std::mem::size_of::<crate::progression::ExpectationPayload>() as u64;
     let publication_plan =
-        std::mem::size_of::<crate::progression::RecoveryPublicationPlan>() as u64;
+        std::mem::size_of::<super::RecoveryPublicationPlanBody>() as u64;
+    let core_body =
+        worth_store::physical_runtime::PreparedRecoveredRuntimeCoreBacking::required_bytes();
     Some(
         planned
             .checked_add(extraction_bytes)?
@@ -174,6 +173,7 @@ fn construction_scratch(extraction_bytes: u64) -> Option<u64> {
                     .checked_mul(3)?
                     .checked_add(roster.checked_mul(2)?)?,
             )
-            .max(publication_plan.checked_add(expectation.checked_mul(2)?)?),
+            .max(publication_plan.checked_add(expectation.checked_mul(2)?)?)
+            .max(core_body),
     )
 }

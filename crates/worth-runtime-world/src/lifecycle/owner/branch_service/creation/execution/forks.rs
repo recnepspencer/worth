@@ -128,7 +128,7 @@ where
         denial: RuntimeWorldBranchAdmissionDenial::CustodyCapacityExhausted,
     })?;
     let services = owner.state.signal.memory_services().ok_or(ForkFailure {
-        denial: RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired,
+        denial: RuntimeWorldBranchAdmissionDenial::HomeCreationRequestRequired,
     })?;
     let mutation_port = services.mutation_port();
     let reservation = mutation_port

@@ -20,8 +20,8 @@ impl GenerationPublicationGate {
         mut poll: impl FnMut() -> Result<(), Stop>,
     ) -> Result<GenerationPublicationPermit, Stop> {
         loop {
-            // Neither the original request nor candidate expiry may disappear
-            // behind an owner wait. The callback never runs under this mutex.
+            // The original request's stop may not disappear behind an owner
+            // wait. The callback never runs under this mutex.
             poll()?;
             let mut occupied = self.occupied.lock().unwrap_or_else(|e| e.into_inner());
             if !*occupied {

@@ -110,5 +110,9 @@ fn semantic_result_bulk_entities_and_relations_seal_and_readmit_original_binding
     let artifact = medium.offered().pop().unwrap();
     let admitted = Artifact::readmit(artifact.as_bytes(), execution).unwrap();
     assert_eq!(admitted.envelope().semantic_result(), semantic);
+    assert!(
+        admitted.contains_symbol_text("bulk-input-00"),
+        "the actual symbol dictionary participates in this bulk source"
+    );
     release_test_commit_snapshot(&runtime, &committed);
 }

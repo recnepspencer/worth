@@ -1,0 +1,97 @@
+{
+  "ceiling_bytes": 262144,
+  "ceiling_reason": "A quarter of the 1 MiB Windows default main-thread stack, the smallest stack a consumer calls WORTH on, and a sixteenth of the 4 MiB red zone worth_execution::run_with_execution_stack guarantees.",
+  "census_floor_bytes": 32768,
+  "owner_crate_prefixes": [
+    "worth_",
+    "invariant_reads",
+    "required_feature",
+    "shared_execution"
+  ],
+  "roster": [
+    {
+      "label": "examples",
+      "cargo": [
+        "build",
+        "--manifest-path",
+        "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml",
+        "-p",
+        "worth-query-topology-entry",
+        "--examples"
+      ],
+      "executables": [
+        "invariant_reads",
+        "required_feature",
+        "shared_execution"
+      ]
+    },
+    {
+      "label": "consumer-root",
+      "cargo": [
+        "build",
+        "--manifest-path",
+        "workspaces/worth-query/crates/worth-query-certification/fixtures/consumer_entry/Cargo.toml",
+        "-p",
+        "worth-query-consumer-root",
+        "--bins"
+      ],
+      "executables": [
+        "worth-query-consumer-root"
+      ]
+    },
+    {
+      "label": "root",
+      "cargo": [
+        "test",
+        "--no-run",
+        "-p",
+        "worth-court-relational-certification"
+      ],
+      "executables": [
+        "worth_court_relational_certification"
+      ]
+    },
+    {
+      "label": "store",
+      "cargo": [
+        "test",
+        "--no-run",
+        "--manifest-path",
+        "workspaces/worth-store/Cargo.toml",
+        "-p",
+        "worth-store-court-application"
+      ],
+      "executables": [
+        "worth_store_court_application"
+      ]
+    },
+    {
+      "label": "query",
+      "cargo": [
+        "test",
+        "--no-run",
+        "--manifest-path",
+        "workspaces/worth-query/Cargo.toml",
+        "-p",
+        "worth-query-court-decl-host-integration"
+      ],
+      "executables": [
+        "worth_query_court_decl_host_integration"
+      ]
+    },
+    {
+      "label": "bank",
+      "cargo": [
+        "test",
+        "--no-run",
+        "--manifest-path",
+        "workspaces/worth-query-bank-world/Cargo.toml",
+        "-p",
+        "worth-query-bank-court-external-rail-server"
+      ],
+      "executables": [
+        "worth_query_bank_court_external_rail_server"
+      ]
+    }
+  ]
+}

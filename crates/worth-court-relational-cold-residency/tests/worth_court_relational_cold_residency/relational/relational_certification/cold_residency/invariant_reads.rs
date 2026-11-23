@@ -17,10 +17,41 @@ fn storage_cause(error: TransactionCommitError) -> RelationalExecutionDenialCaus
 }
 
 #[test]
+fn selected_branch_views_preserve_cold_probe_and_demand() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host);
+    let (runtime, counter, entity, _) = recovered(execution, false);
+    let main_branch = worth_relational::facade::history::BranchId("main".into());
+    assert_eq!(
+        runtime
+            .observe_branch_region_residency(&main_branch, entity.partition_id)
+            .unwrap()
+            .full,
+        RelationalRegionProbeStatus::Cold
+    );
+    let (_, basis) = runtime
+        .observe_branch(&runtime.main_branch_identity())
+        .unwrap();
+    assert!(runtime
+        .entity_record_at_observation(execution, &basis.observation(), entity)
+        .unwrap()
+        .is_some());
+    assert_eq!(
+        runtime
+            .observe_branch_region_residency(&main_branch, entity.partition_id)
+            .unwrap()
+            .full,
+        RelationalRegionProbeStatus::Resident
+    );
+    assert!(counter.reads.load(Ordering::Relaxed) > 0);
+}
+
+#[test]
 fn invariant_storage_refusal_is_sticky_and_preserves_publication() {
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let (runtime, counter, entity, medium) = recovered(execution, true);
+    let before = runtime.observe_complexity_counters();
     let frontier = runtime.history().latest_patch_stream_position();
     let first = storage_cause(
         runtime
@@ -52,6 +83,19 @@ fn invariant_storage_refusal_is_sticky_and_preserves_publication() {
         first
     );
     assert_eq!(counter.reads.load(Ordering::Relaxed), reads);
+    let after = runtime.observe_complexity_counters();
+    assert_eq!(
+        after.preparation_packet_count,
+        before.preparation_packet_count
+    );
+    assert_eq!(
+        after.invariant_entity_slot_scans,
+        before.invariant_entity_slot_scans
+    );
+    assert_eq!(
+        after.invariant_authoritative_entity_records_materialized,
+        before.invariant_authoritative_entity_records_materialized
+    );
     assert_eq!(runtime.history().latest_patch_stream_position(), frontier);
     assert!(medium.offered().is_empty());
 }
@@ -61,6 +105,7 @@ fn cold_and_warm_invariant_reads_preserve_results_without_reloading() {
     let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let (runtime, counter, _, _) = recovered(execution, false);
+    let before = runtime.observe_complexity_counters();
     let cold = runtime
         .validation()
         .mutation_sensitive_state(execution)
@@ -69,6 +114,7 @@ fn cold_and_warm_invariant_reads_preserve_results_without_reloading() {
         !cold.results().is_empty(),
         "the fixture must execute a real native rule"
     );
+    let after_cold = runtime.observe_complexity_counters();
     let reads = counter.reads.load(Ordering::Relaxed);
     assert!(reads > 0);
     let warm = runtime
@@ -76,7 +122,19 @@ fn cold_and_warm_invariant_reads_preserve_results_without_reloading() {
         .mutation_sensitive_state(execution)
         .unwrap();
     assert_eq!(cold.results(), warm.results());
+    let after_warm = runtime.observe_complexity_counters();
     assert_eq!(counter.reads.load(Ordering::Relaxed), reads);
+    let cold_packets = after_cold.preparation_packet_count - before.preparation_packet_count;
+    let warm_packets = after_warm.preparation_packet_count - after_cold.preparation_packet_count;
+    assert!(cold_packets > 0);
+    assert_eq!(
+        cold_packets, warm_packets,
+        "a discarded round must not publish its counters"
+    );
+    assert_eq!(
+        after_cold.invariant_entity_slot_scans - before.invariant_entity_slot_scans,
+        after_warm.invariant_entity_slot_scans - after_cold.invariant_entity_slot_scans,
+    );
 }
 
 #[test]

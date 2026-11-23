@@ -77,7 +77,7 @@ impl<'a> DropSetManifestV3View<'a> {
         Self::decode_payload(frame.payload)
     }
 
-    pub(super) fn decode_payload(payload: &'a [u8]) -> Result<Self, BlobRecordDenial> {
+    pub(in crate::blob_record) fn decode_payload(payload: &'a [u8]) -> Result<Self, BlobRecordDenial> {
         if payload.len() < MINIMUM_PAYLOAD_BYTES + 112 + 24 {
             return Err(BlobRecordDenial::LengthMismatch);
         }

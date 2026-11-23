@@ -34,6 +34,13 @@ pub enum SignalBranchCreationPlan {
 }
 
 impl SignalBranchCreationPlan {
+    pub fn fork_exact_named(
+        name: impl Into<String>,
+    ) -> Result<Self, worth_signal::facade::branch::SignalBranchIdentityConstructionDenial> {
+        worth_signal::facade::branch::validate_signal_branch_name(name)
+            .map(|target| Self::ForkExact { target })
+    }
+
     pub const fn is_reuse_exact(&self) -> bool {
         matches!(self, Self::ReuseExact)
     }

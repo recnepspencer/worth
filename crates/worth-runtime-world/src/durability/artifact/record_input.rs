@@ -15,23 +15,28 @@ impl<'a> WorldHeadInput<'a> {
     pub(crate) fn from_observation(
         observed: &'a crate::branch::ProductBranchObservation,
     ) -> Result<Self, Denial> {
-        let owner = observed
-            .owner_identity()
+        Self::from_snapshot(observed.snapshot())
+    }
+    pub(crate) fn from_snapshot(
+        snapshot: &'a crate::branch::ProductBranchReferenceSnapshot,
+    ) -> Result<Self, Denial> {
+        let owner = snapshot
+            .owner()
             .durable()
             .ok_or(WorldDurableFrameDenial::IdentityMismatch)?;
         Ok(Self {
             owner,
-            name: observed.branch_identity().name().as_str(),
+            name: snapshot.branch().name().as_str(),
             incarnation: DurableProductBranchIncarnation::from_recorded(
                 owner,
-                observed.lifecycle_incarnation().ordinal(),
+                snapshot.lifecycle().ordinal(),
             ),
             generation: DurableProductReferenceGeneration::from_recorded(
-                observed.reference_generation().get(),
+                snapshot.generation().get(),
             ),
             commit: DurableCompositeCommitIdentity::from_recorded(
                 owner,
-                observed.selected_commit().ordinal(),
+                snapshot.selected_commit().ordinal(),
             ),
         })
     }
@@ -126,6 +131,15 @@ pub(crate) enum WorldArtifactInput<'a> {
         association: &'a CompositeAttemptAssociation,
         custody: DurableProductUnpublishedOwnerEffectsIdentity,
     },
+    BranchRetired {
+        head: WorldHeadInput<'a>,
+        retiring_incarnation: HomeIncarnation,
+    },
+    HistoryRetired {
+        owner: DurableWorldOwnerIdentity,
+        commits: &'a [DurableCompositeCommitIdentity],
+        retiring_incarnation: HomeIncarnation,
+    },
     Released {
         association: &'a CompositeAttemptAssociation,
         custody: DurableProductUnpublishedOwnerEffectsIdentity,
@@ -135,7 +149,11 @@ pub(crate) enum WorldArtifactInput<'a> {
 impl WorldArtifactInput<'_> {
     pub(super) fn name_bytes(&self) -> Result<usize, Denial> {
         match self {
-            Self::Branch { head, .. } => Ok(head.name.len()),
+            Self::Branch { head, .. } | Self::BranchRetired { head, .. } => Ok(head.name.len()),
+            Self::HistoryRetired { commits, .. } => commits
+                .len()
+                .checked_mul(std::mem::size_of::<DurableCompositeCommitIdentity>())
+                .ok_or(WorldDurableFrameDenial::SizeLimit.into()),
             Self::OpenAttempt(open) => open.name_bytes(),
             Self::CreationIntent(intent) | Self::BranchCreated { intent, .. } => {
                 intent.name_bytes()
@@ -199,6 +217,32 @@ impl WorldArtifactInput<'_> {
                 association: creation::copy_association(association)?,
                 custody,
             },
+            Self::BranchRetired {
+                head,
+                retiring_incarnation,
+            } => WorldRecord::BranchRetired {
+                head: head.materialize()?,
+                retiring_incarnation,
+            },
+            Self::HistoryRetired {
+                owner,
+                commits,
+                retiring_incarnation,
+            } => {
+                if commits.is_empty() || commits.iter().any(|commit| commit.owner() != owner) {
+                    return Err(WorldDurableFrameDenial::IdentityMismatch.into());
+                }
+                let mut copied = Vec::new();
+                copied
+                    .try_reserve_exact(commits.len())
+                    .map_err(|_| Denial::NameAllocation)?;
+                copied.extend_from_slice(commits);
+                WorldRecord::HistoryRetired {
+                    owner,
+                    commits: copied,
+                    retiring_incarnation,
+                }
+            }
             Self::Released {
                 association,
                 custody,

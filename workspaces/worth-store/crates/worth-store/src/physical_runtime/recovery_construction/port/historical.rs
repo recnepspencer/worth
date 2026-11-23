@@ -6,24 +6,27 @@ use worth_store_recovery_physics::{
     VerifiedSelectedTierEpochCustody,
 };
 
+use crate::physical_runtime::record_serving::RecoveredReleaseCustody;
 use crate::physical_runtime::{
-    ClosedPhysicalRecoveryCleanup, PhysicalRecoveryAllocationAdmission,
-    PhysicalRecoveryCoordination,
+    ClosedPhysicalRecoveryCleanup, CompletedPhysicalRecoveryFreshReopen,
+    PhysicalRecoveryAllocationAdmission, PhysicalRecoveryCoordination,
 };
 
 use super::{
     selected_rejoin, validate_construction_binding, PhysicalRecoveryConstructionPort,
-    RecoveredPhysicalRuntimeConstructionDenial, RecoveredPhysicalRuntimeCore,
+    PreparedRecoveredRuntimeCoreBacking, RecoveredPhysicalRuntimeConstructionDenial,
+    RecoveredPhysicalRuntimeCore,
 };
 
 impl PhysicalRecoveryConstructionPort {
-    pub fn construct_with_verified_ordered_historical_release(
+    pub(super) fn construct_ordered_historical_inner(
+        backing: PreparedRecoveredRuntimeCoreBacking,
         mut coordination: PhysicalRecoveryCoordination,
         media: AdmittedRecoveryFilesystemMedia,
         cleanup: ClosedPhysicalRecoveryCleanup,
         recovery_allocation: PhysicalRecoveryAllocationAdmission,
-        historical: VerifiedOrderedHistoricalReleaseCustody,
-        effective: VerifiedEffectiveReleaseHeadRosterV14,
+        historical: Box<VerifiedOrderedHistoricalReleaseCustody>,
+        effective: Box<VerifiedEffectiveReleaseHeadRosterV14>,
         tier: Option<VerifiedSelectedTierEpochCustody>,
     ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
         if cleanup.live_media_handle_delta() != 0
@@ -69,17 +72,41 @@ impl PhysicalRecoveryConstructionPort {
                     return Err(super::rejoin_denial::construction_denial(denial));
                 }
             };
-        let mut core = Self::construct_inner(
+        Self::finish_ordered_historical(
+            backing,
             coordination,
             media,
             reopen,
-            None,
+            historical,
+            effective,
+            selected_wal,
+            selected_controls,
+        )
+    }
+
+    #[inline(never)]
+    fn finish_ordered_historical(
+        backing: PreparedRecoveredRuntimeCoreBacking,
+        coordination: PhysicalRecoveryCoordination,
+        media: AdmittedRecoveryFilesystemMedia,
+        reopen: CompletedPhysicalRecoveryFreshReopen,
+        historical: Box<VerifiedOrderedHistoricalReleaseCustody>,
+        effective: Box<VerifiedEffectiveReleaseHeadRosterV14>,
+        selected_wal: selected_rejoin::SelectedWalMediaFingerprint,
+        selected_controls: selected_rejoin::SelectedControlMediaFingerprint,
+    ) -> Result<RecoveredPhysicalRuntimeCore, RecoveredPhysicalRuntimeConstructionDenial> {
+        Self::construct_inner(
+            backing,
+            coordination,
+            media,
+            reopen,
+            Some(RecoveredReleaseCustody::OrderedHistorical {
+                effective: *effective,
+                claim: *historical,
+            }),
             None,
             Some(selected_wal),
             Some(selected_controls),
-        )?;
-        core.historical_release_custody = Some(historical);
-        core.effective_release_heads = Some(effective);
-        Ok(core)
+        )
     }
 }

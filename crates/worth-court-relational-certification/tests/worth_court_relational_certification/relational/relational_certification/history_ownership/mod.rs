@@ -84,3 +84,72 @@ mod current_publications;
 mod current_successor;
 
 mod publication_appendix;
+
+#[test]
+fn ownership_observation_preserves_work_and_memory_refusals() {
+    use worth_foundational::{
+        DeterminismContract, ExecutionBudget, ExecutionPosture, ExecutionRequestPolicy,
+    };
+    let host = serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let graph = graph(execution);
+    let (_, basis) = graph
+        .runtime
+        .observe_branch(&graph.runtime.main_branch_identity())
+        .unwrap();
+    // Warm the actual serving view so the narrow request tests traversal cost.
+    assert_eq!(
+        graph
+            .runtime
+            .observe_model_owner(execution, &basis, &ownership(), graph.nested)
+            .unwrap(),
+        Some(graph.model)
+    );
+    let policy = ExecutionRequestPolicy::new(
+        ExecutionPosture::Automatic,
+        DeterminismContract::CanonicalBitwise,
+        ExecutionBudget::new(std::num::NonZeroUsize::new(1).unwrap(), None, Some(1)),
+    );
+    let bounded = SerialRequest::from_policy(&policy, CancellationToken::new(), None);
+    let denial = graph
+        .runtime
+        .observe_model_owner(
+            &ExecutionRequest::serial(&bounded),
+            &basis,
+            &ownership(),
+            graph.nested,
+        )
+        .unwrap_err();
+    assert!(
+        matches!(
+            denial,
+            Denial::Request(worth_execution::WorkCeilingDenial::Stopped(
+                worth_execution::MapKernelStop::WorkCeiling
+            ))
+        ),
+        "{denial:?}"
+    );
+    let bounded = SerialRequest::from_memory(
+        SerialMemoryBudget::new(Some(0)),
+        CancellationToken::new(),
+        None,
+    );
+    let denial = graph
+        .runtime
+        .observe_model_owner(
+            &ExecutionRequest::serial(&bounded),
+            &basis,
+            &ownership(),
+            graph.nested,
+        )
+        .unwrap_err();
+    assert!(matches!(denial, Denial::Request(_)), "{denial:?}");
+    assert_eq!(
+        graph
+            .runtime
+            .observe_branch(&graph.runtime.main_branch_identity())
+            .unwrap()
+            .0,
+        basis.descriptor().clone()
+    );
+}

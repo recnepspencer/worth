@@ -27,6 +27,10 @@ impl SettledRelationalPublicationAdoption {
         }
     }
 
+    pub(crate) fn commit_identity(&self) -> &RelationalCommitIdentity {
+        &self.commit_identity
+    }
+
     pub(crate) fn successor_basis(&self) -> &AdmittedRelationalBranchBasis {
         &self.successor_basis
     }

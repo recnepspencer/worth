@@ -64,7 +64,7 @@ where
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
     ) -> DiscoveredAdvance<S, I, P, R, A> {
         if !matches!(
-            &self.state,
+            &*self.state,
             State::Initial | State::NotPerformed(_) | State::Blocked(_)
         ) {
             let resolution = (|| {
@@ -89,7 +89,7 @@ where
                 };
             }
         }
-        match &self.state {
+        match &*self.state {
             State::Initial => self.advance_source(phase, request),
             State::ReplayRetained(_) | State::ReplayRecorded(_) => {
                 self.advance_replay(phase, request)

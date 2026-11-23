@@ -1,4 +1,6 @@
 mod acquisition;
+mod gate_trial;
+pub use gate_trial::{RelationalRetentionCensusForTest, RelationalRetentionGateForTest};
 pub(crate) use acquisition::RelationalRetentionRequestAcquisitionDenial;
 mod record;
 mod root_counts;

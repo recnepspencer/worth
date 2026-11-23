@@ -21,8 +21,8 @@ use crate::physical_runtime::{
 };
 
 pub struct RootPublicationCandidatePlan {
-    basis: RootPublicationCandidateBasis,
-    plan: PublicationPlan,
+    basis: Vec<RootPublicationCandidateBasis>,
+    plan: Vec<PublicationPlan>,
 }
 
 pub(in crate::physical_runtime::record_serving) struct RootPublicationCandidateBasis {
@@ -36,7 +36,7 @@ pub(in crate::physical_runtime::record_serving) struct RootPublicationCandidateB
 
 pub(in crate::physical_runtime) struct WrittenRootPublicationCandidate {
     core: RootPublicationPlanningCore,
-    candidate: PreparedPhysicalRootCandidate,
+    candidate: Box<PreparedPhysicalRootCandidate>,
     transition: PhysicalRootPublicationTransition,
 }
 
@@ -50,52 +50,55 @@ impl RootPublicationCandidatePlan {
         plan: PublicationPlan,
     ) -> Self {
         Self {
-            basis: RootPublicationCandidateBasis {
+            basis: vec![RootPublicationCandidateBasis {
                 core,
                 source_root,
                 successor_free_space,
                 allocation_bytes,
                 transition,
-            },
-            plan,
+            }],
+            plan: vec![plan],
         }
     }
 
     pub(in crate::physical_runtime) const fn group_basis(&self) -> PhysicalDurabilityGroupBasis {
-        self.basis.core.group_basis()
+        self.basis.as_slice()[0].core.group_basis()
     }
 
     pub(in crate::physical_runtime) fn member_identities(
         &self,
     ) -> &[PhysicalRootPublicationMemberIdentity] {
-        self.basis.core.member_identities()
+        self.basis[0].core.member_identities()
     }
 
     pub(in crate::physical_runtime) fn settled_members(
         &self,
     ) -> &[RootPublicationPhysicalMutationMember] {
-        self.basis.core.settled_members()
+        self.basis[0].core.settled_members()
     }
 
     pub(in crate::physical_runtime) const fn candidate_generation(&self) -> u64 {
-        self.plan.generation
+        self.plan.as_slice()[0].generation
     }
 
     #[cfg_attr(not(feature = "certification-test-authority"), allow(dead_code))]
     pub(in crate::physical_runtime::record_serving) const fn allocation_bytes(&self) -> NonZeroU64 {
-        self.basis.allocation_bytes
+        self.basis.as_slice()[0].allocation_bytes
     }
 
     pub(in crate::physical_runtime::record_serving) fn frame_set(
         &self,
     ) -> Result<CandidateFrameSet, RecordAppendDenial> {
-        self.plan.root_candidate_frame_set()
+        self.plan[0].root_candidate_frame_set()
     }
 
     pub(in crate::physical_runtime::record_serving) fn into_write_parts(
-        self,
+        mut self,
     ) -> (RootPublicationCandidateBasis, PublicationPlan) {
-        (self.basis, self.plan)
+        (
+            self.basis.pop().expect("candidate plan holds one basis"),
+            self.plan.pop().expect("candidate plan holds one plan"),
+        )
     }
 }
 
@@ -113,14 +116,20 @@ impl RootPublicationCandidateBasis {
         plan: PublicationPlan,
     ) -> RootPublicationCandidatePlan {
         self.transition.prove_no_effect();
-        RootPublicationCandidatePlan { basis: self, plan }
+        RootPublicationCandidatePlan {
+            basis: vec![self],
+            plan: vec![plan],
+        }
     }
 
     pub(in crate::physical_runtime::record_serving) fn restore_inspection_required(
         self,
         plan: PublicationPlan,
     ) -> RootPublicationCandidatePlan {
-        RootPublicationCandidatePlan { basis: self, plan }
+        RootPublicationCandidatePlan {
+            basis: vec![self],
+            plan: vec![plan],
+        }
     }
 
     pub(in crate::physical_runtime::record_serving) fn complete_write(
@@ -130,12 +139,12 @@ impl RootPublicationCandidateBasis {
     ) -> WrittenRootPublicationCandidate {
         WrittenRootPublicationCandidate {
             core: self.core,
-            candidate: PreparedPhysicalRootCandidate::new(
+            candidate: Box::new(PreparedPhysicalRootCandidate::new(
                 self.source_root,
                 self.successor_free_space,
                 plan,
                 artifacts,
-            ),
+            )),
             transition: self.transition,
         }
     }
@@ -183,7 +192,7 @@ impl WrittenRootPublicationCandidate {
         (
             self.core.group_basis(),
             self.core.into_settled_members(),
-            self.candidate,
+            *self.candidate,
             self.transition,
         )
     }

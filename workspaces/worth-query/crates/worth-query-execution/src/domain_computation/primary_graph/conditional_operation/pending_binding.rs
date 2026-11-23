@@ -337,7 +337,7 @@ where
                     .canonical_identity(),
                 node.operation().binding().domain_operation_slot(),
                 node.location(),
-            )?,
+            ),
             clock: binding.clocked_node().clock_identity(),
             source: binding.clocked_node().source_identity().as_str(),
             timeline: binding.clocked_node().timeline_identity().as_str(),

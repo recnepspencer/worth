@@ -30,6 +30,7 @@ mod retained;
 mod room;
 mod serial_authority;
 mod serial_backing;
+mod stage_origin;
 mod worker_context;
 mod worker_width;
 pub use array_backing::{
@@ -49,6 +50,7 @@ pub use interruption_view::{ExecutionInterruptionView, ExecutionInterruptionView
 pub(in crate::authority) use memory::LeaseMemory;
 pub(crate) use reservation::SlotRefusal;
 use reservation::{ClaimSlot, RunInline};
+pub(crate) use stage_origin::StageOrigin;
 use worker_context::ACTIVE_WORKER;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -146,7 +148,7 @@ struct NodeUsage {
 }
 
 #[derive(Debug)]
-struct LeaseNode {
+pub(crate) struct LeaseNode {
     accounted: bool,
     id: u64,
     parent: Option<Arc<LeaseNode>>,

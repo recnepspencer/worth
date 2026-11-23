@@ -9,11 +9,16 @@ use crate::recovery_projection::decode_storage::reserve_vec;
 use crate::RecordArtifactFile;
 use crate::{PhysicalRecoveryDecodeFailure, PhysicalRecoveryDecodeStorage};
 
+pub(super) enum DistinctTargets<'a> {
+    Set(&'a mut BTreeSet<CanonicalRedoTargetIdentity>, u64),
+    Bounded(&'a mut Vec<CanonicalRedoTargetIdentity>, u64),
+}
+
 pub(super) fn decode_targets<S: PhysicalRecoveryDecodeStorage>(
     cursor: &mut Cursor<'_>,
     total: &mut u64,
     maximum: u64,
-    distinct: &mut Option<(&mut BTreeSet<CanonicalRedoTargetIdentity>, u64)>,
+    distinct: &mut Option<DistinctTargets<'_>>,
     storage: &mut S,
 ) -> Result<Box<[CanonicalRedoTarget]>, PhysicalRecoveryDecodeFailure<S::Denial>> {
     let count = cursor.u64()?;
@@ -36,16 +41,8 @@ pub(super) fn decode_targets<S: PhysicalRecoveryDecodeStorage>(
         let encoded = cursor.field()?;
         let resulting_digest = cursor.array()?;
         let target = decode_target(encoded, resulting_digest)?;
-        if let Some((identities, maximum_distinct)) = distinct.as_mut() {
-            let identity = target.identity();
-            if !identities.contains(&identity) && identities.len() as u64 == *maximum_distinct {
-                let admitted = *maximum_distinct;
-                let observed = admitted.saturating_add(1);
-                return Err(
-                    CanonicalRedoWireDenial::DistinctTargetLimit { observed, admitted }.into(),
-                );
-            }
-            identities.insert(identity);
+        if let Some(identities) = distinct.as_mut() {
+            admit_distinct(identities, target.identity(), storage)?;
         }
         let order = target.canonical_order();
         if prior.as_ref().is_some_and(|prior| prior > &order) {
@@ -55,6 +52,75 @@ pub(super) fn decode_targets<S: PhysicalRecoveryDecodeStorage>(
         targets.push(target);
     }
     Ok(targets.into_boxed_slice())
+}
+
+fn admit_distinct<S: PhysicalRecoveryDecodeStorage>(
+    distinct: &mut DistinctTargets<'_>,
+    identity: CanonicalRedoTargetIdentity,
+    storage: &mut S,
+) -> Result<(), PhysicalRecoveryDecodeFailure<S::Denial>> {
+    match distinct {
+        DistinctTargets::Set(identities, maximum_distinct) => {
+            if !identities.contains(&identity) && identities.len() as u64 == *maximum_distinct {
+                let admitted = *maximum_distinct;
+                let observed = admitted.saturating_add(1);
+                return Err(
+                    CanonicalRedoWireDenial::DistinctTargetLimit { observed, admitted }.into(),
+                );
+            }
+            identities.insert(identity);
+            Ok(())
+        }
+        DistinctTargets::Bounded(identities, maximum_distinct) => {
+            let Err(insert_at) = identities.binary_search(&identity) else {
+                return Ok(());
+            };
+            if identities.len() as u64 == *maximum_distinct {
+                let admitted = *maximum_distinct;
+                let observed = admitted.saturating_add(1);
+                return Err(
+                    CanonicalRedoWireDenial::DistinctTargetLimit { observed, admitted }.into(),
+                );
+            }
+            if identities.len() == identities.capacity() {
+                let next = if identities.capacity() == 0 {
+                    1
+                } else {
+                    identities
+                        .capacity()
+                        .checked_mul(2)
+                        .ok_or(PhysicalRecoveryDecodeFailure::SizeOverflow)?
+                };
+                let bytes = next
+                    .checked_mul(std::mem::size_of::<CanonicalRedoTargetIdentity>())
+                    .filter(|bytes| *bytes <= isize::MAX as usize)
+                    .and_then(|bytes| u64::try_from(bytes).ok())
+                    .ok_or(PhysicalRecoveryDecodeFailure::SizeOverflow)?;
+                storage
+                    .admit_allocation(bytes)
+                    .map_err(PhysicalRecoveryDecodeFailure::Allocation)?;
+                identities
+                    .try_reserve_exact(next - identities.len())
+                    .map_err(|cause| PhysicalRecoveryDecodeFailure::AllocationFailed {
+                        requested: bytes,
+                        cause,
+                    })?;
+                if identities.capacity() != next {
+                    let actual = (identities.capacity() as u64)
+                        .checked_mul(std::mem::size_of::<CanonicalRedoTargetIdentity>() as u64)
+                        .ok_or(PhysicalRecoveryDecodeFailure::SizeOverflow)?;
+                    return Err(
+                        PhysicalRecoveryDecodeFailure::AllocatorExceededReservation {
+                            requested: bytes,
+                            actual,
+                        },
+                    );
+                }
+            }
+            identities.insert(insert_at, identity);
+            Ok(())
+        }
+    }
 }
 
 fn decode_target(

@@ -24,7 +24,7 @@ where
 {
     pub(super) closed: WorthQueryClosedOperation,
     // Keep runtime last in the entire owning destruction order.
-    pub(super) delivery: FixedDeliveryCore<Schema, Intent, Program, Root, Action>,
+    pub(super) delivery: Box<FixedDeliveryCore<Schema, Intent, Program, Root, Action>>,
 }
 impl<Schema, Intent, Program, Root, Action>
     WorthQueryClosedFixedDelivery<Schema, Intent, Program, Root, Action>

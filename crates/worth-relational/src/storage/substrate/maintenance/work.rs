@@ -37,6 +37,14 @@ impl ChangeWork<'_> {
     pub fn prepare(&mut self, units: u64, bytes: u64) -> Result<(), MaintenanceRefusal> {
         (self.prepare)(units, bytes)
     }
+    /// Borrow an already-active native stage payer instead of nesting a second
+    /// child meter above it (which would let ancestor charges bypass the child ceiling).
+    pub(crate) fn run_with_payer<T>(
+        prepare: &mut dyn FnMut(u64, u64) -> Result<(), MaintenanceRefusal>,
+        operation: impl FnOnce(&mut ChangeWork<'_>) -> T,
+    ) -> T {
+        operation(&mut ChangeWork { prepare })
+    }
     pub fn run<T, E: From<MaintenanceRefusal>>(
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         operation: impl FnOnce(&mut ChangeWork<'_>) -> Result<T, E>,

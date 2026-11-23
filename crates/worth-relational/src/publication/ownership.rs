@@ -2,6 +2,9 @@
 mod certification;
 mod observation;
 pub use certification::CurrentOwnershipContactsForTest;
+mod cold_checkpoint_source;
+mod locality_court;
+pub use locality_court::CurrentOwnershipLocalityForTest;
 mod completion;
 pub(crate) mod corruption;
 mod evidence;

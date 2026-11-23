@@ -3,13 +3,21 @@ mod branch_transition;
 mod caller_association;
 mod canonical_commit_artifact;
 mod checkpoint_recovery;
+mod derived_index_checkpoint;
 mod descriptor_continuity;
+mod global_generation_reclamation;
 mod managed_field_text;
+mod merge_replay_continuity;
 mod native_checkpoint;
+mod native_checkpoint_restore_benchmark;
+mod record_allocation_recovery;
 mod rejected_and_parent_closure;
+mod retention_inspection_store;
+mod schema_transition_continuity;
 mod semantic_result;
 
-use crate::facade::diagnostics::DiagnosticCode;
+use crate::diagnostics::data::RelationalDiagnosticValue;
+use crate::facade::diagnostics::{DiagnosticCode, DiagnosticsScope};
 use crate::facade::durability::{
     RecoveryAuthorityContinuityMismatch, RecoveryFailureClass, RecoveryVerificationMode,
 };
@@ -19,8 +27,9 @@ use crate::facade::lineage::LineageEventKind;
 use crate::facade::runtime::RelationalRuntimeApi;
 use crate::facade::schema::DescriptorSemanticsVersion;
 use crate::facade::schema::{
-    HistoricalInterpretationSensitivity, ProposedSchemaTransition, SchemaDiffAtom,
-    SchemaDiffDetail, SchemaElementKind, SchemaElementRef, SchemaId, SchemaPublicationImpact,
+    EntityKindRegistration, HistoricalInterpretationSensitivity, KindAspectContractDeclarations,
+    ProposedSchemaTransition, RelationalSchemaRegistry, SchemaDiffAtom, SchemaDiffDetail,
+    SchemaElementKind, SchemaElementRef, SchemaId, SchemaPublicationImpact,
     SchemaReconciliationPolicy, SchemaStratum, SchemaSubscriberImpact, SchemaVersionId,
 };
 use crate::facade::transactions::TransactionCommitError;
@@ -69,4 +78,17 @@ fn schema_transition_for_subscriber_impact(
             _ => crate::schema::data::SubscriberBoundaryVisibility::NotVisible,
         })],
     }
+}
+
+fn verified_at_digest_parity_value() -> RelationalDiagnosticValue {
+    RelationalDiagnosticValue::object([
+        (
+            "parity",
+            RelationalDiagnosticValue::string("VerifiedAtLayer"),
+        ),
+        (
+            "verification_layer",
+            RelationalDiagnosticValue::string("DigestParity"),
+        ),
+    ])
 }

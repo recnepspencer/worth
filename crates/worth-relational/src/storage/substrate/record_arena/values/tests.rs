@@ -1,6 +1,10 @@
 //! Original-policy payload ownership; these fixtures issue no runtime authority.
 use super::*;
+mod historical_selection_funding;
+mod optional_output_funding;
+mod reclamation_closure_court;
 mod shared_state_bound;
+mod shared_state_delta_court;
 mod wire;
 use crate::identity::data::{KindId, PartitionId, VersionId};
 use crate::storage::substrate::{
@@ -75,8 +79,9 @@ fn check_delta(current: &RecordArena<EntityRecordKind>, prior: &RecordArena<Enti
     prior.visit_new_authoritative_allocations(current, &mut removed);
     let sum = |observed: &Observed| observed.0.iter().map(|entry| entry.bytes).sum::<u64>();
     assert_eq!(
-        prior.allocation_inventory().authoritative_bytes - sum(&removed) + sum(&introduced),
-        current.allocation_inventory().authoritative_bytes
+        prior.allocation_inventory().unwrap().authoritative_bytes - sum(&removed)
+            + sum(&introduced),
+        current.allocation_inventory().unwrap().authoritative_bytes
     );
 }
 #[test]
@@ -274,6 +279,54 @@ fn escaped_extra_carrier_keeps_only_its_own_bill_after_node_drop() {
     assert_eq!(payload_budget.charged_memory_bytes(), bill);
     drop(escaped);
     assert_eq!(payload_budget.charged_memory_bytes(), 0);
+}
+
+#[test]
+fn funded_extra_refuses_copy_and_replacement_before_growth() {
+    let original = SerialMemoryBudget::new(Some(128 * 1024));
+    let host = request(&original);
+    let execution = ExecutionRequest::serial(&host);
+    let old = extra(&execution, &"large".repeat(2048));
+    let old_bill = expected(&old);
+    let limited = SerialMemoryBudget::new(Some(0));
+    let limited_host = request(&limited);
+    let limited_request = ExecutionRequest::serial(&limited_host);
+    assert!(matches!(
+        EntityExtra::apply_payload(
+            &limited_request,
+            old.authoritative_aspect_state(),
+            &patch("new").1
+        ),
+        Err(ExtraPayloadDenial::Request(_))
+    ));
+    assert!(old.copy_for_request(&limited_request).is_err());
+    assert_eq!(original.charged_memory_bytes(), old_bill);
+    assert_eq!(limited.charged_memory_bytes(), 0);
+    // Aspect state is a persistent map whose declared bound carries one whole
+    // root node per tree for every holder; the replacement's own payload stays
+    // under 1 KiB above that fixed geometry.
+    let tree_nodes = CanonicalAspectStateMap::construction_storage_bytes(1).unwrap() as u64;
+    let replacement_budget = SerialMemoryBudget::new(Some(4096 + tree_nodes));
+    let replacement_host = request(&replacement_budget);
+    let replacement_request = ExecutionRequest::serial(&replacement_host);
+    let replacement = EntityExtra::apply_payload(
+        &replacement_request,
+        old.authoritative_aspect_state(),
+        &patch("ok").1,
+    )
+    .unwrap();
+    assert_eq!(
+        replacement_budget.charged_memory_bytes(),
+        expected(&replacement)
+    );
+    assert!(replacement_budget.charged_memory_bytes() - tree_nodes < 1024);
+    // An ordinary deep copy owns independent allocations and no old ticket.
+    let independent = replacement.clone();
+    drop(replacement);
+    assert_eq!(replacement_budget.charged_memory_bytes(), 0);
+    assert!(independent.authoritative_aspect_state().is_some());
+    drop(old);
+    assert_eq!(original.charged_memory_bytes(), 0);
 }
 
 #[test]

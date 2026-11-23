@@ -22,6 +22,7 @@ where
     Scope<S, H>: ApplicationQueryScopeResolution<S, Principal<S, H>>,
     Rows<S, H>: WorthQueryApplicationProjection<S, Query<S, H>>,
 {
+    #[inline(never)]
     pub(super) fn advance_admission(
         self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -29,6 +30,7 @@ where
         self.advance_admission_with(request, |_, _, read| Ok(read))
     }
 
+    #[inline(never)]
     pub(super) fn advance_admission_with(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,
@@ -115,6 +117,7 @@ where
         self.after_opening(result)
     }
 
+    #[inline(never)]
     pub(super) fn advance_fork(
         mut self,
         request: &WorthQueryApplicationRequest<'_, '_, '_, S>,

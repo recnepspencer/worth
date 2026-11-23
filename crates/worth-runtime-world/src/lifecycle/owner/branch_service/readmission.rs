@@ -205,6 +205,7 @@ where
             let mut origin = crate::durability::PreparedCheckpointOccurrence::prepare(request)
                 .map_err(Denial::Medium)?;
             origin.bind(
+                observation.selected_commit().ordinal(),
                 observation.basis(),
                 observation
                     .fork_checkpoint_history()

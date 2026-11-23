@@ -37,22 +37,25 @@ where
         {
             continue;
         }
-        let expected = find(observations, &open.expected)?;
         let disposition = image.dispositions.get(&open.association.attempt());
         if let Some(disposition) = disposition
             && let RecoveredCustodyDisposition::Released(_) = disposition.disposition()
         {
+            // Released originals reconstruct terminal Track H custody directly
+            // from authenticated recorded coordinates so disposing their
+            // predecessor never blocks cold reopen.
             root.state
                 .recovery
                 .readmit_released_original(
                     execution,
+                    owner,
                     disposition,
-                    expected,
                     effects.take(&open.association.attempt()),
                 )
                 .map_err(Denial::Medium)?;
             continue;
         }
+        let expected = find(observations, &open.expected)?;
         let before = descriptors
             .get(&open.expected.commit)
             .ok_or(Denial::MissingPredecessor)?;

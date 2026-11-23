@@ -32,7 +32,7 @@ use worth_query_execution::facade::query_obligations::QueryObligationsMedium;
 /// }
 /// ```
 pub struct UnadmittedHomeQueryService<Schema: ApplicationSchemaComposition, Program> {
-    _query: ReadmittedHomeQueryService<Schema, Program>,
+    _query: Box<ReadmittedHomeQueryService<Schema, Program>>,
     obligations: Arc<dyn QueryObligationsMedium>,
     material: Arc<dyn QueryCorrectionsMedium>,
     dispatch: Arc<dyn QueryDispatchMedium>,
@@ -68,7 +68,7 @@ impl<Schema: ApplicationSchemaComposition, Program: 'static>
         dispatch: Arc<dyn QueryDispatchMedium>,
     ) -> Self {
         Self {
-            _query: query,
+            _query: Box::new(query),
             obligations,
             material,
             dispatch,

@@ -119,6 +119,33 @@ impl RelationalBranchBasisPort {
             .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
             .observe_memory_component(execution, basis)
     }
+    /// Admit, before publication, the component of the successor `candidate`
+    /// will issue: its exact retained bytes and copy work.
+    pub fn admit_successor_memory_component(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        candidate: &crate::mvcc::PreparedRelationalCommitCandidate,
+    ) -> Result<
+        crate::branch::AdmittedRelationalMemoryComponent,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .admit_successor_memory_component(execution, candidate)
+    }
+    /// Observe the issued successor on its admission; this charges nothing.
+    pub fn observe_admitted_memory_component(
+        &self,
+        admitted: crate::branch::AdmittedRelationalMemoryComponent,
+        basis: &AdmittedRelationalBranchBasis,
+    ) -> Result<
+        crate::branch::ObservedRelationalMemoryComponent,
+        crate::branch::RelationalRecordedComponentRefusal,
+    > {
+        self.admitted_runtime()
+            .map_err(crate::branch::RelationalRecordedComponentRefusal::Basis)?
+            .observe_admitted_memory_component(admitted, basis)
+    }
     pub fn export_memory_component(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

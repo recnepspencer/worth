@@ -28,7 +28,14 @@ enum PublicationCustody {
     /// An actual group member shares the committed endpoint and owns no delivery.
     CoCommitted {
         description: Arc<DescriptiveProductPublication>,
-        endpoint: crate::basis::WorthQueryProductBranchReadIdentity,
+        endpoint: Box<crate::basis::WorthQueryProductBranchReadIdentity>,
+    },
+    /// Cached Ready publication identity with exact descriptive before/after
+    /// endpoints. Retains no World history hold, consumed publication, or Native basis.
+    SettledMovement {
+        description: Arc<DescriptiveProductPublication>,
+        before: Box<crate::basis::WorthQueryProductBranchReadIdentity>,
+        after: Box<crate::basis::WorthQueryProductBranchReadIdentity>,
     },
 }
 
@@ -59,86 +66,17 @@ impl WorthQueryCommittedProductPublication {
         Self {
             custody: PublicationCustody::CoCommitted {
                 description,
-                endpoint,
+                endpoint: Box::new(endpoint),
             },
         }
     }
     pub(crate) fn co_committed_at(&self, observation: &ProductBranchObservation) -> bool {
         matches!(&self.custody,PublicationCustody::CoCommitted{endpoint,..} if endpoint.matches_observation(observation))
     }
-    pub(crate) fn preflight_home_retirement(
-        &mut self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial> {
-        match &mut self.custody {
-            PublicationCustody::Performed(receipt) => receipt
-                .preflight_home_retirement(request)
-                .map_err(Into::into),
-            PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. } => Ok(()),
-        }
-    }
-    pub(crate) fn advance_home_retirement(
-        &mut self,
-        request: &worth_execution::ExecutionRequest<'_, '_>,
-        native: &worth_relational::facade::runtime::RelationalRuntime,
-    ) -> Result<
-        crate::domain_computation::primary_graph::WorthQueryOperationHomeRetirementProgress,
-        crate::domain_computation::primary_graph::WorthQueryHomeRetirementDenial,
-    > {
-        match &mut self.custody {
-            PublicationCustody::Performed(receipt) => receipt
-                .advance_home_retirement(request, native)
-                .map_err(Into::into),
-            PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. } => Ok(crate::domain_computation::primary_graph::WorthQueryOperationHomeRetirementProgress::Complete),
-        }
-    }
-
-    /// Canonical World facts remain available only from actual consumed custody.
-    pub(crate) fn original_movement(
-        &self,
-    ) -> Option<&worth_runtime_world::facade::ConsumedCompositePublication> {
-        self.performed().map(|receipt| receipt.publication())
-    }
-
-    /// Join metadata to the real performed predecessor, including its admission.
-    pub(crate) fn follows_observation(&self, observation: &ProductBranchObservation) -> bool {
-        self.performed().is_some_and(|receipt| {
-            let before = receipt.publication().old_product_head();
-            before.branch_identity() == observation.branch_identity()
-                && before.lifecycle_incarnation() == observation.lifecycle_incarnation()
-                && before.reference_generation() == observation.reference_generation()
-                && before.selected_commit() == observation.selected_commit()
-                && before.basis().relational_basis() == observation.basis().relational_basis()
-        })
-    }
-    /// The original performed selection, without retaining its owner bases.
-    /// Identity-only custody cannot supply the missing full basis.
-    pub(crate) fn observed_product_identity(
-        &self,
-    ) -> Option<crate::basis::WorthQueryProductBranchReadIdentity> {
-        self.performed().map(|receipt| {
-            crate::basis::WorthQueryProductBranchReadIdentity::from_reference_snapshot(
-                receipt.publication().new_product_head(),
-            )
-        })
-    }
 
     pub(crate) fn from_receipt(receipt: WorthQueryProductPublicationReceipt) -> Self {
         Self {
             custody: PublicationCustody::Performed(receipt),
-        }
-    }
-
-    /// Takes the World history protection out of this copy, leaving it
-    /// detached; a retired publication has none.
-    pub(crate) fn take_history(
-        &mut self,
-    ) -> Option<
-        crate::domain_computation::execution_runtime::product_world::WorthQueryCommitHistoryHold,
-    > {
-        match &mut self.custody {
-            PublicationCustody::Performed(receipt) => receipt.take_history(),
-            PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. } => None,
         }
     }
 
@@ -174,7 +112,9 @@ impl WorthQueryCommittedProductPublication {
     fn performed(&self) -> Option<&WorthQueryProductPublicationReceipt> {
         match &self.custody {
             PublicationCustody::Performed(receipt) => Some(receipt),
-            PublicationCustody::Described(_) | PublicationCustody::CoCommitted { .. } => None,
+            PublicationCustody::Described(_)
+            | PublicationCustody::CoCommitted { .. }
+            | PublicationCustody::SettledMovement { .. } => None,
         }
     }
 
@@ -192,7 +132,10 @@ impl WorthQueryCommittedProductPublication {
                 receipt.publication().new_product_head().branch_identity()
             }
             PublicationCustody::Described(description)
-            | PublicationCustody::CoCommitted { description, .. } => &description.product_branch,
+            | PublicationCustody::CoCommitted { description, .. }
+            | PublicationCustody::SettledMovement { description, .. } => {
+                &description.product_branch
+            }
         }
     }
 
@@ -203,7 +146,8 @@ impl WorthQueryCommittedProductPublication {
                 .new_product_head()
                 .lifecycle_incarnation(),
             PublicationCustody::Described(description)
-            | PublicationCustody::CoCommitted { description, .. } => {
+            | PublicationCustody::CoCommitted { description, .. }
+            | PublicationCustody::SettledMovement { description, .. } => {
                 description.product_incarnation
             }
         }
@@ -216,7 +160,10 @@ impl WorthQueryCommittedProductPublication {
                 .new_product_head()
                 .reference_generation(),
             PublicationCustody::Described(description)
-            | PublicationCustody::CoCommitted { description, .. } => description.product_generation,
+            | PublicationCustody::CoCommitted { description, .. }
+            | PublicationCustody::SettledMovement { description, .. } => {
+                description.product_generation
+            }
         }
     }
 
@@ -224,7 +171,10 @@ impl WorthQueryCommittedProductPublication {
         match &self.custody {
             PublicationCustody::Performed(receipt) => receipt.publication().commit().identity(),
             PublicationCustody::Described(description)
-            | PublicationCustody::CoCommitted { description, .. } => &description.composite_commit,
+            | PublicationCustody::CoCommitted { description, .. }
+            | PublicationCustody::SettledMovement { description, .. } => {
+                &description.composite_commit
+            }
         }
     }
 
@@ -241,7 +191,8 @@ impl WorthQueryCommittedProductPublication {
         match &self.custody {
             PublicationCustody::Performed(receipt) => receipt.publication().attempt_identity(),
             PublicationCustody::Described(description)
-            | PublicationCustody::CoCommitted { description, .. } => {
+            | PublicationCustody::CoCommitted { description, .. }
+            | PublicationCustody::SettledMovement { description, .. } => {
                 &description.publication_attempt
             }
         }
@@ -261,7 +212,10 @@ impl WorthQueryCommittedProductPublication {
                     .commit
             }
             PublicationCustody::Described(description)
-            | PublicationCustody::CoCommitted { description, .. } => &description.relational_commit,
+            | PublicationCustody::CoCommitted { description, .. }
+            | PublicationCustody::SettledMovement { description, .. } => {
+                &description.relational_commit
+            }
         }
     }
 
@@ -272,7 +226,10 @@ impl WorthQueryCommittedProductPublication {
                 .component_results()
                 .relational_posture(),
             PublicationCustody::Described(description)
-            | PublicationCustody::CoCommitted { description, .. } => description.relational_posture,
+            | PublicationCustody::CoCommitted { description, .. }
+            | PublicationCustody::SettledMovement { description, .. } => {
+                description.relational_posture
+            }
         }
     }
 
@@ -282,7 +239,8 @@ impl WorthQueryCommittedProductPublication {
                 receipt.publication().component_results().signal_posture()
             }
             PublicationCustody::Described(description)
-            | PublicationCustody::CoCommitted { description, .. } => description.signal_posture,
+            | PublicationCustody::CoCommitted { description, .. }
+            | PublicationCustody::SettledMovement { description, .. } => description.signal_posture,
         }
     }
 
@@ -292,7 +250,8 @@ impl WorthQueryCommittedProductPublication {
                 receipt.publication().commit().signal_publication_identity()
             }
             PublicationCustody::Described(description)
-            | PublicationCustody::CoCommitted { description, .. } => {
+            | PublicationCustody::CoCommitted { description, .. }
+            | PublicationCustody::SettledMovement { description, .. } => {
                 description.signal_publication.as_ref()
             }
         }
@@ -302,7 +261,8 @@ impl WorthQueryCommittedProductPublication {
         match &self.custody {
             PublicationCustody::Performed(receipt) => receipt.conditional_definition_generation(),
             PublicationCustody::Described(description)
-            | PublicationCustody::CoCommitted { description, .. } => {
+            | PublicationCustody::CoCommitted { description, .. }
+            | PublicationCustody::SettledMovement { description, .. } => {
                 description.conditional_definition_generation
             }
         }

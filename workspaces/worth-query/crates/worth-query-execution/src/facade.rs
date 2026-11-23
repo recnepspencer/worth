@@ -295,7 +295,6 @@ pub mod integration {
                 max_active_snapshot_handles: Some(maximum_active_snapshots),
                 max_transaction_savepoints: 4_096,
                 max_prepared_candidates: Some(1_024),
-                candidate_max_lifetime_millis: 30_000,
             })
             .build()?;
         prepare_primary_graph_with_relational_runtime(

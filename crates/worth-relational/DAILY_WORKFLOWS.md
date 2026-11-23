@@ -68,12 +68,12 @@ was unused; an outer `Err` is a refusal before the callback.
 
 Use `cutover.perform_before(deadline)` when the enclosing operation has an
 additional admitted deadline, such as authentication expiry. This only narrows
-the original request and candidate lifetime. Native rechecks the original
-request and the effective cutoff after reservation waits, before assigning a
-canonical position. An elapsed additional cutoff returns
-`RelationalPublicationDenial::CutoverDeadlineElapsed`; an earlier candidate
-expiry retains `CandidateLifetimeExpired`. The cutoff does not replace the
-original request's cancellation or waiting policy.
+the original request. Native rechecks the original request and the cutoff after
+reservation waits, before assigning a canonical position. An elapsed cutoff
+returns `RelationalPublicationDenial::CutoverDeadlineElapsed`. The cutoff does
+not replace the original request's cancellation, work ceiling or waiting
+policy. A prepared candidate has no wall-clock lifetime: the publishing
+request's work ceiling and deadline bound its publication.
 
 ## Read truth
 
