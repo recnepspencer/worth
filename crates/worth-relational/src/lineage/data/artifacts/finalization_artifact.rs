@@ -159,6 +159,7 @@ impl PreparedLineageFinalization {
         Vec<crate::lineage::data::LineageNode>,
         Vec<(RelationId, LineageId)>,
     ) {
+        debug_assert!(self.entity_bindings.is_empty());
         (
             self.artifact,
             self.new_nodes,

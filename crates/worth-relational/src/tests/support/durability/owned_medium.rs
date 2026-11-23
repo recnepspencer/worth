@@ -22,10 +22,10 @@ use crate::durability::data::{
     RelationalCheckpointMember, RelationalNativeCheckpoint as NativeCheckpoint,
 };
 use crate::durability::medium::{
-    DurablePublicationFate as Fate, OpaqueCapturedCheckpointSubject as CheckpointSubject,
-    RelationalDurableOwnedReadRefusal as ReadRefusal,
+    DurablePublicationFate as Fate, RelationalDurableOwnedReadRefusal as ReadRefusal,
 };
 use crate::durability::published_medium::{
+    OpaqueCapturedCheckpointSubject as CheckpointSubject,
     RelationalDurableCheckpointSource as CheckpointSrc, RelationalDurableMedium as DurableMedium,
     RelationalDurableRecoverySource as RecoverySrc,
 };

@@ -1,10 +1,11 @@
 //! Capture the actual global allocator image without replaying its authority.
 use super::*;
-use crate::durability::data::{
-    DurabilityError, DurablePendingRecordReservation, DurableRecordGenerationClass,
+use crate::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
+use crate::storage::data::record_identity_image::{
+    DurablePendingRecordReservation, DurableRecordGenerationClass,
     DurableRecordGenerationHighWater, DurableRecordIdentityState, DurableRecordReservationOrigin,
-    DurableRecordSlotFrontier, DurableReusableRecordSlot, RecoveryFailureClass,
-    RelationalRecoveryStop,
+    DurableRecordSlotFrontier, DurableReusableRecordSlot,
 };
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 #[cfg(test)]

@@ -1,5 +1,6 @@
 //! Bind the exact captured data subject to its actual medium.
 use super::*;
+use crate::durability::published_medium::OpaqueCapturedCheckpointSubject;
 impl RelationalNativeCheckpoint {
     pub(crate) fn bind_publication(
         self,
@@ -22,7 +23,7 @@ impl RelationalNativeCheckpoint {
                 .as_ref()
                 .is_some_and(|publication| publication.source_matches(&binding.cold_source()))
         {
-            let subject = crate::durability::medium::OpaqueCapturedCheckpointSubject::new(
+            let subject = OpaqueCapturedCheckpointSubject::new(
                 self.bytes.clone(),
                 self.region.clone(),
                 self.members.entries(),
