@@ -6,7 +6,8 @@ use crate::lineage::data::{LineageEventRecord, LineageNode};
 
 #[derive(Debug, Clone, Default)]
 pub(super) struct LineageResolutionIndexes {
-    entity_lineages: BTreeMap<EntityId, LineageId>,
+    /// Every lineage each entity was bound to across restore epochs.
+    entity_lineages: BTreeMap<EntityId, BTreeSet<LineageId>>,
     branch_event_positions: BTreeMap<BranchId, Vec<usize>>,
     branch_source_event_positions: BTreeMap<BranchId, BTreeMap<LineageId, Vec<usize>>>,
     branch_lineage_event_positions: BTreeMap<BranchId, BTreeMap<LineageId, Vec<usize>>>,
@@ -15,9 +16,14 @@ pub(super) struct LineageResolutionIndexes {
 }
 
 impl LineageResolutionIndexes {
+    /// Records every lineage an entity holds: a restore rebinds the exact
+    /// record to a fresh lineage, and cold demand may admit epochs in any
+    /// order, so the set never depends on admission order.
     pub(super) fn record_node(&mut self, node: &LineageNode) {
         self.entity_lineages
-            .insert(node.entity_id(), node.lineage_id());
+            .entry(node.entity_id())
+            .or_default()
+            .insert(node.lineage_id());
     }
 
     pub(super) fn append_event(&mut self, position: usize, event: &LineageEventRecord) {
@@ -120,8 +126,14 @@ impl LineageResolutionIndexes {
         (positions, index_probe_count)
     }
 
-    pub(super) fn lineage_for_entity(&self, entity_id: EntityId) -> (Option<LineageId>, usize) {
-        (self.entity_lineages.get(&entity_id).copied(), 1)
+    /// The entity's lineages, newest first.
+    pub(super) fn lineages_for_entity(&self, entity_id: EntityId) -> (Vec<LineageId>, usize) {
+        let lineages = self
+            .entity_lineages
+            .get(&entity_id)
+            .map(|set| set.iter().rev().copied().collect())
+            .unwrap_or_default();
+        (lineages, 1)
     }
 
     pub(super) fn lineages_are_exclusive_to_branch(

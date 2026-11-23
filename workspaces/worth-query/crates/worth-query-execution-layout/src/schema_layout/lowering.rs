@@ -268,6 +268,8 @@ impl WorthQueryPrimaryGraphLayout {
             &relation_layouts,
             &live_control_entity_kinds,
         )?;
+        let (registry, persistent_names) =
+            persistent_naming::lower(registry, schema, &entity_kinds, &relation_kinds)?;
         let physical_roles = roles.finish(&registry, entity_kinds, relation_kinds)?;
         Ok((
             Self {
@@ -300,6 +302,7 @@ impl WorthQueryPrimaryGraphLayout {
                 workflow: platform_entities.workflow,
                 workflow_reads: None,
                 bootstrap_publication,
+                persistent_names,
             },
             registry,
         ))

@@ -622,17 +622,28 @@ automatically follow `Restore` events and bind to the checked-out basis.
 - **Append-only lineage (Arch 8, 14, 18):** Corrections, undos, and checkouts
   only append `Restore` / `Retire` lineage events; prior lineage event bytes are
   immutable and never edited or deleted.
-- **Generational safety preserved (Arch 10):** Restoration still allocates a
-  fresh `RecordId` generation; `WorthQueryName<K>` resolves to the new
-  generation while any stale pre-undo `RecordId` still fails stale-handle checks.
+- **Generational safety preserved (Arch 10):** `HistoryDocument` selection
+  restores a record at its exact original full-generation `RecordId`
+  ([tree-based-undo.md](tree-based-undo.md), Arch 14: ID regeneration on undo
+  is a defect), so `Restore` binds the name to a fresh `LineageId` on that
+  identity rather than to a new generation. A handle to a record the
+  checked-out node does not hold still fails stale-handle checks, and no
+  selection replaces another slot identity. (Repaired 2026-11-23, Slice 5B:
+  the earlier "fresh generation" clause contradicted the landed undo spec.)
+- **Single authority (Arch 1, 10, 18):** Native's owned-graph selection
+  commit derives `Retire`/`Restore`/in-place continuity from the canonical
+  selection and the branch naming basis; `HistoryDocument` supplies no naming
+  plan and Query reconstructs no lineage.
 
 ### Operational behavior and cutover
 
 1. When a commit retires a holder and re-mints the exact same identity in the
    same commit → emits `Preserve` continuity (no conflict).
 2. When undo, redo, checkout, or authored restore brings back an identity
-   retired in an earlier commit → appends `LineageEventKind::Restore` pointing
-   to the fresh `RecordId` generation and updates the branch-local derived index.
+   retired in an earlier commit → appends `LineageEventKind::Restore` from the
+   name's last retired lineage onto a fresh `LineageId` bound to the restored
+   record (its exact original identity under `HistoryDocument` selection) and
+   updates the branch-local derived index.
 3. When any commit attempts to mint an identity whose previous holder is still
    live and not retired in this commit → refuses `DuplicateBirth`.
 

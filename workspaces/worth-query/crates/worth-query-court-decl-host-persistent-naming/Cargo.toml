@@ -1,0 +1,25 @@
+[package]
+name = "worth-query-court-decl-host-persistent-naming"
+autotests = false
+edition.workspace = true
+rust-version.workspace = true
+version.workspace = true
+license.workspace = true
+publish = false
+
+[dev-dependencies]
+proptest = { version = "1", default-features = false, features = ["std", "bit-set"] }
+worth-query-decl = { path = "../worth-query-decl" }
+worth-query-host = { path = "../worth-query-host" }
+worth-query-testkit-document-retention = { path = "../worth-query-testkit-document-retention" }
+
+[lints]
+workspace = true
+
+[[test]]
+name = "worth_query_court_decl_host_persistent_naming"
+path = "tests/worth_query_court_decl_host_persistent_naming.rs"
+
+[dev-dependencies.serde]
+version = "1"
+features = ["derive"]

@@ -125,6 +125,8 @@ impl PhysicalIdentityBindings {
 }
 
 #[cfg(test)]
+mod naming_tests;
+#[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod value_layout;

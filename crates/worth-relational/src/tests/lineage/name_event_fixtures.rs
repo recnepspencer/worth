@@ -42,6 +42,7 @@ fn event(
         name_birth: None,
         kept_name: None,
         relation_id: None,
+        entity_id: None,
     }
 }
 

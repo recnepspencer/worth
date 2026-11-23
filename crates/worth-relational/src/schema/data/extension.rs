@@ -18,6 +18,8 @@ impl RelationalSchemaRegistry {
             })?;
         let derived = additions.derived_relations;
         let domains = additions.projected_member_domains;
+        let naming_schemes = additions.persistent_name_schemes;
+        let naming_bindings = additions.kind_name_schemes;
         for registration in additions.entity_kinds.into_values() {
             self = self.register_entity_kind(registration)?;
         }
@@ -32,7 +34,7 @@ impl RelationalSchemaRegistry {
                 ));
             }
         }
-        crate::schema::source_catalog::install(
+        let composed = crate::schema::source_catalog::install(
             self,
             additions.relation_kinds.into_values(),
             derived
@@ -43,6 +45,9 @@ impl RelationalSchemaRegistry {
             SchemaRegistryError::inconsistent_schema_basis(format!(
                 "source catalog admission denied: {denial}"
             ))
-        })
+        })?;
+        // Name schemes bind kinds, so they compose only after every addition's
+        // kind is registered. Empty additions leave the registry bit-identical.
+        composed.extend_persistent_name_schemes(naming_schemes, naming_bindings)
     }
 }

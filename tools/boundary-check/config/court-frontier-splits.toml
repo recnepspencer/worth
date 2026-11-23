@@ -244,6 +244,13 @@ owners = ["where_filter"]
 delegates = []
 
 [[splits]]
+court = "worth-query-court-decl-host-persistent-naming"
+frontier = ["worth-query-decl", "worth-query-host"]
+area = "persistent-naming"
+owners = ["persistent_naming"]
+delegates = []
+
+[[splits]]
 court = "worth-query-court-decl-host-single-source"
 frontier = ["worth-query-decl", "worth-query-host"]
 area = "single-source"

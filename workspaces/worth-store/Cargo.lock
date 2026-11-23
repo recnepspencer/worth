@@ -1468,6 +1468,7 @@ dependencies = [
  "worth-execution",
  "worth-foundational",
  "worth-query-declaration",
+ "worth-query-execution-naming",
  "worth-query-installation",
  "worth-relational",
 ]

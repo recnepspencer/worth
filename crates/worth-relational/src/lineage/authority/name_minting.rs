@@ -54,6 +54,7 @@ impl PersistentNameMintingAuthority {
             }
             fn live_lineage(&self, _: &PersistentNameHolder) -> Option<crate::identity::data::LineageId> { None }
             fn retired_lineage(&self, _: &PersistentNameIdentity) -> Option<(crate::lineage::data::LineageSubject, crate::identity::data::LineageId)> { None }
+            fn holder_name(&self, _: &PersistentNameHolder) -> Option<PersistentNameIdentity> { None }
         }
         Self::mint_commit_births_with_basis(registry, &MapBasis(live_holders), retired_in_commit, requests)
     }

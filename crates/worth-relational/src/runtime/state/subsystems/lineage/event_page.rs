@@ -152,10 +152,22 @@ fn valid_event_shape(event: &crate::lineage::data::LineageEventRecord) -> bool {
                 && targets.len() == 1
         }
     };
+    let entity_binding_ok = match event.entity_id() {
+        None => true,
+        Some(_) => {
+            event.subject() == crate::lineage::data::LineageSubject::Entity
+                && matches!(
+                    event.kind(),
+                    LineageEventKind::Create | LineageEventKind::Restore
+                )
+                && targets.len() == 1
+        }
+    };
     source_set.len() == sources.len()
         && target_set.len() == targets.len()
         && source_set.is_disjoint(&target_set)
         && relation_binding_ok
+        && entity_binding_ok
         && match event.kind() {
             LineageEventKind::Create => sources.is_empty() && targets.len() == 1,
             LineageEventKind::Replace => sources.len() == 1 && targets.len() == 1,
@@ -191,6 +203,7 @@ mod tests {
             name_birth: None,
             kept_name: None,
             relation_id: None,
+            entity_id: None,
         }
     }
 

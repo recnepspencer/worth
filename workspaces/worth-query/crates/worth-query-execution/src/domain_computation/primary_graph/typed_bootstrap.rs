@@ -3,11 +3,15 @@ use std::marker::PhantomData;
 use worth_query_declaration::facade::application_schema::ApplicationFieldBindingLocus;
 
 use worth_foundational::facade::{AspectFieldLocator, AspectValue};
+use worth_query_declaration::facade::application_naming::ApplicationNameDiscriminator;
+mod seed_name;
+pub(super) use seed_name::SeedPersistentName;
 use worth_query_installation::facade::{
     ApplicationEntityRef, ApplicationRelationRef, ApplicationScalarValueBinding, ApplicationSchema,
     ApplicationValueEncodeDenial,
 };
 use worth_relational::facade::identity::KindId;
+use worth_relational::facade::lineage::PersistentNameSubjectKind as Subject;
 
 use super::{
     WorthQueryApplicationEntityKey, WorthQueryPrimaryGraphInstallationDenial,
@@ -27,12 +31,18 @@ pub struct WorthQueryApplicationEntitySeed<Schema, Entity> {
     entity: &'static str,
     key: WorthQueryApplicationEntityKey<Schema, Entity>,
     fields: Vec<EncodedSeedField>,
+    name: Option<SeedPersistentName>,
 }
 
 impl<Schema, Entity> WorthQueryApplicationEntitySeed<Schema, Entity> {
     pub(super) fn migration_cost(&self) -> (usize, usize) {
         let bytes = std::mem::size_of::<Self>()
             .saturating_add(self.key.owned_allocation_capacity_bytes())
+            .saturating_add(
+                self.name
+                    .as_ref()
+                    .map_or(0, SeedPersistentName::retained_bytes),
+            )
             .saturating_add(
                 self.fields
                     .capacity()
@@ -68,7 +78,26 @@ impl<Schema, Entity> WorthQueryApplicationEntitySeed<Schema, Entity> {
             entity: entity.name(),
             key,
             fields: Vec::new(),
+            name: None,
         }
+    }
+
+    /// Names the seeded record under its kind's declared persistent-name
+    /// scheme, born under the declared `role` with the seed key as its
+    /// authored occurrence. A seed of a schemed kind must declare its name.
+    pub fn persistent_name(mut self, role: &str) -> Self {
+        self.name = Some(SeedPersistentName::plain(role));
+        self
+    }
+
+    /// As [`Self::persistent_name`], distinguished by a typed discriminator.
+    pub fn persistent_name_with_discriminator<D: ApplicationNameDiscriminator>(
+        mut self,
+        role: &str,
+        discriminator: &D,
+    ) -> Self {
+        self.name = Some(SeedPersistentName::discriminated(role, discriminator));
+        self
     }
 
     pub fn record_field<
@@ -131,6 +160,7 @@ pub struct WorthQueryApplicationRelationSeed<Schema, Relation, From, To> {
     key: String,
     from: WorthQueryApplicationEntityKey<Schema, From>,
     to: WorthQueryApplicationEntityKey<Schema, To>,
+    name: Option<SeedPersistentName>,
     _marker: PhantomData<fn() -> Relation>,
 }
 
@@ -141,7 +171,12 @@ impl<Schema, Relation, From, To> WorthQueryApplicationRelationSeed<Schema, Relat
             std::mem::size_of::<Self>()
                 .saturating_add(self.key.capacity())
                 .saturating_add(self.from.owned_allocation_capacity_bytes())
-                .saturating_add(self.to.owned_allocation_capacity_bytes()),
+                .saturating_add(self.to.owned_allocation_capacity_bytes())
+                .saturating_add(
+                    self.name
+                        .as_ref()
+                        .map_or(0, SeedPersistentName::retained_bytes),
+                ),
         )
     }
 
@@ -156,8 +191,26 @@ impl<Schema, Relation, From, To> WorthQueryApplicationRelationSeed<Schema, Relat
             key: key.into(),
             from,
             to,
+            name: None,
             _marker: PhantomData,
         }
+    }
+
+    /// Names the seeded relation under its declared persistent-name scheme,
+    /// born under `role` with the seed key as its authored occurrence.
+    pub fn persistent_name(mut self, role: &str) -> Self {
+        self.name = Some(SeedPersistentName::plain(role));
+        self
+    }
+
+    /// As [`Self::persistent_name`], distinguished by a typed discriminator.
+    pub fn persistent_name_with_discriminator<D: ApplicationNameDiscriminator>(
+        mut self,
+        role: &str,
+        discriminator: &D,
+    ) -> Self {
+        self.name = Some(SeedPersistentName::discriminated(role, discriminator));
+        self
     }
 }
 
@@ -165,6 +218,7 @@ pub(super) struct WorthQueryTypedEntityBootstrapRow {
     pub(super) kind: KindId,
     pub(super) key: String,
     pub(super) fields: BTreeMap<AspectFieldLocator, AspectValue>,
+    pub(super) name: Option<SeedPersistentName>,
 }
 
 pub(super) struct WorthQueryTypedRelationBootstrapRow {
@@ -174,6 +228,7 @@ pub(super) struct WorthQueryTypedRelationBootstrapRow {
     pub(super) from_key: String,
     pub(super) to_kind: KindId,
     pub(super) to_key: String,
+    pub(super) name: Option<SeedPersistentName>,
 }
 
 #[derive(Default)]
@@ -206,6 +261,7 @@ impl TypedBootstrapRows {
         if self.entity_keys.contains(&(kind, key.clone())) {
             return Err(invalid_seed("duplicate application entity key"));
         }
+        require_declared_name(layout, Subject::Entity, kind, seed.name.is_some())?;
         let mut fields = BTreeMap::new();
         for encoded in seed.fields {
             let (aspect, field, value) = encoded.map_err(|(field, cause)| {
@@ -230,8 +286,12 @@ impl TypedBootstrapRows {
         )?;
         self.entity_keys.insert((kind, key.clone()));
         self.pending_entity_keys.insert((kind, key.clone()));
-        self.entity_rows
-            .push(WorthQueryTypedEntityBootstrapRow { kind, key, fields });
+        self.entity_rows.push(WorthQueryTypedEntityBootstrapRow {
+            kind,
+            key,
+            fields,
+            name: seed.name,
+        });
         Ok(())
     }
 
@@ -241,6 +301,7 @@ impl TypedBootstrapRows {
         _recovered: bool,
         seed: WorthQueryApplicationRelationSeed<Schema, Relation, From, To>,
     ) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+        let graph_layout = layout;
         let layout = layout
             .relation(seed.relation)
             .cloned()
@@ -258,6 +319,7 @@ impl TypedBootstrapRows {
                 "typed relation endpoints must be seeded in the current batch",
             ));
         }
+        require_declared_name(graph_layout, Subject::Relation, layout.kind, seed.name.is_some())?;
         let relation_identity = (layout.kind, seed.key.clone());
         if !self.relation_keys.insert(relation_identity) {
             return Err(invalid_seed("duplicate application relation key"));
@@ -270,8 +332,31 @@ impl TypedBootstrapRows {
                 from_key,
                 to_kind: layout.to,
                 to_key,
+                name: seed.name,
             });
         Ok(())
+    }
+}
+
+/// A schemed kind's seed must declare its name, and an unschemed kind's seed
+/// cannot: Relational would refuse the first and nothing can mint the second.
+fn require_declared_name(
+    layout: &super::schema_layout::WorthQueryPrimaryGraphLayout,
+    subject: Subject,
+    kind: KindId,
+    named: bool,
+) -> Result<(), WorthQueryPrimaryGraphInstallationDenial> {
+    let schemed = layout
+        .persistent_names()
+        .is_some_and(|names| names.scheme_for_kind(subject, kind).is_some());
+    match (schemed, named) {
+        (true, false) => Err(invalid_seed(
+            "a seed of a persistently named kind must declare its persistent name",
+        )),
+        (false, true) => Err(invalid_seed(
+            "a seed names a kind that declares no persistent-name scheme",
+        )),
+        _ => Ok(()),
     }
 }
 

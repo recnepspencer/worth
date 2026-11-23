@@ -68,6 +68,7 @@ fn retire(event_id: u64) -> LineageEventRecord {
         name_birth: None,
         kept_name: None,
         relation_id: None,
+        entity_id: None,
     }
 }
 

@@ -76,14 +76,12 @@ impl LineageSubsystem {
             };
             let mut state = self.state.write();
             for admitted in node.page_nodes() {
+                // A lineage binds one entity forever; an entity may hold
+                // several lineages across retire/restore epochs.
                 if state
                     .nodes
                     .get(&admitted.lineage_id())
                     .is_some_and(|prior| prior != admitted)
-                    || state
-                        .indexed_lineage_for_entity(admitted.entity_id())
-                        .0
-                        .is_some_and(|prior| prior != admitted.lineage_id())
                 {
                     return Err(node.reject_binding());
                 }
@@ -259,11 +257,11 @@ impl LineageSubsystem {
             .branch_event_positions_for_lineages(branch_ids, lineage_ids, sources_only)
     }
 
-    pub(crate) fn indexed_lineage_for_entity(
+    pub(crate) fn indexed_lineages_for_entity(
         &self,
         entity_id: EntityId,
-    ) -> (Option<LineageId>, usize) {
-        self.state.read().indexed_lineage_for_entity(entity_id)
+    ) -> (Vec<LineageId>, usize) {
+        self.state.read().indexed_lineages_for_entity(entity_id)
     }
 
     pub(crate) fn indexed_lineages_are_exclusive_to_branch(

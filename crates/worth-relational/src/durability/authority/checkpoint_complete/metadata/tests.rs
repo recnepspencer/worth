@@ -150,6 +150,7 @@ fn borrowed_lineage_rows_and_funded_routes_keep_original_wire() {
         name_birth: None,
         kept_name: None,
         relation_id: None,
+        entity_id: None,
     };
     let borrowed = [OriginalLineageEvent {
         event: &event,

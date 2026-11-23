@@ -158,11 +158,13 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
             },
         )));
     }
-    batch = append_typed_rows(
+    let (mut batch, naming) = append_typed_rows(
         batch,
         std::mem::take(&mut graph.meaning.typed_rows.entity_rows),
         std::mem::take(&mut graph.meaning.typed_rows.relation_rows),
-    );
+        &layout,
+    )
+    .map_err(WorthQueryApplicationPreparationDenial::Graph)?;
     for entity_id in records.entities {
         if recovered.codec_transition_retires(entity_id) {
             continue;
@@ -193,6 +195,9 @@ fn prepare_transition<Schema: ApplicationSchema + 'static>(
                 )
                 .map_err(map_bootstrap_transaction_admission_denial)?,
         };
+        if let Some(naming) = naming {
+            transaction.attach_naming_plan(naming);
+        }
         transaction
             .push_batch(
                 batch,
