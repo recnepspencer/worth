@@ -68,6 +68,8 @@ fn record_stopping_at<'d>(
 /// candidate the stopped request could not, and the same key then records the
 /// step with both trees. Stops after a producer has recorded on the private
 /// candidate are the ones that leave bound trees for the refusal to release.
+/// Every other stop records again before maintenance runs, so the next
+/// envelope itself releases the trees the stopped request left bound.
 #[test]
 fn a_request_stopped_anywhere_in_an_envelope_rolls_back_and_the_same_key_then_records() {
     let _observation = WorthQueryExecutionObservation::install_on_this_thread();
@@ -84,6 +86,7 @@ fn a_request_stopped_anywhere_in_an_envelope_rolls_back_and_the_same_key_then_re
     assert!(consults >= STOP_POINTS, "{consults} consults");
     let stride = consults / STOP_POINTS;
     let (mut refusals, mut refusals_after_a_producer, mut parked) = (0, 0, 0);
+    let mut recorded_before_maintenance = 0;
     for point in 0..STOP_POINTS {
         let stop_at = consults - point * stride;
         let before = observe(&host, &document);
@@ -103,11 +106,18 @@ fn a_request_stopped_anywhere_in_an_envelope_rolls_back_and_the_same_key_then_re
                 // The denial may hold receipts that keep the candidate's history.
                 let denial = format!("{denial:?}");
                 refusals += 1;
-                if host.producer_contacts_on_this_thread_for_test() > contacts {
-                    refusals_after_a_producer += 1;
-                }
+                let after_a_producer = host.producer_contacts_on_this_thread_for_test() > contacts;
+                refusals_after_a_producer += usize::from(after_a_producer);
                 assert_eq!(observe(&host, &document), before, "stop at {stop_at}: {denial}");
                 assert_eq!(snapshot(&host, &document), original, "stop at {stop_at}");
+                let mut step_before_maintenance = None;
+                if point % 2 == 1 {
+                    let (next, step) =
+                        recorded(record(&host, document, &request_scope(), stages, metadata(b"")));
+                    document = next;
+                    step_before_maintenance = Some(step);
+                    recorded_before_maintenance += usize::from(after_a_producer);
+                }
                 let passes = maintain(&host, &mut document);
                 eprintln!("stop at {stop_at}: {denial}; maintenance {passes:?}");
                 assert!(
@@ -118,8 +128,13 @@ fn a_request_stopped_anywhere_in_an_envelope_rolls_back_and_the_same_key_then_re
                     "stop at {stop_at}: the parked candidate must close: {passes:?}"
                 );
                 parked += passes.len();
-                assert_eq!(snapshot(&host, &document), original, "stop at {stop_at}");
-                recorded(record(&host, document, &request_scope(), stages, metadata(b"")))
+                match step_before_maintenance {
+                    Some(step) => (document, step),
+                    None => {
+                        assert_eq!(snapshot(&host, &document), original, "stop at {stop_at}");
+                        recorded(record(&host, document, &request_scope(), stages, metadata(b"")))
+                    }
+                }
             }
         };
         document = next;
@@ -134,12 +149,17 @@ fn a_request_stopped_anywhere_in_an_envelope_rolls_back_and_the_same_key_then_re
     }
     eprintln!(
         "stopped-request sweep: consults={consults} stride={stride} refusals={refusals} \
-         after_a_producer={refusals_after_a_producer} parked={parked}"
+         after_a_producer={refusals_after_a_producer} parked={parked} \
+         recorded_before_maintenance={recorded_before_maintenance}"
     );
     assert!(parked > 0, "no stop left a candidate for maintenance to close");
     assert!(
         refusals_after_a_producer > 0,
         "no stop refused an envelope whose trees were already bound to its candidate"
+    );
+    assert!(
+        recorded_before_maintenance > 0,
+        "no envelope recorded over trees a stopped request had left bound"
     );
     close(&host, document);
 }
