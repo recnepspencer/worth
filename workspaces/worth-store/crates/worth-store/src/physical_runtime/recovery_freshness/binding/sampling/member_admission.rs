@@ -7,6 +7,7 @@ use super::super::{
 use super::{
     allocation::{SamplingAllocation, StoreRecoveryBindingSampleAllocationDenial},
     group_validation::RecoveryWalGroupBinding,
+    LocalSamplingBudget,
 };
 use crate::physical_runtime::durability::{
     PersistedPhysicalMutationAttemptBinding, PhysicalBindingDecodingContext,
@@ -28,6 +29,7 @@ pub(super) fn admit(
     context: PhysicalBindingDecodingContext,
     range: WalLsnRange,
     generation: u64,
+    local_budget: Option<LocalSamplingBudget>,
 ) -> Result<
     (
         StoreRecoveryOperationEvidence,
@@ -40,6 +42,11 @@ pub(super) fn admit(
     let requested = (bytes.len() as u64)
         .checked_mul(2)
         .ok_or(MemberDenial::Allocation(Denial::SizeOverflow))?;
+    if let Some(budget) = local_budget {
+        budget
+            .admit_decode(requested)
+            .map_err(MemberDenial::Allocation)?;
+    }
     let _backing = allocation
         .reserve(requested)
         .map_err(MemberDenial::Allocation)?;

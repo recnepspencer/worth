@@ -116,8 +116,8 @@ impl super::RelationalRuntime {
                     .branch_cell(&id)
                     .and_then(|cell| cell.root())
                     .expect("placement retains each live branch root");
-                for region in root.storage_regions() {
-                    root.accepted_head_region_witness(region.partition_id)
+                for partition_id in root.partition_ids() {
+                    root.accepted_head_region_witness(partition_id)
                         .expect("placement starts resident")
                         .expect("enumerated actual region")
                         .admit_cold_placement_symbols_for_test(

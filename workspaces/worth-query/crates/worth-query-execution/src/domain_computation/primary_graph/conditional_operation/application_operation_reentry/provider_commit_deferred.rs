@@ -19,17 +19,6 @@ pub(super) fn apply_provider_commit_deferred(
 ) {
     let kind = deferred.kind();
     match kind {
-        Kind::CandidateLifetimeExpired {
-            maximum_lifetime_millis,
-        } => {
-            wake.decision = WorthQueryRetainedConditionalDecision::OperationRetryable(
-                evidence,
-                super::super::WorthQueryConditionalReentryFailure::CandidateLifetimeExpired {
-                    maximum_lifetime_millis,
-                },
-            );
-            counts.failed += 1;
-        }
         Kind::RetentionCapacityExhausted => {
             counts.retention_capacity_backpressure = true;
             backpressured(wake, evidence, kind);

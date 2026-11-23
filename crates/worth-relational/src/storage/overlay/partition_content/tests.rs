@@ -52,9 +52,9 @@ fn one_record_update_hashes_three_values_regardless_of_population_or_history() {
         assert_eq!(retained.digest(old.partition_id), before_digest);
         assert_ne!(incremental.digest(next.partition_id), before_digest);
         assert_eq!(
-            next.allocation_inventory_since(&old, old.allocation_inventory())
+            next.allocation_inventory_since(&old, old.allocation_inventory().unwrap())
                 .unwrap(),
-            next.allocation_inventory()
+            next.allocation_inventory().unwrap()
         );
         let mut bytes = Bytes::default();
         incremental.visit_allocations(&mut bytes);

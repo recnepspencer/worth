@@ -3,6 +3,7 @@
 mod completion;
 mod native_preparation;
 mod retained_memory;
+mod single_stage;
 
 use super::{ExecutionResourceLease, SerialRequest};
 use crate::{ExecutionWorkCeiling, WorkCeilingDenial};
@@ -138,6 +139,11 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
             &mut crate::MapKernelContext<'_, '_>,
         ) -> Result<R, crate::backend::KernelFailure<E>>,
     ) -> crate::backend::ScopeOutcome<R, E> {
+        if ceiling.is_none()
+            && let Some(mut stage) = self.joined_stage()
+        {
+            return single_stage::run_joined(&mut stage, operation);
+        }
         let active = match self.form {
             RequestBacking::Leased(lease) => lease.current_descendant(),
             RequestBacking::Serial(_) => None,
@@ -283,7 +289,8 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
         })
     }
 
-    /// Adapt within the original request scope. Leased carriage adds no scope.
+    /// Adapt within the original request scope. Leased carriage, and serial
+    /// carriage inside the request's declared single stage, add no scope.
     pub fn in_scope<R>(
         self,
         operation: impl for<'scope> FnOnce(Option<&'scope ExecutionResourceLease<'authority>>) -> R,
@@ -293,6 +300,7 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
                 let active = lease.current_descendant();
                 Ok(operation(Some(active.as_ref().unwrap_or(lease))))
             }
+            RequestBacking::Serial(_) if self.joined_stage().is_some() => Ok(operation(None)),
             RequestBacking::Serial(_) if !self.has_accounting() => {
                 self.run_native(operation).map(|(value, _)| value)
             }
@@ -317,6 +325,20 @@ impl<'request, 'authority> ExecutionRequest<'request, 'authority> {
             &mut crate::ExecutionResultMemory<'_>,
         ) -> Result<R, crate::MapKernelFailure<E>>,
     ) -> crate::ScopeOutcome<R, E> {
+        if let Some(mut stage) = self.joined_stage()
+            && stage.has_accounting()
+            && stage.leaves_ceiling(ceiling.work_units())
+        {
+            let active = self.active_lease();
+            let lease = active.as_ref().or(self.lease());
+            return single_stage::run_measured_joined(
+                &mut stage,
+                lease,
+                retained_bytes,
+                memory,
+                kernel,
+            );
+        }
         match self.form {
             RequestBacking::Leased(lease) => {
                 let active = lease.current_descendant();

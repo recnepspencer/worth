@@ -1,7 +1,7 @@
 use sha2::{Digest, Sha256};
 use worth_store_physical_format::store_namespace::StableStoreIdentity;
 use worth_store_physical_format::{
-    BlobReclaimSourceBasisV1, BlobRecordV1, PersistedPhysicalRecoveryOperation,
+    BlobReclaimDescriptorV3, BlobReclaimSourceBasisV1, PersistedPhysicalRecoveryOperation,
     PersistedPhysicalRecoveryProjection, PersistedReleaseHeadTreeClaim,
     PersistedTerminalReleaseHeadRetirementV1, PhysicalRecordFormatDeclaration,
     ReleaseCustodyHeadMutationV1,
@@ -39,9 +39,7 @@ fn validate_head_descriptor(
     format: PhysicalRecordFormatDeclaration,
     effect: &worth_store_physical_format::PersistedReleaseCustodyHeadEffectV1,
 ) -> Result<(), PhysicalRedoPlanningDenial> {
-    let Ok(BlobRecordV1::ReclaimDescriptorV3(descriptor)) =
-        worth_store_physical_format::decode_blob_record(bytes)
-    else {
+    let Ok(descriptor) = BlobReclaimDescriptorV3::decode(bytes) else {
         return invalid();
     };
     let base = descriptor.base();

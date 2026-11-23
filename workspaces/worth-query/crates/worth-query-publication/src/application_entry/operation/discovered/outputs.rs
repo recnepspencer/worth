@@ -24,6 +24,7 @@ where
     RootValue<S, R>: WorthQueryApplicationProjection<S, RootQuery<S, R>> + Clone,
     R::Dependents: ProgramOutputContinuationFactory<S, P, RootDemand<S, R>>,
 {
+    #[inline(never)]
     pub(super) fn advance_start(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -42,7 +43,7 @@ where
                 };
             }
         };
-        let State::Performed(performed) = self.state else {
+        let State::Performed(performed) = *self.state else {
             unreachable!("dispatch owns genuine performed source")
         };
         match performed.start_required_outputs_in_advancement(
@@ -54,7 +55,7 @@ where
             Ok(started) => {
                 let (_receipt, result, outputs) = started.into_parts();
                 self.result = Some(result);
-                self.state = State::Outputs(outputs);
+                self.state = Box::new(State::Outputs(outputs));
                 Advance::Progress {
                     operation: self,
                     progress: Progress::OutputsStarted,
@@ -64,7 +65,7 @@ where
                 let (performed, denial) = failure.into_parts();
                 let terminal =
                     denial.recovery_posture() == WorthQueryRequiredOutputRecoveryPosture::Terminal;
-                self.state = State::Performed(performed);
+                self.state = Box::new(State::Performed(performed));
                 if terminal {
                     self.terminal(Denial::Outputs(denial))
                 } else {
@@ -76,6 +77,7 @@ where
             }
         }
     }
+    #[inline(never)]
     pub(super) fn advance_outputs(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -94,7 +96,7 @@ where
                 };
             }
         };
-        let State::Outputs(mut outputs) = self.state else {
+        let State::Outputs(mut outputs) = *self.state else {
             unreachable!("dispatch owns native output continuation")
         };
         match outputs.advance_in_advancement(phase, &self.runtime, request) {
@@ -102,7 +104,7 @@ where
                 WorthQueryDiscoveredProgramOutputProgress::Pending
                 | WorthQueryDiscoveredProgramOutputProgress::Progressed,
             ) => {
-                self.state = State::Outputs(outputs);
+                self.state = Box::new(State::Outputs(outputs));
                 Advance::Progress {
                     operation: self,
                     progress: Progress::OutputsPending,
@@ -113,7 +115,7 @@ where
                     runtime: self.runtime,
                     installed_action: self.installed_action,
                     description: self.description,
-                    settlement,
+                    settlement: Box::new(settlement),
                     initial_cause: self.initial_cause,
                     result: self.result,
                     recovered: self.recovered,
@@ -128,7 +130,7 @@ where
                 }
                 let terminal =
                     denial.recovery_posture() == WorthQueryRequiredOutputRecoveryPosture::Terminal;
-                self.state = State::Outputs(outputs);
+                self.state = Box::new(State::Outputs(outputs));
                 if terminal {
                     self.terminal(Denial::Outputs(denial))
                 } else {

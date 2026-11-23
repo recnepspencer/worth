@@ -17,7 +17,9 @@ impl RelationalRuntime {
             .iter()
             .map(|entry| entry.branch_id.clone())
             .collect::<Vec<_>>();
-        let sharing_costs = self.branch_sharing_cost_counters_for_branches(&branch_ids);
+        let sharing_costs = self
+            .try_branch_sharing_cost_counters_for_branches(&branch_ids)
+            .map_err(|_| RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)?;
         let authoritative_allocations = inventory.accounting.allocations();
         let region_locators = partition_region_locators(&authoritative_allocations);
         let excluded = inventory.accounting.excluded_unique_bytes();

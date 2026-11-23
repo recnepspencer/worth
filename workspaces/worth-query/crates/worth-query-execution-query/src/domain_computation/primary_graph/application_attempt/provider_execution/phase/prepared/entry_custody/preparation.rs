@@ -48,7 +48,7 @@ where
         producer_round_limits,
         read_set,
         mut effects,
-        mut content_attachments,
+        content_attachments,
         conditional_definition,
         effect_posture,
         output_correspondence,
@@ -189,66 +189,23 @@ where
     if let Err(outcome) = validate_workflow_deadline(application, workflow_deadline) {
         return terminal(outcome);
     }
-    // Consequences belong to the retained decision, not a newer publication
-    // basis. Preserve those observations before ordinary basis re-admission;
-    // membership movement must compare stale like any other dependency.
-    let lease = read_set.lease;
-    if let Err(outcome) = crate::domain_computation::primary_graph::application_attempt::signing_lifecycle::validate_incoming(
-        &lease, &effects, signed_creation.as_ref(), execution, admission.scope_entity_id(),
-    ) { return terminal(outcome); }
-    if let Err(outcome) =
-        crate::domain_computation::primary_graph::application_attempt::signed_creation::publish(
-            signed_creation,
-            &mut effects,
-            phase
-                .execution_for(&application.runtime.product_runtime)
-                .expect("phase readmitted for this runtime"),
-            &lease,
-            &idempotency,
-        )
-    {
-        return terminal(outcome);
-    }
-    let lifecycle = match crate::domain_computation::primary_graph::application_attempt::signing_lifecycle::expand(
-        &admission, &lease, &mut effects, read_set.facts,
-        phase.execution_for(&application.runtime.product_runtime).expect("phase readmitted for this runtime"),
-        *idempotency.key_identity(),
-    ) { Ok(lifecycle) => lifecycle, Err(outcome) => return terminal(outcome) };
-    let effect_routes = if read_set.effect_routes.matches_body(&lifecycle.facts) {
-        read_set.effect_routes
-    } else {
-        match crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
-            lifecycle.facts.clone(),
-            crate::domain_computation::primary_graph::StorageControl::new(execution.allocation_policy(), Some(admission.publication_request())),
-        ) {
-            Ok(routes) => routes,
-            Err(cause) => return terminal(WorthQueryApplicationCommitOutcome::Denied(
-                WorthQueryApplicationCommitDenial::signing_lifecycle_attempt(cause.into_attempt_denial(admission.operation())))),
-        }
-    };
-    content_attachments = match super::super::domain_value_write::admit(
+    let (lease, effect_routes, content_attachments) = match expand_signing_and_readmit_basis(
         execution,
-        application.installed_schema.value_bindings(),
-        &lease.layout,
-        &effects,
-        lease.product().relational_basis(),
-        &content_attachments,
-        aftermath_causality
-            .as_ref()
-            .map(|causality| causality.prepared_correction().content()),
-    ) {
-        Ok(attachments) => attachments,
-        Err(denial) => return terminal(WorthQueryApplicationCommitOutcome::Denied(denial)),
-    };
-    let lease = match readmit_current_basis(
-        execution,
+        phase,
         application,
         &mut admission,
-        lease,
+        read_set.lease,
         current_product,
         ordinary_basis,
+        signed_creation,
+        &mut effects,
+        read_set.facts,
+        read_set.effect_routes,
+        content_attachments,
+        &idempotency,
+        aftermath_causality.as_ref(),
     ) {
-        Ok(lease) => lease,
+        Ok(parts) => parts,
         Err(outcome) => return terminal(outcome),
     };
     prepare_authorized_application_commit(
@@ -285,4 +242,101 @@ where
             workflow_approval_authority,
         },
     )
+}
+
+#[inline(never)]
+#[allow(clippy::too_many_arguments)]
+fn expand_signing_and_readmit_basis<Schema, Operation, Input, Scope>(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    phase: &WorthQueryAdvancementPhase<'_>,
+    application: &WorthQueryPrimaryGraphApplicationRuntime<Schema>,
+    admission: &mut WorthQueryAdmittedApplicationOperation<Schema, Operation, Input, Scope>,
+    lease: WorthQueryApplicationSnapshotLease,
+    current_product: crate::basis::WorthQueryProductBranchLease,
+    ordinary_basis: bool,
+    signed_creation: Option<
+        crate::domain_computation::primary_graph::application_attempt::signed_creation::SignedCreationState<Schema>,
+    >,
+    effects: &mut Vec<WorthQueryApplicationRealizedEffect>,
+    facts: crate::domain_computation::primary_graph::application_checkpoint::facts::FactPayload,
+    effect_routes: crate::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes,
+    content_attachments: worth_relational::facade::content::RelationalContentAttachments,
+    idempotency: &WorthQueryApplicationIdempotencyBinding,
+    aftermath_causality: Option<&WorthQueryPendingAftermathCausality>,
+) -> Result<
+    (
+        WorthQueryApplicationSnapshotLease,
+        crate::domain_computation::primary_graph::application_attempt::dependency_identity::content_tree::CompletedFactRoutes,
+        worth_relational::facade::content::RelationalContentAttachments,
+    ),
+    WorthQueryApplicationCommitOutcome,
+>
+where
+    Schema: ApplicationSchema,
+{
+    crate::domain_computation::primary_graph::application_attempt::signing_lifecycle::validate_incoming(
+        &lease,
+        effects,
+        signed_creation.as_ref(),
+        execution,
+        admission.scope_entity_id(),
+    )?;
+    crate::domain_computation::primary_graph::application_attempt::signed_creation::publish(
+        signed_creation,
+        effects,
+        phase
+            .execution_for(&application.runtime.product_runtime)
+            .expect("phase readmitted for this runtime"),
+        &lease,
+        idempotency,
+    )?;
+    let lifecycle =
+        crate::domain_computation::primary_graph::application_attempt::signing_lifecycle::expand(
+            admission,
+            &lease,
+            effects,
+            facts,
+            phase
+                .execution_for(&application.runtime.product_runtime)
+                .expect("phase readmitted for this runtime"),
+            *idempotency.key_identity(),
+        )?;
+    let effect_routes = if effect_routes.matches_body(&lifecycle.facts) {
+        effect_routes
+    } else {
+        crate::domain_computation::primary_graph::application_attempt::CompletedFactRoutes::from_facts(
+            lifecycle.facts.clone(),
+            crate::domain_computation::primary_graph::StorageControl::new(
+                execution.allocation_policy(),
+                Some(admission.publication_request()),
+            ),
+        )
+        .map_err(|cause| {
+            WorthQueryApplicationCommitOutcome::Denied(
+                WorthQueryApplicationCommitDenial::signing_lifecycle_attempt(
+                    cause.into_attempt_denial(admission.operation()),
+                ),
+            )
+        })?
+    };
+    let content_attachments = super::super::domain_value_write::admit(
+        execution,
+        application.installed_schema.value_bindings(),
+        &lease.layout,
+        effects,
+        lease.product().relational_basis(),
+        &content_attachments,
+        aftermath_causality
+            .map(|causality| causality.prepared_correction().content()),
+    )
+    .map_err(WorthQueryApplicationCommitOutcome::Denied)?;
+    let lease = readmit_current_basis(
+        execution,
+        application,
+        admission,
+        lease,
+        current_product,
+        ordinary_basis,
+    )?;
+    Ok((lease, effect_routes, content_attachments))
 }

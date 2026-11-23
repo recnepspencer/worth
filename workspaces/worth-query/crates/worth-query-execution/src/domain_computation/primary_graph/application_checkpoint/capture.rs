@@ -131,6 +131,10 @@ where
                     .graph_ref()
                     .with_runtime(&execution, |runtime| {
                         policy.check_live()?;
+                        retire_unprotected_changed_history(
+                            self.inner.runtime.primary_provider_ref(),
+                            runtime,
+                        );
                         runtime
                             .durability_authority()
                             .capture_interim_checkpoint(&execution, policy)
@@ -281,4 +285,37 @@ where
                 worth_relational::facade::durability::RelationalNativeCheckpointCaptureDenial::Request(cause.into()))),
         }
     }
+}
+
+/// Retire unprotected World history whose last protection dropped after the
+/// most recent publication, then reclaim any Native roots no longer pinned.
+fn retire_unprotected_changed_history(
+    provider: &crate::domain_computation::primary_graph::provider::WorthQueryPrimaryGraphProvider,
+    runtime: &worth_relational::facade::runtime::RelationalRuntime,
+) {
+    use worth_runtime_world::facade::HistoryReclamationDenial;
+    let retired = match provider
+        .world_history_ref()
+        .get()
+        .map(|world| world.retire_changed_history())
+    {
+        Some(Ok(retired)) => retired,
+        Some(Err(HistoryReclamationDenial::PartialPublication { reclaimed, .. })) => reclaimed,
+        Some(Err(_)) | None => Vec::new(),
+    };
+    if !retired.is_empty() {
+        let commits = provider
+            .completed_commit_evidence_ref()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .retire(&retired);
+        let mut bases = provider
+            .receipt_basis_retention_ref()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for commit in commits {
+            bases.release_ordinary(commit);
+        }
+    }
+    runtime.run_branch_root_reclamation_pass();
 }

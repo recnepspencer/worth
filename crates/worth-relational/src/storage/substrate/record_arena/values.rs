@@ -5,7 +5,7 @@ mod metadata;
 #[cfg(test)]
 mod tests;
 use crate::identity::data::EntityId;
-pub(crate) use extra::{EntityExtra, RelationExtra};
+pub(crate) use extra::{current_extra_birth_watermark, EntityExtra, RelationExtra};
 pub(crate) use funding::ExtraPayloadDenial;
 pub(crate) use metadata::{VersionedEntityMetadata, VersionedRelationMetadata};
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]

@@ -51,11 +51,9 @@ impl PreparedCandidateIndexPublication {
     pub(crate) fn admit_catalog(
         &mut self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        expires_at: std::time::Instant,
-        maximum_lifetime_millis: u64,
     ) -> Result<(), crate::mvcc::RelationalPublicationOutcome> {
         use crate::indexes::data::SelectedIndexGenerationAdmissionStop as Stop;
-        use crate::mvcc::{RelationalPublicationDeferred, RelationalPublicationOutcome as Outcome};
+        use crate::mvcc::RelationalPublicationOutcome as Outcome;
         let mut metadata = execution
             .reserve_retained_memory(0)
             .map_err(Outcome::RequestStopped)?;
@@ -65,13 +63,6 @@ impl PreparedCandidateIndexPublication {
             .publication
             .admit_actual_geometry(|units, bytes| {
                 execution.consult().map_err(Outcome::RequestStopped)?;
-                if std::time::Instant::now() >= expires_at {
-                    return Err(Outcome::deferred(
-                        RelationalPublicationDeferred::CandidateLifetimeExpired {
-                            maximum_lifetime_millis,
-                        },
-                    ));
-                }
                 pay_catalog_work(execution, units).map_err(Outcome::RequestStopped)?;
                 total = total.checked_add(bytes).ok_or(Outcome::RequestStopped(
                     worth_execution::WorkCeilingDenial::Admission(

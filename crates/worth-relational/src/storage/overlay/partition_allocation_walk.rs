@@ -1,30 +1,116 @@
 use super::PartitionState;
-use crate::storage::substrate::{StorageAllocationExtent, StorageAllocationVisitor};
+use crate::storage::substrate::{
+    ExtraDeltaCollector, SealedAllocationWatermarks, StorageAllocationExtent,
+    StorageAllocationOverflow, StorageAllocationVisitor,
+};
+use std::collections::{BTreeMap, BTreeSet};
 
 impl PartitionState {
-    /// Checked bytes of the owners this partition introduces beyond `previous`.
-    /// A payload carrier contributes its declared upper bound for nested aspect
-    /// backing; an unrepresentable bound or total refuses before publication.
+    /// Checked exact physical bytes of the authoritative allocations this
+    /// partition introduces beyond `previous`, deduplicated across entity and
+    /// relation arenas, unchanged slots, and retained metadata history. An
+    /// unrepresentable total refuses before publication instead of saturating.
+    #[cfg(test)]
     pub(crate) fn new_authoritative_allocation_bytes_since(
         &self,
         previous: &Self,
     ) -> Result<u64, super::PartitionContentDigestError> {
-        let mut new = NewAllocations { bytes: Some(0) };
+        self.new_authoritative_allocation_bytes_since_with_watermarks(
+            previous,
+            SealedAllocationWatermarks::default(),
+        )
+    }
+
+    pub(crate) fn visit_new_authoritative_allocations_since_with_watermarks(
+        &self,
+        previous: &Self,
+        previous_watermarks: SealedAllocationWatermarks,
+        visitor: &mut dyn StorageAllocationVisitor,
+    ) {
         self.entity_arena
-            .visit_new_authoritative_allocations(&previous.entity_arena, &mut new);
+            .visit_new_non_extra_authoritative_allocations(&previous.entity_arena, visitor);
         self.relation_arena
-            .visit_new_authoritative_allocations(&previous.relation_arena, &mut new);
+            .visit_new_non_extra_authoritative_allocations(&previous.relation_arena, visitor);
+        let mut extras = ExtraDeltaCollector::with_watermarks(previous_watermarks);
+        self.entity_arena.collect_changed_extra_allocations(
+            &previous.entity_arena,
+            previous_watermarks.extra,
+            &mut extras,
+        );
+        self.relation_arena.collect_changed_extra_allocations(
+            &previous.relation_arena,
+            previous_watermarks.extra,
+            &mut extras,
+        );
+        if extras.has_unresolved() {
+            let mut seen = BTreeSet::new();
+            previous
+                .entity_arena
+                .resolve_extra_allocations(&mut seen, &mut extras);
+            previous
+                .relation_arena
+                .resolve_extra_allocations(&mut seen, &mut extras);
+        }
+        extras.emit(visitor);
         self.adjacency
-            .visit_new_authoritative_allocations(&previous.adjacency, &mut new);
+            .visit_new_authoritative_allocations(&previous.adjacency, visitor);
         self.reverse_adjacency
-            .visit_new_authoritative_allocations(&previous.reverse_adjacency, &mut new);
+            .visit_new_authoritative_allocations(&previous.reverse_adjacency, visitor);
+    }
+
+    pub(crate) fn new_authoritative_allocation_bytes_since_with_watermarks(
+        &self,
+        previous: &Self,
+        previous_watermarks: SealedAllocationWatermarks,
+    ) -> Result<u64, super::PartitionContentDigestError> {
+        let mut new = NewAllocations {
+            bytes: Some(0),
+            seen: BTreeSet::new(),
+        };
+        self.visit_new_authoritative_allocations_since_with_watermarks(
+            previous,
+            previous_watermarks,
+            &mut new,
+        );
         new.bytes
             .ok_or(super::PartitionContentDigestError::AllocationAccountingOverflow)
     }
-    pub(crate) fn reclaimable_unique_authoritative_bytes(&self) -> u64 {
-        let mut reclaimable = ReclaimableAllocations::default();
-        self.visit_authoritative_allocations(true, &mut reclaimable);
-        reclaimable.bytes
+
+    pub(super) fn unique_authoritative_allocation_bytes(
+        &self,
+    ) -> Result<u64, StorageAllocationOverflow> {
+        let mut observed = NewAllocations {
+            bytes: Some(0),
+            seen: BTreeSet::new(),
+        };
+        self.visit_authoritative_allocations(false, &mut observed);
+        observed.bytes.ok_or(StorageAllocationOverflow)
+    }
+
+    /// Raw edge traversal across both arenas and adjacency tables for exact
+    /// refcount-closure reclamation (every internal owning edge is visited so
+    /// multi-edge exclusively owned allocations reach `dying_refs == strong_count`).
+    pub(crate) fn visit_authoritative_allocation_edges(
+        &self,
+        visitor: &mut dyn StorageAllocationVisitor,
+    ) {
+        self.entity_arena
+            .visit_authoritative_allocation_edges(false, visitor);
+        self.relation_arena
+            .visit_authoritative_allocation_edges(false, visitor);
+        self.adjacency
+            .visit_authoritative_allocations(false, visitor);
+        self.reverse_adjacency
+            .visit_authoritative_allocations(false, visitor);
+    }
+
+    #[cfg(test)]
+    pub(crate) fn reclaimable_unique_authoritative_bytes(
+        &self,
+    ) -> Result<u64, StorageAllocationOverflow> {
+        let mut reclaimable = ReclaimableAllocations::new();
+        self.visit_authoritative_allocation_edges(&mut reclaimable);
+        reclaimable.finish()
     }
     pub(crate) fn visit_authoritative_allocations(
         &self,
@@ -61,28 +147,53 @@ impl PartitionState {
     }
 }
 
-/// `None` once a declared bound or the running total is unrepresentable.
+/// `None` once an observation or the running total is unrepresentable.
 struct NewAllocations {
     bytes: Option<u64>,
+    seen: BTreeSet<u64>,
 }
 impl StorageAllocationVisitor for NewAllocations {
     fn visit(
         &mut self,
         allocation: crate::storage::substrate::StorageAllocationObservation,
     ) -> bool {
+        if !self.seen.insert(allocation.id) {
+            return false;
+        }
         self.bytes = match allocation.extent {
             StorageAllocationExtent::Checked => self
                 .bytes
                 .and_then(|bytes| bytes.checked_add(allocation.bytes)),
             StorageAllocationExtent::Overflow => None,
         };
-        true
+        self.bytes.is_some()
     }
 }
 
-#[derive(Default)]
-struct ReclaimableAllocations {
-    bytes: u64,
+/// Exact internal-refcount graph closure for a retiring root.
+///
+/// An allocation is charged and descended into if and only if the number of
+/// dying owning edges observed from already-freed parents in this retiring root
+/// reaches that allocation's live `strong_count`. Multiple internal edges (such
+/// as `extra` + `metadata_history`, or two slots/arenas sharing a map) release
+/// together when their last external owner is gone, while any outside holder
+/// keeps `dying_refs < strong_count` and excludes the allocation.
+pub(crate) struct ReclaimableAllocations {
+    bytes: Option<u64>,
+    dying_refs: BTreeMap<u64, usize>,
+}
+
+impl ReclaimableAllocations {
+    pub(crate) fn new() -> Self {
+        Self {
+            bytes: Some(0),
+            dying_refs: BTreeMap::new(),
+        }
+    }
+
+    pub(crate) fn finish(self) -> Result<u64, StorageAllocationOverflow> {
+        self.bytes.ok_or(StorageAllocationOverflow)
+    }
 }
 
 impl StorageAllocationVisitor for ReclaimableAllocations {
@@ -90,11 +201,21 @@ impl StorageAllocationVisitor for ReclaimableAllocations {
         &mut self,
         allocation: crate::storage::substrate::StorageAllocationObservation,
     ) -> bool {
-        if !allocation.unique {
+        if self.bytes.is_none() {
             return false;
         }
-        self.bytes = self.bytes.saturating_add(allocation.bytes);
-        true
+        let refs = self.dying_refs.entry(allocation.id).or_insert(0);
+        *refs += 1;
+        if *refs != allocation.strong_count {
+            return false;
+        }
+        self.bytes = match allocation.extent {
+            StorageAllocationExtent::Checked => self
+                .bytes
+                .and_then(|bytes| bytes.checked_add(allocation.bytes)),
+            StorageAllocationExtent::Overflow => None,
+        };
+        self.bytes.is_some()
     }
 }
 
@@ -111,18 +232,25 @@ mod tests {
             id: 1,
             bytes: 64,
             unique: false,
+            strong_count: 1,
+            birth_seq: None,
             extent: StorageAllocationExtent::Checked,
         };
-        let mut new = NewAllocations { bytes: Some(0) };
+        let mut new = NewAllocations {
+            bytes: Some(0),
+            seen: std::collections::BTreeSet::new(),
+        };
         assert!(new.visit(carrier));
         assert_eq!(new.bytes, Some(64));
         let mut total = NewAllocations {
             bytes: Some(u64::MAX),
+            seen: std::collections::BTreeSet::new(),
         };
-        assert!(total.visit(carrier));
+        assert!(!total.visit(carrier));
         assert_eq!(total.bytes, None);
+        carrier.id = 2;
         carrier.add_checked_nested_bound(None);
-        assert!(new.visit(carrier));
+        assert!(!new.visit(carrier));
         assert_eq!(new.bytes, None);
     }
 }

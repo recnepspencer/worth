@@ -8,6 +8,7 @@ fn temporal_node_keys_bind_operation_definition_and_exact_declared_location() {
                   slot: &str,
                   location: &WorthQueryConditionalNodeLocation| {
         prepare_temporal_node_definition(CanonicalDigestId::new(operation), domain, slot, location)
+            .derive()
             .unwrap()
             .0
     };

@@ -38,6 +38,9 @@ impl CompositeHistoryCatalog {
         let memory = reserve_position(execution)?;
         let state = lock_state(&self.state);
         validate_owner(&state, selected.owner_identity())?;
+        if state.retiring.contains(selected) {
+            return Err(Denial::SourceUnavailable);
+        }
         let entry = state
             .entries
             .get(selected)
@@ -71,6 +74,9 @@ impl CompositeHistoryCatalog {
         let CompositeCommitParent::Ordinary(parent) = current.commit.parent() else {
             return Ok(None);
         };
+        if state.retiring.contains(parent.commit()) {
+            return Err(Denial::RetiredHistoryGap);
+        }
         let entry = state
             .entries
             .get(parent.commit())

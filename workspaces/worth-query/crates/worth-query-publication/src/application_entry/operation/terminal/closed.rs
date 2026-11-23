@@ -15,18 +15,20 @@ use super::*;
 /// ```
 pub struct WorthQueryClosedFixedTerminal<S: ApplicationSchema, I: ApplicationMutationIntent<S>> {
     source_outcome: Option<
-        WorthQueryApplicationMutationOutcome<
-            <I::Binding as ApplicationMutationBinding<S>>::Denial,
-            <I::Binding as ApplicationMutationBinding<S>>::Result,
+        Box<
+            WorthQueryApplicationMutationOutcome<
+                <I::Binding as ApplicationMutationBinding<S>>::Denial,
+                <I::Binding as ApplicationMutationBinding<S>>::Result,
+            >,
         >,
     >,
     source_result: Option<<I::Binding as ApplicationMutationBinding<S>>::Result>,
-    advance_denial: Option<WorthQueryOperationAdvanceDenial>,
+    advance_denial: Option<Box<WorthQueryOperationAdvanceDenial>>,
     closed: WorthQueryClosedOperation,
 }
 impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> WorthQueryClosedFixedTerminal<S, I> {
     pub fn advance_denial(&self) -> Option<&WorthQueryOperationAdvanceDenial> {
-        self.advance_denial.as_ref()
+        self.advance_denial.as_deref()
     }
     pub fn source_outcome(
         &self,
@@ -36,7 +38,7 @@ impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> WorthQueryClosedFixe
             <I::Binding as ApplicationMutationBinding<S>>::Result,
         >,
     > {
-        self.source_outcome.as_ref()
+        self.source_outcome.as_deref()
     }
     /// The original performed source result can exist even when its output was
     /// unavailable. Absence is not a claim that no source effect occurred.
@@ -64,8 +66,8 @@ impl<S: ApplicationSchema, I: ApplicationMutationIntent<S>> WorthQueryClosedFixe
     {
         let source_result = terminal.operation.result.take();
         let advance_denial = terminal.advance_denial.take();
-        let source_outcome = match terminal.operation.state {
-            FixedState::NotPerformed(outcome) => Some(outcome),
+        let source_outcome = match *terminal.operation.state {
+            FixedState::NotPerformed(outcome) => Some(Box::new(outcome)),
             _ => None,
         };
         // The remaining description, including any history restriction, and

@@ -8,6 +8,7 @@ impl InspectionAccess<'_> {
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<ConnectivityInspectionSummary, crate::execution::RelationalExecutionDenialCause>
     {
+        self.count_connectivity_summary_request();
         let partition_scope = PartitionScopeFilter::from_scope(request.partition_scope.as_ref());
         let relation_kind_scope = KindScopeFilter::from_scope(request.relation_kind_scope.as_ref());
         let mut entities = Vec::new();

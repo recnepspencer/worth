@@ -100,7 +100,7 @@ impl CapturedCheckpointBasis {
                                 .ok_or_else(|| {
                                     corrupt("original Memory canonical cell unavailable")
                                 })?
-                                .original_memory_payload_digest(execution)
+                                .original_memory_recorded_digest()
                                 .map_err(
                                     crate::durability::checkpoint_history::capture::capture_stop,
                                 )
@@ -148,14 +148,21 @@ impl CapturedCheckpointBasis {
             schemas.entry(schema_digest).or_insert(image);
             let mut leaves = Vec::new();
             for region in root.regions() {
-                let capture = region.cell.capture_checkpoint(
-                    execution,
-                    schema,
-                    schema_digest,
-                    &symbols,
-                    current_members.as_ref(),
-                )?;
-                super::checkpoint_region_consistency::validate(execution, &region, &capture.leaf)?;
+                let capture = region_capture(execution, || {
+                    let capture = region.cell.capture_checkpoint(
+                        execution,
+                        schema,
+                        schema_digest,
+                        &symbols,
+                        current_members.as_ref(),
+                    )?;
+                    super::checkpoint_region_consistency::validate(
+                        execution,
+                        &region,
+                        &capture.leaf,
+                    )?;
+                    Ok(capture)
+                })?;
                 merge_history_dependencies(
                     &mut history_dependencies,
                     capture.history_dependencies,
@@ -200,13 +207,15 @@ impl CapturedCheckpointBasis {
             schemas.entry(digest).or_insert(image);
             for (_, region) in mirror.cells() {
                 policy.check_live()?;
-                let capture = region.cell().capture_checkpoint(
-                    execution,
-                    &schema,
-                    digest,
-                    &symbols,
-                    current_members.as_ref(),
-                )?;
+                let capture = region_capture(execution, || {
+                    Ok(region.cell().capture_checkpoint(
+                        execution,
+                        &schema,
+                        digest,
+                        &symbols,
+                        current_members.as_ref(),
+                    )?)
+                })?;
                 merge_history_dependencies(
                     &mut history_dependencies,
                     capture.history_dependencies,
@@ -360,4 +369,21 @@ fn insert_member(captured: &mut CapturedManifest, member: RelationalCheckpointMe
 
 fn corrupt(detail: impl Into<String>) -> DurabilityError {
     DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
+}
+
+type RegionCapture = crate::storage::residency::RelationalCapturedRegionCheckpoint;
+
+/// Capturing a region, from its recorded checkpoint or by reconstructing its
+/// images, and checking a root region against its selection, is its residency
+/// owner's work: one named phase, apart from the capture's encoding rate.
+fn region_capture(
+    execution: &worth_execution::ExecutionRequest<'_, '_>,
+    capture: impl FnOnce() -> Result<RegionCapture, RelationalNativeCheckpointCaptureDenial>,
+) -> Result<RegionCapture, RelationalNativeCheckpointCaptureDenial> {
+    crate::execution::phase_observation::run(
+        execution,
+        "region_capture",
+        capture,
+        RelationalNativeCheckpointCaptureDenial::Request,
+    )
 }

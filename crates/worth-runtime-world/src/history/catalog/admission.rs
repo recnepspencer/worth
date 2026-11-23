@@ -157,4 +157,130 @@ impl CompositeHistoryCatalog {
             publication,
         ))
     }
+
+    /// Install a surviving commit whose direct parent was durably disposed
+    /// before reopen. Preserves the commit's authoritative `Ordinary(parent)`
+    /// while wiring catalog reachability and spliced edge distance to its
+    /// nearest surviving installed ancestor (if any).
+    pub(crate) fn install_readmitted_horizon_commit(
+        &self,
+        commit: Arc<super::CompositeRuntimeWorldCommit>,
+        pins: crate::retention::HistoryRetentionObligation,
+        spliced_parent: Option<(CompositeCommitIdentity, usize)>,
+    ) -> Result<crate::history::ProductHeadHistoryProtectionObligation, CompositeHistoryCatalogDenial>
+    {
+        use crate::history::retention::{
+            CompositeHistoryProtectionObligation, HistoryProtectionClass,
+            ProductHeadHistoryProtectionObligation,
+        };
+        if !pins.matches_basis(commit.basis()) {
+            return Err(CompositeHistoryCatalogDenial::HistoryPinBasisMismatch);
+        }
+        let identity = commit.identity().clone();
+        let mut state = lock_state(&self.state);
+        validate_owner(&state, identity.owner_identity())?;
+        if state.entries.contains_key(&identity) || state.reservations.contains_key(&identity) {
+            return Err(CompositeHistoryCatalogDenial::DuplicateCommit);
+        }
+        if let Some((ancestor, generations)) = &spliced_parent {
+            if ancestor.owner_identity() != state.owner {
+                return Err(CompositeHistoryCatalogDenial::ForeignParent {
+                    expected: state.owner,
+                    actual: ancestor.owner_identity(),
+                });
+            }
+            if *generations < 2
+                || state.retiring.contains(ancestor)
+                || state
+                    .entries
+                    .get(ancestor)
+                    .is_none_or(|slot| slot.get().is_none())
+            {
+                return Err(CompositeHistoryCatalogDenial::MissingParent(
+                    ancestor.clone(),
+                ));
+            }
+        }
+        let maximum_commits = state.limits.maximum_commits().get();
+        if let Some(maximum_commits) =
+            maximum_commits.filter(|maximum| state.entries.len() >= *maximum)
+        {
+            return Err(CompositeHistoryCatalogDenial::CommitCapacityExhausted {
+                maximum: maximum_commits,
+            });
+        }
+        let commit_charge = metadata::HistoryMetadataCharge::for_commit(&commit)
+            .map_err(|_| CompositeHistoryCatalogDenial::ArithmeticOverflow)?;
+        let reservation_charge = metadata::HistoryReservationCharge::for_parent(commit.parent())
+            .map_err(|_| CompositeHistoryCatalogDenial::ArithmeticOverflow)?;
+        let preview = {
+            counters::lock_counters(&state.counters).record_metadata_reservation_check();
+            state
+                .metadata
+                .preview_reservation(
+                    reservation_charge,
+                    commit_charge,
+                    state.limits.maximum_metadata_bytes().get(),
+                )
+                .map_err(|denial| match denial {
+                    metadata::HistoryMetadataLedgerDenial::ArithmeticOverflow => {
+                        CompositeHistoryCatalogDenial::ArithmeticOverflow
+                    }
+                    metadata::HistoryMetadataLedgerDenial::Capacity {
+                        maximum,
+                        used,
+                        requested,
+                    } => CompositeHistoryCatalogDenial::MetadataCapacityExhausted {
+                        maximum,
+                        used,
+                        requested,
+                    },
+                })?
+        };
+        if let Some((ancestor, _)) = &spliced_parent {
+            lock_index(&state.reachability).increment_descendant_dependency(ancestor)?;
+        }
+        let slots = super::slots::ReservedHistorySlots::reserve(&mut state, &identity);
+        assert!(state.inspection_order.insert(identity.clone()));
+        state.metadata.reserve_confirmed(preview);
+        state.metadata.promote(reservation_charge, commit_charge);
+        counters::lock_counters(&state.counters).record_metadata_promotion();
+        let publication = if commit.relational_publication_identity().is_some() {
+            Some(crate::history::PublicationEvidence::ReadmittedHorizon)
+        } else {
+            None
+        };
+        let entry = super::entry::CompositeHistoryCatalogEntry {
+            pins,
+            commit: Some(commit),
+            publication,
+            metadata_charge: commit_charge,
+        };
+        let marks_root = spliced_parent.is_none();
+        slots.install_with_parent(
+            &mut state,
+            entry,
+            spliced_parent.as_ref().map(|(ancestor, _)| ancestor),
+            marks_root,
+        );
+        if let Some((parent, generations)) = spliced_parent {
+            state.spliced.insert(
+                identity.clone(),
+                super::history_retirement::SplicedParent {
+                    parent,
+                    generations,
+                },
+            );
+        }
+        let reachability = Arc::clone(&state.reachability);
+        lock_index(&reachability).protect_reserved_slot(&slots.reachability);
+        state.publication_revision.advance();
+        Ok(ProductHeadHistoryProtectionObligation::issued(
+            CompositeHistoryProtectionObligation::new(
+                reachability,
+                identity,
+                HistoryProtectionClass::ProductHead,
+            ),
+        ))
+    }
 }

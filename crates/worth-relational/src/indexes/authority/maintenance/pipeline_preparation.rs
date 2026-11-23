@@ -141,33 +141,56 @@ impl IndexDefinitionReadBinding {
                 .as_ref()
                 .and_then(|inputs| inputs.inherited.as_ref())
                 .map(|basis| basis.selection_state());
+            let work_cell = std::cell::RefCell::new(work);
             let mut maintainer = super::maintained_selection::IndexSelectionMaintainer {
                 owner: &owner,
                 execution,
                 before: &before,
                 after: &after,
                 request: &request,
-                native: work,
+                native: &work_cell,
                 routes,
                 inputs,
                 prepared: None,
             };
-            let state = if let Some((lane, cold_work)) = reconstruction.as_mut() {
-                crate::storage::substrate::maintenance::Maintained::cold(
-                    &mut maintainer,
-                    lane,
-                    cold_work,
-                )?
-            } else {
-                crate::storage::substrate::maintenance::ChangeWork::run(execution, |shared| {
-                    crate::storage::substrate::maintenance::apply_change(
-                        &mut maintainer,
-                        previous.as_ref(),
-                        change,
-                        shared,
-                    )
-                })?
+            let mut prepare = |units, bytes| {
+                work_cell
+                    .borrow_mut()
+                    .prepare(units, bytes)
+                    .map_err(|denial| match denial {
+                        Denial::Execution(cause) => {
+                            crate::storage::substrate::maintenance::MaintenanceRefusal::Execution(
+                                cause,
+                            )
+                        }
+                        _ => crate::storage::substrate::maintenance::MaintenanceRefusal::Execution(
+                            crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                        ),
+                    })
             };
+            let state = crate::storage::substrate::maintenance::ChangeWork::run_with_payer(
+                &mut prepare,
+                |shared| {
+                    if let Some((lane, _)) = reconstruction.as_mut() {
+                        let mut cold_work =
+                            crate::storage::substrate::maintenance::ReconstructionWork::from_change_work(
+                                shared,
+                            );
+                        crate::storage::substrate::maintenance::Maintained::cold(
+                            &mut maintainer,
+                            lane,
+                            &mut cold_work,
+                        )
+                    } else {
+                        crate::storage::substrate::maintenance::apply_change(
+                            &mut maintainer,
+                            previous.as_ref(),
+                            change,
+                            shared,
+                        )
+                    }
+                },
+            )?;
             maintainer.finish(state)
         })?;
         let (prepared, funding) = prepared.into_funded_parts();

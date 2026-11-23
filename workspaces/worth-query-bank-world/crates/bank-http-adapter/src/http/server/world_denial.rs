@@ -68,7 +68,6 @@ pub(super) fn publication(cause: NoEffectCause) -> BankHttpDenial {
             | RelationalPublicationDeferred::CompanionRebindRequired
             | RelationalPublicationDeferred::PatchPositionReservationContended
             | RelationalPublicationDeferred::RetentionBackpressure
-            | RelationalPublicationDeferred::CandidateLifetimeExpired { .. }
             | RelationalPublicationDeferred::CandidateCapacityExhausted { .. }
             | RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted { .. } => {
                 unavailable()
@@ -138,8 +137,7 @@ fn branch(cause: RuntimeWorldBranchAdmissionDenial) -> BankHttpDenial {
         | D::ForkSourceChanged
         | D::RetiredBranch
         | D::HistoryEntryUnavailable => stale(),
-        D::DurableBranchPublicationRequired
-        | D::HomeCreationRequestRequired
+        D::HomeCreationRequestRequired
         | D::MemoryCreationRequestRequired
         | D::ProgramSourceRequired
         | D::ForeignProgramSource

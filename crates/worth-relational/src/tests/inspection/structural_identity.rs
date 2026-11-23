@@ -295,3 +295,91 @@ fn memory_inspection_truth_bundle_recovery_parity_holds_for_current_and_historic
 
     assert_eq!(expected, actual);
 }
+
+// Fixture adaptation (C2.4): the original used `checkpoint_durably` and
+// `recovery_plan_for` over the retired in-crate medium. Structural identity
+// recovery has no physical-medium content, so it runs over Memory checkpoint
+// and recovery.
+#[test]
+fn structural_identity_recovery_preserves_current_evidence_and_queries() {
+    let host_request = crate::test_execution_policy::serial_request();
+    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
+
+    let mut runtime = runtime_with_test_schema();
+    let left = create_entity(execution, &runtime, "left");
+    let right = create_entity(execution, &runtime, "right");
+    // Recovery requires a real retained meaning, not a fabricated numeric symbol.
+    let family = runtime.services.symbols.with_read(|symbols| {
+        symbols
+            .symbol("left")
+            .expect("the published client key is interned")
+    });
+    assert!(runtime.set_entity_structural_identity_for_test(
+        left,
+        Some(StructuralFingerprint::new(family, 1001)),
+        Some(LineageId(501)),
+    ));
+    assert!(runtime.set_entity_structural_identity_for_test(
+        right,
+        Some(StructuralFingerprint::new(family, 1002)),
+        Some(LineageId(502)),
+    ));
+    runtime
+        .durability_authority()
+        .checkpoint(execution)
+        .unwrap();
+    let expected_left = runtime
+        .inspect_what_happened()
+        .structural_identity(
+            execution,
+            InspectionScope::Current,
+            crate::facade::transactions::RecordRef::Entity(left),
+        )
+        .expect("read request remains live")
+        .expect("expected left evidence");
+    let expected_query = runtime
+        .inspect_what_happened()
+        .query_structural_identity(
+            execution,
+            &StructuralIdentityQueryRequest {
+                scope: InspectionScope::Current,
+                partition_scope: None,
+                fingerprint_family: family,
+            },
+        )
+        .expect("read request remains live");
+
+    let plan = runtime
+        .durability()
+        .recovery_plan(execution, RecoveryMode::NormalRecoveryVerification)
+        .unwrap();
+    let mut recovered = runtime_with_test_schema();
+    recovered
+        .durability_recovery()
+        .recover(execution, plan)
+        .unwrap();
+
+    let actual_left = recovered
+        .inspect_what_happened()
+        .structural_identity(
+            execution,
+            InspectionScope::Current,
+            crate::facade::transactions::RecordRef::Entity(left),
+        )
+        .expect("read request remains live")
+        .expect("actual left evidence");
+    let actual_query = recovered
+        .inspect_what_happened()
+        .query_structural_identity(
+            execution,
+            &StructuralIdentityQueryRequest {
+                scope: InspectionScope::Current,
+                partition_scope: None,
+                fingerprint_family: family,
+            },
+        )
+        .expect("read request remains live");
+
+    assert_eq!(expected_left, actual_left);
+    assert_eq!(expected_query, actual_query);
+}

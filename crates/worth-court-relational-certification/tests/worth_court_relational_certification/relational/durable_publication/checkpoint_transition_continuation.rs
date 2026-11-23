@@ -37,6 +37,7 @@ fn checkpoint_transition_sequence_resumes_after_archived_and_deleted_history() {
             runtime.delete_branch(execution, &identity).unwrap();
         }
         let count = if extra_steps { 128 } else { 64 };
+        assert_eq!(runtime.retained_branch_transition_count(), count);
         let checkpoint = runtime
             .durability_authority()
             .native_checkpoint(execution, execution.allocation_policy())
@@ -45,15 +46,29 @@ fn checkpoint_transition_sequence_resumes_after_archived_and_deleted_history() {
             checkpoint.covered_branch_transitions(),
             Some(Sequence(count as u64))
         );
+        assert_eq!(
+            runtime.retained_branch_transition_count(),
+            0,
+            "covered transition log is released"
+        );
+        let bytes = checkpoint.bytes().len();
         medium.file_checkpoint(checkpoint);
         let recovered =
             super::branch_history_recovery::recover(execution, &medium, durable_runtime(&medium)).1;
+        assert_eq!(recovered.retained_branch_transition_count(), 0);
         fork(execution, &recovered, "after-checkpoint");
         assert_eq!(
             medium.offered_transitions().last().unwrap().sequence(),
             Sequence(count as u64 + 1)
         );
+        bytes
     };
-    history(false);
-    history(true);
+    let direct = history(false);
+    let through_archive_and_pending_deletion = history(true);
+    // Identical current cells and retired names, but twice as many transitions.
+    // Small headroom permits integer encoding/runtime identity width changes.
+    assert!(
+        through_archive_and_pending_deletion <= direct + 32,
+        "covered history grew the manifest: {direct} -> {through_archive_and_pending_deletion}"
+    );
 }

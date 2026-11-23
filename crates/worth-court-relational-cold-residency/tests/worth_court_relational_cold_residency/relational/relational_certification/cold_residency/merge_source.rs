@@ -148,6 +148,16 @@ impl MergeRecipe {
     pub fn reopen(&self, execution: &ExecutionRequest<'_, '_>) -> MergeFixture {
         {
             let reader = reopen(execution, &self.original);
+            if let Some(symbol) = self.symbol {
+                assert!(
+                    reader
+                        .runtime
+                        .observe_resident_symbol_dictionary()
+                        .resolve(symbol)
+                        .is_none(),
+                    "the unchanged ancestor's current field text is cold"
+                );
+            }
             MergeFixture {
                 runtime: reader.runtime,
                 source: reader.source,

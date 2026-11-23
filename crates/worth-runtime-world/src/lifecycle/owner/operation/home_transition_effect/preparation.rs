@@ -66,7 +66,11 @@ where
                 .map_err(Denial::Medium)?;
         let mut occurrence = crate::durability::WorldOccurrenceCustody::prepare(&open, request)
             .map_err(Denial::Medium)?;
-        occurrence.bind_origin(prepared.after.basis(), origin_pins);
+        occurrence.bind_origin(
+            prepared.after.selected_commit().ordinal(),
+            prepared.after.basis(),
+            origin_pins,
+        );
         let actual = native.effect().subject();
         occurrence
             .finalize(

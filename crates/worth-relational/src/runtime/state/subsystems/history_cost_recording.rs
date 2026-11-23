@@ -14,13 +14,13 @@ impl HistorySubsystem {
         &self,
         branch_id: &BranchId,
         root: &RelationalBranchRoot,
-        new_authoritative_bytes: u64,
+        new_authoritative_bytes: Option<u64>,
     ) {
         let cost = root.publication_cost();
-        self.record_branch_sharing_operation(branch_id, |costs| {
-            costs.copied_truth_bytes = costs
-                .copied_truth_bytes
-                .saturating_add(cost.copied_truth_bytes);
+        let Some(cell) = self.branch_cell(branch_id) else {
+            return;
+        };
+        cell.publication_cell().record_sharing_cost_checked(|costs| {
             costs.copied_commit_envelopes = costs
                 .copied_commit_envelopes
                 .saturating_add(cost.copied_commit_envelopes);
@@ -33,15 +33,23 @@ impl HistorySubsystem {
             costs.publication_persistent_index_path_nodes = costs
                 .publication_persistent_index_path_nodes
                 .saturating_add(cost.persistent_index_path_nodes);
-            costs.publication_new_authoritative_bytes = costs
-                .publication_new_authoritative_bytes
-                .saturating_add(new_authoritative_bytes);
-            costs.publication_new_root_authoritative_bytes = costs
-                .publication_new_root_authoritative_bytes
-                .saturating_add(cost.new_authoritative_bytes);
             costs.publication_content_values_hashed = costs
                 .publication_content_values_hashed
                 .saturating_add(cost.content_values_hashed);
+            let new_authoritative_bytes = new_authoritative_bytes?;
+            let next_copied = costs
+                .copied_truth_bytes
+                .checked_add(cost.copied_truth_bytes)?;
+            let next_new = costs
+                .publication_new_authoritative_bytes
+                .checked_add(new_authoritative_bytes)?;
+            let next_root_new = costs
+                .publication_new_root_authoritative_bytes
+                .checked_add(cost.new_authoritative_bytes)?;
+            costs.copied_truth_bytes = next_copied;
+            costs.publication_new_authoritative_bytes = next_new;
+            costs.publication_new_root_authoritative_bytes = next_root_new;
+            Some(())
         });
     }
 
@@ -52,6 +60,18 @@ impl HistorySubsystem {
         self.branch_cell(branch_id)
             .map(|cell| cell.publication_cell().sharing_costs())
             .unwrap_or_default()
+    }
+
+    pub(crate) fn try_sharing_costs_for_branch(
+        &self,
+        branch_id: &BranchId,
+    ) -> Result<
+        RelationalBranchSharingCostCounters,
+        crate::storage::substrate::StorageAllocationOverflow,
+    > {
+        self.branch_cell(branch_id)
+            .map(|cell| cell.publication_cell().try_sharing_costs())
+            .unwrap_or_else(|| Ok(RelationalBranchSharingCostCounters::default()))
     }
 
     fn record_branch_sharing_operation(

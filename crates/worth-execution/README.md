@@ -143,6 +143,19 @@ polls the effective cancellation and deadline controls without inventing a work
 invoice. `checkpoint_in(context, units)` additionally checks that the supplied
 context is the actual authorized current context.
 
+## Single-stage operations
+
+`ExecutionRequest::run_single_stage` runs an operation as the single stage of
+its request, as one native checkpoint capture is. Inside it, that request's own
+nested native stages, serial `in_scope` adaptations and measured results whose
+ceiling leaves the stage's remaining work join the stage instead of setting up
+another: they charge, admit memory and stop on its meter, so work is charged
+once and cumulatively, the request's ceiling bounds the whole operation and a
+stop belongs to the stage it occurs in. A joined measured result keeps its
+caller's reservation and admits its payload there. Another request, a narrowing
+ceiling, and anything run inside another scope keep their own stage; outside a
+single stage nested stages are set up as before.
+
 ## Checked component edits
 
 Runtime owners apply one `ComponentEdit` through

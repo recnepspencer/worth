@@ -169,10 +169,14 @@ pub struct WorthQueryApplicationCommitAuthorityBinding {
     /// minting into, so one runtime cannot mint a handle for another's commit.
     runtime_authority: WorthQueryRuntimeAuthorityIdentity,
     installed_operation: [u8; 32],
-    installed_aftermath: Option<WorthQueryInstalledAftermathContract>,
+    installed_recovery_contract:
+        Option<worth_query_installation::facade::InstalledAftermathRecoveryContract>,
+    published_aftermath_posture:
+        Option<worth_query_installation::facade::PublishedAftermathPosture>,
+    installed_aftermath: Option<Box<WorthQueryInstalledAftermathContract>>,
     principal_scope: WorthQueryOperationScopeBinding,
     idempotency_binding: WorthQueryApplicationIdempotencyBinding,
-    retained_governed_input: Option<WorthQueryRetainedGovernedInput>,
+    retained_governed_input: Option<Box<WorthQueryRetainedGovernedInput>>,
     original_program: Option<Arc<dyn Any + Send + Sync>>,
     original_inspection_disclosure:
         Option<Arc<super::super::source_disclosure::OriginalSourceInspectionDisclosure>>,
@@ -240,14 +244,22 @@ impl WorthQueryApplicationCommitAuthorityBinding {
             Arc<super::super::source_disclosure::OriginalSourceInspectionDisclosure>,
         >,
     ) -> Self {
+        let installed_recovery_contract = installed_aftermath
+            .as_ref()
+            .map(|contract| contract.recovery());
+        let published_aftermath_posture = installed_aftermath
+            .as_ref()
+            .map(|contract| contract.published_posture());
         Self {
             original_mutation_binding,
             runtime_authority,
             installed_operation,
-            installed_aftermath,
+            installed_recovery_contract,
+            published_aftermath_posture,
+            installed_aftermath: installed_aftermath.map(Box::new),
             principal_scope,
             idempotency_binding,
-            retained_governed_input,
+            retained_governed_input: retained_governed_input.map(Box::new),
             original_program,
             original_inspection_disclosure,
         }
@@ -271,8 +283,20 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     }
 
     /// Exact compiled aftermath retained from the admitted installed operation.
-    pub const fn installed_aftermath(&self) -> Option<&WorthQueryInstalledAftermathContract> {
-        self.installed_aftermath.as_ref()
+    pub fn installed_aftermath(&self) -> Option<&WorthQueryInstalledAftermathContract> {
+        self.installed_aftermath.as_deref()
+    }
+
+    pub const fn installed_recovery_contract(
+        &self,
+    ) -> Option<worth_query_installation::facade::InstalledAftermathRecoveryContract> {
+        self.installed_recovery_contract
+    }
+
+    pub const fn published_aftermath_posture(
+        &self,
+    ) -> Option<worth_query_installation::facade::PublishedAftermathPosture> {
+        self.published_aftermath_posture
     }
 
     pub const fn principal_scope(&self) -> &WorthQueryOperationScopeBinding {
@@ -288,13 +312,11 @@ impl WorthQueryApplicationCommitAuthorityBinding {
     /// A mismatched type yields no value; the caller never supplies replacement
     /// bytes or a fallback value.
     pub(crate) fn retained_governed_input<Input: 'static>(&self) -> Option<&Input> {
-        self.retained_governed_input.as_ref()?.downcast_ref()
+        self.retained_governed_input.as_deref()?.downcast_ref()
     }
 
-    pub(crate) const fn retained_governed_input_carrier(
-        &self,
-    ) -> Option<&WorthQueryRetainedGovernedInput> {
-        self.retained_governed_input.as_ref()
+    pub(crate) fn retained_governed_input_carrier(&self) -> Option<&WorthQueryRetainedGovernedInput> {
+        self.retained_governed_input.as_deref()
     }
 
     pub(crate) fn original_inspection_disclosure(

@@ -36,6 +36,7 @@ fn concurrent_replay_references_release_each_original_reference_once() {
         )
         .unwrap();
     let committed = transaction.commit(execution, &runtime).unwrap();
+    let entities = worth_testkit_relational::aspect_storage::publications::changed_entities(&committed);
     release_test_commit_snapshot(&runtime, &committed);
     let version = committed.version_id;
     let start = std::sync::Barrier::new(8);
@@ -59,6 +60,13 @@ fn concurrent_replay_references_release_each_original_reference_once() {
             worker.join().unwrap();
         }
     });
+    for &entity in &entities {
+        assert_eq!(
+            runtime.entity_replay_pin_count(entity),
+            Some(1),
+            "eight concurrent replay references share one physical pin"
+        );
+    }
     std::thread::scope(|scope| {
         let workers = (0..8)
             .map(|_| {
@@ -74,6 +82,13 @@ fn concurrent_replay_references_release_each_original_reference_once() {
             worker.join().unwrap();
         }
     });
+    for &entity in &entities {
+        assert_eq!(
+            runtime.entity_replay_pin_count(entity),
+            Some(0),
+            "releasing all eight references clears physical replay pins"
+        );
+    }
     assert!(!runtime
         .history_authority()
         .release_version_replay_retention(version));

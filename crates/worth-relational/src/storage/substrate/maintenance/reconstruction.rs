@@ -9,7 +9,10 @@ pub struct ReconstructionLane<'scope> {
 pub struct ReconstructionWork<'borrow, 'scope> {
     work: &'borrow mut ChangeWork<'scope>,
 }
-impl ReconstructionWork<'_, '_> {
+impl<'borrow, 'scope> ReconstructionWork<'borrow, 'scope> {
+    pub(crate) fn from_change_work(work: &'borrow mut ChangeWork<'scope>) -> Self {
+        Self { work }
+    }
     pub fn prepare(&mut self, units: u64, bytes: u64) -> Result<(), MaintenanceRefusal> {
         self.work.prepare(units, bytes)
     }

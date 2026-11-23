@@ -21,8 +21,11 @@ mod checkpoint_member_carry;
 mod checkpoint_memory_demand;
 mod checkpoint_native_capture;
 mod checkpoint_region_consistency;
+mod checkpoint_split_doors_for_test;
 mod checkpoint_transition;
 mod checkpointing;
+#[doc(hidden)]
+pub use checkpoint_split_doors_for_test::CapturedRelationalCheckpointBasisForTest;
 mod diagnostics;
 mod lineage_allocation;
 #[cfg(test)]
@@ -32,6 +35,8 @@ mod lineage_allocation_tests;
 mod recorded_component_readmission;
 mod recovered_associated_effects;
 mod recovered_publication;
+#[doc(hidden)]
+pub use recovered_publication::RelationalRetentionGateTrialForTest;
 pub use recovered_publication::{
     RefusedRelationalPublicationReadmission, RelationalRecordedSuccessorRefusal,
     RelationalRecoveredPublicationAdmissionCause, RelationalRecoveredPublicationCustody,

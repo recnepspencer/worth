@@ -245,7 +245,6 @@ fn snapshot_registry_scale_runtime() -> RelationalRuntime {
             max_active_snapshot_handles: Some(8_192),
             max_transaction_savepoints: 8,
             max_prepared_candidates: Some(8),
-            candidate_max_lifetime_millis: 30_000,
         })
         .build()
         .expect("valid native runtime configuration")

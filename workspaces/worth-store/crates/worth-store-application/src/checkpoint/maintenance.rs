@@ -18,7 +18,6 @@ pub enum ApplicationHomeCheckpointMaintenanceDenial {
     Busy,
     WorkerCreation(std::io::ErrorKind),
     WorkerPanicked,
-    DeadlineOverflow,
 }
 #[derive(Debug, Default)]
 pub(super) struct CheckpointMaintenance {

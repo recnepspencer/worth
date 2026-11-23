@@ -1,11 +1,14 @@
 use std::collections::BTreeSet;
 
 use worth_store_physical_format::{
-    decode_canonical_redo_v3, CanonicalRedoWireDenial, PersistedPhysicalRecoveryProjection,
-    PhysicalRecordFormatDeclaration, PhysicalRecoveryProjectionDecodeLimits,
+    decode_canonical_redo_v3, decode_canonical_redo_v3_with_distinct_and_storage,
+    CanonicalRedoWireDenial, PersistedPhysicalRecoveryProjection, PhysicalRecordFormatDeclaration,
+    PhysicalRecoveryDecodeFailure, PhysicalRecoveryProjectionDecodeLimits,
+    PhysicalRecoveryProjectionDenial,
 };
 use worth_store_wal::{LogSequenceNumber, WalLsnRange};
 
+use super::plan::RedoAllocationBudget;
 use super::PhysicalRedoPlanningDenial;
 
 pub use worth_store_physical_format::{
@@ -55,13 +58,15 @@ pub fn decode_physical_redo_records(
     .map(|(records, _)| records)
 }
 
-pub(super) fn decode_physical_redo_member(
+pub(super) fn decode_physical_redo_member_with_storage(
     bytes: &[u8],
     expected_range: WalLsnRange,
     maximum_targets: u64,
-    distinct: Option<(&mut BTreeSet<PhysicalRedoTargetIdentity>, u64)>,
+    distinct: &mut Vec<PhysicalRedoTargetIdentity>,
+    maximum_distinct: u64,
     projection_limits: PhysicalRecoveryProjectionDecodeLimits,
     format: PhysicalRecordFormatDeclaration,
+    budget: &mut RedoAllocationBudget,
 ) -> Result<
     (
         Box<[PhysicalRedoRecord]>,
@@ -69,14 +74,56 @@ pub(super) fn decode_physical_redo_member(
     ),
     PhysicalRedoPlanningDenial,
 > {
-    decode_member(
+    let (wire_records, projection) = decode_canonical_redo_v3_with_distinct_and_storage(
         bytes,
-        expected_range,
+        expected_range.start().get(),
+        expected_range.end_exclusive().get(),
         maximum_targets,
         distinct,
+        maximum_distinct,
         projection_limits,
         format,
+        budget,
     )
+    .map_err(map_decode_failure)?;
+    let wire_bytes = RedoAllocationBudget::slot_bytes::<
+        worth_store_physical_format::CanonicalRedoWireRecord,
+    >(wire_records.len())?;
+    let mut records = budget.reserve_exact::<PhysicalRedoRecord>(wire_records.len())?;
+    for wire in wire_records.into_vec() {
+        let (ordinal, lsn, targets, bytes) = wire.into_parts();
+        records.push(PhysicalRedoRecord {
+            ordinal,
+            lsn: LogSequenceNumber::new(lsn),
+            targets,
+            bytes,
+        });
+    }
+    budget.release(wire_bytes);
+    Ok((budget.into_boxed_slice(records)?, projection))
+}
+
+fn map_decode_failure(
+    failure: PhysicalRecoveryDecodeFailure<PhysicalRedoPlanningDenial>,
+) -> PhysicalRedoPlanningDenial {
+    match failure {
+        PhysicalRecoveryDecodeFailure::Canonical(denial) => map_wire_denial(denial),
+        PhysicalRecoveryDecodeFailure::Projection(PhysicalRecoveryProjectionDenial::EntryLimit) => {
+            PhysicalRedoPlanningDenial::InvalidRecoveryProjection
+        }
+        PhysicalRecoveryDecodeFailure::Projection(
+            PhysicalRecoveryProjectionDenial::UnsupportedVersion(version),
+        ) => PhysicalRedoPlanningDenial::UnsupportedRecoveryProjectionVersion(version),
+        PhysicalRecoveryDecodeFailure::Projection(_) => {
+            PhysicalRedoPlanningDenial::InvalidRecoveryProjection
+        }
+        PhysicalRecoveryDecodeFailure::Allocation(denial) => denial,
+        PhysicalRecoveryDecodeFailure::AllocationFailed { .. }
+        | PhysicalRecoveryDecodeFailure::AllocatorExceededReservation { .. }
+        | PhysicalRecoveryDecodeFailure::SizeOverflow => {
+            PhysicalRedoPlanningDenial::CounterOverflow
+        }
+    }
 }
 
 pub(super) fn decode_physical_redo_records_with_distinct(

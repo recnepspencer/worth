@@ -67,6 +67,8 @@ pub enum RelationalForkDenial {
     TransitionStorageExhausted,
     /// Restored transition data differs from this source's original prefix.
     TransitionOriginalPrefixMismatch,
+    /// Fork materialization accounting total could not be represented in `u64`.
+    AllocationAccountingOverflow,
 }
 
 impl super::RelationalBranchTransitionDenial for RelationalForkDenial {
@@ -132,4 +134,4 @@ impl RelationalForkOutcome {
 }
 
 use source_validation::ValidatedForkSource;
-use target_preparation::PreparedForkTarget;
+pub(in crate::branch) use target_preparation::PreparedForkTarget;

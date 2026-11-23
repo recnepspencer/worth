@@ -137,6 +137,9 @@ pub(super) fn reopened_with_source(
         0,
         "reopen reads no lineage or symbol members"
     );
+    let residency = runtime.observe_lineage_residency();
+    assert_eq!(residency.resident_node_count, 0);
+    assert_eq!(residency.resident_event_count, 0);
     EventFixture {
         runtime,
         source,

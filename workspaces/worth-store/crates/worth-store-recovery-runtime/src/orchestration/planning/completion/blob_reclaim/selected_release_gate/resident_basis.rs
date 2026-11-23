@@ -29,6 +29,11 @@ pub(super) fn seed(
     Ok(resident)
 }
 
+pub(super) fn reserve_box<T>(resident: &mut ResidentAllowance) -> Result<(), ()> {
+    let bytes = u64::try_from(std::mem::size_of::<T>()).unwrap_or(u64::MAX);
+    resident.bytes(bytes).map_err(|_| ())
+}
+
 pub(super) fn limit_failure(
     context: &PlanningContext,
     resident: &ResidentAllowance,

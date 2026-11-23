@@ -116,7 +116,6 @@ impl RelationalCommitEnvelopeResidency {
             }),
         }
     }
-    #[cfg(test)]
     pub(crate) fn resident_payload_bytes(&self) -> Option<u64> {
         self.state
             .lock()
@@ -136,6 +135,22 @@ impl RelationalCommitEnvelopeResidency {
             } => canonical
                 .payload_storage_bytes()
                 .saturating_add(original.as_ref().map_or(0, |bytes| bytes.len() as u64)),
+            _ => 0,
+        }
+    }
+    /// Only the separately admitted original Memory frame added at position
+    /// binding; excludes `canonical.payload_storage_bytes()` already accounted
+    /// during artifact preparation.
+    pub(crate) fn original_frame_storage_bytes(&self) -> u64 {
+        match &self
+            .state
+            .lock()
+            .unwrap_or_else(|error| error.into_inner())
+            .backing
+        {
+            EnvelopeBacking::Memory { original, .. } => {
+                original.as_ref().map_or(0, |bytes| bytes.len() as u64)
+            }
             _ => 0,
         }
     }

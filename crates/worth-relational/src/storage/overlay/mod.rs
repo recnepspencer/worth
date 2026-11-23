@@ -24,6 +24,7 @@ pub(crate) use partition::{
     PartitionMutationJournal, PartitionState, RelationalPartitionAllocationInventory,
     SnapshotPartitionPins, TouchedSlots,
 };
+pub(crate) use partition_allocation_walk::ReclaimableAllocations;
 pub(crate) use partition_content::{
     PartitionContentCommitment, PartitionContentDigestError, PartitionHistoryFrontiers,
 };

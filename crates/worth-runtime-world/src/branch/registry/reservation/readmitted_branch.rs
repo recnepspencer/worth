@@ -31,13 +31,9 @@ impl ProductBranchRegistryReservation {
             .state
             .lock()
             .unwrap_or_else(|error| error.into_inner());
-        let source_cell = state
-            .entries
-            .get(source.branch_identity())
-            .ok_or(ProductBranchRegistryDenial::IdentityMismatch)?;
-        if source_cell.lifecycle != source.lifecycle_incarnation() {
-            return Err(ProductBranchRegistryDenial::IdentityMismatch);
-        }
+        // Cold readmission already authenticated `source` from the exact
+        // historical incarnation in the validated journal; a retired parent
+        // (or a later same-name incarnation) must not block its surviving child.
         self.insert_installed(&mut state, &mut installed)
     }
 }

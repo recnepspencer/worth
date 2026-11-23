@@ -48,6 +48,7 @@ pub struct RelationalWorldOriginalDescription {
     fate: WorldOriginalFate,
     effect: Option<RelationalWorldEffectCoordinates>,
     receipt: Option<RelationalCommitReceipt>,
+    source_disposed: bool,
     _receipt_memory: Option<ExecutionMemoryReservation>,
 }
 impl RelationalWorldOriginalDescription {
@@ -78,8 +79,16 @@ impl RelationalWorldOriginalDescription {
             fate,
             effect,
             receipt: receipt.cloned(),
+            source_disposed: false,
             _receipt_memory: memory,
         })
+    }
+    pub fn with_source_disposed(mut self, source_disposed: bool) -> Self {
+        self.source_disposed = source_disposed;
+        self
+    }
+    pub fn source_disposed(&self) -> bool {
+        self.source_disposed
     }
     pub fn caller(&self) -> &CanonicalDigestId {
         &self.caller

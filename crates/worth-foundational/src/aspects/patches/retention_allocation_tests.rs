@@ -73,10 +73,7 @@ fn retained_storage_and_delta_scratch_cover_observed_splits_merges_and_long_keys
         };
         let next = next.into_parts().into_parts().0;
         assert!(next.get(added.key()).is_none());
-        assert_eq!(
-            next.aspects().maximum_key_width(),
-            if next.aspects().is_empty() { 0 } else { 5 }
-        );
+        assert_eq!(next.aspects().len(), result.aspects().len() - 1);
     }
 }
 
@@ -128,7 +125,11 @@ fn independent_successor_retention_covers_observed_backing_after_predecessor_dro
         let bound = AuthoritativeRecordAspectPatch::empty()
             .application_retained_storage_bounds(Some(&successor))
             .unwrap();
-        assert!(retained > 0, "even an empty state owns persistent roots");
+        if count == 0 {
+            assert_eq!(retained, 0, "empty owned AVL map allocates no roots");
+        } else {
+            assert!(retained > 0);
+        }
         assert!(
             retained <= bound.retained_bytes,
             "count={count}, observed retained={retained}, bound={bound:?}"

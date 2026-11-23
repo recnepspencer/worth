@@ -7,7 +7,7 @@ use crate::history::data::BranchId;
 /// A prepared target whose head retention and optional basis are already
 /// acquired. Dropping it releases both and installs nothing, so the fork's
 /// durable step can still refuse.
-pub(super) struct InstallableForkTarget {
+pub(in crate::branch) struct InstallableForkTarget {
     prepared: PreparedForkTarget,
     materialization_cost: crate::runtime::RelationalForkMaterializationCost,
     basis: Option<AdmittedRelationalBranchBasis>,
@@ -23,12 +23,12 @@ impl RelationalForkPort {
     /// Acquire everything the installation needs and can fail on: the
     /// target's head retention and, when asked, its admitted basis. Both are
     /// held by the uninstalled target cell.
-    pub(super) fn prepare_installation(
+    pub(in crate::branch) fn prepare_installation(
         &self,
         mut target: PreparedForkTarget,
         return_basis: bool,
     ) -> Result<InstallableForkTarget, RelationalForkDenial> {
-        let materialization_cost = materialization_cost(&target);
+        let materialization_cost = materialization_cost(&target)?;
         let target_root = target
             .target_cell
             .root()
@@ -118,24 +118,28 @@ impl RelationalForkPort {
 
 fn materialization_cost(
     target: &PreparedForkTarget,
-) -> crate::runtime::RelationalForkMaterializationCost {
-    let fork_materialized_authoritative_bytes = target
+) -> Result<crate::runtime::RelationalForkMaterializationCost, RelationalForkDenial> {
+    let fork_materialized_authoritative_bytes = match target
         .target_cell
         .root()
         .filter(|target_root| !target_root.shares_authoritative_regions_with(&target.source_root))
-        .map(|target_root| target_root.logical_partition_payload_bytes())
-        .unwrap_or(0);
+    {
+        Some(target_root) => target_root
+            .logical_partition_payload_bytes()
+            .map_err(|_| RelationalForkDenial::AllocationAccountingOverflow)?,
+        None => 0,
+    };
     let copied_commit_envelopes = target
         .target_cell
         .root()
         .filter(|target_root| !target_root.shares_canonical_envelope_with(&target.source_root))
         .map_or(0, |_| 1);
-    crate::runtime::RelationalForkMaterializationCost {
+    Ok(crate::runtime::RelationalForkMaterializationCost {
         entity_count: 0,
         relation_count: 0,
         authoritative_bytes: fork_materialized_authoritative_bytes,
         copied_commit_envelopes,
-    }
+    })
 }
 
 fn map_retention_denial(

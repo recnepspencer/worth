@@ -16,13 +16,15 @@ use worth_testkit_relational::{
     durable_medium::TestDurableMedium,
     durable_publication::durable_runtime,
 };
+pub(super) const POPULATION: usize = 600;
 pub(super) struct BucketRecipe {
     original: ColdRecoverySourceFixture,
     pub endpoints: [EntityId; 2],
     pub label_bucket: RelationalDurableMemberLocator,
     pub cold_key: String,
+    pub relation_floor: usize,
 }
-pub(super) struct BucketFixture{pub runtime:worth_relational::facade::runtime::RelationalRuntime,pub source:std::sync::Arc<worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource>,pub medium:std::sync::Arc<TestDurableMedium>,pub endpoints:[EntityId;2],pub label_bucket:RelationalDurableMemberLocator,pub cold_key:String}
+pub(super) struct BucketFixture{pub runtime:worth_relational::facade::runtime::RelationalRuntime,pub source:std::sync::Arc<worth_testkit_relational::durable_medium::immutable_members::ImmutableCheckpointMemberSource>,pub medium:std::sync::Arc<TestDurableMedium>,pub endpoints:[EntityId;2],pub label_bucket:RelationalDurableMemberLocator,pub cold_key:String,pub relation_floor:usize}
 impl BucketRecipe {
     pub fn new(request: &ExecutionRequest<'_, '_>) -> Self {
         let medium = TestDurableMedium::new();
@@ -62,6 +64,12 @@ impl BucketRecipe {
             .find(|entry| entry.bucket == bucket)
             .unwrap()
             .pages[0];
+        let relation_floor = directory
+            .mirror
+            .iter()
+            .find(|leaf| leaf.partition_id == PartitionId::main())
+            .unwrap()
+            .relation_slots;
         assert!(
             directory.symbols.len() > 1,
             "fixture spans dictionary ID pages"
@@ -71,6 +79,7 @@ impl BucketRecipe {
             endpoints,
             label_bucket,
             cold_key,
+            relation_floor,
         }
     }
     pub fn reopen(&self, request: &ExecutionRequest<'_, '_>) -> BucketFixture {
@@ -83,6 +92,7 @@ impl BucketRecipe {
                 endpoints: self.endpoints,
                 label_bucket: self.label_bucket,
                 cold_key: self.cold_key.clone(),
+                relation_floor: self.relation_floor,
             }
         }
     }

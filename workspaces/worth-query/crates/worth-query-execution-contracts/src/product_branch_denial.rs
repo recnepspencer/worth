@@ -14,7 +14,6 @@ pub enum WorthQueryProductBranchAdmissionDenial {
 /// Why a selected product basis could not be admitted for a read.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum WorthQueryProductBranchAdmissionRefusalKind {
-    DurableBranchPublicationRequired,
     ExpectedDescriptionVersionUnsupported {
         supported: u16,
         actual: u16,

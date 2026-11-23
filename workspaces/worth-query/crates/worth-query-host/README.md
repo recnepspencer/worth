@@ -286,11 +286,13 @@ been recorded.
 Resume, plan-drift qualification, interrupted binding and process-kill courts
 remain cleanup work; the graceful workflow above does not qualify them.
 
-### Durable branch creation
+### Durable branch creation, retirement, and history disposal
 
-On a Directory Home, creating a branch that must fork Signal state refuses with
-`RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired`. Durable
-branch publication and retirement belong to Milestone 3's cleanup track (C2).
+On a Directory Home, durable branch creation (including Native and Signal forks),
+durable branch retirement, and durable history disposal publish through World's
+authoritative journals. Created branches, forks, and retired-branch states
+survive graceful close/reopen and quiescent kill/reopen, while disposed history
+is released once and is not resurrected on reopen.
 
 ## Explain a query result or source operation
 
@@ -738,8 +740,10 @@ workflow advance. No callback or resume message advances an instance itself.
 
 ## Branch-Local Program Evolution
 
-This section uses MemoryOnly. Directory program transitions and durable branch
-creation remain pending under the owners named above.
+This section uses MemoryOnly. Durable branch creation, retirement, and history
+disposal publish through World's authoritative journals on Directory Homes;
+crash-recovery qualification for interrupted Directory program transitions
+remains under the owners named above.
 
 One host may roster multiple validated application programs over the same
 installed native contracts. A request enters the public path with

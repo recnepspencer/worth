@@ -379,8 +379,8 @@ pub use crate::application_home::{
 /// Relational DATA for a Home transition author. These values grant no step,
 /// initialization, publication or Native owner access.
 pub mod home_program_transition;
-/// Existing owner refusal vocabulary for retained Home custody.
-pub use crate::application_home::ApplicationHomeCloseDenial;
+/// Existing owner refusal vocabulary for retained Home custody and Directory checkpoints.
+pub use crate::application_home::{ApplicationHomeCheckpointDenial, ApplicationHomeCloseDenial};
 /// Store's physical open refusal from `WorthQueryApplicationHomeOpenRefused::
 /// physical_refusal`: an application matches a contended or discard-pending
 /// open by kind. Store owns this vocabulary; Host does not copy it.

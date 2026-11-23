@@ -240,8 +240,7 @@ fn maintenance_denial(
         M::Basis(_)
         | M::SnapshotUnavailable
         | M::CommitMismatch
-        | M::CandidateUnavailable
-        | M::CandidateLifetimeExpired { .. } => return D::ExactBasisRequired,
+        | M::CandidateUnavailable => return D::ExactBasisRequired,
         M::IndexUnavailable(_) => K::IndexNotInstalled,
         M::GenerationKindMismatch(_) => K::WrongIndexKind,
         M::ColdReconstructionRequired => K::ExactGenerationUnavailable,

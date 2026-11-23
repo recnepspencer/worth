@@ -24,6 +24,7 @@ where
     RootValue<S, R>: WorthQueryApplicationProjection<S, RootQuery<S, R>> + Clone,
     R::Dependents: ProgramOutputContinuationFactory<S, P, RootDemand<S, R>>,
 {
+    #[inline(never)]
     pub(super) fn readmit_original_in_phase(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -87,7 +88,7 @@ where
                     !performed.matches_original_receipt(&access, &receipt)) {
                     return Advance::Refused { operation: self, denial: Denial::RecoveryCarrierUnavailable };
                 }
-                self.state = State::ReplayRecorded(receipt);
+                *self.state = State::ReplayRecorded(receipt);
                 self.description.original.as_mut().expect("readmitted original").readmission = false;
                 Advance::Progress { operation: self, progress: Progress::SourceReplayObserved }
             }
@@ -105,6 +106,7 @@ where
         }
     }
 
+    #[inline(never)]
     pub(super) fn advance_replay(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
@@ -114,7 +116,7 @@ where
             WorthQueryApplicationIdempotencyResolution as Resolution,
             WorthQueryManagedApplicationRecoveryDenial as Recovery,
         };
-        let original = match &self.state {
+        let original = match &*self.state {
             State::ReplayRetained(receipt) => {
                 worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Retained(
                     receipt,
@@ -174,7 +176,7 @@ where
             &prepared.admission,
         ) {
             Ok(outputs) => {
-                self.state = State::Outputs(outputs);
+                *self.state = State::Outputs(outputs);
                 Advance::Progress {
                     operation: self,
                     progress: Progress::RegisteredOutputsRecovered,
@@ -188,7 +190,7 @@ where
             },
             Err(AdmittedDiscoveredRecoveryDenial::Outputs(denial)) => {
                 if denial.recovery_posture() == WorthQueryRequiredOutputRecoveryPosture::Terminal {
-                    self.state = State::NotPerformed(
+                    *self.state = State::NotPerformed(
                         match receipt {
                         worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Retained(receipt) => WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt.clone()),
                         worth_query_execution::facade::primary_graph::WorthQueryOutputSourceReplay::Recorded(receipt) => WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt.clone()),

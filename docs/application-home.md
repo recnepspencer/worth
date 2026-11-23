@@ -235,6 +235,12 @@ fixed owner order before the Home serves anything.
   once any fork is durable it continues. A kill between Native's fork and
   Signal's completes Signal's planned fork once, at the recorded basis,
   before the creation is published.
+- **Durable branch retirement and history disposal:** retiring a product branch
+  and disposing retired or unprotected historical commits publish through
+  World's journals (`Branches` and `Custody`). Retired branches remain retired
+  with history readable to the retained horizon across graceful close/reopen and
+  quiescent kill/reopen; disposed commits release their roots and envelopes once
+  and are never resurrected on reopen.
 - **An interrupted program transition:** reopen with the same transition request
   and it resumes. Every step happens exactly once and the result equals an
   uninterrupted run. If the recomputed plan differs from the recorded one,
@@ -325,7 +331,10 @@ maintenance when any Native or World journal reaches the threshold: 4096 entries
 or 64 MiB of payload by default. Change the thresholds and the maintenance
 allowance with
 `request.with_checkpoint_limits(host::WorthQueryApplicationHomeCheckpointLimits::new(entries, payload_bytes))`
-and its `with_maintenance_allowance(work, memory_bytes, timeout)`.
+and its `with_maintenance_allowance(work, memory_bytes)`. Counted work and
+memory bound maintenance and the close checkpoint; no wall-clock deadline
+applies, so a slow machine never turns a graceful close into a failed
+checkpoint.
 
 `home.checkpoint(&request)` takes one explicitly, `home.inspect_checkpoint(&request)`
 reports what is due, and `home.recover_checkpoint(&request)` finishes an accepted

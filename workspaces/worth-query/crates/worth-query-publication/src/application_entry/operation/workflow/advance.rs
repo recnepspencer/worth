@@ -52,27 +52,27 @@ where
             ),
             Ok(Ok(WorkflowStep::Terminal)) => {
                 WorthQueryWorkflowOperationAdvance::Terminal(WorthQueryTerminalWorkflowOperation {
-                    state: super::completion::TerminalWorkflowState::Native {
+                    state: Box::new(super::completion::TerminalWorkflowState::Native {
                         source: WorthQueryTerminalSourceOperation {
                             operation: self.source,
                         },
-                    },
+                    }),
                 })
             }
             Ok(Ok(WorkflowStep::Spent(denial))) => {
                 WorthQueryWorkflowOperationAdvance::Terminal(WorthQueryTerminalWorkflowOperation {
-                    state: super::completion::TerminalWorkflowState::Spent {
+                    state: Box::new(super::completion::TerminalWorkflowState::Spent {
                         operation: self,
                         denial,
-                    },
+                    }),
                 })
             }
             Ok(Ok(WorkflowStep::RecoveryTerminal(denial))) => {
                 WorthQueryWorkflowOperationAdvance::Terminal(WorthQueryTerminalWorkflowOperation {
-                    state: super::completion::TerminalWorkflowState::Recovery {
+                    state: Box::new(super::completion::TerminalWorkflowState::Recovery {
                         operation: self,
                         denial,
-                    },
+                    }),
                 })
             }
             Ok(Err(denial)) => WorthQueryWorkflowOperationAdvance::Refused {

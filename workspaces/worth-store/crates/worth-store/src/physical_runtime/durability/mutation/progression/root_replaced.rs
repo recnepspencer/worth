@@ -9,7 +9,7 @@ use crate::physical_runtime::{
 
 pub struct RootReplacedPhysicalMutationMembers {
     core: RootPublicationPreparedCore,
-    replacement: SettledPhysicalWork,
+    replacement: Box<SettledPhysicalWork>,
 }
 
 impl RootReplacedPhysicalMutationMembers {
@@ -17,7 +17,10 @@ impl RootReplacedPhysicalMutationMembers {
         core: RootPublicationPreparedCore,
         replacement: SettledPhysicalWork,
     ) -> Self {
-        Self { core, replacement }
+        Self {
+            core,
+            replacement: Box::new(replacement),
+        }
     }
 
     pub const fn group_basis(&self) -> PhysicalDurabilityGroupBasis {
@@ -56,7 +59,7 @@ impl RootReplacedPhysicalMutationMembers {
 
     pub(in crate::physical_runtime) fn into_parts(
         self,
-    ) -> (RootPublicationPreparedCore, SettledPhysicalWork) {
+    ) -> (RootPublicationPreparedCore, Box<SettledPhysicalWork>) {
         (self.core, self.replacement)
     }
 }

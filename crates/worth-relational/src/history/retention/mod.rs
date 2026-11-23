@@ -6,6 +6,8 @@ mod historical_retirement;
 pub(crate) use historical_retirement::RelationalHistoricalObservationRetirement;
 mod index_liveness;
 mod lane;
+#[doc(hidden)]
+pub use lane::{RelationalRetentionCensusForTest, RelationalRetentionGateForTest};
 #[cfg(test)]
 pub(crate) use lane::assert_external_cut_and_lane_busy;
 mod lease;
@@ -53,6 +55,7 @@ pub use reclamation::RelationalBranchRootReclamationOutcome;
 pub(crate) use reclamation::RetainedIndexRoots;
 pub(crate) use storage_inventory::RelationalRetiredRootStorageSnapshot;
 pub(crate) use terminal_accounting::RelationalExternalRetentionTerminalAccounting;
+pub use terminal_accounting::RelationalExternalRetentionTerminalCounts;
 
 #[cfg(test)]
 mod component_cut_tests;

@@ -30,7 +30,7 @@ where
         if let Err(cause) = self.admission.description.admit_original_discharge() {
             return Err((self, cause));
         }
-        let prepared = match &mut self.state {
+        let prepared = match &mut *self.state {
             SourceState::<S, I>::Unpublished(recovery) => {
                 self.cleanup.retain_original_recovery(recovery.clone())
             }

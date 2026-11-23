@@ -98,7 +98,7 @@ owner state.
 | Port method | Input | Output | Canonical owner | Compatibility delegate and required evidence |
 | --- | --- | --- | --- | --- |
 | `prepare_branch_transaction` | `BranchBoundRelationalTransaction` | `Result<PreparedRelationalCommitCandidate, TransactionCommitError>` | preparation owner and candidate registry | runtime `prepare_branch_transaction`; healthy preparation plus validation, owner-loss, capacity, and cancellation/deferral denial |
-| `discard_prepared_candidate` | `PreparedRelationalCommitCandidate` | `Result<DiscardedRelationalCommitCandidate, TransactionCommitError>` | preparation owner and candidate registry | runtime `discard_prepared_candidate`; exact by-value consumption, foreign-owner and owner-unavailable denials, and cleanup; reuse is unavailable by move semantics, while an expired candidate remains discardable |
+| `discard_prepared_candidate` | `PreparedRelationalCommitCandidate` | `Result<DiscardedRelationalCommitCandidate, TransactionCommitError>` | preparation owner and candidate registry | runtime `discard_prepared_candidate`; exact by-value consumption, foreign-owner and owner-unavailable denials, and cleanup; reuse is unavailable by move semantics |
 | `observe_fork_source` | `&BranchId` | `Result<(RelationalForkSourceDescriptor, AdmittedRelationalForkSourceBasis), RelationalForkDenial>` | source branch cell | runtime `observe_fork_source`; live non-empty source plus missing, archived, deleting, empty, and owner-loss denials |
 | `fork_branch` | `BranchId`, `AdmittedRelationalForkSourceBasis` | `Result<RelationalForkOutcome, RelationalForkDenial>` | source cell plus target reservation | runtime `fork_branch`; shared immutable source plus stale/foreign/duplicate/retired/capacity denials |
 | `compare_and_publish` | `PreparedRelationalCommitCandidate` | `RelationalPublicationOutcome` | one branch publication cell | runtime publication convenience delegates through `publication_port`; performed, stale, denied, deferred, failed-before-movement, one-winner, and residue cleanup |
@@ -428,8 +428,7 @@ These are the complete sets the Runtime World composition owner must match on.
 `OwnerMismatch`, `BranchUnavailable`, `Archived`, `Deleting`.
 
 `RelationalPublicationDeferred`: `PatchPositionReservationContended`,
-`RetentionBackpressure`, `CandidateLifetimeExpired`,
-`CandidateCapacityExhausted`, `PublishedSnapshotCapacityExhausted`.
+`RetentionBackpressure`, `CandidateCapacityExhausted`, `PublishedSnapshotCapacityExhausted`.
 
 `RelationalPublicationFailureKind`: `SnapshotIdentityExhausted`,
 `CandidateIdentityExhausted`,

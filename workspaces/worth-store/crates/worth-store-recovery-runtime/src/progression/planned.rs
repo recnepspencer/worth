@@ -214,7 +214,7 @@ pub(crate) use basis::{
     derive_execution_basis, requires_successor_candidate, verified_historical_release_transition,
     ExecutionBasis, ExecutionBasisDenial, ExecutionBasisState, ExpectationPayload,
     RecoveryObservedCandidateArtifact, RecoveryObservedSuccessorCandidate,
-    RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
+    RecoveryPublicationPlanBody, RecoverySelectedSegmentPage, RecoverySelectedSourceInventory,
 };
 pub use basis::{
     RecoveryBaseImageAction, RecoveryBaseImagePlan, RecoveryPayloadManifestAction,

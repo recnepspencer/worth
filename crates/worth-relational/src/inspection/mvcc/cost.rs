@@ -7,6 +7,7 @@ use super::sharing::{RelationalBranchSharingInspectionDenial, RelationalBranchSh
 pub struct RelationalMvccCostScope {
     branches: Vec<RelationalBranchIdentity>,
     baseline: crate::runtime::RelationalBranchSharingCostCounters,
+    baseline_overflowed: bool,
     baseline_retention: crate::history::retention::RelationalRetentionCostCounters,
     baseline_interruption: crate::runtime::RelationalInterruptionCostCounters,
     baseline_maintenance: crate::history::retention::RelationalRetentionCostCounters,
@@ -24,9 +25,19 @@ impl RelationalMvccCostScope {
         let baseline_retention = selected_retention_counters(runtime, &branches);
         let baseline_interruption = selected_interruption_counters(runtime, &branches);
         let baseline_maintenance = runtime.retention_cost_counters().maintenance_only();
+        let (baseline, baseline_overflowed) = match runtime
+            .try_branch_sharing_cost_counters_for_branches(&branch_ids)
+        {
+            Ok(counters) => (counters, false),
+            Err(_) => (
+                runtime.branch_sharing_cost_counters_for_branches(&branch_ids),
+                true,
+            ),
+        };
         Self {
             branches,
-            baseline: runtime.branch_sharing_cost_counters_for_branches(&branch_ids),
+            baseline,
+            baseline_overflowed,
             baseline_retention,
             baseline_interruption,
             baseline_maintenance,
@@ -190,7 +201,12 @@ impl RelationalRuntime {
             .iter()
             .map(|identity| identity.branch_id().clone())
             .collect::<Vec<_>>();
-        let current = self.branch_sharing_cost_counters_for_branches(&branch_ids);
+        if scope.baseline_overflowed {
+            return Err(RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow);
+        }
+        let current = self
+            .try_branch_sharing_cost_counters_for_branches(&branch_ids)
+            .map_err(|_| RelationalBranchSharingInspectionDenial::AuthoritativeByteBoundOverflow)?;
         let baseline = scope.baseline;
         let branch_population_scans = self
             .branch_population_scan_count()

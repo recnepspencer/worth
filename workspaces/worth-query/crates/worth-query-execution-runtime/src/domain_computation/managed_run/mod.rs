@@ -31,6 +31,7 @@ pub mod recovery_registry;
 pub mod relational_observation;
 mod retained_graph_execution;
 mod run_affinity;
+pub use run_affinity::prime_managed_logical_run_plateau_for_test;
 pub use direct_graph_execution::WorthQueryCompletedDirectEvidenceOwner;
 pub use readmission::WorthQueryDirectReadmissionTransitionPermit;
 pub use relational_observation::WorthQueryManagedRelationalObservation;

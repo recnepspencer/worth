@@ -59,18 +59,18 @@ pub use source::{
 };
 
 pub struct PreparedHomeApplication<Schema: ApplicationSchemaComposition, Program> {
-    state: HomeApplicationState<Schema, Program>,
-    invariants: super::super::WorthQueryApplicationInvariantFactories<Schema>,
+    state: Box<HomeApplicationState<Schema, Program>>,
+    invariants: Box<super::super::WorthQueryApplicationInvariantFactories<Schema>>,
 }
 
 pub struct PreparedHomeNativeMeaning<Schema: ApplicationSchemaComposition, Program> {
-    state: HomeApplicationState<Schema, Program>,
-    schema: PreparedNativeSchemaMeaning,
+    state: Box<HomeApplicationState<Schema, Program>>,
+    schema: Box<PreparedNativeSchemaMeaning>,
 }
 
 pub struct ReadmittedHomeNativeMeaning<Schema: ApplicationSchemaComposition, Program> {
-    state: HomeApplicationState<Schema, Program>,
-    schema: InstalledNativeSchemaMeaning,
+    state: Box<HomeApplicationState<Schema, Program>>,
+    schema: Box<InstalledNativeSchemaMeaning>,
     restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
     activation_seed: super::super::bootstrap::WorthQueryProgramActivationSeed,
 }
@@ -144,7 +144,7 @@ where
     let (program, supported) =
         admitted.ok_or(WorthQueryApplicationPreparationDenial::ProgramAdmissionIncomplete)?;
     Ok(PreparedHomeApplication {
-        state: HomeApplicationState {
+        state: Box::new(HomeApplicationState {
             runtime,
             authority,
             installed,
@@ -157,8 +157,8 @@ where
             limits,
             build_identity,
             authorization_time_source,
-        },
-        invariants,
+        }),
+        invariants: Box::new(invariants),
     })
 }
 

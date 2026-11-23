@@ -114,26 +114,28 @@ impl PerformedPublicationStream {
         original_payload: &crate::durability::canonical_commit_artifact::PreparedOriginalCanonicalPayload,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         cutover_before: Option<std::time::Instant>,
+        mut allow_effect: Option<&mut dyn FnMut() -> bool>,
         medium: Option<&RelationalDurableMediumBinding>,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         cutover: impl FnOnce(PatchStreamPosition) -> T,
     ) -> Result<(Arc<PositionedCanonicalCommit>, T), CanonicalPublicationRecordError> {
         let _reservation = self.reservation.enter(admission)?;
-        cutover_deadline::require(admission, cutover_before)?;
+        cutover_deadline::require(admission, cutover_before, allow_effect.as_deref_mut())?;
         let current = self.head.load_full();
         let prior_position = self.performed_head_position(&current);
         let Some(next_position) = prior_position.checked_add(1) else {
             self.reservation.overflows.fetch_add(1, Ordering::Relaxed);
             return Err(CanonicalPublicationRecordError::PositionCapacityExhausted);
         };
-        let original = cutover_deadline::prepare_frame(admission, cutover_before, || {
-            RelationalCommitPublication::prepare_memory_frame(
-                PatchStreamPosition(next_position),
-                original_payload,
-                medium,
-                execution,
-            )
-        })?;
+        let original =
+            cutover_deadline::prepare_frame(admission, cutover_before, allow_effect, || {
+                RelationalCommitPublication::prepare_memory_frame(
+                    PatchStreamPosition(next_position),
+                    original_payload,
+                    medium,
+                    execution,
+                )
+            })?;
         let positioned = Arc::new(PositionedCanonicalCommit::admit(
             super::CanonicalPositionAdmission::performed(
                 PatchStreamPosition(next_position),

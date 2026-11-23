@@ -52,8 +52,8 @@ pub struct WorthQueryCommittedAftermathCausality {
     parent: RelationalCommitReceipt,
     child: RelationalCommitReceipt,
     fact_record: RecordRef,
-    source: WorthQueryRecordedCorrectionSource,
-    lineage: WorthQueryCorrectionLineageBinding,
+    source: Box<WorthQueryRecordedCorrectionSource>,
+    lineage: Box<WorthQueryCorrectionLineageBinding>,
 }
 
 impl WorthQueryCommittedAftermathCausality {
@@ -79,8 +79,8 @@ impl WorthQueryCommittedAftermathCausality {
                 parent,
                 child,
                 fact_record,
-                source,
-                lineage,
+                source: Box::new(source),
+                lineage: Box::new(lineage),
             })
     }
 
@@ -121,8 +121,8 @@ impl WorthQueryCommittedAftermathCausality {
     ) -> bool {
         self.role == role
             && &self.parent == parent
-            && &self.source == source
-            && &self.lineage == lineage
+            && self.source.as_ref() == source
+            && self.lineage.as_ref() == lineage
             && &self.child.branch_id == target_branch
     }
 }

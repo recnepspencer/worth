@@ -54,6 +54,10 @@ fn cold_head_warm_and_full_warm_uniqueness_reuse_the_original_paged_field_identi
             .recover(execution, plan)
             .unwrap();
         assert_eq!(source.reads.load(Ordering::Relaxed), 0);
+        assert!(receiving
+            .observe_resident_symbol_dictionary()
+            .resolve(symbol)
+            .is_none());
         if warmth == 1 {
             let mut read = begin_main_transaction(&receiving);
             assert!(read

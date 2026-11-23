@@ -232,8 +232,51 @@ pub(super) fn performed_source_settles_required_output(
         latest_commit,
         "the aggregate selects the exact newest commit across every settled graph output"
     );
-    let current_basis = world
-        .application
+    assert_settled_transitive_reads(
+        &world.application,
+        &request,
+        &original_settlement,
+    );
+    let exact_output = settled.observation().selected_commit().clone();
+    drop(original_settlement);
+    drop(repeated_settlement);
+    drop(repeated);
+    drop(settled);
+    drop(recovered);
+    drop(performed);
+    let retired_settlement = settle_and_verify_recovered_output(&request, controls);
+    assert_eq!(
+        retired_settlement
+            .application_commit_receipt()
+            .expect("the retired output retains its original commit")
+            .committed_product_publication()
+            .composite_commit(),
+        &exact_output
+    );
+    assert_eq!(
+        retired_settlement.observation().selected_commit(),
+        &exact_output,
+        "the source commit published the whole tree, so recovery selects that same commit"
+    );
+}
+
+#[inline(never)]
+fn assert_settled_transitive_reads(
+    application: &worth_query_host::facade::application_installation::WorthQueryProgramApplicationRuntime<
+        ConsumerSchema,
+        crate::ConsumerProgram,
+    >,
+    request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
+        '_,
+        '_,
+        '_,
+        ConsumerSchema,
+    >,
+    original_settlement: &worth_query_host::facade::application_entry::WorthQueryApplicationProgramOutputSettlement<
+        worth_query_topology_entry::PlanarQuery,
+    >,
+) {
+    let current_basis = application
         .with_host_advancement(|host_phase| {
             request
                 .retain_read(&host_phase)
@@ -243,7 +286,7 @@ pub(super) fn performed_source_settles_required_output(
 
     request
         .at(&current_basis)
-        .require_current_program_output(&original_settlement)
+        .require_current_program_output(original_settlement)
         .expect("every transitive output retains current Query source lineage");
 
     assert_eq!(
@@ -318,27 +361,21 @@ pub(super) fn performed_source_settles_required_output(
             .value,
         length(5)
     );
-    let exact_output = settled.observation().selected_commit().clone();
-    drop(original_settlement);
-    drop(repeated_settlement);
-    drop(repeated);
-    drop(settled);
-    drop(recovered);
-    drop(performed);
-    let retired_settlement = recovery::settle_recovered(&request, "anchor-a", controls);
-    assert_eq!(
-        retired_settlement
-            .application_commit_receipt()
-            .expect("the retired output retains its original commit")
-            .committed_product_publication()
-            .composite_commit(),
-        &exact_output
-    );
-    assert_eq!(
-        retired_settlement.observation().selected_commit(),
-        &exact_output,
-        "the source commit published the whole tree, so recovery selects that same commit"
-    );
+}
+
+#[inline(never)]
+fn settle_and_verify_recovered_output(
+    request: &worth_query_host::facade::application_entry::WorthQueryApplicationRequest<
+        '_,
+        '_,
+        '_,
+        ConsumerSchema,
+    >,
+    controls: WorthQueryOutputDemandControls,
+) -> worth_query_host::facade::application_entry::WorthQueryApplicationOutputDemandSettlement<
+    worth_query_topology_entry::PlanarQuery,
+> {
+    let retired_settlement = recovery::settle_recovered(request, "anchor-a", controls);
     assert_eq!(
         request
             .at(retired_settlement.observation())
@@ -351,4 +388,5 @@ pub(super) fn performed_source_settles_required_output(
             .value,
         length(3)
     );
+    retired_settlement
 }

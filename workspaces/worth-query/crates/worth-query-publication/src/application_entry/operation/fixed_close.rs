@@ -25,7 +25,7 @@ where
             return Err((self, WorthQueryOperationCloseDenial::FreshRequestMismatch));
         }
         if self.readmitted_recovery.is_some()
-            || !matches!(&self.state, super::fixed::FixedState::Initial)
+            || !matches!(&*self.state, super::fixed::FixedState::Initial)
         {
             return Err((
                 self,
@@ -55,7 +55,7 @@ where
         }
         if self.readmitted_recovery.is_some()
             || !matches!(
-                self.state,
+                &*self.state,
                 super::fixed::FixedState::Initial
                     | super::fixed::FixedState::Outputs(_)
                     | super::fixed::FixedState::ReplayRetained(_)

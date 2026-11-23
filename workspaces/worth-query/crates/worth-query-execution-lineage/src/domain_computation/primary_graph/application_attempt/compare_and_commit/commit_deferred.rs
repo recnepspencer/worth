@@ -1,6 +1,6 @@
 //! Application-owned deferred commit evidence.
 
-/// Evidence that a commit attempt stopped at a capacity, lifetime or prerequisite boundary, carried
+/// Evidence that a commit attempt stopped at a capacity or prerequisite boundary, carried
 /// by the `Deferred` commit outcome.
 ///
 /// Nothing was committed. The [`kind`](Self::kind) names the boundary that
@@ -25,8 +25,6 @@ pub enum WorthQueryApplicationCommitDeferredKind {
     RetentionCapacityExhausted,
     /// Another attempt held the reservation this commit needed.
     PatchPositionReservationContended,
-    /// The prepared candidate outlived its maximum lifetime before it could commit.
-    CandidateLifetimeExpired { maximum_lifetime_millis: u64 },
     /// The owner already held its maximum number of prepared candidates.
     CandidateCapacityExhausted { maximum_candidates: usize },
     /// The owner already held its maximum number of published snapshot handles.
@@ -50,11 +48,6 @@ impl From<crate::domain_computation::provider_session::WorthQueryProviderSession
             Provider::RelationalDeferred(deferred) => Self::RelationalDeferred(deferred),
             Provider::RetentionCapacityExhausted => Self::RetentionCapacityExhausted,
             Provider::PatchPositionReservationContended => Self::PatchPositionReservationContended,
-            Provider::CandidateLifetimeExpired {
-                maximum_lifetime_millis,
-            } => Self::CandidateLifetimeExpired {
-                maximum_lifetime_millis,
-            },
             Provider::CandidateCapacityExhausted { maximum_candidates } => {
                 Self::CandidateCapacityExhausted { maximum_candidates }
             }

@@ -188,8 +188,24 @@ impl HistorySubsystem {
         self.retention_owner.reclaim_retired_roots(maximum_roots)
     }
 
+    pub(crate) fn try_reclaim_retired_branch_roots(
+        &self,
+        maximum_roots: usize,
+    ) -> Result<
+        crate::history::retention::RelationalBranchRootReclamationOutcome,
+        crate::storage::substrate::StorageAllocationOverflow,
+    > {
+        self.retention_owner
+            .try_reclaim_retired_roots(maximum_roots)
+    }
+
     pub(crate) fn retired_branch_root_count(&self) -> usize {
         self.retention_owner.retired_root_count()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn retired_branch_binding_count(&self) -> usize {
+        self.retention_owner.retired_branch_binding_count()
     }
 
     pub(super) fn try_reset_retention_owner(

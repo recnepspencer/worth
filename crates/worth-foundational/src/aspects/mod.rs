@@ -1,3 +1,4 @@
+pub(crate) mod allocation_visitor;
 mod binding;
 mod contracts;
 mod evolution;
@@ -12,6 +13,10 @@ mod structs;
 mod validation;
 mod value_posture;
 
+pub use allocation_visitor::{
+    current_foundational_allocation_watermark, FoundationalAllocationKind,
+    FoundationalAllocationObservation, FoundationalAllocationVisitor,
+};
 pub use binding::{AspectBinding, AuthoritativeAspectChangeKind, TruthPartitionRole};
 pub use contracts::{
     AbsenceLaw, AspectContract, AspectEquivalenceBasis, AspectShape, OpaqueAspectType,

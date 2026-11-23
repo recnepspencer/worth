@@ -52,21 +52,55 @@ fn checkpoint_associated_subject_readmits_its_original_semantic_result() {
     let committed = source
         .settle_performed_publication(perform(request, &source, &association, "selected"))
         .unwrap();
+    let selected_id = committed.commit.commit_id;
     let semantic = committed.semantic_result();
     release_test_commit_snapshot(&source, &committed);
-    create_entity(request, &source, "unrelated-cold");
+    let unrelated = create_entity_outcome(request, &source, "unrelated-cold");
+    let unrelated_id = unrelated.commit.commit_id;
+    release_test_commit_snapshot(&source, &unrelated);
     create_entity(request, &source, "checkpoint-head");
     let recovered = recover_external(request, &source, &medium);
+    medium.drop_artifact(unrelated.patch_position());
+    assert!(medium.artifact_bytes(unrelated.patch_position()).is_none());
+    let resident_of = |commit_id| {
+        recovered
+            .observe_commit_envelope_custody()
+            .into_iter()
+            .find(|row| row.commit_id == commit_id)
+            .expect("commit is catalogued")
+            .resident
+    };
+    assert!(!resident_of(selected_id));
+    assert!(!resident_of(unrelated_id));
+    let before_reads = medium.canonical_member_reads() + medium.canonical_journal_reads();
     let owner = recovered.durability_authority();
     let subjects = owner
         .discover_associated_effects(request, &association)
         .unwrap();
     assert_eq!(subjects.len(), 1);
+    assert_eq!(
+        medium.canonical_member_reads() + medium.canonical_journal_reads(),
+        before_reads,
+        "discovery reads only metadata without opening any commit body"
+    );
+    assert!(
+        !resident_of(selected_id),
+        "discovery reads only metadata without materializing the body"
+    );
     let effect = owner
         .readmit_associated_effect(request, &subjects[0])
         .unwrap();
+    assert_eq!(
+        medium.canonical_member_reads() + medium.canonical_journal_reads(),
+        before_reads + 1,
+        "selected readmission reads only the selected subject body and never touches unrelated history"
+    );
     assert_eq!(effect.settlement(), Settlement::CheckpointReadmitted);
     assert_eq!(effect.semantic_result(), semantic);
+    assert!(
+        !resident_of(unrelated_id),
+        "selected readmission leaves unrelated cold bodies nonresident"
+    );
     let frame = Artifact::readmit(
         &medium.artifact_bytes(effect.subject().position()).unwrap(),
         request,
@@ -109,8 +143,17 @@ fn checkpoint_metadata_enumerates_known_orphan_and_unrelated_originals() {
         .discover_all_associated_effects(request)
         .unwrap();
     assert_eq!(subjects.len(), 3);
+    let custody = runtime.observe_commit_envelope_custody();
     for (subject, expected) in subjects.iter().zip([&known, &orphan, &other]) {
         assert_eq!(subject.association(), Some(expected));
+        assert!(
+            !custody
+                .iter()
+                .find(|row| row.commit_id == subject.receipt().commit_id)
+                .expect("associated subject is catalogued")
+                .resident,
+            "metadata enumeration leaves associated commit bodies cold"
+        );
     }
     assert_eq!(
         runtime

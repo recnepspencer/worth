@@ -38,12 +38,13 @@ where
             Demand<Schema, Root>,
         >,
 {
+    #[inline(never)]
     pub(super) fn advance_initial_in_phase(
         mut self,
         phase: &WorthQueryAdvancementPhase<'_>,
         request: &WorthQueryApplicationRequest<'_, '_, '_, Schema>,
     ) -> FixedAdvance<Schema, Intent, Program, Root, Action> {
-        debug_assert!(matches!(self.state, FixedState::Initial));
+        debug_assert!(matches!(&*self.state, FixedState::Initial));
         if self.description.original.as_ref().is_some_and(|original| original.readmission) {
             return self.readmit_original_in_phase(phase, request);
         }
@@ -102,38 +103,38 @@ where
                 }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::ProductUnpublished(partial)) => {
                     self.initial_cause = Some(partial.initial_cause());
-                    self.state = FixedState::Unpublished(partial);
+                    *self.state = FixedState::Unpublished(partial);
                     Progress::SourceUnpublished
                 }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::Performed(performed)) => {
                     let (result, preparation) = performed.into_preparation();
                     self.result = Some(result);
-                    self.state = FixedState::Preparation(preparation);
+                    *self.state = FixedState::Preparation(preparation);
                     Progress::SourcePerformed
                 }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::RequiredOutputDenied(
                     failure,
                 )) => {
-                    self.state = FixedState::Retention(failure);
+                    *self.state = FixedState::Retention(failure);
                     Progress::SourceRetentionDenied
                 }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::Blocked(blocked)) => {
-                    self.state = FixedState::Blocked(blocked);
+                    *self.state = FixedState::Blocked(blocked);
                     return Advance::Terminal {
                         operation: WorthQueryTerminalFixedOperation::new(self),
                         denial: Denial::NativeTerminal,
                     };
                 }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(WorthQueryApplicationMutationOutcome::RecoveredCommitted(receipt))) => {
-                    self.state = FixedState::ReplayRecorded(receipt);
+                    *self.state = FixedState::ReplayRecorded(receipt);
                     Progress::SourceReplayObserved
                 }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(WorthQueryApplicationMutationOutcome::AlreadyCommitted(receipt))) => {
-                    self.state = FixedState::ReplayRetained(receipt);
+                    *self.state = FixedState::ReplayRetained(receipt);
                     Progress::SourceReplayObserved
                 }
                 Ok(WorthQueryApplicationPerformedMutationOutcome::NotPerformed(outcome)) => {
-                    self.state = FixedState::NotPerformed(self.cleanup.absorb_native_outcome(&self.runtime, outcome));
+                    *self.state = FixedState::NotPerformed(self.cleanup.absorb_native_outcome(&self.runtime, outcome));
                     return Advance::Terminal {
                         operation: WorthQueryTerminalFixedOperation::new(self),
                         denial: Denial::NativeTerminal,

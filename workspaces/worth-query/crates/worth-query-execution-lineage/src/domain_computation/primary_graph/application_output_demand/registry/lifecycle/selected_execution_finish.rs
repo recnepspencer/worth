@@ -156,17 +156,27 @@ impl PreparedSelectedExecutionFinish<'_> {
             };
             return Err((denial, checkpoint));
         }
+        let reached_ready = matches!(checkpoint, WorthQueryOutputCheckpoint::Ready(_));
         let (mut output, retired_observation) =
             WorthQueryOutputProgress::new_with_detached_observation(checkpoint);
         output.bind_publication_head(self.publication_head);
         record.state = DemandState::Output(output);
         let retired_source = record.performed_source.take();
+        let released_basis = if reached_ready {
+            record
+                .readmission_source
+                .as_ref()
+                .and_then(|source| source.release_retained_program_basis())
+        } else {
+            None
+        };
         record.successor_of = None;
         record.wake.notify();
         record.finish();
         drop(state);
         drop(retired_source);
         drop(retired_observation);
+        drop(released_basis);
         Ok(())
     }
 

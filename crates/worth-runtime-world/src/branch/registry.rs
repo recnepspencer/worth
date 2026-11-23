@@ -229,6 +229,69 @@ impl ProductBranchRegistry {
             entry.retirement_boundary,
         ))
     }
+
+    pub(crate) fn retire_permitted(
+        &self,
+        observed: &ProductBranchObservation,
+        permit: super::WorldProductRetirementPermit,
+    ) -> Result<
+        (
+            ProductBranchReferenceCell,
+            ProductBranchIncarnation,
+            ProductBranchReferenceRetirement,
+            Option<crate::identity::CompositeCommitIdentity>,
+        ),
+        ProductBranchRegistryDenial,
+    > {
+        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        if observed.owner_identity() != state.owner {
+            permit.proven_no_effect();
+            return Err(ProductBranchRegistryDenial::ForeignOwner);
+        }
+        let branch = observed.branch_identity();
+        if state
+            .entries
+            .get(branch)
+            .is_none_or(|entry| entry.lifecycle != observed.lifecycle_incarnation())
+        {
+            permit.proven_no_effect();
+            return Err(ProductBranchRegistryDenial::AlreadyRetired);
+        }
+        let retirement = permit.finalize_retirement();
+        let entry = release_installed_entry(&mut state, branch)
+            .expect("the observed incarnation was checked under the registry guard");
+        Ok((
+            entry.cell,
+            entry.lifecycle,
+            retirement,
+            entry.retirement_boundary,
+        ))
+    }
+
+    pub(crate) fn retire_readmitted_by_lifecycle(
+        &self,
+        lifecycle: ProductBranchIncarnation,
+    ) -> Result<
+        (ProductBranchReferenceCell, ProductBranchReferenceRetirement),
+        ProductBranchRegistryDenial,
+    > {
+        let mut state = self.state.lock().unwrap_or_else(|error| error.into_inner());
+        let branch = state
+            .lifecycles
+            .get(&lifecycle)
+            .cloned()
+            .ok_or(ProductBranchRegistryDenial::AlreadyRetired)?;
+        let retirement = state
+            .entries
+            .get(&branch)
+            .expect("lifecycle index matches installed entry")
+            .cell
+            .retire()
+            .map_err(|_| ProductBranchRegistryDenial::AlreadyInstalled)?;
+        let entry = release_installed_entry(&mut state, &branch)
+            .expect("lifecycle index matches installed entry");
+        Ok((entry.cell, retirement))
+    }
 }
 
 /// Take one installed occurrence out of every index that names it. Retirement

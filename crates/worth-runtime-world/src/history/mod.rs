@@ -5,7 +5,8 @@ mod publication;
 mod reclamation;
 mod retention;
 
-pub(crate) use catalog::MemoryOriginalRegistration;
+pub(crate) use catalog::{MemoryOriginalRegistration, MemoryOriginalSlot};
+pub(crate) use publication::MemoryOriginalSuccessor;
 pub(crate) use catalog::{AncestorSelectionPath, HistoryTraversalControl};
 pub use catalog::{
     CompositeAncestorSelectionDenial, CompositeHistoryCatalogDenial, CompositeHistoryTraversal,
@@ -14,8 +15,8 @@ pub use catalog::{
     RuntimeWorldPublicationRow,
 };
 pub(crate) use catalog::{
-    CompositeHistoryCatalog, ReservedCompositeCommitCapacity, RetainedExactHistoryPosition,
-    RetiredHistoryEntries, RuntimeWorldHistoryCatalogContract,
+    CompositeHistoryCatalog, PendingDurableHistoryRetirement, ReservedCompositeCommitCapacity,
+    RetainedExactHistoryPosition, RetiredHistoryEntries, RuntimeWorldHistoryCatalogContract,
 };
 pub(crate) use catalog::{CompositeHistoryCatalogEntry, InstalledRootCommitRollback};
 #[allow(

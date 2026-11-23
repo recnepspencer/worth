@@ -67,6 +67,7 @@ fn caller_association_refuses_rebinding_and_stays_on_the_prepared_candidate() {
     let host=worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = memory_runtime();
+    let routes = runtime.pending_canonical_publication_route_count();
     let association = Association::from_bytes(b"opaque\0caller\xff").unwrap();
     let proposal = propose(execution, &runtime, "rebound")
         .bind_caller_association(association.clone())
@@ -81,7 +82,12 @@ fn caller_association_refuses_rebinding_and_stays_on_the_prepared_candidate() {
         .prepare_validated_proposal(execution, proposal)
         .unwrap();
     assert_eq!(candidate.caller_association().as_ref(), Some(&association));
+    assert_eq!(
+        runtime.pending_canonical_publication_route_count(),
+        routes + 1
+    );
     drop(candidate);
+    assert_eq!(runtime.pending_canonical_publication_route_count(), routes);
 }
 
 #[test]
@@ -119,6 +125,39 @@ fn caller_association_survives_cold_checkpoint_history_and_journal_tail() {
         Some(head.position())
     );
     assert_eq!(outcome.coverage.replayed_tail_commits, 1);
+    assert!(
+        recovered.observe_checkpoint_selection().selected.is_some(),
+        "external-member recovery installs its selected checkpoint directory"
+    );
+    let custody = recovered.observe_commit_envelope_custody();
+    let first_row = custody
+        .iter()
+        .find(|row| row.commit_id == first.commit_id())
+        .expect("historical covered commit is catalogued");
+    assert!(
+        first_row.selected_directory.is_some(),
+        "covered historical commit retains selected directory placement"
+    );
+    assert!(
+        !first_row.resident,
+        "historical body begins cold"
+    );
+    let head_row = custody
+        .iter()
+        .find(|row| row.commit_id == head.commit_id())
+        .expect("checkpoint head commit is catalogued");
+    assert!(
+        head_row.selected_directory.is_some(),
+        "covered checkpoint head retains selected directory placement"
+    );
+    let tail_row = custody
+        .iter()
+        .find(|row| row.commit_id == tail.commit_id())
+        .expect("tail commit is catalogued");
+    assert!(
+        tail_row.selected_directory.is_none(),
+        "tail commits stay outside the selected checkpoint directory"
+    );
     let actual = recovered
         .durability()
         .canonical_commit_artifacts(execution)

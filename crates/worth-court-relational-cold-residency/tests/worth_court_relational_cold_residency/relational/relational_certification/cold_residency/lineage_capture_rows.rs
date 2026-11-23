@@ -13,6 +13,7 @@ fn fork_capture_preserves_every_original_published_event_in_its_admitted_directo
     let request = &ExecutionRequest::serial(&host);
     let fixture = reopened(request);
     let fork = fixture.runtime.fork().unwrap();
+    assert_eq!(fork.observe_lineage_residency().resident_event_count, 0);
     // Populate the shared event pages through actual public authored-history reads.
     for page in &fixture.directory.lineage {
         for id in page.first..=page.last {
@@ -26,6 +27,11 @@ fn fork_capture_preserves_every_original_published_event_in_its_admitted_directo
                 .unwrap();
         }
     }
+    assert_eq!(
+        fork.observe_lineage_residency().resident_event_count,
+        0,
+        "parent warmup does not mutate the fork's per-runtime event index"
+    );
     let current_members = fixture.source.members.keys().copied().collect::<Vec<_>>();
     let native = fork
         .durability_authority()
@@ -38,6 +44,11 @@ fn fork_capture_preserves_every_original_published_event_in_its_admitted_directo
             },
         )
         .unwrap();
+    assert_eq!(
+        fork.observe_lineage_residency().resident_event_count,
+        0,
+        "fork capture uses shared resident pages without populating fork query index"
+    );
     let source = fixture.source.with_published_members(native.members());
     let input = RelationalDurableRecoverySource::new(
         Some(RelationalDurableCheckpointSource::new(

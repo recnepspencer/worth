@@ -2,9 +2,9 @@ use super::temporal_idempotency::{prepare_temporal_idempotency, TemporalIdempote
 mod durable_identity;
 use super::*;
 use crate::domain_computation::primary_graph::conditional_operation::canonical_identity::{
-    prepare_temporal_binding_identity, prepare_temporal_runtime_binding_identity,
-    TemporalBindingIdentityParts, TemporalRuntimeBindingIdentityParts,
-    WorthQueryTemporalRuntimeBindingIdentity,
+    prepare_temporal_binding_identity, prepare_temporal_node_definition,
+    prepare_temporal_runtime_binding_identity, TemporalBindingIdentityParts,
+    TemporalRuntimeBindingIdentityParts, WorthQueryTemporalRuntimeBindingIdentity,
 };
 use worth_foundational::facade::CanonicalDigestId;
 use worth_query_declaration::facade::application_schema::StringApplicationValueBinding;
@@ -46,9 +46,12 @@ fn runtime_binding_with_node(
 ) -> WorthQueryTemporalRuntimeBindingIdentity {
     let binding = prepare_temporal_binding_identity(TemporalBindingIdentityParts {
         node_authority: authority,
-        node_definition: (
+        node_definition: prepare_temporal_node_definition(
             CanonicalDigestId::new([node; 32]),
-            worth_query_installation::facade::WorthQueryCanonicalWorkEvidence::zero(),
+            "domain-operation",
+            "slot",
+            &worth_query_installation::facade::WorthQueryConditionalNodeLocation::operation("gate")
+                .unwrap(),
         ),
         clock: "clock",
         source: "source",

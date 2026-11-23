@@ -24,6 +24,7 @@ where
         &self,
         execution: worth_execution::ExecutionRequest<'_, '_>,
         attempt: &mut crate::publication::ReservedCompositePublicationAttempt,
+        cancellation: &crate::publication::RuntimeWorldCancellationToken,
         handoff: Option<&mut super::super::RelationalCutoverHandoff<'_>>,
     ) -> Result<RelationalAttemptProgress, RelationalExecutionFailure> {
         match attempt.plan().relational().posture() {
@@ -39,7 +40,13 @@ where
                     .take_relational_candidate()
                     .ok_or_else(|| pre_effect_failure(NoEffectCause::PreEffectFailure))?;
                 attempt.counters_mut().record_relational_owner_contact();
-                self.publish_relational_candidate(&execution, attempt, candidate, handoff)
+                self.publish_relational_candidate(
+                    &execution,
+                    attempt,
+                    candidate,
+                    cancellation,
+                    handoff,
+                )
             }
             crate::publication::RelationalComponentPlanPosture::AdoptSettled => attempt
                 .take_settled_relational_adoption()
@@ -53,11 +60,18 @@ where
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         attempt: &mut crate::publication::ReservedCompositePublicationAttempt,
         candidate: worth_relational::facade::mvcc::PreparedRelationalCommitCandidate,
+        cancellation: &crate::publication::RuntimeWorldCancellationToken,
         handoff: Option<&mut super::super::RelationalCutoverHandoff<'_>>,
     ) -> Result<RelationalAttemptProgress, RelationalExecutionFailure> {
         match self
-            .publish_relational_with_current_read(execution, attempt, candidate, handoff)
-            .map_err(|denial| pre_effect_failure(NoEffectCause::CurrentReadDependency(denial)))?
+            .publish_relational_with_current_read(
+                execution,
+                attempt,
+                candidate,
+                cancellation,
+                handoff,
+            )
+            .map_err(pre_effect_failure)?
         {
             RelationalPublicationOutcome::RequestStopped(stop) => {
                 Err(pre_effect_failure(NoEffectCause::ExecutionRequest(stop)))
@@ -159,7 +173,6 @@ fn deferred_no_effect(deferred: RelationalPublicationDeferred) -> NoEffectCause 
         }
         RelationalPublicationDeferred::RetentionBackpressure => NoEffectCause::CapacityExhausted,
         RelationalPublicationDeferred::PatchPositionReservationContended
-        | RelationalPublicationDeferred::CandidateLifetimeExpired { .. }
         | RelationalPublicationDeferred::CandidateCapacityExhausted { .. }
         | RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted { .. } => {
             NoEffectCause::PreEffectFailure

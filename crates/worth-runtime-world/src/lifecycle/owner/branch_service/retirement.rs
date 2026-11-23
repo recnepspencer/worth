@@ -28,9 +28,6 @@ where
                 }
             });
         }
-        if self.state.durable.is_some() {
-            return Err(RuntimeWorldBranchRetirementDenial::DurableBranchPublicationRequired);
-        }
         let branch = observed.branch_identity();
         if observed.owner_identity() != self.owner_identity() {
             return Err(RuntimeWorldBranchRetirementDenial::OwnerUnavailable);
@@ -47,11 +44,15 @@ where
             .custody
             .reserve_retirement_work(branch, observed.lifecycle_incarnation())
             .map_err(|()| RuntimeWorldBranchRetirementDenial::CapacityExhausted)?;
-        let (cell, incarnation, retirement, retirement_boundary) = self
-            .state
-            .branches
-            .retire(observed)
-            .map_err(map_retirement_denial)?;
+        let (cell, incarnation, retirement, retirement_boundary) =
+            if let Some(binding) = self.state.durable.as_ref() {
+                self.retire_durable_observed_branch(binding, observed)?
+            } else {
+                self.state
+                    .branches
+                    .retire(observed)
+                    .map_err(map_retirement_denial)?
+            };
         let (retired_head, released_product_head) = retirement.into_parts();
         // Drop the product-head and history custody after the registry lock
         // has been released. No component lifecycle/delete port is called.
@@ -72,6 +73,88 @@ where
             retirement_boundary,
             owner_retirement_work,
         ))
+    }
+
+    fn retire_durable_observed_branch(
+        &self,
+        binding: &std::sync::Arc<crate::durability::WorldDurableMediumBinding>,
+        observed: &ProductBranchObservation,
+    ) -> Result<
+        (
+            crate::branch::ProductBranchReferenceCell,
+            crate::identity::ProductBranchIncarnation,
+            crate::branch::ProductBranchReferenceRetirement,
+            Option<crate::identity::CompositeCommitIdentity>,
+        ),
+        RuntimeWorldBranchRetirementDenial,
+    > {
+        use crate::branch::ProductBranchReferenceCellDenial as CellDenial;
+        use crate::durability::{
+            WorldArtifactInput, WorldDurableArtifact, WorldDurablePublicationStop as Stop,
+            WorldHeadInput,
+        };
+        let cell = self
+            .state
+            .branches
+            .branch_cell_by_lifecycle(observed.lifecycle_incarnation())
+            .ok_or(RuntimeWorldBranchRetirementDenial::AlreadyRetired)?;
+        let (permit, snapshot) = cell.begin_durable_retirement().map_err(|denial| match denial {
+            CellDenial::Retired => RuntimeWorldBranchRetirementDenial::AlreadyRetired,
+            _ => RuntimeWorldBranchRetirementDenial::OwnerUnavailable,
+        })?;
+        if snapshot.branch() != observed.branch_identity()
+            || snapshot.lifecycle() != observed.lifecycle_incarnation()
+        {
+            permit.proven_no_effect();
+            return Err(RuntimeWorldBranchRetirementDenial::AlreadyRetired);
+        }
+        let policy = self.state.execution.request_policy();
+        let serial = worth_execution::SerialRequest::from_policy(
+            &policy,
+            worth_execution::CancellationSource::new().token(),
+            None,
+        );
+        let execution = worth_execution::ExecutionRequest::serial(&serial);
+        let head = match WorldHeadInput::from_snapshot(&snapshot) {
+            Ok(head) => head,
+            Err(_) => {
+                permit.proven_no_effect();
+                return Err(RuntimeWorldBranchRetirementDenial::OwnerUnavailable);
+            }
+        };
+        let subject = match WorldDurableArtifact::from_input(
+            WorldArtifactInput::BranchRetired {
+                head,
+                retiring_incarnation: binding.binding().incarnation(),
+            },
+            &execution,
+        ) {
+            Ok(subject) => subject,
+            Err(_) => {
+                permit.proven_no_effect();
+                return Err(RuntimeWorldBranchRetirementDenial::CapacityExhausted);
+            }
+        };
+        loop {
+            match binding.publish(&subject, &execution) {
+                Ok(_committed) => break,
+                Err(Stop::Pending) => std::thread::yield_now(),
+                Err(Stop::Refused(_) | Stop::Busy | Stop::BlockedByPriorBarrier { .. }) => {
+                    permit.proven_no_effect();
+                    return Err(RuntimeWorldBranchRetirementDenial::OwnerUnavailable);
+                }
+                Err(Stop::Unresolved | Stop::EvidenceRequired) => {
+                    // Dropping permit without proven_no_effect retains
+                    // RetirementRecoveryRequired on the cell until reopen.
+                    drop(permit);
+                    return Err(RuntimeWorldBranchRetirementDenial::OwnerUnavailable);
+                }
+            }
+        }
+        self.state
+            .branches
+            .retire_permitted(observed, permit)
+            .map_err(map_retirement_denial)
     }
 }
 

@@ -48,6 +48,7 @@ impl WorthQueryOutputDemandRegistry {
             } if *active == claim => Some(denial.clone()),
             _ => return Err(returned(Kind::SchedulingRejected, checkpoint)),
         };
+        let reached_ready = matches!(checkpoint, WorthQueryOutputCheckpoint::Ready(_));
         output.install_checkpoint(checkpoint);
         let terminal_denial = stopped
             .as_ref()
@@ -61,12 +62,21 @@ impl WorthQueryOutputDemandRegistry {
         if terminal {
             record.release_obligations();
         }
+        let released_basis = if reached_ready {
+            record
+                .readmission_source
+                .as_ref()
+                .and_then(|source| source.release_retained_program_basis())
+        } else {
+            None
+        };
         record.wake.notify();
         record.finish();
         let released_prerequisites =
             terminal.then(|| release_completed_prerequisites(&mut state, &interest.key));
         release_completed_member(&mut state, &interest.key);
         drop(state);
+        drop(released_basis);
         drop(released_prerequisites);
         match stopped {
             Some(denial) => Err(CheckpointFinishStop::Restored(denial)),

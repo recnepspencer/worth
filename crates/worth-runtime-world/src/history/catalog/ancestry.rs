@@ -86,16 +86,20 @@ impl CompositeHistoryCatalog {
         let state = lock_state(&self.state);
         validate_owner(&state, target.owner_identity())?;
         validate_owner(&state, source.owner_identity())?;
+        if state.retiring.contains(source) {
+            return Err(CompositeAncestorSelectionDenial::SourceUnavailable);
+        }
         let source_entry = state
             .entries
             .get(source)
             .and_then(|slot| slot.get())
             .ok_or(CompositeAncestorSelectionDenial::SourceUnavailable)?;
-        if state
-            .entries
-            .get(target)
-            .and_then(|slot| slot.get())
-            .is_none()
+        if state.retiring.contains(target)
+            || state
+                .entries
+                .get(target)
+                .and_then(|slot| slot.get())
+                .is_none()
         {
             return Err(CompositeAncestorSelectionDenial::TargetUnavailable);
         }
@@ -105,6 +109,9 @@ impl CompositeHistoryCatalog {
             control.check_live()?;
             if maximum.is_some_and(|limit| visited >= limit.get()) {
                 return Err(CompositeAncestorSelectionDenial::SelectionLimitReached);
+            }
+            if state.retiring.contains(&current) {
+                return Err(CompositeAncestorSelectionDenial::RetiredHistoryGap);
             }
             let entry = state
                 .entries

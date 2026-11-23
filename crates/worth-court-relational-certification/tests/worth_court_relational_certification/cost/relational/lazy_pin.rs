@@ -5,6 +5,7 @@ use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, 
 use worth_relational::facade::{
     durability::*, identity::KindId, runtime::RelationalRuntime, transactions::*,
 };
+use worth_testkit_relational::maintenance::assert_change_bounded;
 mod queries;
 use super::cold_checkpoint::{reopen, ColdCheckpointSource as Source};
 
@@ -24,7 +25,12 @@ fn pin(
         .pin_view_read_capability(&view, &[], request)
         .unwrap()
 }
-fn fixed_read(regions: u32, history: usize, width: usize) {
+struct ReadWork {
+    members: u64,
+    pin_members: u64,
+    symbol_at_pin: bool,
+}
+fn fixed_read_work(regions: u32, history: usize, width: usize) -> ReadWork {
     let original = SerialRequest::from_memory(
         SerialMemoryBudget::new(Some(1 << 30)),
         CancellationSource::new().token(),
@@ -127,8 +133,12 @@ fn fixed_read(regions: u32, history: usize, width: usize) {
         source.region_read_count() == 0,
         "recovery leaves record regions cold"
     );
+    // Recovery reads checkpoint metadata (the index catalog); count only reads after it.
+    let recovered = source.reads.lock().unwrap().len() as u64;
     let read = pin(&runtime, &request);
+    let pin_members = source.reads.lock().unwrap().len() as u64 - recovered;
     let selected = world.entities[0];
+    let symbol_at_pin = read.symbols().resolve(text_symbol).is_some();
     let actual = read
         .project_read()
         .read_exact_entity_state(&request, selected, |metadata, state| {
@@ -167,21 +177,69 @@ fn fixed_read(regions: u32, history: usize, width: usize) {
         .into_records();
     assert_eq!(relations.len(), 1);
     assert_eq!(relations[0].relation_id, relation);
+    let work = source.reads.lock().unwrap().len() as u64 - recovered;
+    assert!(work > 0, "the fixed read must actually cross cold storage");
     let again = read
         .project_read()
         .read_exact_entity_state(&request, selected, |m, _| m.entity_id)
         .unwrap();
     assert_eq!(again, Some(selected));
+    assert_eq!(
+        source.reads.lock().unwrap().len() as u64 - recovered,
+        work,
+        "accepted region is reused"
+    );
+    ReadWork {
+        members: work,
+        pin_members,
+        symbol_at_pin,
+    }
 }
 #[test]
-fn cold_pinned_reads_preserve_selected_values_across_regions_and_history() {
-    for (regions, history) in [(8, 8), (16, 8), (4, 16), (4, 32)] {
-        fixed_read(regions, history, 1);
+fn lazy_pin_and_fixed_read_do_not_grow_with_unrelated_regions_or_history() {
+    let model = (fixed_read_work(8, 8, 1), fixed_read_work(16, 8, 1));
+    let history = (fixed_read_work(4, 16, 1), fixed_read_work(4, 32, 1));
+    eprintln!(
+        "SDK fixed read cold member calls: model {}->{}; history {}->{}",
+        model.0.members, model.1.members, history.0.members, history.1.members
+    );
+    assert_change_bounded(
+        "lazy pin and reached regions",
+        "model",
+        model.0.members,
+        model.1.members,
+    );
+    assert_change_bounded(
+        "lazy pin and reached regions",
+        "history",
+        history.0.members,
+        history.1.members,
+    );
+    for evidence in [model.0, model.1, history.0, history.1] {
+        assert_eq!(evidence.pin_members, 0, "pinning does no I/O");
+        assert!(
+            !evidence.symbol_at_pin,
+            "pinning does not load field symbol pages"
+        );
     }
 }
 
 #[test]
-fn cold_wide_frontiers_preserve_the_selected_relation_and_values() {
-    fixed_read(64, 4, 33);
-    fixed_read(128, 4, 33);
+fn wide_frontier_does_not_escalate_to_unreached_regions() {
+    let base = fixed_read_work(64, 4, 33);
+    let doubled = fixed_read_work(128, 4, 33);
+    eprintln!(
+        "SDK fixed wide frontier member calls: {}->{}",
+        base.members, doubled.members
+    );
+    assert_change_bounded(
+        "wide frontier residency",
+        "unreached regions",
+        base.members,
+        doubled.members,
+    );
+    assert_eq!(
+        base.pin_members, doubled.pin_members,
+        "neither pin performs I/O"
+    );
 }

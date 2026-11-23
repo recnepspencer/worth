@@ -81,6 +81,22 @@ impl AspectContract {
     pub(crate) fn shares_definition(&self, other: &Self) -> bool {
         std::sync::Arc::ptr_eq(&self.definition, &other.definition)
     }
+
+    pub(crate) fn visit_allocations(
+        &self,
+        ancestor_unique: bool,
+        visitor: &mut dyn crate::aspects::FoundationalAllocationVisitor,
+    ) {
+        let strong_count = std::sync::Arc::strong_count(&self.definition);
+        visitor.visit(crate::aspects::FoundationalAllocationObservation {
+            id: crate::aspects::allocation_visitor::arc_id(&self.definition),
+            bytes: self.definition.allocation_bytes as u64,
+            unique: ancestor_unique && strong_count == 1,
+            strong_count,
+            birth_seq: None,
+            kind: crate::aspects::FoundationalAllocationKind::SchemaContract,
+        });
+    }
 }
 impl std::fmt::Debug for AspectContract {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

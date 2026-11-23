@@ -38,7 +38,7 @@ pub use failure::StoreRecoveryBindingSampleFailure;
 use failure::{empty_failure, sample_failure_from_evidence};
 pub use retirement_obligation::{StoreRecoveryRetiredArtifact, StoreRecoveryRetirementObligation};
 pub use tier_epoch::StoreTierEpochActivationObservation;
-pub(super) use wal_frame_input::sample_binding;
+pub(super) use wal_frame_input::{sample_binding, sample_binding_with_budget};
 
 #[derive(Debug)]
 pub struct StoreRecoveryBindingFreshnessSample {

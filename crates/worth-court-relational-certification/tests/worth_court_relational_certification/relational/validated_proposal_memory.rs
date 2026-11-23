@@ -44,3 +44,31 @@ fn validated_proposal_backing_charges_original_request_until_native_consumption(
     );
     assert_eq!(runtime.observe_branch(&identity).unwrap().0, before);
 }
+
+#[test]
+fn unfunded_validated_proposal_backing_refuses_and_releases_original_custody() {
+    let runtime = memory_runtime();
+    let identity = runtime.main_branch_identity();
+    let before = runtime.observe_branch(&identity).unwrap().0;
+    let budget = SerialMemoryBudget::new(Some(SMALL_OWNER_CEILING));
+    let host = SerialRequest::from_memory(budget.clone(), CancellationSource::new().token(), None);
+    let request = ExecutionRequest::serial(&host);
+    let transaction = begin_main_transaction(&runtime);
+    let denied = transaction.validate(&request, &runtime).unwrap_err();
+    let TransactionCommitError::Execution { denial, .. } = denied else {
+        panic!("unfunded real validation must preserve its typed execution refusal");
+    };
+    // Validation funds each consumed phase (round, then candidate) before the
+    // proposal state; the round is released before the state is reserved, so no
+    // ceiling reaches the state's backing first (8745bcbb1b). The refusal is the
+    // first phase the request cannot fund, typed and before any effect.
+    assert!(
+        matches!(denial.kind,
+        CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::PolicyMemoryExhausted {
+            requested, admitted, ancestor: 0,
+        }) if requested > admitted),
+        "{denial:?}"
+    );
+    assert_eq!(budget.charged_memory_bytes(), 0);
+    assert_eq!(runtime.observe_branch(&identity).unwrap().0, before);
+}

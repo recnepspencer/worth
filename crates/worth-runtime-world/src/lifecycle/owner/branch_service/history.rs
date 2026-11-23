@@ -29,13 +29,15 @@ where
     let _operation = owner
         .reserve_creation_operation()
         .map_err(|()| Denial::Branch(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable))?;
-    owner
+    let cell = owner
         .state
         .branches
         .branch_cell_by_lifecycle(target.lifecycle_incarnation())
+        .filter(|cell| !cell.is_retired_or_retiring())
         .ok_or(Denial::Branch(
             RuntimeWorldBranchAdmissionDenial::RetiredBranch,
         ))?;
+    let _ = cell;
     let ancestor = owner
         .state
         .history
@@ -66,6 +68,7 @@ where
         .state
         .branches
         .branch_cell_by_lifecycle(occurrence)
+        .filter(|cell| !cell.is_retired_or_retiring())
         .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
     let snapshot = cell.atomic_snapshot();
     let branch_depth = usize::try_from(snapshot.reference_generation().get())
@@ -113,6 +116,7 @@ where
         .state
         .branches
         .branch_cell_by_lifecycle(previous.occurrence())
+        .filter(|cell| !cell.is_retired_or_retiring())
         .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
     let start = previous
         .next_parent()
@@ -153,6 +157,7 @@ where
         .state
         .branches
         .branch_cell_by_lifecycle(history.occurrence())
+        .filter(|cell| !cell.is_retired_or_retiring())
         .ok_or(RuntimeWorldBranchAdmissionDenial::RetiredBranch)?;
     let (commit, generation) = history
         .selection(index)

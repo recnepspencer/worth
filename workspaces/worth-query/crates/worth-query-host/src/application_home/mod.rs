@@ -39,6 +39,7 @@ pub use worth_store_application::ApplicationHomeCheckpointLimits as WorthQueryAp
 pub use worth_store_application::ApplicationHomeCloseDenial::WorldCompositionRetained;
 pub use worth_store_application::{
     ApplicationHomeCheckpoint as WorthQueryApplicationHomeCheckpoint,
+    ApplicationHomeCheckpointDenial,
     ApplicationHomeCheckpointInspection as WorthQueryApplicationHomeCheckpointInspection,
     ApplicationHomeCheckpointJournalObservation as WorthQueryApplicationHomeCheckpointJournalObservation,
     ApplicationHomeCloseDenial,

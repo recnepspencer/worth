@@ -14,6 +14,8 @@ use super::{RuntimeWorldClock, RuntimeWorldOwnerInputs};
 use crate::budget::RuntimeWorldBudgets;
 mod home_readmission;
 pub use home_readmission::RuntimeWorldAuthoredHomeBuilder;
+#[cfg(test)]
+pub(crate) use home_readmission::require_retained_native_predecessor as require_retained_native_predecessor_for_test;
 
 pub struct MissingRuntimeWorldInput;
 

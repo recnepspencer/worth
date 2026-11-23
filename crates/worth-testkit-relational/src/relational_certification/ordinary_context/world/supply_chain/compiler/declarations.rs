@@ -164,7 +164,6 @@ pub fn compile_supply_chain_baseline_with_limits_and_catalog_and_custom_invarian
             max_active_snapshot_handles: Some(4_096),
             max_transaction_savepoints: 4_096,
             max_prepared_candidates: Some(1_024),
-            candidate_max_lifetime_millis: 30_000,
         });
     if let Some(invariant_catalog) = invariant_catalog {
         builder = builder.invariant_catalog(invariant_catalog);

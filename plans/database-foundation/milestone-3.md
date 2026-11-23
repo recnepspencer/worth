@@ -151,7 +151,9 @@ guides state that crash recovery is not yet certified.
 ### Cleanup track status
 
 **2026-11-20.** C1 (crash core) is complete on branch `m3/cleanup-c1` and
-lands with its PR; C2–C5 have not started. D18 remains for the causes below:
+lands with its PR. C2 (cost and bounds) started on `m3/cleanup-c2`, branched
+from C1; its slices are listed below. C3 started on `m3/cleanup-c3`; C4 and C5
+have not started. D18 remains for the causes below:
 two damage-shaped World causes and the Dispatch cause (C3). C5 retires the
 surface.
 
@@ -190,6 +192,17 @@ World-wrapped damage causes:
   `owner_evidence::recovered_owners` covers the refusal.
 
 C5 deletes the accessor along with D18.
+
+| C2 slice | State on the branch |
+|---|---|
+| C2.1 Frame and future size budget lane | Done (reviewed). `scripts/ci/frame_budget.py` (+ `rust_symbol.py` demangler, RSDS GUID+age PDB verification, section-contribution attribution for unnamed symbols, 19/19 self-tests) landed and all owner frames across the full 6-target / 8-binary roster reduced to `<= 256 KiB` (`148 named + 127 unnamed` before -> `0 named + 0 unnamed` after; largest named `261,096 B`) by boxing large values/variants and splitting inlined phase chains with zero stack/thread/profile workarounds; independent review APPROVE (Batch 1 r2 `c2-review-frames-batch1.md`, Batch 2 r8 `c2-review-frames-batch2.md`) |
+| C2.2 Graceful close without the maintenance deadline | Done (reviewed). Removed wall-clock maintenance timeout from `ApplicationHomeCheckpointLimits` and close maintenance across Store, Query, and guides; close maintenance runs strictly on counted work/memory allowance and returns `Closed` with typed work stop on exhaustion; independent review APPROVE (`c2-review-c2.2-r4.md`) |
+| C2.3 Automatic triggers and the cross-owner capture cut | Done (reviewed). Count/byte automatic checkpoint triggers overlap live operations without `Busy` refusal; World checkpoint capture freezes exact root/custody snapshot + Native leases across concurrent acquire/release without inheriting previous physical unions; all capture-cut and compaction courts restored (two via recorded 2026-11-21 owner test doors with exact `control-callers.txt` rows); independent review APPROVE (`c2-review-capture.md`) |
+| C2.4 Proportional reopen and request-funded cold materialization | Done (reviewed). Reopen growth court proves history-flat cost (`< 1` unit per covered commit across 1,000 vs 10,000 covered commits, 0 record-region reads) and linear tail cost; complete physical cold-locality campaign and all 25 cold-residency private suite groups restored over pure read-only owner observations; independent review APPROVE (`c2-review-cold.md`) |
+| C2.5 Exact physical accounting and funded backing | Done (reviewed). Allocation visitor deduplicates shared persistent-aspect backing across Extras with allocator-observed union parity; inspection updated for exact deduplicated nested backing; region inventories and reclamation counters refuse unrepresentable overflow; F4 24-court audit recorded; retained-root holder proven at World/Query (`c2-5-retained-root-holder.md`) and producer-succession shrink invoice transferred to C2.8; independent review APPROVE (`c2-review-accounting.md`) |
+| C2.6 Work budgets and exact work accounts | Done (reviewed). One work account bounds each request with pre-effect work/cancellation/deadline cutoffs (including parameter-lease post-commit publication reservation and Native reversible cutover cutoff), exhaustive 8,373/8,373 cold work-prefix sweep verified one unit short, single-stage checkpoint capture, temporal identity memoization, and deferred complexity declarations restored with nonempty proofs; independent review APPROVE (`c2-review-lease.md`) |
+| C2.7 Growth campaigns | Done (reviewed). Component-island installation bounded to installed delta, logical-rule candidate lifetime converted from 30s wall clock to counted work, `restoration_header` (2026-11-22 ruling, 1 exact `control-callers.txt` row), `embedded_cost`, `native_checkpoint_restore_benchmark`, root final-partition growth courts, and all 12 performance matrices restored with wall-clock assertions replaced by counted-work laws (2026-11-22 Option 1 ruling for `OwnedTestDurableMedium`, zero new baseline/caller rows); independent review APPROVE (`c2-review-growth.md`) |
+| C2.8 Durable World history and branch retirement | Done (reviewed). Durable World branch creation, retirement, and retired/inherited occurrence disposal land through World journals and reopen cleanly across graceful close and quiescent kills; `DurableBranchPublicationRequired` and `AuthoritativeDurableHistory` deleted across crates and docs; `retention_roundtrip`, `recovered_publication`, `world_selection_disposed_source`, Store `world_branch_retirement` / `world_original_observation` / `world_occurrence_readmission` / `world_durable_release`, and producer succession's exact physical shrink invoice (4 entities / 4 relations) restored and green; independent review APPROVE (`c2-review-world.md`) |
 
 ### Track C items
 
@@ -322,6 +335,215 @@ case. See [the adversarial constraint](#adversarial-constraint) for the broader
 C4 campaign and the existing [verification tiers](#verification-tiers-every-phase)
 for promotion. Update the existing Host recovery and Native component guides
 when the corresponding behavior lands.
+
+### C2 implementation and acceptance slices
+
+C2 makes cost and bounds certifiable. Every C2 claim is a counted measure that
+can fail: work units, allocation bytes, reads, pins, frames or bytes on the
+medium. No C2 court asserts wall-clock time (Iteration Law 22), and growth
+courts sit under a `cost` path segment (Iteration Law 15). Budgets, funding and
+accounting live in their owning crate. A C2 court restores its moved original
+in full, from the `restore from <sha>:<path>` reference in its ledger entry,
+and runs it against the current owners and genuine owned media; the retired
+runtime-discovery adapters, fixed-generation selection and local provider
+adapters are never revived. Where a moved court needs a physical observation
+(resident census, pin count, allocation identity) that the owner no longer
+exposes, the owner supplies it as a counted, read-only observation in the same
+crate. Exact-equality courts stay exact; a court that fails on the current tree
+is fixed at its owner, never refitted to the observed value.
+
+- **Placement.** A restored court goes to its owner's court crate (Iteration
+  Laws 2 and 3), and a growth court goes under that crate's `cost/` segment. It
+  reaches the owner through the public testkit and the owner's counted
+  read-only observations, over genuine owned media: the testkit's
+  `TestDurableMedium`, or the owner's own Memory placement for a claim with no
+  physical-medium content. A restored court stays in `src/` only when it tests
+  module-private logic, as Iteration Law 2 allows. It keeps the
+  `src-court-baseline.json` row its restore SHA recorded for that file, as a
+  restored door keeps its caller row. A restored source closure that had no
+  row at its restore SHA keeps its ledger path with an exact row only when its
+  claim is module-private and no public court observes it (the C2 ruling of
+  2026-11-21 in the ledger); otherwise it is deleted, naming the public guard.
+  No other baseline row is added.
+- **Restore reference.** Where the ledger records a later refresh reference
+  for the same file (the `22e638d638` integration protocol restoration
+  refreshes), restore from the refresh.
+- **Test doors and caller rows.** A restored court reuses a `*_for_test` door
+  or `control-callers.txt` row only where its ledger entry restores that door
+  or row from the same SHA. Otherwise it reads the owner's public counted
+  observation; a court that still needs a new door or caller row records the
+  boundary ruling it requires in the progress note and does not add the row
+  without one.
+- **Wall-clock predicates.** A moved original that asserts elapsed time keeps
+  the measure that predicate stands for: the timing comparison becomes the
+  counted work, allocation or reads per window it bounds, or it is removed with
+  the guarantee that replaces it named under `test-suite-simplify`. A court that
+  can pass or fail with machine load is not restored as such.
+
+The slices run in the order below. World durable history and branch retirement
+comes last: C3 also changes World recovery, so C2.8 starts only after merging
+C3's progress (`origin/m3/cleanup-c3`), and keeps its World edits minimal and
+additive. Before C2.8, C2's World writes are limited to the checkpoint capture
+owner (`crates/worth-runtime-world/src/durability/checkpoint/` and
+`durability/binding/`) for C2.3's capture cut; World recovery and readmission
+are not edited before C3's progress is merged. Each slice names the ledger entries it restores; together they cover
+every C2 entry in this file. Fourteen C4 roots also carry C2 cost, custody or
+residency guards: the six lifecycle lock-order roots, the two reservation-wait
+roots, the four branch-transition race roots,
+`divergent_mirror_partition_rebuilds_cross_partition_adjacency_after_reuse` and
+`managed_fork_refusal_and_success_drop_lookup_outside_native_coordination`.
+They stay C4's to restore; C2 supplies the counted observations their C2
+guards read, so C4 can restore them unchanged.
+
+#### C2.1 — Frame and future size budget lane
+
+A tool lane, first because it is self-contained:
+`python scripts/ci/frame_budget.py run`. It builds the declared roster with
+the committed profiles, takes executables only from that build's own cargo
+artifact messages, and refuses an executable whose PDB identity (RSDS GUID and
+age) does not match it. It then parses the x64 unwind metadata
+(`.pdata`/`UNWIND_INFO`), attributes each function's fixed frame allocation to
+its symbol, and fails when a function of a declared owner crate (`worth_*` and
+the consumer examples) exceeds the ceiling. Crates built without debug
+information (`debug = false` for `worth-query-execution` and
+`worth-query-topology-entry` in the consumer profile, `debug = 0` in test
+profiles) name functions only by mangled public symbols, which the lane
+decodes to their defining path, so a foreign generic over an owned type stays
+foreign; a function with no symbol at all is assigned to the
+crate whose object module contributed its code, from the PDB's section
+contributions, and fails when that crate is owned or unknown. Its refusal
+names the binary, address, crate and nearest preceding symbol. A future held by value occupies
+its holder's frame, so async state machines are covered; the lane bounds
+per-function frames, not total stack depth or heap-held futures. The ceiling
+and roster are declared in `scripts/ci/frame_budget.json`. The lane measures
+Windows x64 binaries, because the binding stack is the 1 MiB Windows main
+thread, and refuses on other platforms instead of passing. It is a Tier-3 lane
+run on the Windows landing machine, and a Tier-2 lane there when the diff
+changes its script or configuration; the Ubuntu CI does not run it. The
+large-frame census of 2026-11-06 is reduced to the ceiling at the owners, by
+boxing large values or variants and splitting inlined phase chains, never by a
+bigger stack, `RUST_MIN_STACK`, a thread or a profile change.
+
+| Evidence | Acceptance |
+|---|---|
+| Lane self-test | Plain-Python unit fixtures for the unwind parser cover a frameless leaf, a fixed allocation, a large allocation and a chained unwind record. An executable whose PDB identity does not match refuses; a hyphenated binary finds the PDB its linker recorded; an unnamed function is assigned to its contributing crate. The over-ceiling refusal names the function (or address and nearest symbol), crate, binary and size. |
+| Census | The lane runs over the declared roster: the three examples, consumer-root, the Bank court and one Root, Query and Store court binary. Before and after counts are recorded in `target/lane-evidence/c2-frame-census.md`. After this slice no `worth_*` function exceeds the ceiling. |
+| Ceiling | The ceiling is 256 KiB: a quarter of the 1 MiB Windows default main-thread stack, the smallest stack a consumer calls WORTH on, and a sixteenth of the 4 MiB red zone `worth_execution::run_with_execution_stack` guarantees at heavy public operations. Court and example functions are `worth_*` functions and meet it too. |
+
+#### C2.2 — Graceful close without the maintenance deadline
+
+Close maintenance's 60-second deadline is a timing trigger. Close capture and
+automatic upkeep run on the Home's maintenance allowance: counted work and
+memory, cancelled only by the Home's retirement. The closing request's own
+stops apply at close's consult points around the capture. No wall-clock
+maintenance deadline exists to refuse a graceful close: it is removed by clean
+cutover, not raised, and the type carries no timeout. The fixed 120-second
+deadlines the checkpoint path passes to Store's physical publication
+(`physical_start.rs`, `physical_checkpoint.rs`) are Store's physical-protocol
+liveness bound for one physical step, a required input of every physical
+mutation; they are not close maintenance's deadline, stay as they are, and no
+close court is certified by raising them.
+
+| Evidence | Acceptance |
+|---|---|
+| Close court | A close whose capture exceeds the maintenance work allowance still returns `Closed`, reporting the typed work stop as its failed checkpoint (D11, D12), and the next open replays the retained tail to the same acknowledged state. |
+| Type and callers | `ApplicationHomeCheckpointLimits` carries no maintenance timeout and the maintenance request has no deadline; every caller and guide migrates in the same change. No graceful-close court can pass or fail because of elapsed time. |
+
+#### C2.3 — Automatic triggers and the cross-owner capture cut
+
+D12's track-C half: the threshold trigger checkpoints while operations
+execute. World's checkpoint owner freezes its exact root and open-custody
+snapshot, plus the external Native component leases that snapshot needs, and
+retains them through Home manifest selection. Later World publications remain
+journal tails instead of refusing. Capture selects exact Native component
+obligations at one owner capture boundary under concurrent acquire and
+release, without inheriting the previous checkpoint's physical union.
+Includes C1.3's deferred concurrent-capture growth bounds.
+
+| Evidence | Acceptance |
+|---|---|
+| Trigger court | Count and byte thresholds each trigger exactly one automatic checkpoint, with its coverage at the observed journal heads, while a business operation is in flight. Publication that overlaps capture is admitted as a tail, not refused `Busy`. |
+| Capture-cut courts | An attempt executing or loaned during capture is either retained with World's successor component or the cut refuses with its typed reason; artifact bytes never stand in for root custody. Capture pins are released before Native `prepare_close`. Reopen from that checkpoint plus tails recovers the reference state. |
+| Restored ledger entries | `selected_ack` (both campaigns) and the two delayed-selection variants; `completing_an_older_capture_cannot_replace_the_compacted_transition_basis`; `native_custody_correction_last_actual_capture_abandonment_releases_shared_root_custody`; `native_custody_correction_cross_lane_acquire_release_has_one_actual_capture_cut`; `native_custody_correction_current_lane_inventory_is_collected_inside_actual_cut`; `native_checkpoint_retains_all_admitted_capture_owners_and_restores_editable_truth`; `unpublished_client_keys_leave_checkpoint_dictionary_equal_and_published_keys_restore`; `fresh_source_keeps_actual_runtime_root_and_installed_schema_for_complete`; the C2 portions of `recorded_component_checkpoint_*`, `recorded_original_retirement_preserves_both_leases_across_busy_and_stop` and its fixture closure; the snapshot-handle census portions of the three `checkpoint_transition` tests; `repeated_native_captures_do_not_retain_checkpoint_images`; `repeated_edits_checkpoint_only_the_live_index_payload`; `cold_complete_recapture_preserves_original_index_generations_and_live_tail`. |
+
+C2 ruling 2026-11-21: restored through owner test doors with exact control-caller rows; in-crate medium attachment stays retired (disposition rule 3). Doors: `DurabilityAuthority::capture_checkpoint_basis_for_test` and `finalize_captured_checkpoint_for_test` (`completing_an_older_capture_cannot_replace_the_compacted_transition_basis`); `RelationalRecoveredPublicationRetirement::advance_with_retention_gate_held_for_test` with the read-only `AdmittedRelationalBranchBasis::retention_census_for_test` and `RelationalRuntime::external_retention_terminal_counts_for_test` (`recorded_original_retirement_preserves_both_leases_across_busy_and_stop`). Rows: `crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/checkpoint_transition_compaction.rs` and `crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/durable_publication/recorded_original_checkpoint_journeys.rs`.
+
+#### C2.4 — Proportional reopen and request-funded cold materialization
+
+Reopen work is proportional to the manifest, the bounded tails and the
+demanded root and artifact material, never to history. Cold material is
+materialized only on a request that funds it. P-A's funding (on master since
+`e4d3b01c8d`) lands here as certified behavior. Residency, pin and dictionary
+observations the moved private courts need come from the Native owner as
+counted read-only observations.
+
+| Evidence | Acceptance |
+|---|---|
+| Reopen growth court | Reopening from a checkpoint with 1,000 and with 10,000 covered commits behind it, and an equal tail, costs counted work that differs by less than one unit per covered commit (any per-commit reopen work decodes at least one index entry of about 30 bytes, charged per byte), and reads no record region. Tails of three lengths with equal differences show equal cost increments, so tail cost is linear. |
+| Restored ledger entries | `reclose_before_any_image_demand_keeps_the_selections_the_image_carried` and its carried-only fixture; the complete physical cold-locality campaign (`current_custody_contacts_only_the_touched_publication_and_leaves_other_regions_cold`); the generation-selection counter remainder; the pinned-reader restoration remainders; `checkpoint_restore_protects_published_lineage_identities_in_each_lane` and `inflight_tail_replay_resumes_after_the_largest_durable_lineage_values`; the four index, merge, bulk and empty-head remainders at `622f101e99`; the envelope-residency, symbol-frontier, retained-export skip and structural-identity roots at `86e84dc5cd`; `equal_exact_root_reuses_the_readmitted_partition_substrate`; the B2 split's `tail_replay_consumes_canonical_reused_record_allocation`; the associated-effects and caller-association residency portions; `a_recovered_runtime_publishes_its_next_commit_at_the_next_position`; `checkpoint_size_tracks_branch_state_not_covered_transitions`; `checkpoint_recovery_readmits_shared_root_once_for_sibling_heads`; `durability_contract_checkpoint_tail_recovery_preserves_post_checkpoint_commits`; the `f9f15bf8c8` reopen roots (`replay_reads_only_the_gap_after_its_checkpoint`, `durability_tail_replay_releases_each_commit_snapshot_beyond_live_capacity`, `native_field_text_checkpoint_readmission_denial_keeps_bytes_and_target_root_intact`, the three record-allocation recovery roots, `an_attachment_the_medium_moved_out_of_publishes_nothing`); `replay_pin_of_a_cold_partition_is_typed_and_has_no_effect`, `resident_pin_custody_refuses_unread_mirror_frames_after_exact_source_admission`, `selected_branch_views_preserve_cold_probe_and_demand`; every C2 cold-residency entry from the lineage matrices through `complete_index_selections` (`ea2ffee250`, `427700edd0`, `81d41f5575`, `1403ddb275`, `8283728aff`, `14e282569e`, `3fa8da0cb4`), including the restored `resident_replay_pins` and `LineageSubsystem::node` probes; the Batch 1 cold entries `cold_selected_index_refresh_preserves_budget_gate_and_reads_head_without_history`, `shared_history_custody_refuses_unfunded_admission_then_survives_until_the_last_basis_drops` and `checkpoint_image_roots_build_cold_and_incremental_indexes_without_canonical_body_reads`; both `cold_inline_bytes_*` courts and the `selected_source` fixture closure. |
+
+#### C2.5 — Exact physical accounting and funded backing
+
+Physical accounting counts each distinct allocation once. An allocation
+visitor sees through shared nodes and values, inspection gains a new version
+for exact deduplicated backing of nested persistent aspects, and full region
+inventories and reclamation counters refuse an unrepresentable bound instead
+of saturating. Every funded value keeps its original request's bill until its
+last owner drops, then refunds it exactly.
+
+| Evidence | Acceptance |
+|---|---|
+| Sharing court | Two Extras sharing one aspect map contribute the shared backing once, and the rows sum to an allocator-observed union. An unrepresentable inventory total refuses with a typed overflow. |
+| Exact-accounting reds | First record, in the deduplicated-backing ledger entry, the 24 exact-accounting and cost-equality courts that were red after the second master merge: family F4 of `fable-repair-root-families.md`, with per-test names in `fable-repair-root-focused-families.txt` (both recoverable at `ff73e2304b^:target/lane-evidence/`). Mark each one that has since moved to a `9ed22bccaa` or `73ce80ebfc` C2 entry, so it is classified once, under that entry. Classify each remaining court with its reason: exact-equality courts restore and pass; bound-at-least-actual courts stay and pass. |
+| Retained-root holder | Identify, at its owner, the holder of the historical roots that producer succession's shrink invoice found retained (roots 4–9, `d13-retirement-census-attribution.md`). If the holder is Native, fix it here and restore the invoice in this slice; only if it is World's retired or inherited occurrences does the invoice move to C2.8. *(C2.5 conclusion: verified at HEAD in `target/lane-evidence/c2-5-retained-root-holder.md` — Native is not the holder; roots 4–9 are pinned by World's unretired commits / Query's performed-World-publication (`WorthQueryCompletedCommitEvidenceStore::performed_by_world`, cloned `PublicationCustody::Performed` on cached Ready rows) and `receipt_basis_retention` waiting on `world.retire_changed_history()`. Moved to C2.8.)* |
+| Restored ledger entries | The deduplicated nested-backing claim and its inspection wording; the shared-process exact memory campaign; the Batch 1 funding entries (`content_durable_artifact_*` ×3, `original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen`, `graph_relation_preparation_retains_its_funding_and_cannot_reset_the_entity_meter`, `unfunded_validated_proposal_backing_refuses_and_releases_original_custody`, `canonical_artifact_accounting_excludes_nested_diagnostic_perturbation`, `memory_frame_quota_and_cancel_refuse_before_position_or_head`, `clearing_reconstructed_last_aspect_retains_no_state_bill`, `funded_extra_refuses_copy_and_replacement_before_growth`, `repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy`, both `controlled_field_lowering_*` closures, `cleared_entity_and_relation_extras_keep_only_their_fixed_original_bills`); the `86e84dc5cd` artifact, strategy-readmission, shared-readmission and snapshot-cleanup roots; the memory-frame old-layout portion; the B2 retention census, inspection bundle and managed field-text entries; both `controlled_resident_cell_*` charge courts; `request_root_refusal_preserves_original_and_releases_partial_backing`; `publication_cost_distinguishes_new_and_reused_schema_authority`; the `f9f15bf8c8` retention and index-generation roots (`branch_roots_with_one_schema_deduplicate_the_durable_carrier`, the derived-index reader and reclamation roots, `repeated_global_same_basis_builds_reclaim_duplicates_but_keep_pinned_root`, `durability_contract_branch_heads_do_not_mutate_legacy_record_pins`); the three copy-on-write and publication-footprint courts; the private fixture funding splits, handler-key custody split, selected-payload funding split and `memory_original_frame_survives_export_checkpoint_and_last_alias`. |
+
+#### C2.6 — Work budgets and exact work accounts
+
+One work account bounds each request across its entries; a charge is exact,
+and one unit short stops before any effect with its typed owning cause. The
+complexity declarations whose proofs moved out are Verified again with their
+registered proofs.
+
+| Evidence | Acceptance |
+|---|---|
+| Work-prefix sweep | For a healthy operation, every real charged prefix rerun one unit short ends in the terminal of its typed owning cause, with no effect. The sweep lives under a `cost/` segment, records the number of prefixes it executed, and each replay costs what its prefix costs, so it finishes inside the ordinary kill without a raised deadline. |
+| Restored ledger entries | The parameter exact-work campaign; `conditional_operation_work_stop_terminal_matches_its_typed_cause`; both `temporal_identity_work_is_cold_or_fresh_admission_only` wrappers and their shared campaign; both `one_work_account_*` courts and the original-account invoice remainder; `positioned_agreement_uses_original_work_budget_and_preserves_authoritative_digest`; `content_original_field_capture_charges_real_aspect_count_and_key_bytes`; `entity_boundary_refuses_wrong_model_kind_and_original_request_limits`; `ownership_observation_preserves_work_and_memory_refusals`; the four `checkpoint_stage` courts; the B2 descriptor-continuity and schema-mismatch counters; the merge instrumentation halves and the verification and topology-detection counter roots; the five `complexity_budget_*` roots; the Home-step invoice campaign; the `runtime.merge.*` metadata and the four deferred complexity declarations, with the universal nonempty-proof assertion. |
+
+#### C2.7 — Growth campaigns
+
+Each growth court compares counted work, reads or bytes across a small and a
+large unrelated population and asserts the stated growth law. No population is
+reduced and no limit raised to make a campaign fit.
+
+| Evidence | Acceptance |
+|---|---|
+| Installation at scale | Neither large installation's outcome can depend on elapsed time or on the size of the unrelated population. The component-island installation's `CanonicalArtifactEncoding(SizeLimit)` refusal is fixed by bounding the installation artifact to the installed delta, not by a raised limit. The logical-rule installation's `CandidateLifetimeExpired` refusal is fixed by bounding that candidate with counted work instead of the 30-second wall-clock lifetime, not by a longer lifetime. |
+| Restored ledger entries | The component-island growth campaign; the logical-rule acquisition growth campaign; `restoration_header_is_validated_once_and_work_grows_linearly` and `public_create_grow_retire_restore_relation_scale_report`; the root final-partition growth courts (`fixed_kind_read_is_flat_in_unrelated_regions_and_history`, both lazy-pin courts' C2 parts, `equal_payload_jumps_charge_the_same_receiving_owner_work_at_near_and_distant_history_nodes`, both `count_only_read_*`, both `renewed_cell_symbol_admission_*`, `a_fixed_edit_does_not_pay_the_previous_large_edit_again`); `embedded_restore_allocation_grows_linearly_in_relation_bearing_regions`; `synthetic_native_restore_and_image_digest_benchmark`; the twelve adapter-dependent performance matrices and their campaign fixtures, each timing predicate converted under the wall-clock rule above. C2 ruling (2026-11-22): `restoration_header` restores only the same-SHA (`669ac9fcd4`) `#[doc(hidden)]` door `CanonicalCommitEnvelopeBody::output_origin_header_work_for_test` (`header_work.rs`, its parent mount, and the `header_work::{begin,finish}` wrapper in `required_output_origin/restoration_header.rs`) and its 1 exact `control-callers.txt` row (`crates/worth-relational/ crates/worth-court-relational-certification/tests/worth_court_relational_certification/cost/relational/restoration_header.rs`), leaving C4's `output_origin_header_with_missing_entity_for_test`, `header_corruption.rs`, `corruption_court`, and its two caller rows untouched. C2 ruling (2026-11-22, Option 1 — in-crate durable performance matrices): authorizes the case-owned `OwnedTestDurableMedium` (`crates/worth-relational/src/tests/support/durability.rs` + `durability/owned_medium.rs`) strictly as a thin `#[cfg(test)]` trait-identity adapter for the 11 in-crate `worth-relational` performance matrices whose `pub(crate)`/`#[cfg(test)]` observations (`performance_access().counters()`, `configure_diagnostics_for_test`, `digest_diagnostics_surface`, `execute_query_plan_with_index_parity`, `runtime.indexes.corrupt_latest_generation`) are coupled to the same durable operation (because Rust's dual crate compilation identity prevents importing `worth_testkit_relational::TestDurableMedium`'s trait impls into `worth-relational`'s unit-test crate without leaking private test internals or adding caller rows), subject to four binding guardrails: (1) explicit case-owned handle only — zero runtime-discovery map, zero global registry, zero fixed-generation selection bypass, zero fallback to `Memory` or retained-runtime `recovery_plan()`; (2) shared testkit byte primitives — delegates raw journal storage, member bytes, and immutable read-snapshot protection to `worth_testkit_relational::durable_medium::{ByteJournal, MemberBytes, OwnedNativeReadSnapshot, OwnedSnapshotDenial}`; (3) zero baseline/caller expansion — adds zero new `src-court-baseline.json` rows and zero new `control-callers.txt` rows beyond the separately ruled `restoration_header` row; and (4) purely public durable matrices (`durability_append_matrix.rs`) remain in `worth-court-relational-certification` over `TestDurableMedium`. |
+
+#### C2.8 — Durable World history and branch retirement
+
+Starts after merging C3's progress. World history becomes durable and
+authoritative: durable branch creation and retirement publish through World's
+journals, and reclamation disposes of retired and inherited occurrences under
+the same durable history. Track H keeps funded disposal of released unpublished
+originals. Both Refused rows are lifted completely and their variants deleted:
+`DurableBranchPublicationRequired` from `RuntimeWorldBranchAdmissionDenial`
+(creation) and `RuntimeWorldBranchRetirementDenial` (retirement), with the
+Query and Bank mappings that name it, and `AuthoritativeDurableHistory` from
+`HistoryReclamationDenial`. The build-an-application guide and the Query Host
+README sections that promise this to C2 are updated.
+
+| Evidence | Acceptance |
+|---|---|
+| Creation journey | A durable branch is created (Native and Signal forks), the Home is closed and reopened, and the branch and its fork survive with their history; a quiescent kill after creation reopens to the same state. |
+| Retirement journey | A durable branch is retired, the Home is closed and reopened, and the branch stays retired with its history readable to the retained horizon; a quiescent kill after retirement reopens to the same state. |
+| Disposal court | Retired and inherited occurrences are disposed exactly once under durable history; their roots and envelopes are released, counted, and a later reopen does not resurrect them. |
+| Restored ledger entries | `a_reused_relation_slot_keeps_retention_readmission_valid` and `mixed_retirement_replacement_reuse_and_cold_roundtrips_keep_region_integrity`; producer succession's exact physical shrink invoice (`89039fa735:...producer_succession/{checkpoint.rs,history_courts.rs}`, transferred from C2.5 after `target/lane-evidence/c2-5-retained-root-holder.md` confirmed World/Query performed-publication and receipt-basis custody — not Native — holds roots 4–9); the refusal assertions in the current `world_branch_retirement` and `world_original_observation` courts become success assertions. |
+
+C2 slice checks run the focused owner tests and the named courts; T2
+(diff-reachable lanes) runs before landing. Update `docs/application-home.md`
+and the related guides when each behavior lands.
 
 ### C3 implementation and acceptance slices
 
@@ -575,7 +797,32 @@ path runs that journey.
 
 Cleanup courts moved out of the tree are listed under their C item, with `restore from <sha>:<path>`. Existing entries:
 - **C1:** the three transition-source recovery courts, listed in D16 under "Cleanup track: moved courts". Restored in C1; D16 names their new courts.
-- **C2 (cost and bounds): exact deduplicated physical accounting of nested persistent aspect backing.** No court has left the tree yet; the claim moved. Pending: 24 exact-accounting and cost-equality courts are still red after the master merge and are not yet classified court by court (exact-equality courts move here with a restore reference; bound-at-least-actual courts stay and must pass); and the full-inventory totals (`RecordArena::allocation_inventory`, `PartitionState::allocation_inventory`, the fork-materialized total in `branch/root.rs`) still saturate instead of refusing, which is open repair work until the coordinator accepts it as C2. `restore from 171d380829:crates/worth-relational/src/inspection/mvcc/sharing_authoritative_byte_metrics.rs` (lines 6–11, 25–28) and `restore from 171d380829:crates/worth-relational/src/inspection/mvcc/sharing_byte_metric_scope.rs` (lines 7–11, inspection version 6). Claim: `unique_physical_*` sums each distinct allocation exactly once, and shared payloads keep node and value granularity, including persistent aspect nodes and admitted values shared between distinct Extra carriers. Inspection version 7 reports that backing as a checked per-carrier upper bound that may count shared structure once per holder, and refuses an unrepresentable bound with a typed overflow. C2 supplies an allocation visitor that sees through shared nodes and values, restores the exact wording under a new version, and adds the court: two Extras sharing one aspect map contribute the shared backing once, and the rows sum to an allocator-observed union. C2 also makes full region inventories and reclamation counters refuse an unrepresentable bound instead of saturating.
+- **C2 (cost and bounds): exact deduplicated physical accounting of nested persistent aspect backing.** **Resolved in C2.5.** `worth-foundational` (`FoundationalAllocationVisitor` over the owned `Arc<EntryNode>` persistent aspect map and `StructFields`) and `worth-relational` (`FoundationalValueBackingAdapter`, `RecordKind`/`RecordArena`/`PartitionState` deduplicated traversal) now walk every distinct physical allocation exactly once at node and value granularity across distinct `Extra` carriers. `RELATIONAL_SHARING_INSPECTION_VERSION` is bumped from `7` to `8` with exact deduplicated wording restored from `171d380829` on `crates/worth-relational/src/inspection/mvcc/sharing_authoritative_byte_metrics.rs` and `crates/worth-relational/src/inspection/mvcc/sharing_byte_metric_scope.rs`. Full region inventories (`RecordArena::allocation_inventory`, `PartitionState::allocation_inventory`), the fork-materialized total (`branch/root.rs`, `branch/fork.rs`, `branch/fork_target_installation.rs`), and reclamation counters (`history/retention/cost_counters.rs`, `history/retention/reclamation.rs`) refuse unrepresentable totals with typed `StorageAllocationOverflow` instead of saturating. Acceptance sharing court: `storage::substrate::record_arena::values::tests::shared_state_bound::extras_sharing_one_aspect_map_contribute_shared_backing_once_matching_allocator_union` (plus overflow refusal tests in `record_arena::arena::allocation`, `partition_allocation_walk`, and `history::retention::reclamation`).
+  - **Classification of all 24 F4 exact-accounting reds** (recovered from `ff73e2304b^:target/lane-evidence/fable-repair-root-families.md` and `ff73e2304b^:target/lane-evidence/fable-repair-root-focused-families.txt`). Every one of the 24 F4 courts subsequently moved to a `9ed22bccaa` (14 courts) or `73ce80ebfc` (10 courts) C2 ledger entry below, so each is classified once under that entry with **0 remaining unclassified courts**:
+    1. `forked_topology_write_copies_only_touched_regions` — moved to `73ce80ebfc` C2 entry (C2.5; exact-equality physical publication accounting; restored and passing in C2.5).
+    2. `every_supply_chain_delta_shares_payloads_within_its_declared_partition_footprint` (`prove_named_delta_cow`) — moved to `73ce80ebfc` C2 entry (C2.5; exact-equality physical publication accounting across 8 deltas; restored and passing in C2.5).
+    3. `production_write_footprints_report_exact_records_and_local_publication_cost` — moved to `73ce80ebfc` C2 entry (C2.5; exact-equality physical publication footprint; restored and passing in C2.5).
+    4. `unfunded_validated_proposal_backing_refuses_and_releases_original_custody` — moved to `9ed22bccaa` C2 entry (C2.5; exact finite-budget refusal and refund; restored and passing).
+    5. `shared_history_custody_refuses_unfunded_admission_then_survives_until_the_last_basis_drops` — moved to `9ed22bccaa` C2 entry (C2.4; exact retained funding/refund lifetime; restored in C2.4).
+    6. `content_durable_artifact_original_work_exhaustion_is_exact_and_pre_effect` — moved to `9ed22bccaa` C2 entry (C2.5; exact work ceiling and final available-memory equality; restored and passing).
+    7. `content_durable_artifact_memory_refuses_before_the_medium_and_selected_commit` — moved to `9ed22bccaa` C2 entry (C2.5; exact finite artifact-memory refusal and refund; restored and passing).
+    8. `content_durable_artifact_cancellation_after_original_allocation_never_calls_medium` — moved to `9ed22bccaa` C2 entry (C2.5; exact original-backed cancellation refund equality; restored and passing).
+    9. `content_original_field_capture_charges_real_aspect_count_and_key_bytes` — moved to `9ed22bccaa` C2 entry (C2.6; exact preimage work threshold and refund; restored in C2.6).
+    10. `original_kind_custody_survives_successor_basis_checkpoint_tail_and_reopen` — moved to `9ed22bccaa` C2 entry (C2.5; exact retained funding equality across reopen and final refund; restored and passing).
+    11. `checkpoint_capture_sets_up_exactly_one_stage_whatever_the_row_count` — moved to `73ce80ebfc` C2 entry (C2.6; exact stage-setup count equality; restored in C2.6).
+    12. `checkpoint_stage_charges_the_documented_rate_for_each_encoded_byte` — moved to `73ce80ebfc` C2 entry (C2.6; exact per-byte charge equality; restored in C2.6).
+    13. `empty_checkpoint_memory_boundary_is_its_bytes_plus_one_stage` — moved to `73ce80ebfc` C2 entry (C2.6; exact memory boundary equality; restored in C2.6).
+    14. `empty_checkpoint_work_ceiling_bounds_the_whole_capture` — moved to `73ce80ebfc` C2 entry (C2.6; exact work-ceiling boundary; restored in C2.6).
+    15. `equal_payload_jumps_charge_the_same_receiving_owner_work_at_near_and_distant_history_nodes` — moved to `73ce80ebfc` C2 entry (C2.7; exact receiving-owner work equality across history distances; owned by C2.7).
+    16. `cold_inline_bytes_head_refuses_after_member_read_then_retains_exact_payload_through_edit` — moved to `73ce80ebfc` C2 entry (C2.4; exact finite memory-room denial and retained backing; restored in C2.4).
+    17. `cold_inline_bytes_history_refuses_after_read_then_retries_full_with_exact_old_values` — moved to `73ce80ebfc` C2 entry (C2.4; exact finite memory-room denial and retained backing; restored in C2.4).
+    18. `one_work_account_bounds_the_same_proposal_on_every_entry` — moved to `9ed22bccaa` C2 entry (C2.6; exact SDK work-account equality; retired by `7dbe96af31` and `dc959f71cb`, guarded by #19 per C2.6 ruling).
+    19. `one_work_account_bounds_each_entry_with_its_original_canonical_evidence` — moved to `9ed22bccaa` C2 entry (C2.6; exact SDK work-account equality; restored in C2.6).
+    20. `canonical_artifact_accounting_excludes_nested_diagnostic_perturbation` — moved to `9ed22bccaa` C2 entry (C2.5; exact canonical artifact byte equality; restored and passing).
+    21. `memory_frame_quota_and_cancel_refuse_before_position_or_head` — moved to `9ed22bccaa` C2 entry (C2.5; exact one-byte-short memory-frame quota and refund; restored and passing).
+    22. `clearing_reconstructed_last_aspect_retains_no_state_bill` — moved to `9ed22bccaa` C2 entry (C2.5; exact zero retained-state bill after clearing last aspect; restored and passing).
+    23. `repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy` — moved to `9ed22bccaa` C2 entry (C2.5; exact live-scratch reuse and final refund under finite policy; restored and passing).
+    24. `funded_extra_refuses_copy_and_replacement_before_growth` — moved to `9ed22bccaa` C2 entry (C2.5; exact finite copy/replacement admission and retained bill; restored and passing).
 - **C2:** `reclose_before_any_image_demand_keeps_the_selections_the_image_carried`
   (restore from `10d117085f:crates/worth-relational/src/tests/durability/medium/complete_index_selections.rs`).
   Restore its carried-only fixture mode from
@@ -1626,7 +1873,28 @@ in `tests/performance_metrics.rs`, the ten performance adapters/exports in
 `crates/worth-relational/src/`). Remaining shared fixtures and all ordinary
 Fintech scenarios remain. C2 must restore these claims with actual owned durable
 media through the public testkit, preserving the claims without reviving the
-retired runtime-discovery adapters.
+retired runtime-discovery adapters. C2 ruling (2026-11-22, Option 1): for the 11
+in-crate `worth-relational` performance matrices below whose
+`pub(crate)`/`#[cfg(test)]` observations (`performance_access().counters()`,
+`configure_diagnostics_for_test`, `digest_diagnostics_surface`,
+`execute_query_plan_with_index_parity`, `runtime.indexes.corrupt_latest_generation`)
+are coupled to the same durable operation — where Rust's dual crate compilation
+identity (`crate` vs external `worth_relational`) prevents importing
+`worth_testkit_relational::TestDurableMedium`'s trait impls into `worth-relational`
+unit tests without leaking private test internals or adding caller rows — the
+case-owned `OwnedTestDurableMedium` (`crates/worth-relational/src/tests/support/durability.rs`
++ `durability/owned_medium.rs`) is authorized strictly as a thin `#[cfg(test)]`
+trait-identity adapter under four binding guardrails: (1) explicit case-owned
+handle only (zero runtime-discovery map, zero global registry, zero
+fixed-generation selection bypass, zero fallback to `Memory` or retained-runtime
+`recovery_plan()`); (2) shared testkit byte primitives (delegates raw journal
+storage, member bytes, and immutable read-snapshot protection to
+`worth_testkit_relational::durable_medium::{ByteJournal, MemberBytes, OwnedNativeReadSnapshot, OwnedSnapshotDenial}`);
+(3) zero baseline/caller expansion (adds zero new `src-court-baseline.json` rows
+and zero new `control-callers.txt` rows beyond the separately ruled
+`restoration_header` row); and (4) purely public durable matrices
+(`durability_append_matrix.rs`) remain in `worth-court-relational-certification`
+over `TestDurableMedium`.
 
 - `perf_artifact_recoverability_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/artifact_recoverability_matrix.rs`.
 - `perf_chip_simulator_matrix`: `restore from ee7aef9014:crates/worth-relational/src/tests/performance_profiles/chip_simulator_matrix/mod.rs`.
@@ -1952,7 +2220,7 @@ The following original claims move under Delivery tracks; mixed courts retain th
 - **C4** `rehashed_selection_artifacts_refuse_wrong_source_identity_predecessor_and_mixed_profiles`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/relational_certification/owner_service_completion/retained_entity_selection/provenance.rs`. One rehashed provenance/profile fault matrix with private byte mutation helpers. Unchanged readmission/head assertions establish the matrix counterpart and no-effect posture.
 - **C2** `unfunded_validated_proposal_backing_refuses_and_releases_original_custody`: `restore from 9ed22bccaa:crates/worth-court-relational-certification/tests/worth_court_relational_certification/relational/validated_proposal_memory.rs`. Owner-layout-specific finite-budget refusal and exact refund/no-effect.
 - **C2** `one_work_account_bounds_each_entry_with_its_original_canonical_evidence`: `restore from 9ed22bccaa:crates/worth-relational/src/authority/commit/pipeline/request_checkpoints/work_account.rs`. Exact common work account and one-unit-short denial across entries.
-- **C2** `one_work_account_bounds_the_same_proposal_on_every_entry`: `restore from 9ed22bccaa:crates/worth-relational/src/authority/commit/pipeline/request_checkpoints/work_account.rs`. Equal SDK work settlement and shared one-unit-short ceilings across entries.
+- **C2** `one_work_account_bounds_the_same_proposal_on_every_entry`: `restore from 9ed22bccaa:crates/worth-relational/src/authority/commit/pipeline/request_checkpoints/work_account.rs`. Equal SDK work settlement and shared one-unit-short ceilings across entries. *(Ruling: retired by `7dbe96af31` and deleted again by `dc959f71cb`; guarded by `one_work_account_bounds_each_entry_with_its_original_canonical_evidence`, so not restored.)*
 - **C2** `selected_ack_exposes_backed_data_before_retirement_and_releases_holds_only_on_completion`: `restore from 9ed22bccaa:crates/worth-relational/src/durability/data/native_checkpoint/tests/selected_ack.rs`. Interrupted/work-limited partial ACK, publication while ACK is pending, old read/capture hold retention and exact terminal retirement. Keep shared setup/observations in the restored C2 case.
 - **C4** `forged_cross_region_kind_commitment_is_refused_before_member_reads`: `restore from 9ed22bccaa:crates/worth-relational/src/durability/log/native_checkpoint_codec/kind_authentication_tests.rs`. Four forged kind/directory/count dimensions; all target assertions concern refusal before region reads.
 - **C2** `canonical_artifact_accounting_excludes_nested_diagnostic_perturbation`: `restore from 9ed22bccaa:crates/worth-relational/src/history/commit/artifact_tests.rs`. Pure allocation accounting and diagnostic-size invariance. canonical_payload_bytes() returns u64, so even lines 243-247 compare size, not payload contents. No independent H semantic assertion identified.
@@ -1962,6 +2230,18 @@ The following original claims move under Delivery tracks; mixed courts retain th
 - **C2** `repeated_dag_reachability_reuses_scratch_under_the_same_finite_policy`: `restore from 9ed22bccaa:crates/worth-relational/src/validation/engine/tests/acyclicity_resources.rs`. 128-node repeated-reachability workload under fixed 1MiB/4M policy, live-scratch budget reuse and final exact refund. Underlying current memory-denial cause remains unknown.
 - **C4** `checkpoint_restore_rejects_incomplete_field_revision_column`: `restore from 9ed22bccaa:crates/worth-relational/src/visibility/materialization/read_records/projection/field_revisions/restore_tests.rs`. Intentionally shorten field_revisions SoA column and reseal root; require typed corruption refusal and diagnostic. Recovery already refuses CorruptCheckpoint at generic arena column-length check; detail substring expectation is stale.
 - **C2 metadata accompanying already moved private courts**: `runtime.merge.topology_region_detection` and `runtime.merge.execution_verification`, `restore from 73ce80ebfc:crates/worth-relational/src/performance/data/complexity_contract_inventory.rs`. Their only registered proof bodies moved with P-A; do not publish them as Verified until C2 restores the actual counter/verification evidence. Other contracts keep their actual registered proofs. The proof registry checker remains unchanged.
+- **C2 ruling 2026-11-21:** restored as existing source courts with exact
+  src-court-baseline rows (BC9002); Law 2 debt carried for C5's boundary
+  re-audit. The six restored source closures that had no row at their restore
+  SHA, each a module-private funding claim no public court observes:
+  `crates/worth-relational/src/authority/mutation/intents/field_authoring_candidate/tests/storage_footprint.rs`,
+  `crates/worth-relational/src/branch/root_schema/readmission/tests.rs`,
+  `crates/worth-relational/src/content/schema/retention_tests.rs`,
+  `crates/worth-relational/src/storage/substrate/digest_index/funding_tests.rs`,
+  `crates/worth-relational/src/storage/substrate/record_arena/values/tests/historical_selection_funding.rs`,
+  `crates/worth-relational/src/storage/substrate/record_arena/values/tests/optional_output_funding.rs`;
+  and, under the same ruling, the Query handler-key custody split
+  `workspaces/worth-query/crates/worth-query-execution/src/domain_computation/primary_graph/invariant_projection/operation_reader/decision_reads/expected_keys/historical_retention_tests.rs`.
 - **C2 source-unit claim closures**: `controlled_field_lowering_refuses_before_copy_and_preserves_typed_causes` (its finite lowerer/readmitter phase-admission block) and `controlled_field_lowering_releases_scratch_before_retaining_small_patch` (all private exact/backing/peak assertions), `restore from 73ce80ebfc:crates/worth-relational/src/authority/mutation/intents/field_authoring_candidate/tests.rs`; restore the same-SHA `tests/storage_footprint.rs` and `tests/fixture.rs`. Original winner, typed cancellation/zero-memory refusal, scalar/struct content and portable wire-copy assertions remain in their semantic unit courts.
 - **C2** `cleared_entity_and_relation_extras_keep_only_their_fixed_original_bills`: `restore from 73ce80ebfc:crates/worth-relational/src/storage/substrate/record_arena/values/tests/optional_output_funding.rs`, with its same-SHA parent fixtures. This is the exact private EntityExtra/RelationExtra bill and last-drop campaign. The independent optional reconstruction semantics remain in their own unit court with a lawful optional contract.
 

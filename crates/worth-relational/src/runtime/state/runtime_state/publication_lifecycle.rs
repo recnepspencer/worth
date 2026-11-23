@@ -24,9 +24,11 @@ pub(super) struct RelationalRuntimePublicationLifecycle {
     pub(super) settlements: Arc<super::RelationalPublicationSettlementRegistry>,
 }
 
+/// A live candidate's registration. The candidate handle holds the payload's
+/// only strong reference, so a dead weak reference means the handle was leaked
+/// without its `Drop`; nothing else evicts a registration.
 #[derive(Debug)]
 struct RegisteredCandidate {
-    expires_at: std::time::Instant,
     payload: Weak<Mutex<Option<crate::mvcc::publication::CandidatePayload>>>,
 }
 
@@ -37,7 +39,7 @@ pub(crate) enum RelationalCandidateRegistrationDenial {
 
 impl RelationalRuntimePublicationOwner {
     /// Unlike ordinary close, this never reaps candidates or drains settlements.
-    /// A retained candidate owns real reservations, including after its expiry.
+    /// A retained candidate owns real reservations until its holder drops it.
     pub(super) fn try_memory_close_custody(
         &self,
     ) -> Result<Option<super::RelationalPublicationCustodyHolders>, ()> {
@@ -61,7 +63,7 @@ impl RelationalRuntimePublicationOwner {
     pub(super) fn live_publication_custody(
         &self,
     ) -> Option<super::RelationalPublicationCustodyHolders> {
-        self.binding.reap_expired_candidates();
+        self.binding.reap_abandoned_candidates();
         let candidates = self
             .binding
             .lifecycle
@@ -162,7 +164,6 @@ impl RelationalRuntimePublicationBinding {
 
     pub(crate) fn register_candidate(
         &self,
-        expires_at: std::time::Instant,
         maximum_candidates: Option<usize>,
         payload: &Arc<Mutex<Option<crate::mvcc::publication::CandidatePayload>>>,
     ) -> Result<u64, RelationalCandidateRegistrationDenial> {
@@ -213,7 +214,6 @@ impl RelationalRuntimePublicationBinding {
         let replaced = candidates.insert(
             id,
             RegisteredCandidate {
-                expires_at,
                 payload: Arc::downgrade(payload),
             },
         );
@@ -224,17 +224,14 @@ impl RelationalRuntimePublicationBinding {
         Ok(id)
     }
 
-    pub(crate) fn take_candidate(
-        &self,
-        candidate_id: u64,
-    ) -> Option<crate::mvcc::publication::CandidatePayload> {
-        let registered = self
-            .lifecycle
+    /// Remove a consumed candidate's registration; the consuming receiver
+    /// takes the payload from its own strong reference.
+    pub(crate) fn release_candidate_registration(&self, candidate_id: u64) {
+        self.lifecycle
             .candidates
             .lock()
             .unwrap_or_else(|poisoned| poisoned.into_inner())
-            .remove(&candidate_id)?;
-        registered.payload.upgrade()?.lock().ok()?.take()
+            .remove(&candidate_id);
     }
 
     pub(crate) fn discard_candidate(&self, candidate_id: u64) {
@@ -252,13 +249,12 @@ impl RelationalRuntimePublicationBinding {
         }
     }
 
-    pub(crate) fn reap_expired_candidates(&self) -> usize {
-        let mut candidates = self
-            .lifecycle
+    fn reap_abandoned_candidates(&self) {
+        self.lifecycle
             .candidates
             .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
-        reap_expired_candidates(&mut candidates, std::time::Instant::now())
+            .unwrap_or_else(|poisoned| poisoned.into_inner())
+            .retain(|_, entry| entry.payload.strong_count() > 0);
     }
 
     pub(crate) fn belongs_to_same_owner(&self, other: &Self) -> bool {
@@ -317,28 +313,4 @@ impl RelationalRuntimePublicationBinding {
     pub(crate) fn pending_settlement_owner_loss_count(&self) -> u64 {
         self.lifecycle.settlements.owner_loss_release_count()
     }
-}
-
-fn reap_expired_candidates(
-    candidates: &mut HashMap<u64, RegisteredCandidate>,
-    now: std::time::Instant,
-) -> usize {
-    let expired = candidates
-        .iter()
-        .filter_map(|(id, entry)| {
-            (now >= entry.expires_at || entry.payload.strong_count() == 0).then_some(*id)
-        })
-        .collect::<Vec<_>>();
-    for id in &expired {
-        if let Some(payload) = candidates
-            .remove(id)
-            .and_then(|entry| entry.payload.upgrade())
-        {
-            payload
-                .lock()
-                .unwrap_or_else(|poisoned| poisoned.into_inner())
-                .take();
-        }
-    }
-    expired.len()
 }

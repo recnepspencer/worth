@@ -238,10 +238,20 @@ impl WorldRecoveredUnpublishedEffects {
                     custody: self,
                 }
             }
-            Err(WorldDurablePublicationStop::Unresolved) => {
+            Err(
+                WorldDurablePublicationStop::Unresolved
+                | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                    evidence_required: false,
+                },
+            ) => {
                 WorldRecoveredReleaseOutcome::Indeterminate(self)
             }
-            Err(WorldDurablePublicationStop::EvidenceRequired) => {
+            Err(
+                WorldDurablePublicationStop::EvidenceRequired
+                | WorldDurablePublicationStop::BlockedByPriorBarrier {
+                    evidence_required: true,
+                },
+            ) => {
                 WorldRecoveredReleaseOutcome::EvidenceRequired(self)
             }
         }

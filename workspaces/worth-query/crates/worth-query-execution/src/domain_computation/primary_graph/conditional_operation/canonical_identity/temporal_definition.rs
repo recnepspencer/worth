@@ -7,7 +7,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn prepa
     domain: &str,
     slot: &str,
     location: &WorthQueryConditionalNodeLocation,
-) -> Result<(CanonicalDigestId, WorthQueryCanonicalWorkEvidence), CanonicalDigestDerivationDenial> {
+) -> CanonicalIdentityMaterial {
     let mut meaning = CanonicalIdentityMaterial::new(
         "worth-query.temporal-node-definition",
         "worth-query-temporal-node-definition-v1",
@@ -32,7 +32,7 @@ pub(in crate::domain_computation::primary_graph::conditional_operation) fn prepa
             meaning.text("node", node_identity);
         }
     }
-    meaning.derive()
+    meaning
 }
 
 #[cfg(test)]

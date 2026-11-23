@@ -30,6 +30,28 @@ pub use source_basis::StoreRecoverySamplingBasis;
 use source_basis::{validate_source, SamplingSource};
 use storage::SamplingStorage;
 
+#[derive(Clone, Copy)]
+pub(super) struct LocalSamplingBudget {
+    primary_bytes: u64,
+    limit: u64,
+}
+
+impl LocalSamplingBudget {
+    pub(super) fn admit_decode(self, decode_bytes: u64) -> Result<(), AllocationDenial> {
+        let total = self
+            .primary_bytes
+            .checked_add(decode_bytes)
+            .ok_or(AllocationDenial::SizeOverflow)?;
+        if total > self.limit {
+            return Err(AllocationDenial::LocalLimit {
+                required: total,
+                admitted: self.limit,
+            });
+        }
+        Ok(())
+    }
+}
+
 pub(super) fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 'frame>(
     covered: CheckpointCoveredMembers,
     coordination: &PhysicalRecoveryCoordination,
@@ -39,6 +61,34 @@ pub(super) fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 
     maximum_operations: u64,
     maximum_redo: u64,
     cleanup_limit: u64,
+) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
+    sample_binding_from_frames_with_budget(
+        covered,
+        coordination,
+        media,
+        basis,
+        wal_frames,
+        maximum_operations,
+        maximum_redo,
+        cleanup_limit,
+        None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn sample_binding_from_frames_with_budget<
+    'frame,
+    Frame: RecoveryWalFrameInput + 'frame,
+>(
+    covered: CheckpointCoveredMembers,
+    coordination: &PhysicalRecoveryCoordination,
+    media: &AdmittedRecoveryFilesystemMedia,
+    basis: StoreRecoverySamplingBasis<'_>,
+    wal_frames: impl Iterator<Item = &'frame Frame> + Clone,
+    maximum_operations: u64,
+    maximum_redo: u64,
+    cleanup_limit: u64,
+    maximum_sampling_bytes: Option<u64>,
 ) -> Result<StoreRecoveryBindingFreshnessSample, StoreRecoveryBindingSampleFailure> {
     let source = validate_source(coordination, media, basis, maximum_operations)?;
     let allocation = SamplingAllocation::from_coordination(coordination)
@@ -59,10 +109,22 @@ pub(super) fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 
         cleanup_limit,
     )
     .map_err(|cause| source.allocation_failure(cause))?;
+    if let Some(limit) = maximum_sampling_bytes
+        && capacity.requested > limit
+    {
+        return Err(source.allocation_failure(AllocationDenial::LocalLimit {
+            required: capacity.requested,
+            admitted: limit,
+        }));
+    }
     // On every early return, storage is disposed before its native grant.
     let backing = allocation
         .reserve(capacity.requested)
         .map_err(|cause| source.allocation_failure(cause))?;
+    let local_budget = maximum_sampling_bytes.map(|limit| LocalSamplingBudget {
+        primary_bytes: backing.bytes(),
+        limit,
+    });
     let mut storage =
         SamplingStorage::prepare(capacity, maximum_operations, cleanup_limit, &backing)
             .map_err(|cause| source.allocation_failure(cause))?;
@@ -76,6 +138,7 @@ pub(super) fn sample_binding_from_frames<'frame, Frame: RecoveryWalFrameInput + 
         maximum_operations,
         maximum_redo,
         cleanup_limit,
+        local_budget,
     )?;
     finish_sample(backing, storage, &source)
 }

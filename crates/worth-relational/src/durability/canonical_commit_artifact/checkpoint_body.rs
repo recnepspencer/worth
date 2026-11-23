@@ -1,10 +1,25 @@
 //! The fixed checkpoint projection uses the same quote, wire and leaf handoff.
+#[cfg(test)]
+use super::RelationalCanonicalCommitArtifact as Artifact;
 use super::{
     borrowed_payload::BorrowedPayload, decoded_quote,
     RelationalCanonicalCommitArtifactRefusal as Refusal,
 };
 use crate::history::data::{CanonicalCommitEnvelope, CanonicalEnvelopeWire, EnvelopeProjection};
 use worth_execution::{ExecutionImmutableBytes, ExecutionRequest};
+
+#[cfg(test)]
+impl Artifact {
+    /// Data readmission only: this neither positions a commit nor grants a
+    /// performed publication. The checkpoint funding courts observe its bill.
+    pub(crate) fn readmit_checkpoint_body(
+        bytes: &[u8],
+        input: Option<ExecutionImmutableBytes>,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<CanonicalCommitEnvelope, Refusal> {
+        decode(bytes, input, request, 0)
+    }
+}
 
 fn require_owned_region(
     bytes: &[u8],

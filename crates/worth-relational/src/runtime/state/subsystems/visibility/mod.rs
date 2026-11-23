@@ -263,6 +263,10 @@ impl VisibilitySubsystem {
         self.cache.clear_branch_head_residency(tracked_states);
     }
 
+    pub(crate) fn replay_retention_versions(&self) -> Vec<crate::identity::data::VersionId> {
+        self.replay_retention.read().entries.keys().copied().collect()
+    }
+
     pub(crate) fn increment_replay_retention(
         &self,
         version_id: crate::identity::data::VersionId,

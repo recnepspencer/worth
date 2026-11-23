@@ -111,6 +111,36 @@ impl RelationalBranchRoot {
         Ok(())
     }
 
+    pub(crate) fn peek_head_region_with_symbols(
+        &self,
+        id: PartitionId,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> crate::storage::residency::PartitionHeadProbe<'_> {
+        use crate::storage::residency::PartitionHeadProbe as Probe;
+        match self.regions.get(id) {
+            None => Probe::Absent,
+            Some(region) => match region.partition.peek_head_view_with_symbols(symbols) {
+                Some(view) => Probe::Resident(view),
+                None => Probe::Cold,
+            },
+        }
+    }
+
+    pub(crate) fn peek_full_region_with_symbols(
+        &self,
+        id: PartitionId,
+        symbols: &crate::runtime::RuntimeSymbolTable,
+    ) -> crate::storage::residency::PartitionProbe<'_> {
+        use crate::storage::residency::PartitionProbe as Probe;
+        match self.regions.get(id) {
+            None => Probe::Absent,
+            Some(region) => match region.partition.peek_full_partition_with_symbols(symbols) {
+                Some(partition) => Probe::Resident(partition),
+                None => Probe::Cold,
+            },
+        }
+    }
+
     pub(crate) fn probe_head_region_with_symbols(
         &self,
         id: PartitionId,

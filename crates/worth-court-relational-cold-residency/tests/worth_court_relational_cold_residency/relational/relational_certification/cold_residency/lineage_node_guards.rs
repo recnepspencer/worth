@@ -30,6 +30,11 @@ fn a_cold_lineage_point_read_loads_one_node_page_and_no_region_history() {
         .unwrap()
         .unwrap();
     assert_eq!(observed.node(), &fixture.expected);
+    assert!(fixture.runtime.has_resident_lineage_node(fixture.expected.lineage_id()));
+    assert!(
+        fixture.runtime.observe_lineage_residency().resident_node_count < 601 / 2,
+        "point read loads only one node page"
+    );
     let reads = fixture.source.member_reads.lock().unwrap();
     assert_eq!(
         reads

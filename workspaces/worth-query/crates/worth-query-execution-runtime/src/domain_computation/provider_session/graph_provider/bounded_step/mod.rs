@@ -1,5 +1,6 @@
 mod artifact_evidence;
 mod checkpoint;
+pub use checkpoint::prime_provider_checkpoint_plateau_for_test;
 mod checkpoint_release;
 mod checkpoint_restore;
 mod cooperative_execution;

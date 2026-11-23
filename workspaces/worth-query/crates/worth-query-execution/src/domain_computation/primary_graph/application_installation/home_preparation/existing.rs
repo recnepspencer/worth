@@ -7,8 +7,8 @@ pub use source::{PreparedExistingHomeQueryRuntime, QueryExistingHomeSourceAttach
 pub use world::QueryExistingHomeWorldAttachmentRefused;
 
 pub struct ReadmittedExistingHomeNativeMeaning<Schema: ApplicationSchemaComposition, Program> {
-    pub(super) state: HomeApplicationState<Schema, Program>,
-    pub(super) schema: InstalledNativeSchemaMeaning,
+    pub(super) state: Box<HomeApplicationState<Schema, Program>>,
+    pub(super) schema: Box<InstalledNativeSchemaMeaning>,
     pub(super) restore_work: Option<worth_relational::facade::durability::CheckpointRestoreWork>,
 }
 pub struct QueryExistingHomeNativeReadmissionRefused<Schema: ApplicationSchemaComposition, Program>
@@ -77,7 +77,7 @@ impl<Schema: ApplicationSchemaComposition, Program> PreparedHomeNativeMeaning<Sc
         match result {
             Ok(()) => Ok(ReadmittedExistingHomeNativeMeaning {
                 state: self.state,
-                schema: self.schema.bind_sources(&native.main_branch_identity()),
+                schema: Box::new(self.schema.bind_sources(&native.main_branch_identity())),
                 restore_work: outcome.checkpoint_restore_work,
             }),
             Err(cause) => Err(QueryExistingHomeNativeReadmissionRefused {
@@ -91,8 +91,8 @@ impl<Schema: ApplicationSchemaComposition, Program>
     ReadmittedExistingHomeNativeMeaning<Schema, Program>
 {
     pub(super) fn from_transition(
-        state: HomeApplicationState<Schema, Program>,
-        schema: InstalledNativeSchemaMeaning,
+        state: Box<HomeApplicationState<Schema, Program>>,
+        schema: Box<InstalledNativeSchemaMeaning>,
     ) -> Self {
         Self {
             state,

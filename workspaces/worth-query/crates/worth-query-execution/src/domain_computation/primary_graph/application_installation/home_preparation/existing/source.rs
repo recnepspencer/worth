@@ -58,7 +58,7 @@ use super::*;
 /// }
 /// ```
 pub struct PreparedExistingHomeQueryRuntime<Schema: ApplicationSchemaComposition, Program> {
-    pub(super) prepared: HomeQueryPreparation<Schema, Program>,
+    pub(super) prepared: Box<HomeQueryPreparation<Schema, Program>>,
 }
 pub struct QueryExistingHomeSourceAttachmentRefused<Schema: ApplicationSchemaComposition, Program> {
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) inner:
@@ -74,7 +74,7 @@ impl<Schema: ApplicationSchemaComposition, Program>
 
 impl<S: ApplicationSchemaComposition, P> PreparedExistingHomeQueryRuntime<S, P> {
     pub(in crate::domain_computation::primary_graph::application_installation::home_preparation) fn from_authored_preparation(
-        prepared: HomeQueryPreparation<S, P>,
+        prepared: Box<HomeQueryPreparation<S, P>>,
     ) -> Self {
         Self { prepared }
     }
