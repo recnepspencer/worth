@@ -1,9 +1,9 @@
 //! Only the attached Native binding mints and consumes selection authority.
 use super::RelationalDurableMediumBinding;
 use crate::durability::data::RelationalNativeCheckpoint;
-use crate::durability::medium::{
+use crate::durability::medium::RelationalCheckpointAcknowledgementDenial as Denial;
+use crate::durability::published_medium::{
     CheckpointSelectionIdentity, CheckpointSelectionObservation, OpaqueCapturedCheckpointSubject,
-    RelationalCheckpointAcknowledgementDenial as Denial,
 };
 use std::sync::{Mutex, Weak};
 use worth_proof::{AuthorityMarker, DurablyCommitted};
@@ -92,9 +92,11 @@ impl CheckpointPublication {
 
     pub(crate) fn progress(
         &self,
-    ) -> Result<crate::durability::medium::RelationalCheckpointAcknowledgementProgress, Denial>
-    {
-        use crate::durability::medium::RelationalCheckpointAcknowledgementProgress as Progress;
+    ) -> Result<
+        crate::durability::published_medium::RelationalCheckpointAcknowledgementProgress,
+        Denial,
+    > {
+        use crate::durability::published_medium::RelationalCheckpointAcknowledgementProgress as Progress;
         let phase = match self.phase.try_lock() {
             Ok(guard) => guard,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),

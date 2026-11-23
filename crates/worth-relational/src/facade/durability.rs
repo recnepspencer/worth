@@ -44,11 +44,9 @@ pub use crate::durability::data::{
 };
 pub use crate::durability::medium::home_write_denial::RelationalHomeProgramWriteDenial;
 pub use crate::durability::medium::{
-    CheckpointSelectionIdentity, CheckpointSelectionObservation, DurablePublicationFate,
-    OpaqueCapturedCheckpointSubject, RelationalCheckpointAcknowledgementDenial,
-    RelationalCheckpointAcknowledgementProgress, RelationalDurabilityUnresolved,
-    RelationalDurabilityUnresolvedSubject, RelationalDurableColdSource,
-    RelationalDurableMemberCustody, RelationalDurableMemberLocator,
+    DurablePublicationFate, RelationalCheckpointAcknowledgementDenial,
+    RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
+    RelationalDurableColdSource, RelationalDurableMemberCustody, RelationalDurableMemberLocator,
     RelationalDurableMemberRetirement, RelationalDurableMemberRetirementObservation,
     RelationalDurableMemberRetirementRefusal, RelationalDurablePublicationRefusal,
     RelationalDurableTransitionReadFailure, RelationalMediumRetirementDenial,
@@ -57,7 +55,9 @@ pub use crate::durability::medium::{
 pub use crate::durability::migration::ReadmittedCanonicalCommit;
 pub use crate::durability::published_medium::RelationalInitialInputsPublicationStop;
 pub use crate::durability::published_medium::{
-    RelationalDurableCheckpointSource, RelationalDurableMedium, RelationalDurableRecoverySource,
+    CheckpointSelectionIdentity, CheckpointSelectionObservation, OpaqueCapturedCheckpointSubject,
+    RelationalCheckpointAcknowledgementProgress, RelationalDurableCheckpointSource,
+    RelationalDurableMedium, RelationalDurableRecoverySource,
 };
 pub use crate::durability::source_initial_inputs::{
     RelationalCompleteSourceArtifact, RelationalFreshInitialization,

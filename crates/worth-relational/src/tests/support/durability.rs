@@ -15,17 +15,18 @@ use crate::durability::data::{
     RelationalNativeCheckpoint as NativeCheckpoint,
 };
 use crate::durability::medium::{
-    CheckpointSelectionIdentity, CheckpointSelectionObservation as SelectionObs,
-    DurablePublicationFate as Fate, OpaqueCapturedCheckpointSubject as CheckpointSubject,
-    RelationalDurableColdSource as ColdSource, RelationalDurableMemberCustody as MemberCustody,
-    RelationalDurableMemberLocator as MemberLoc,
+    DurablePublicationFate as Fate, RelationalDurableColdSource as ColdSource,
+    RelationalDurableMemberCustody as MemberCustody, RelationalDurableMemberLocator as MemberLoc,
     RelationalDurableMemberRetirementObservation as RetireObs,
     RelationalDurableMemberRetirementRefusal as RetireRefusal,
     RelationalDurableOwnedReadRefusal as ReadRefusal, RelationalDurableReadBounds as ReadBounds,
     RelationalDurableReadPayload as ReadPayload,
     RelationalDurableTransitionReadFailure as TransReadErr,
 };
-use crate::durability::published_medium::RelationalDurableMedium as DurableMedium;
+use crate::durability::published_medium::{
+    CheckpointSelectionIdentity, CheckpointSelectionObservation as SelectionObs,
+    OpaqueCapturedCheckpointSubject as CheckpointSubject, RelationalDurableMedium as DurableMedium,
+};
 use crate::durability::source_initial_inputs::{
     RelationalInitialInputsPublicationDetail as InitDetail,
     RelationalSourceInitialInputsArtifact as InitArt,

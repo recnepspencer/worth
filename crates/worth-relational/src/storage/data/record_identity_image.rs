@@ -1,8 +1,5 @@
 //! Immutable source allocator image; clones retain the same data and admission.
-use super::{
-    DurablePendingRecordReservation, DurableRecordGenerationHighWater, DurableRecordSlotFrontier,
-    DurableReusableRecordSlot,
-};
+use crate::identity::data::PartitionId;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::sync::Arc;
 use worth_execution::ExecutionMemoryReservation;
@@ -87,4 +84,49 @@ impl<'de> Deserialize<'de> for DurableRecordIdentityState {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         RecordIdentityImageData::deserialize(deserializer).map(|data| Self(Arc::new(data)))
     }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) enum DurableRecordGenerationClass {
+    Entity,
+    Relation,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct DurableRecordGenerationHighWater {
+    pub(crate) class: DurableRecordGenerationClass,
+    pub(crate) partition_id: PartitionId,
+    pub(crate) slot: u64,
+    pub(crate) generation: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct DurableReusableRecordSlot {
+    pub(crate) class: DurableRecordGenerationClass,
+    pub(crate) partition_id: PartitionId,
+    pub(crate) slot: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct DurableRecordSlotFrontier {
+    pub(crate) class: DurableRecordGenerationClass,
+    pub(crate) partition_id: PartitionId,
+    pub(crate) next_slot: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) enum DurableRecordReservationOrigin {
+    AppendFrontier,
+    Reclaimed { prior_generation: u32 },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub(crate) struct DurablePendingRecordReservation {
+    pub(crate) class: DurableRecordGenerationClass,
+    pub(crate) partition_id: PartitionId,
+    pub(crate) slot: u64,
+    pub(crate) generation: u32,
+    pub(crate) origin: DurableRecordReservationOrigin,
 }

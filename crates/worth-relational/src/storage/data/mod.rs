@@ -114,7 +114,9 @@ pub struct ChunkDiagnostics {
 pub(crate) mod checkpoint_page;
 pub(crate) mod checkpoint_pages;
 pub(crate) mod checkpoint_symbol_buckets;
+pub(crate) mod history_member_directory;
 pub(crate) mod member_frame;
+pub(crate) mod record_identity_image;
 pub(crate) mod symbol_page_readmission;
 pub(crate) mod symbol_page_roster;
 pub(crate) mod symbol_residency;

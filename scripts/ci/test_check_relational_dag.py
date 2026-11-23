@@ -102,13 +102,19 @@ class RelationalDagTests(unittest.TestCase):
             }),
             'storage -> durability': Counter({
                 ((SOURCE / 'storage/partition/write.rs').as_posix(), 'durability::Frame'): 1,
+                ((SOURCE / 'storage/residency/cell.rs').as_posix(), 'durability::Frame'): 2,
+            }),
+            'durability -> storage': Counter({
+                ((SOURCE / 'durability/data/capture.rs').as_posix(), 'storage::Partition'): 1,
             }),
         }
-        self.assertEqual(
-            ordinary_storage_totals('production_explicit', references), {'storage -> runtime': 1})
+        outgoing = {'storage -> runtime': 1, 'storage -> durability': 1}
+        for projection in ('production_explicit', 'production_resolved'):
+            with self.subTest(projection=projection):
+                self.assertEqual(ordinary_storage_totals(projection, references), outgoing)
         self.assertEqual(
             ordinary_storage_totals('inherent_impl', references),
-            {'storage -> runtime': 1, 'runtime -> storage': 1})
+            {**outgoing, 'runtime -> storage': 1, 'durability -> storage': 1})
 
     def test_ordinary_storage_test_ratchet_includes_durability(self):
         reference = 'durability::Frame'

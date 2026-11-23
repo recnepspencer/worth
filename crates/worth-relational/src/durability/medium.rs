@@ -18,11 +18,8 @@ mod native_journal_source;
 pub(crate) mod source_retirement;
 pub(crate) use native_journal_source::NativeJournalSourceEdge;
 pub use source_retirement::{RelationalMediumRetirementDenial, RelationalMediumRetirementProgress};
-mod checkpoint_selection;
-pub use checkpoint_selection::{
-    CheckpointSelectionIdentity, CheckpointSelectionObservation, OpaqueCapturedCheckpointSubject,
-    RelationalCheckpointAcknowledgementDenial, RelationalCheckpointAcknowledgementProgress,
-};
+mod checkpoint_acknowledgement_denial;
+pub use checkpoint_acknowledgement_denial::RelationalCheckpointAcknowledgementDenial;
 mod cold_source;
 pub use cold_source::{RelationalDurableColdSource, RelationalDurableMemberLocator};
 mod member_custody;

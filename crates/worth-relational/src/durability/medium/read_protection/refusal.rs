@@ -1,5 +1,9 @@
 //! Owned-read control and storage failures remain typed and nonserialized.
 use crate::{
+    durability::{
+        branch_transition_artifact::frame_refusal::RelationalBranchTransitionArtifactFrameRefusal,
+        canonical_commit_artifact::frame_refusal::RelationalCanonicalCommitArtifactFrameRefusal,
+    },
     execution::denial_cause::RelationalExecutionDenialCause,
     storage::data::RelationalStorageUnavailableCause,
 };
@@ -13,8 +17,8 @@ pub enum RelationalDurableOwnedReadRefusal {
     Request(RelationalExecutionDenialCause),
     Buffer(worth_execution::ExecutionRequestArrayDenial),
     Storage(RelationalStorageUnavailableCause),
-    CanonicalFrame(crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifactFrameRefusal),
-    TransitionFrame(crate::durability::branch_transition_artifact::RelationalBranchTransitionArtifactFrameRefusal),
+    CanonicalFrame(RelationalCanonicalCommitArtifactFrameRefusal),
+    TransitionFrame(RelationalBranchTransitionArtifactFrameRefusal),
 }
 impl From<worth_execution::WorkCeilingDenial> for RelationalDurableOwnedReadRefusal {
     fn from(cause: worth_execution::WorkCeilingDenial) -> Self {
