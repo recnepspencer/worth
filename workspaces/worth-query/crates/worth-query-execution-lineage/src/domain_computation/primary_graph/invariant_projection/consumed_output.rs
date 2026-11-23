@@ -115,6 +115,10 @@ impl ConsumedOutputEvidence {
             Self::Appended(_) | Self::Recorded(_) => None,
         }
     }
+    /// Whether this consumption read a committed output (Recorded evidence).
+    pub fn recorded_evidence(&self) -> bool {
+        matches!(self, Self::Recorded(_))
+    }
     fn recorded(&self) -> &RecordedConsumedOutput {
         match self {
             Self::Recorded(recorded) => recorded,

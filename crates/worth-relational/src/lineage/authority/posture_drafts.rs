@@ -6,8 +6,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::history::data::RelationalCommitReceipt;
 use crate::identity::data::{EntityId, LineageId};
 use crate::lineage::data::{
-    LineageCommitPostureInput, LineageNameDenial, LineagePostureKind, LineageRecordTarget,
-    LineageSubject, PersistentNameHolder, PersistentNameIdentity,
+    LineageBasisView, LineageNameDenial, LineagePostureKind, LineageRecordTarget, LineageSubject,
+    PersistentNameHolder, PersistentNameIdentity,
 };
 use crate::runtime::WorkingState;
 use crate::transactions::data::{
@@ -61,7 +61,7 @@ pub(super) fn build_posture_drafts(
     commit: &RelationalCommitReceipt,
     merged_plan: &[MutationIntent],
     changed_records: &[RecordRef],
-    input: &LineageCommitPostureInput,
+    basis: &dyn LineageBasisView,
     validated: &ValidatedPostureBatch,
 ) -> Result<(Vec<PostureEventDraft>, usize), LineageNameDenial> {
     let mut drafts = Vec::new();
@@ -276,9 +276,8 @@ pub(super) fn build_posture_drafts(
                 if validated.claimed_basis_targets.contains(&target) {
                     continue;
                 }
-                if let Some(&lineage_id) = input
-                    .live_lineages
-                    .get(&PersistentNameHolder::Relation(spec.relation_id))
+                if let Some(lineage_id) =
+                    basis.live_lineage(&PersistentNameHolder::Relation(spec.relation_id))
                 {
                     drafts.push(PostureEventDraft::Retire {
                         subject: LineageSubject::Relation,

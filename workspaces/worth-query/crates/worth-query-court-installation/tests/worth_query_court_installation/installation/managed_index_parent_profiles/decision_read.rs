@@ -74,6 +74,9 @@ pub(super) fn declare<S: ModelSchema>(
     schema: ApplicationSchemaDeclarationBuilder<S>,
 ) -> ApplicationSchemaDeclarationBuilder<S> {
     let operation = ApplicationOperationRef::<S, DecisionOperation, ()>::from_declaration();
+    if S::MODE >= 10 {
+        return super::shared_owner_read::declare(schema, operation);
+    }
     let scope = ApplicationDecisionReadScopeDefinition::<S, ParentReads>::new()
         .managed_index::<ParentBinding<S>>();
     let reference = scope.reference().expect("fixed Parent scope");

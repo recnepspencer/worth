@@ -11,6 +11,9 @@ use worth_query_declaration::facade::application_schema::ApplicationReadableScal
 pub struct ProducerDomainDenial {
     pub reason: Option<std::borrow::Cow<'static, str>>,
     pub value: WorthQueryProducerDenialValue,
+    /// What the refused decision read (PR C §1.7): a pending refusal is
+    /// retried only when one of these proofs changes.
+    pub proofs: Option<crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::RefusalProofs>,
 }
 
 impl WorthQueryOutputDemandDenial {
@@ -67,7 +70,18 @@ impl WorthQueryOutputDemandDenial {
         denial.domain = Some(Box::new(ProducerDomainDenial {
             reason: reason.map(Into::into),
             value,
+            proofs: None,
         }));
         denial
+    }
+    /// A domain refusal keeps what its decision read (PR C §1.7).
+    pub fn with_refusal_proofs(mut self, proofs: Option<crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::RefusalProofs>) -> Self {
+        if let Some(domain) = self.domain.as_mut() {
+            domain.proofs = proofs;
+        }
+        self
+    }
+    pub fn refusal_proofs(&self) -> Option<&crate::domain_computation::primary_graph::invariant_projection::operation_reader::decision_reads::RefusalProofs> {
+        self.domain.as_ref()?.proofs.as_ref()
     }
 }

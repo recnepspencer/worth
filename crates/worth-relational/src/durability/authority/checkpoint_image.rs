@@ -36,6 +36,7 @@ impl CapturedCheckpointBasis {
             aspect_contracts,
             mirror_schema_authority,
             lineage_nodes,
+            relation_lineages,
             lineage_events: _,
             lineage_event_pages_resident: _,
             lineage_event_leases: _,
@@ -122,7 +123,8 @@ impl CapturedCheckpointBasis {
                 .map(|partition| crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| partition_to_image_with_contracts(lane, partition, mirror_plans, &mirror_contracts)))
                 .collect::<Result<Vec<_>, _>>()?,
             aspect_contracts: mirror_contracts.portable_contracts(),
-            lineage: LineageCheckpointArtifact::new(lineage_basis, lineage_nodes),
+            lineage: LineageCheckpointArtifact::new(lineage_basis, lineage_nodes)
+                .with_relation_lineages(relation_lineages),
             index_definitions,
             index_generation_frontier: index_state.generation_frontier(),
             index_definition_frontier: index_state.definition_frontier(),

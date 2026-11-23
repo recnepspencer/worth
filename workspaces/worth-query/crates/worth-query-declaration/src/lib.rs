@@ -126,12 +126,3 @@ mod basis {
 }
 
 pub mod facade;
-
-/// Native scalar carriers named by `worth_query_native_scalar_bindings!`.
-#[doc(hidden)]
-pub mod __native_scalar_carriers {
-    pub use worth_foundational::facade::{
-        CanonicalDate, CanonicalF32, CanonicalF64, CanonicalTime, CanonicalTimestamp,
-        CanonicalTimestampTz, InlineBytes, InternedString,
-    };
-}

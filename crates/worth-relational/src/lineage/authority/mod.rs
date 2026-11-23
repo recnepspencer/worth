@@ -1,3 +1,4 @@
+mod commit_births;
 mod commit_finalization;
 mod discriminator_scan;
 mod event_emission;
@@ -15,13 +16,16 @@ mod staged_effects;
 #[cfg(test)]
 mod name_minting_tests;
 
-pub use name_minting::{PersistentNameMintingAuthority, PERSISTENT_NAME_DOMAIN_TAG};
+pub(crate) use commit_births::extract_committed_name_births;
+#[cfg(test)]
+pub(crate) use commit_finalization::{finalize_postures_in_working_state, test_finalize_with_schema};
+pub(crate) use discriminator_scan::extract_embedded_name_refs;
+#[cfg(test)]
+pub(crate) use name_minting::PersistentNameMintingAuthority;
 pub(crate) use name_readmission::{
     verify_persisted_birth_digest, BirthReadmissionRefusal, PersistedBirthClaim,
     PersistedNameBytes, VerifiedBirthDigest,
 };
-#[cfg(test)]
-pub(crate) use posture_finalization::finalize_postures_in_working_state;
 
 use crate::runtime::RelationalRuntime;
 

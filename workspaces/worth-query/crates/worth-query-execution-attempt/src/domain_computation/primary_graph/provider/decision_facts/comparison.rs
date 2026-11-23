@@ -32,6 +32,9 @@ pub struct PrimaryDecisionReadSetComparison<'provider> {
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
     >,
+    /// A successor round's own-output view (§1.5): facts of records its
+    /// chain wrote exclusively compare at the chain head's pre-pin.
+    own_outputs: Option<crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
 }
 
 impl WorthQueryPrimaryGraphProvider {
@@ -85,6 +88,7 @@ impl WorthQueryPrimaryGraphProvider {
         candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         control: StorageControl<'_, '_>,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
         authority.validate_decision_read_set_receipt(&receipt)?;
@@ -95,6 +99,7 @@ impl WorthQueryPrimaryGraphProvider {
             control,
             Some(candidate.clone()),
         )?;
+        comparison.own_outputs = own_outputs.cloned();
         authority.compare_primary_read_set(execution, receipt, &mut comparison, control)
     }
 
@@ -102,18 +107,24 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         authority: &WorthQuerySessionReadAuthority<'_>,
-        candidate: Option<
+        candidate: Option<(
             &worth_relational::facade::runtime::RelationalPinnedRead<
                 worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
             >,
-        >,
+            Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
+        )>,
         control: StorageControl<'_, '_>,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
         let receipt = self.capture_application_read_set(execution, authority, control)?;
         match candidate {
             None => self.compare_application_read_set(execution, authority, receipt, control),
-            Some(candidate) => self.compare_application_read_set_in_applied(
-                execution, authority, receipt, candidate, control,
+            Some((candidate, own_outputs)) => self.compare_application_read_set_in_applied(
+                execution,
+                authority,
+                receipt,
+                candidate,
+                own_outputs,
+                control,
             ),
         }
     }
@@ -125,7 +136,9 @@ impl WorthQueryPrimaryGraphProvider {
         fresh: WorthQueryFreshDecisionReadSet,
         control: StorageControl<'_, '_>,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
-        self.recompare_application_read_set_on_image(execution, authority, fresh, None, control)
+        self.recompare_application_read_set_on_image(
+            execution, authority, fresh, None, None, control,
+        )
     }
     pub fn recompare_application_read_set_on_image(
         &self,
@@ -137,6 +150,7 @@ impl WorthQueryPrimaryGraphProvider {
                 worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
             >,
         >,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         control: StorageControl<'_, '_>,
     ) -> Result<WorthQueryDecisionReadSetFreshnessOutcome, WorthQueryDecisionReadSetFailure> {
         authority.validate_fresh_decision_read_set(&fresh)?;
@@ -147,6 +161,7 @@ impl WorthQueryPrimaryGraphProvider {
             control,
             applied.cloned(),
         )?;
+        comparison.own_outputs = own_outputs.cloned();
         authority.recompare_primary_read_set(execution, fresh, &mut comparison, control)
     }
 }
@@ -253,6 +268,7 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
             snapshot: Some(snapshot),
             selections: PreparedSelections::new(),
             applied,
+            own_outputs: None,
         };
         check_control(control)?;
         Ok(comparison)
@@ -293,6 +309,7 @@ impl<'provider> PrimaryDecisionReadSetComparison<'provider> {
                     runtime,
                     snapshot,
                     self.applied.as_ref(),
+                    self.own_outputs.as_ref(),
                     control,
                 ),
                 _ => fact

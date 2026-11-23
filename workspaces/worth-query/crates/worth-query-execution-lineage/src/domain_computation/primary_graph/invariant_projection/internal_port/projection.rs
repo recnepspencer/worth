@@ -70,7 +70,9 @@ pub trait ApplicationInvariantProjectionExecutionInternalPort<Schema: Applicatio
         candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         predecessor_access: Option<&dyn SourceQueryReaderPort>,
+        source_context_use: Option<&std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<
                 '_,
@@ -124,6 +126,7 @@ pub trait ApplicationInvariantProjectionExecutionInternalPort<Schema: Applicatio
         native: &worth_relational::facade::runtime::RelationalRuntime,
         input: &worth_relational::facade::mvcc::RelationalPredecessorInput,
         maximum_work: Option<usize>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         projection: impl FnOnce(&mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>) -> T,
         retention: StorageControl<'_, '_>,
     ) -> Result<CompletedProjectionRead<T>, WorthQueryInvariantProjectionDenial>;
@@ -217,7 +220,9 @@ impl<Schema: ApplicationSchema> ApplicationInvariantProjectionExecutionInternalP
         candidate: &worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         predecessor_access: Option<&dyn SourceQueryReaderPort>,
+        source_context_use: Option<&std::cell::Cell<crate::domain_computation::primary_graph::handler::DecisionContextUse>>,
         projection: impl FnOnce(
             &mut WorthQueryApplicationOperationInvariantProjectionReader<
                 '_,
@@ -245,7 +250,9 @@ impl<Schema: ApplicationSchema> ApplicationInvariantProjectionExecutionInternalP
             admission,
             before,
             candidate,
+            own_outputs,
             predecessor_access,
+            source_context_use,
             projection,
             allocation,
         )
@@ -286,6 +293,7 @@ impl<Schema: ApplicationSchema> ApplicationInvariantProjectionExecutionInternalP
         native: &worth_relational::facade::runtime::RelationalRuntime,
         input: &worth_relational::facade::mvcc::RelationalPredecessorInput,
         maximum_work: Option<usize>,
+        own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
         projection: impl FnOnce(&mut WorthQueryApplicationInvariantProjectionReader<'_, Schema>) -> T,
         retention: StorageControl<'_, '_>,
     ) -> Result<CompletedProjectionRead<T>, WorthQueryInvariantProjectionDenial> {
@@ -295,6 +303,7 @@ impl<Schema: ApplicationSchema> ApplicationInvariantProjectionExecutionInternalP
             native,
             input,
             maximum_work,
+            own_outputs,
             projection,
             retention,
         )

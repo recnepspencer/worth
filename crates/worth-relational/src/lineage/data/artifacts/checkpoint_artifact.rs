@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::identity::data::{LineageId, RelationId};
 use crate::lineage::data::LineageNode;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -42,6 +43,8 @@ pub struct LineageCheckpointArtifact {
     digest_basis: LineageCheckpointDigestBasis,
     counters: LineageCheckpointCounters,
     nodes: Vec<LineageNode>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    relation_lineages: Vec<(RelationId, LineageId)>,
 }
 
 impl LineageCheckpointArtifact {
@@ -51,7 +54,20 @@ impl LineageCheckpointArtifact {
             digest_basis,
             counters,
             nodes,
+            relation_lineages: Vec::new(),
         }
+    }
+
+    pub fn with_relation_lineages(
+        mut self,
+        relation_lineages: Vec<(RelationId, LineageId)>,
+    ) -> Self {
+        self.relation_lineages = relation_lineages;
+        self
+    }
+
+    pub fn relation_lineages(&self) -> &[(RelationId, LineageId)] {
+        &self.relation_lineages
     }
 
     pub fn digest_basis(&self) -> &LineageCheckpointDigestBasis {

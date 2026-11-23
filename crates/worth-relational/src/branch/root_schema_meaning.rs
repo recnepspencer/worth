@@ -6,6 +6,8 @@ pub(super) fn registry_meaning_matches(
 ) -> bool {
     if source.content_formats.snapshot() != target.content_formats.snapshot()
         || source.derived_parts() != target.derived_parts()
+        || source.persistent_name_schemes() != target.persistent_name_schemes()
+        || source.kind_name_schemes_map() != target.kind_name_schemes_map()
         || source.entity_kinds.len() != target.entity_kinds.len()
         || source.relation_kinds.len() != target.relation_kinds.len()
     {

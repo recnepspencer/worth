@@ -37,6 +37,7 @@ pub type CaptureAdmission<S, B> =
         ErasedAppliedProducerSource,
         super::super::InstalledProducerEdition,
         std::any::TypeId,
+        Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop>;
 
 pub trait CapturedProducerInputRead: std::any::Any {
@@ -153,6 +154,7 @@ pub fn capture<S, B>(
     erased: ErasedAppliedProducerSource,
     edition: super::super::InstalledProducerEdition,
     component: std::any::TypeId,
+    own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
 ) -> Result<Box<dyn CapturedProducerInputRead>, ProducerExecutionStop>
 where
     S: ApplicationSchema,
@@ -286,6 +288,9 @@ where
             &admission,
             before_pin,
             candidate,
+            own_outputs,
+            None,
+            // Input capture lends no source-query posture.
             None,
             |reader, scope| {
                 (owner.capture)(
@@ -320,6 +325,7 @@ where
             projection,
             candidate.clone(),
             execution.allocation_policy(),
+            own_outputs,
         )
         .and_then(|reads| {
             reads.complete_projected_dependencies_with_request(

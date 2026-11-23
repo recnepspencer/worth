@@ -46,7 +46,9 @@ impl Drop for OpenRecordLoan<'_> {
                 | WorldRecord::PlannedSignalLeg(_)
                 | WorldRecord::CreationIntent(_)
                 | WorldRecord::BranchCreated(_)
-                | WorldRecord::CreationReleased { .. } => {
+                | WorldRecord::CreationReleased { .. }
+                | WorldRecord::BranchRetired { .. }
+                | WorldRecord::HistoryRetired { .. } => {
                     unreachable!("only an actual occurrence can be loaned")
                 }
             }

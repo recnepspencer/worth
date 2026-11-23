@@ -16,6 +16,7 @@ pub(crate) struct HistoryHomeRetirement {
 enum PublicationHomeRetirement {
     Live(crate::history::PublicationFactsRetirement),
     Readmitted(crate::history::ReadmittedPublicationRetirement),
+    ReadmittedHorizon,
 }
 impl PublicationHomeRetirement {
     fn new(original: crate::history::PublicationEvidence) -> Self {
@@ -26,6 +27,7 @@ impl PublicationHomeRetirement {
             crate::history::PublicationEvidence::Readmitted(original) => Self::Readmitted(
                 crate::history::ReadmittedPublicationRetirement::new(original),
             ),
+            crate::history::PublicationEvidence::ReadmittedHorizon => Self::ReadmittedHorizon,
         }
     }
     fn advance(
@@ -44,6 +46,7 @@ impl PublicationHomeRetirement {
                     })
             }
             Self::Readmitted(original) => original.advance(request, native),
+            Self::ReadmittedHorizon => Ok(true),
         }
     }
 }

@@ -119,7 +119,7 @@ where Program: worth_query_host::facade::declaration::application_program::Appli
         (index, (), ()),
         ApplicationBuildIdentity::parse(env!("WORTH_IMPLEMENTATION_BUILD_ID"))
             .expect("embedded application build identity"),
-        installation::application_limits(product_world_resources::bank_product_world_resources()),
+        application_limits::bank_application_limits(application_limits::BANK_EXECUTION_POLICY),
         move |_phase, graph, installed| {
             installation::bind_principals(graph, installed, principals)?;
             crate::graph_bootstrap::bind_program_deployment_scopes(graph, &revisions)?;

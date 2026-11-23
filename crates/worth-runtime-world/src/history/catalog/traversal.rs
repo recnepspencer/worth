@@ -115,6 +115,11 @@ impl CompositeHistoryCatalog {
                 next = Some((current, distance));
                 break;
             }
+            if state.retiring.contains(&current) {
+                stopped_at_retired = true;
+                next = Some((current, distance));
+                break;
+            }
             let Some(entry) = state.entries.get(&current).and_then(|slot| slot.get()) else {
                 stopped_at_retired = true;
                 next = Some((current, distance));
@@ -152,6 +157,11 @@ pub(super) fn protect_installed(
     state: &CompositeHistoryCatalogState,
     identity: &CompositeCommitIdentity,
 ) -> Result<CompositeHistoryProtectionObligation, CompositeHistoryCatalogDenial> {
+    if state.retiring.contains(identity) {
+        return Err(CompositeHistoryCatalogDenial::UnknownProtectionTarget(
+            identity.clone(),
+        ));
+    }
     lock_index(&state.reachability).increment_direct_protection(identity)?;
     Ok(CompositeHistoryProtectionObligation::new(
         Arc::clone(&state.reachability),

@@ -36,11 +36,28 @@ fn walk(
 ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
     let mut index = 0;
     while let Some(from) = resume.get(index) {
-        let release = runtime
+        let release = match runtime
             .owner
             .recovery_port()
             .release_retired_branch_history(from)
-            .map_err(|_| WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?;
+        {
+            Ok(release) => release,
+            Err(worth_runtime_world::facade::HistoryReclamationDenial::PartialPublication {
+                resume_from,
+                ..
+            }) => {
+                match resume_from {
+                    Some(next) => resume[index] = next,
+                    None => {
+                        resume.remove(index);
+                    }
+                }
+                return Err(WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable);
+            }
+            Err(_) => {
+                return Err(WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable);
+            }
+        };
         match release.held_commit() {
             Some(held) => {
                 resume[index] = held.clone();

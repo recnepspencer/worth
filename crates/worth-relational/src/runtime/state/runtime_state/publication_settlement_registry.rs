@@ -105,6 +105,21 @@ impl RelationalPublicationSettlementRegistry {
         })
     }
 
+    /// Whether a commit at or before `basis` has published without its
+    /// settlement having installed derived state yet.
+    ///
+    /// Complexity: O(in-flight settlements); the registry lock is released
+    /// before any record's own state is read.
+    pub(crate) fn has_unsettled_through(&self, basis: CommitId) -> bool {
+        let candidates: Vec<_> = self
+            .records()
+            .values()
+            .filter(|record| record.commit_id() <= basis)
+            .map(Arc::clone)
+            .collect();
+        candidates.iter().any(|record| !record.is_settled())
+    }
+
     fn records(
         &self,
     ) -> std::sync::MutexGuard<'_, HashMap<CommitId, Arc<PendingRelationalPublicationSettlement>>>

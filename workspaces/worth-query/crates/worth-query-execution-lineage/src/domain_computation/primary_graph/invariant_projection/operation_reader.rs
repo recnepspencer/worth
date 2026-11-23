@@ -36,11 +36,14 @@ pub use derived_relation::{
     WorthQueryInvariantGraphComponent, WorthQueryInvariantGraphMember,
 };
 pub mod managed_index;
+pub mod naming;
 pub use managed_index::{
     native_index_decision_cause, WorthQueryComputationManagedIndexDenial,
     WorthQueryComputationManagedIndexDenialKind,
 };
 pub mod output_availability;
+pub mod shared_owner_scope;
+pub use shared_owner_scope::SharedOwnerRelation;
 pub use output_availability::{
     WorthQueryObservedOutputAvailability, WorthQueryOutputAvailabilityDenial,
     WorthQueryOutputAvailabilityState,

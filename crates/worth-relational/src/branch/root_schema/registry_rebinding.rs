@@ -13,6 +13,8 @@ pub(super) fn registry_for_snapshot(
     if available.derived_parts() != expected.derived_relations
         || available.projected_domain_parts() != expected.projected_member_domains
         || available.content_formats.snapshot() != expected.content_formats
+        || available.persistent_name_scheme_snapshots() != expected.persistent_name_schemes
+        || available.kind_name_scheme_snapshots() != expected.kind_name_schemes
     {
         return None;
     }

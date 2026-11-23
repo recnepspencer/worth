@@ -45,5 +45,8 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<Arc<PublishedSnapshotCapacityOwner>>("snapshot_capacity");
         owner.field::<Arc<std::sync::atomic::AtomicU64>>("snapshot_ids");
         owner.field::<crate::runtime::LineageIdentityAllocator>("lineage_identity");
+        owner.field::<crate::runtime::state::subsystems::LineageNamingBasisBinding>(
+            "lineage_naming_basis",
+        );
     }
 }

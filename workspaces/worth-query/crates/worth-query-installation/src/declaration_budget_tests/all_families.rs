@@ -44,6 +44,24 @@ pub(crate) fn declaration() -> ErasedApplicationSchemaDeclaration {
             true,
         ),
     });
+    members.push(ApplicationSchemaMember::ApplicationGroupNameScheme {
+        definition: worth_query_declaration::facade::application_naming::ErasedApplicationGroupNameScheme::from_untrusted_parts(
+            worth_query_declaration::facade::application_naming::ErasedApplicationNameScheme::from_untrusted_parts(
+                "worth.budget.group.v1".into(),
+                worth_query_declaration::facade::application_naming::ApplicationNameSubjectKind::Group,
+                "BudgetLoop".into(),
+                vec!["anchor_face".into(), "edge".into()],
+                Vec::new(),
+                false,
+                None,
+                Vec::new(),
+                true,
+            ),
+            worth_query_declaration::facade::application_naming::ApplicationGroupContinuityRule::Anchor,
+            Some("anchor_face".into()),
+            None,
+        ),
+    });
     members.push(ApplicationSchemaMember::Operation {
         operation: "SharedBudgetRead".into(),
         input_type: portable("worth.rust.unit"),

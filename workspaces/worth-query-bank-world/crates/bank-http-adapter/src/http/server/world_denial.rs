@@ -137,8 +137,7 @@ fn branch(cause: RuntimeWorldBranchAdmissionDenial) -> BankHttpDenial {
         | D::ForkSourceChanged
         | D::RetiredBranch
         | D::HistoryEntryUnavailable => stale(),
-        D::DurableBranchPublicationRequired
-        | D::HomeCreationRequestRequired
+        D::HomeCreationRequestRequired
         | D::MemoryCreationRequestRequired
         | D::ProgramSourceRequired
         | D::ForeignProgramSource

@@ -100,14 +100,15 @@ impl WorldCheckpointImage {
                 }
                 let key = WorldBranchImageKey::new(record.clone(), position, digest);
                 if head.generation.get() != 0
-                    || self.branches.contains_key(&key)
+                    || self.branches.contains_key(&head.incarnation)
+                    || self.heads.contains_key(&key)
                     || self.history.contains_key(&head.commit)
                 {
                     return Err(WorldReadmissionDenial::BranchLineage);
                 }
                 let image_head = WorldImageHead::branch(record.clone(), position);
                 self.remember_reference(&image_head, execution)?;
-                insert(&mut self.branches, &key, &(), execution)?;
+                insert(&mut self.branches, &head.incarnation, &key, execution)?;
                 insert(&mut self.heads, &key, &image_head, execution)?;
                 insert(&mut self.history, &head.commit, &image_head, execution)?;
             }
@@ -121,6 +122,12 @@ impl WorldCheckpointImage {
                 association,
                 custody,
             } => self.admit_creation_release(association, *custody, position, digest, execution)?,
+            WorldRecord::BranchRetired { .. } => {
+                self.collect_branch_retirement(record.clone(), position, digest, execution)?
+            }
+            WorldRecord::HistoryRetired { .. } => {
+                self.collect_history_retirement(record.clone(), position, digest, execution)?
+            }
             WorldRecord::OpenAttempt(open) => {
                 // Exact branch activation/history admission owns this revision.
                 // The Home descriptor may still name a different branch's program.

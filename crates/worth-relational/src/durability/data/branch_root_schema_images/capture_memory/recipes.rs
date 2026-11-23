@@ -53,6 +53,28 @@ pub(super) fn quote(
             memory.text(case)?;
         }
     }
+    if !registry.persistent_name_schemes.is_empty() {
+        memory.array::<crate::schema::data::SchemaAuthorityNamingSchemeSnapshot>(
+            registry.persistent_name_schemes.len(),
+        )?;
+        for scheme in registry.persistent_name_schemes.iter() {
+            memory.text(scheme.scheme_id())?;
+            memory.text(scheme.subject_name())?;
+            let roles = scheme.ordered_roles();
+            memory.array::<String>(roles.len())?;
+            for role in &roles {
+                memory.text(role)?;
+            }
+        }
+    }
+    if !registry.kind_name_schemes.is_empty() {
+        memory.array::<crate::schema::data::SchemaAuthorityKindNamingBindingSnapshot>(
+            registry.kind_name_schemes.len(),
+        )?;
+        for scheme_id in registry.kind_name_schemes.values() {
+            memory.text(scheme_id)?;
+        }
+    }
     Ok(())
 }
 

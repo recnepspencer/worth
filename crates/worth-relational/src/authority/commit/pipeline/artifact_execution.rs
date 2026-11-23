@@ -111,7 +111,9 @@ pub(super) fn assemble_commit_artifacts(
             source_interpretation,
         ) = validated.into_parts();
         let strategy_artifacts = admitted.strategy_artifacts().cloned();
-        let (_, _, merged_plan, _, commit_log, phase_timing) = admitted.phase_view().into_parts();
+        let (_, validation_input, merged_plan, _, commit_log, phase_timing) =
+            admitted.phase_view().into_parts();
+        let naming_plan = validation_input.naming_plan();
         let publication = assemble_authoritative_publication_phase(
             runtime,
             commit_log,
@@ -127,6 +129,9 @@ pub(super) fn assemble_commit_artifacts(
                 merge_parent_branches: &merge_parent_branches,
                 merge_base_commits: &history.merge_base_commits,
                 merged_plan,
+                created_entities: &created_entities,
+                created_relations: &created_relations,
+                naming_plan,
                 record_allocations: mutation_identities.records.canonical(),
                 strategy_commit_artifacts: strategy_artifacts,
                 merge_execution_authority,

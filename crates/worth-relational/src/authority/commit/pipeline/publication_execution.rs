@@ -85,12 +85,14 @@ pub(super) fn prepare_commit_publication_execution(
                 .validation_input()
                 .recovered_codec_publication_custody()
                 .cloned();
-            let (_, _, _, _, commit_log, _) = admitted.phase_view().into_parts();
+            let (_, validation_input, _, _, commit_log, _) = admitted.phase_view().into_parts();
+            let naming_plan = validation_input.naming_plan();
             prepare_publication_phase(
                 execution,
                 runtime,
                 PreparePublicationPhaseInput {
                     lineage_deferred,
+                    naming_plan,
                     structural: &public_structural_summary,
                     validation: &invariant_executions,
                     caller_association,

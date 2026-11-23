@@ -47,7 +47,7 @@ where
                     return Err(Denial::OwnerUnavailable);
                 }
                 Err(Stop::Pending | Stop::Busy) => return Err(Denial::OwnerUnavailable),
-                Err(Stop::Unresolved | Stop::EvidenceRequired) => {
+                Err(Stop::Unresolved | Stop::EvidenceRequired | Stop::BlockedByPriorBarrier { .. }) => {
                     body.phase = CreationPhase::ReopenRequired;
                     return Err(Denial::OwnerUnavailable);
                 }
@@ -190,7 +190,7 @@ where
                 Err(Stop::Pending | Stop::Busy | Stop::Refused(_)) => {
                     return Err(Denial::OwnerUnavailable)
                 }
-                Err(Stop::Unresolved | Stop::EvidenceRequired) => {
+                Err(Stop::Unresolved | Stop::EvidenceRequired | Stop::BlockedByPriorBarrier { .. }) => {
                     body.phase = CreationPhase::ReopenRequired;
                     return Err(Denial::OwnerUnavailable);
                 }

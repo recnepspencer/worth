@@ -54,12 +54,11 @@ fn exercise(worker: bool, interrupted: bool) {
     else {
         panic!("original whole-edit refusal")
     };
-    assert_eq!(cause.invariant_execution_failure().unwrap().kind(),worth_query_host::facade::primary_graph::WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged);
-    assert!(cause
-        .invariant_execution_failure()
-        .unwrap()
-        .detail()
-        .contains("owned-outputs.unstable-discovery-binding.v1"));
+    // The parent selects again and drops the child it derived (#238).
+    let denial = cause
+        .coupled_producer_denial()
+        .expect("original dropped-selection refusal");
+    assert!(matches!(denial.kind(), WorthQueryOutputDemandDenialKind::SupersededSelectionDropped { .. }), "{denial:?}");
     let failures = terminal.managed_cleanup_failures();
     assert_eq!(
         failures.len(),
@@ -165,7 +164,10 @@ fn exercise(worker: bool, interrupted: bool) {
     else {
         panic!("closed diagnostics retain the refusal")
     };
-    assert_eq!(cause.invariant_execution_failure().unwrap().kind(),worth_query_host::facade::primary_graph::WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged);
+    assert!(matches!(
+        cause.coupled_producer_denial().unwrap().kind(),
+        WorthQueryOutputDemandDenialKind::SupersededSelectionDropped { .. }
+    ));
     assert_eq!(host.runtime().active_application_attempts_for_test(), 0);
     assert_eq!(
         host.runtime().world_active_publication_attempts_for_test(),

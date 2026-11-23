@@ -81,6 +81,8 @@ impl RelationalSchemaRegistry {
             control.checkpoint()?;
             projected_member_domains.push(recipes::domain(&domain.parts, control)?);
         }
+        let persistent_name_schemes = self.persistent_name_scheme_snapshots();
+        let kind_name_schemes = self.kind_name_scheme_snapshots();
         control.checkpoint()?;
         let parts = SchemaAuthoritySnapshotParts {
             content_formats: self.content_formats.snapshot_for_compilation(control)?,
@@ -90,6 +92,8 @@ impl RelationalSchemaRegistry {
             relation_kinds,
             derived_relations,
             projected_member_domains,
+            persistent_name_schemes,
+            kind_name_schemes,
         };
         let snapshot = SchemaAuthoritySnapshot::from_compiled_parts(parts, memory);
         schema_authority_snapshot_digest_for_compilation(&snapshot, control)?;

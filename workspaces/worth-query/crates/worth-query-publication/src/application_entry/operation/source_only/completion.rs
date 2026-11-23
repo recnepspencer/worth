@@ -46,6 +46,24 @@ pub enum WorthQueryTerminalSourceEvidence<S: ApplicationSchema, I: ApplicationMu
     /// Keyed resolution settled the original without a live outcome.
     Keyed(worth_query_execution::facade::primary_graph::WorthQueryApplicationIdempotencyResolution),
 }
+/// Formats whenever the binding's `Denial` and `Result` do; the schema and
+/// intent types themselves need not implement `Debug`.
+impl<S, I> std::fmt::Debug for WorthQueryTerminalSourceEvidence<S, I>
+where
+    S: ApplicationSchema,
+    I: ApplicationMutationIntent<S>,
+    NativeOutcome<S, I>: std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Outcome(outcome) => f.debug_tuple("Outcome").field(outcome).finish(),
+            Self::AdmissionStopped(denial) => {
+                f.debug_tuple("AdmissionStopped").field(denial).finish()
+            }
+            Self::Keyed(resolution) => f.debug_tuple("Keyed").field(resolution).finish(),
+        }
+    }
+}
 impl<S, I, P, A, M> WorthQueryCompletedSourceOperation<S, I, P, A, M>
 where
     S: ApplicationSchema + 'static,

@@ -36,11 +36,20 @@ impl WorthQueryPrimaryGraphProvider {
         runtime: &RelationalRuntime,
         committed: &worth_relational::facade::transactions::CommitResult,
     ) {
-        let retired = self
+        let retired = match self
             .world_history
             .get()
-            .and_then(|world| world.retire_changed_history().ok())
-            .unwrap_or_default();
+            .map(|world| world.retire_changed_history())
+        {
+            Some(Ok(retired)) => retired,
+            Some(Err(
+                worth_runtime_world::facade::HistoryReclamationDenial::PartialPublication {
+                    reclaimed,
+                    ..
+                },
+            )) => reclaimed,
+            Some(Err(_)) | None => Vec::new(),
+        };
         if !retired.is_empty() {
             let commits = self
                 .completed_commit_evidence

@@ -23,6 +23,7 @@ pub(crate) struct RelationalPreparationOwnerBinding {
     snapshot_capacity: Arc<PublishedSnapshotCapacityOwner>,
     snapshot_ids: Arc<std::sync::atomic::AtomicU64>,
     lineage_identity: crate::runtime::LineageIdentityAllocator,
+    lineage_naming_basis: crate::runtime::state::subsystems::LineageNamingBasisBinding,
     diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
     index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
     mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
@@ -61,6 +62,7 @@ pub(crate) struct RelationalPreparationRuntime {
     snapshot_capacity: Arc<PublishedSnapshotCapacityOwner>,
     snapshot_ids: Arc<std::sync::atomic::AtomicU64>,
     pub(crate) lineage_identity: crate::runtime::LineageIdentityAllocator,
+    pub(crate) lineage_naming_basis: crate::runtime::state::subsystems::LineageNamingBasisBinding,
 }
 
 impl RelationalPreparationOwnerBinding {
@@ -78,6 +80,7 @@ impl RelationalPreparationOwnerBinding {
             snapshot_capacity: runtime.visibility.published_snapshot_capacity_binding(),
             snapshot_ids: runtime.visibility.snapshot_identity_binding(),
             lineage_identity: runtime.lineage.identity_allocator(),
+            lineage_naming_basis: runtime.lineage.naming_basis_binding(),
             diagnostics: runtime.publication.diagnostics.clone(),
             index_definitions: runtime.indexes.definition_read_binding(),
             durability_admission:
@@ -131,6 +134,7 @@ impl RelationalPreparationOwnerBinding {
             snapshot_capacity: Arc::clone(&self.snapshot_capacity),
             snapshot_ids: Arc::clone(&self.snapshot_ids),
             lineage_identity: self.lineage_identity.clone(),
+            lineage_naming_basis: self.lineage_naming_basis.clone(),
         }
     }
 }

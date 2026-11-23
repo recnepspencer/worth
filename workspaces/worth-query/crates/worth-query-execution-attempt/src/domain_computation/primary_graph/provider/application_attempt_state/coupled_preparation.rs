@@ -1,5 +1,7 @@
 //! One registered writer retains the source and handler it actually executed.
 use super::*;
+mod consumption_order;
+pub(in crate::domain_computation::primary_graph::provider) use consumption_order::rank_consumption;
 use crate::domain_computation::primary_graph::{
     application_query::AppliedSourcePublication, output_lineage::ProducerHandlerPreparation,
 };
@@ -24,6 +26,21 @@ pub struct CoupledProducerPreparation {
         >,
     >,
     pub handler: ProducerHandlerPreparation,
+    /// The earlier rounds of this writer's chain that its round superseded
+    /// (PR C §1.5), oldest first: final support keeps their positions and
+    /// post-own images in its timeline (R4 windows and attribution).
+    pub superseded_rounds: Vec<SupersededRound>,
+}
+/// One superseded round of a chain: where it applied, the stage that owed it,
+/// and the image right after it.
+#[derive(Clone)]
+pub struct SupersededRound {
+    pub position: usize,
+    pub owed: usize,
+    pub after_own:
+        worth_relational::facade::runtime::RelationalPinnedRead<
+            worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
+        >,
 }
 pub struct AppliedParticipantOutputs {
     pub producer: String,
@@ -43,6 +60,52 @@ impl CoupledProducerPreparation {
     }
 }
 impl super::super::WorthQueryPrimaryGraphProvider {
+    /// The rounds a successor of `session`'s writer supersedes: that
+    /// writer's own superseded rounds, then its round at `position`, owed at
+    /// `owed`.
+    pub fn superseded_history(
+        &self,
+        session: WorthQueryProviderSessionView<'_>,
+        position: usize,
+        owed: usize,
+    ) -> Vec<SupersededRound> {
+        let attempts = self
+            .attempts
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let Some(preparation) = attempts
+            .attempt_state(session)
+            .and_then(|state| state.attempt().coupled_preparation())
+        else {
+            return Vec::new();
+        };
+        let mut rounds = preparation.superseded_rounds.clone();
+        if let Some(after_own) = preparation.after_own.clone() {
+            rounds.push(SupersededRound {
+                position,
+                owed,
+                after_own,
+            });
+        }
+        rounds
+    }
+    /// `session`'s writer is the successor round of the chain whose earlier
+    /// rounds are `rounds`.
+    pub fn retain_superseded_rounds(
+        &self,
+        session: WorthQueryProviderSessionView<'_>,
+        rounds: Vec<SupersededRound>,
+    ) {
+        let mut attempts = self
+            .attempts
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        attempts
+            .attempt_state_mut(session)
+            .expect("actual successor writer")
+            .attempt_mut()
+            .retain_superseded_rounds(rounds);
+    }
     pub fn retain_authored_stage_after_own(
         &self,
         session: WorthQueryProviderSessionView<'_>,
@@ -102,6 +165,7 @@ impl super::super::WorthQueryPrimaryGraphProvider {
                 handler,
                 after_own: None,
                 outputs: None,
+                superseded_rounds: Vec::new(),
             });
         Ok(completion)
     }
@@ -125,6 +189,9 @@ pub struct CoupledApplicationMember {
     >,
     pub owned: Option<OwnedCoupledContribution>,
     pub kind: CoupledApplicationMemberKind,
+    /// Where publication finishes this member: final support ranks the group
+    /// in consumption order before the World commit (`consumption_order`).
+    pub consumption_rank: usize,
 }
 pub enum CoupledApplicationMemberKind {
     Producer {
@@ -192,6 +259,7 @@ impl CoupledApplicationMember {
             terminal,
             owned: None,
             pending: None,
+            consumption_rank: 0,
             kind: CoupledApplicationMemberKind::AuthoredStage {
                 stage,
                 identity,
@@ -213,6 +281,7 @@ impl CoupledApplicationMember {
             terminal,
             owned: None,
             pending: None,
+            consumption_rank: 0,
             kind: CoupledApplicationMemberKind::Producer {
                 producer: producer.to_owned(),
                 meaning,

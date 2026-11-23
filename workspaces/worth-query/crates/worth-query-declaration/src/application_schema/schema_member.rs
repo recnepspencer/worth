@@ -56,6 +56,16 @@ pub enum ApplicationOperationDecisionReadTarget {
     ManagedIndex {
         parent: crate::application_query::ApplicationQueryBindingReference,
     },
+    /// The Parent read at a peer scope: any `member` that shares an `owner`
+    /// with the operation scope through `relation`
+    /// (`owner -relation-> operation scope` and `owner -relation-> peer`).
+    /// The operation's own scope stays governed by `ManagedIndex`.
+    SharedOwnerManagedIndex {
+        parent: crate::application_query::ApplicationQueryBindingReference,
+        relation: String,
+        owner: String,
+        member: String,
+    },
     Entity {
         entity: String,
     },
@@ -299,5 +309,10 @@ pub enum ApplicationSchemaMember {
     /// Declared persistent name scheme validated and lowered at installation.
     ApplicationNameScheme {
         definition: crate::application_naming::ErasedApplicationNameScheme,
+    },
+    /// Declared persistent group name scheme with continuity rules validated
+    /// and lowered at installation.
+    ApplicationGroupNameScheme {
+        definition: crate::application_naming::ErasedApplicationGroupNameScheme,
     },
 }

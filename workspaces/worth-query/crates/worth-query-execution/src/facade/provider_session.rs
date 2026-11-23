@@ -6,7 +6,7 @@ pub use crate::domain_computation::provider_session::{
     WorthQueryBoundInvariantExecution, WorthQueryBoundInvariantExecutionView,
     WorthQueryClosedProviderSessionDisposition, WorthQueryCommittedProviderSession,
     WorthQueryCompleteDecisionReadSetReceipt, WorthQueryCooperativeGraphProviderExecution,
-    WorthQueryCoupledSupportHold, WorthQueryCustomInvariantDenial, WorthQueryDecisionFactAdmission,
+    WorthQueryCustomInvariantDenial, WorthQueryDecisionFactAdmission,
     WorthQueryDecisionFactComparisonAdmission, WorthQueryDecisionFactComparisonEvidence,
     WorthQueryDecisionFactEvidence, WorthQueryDecisionFactEvidenceView,
     WorthQueryDecisionFactLocator, WorthQueryDecisionFactProvider, WorthQueryDecisionFactRequest,

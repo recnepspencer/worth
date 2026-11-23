@@ -69,6 +69,7 @@ impl CommitLineage {
             subject,
             name_birth: None,
             kept_name: None,
+            relation_id: None,
         });
     }
 

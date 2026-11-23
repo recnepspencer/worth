@@ -19,7 +19,7 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::identity::data::LineageId;
 use crate::lineage::data::{
-    LineageCommitPostureInput, LineageNameDenial, LineagePostureKind, LineageRecordTarget,
+    LineageBasisView, LineageNameDenial, LineagePostureKind, LineageRecordTarget,
     PersistentNameBirthRecord, PersistentNameHolder, PersistentNameIdentity,
 };
 
@@ -33,7 +33,7 @@ pub(super) struct ContinuityClassification {
 /// Validates explicit `LineagePostureClaim::Restore` claims against live basis
 /// holders, same-commit retirements, and previously retired basis lineages.
 pub(super) fn validate_explicit_restores(
-    input: &LineageCommitPostureInput,
+    basis: &dyn LineageBasisView,
     retired_names_in_commit: &BTreeSet<PersistentNameIdentity>,
     explicit_restores: &[(LineageRecordTarget, PersistentNameIdentity)],
 ) -> Result<
@@ -56,7 +56,7 @@ pub(super) fn validate_explicit_restores(
                 second: target.to_holder(),
             });
         }
-        if let Some(live_holder) = input.live_holders.get(&name) {
+        if let Some(live_holder) = basis.live_holder(&name) {
             if !retired_names_in_commit.contains(&name) {
                 return Err(LineageNameDenial::DuplicateBirth {
                     identity: name,
@@ -70,7 +70,7 @@ pub(super) fn validate_explicit_restores(
                 "Restore posture targets a persistent name that was live at commit basis rather than previously retired",
             ));
         }
-        let Some(&(retired_subject, source_lineage)) = input.retired_lineages.get(&name) else {
+        let Some((retired_subject, source_lineage)) = basis.retired_lineage(&name) else {
             return Err(mismatch(
                 LineagePostureKind::Restore,
                 target,
@@ -101,7 +101,7 @@ pub(super) fn validate_explicit_restores(
 /// `minted_births` so only fresh births retain a `PersistentNameBirthRecord`.
 #[allow(clippy::too_many_arguments)]
 pub(super) fn classify_minted_births(
-    input: &LineageCommitPostureInput,
+    basis: &dyn LineageBasisView,
     validated_postures: Vec<ValidatedPosture>,
     explicit_retires: &BTreeMap<PersistentNameIdentity, (LineageRecordTarget, LineageId)>,
     retired_names_in_commit: &BTreeSet<PersistentNameIdentity>,
@@ -159,8 +159,8 @@ pub(super) fn classify_minted_births(
             continue;
         }
 
-        if !input.live_holders.contains_key(&id)
-            && let Some(&(retired_subject, source_lineage)) = input.retired_lineages.get(&id)
+        if !basis.contains_live_holder(&id)
+            && let Some((retired_subject, source_lineage)) = basis.retired_lineage(&id)
         {
             if retired_subject != target.subject() {
                 return Err(mismatch(

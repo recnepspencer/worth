@@ -18,6 +18,7 @@ mod recorded_component_recovery;
 mod recorded_component_validation;
 mod recovered_associated_effects;
 mod recovered_publication;
+mod world_selection_disposed_source;
 mod result_snapshot_cleanup;
 mod semantic_result;
 pub(crate) mod source_initial_inputs;

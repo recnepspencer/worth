@@ -11,6 +11,10 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<crate::mvcc::PreparedRelationalPublication>("prepared_history");
         owner.field::<crate::runtime::ValidatedLineageEventBatch>("validated_lineage_events");
         owner.field::<Vec<crate::lineage::data::LineageNode>>("lineage_nodes");
+        owner.field::<Vec<(
+            crate::identity::data::RelationId,
+            crate::identity::data::LineageId,
+        )>>("relation_lineages");
         owner.field::<crate::storage::overlay::PublicationArtifacts>("artifacts");
         owner.field::<Vec<crate::transactions::data::RecordRef>>("changed_records");
         owner.field::<VersionId>("version_id");
@@ -33,6 +37,10 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<crate::mvcc::PreparedRelationalPublicationAccelerators>("prepared_history");
         owner.field::<crate::runtime::ValidatedLineageEventBatch>("validated_lineage_events");
         owner.field::<Vec<crate::lineage::data::LineageNode>>("lineage_nodes");
+        owner.field::<Vec<(
+            crate::identity::data::RelationId,
+            crate::identity::data::LineageId,
+        )>>("relation_lineages");
         owner.field::<crate::storage::overlay::PublicationArtifacts>("artifacts");
         owner.field::<Vec<crate::transactions::data::RecordRef>>("changed_records");
         owner.field::<VersionId>("version_id");
@@ -51,6 +59,7 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<&'static crate::transactions::data::CommitStructuralSummary>("structural");
         owner.field::<&'static [crate::validation::engine::InvariantExecutionResult]>("validation");
         owner.field::<Option<crate::mvcc::RelationalCallerAssociation>>("caller_association");
+        owner.field::<Option<&'static crate::lineage::data::CommitNamingPlan>>("naming_plan");
         owner.field::<&'static crate::validation::candidate_source::NativeManagedSourceInterpretation>("source_interpretation");
         owner.field::<Option<Arc<crate::durability::RecoveredCodecPublicationCustody>>>(
             "recovered_codec_publication_custody",

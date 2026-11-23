@@ -42,6 +42,10 @@ struct SchemaImageData {
     #[serde(skip)]
     _memory: Option<worth_execution::ExecutionMemoryReservation>,
     content_formats: crate::content::RelationalContentSchemaSnapshot,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    persistent_name_schemes: Vec<crate::schema::data::SchemaAuthorityNamingSchemeSnapshot>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    kind_name_schemes: Vec<crate::schema::data::SchemaAuthorityKindNamingBindingSnapshot>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -166,6 +170,10 @@ impl DurableBranchRootSchemaImage {
             self.0.content_formats.clone(),
         )
         .map_err(|cause| format!("content declarations refused: {cause:?}"))?;
+        registry = registry.readmit_persistent_name_schemes(
+            &self.0.persistent_name_schemes,
+            &self.0.kind_name_schemes,
+        )?;
         if registry.authority_digest_bytes() != self.0.schema_root {
             return Err("branch-root schema authority digest mismatch".to_owned());
         }

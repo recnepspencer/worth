@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::history::data::{BranchId, RelationalCommitReceipt};
-use crate::identity::data::LineageId;
+use crate::identity::data::{LineageId, RelationId};
 use crate::lineage::data::{PersistentNameBirthRecord, PersistentNameIdentity};
 
 /// Subject class whose continuity a [`LineageEventRecord`] records.
@@ -12,6 +12,12 @@ pub enum LineageSubject {
     #[default]
     Entity,
     Relation,
+}
+
+impl LineageSubject {
+    pub(crate) fn is_entity(&self) -> bool {
+        matches!(self, Self::Entity)
+    }
 }
 
 /// What a committed lineage event did to entity or relation lineages, as
@@ -53,12 +59,22 @@ pub struct LineageEventRecord {
     pub(crate) kind: LineageEventKind,
     pub(crate) sources: Vec<LineageId>,
     pub(crate) targets: Vec<LineageId>,
-    #[serde(skip)]
+    #[serde(default, skip_serializing_if = "LineageSubject::is_entity")]
     pub(crate) subject: LineageSubject,
-    #[serde(skip)]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "super::event_serde::verified_birth"
+    )]
     pub(crate) name_birth: Option<PersistentNameBirthRecord>,
-    #[serde(skip)]
+    #[serde(
+        default,
+        skip_serializing_if = "Option::is_none",
+        with = "super::event_serde::persisted_kept_name"
+    )]
     pub(crate) kept_name: Option<PersistentNameIdentity>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) relation_id: Option<RelationId>,
 }
 
 impl LineageEventRecord {
@@ -96,5 +112,9 @@ impl LineageEventRecord {
 
     pub fn kept_name(&self) -> Option<PersistentNameIdentity> {
         self.kept_name
+    }
+
+    pub fn relation_id(&self) -> Option<RelationId> {
+        self.relation_id
     }
 }

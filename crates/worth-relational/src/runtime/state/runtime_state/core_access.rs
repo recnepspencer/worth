@@ -231,4 +231,38 @@ impl RelationalRuntime {
     pub(crate) fn branch_population_scan_count(&self) -> u64 {
         self.history.branch_population_scan_count()
     }
+
+    /// Returns the persisted lineage identity bound to a committed relation, if
+    /// any.
+    pub fn relation_lineage(
+        &self,
+        relation_id: crate::identity::data::RelationId,
+    ) -> Option<crate::identity::data::LineageId> {
+        self.lineage.relation_lineage(relation_id)
+    }
+
+    /// Returns the installed `(subject_kind, subject_name)` for `scheme_id`
+    /// from Relational's own schema registry, if installed.
+    pub fn persistent_name_scheme_subject(
+        &self,
+        scheme_id: &str,
+    ) -> Option<(crate::lineage::data::PersistentNameSubjectKind, String)> {
+        self.config
+            .schema
+            .registry
+            .persistent_name_scheme(scheme_id)
+            .map(|scheme| (scheme.subject_kind(), scheme.subject_name().to_owned()))
+    }
+
+    /// Read-only view of every currently live persistent-name holder derived
+    /// from Relational's committed lineage events on `branch_id`.
+    pub fn branch_live_persistent_names(
+        &self,
+        branch_id: &crate::history::data::BranchId,
+    ) -> std::collections::BTreeMap<
+        crate::lineage::data::PersistentNameIdentity,
+        crate::lineage::data::PersistentNameHolder,
+    > {
+        self.lineage.branch_live_persistent_names(branch_id)
+    }
 }

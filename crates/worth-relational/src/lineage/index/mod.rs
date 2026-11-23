@@ -27,7 +27,7 @@ use crate::lineage::data::PersistentNameKey;
 use journal::IngestionJournal;
 
 /// The record a lineage was created for.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum LineageHolder {
     Entity(EntityId),
     Relation(RelationId),
@@ -42,6 +42,7 @@ pub struct PersistentNameBranchIndex {
     pub(crate) names: HashMap<PersistentNameKey, NameEntry>,
     lineage_names: HashMap<LineageId, PersistentNameKey>,
     lineage_holders: HashMap<LineageId, LineageHolder>,
+    holder_lineages: HashMap<LineageHolder, LineageId>,
 }
 
 impl PersistentNameBranchIndex {
@@ -55,6 +56,7 @@ impl PersistentNameBranchIndex {
             names: HashMap::new(),
             lineage_names: HashMap::new(),
             lineage_holders: HashMap::new(),
+            holder_lineages: HashMap::new(),
         }
     }
 
@@ -102,6 +104,32 @@ impl PersistentNameBranchIndex {
         let mut keys: Vec<_> = self.names.keys().copied().collect();
         keys.sort_unstable();
         keys
+    }
+
+    /// This index re-addressed to `target`, a branch forked from this one.
+    ///
+    /// Callers fork only an index whose head is at or before the fork
+    /// commit, so the copy holds exactly the inherited history; later
+    /// batches for `target` then pass the branch check.
+    ///
+    /// Complexity: O(1); the caller pays the O(names) clone once per fork.
+    pub(crate) fn rebranched(mut self, target: BranchId) -> Self {
+        self.branch_id = target;
+        self
+    }
+
+    /// The lineage a named record was created with.
+    ///
+    /// Complexity: O(1) expected.
+    pub(crate) fn lineage_of_holder(&self, holder: LineageHolder) -> Option<LineageId> {
+        self.holder_lineages.get(&holder).copied()
+    }
+
+    /// The name a lineage was bound to when its named record was created.
+    ///
+    /// Complexity: O(1) expected.
+    pub(crate) fn name_of_lineage(&self, lineage: LineageId) -> Option<PersistentNameKey> {
+        self.lineage_names.get(&lineage).copied()
     }
 
     /// Ingests one committed batch atomically: on refusal the index is left

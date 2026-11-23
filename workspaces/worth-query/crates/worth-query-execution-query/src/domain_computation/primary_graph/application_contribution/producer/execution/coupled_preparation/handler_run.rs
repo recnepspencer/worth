@@ -14,7 +14,9 @@ pub(super) fn run_coupled_producer_handler<Schema, Binding>(
     shared: &crate::domain_computation::primary_graph::product_operation::SharedSelectedProductOperation<'_, Schema>,
     before_pin: &RelationalPinnedRead,
     candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+    own_outputs: Option<&crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay>,
     participants: &dyn crate::domain_computation::primary_graph::provider::AppliedOutputParticipants,
+    assembly: &dyn crate::domain_computation::primary_graph::application_query::managed_index::AppliedManagedSourceAlignment,
     source: &AppliedQuerySource<SourceQuery<Schema, Binding>, SourceValue<Schema, Binding>>,
     qualified: crate::domain_computation::primary_graph::application_contribution::QualifiedOutputSource,
     selected_publication: worth_relational::facade::runtime::PositionedRelationalSnapshot,
@@ -139,6 +141,7 @@ where
     ).map_err(super::super::denial::request_admission_rejected)?
         .with_producer_reads::<Binding>(read_admission, predecessor_reads)
         .with_applied_participants(participants)
+        .with_applied_managed_sources(assembly)
         .with_applied_source_publication(qualified, selected_publication);
     let prepared_inputs = match captured {
         Some((inputs, component)) => Some(inputs.into_mutation_inputs(
@@ -163,6 +166,7 @@ where
             Some(&source_query),
             admission,
             Some((before_pin, candidate)),
+            own_outputs,
             prepared_inputs,
             || {
                 contact_observation::record(
@@ -172,10 +176,11 @@ where
             },
             execution.allocation_policy(),
         );
-    let report = match prepared_handler {
+    let mut report = match prepared_handler {
         Ok(handler) => handler.run(runtime, identities),
         Err(report) => report.into_uncompleted_report(),
     };
+    let refusal_proofs = report.take_refusal_proofs();
     if let Some(stop) = source_query.take_control_failure() {
         return Err(super::super::denial::request_admission_rejected(stop));
     }
@@ -189,6 +194,7 @@ where
             .into_outcome()
             .map_err(|cause| execution_failed(Binding::IDENTITY, cause))?,
         |cause| installed.provider.domain_denial_reason(cause),
-    )?;
+    )
+    .map_err(|denial| denial.with_refusal_proofs(refusal_proofs))?;
     Ok(completed.into_parts())
 }

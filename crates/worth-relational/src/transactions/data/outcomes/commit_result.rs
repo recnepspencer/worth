@@ -207,6 +207,20 @@ impl CommitResult {
         self.created_relations.resolve(created)
     }
 
+    /// Returns every `(PersistentNameHolder, PersistentNameBirthRecord)` minted
+    /// during THIS sealed commit, derived strictly from this commit's own
+    /// canonical lineage events and record allocations in O(commit events) time
+    /// with zero runtime lock acquisitions and immunity to concurrent post-commit
+    /// retirements.
+    pub fn committed_name_births(
+        &self,
+    ) -> Vec<(
+        crate::lineage::data::PersistentNameHolder,
+        crate::lineage::data::PersistentNameBirthRecord,
+    )> {
+        crate::lineage::authority::extract_committed_name_births(&self.publication.envelope)
+    }
+
     pub fn commit_log(&self) -> &CommitLog {
         &self.outcome.commit_log
     }

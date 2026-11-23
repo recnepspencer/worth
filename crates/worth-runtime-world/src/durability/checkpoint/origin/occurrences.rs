@@ -67,6 +67,7 @@ impl PreparedCheckpointOccurrence {
     }
     pub(crate) fn bind(
         &mut self,
+        commit_ordinal: u64,
         basis: &AdmittedCompositeRuntimeWorldBasis,
         pins: HistoryRetentionObligation,
     ) {
@@ -74,12 +75,13 @@ impl PreparedCheckpointOccurrence {
             self.values[0].evidence,
             OccurrenceEvidence::Prepared
         ));
-        self.values[0].evidence = OccurrenceEvidence::Held(WorldCheckpointOrigin::new(basis, pins));
+        self.values[0].evidence =
+            OccurrenceEvidence::Held(WorldCheckpointOrigin::with_commit(commit_ordinal, basis, pins));
     }
 }
 
 #[derive(Debug, Default)]
-pub(super) struct CheckpointOccurrences {
+pub(crate) struct CheckpointOccurrences {
     first: Option<PreparedCheckpointOccurrence>,
     retired: Option<PreparedCheckpointOccurrence>,
 }
@@ -91,6 +93,33 @@ impl CheckpointOccurrences {
         ));
         prepared.values[0].next = self.first.take();
         self.first = Some(prepared);
+    }
+    pub(super) fn dispose_commits(
+        &mut self,
+        ordinals: &std::collections::BTreeSet<u64>,
+    ) -> (Vec<PreparedCheckpointOccurrence>, Vec<RuntimeWorldRetentionKey>) {
+        let mut removed = Vec::new();
+        let mut keys = Vec::new();
+        let mut kept = None;
+        let mut cursor = self.first.take();
+        while let Some(mut prepared) = cursor {
+            cursor = prepared.values[0].next.take();
+            let matches = match &prepared.values[0].evidence {
+                OccurrenceEvidence::Held(origin) => ordinals.contains(&origin.commit_ordinal),
+                OccurrenceEvidence::Prepared => false,
+            };
+            if matches {
+                if let OccurrenceEvidence::Held(origin) = &prepared.values[0].evidence {
+                    keys.extend(origin.keys.iter().cloned());
+                }
+                removed.push(prepared);
+            } else {
+                prepared.values[0].next = kept;
+                kept = Some(prepared);
+            }
+        }
+        self.first = kept;
+        (removed, keys)
     }
     pub(super) fn advance_retirement(
         &mut self,

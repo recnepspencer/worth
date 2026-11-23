@@ -175,6 +175,16 @@ fn canonical_authority_snapshot(
             .projected_member_domains
             .windows(2)
             .any(|pair| pair[0].identity > pair[1].identity)
+        || snapshot
+            .persistent_name_schemes
+            .windows(2)
+            .any(|pair| pair[0].scheme_id >= pair[1].scheme_id)
+        || snapshot
+            .kind_name_schemes
+            .windows(2)
+            .any(|pair| {
+                (pair[0].subject_kind, pair[0].kind_id) >= (pair[1].subject_kind, pair[1].kind_id)
+            })
     {
         return Err(schema_mismatch(
             envelope,

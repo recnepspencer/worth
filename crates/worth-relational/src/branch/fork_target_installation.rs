@@ -98,6 +98,13 @@ impl RelationalForkPort {
         if let Some(indexes) = target.indexes.take() {
             indexes.publish();
         }
+        if let Some(fork_commit_id) = target.shared_commit_id {
+            self.lineage_naming.register_fork_ancestry(
+                target_identity.branch_id().clone(),
+                source.descriptor.source_branch.clone(),
+                fork_commit_id,
+            );
+        }
         self.owner
             .install_target(target.reservation, target.target_cell);
         (

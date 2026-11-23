@@ -1,8 +1,8 @@
 pub use state::CompleteRelationalCheckpointPreparation;
 pub(crate) use state::{
-    MutationRecordAllocations, MutationSymbolMeanings, OriginalBranchSchemaInputs,
-    OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, RetainedBranchTransition,
+    LineageNamingBasisBinding, MutationRecordAllocations, MutationSymbolMeanings,
+    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
+    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation, RetainedBranchTransition,
 };
 pub mod builder;
 mod construction;

@@ -133,5 +133,8 @@ pub(super) fn append_member(
         ApplicationSchemaMember::ApplicationNameScheme { definition } => {
             application_naming::append(basis, &prefix, definition)
         }
+        ApplicationSchemaMember::ApplicationGroupNameScheme { definition } => {
+            application_naming::append_group(basis, &prefix, definition)
+        }
     }
 }

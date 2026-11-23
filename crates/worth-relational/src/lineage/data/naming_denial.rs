@@ -2,6 +2,7 @@ use std::fmt;
 
 use super::events::LineageSubject;
 use super::naming::{PersistentNameHolder, PersistentNameIdentity};
+use super::postures::LineageRecordTarget;
 
 /// Posture kind named in a [`LineageNameDenial::LineagePostureMismatch`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -102,6 +103,13 @@ pub enum LineageNameDenial {
         keeper: PersistentNameIdentity,
         parents: Vec<PersistentNameIdentity>,
     },
+    /// Commit created a record whose kind has an installed persistent-name
+    /// scheme in Relational's schema registry, but no birth or posture covered
+    /// it.
+    MissingBirth {
+        target: LineageRecordTarget,
+        scheme_id: String,
+    },
 }
 
 impl fmt::Display for LineageNameDenial {
@@ -188,6 +196,10 @@ impl fmt::Display for LineageNameDenial {
                 "invalid merge keeper `{}` is not among declared parents ({} parents)",
                 keeper.render_hex(),
                 parents.len()
+            ),
+            Self::MissingBirth { target, scheme_id } => write!(
+                formatter,
+                "created record {target:?} requires a persistent-name birth under installed scheme `{scheme_id}`"
             ),
         }
     }

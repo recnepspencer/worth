@@ -138,6 +138,7 @@ where
         let origin = body.origin.as_mut().expect("prepaid recipe");
         if origin.needs_binding() {
             origin.bind(
+                snapshot.selected_commit().ordinal(),
                 basis,
                 observation
                     .fork_checkpoint_history()

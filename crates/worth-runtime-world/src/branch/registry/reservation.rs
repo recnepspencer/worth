@@ -131,71 +131,88 @@ impl ProductBranchRegistryReservation {
         lifecycle: ProductBranchIncarnation,
         cell: &mut Option<ProductBranchReferenceCell>,
     ) -> Result<(), ProductBranchRegistryDenial> {
-        let snapshot = cell
-            .as_ref()
-            .expect("original root destination")
-            .atomic_snapshot();
+        self.install_borrowed(name, branch, lifecycle, cell, true, None)
+    }
+
+    pub(crate) fn install_horizon_branch_borrowed(
+        &mut self,
+        name: ProductBranchName,
+        branch: ProductBranchIdentity,
+        lifecycle: ProductBranchIncarnation,
+        cell: &mut Option<ProductBranchReferenceCell>,
+        retirement_boundary: Option<crate::identity::CompositeCommitIdentity>,
+    ) -> Result<(), ProductBranchRegistryDenial> {
+        self.install_borrowed(name, branch, lifecycle, cell, false, retirement_boundary)
+    }
+
+    fn install_borrowed(
+        &mut self,
+        name: ProductBranchName,
+        branch: ProductBranchIdentity,
+        lifecycle: ProductBranchIncarnation,
+        cell: &mut Option<ProductBranchReferenceCell>,
+        root: bool,
+        retirement_boundary: Option<crate::identity::CompositeCommitIdentity>,
+    ) -> Result<(), ProductBranchRegistryDenial> {
+        let snapshot = cell.as_ref().expect("original branch destination").atomic_snapshot();
         let mut installed = BranchInstallation {
-            name,
-            branch,
-            lifecycle,
-            cell,
-            snapshot,
-            retirement_boundary: None,
+            name, branch, lifecycle, cell, snapshot, retirement_boundary,
         };
-        self.admits_installation(&installed, true)?;
+        self.admits_installation(&installed, root)?;
         let registry = self.registry.clone();
-        self.insert_installed(
-            &mut registry.state.lock().unwrap_or_else(|e| e.into_inner()),
-            &mut installed,
-        )
+        self.insert_installed(&mut registry.state.lock().unwrap_or_else(|e| e.into_inner()), &mut installed)
     }
 
     /// Keep the destination in the owner's lease through validation and the
     /// source guard. Only actual insertion takes it. Registry then source-cell
     /// is the existing lock order; neither lock spans a component-owner call.
     pub(crate) fn install_from_source(
-        mut self,
+        self,
         source: &ProductBranchObservation,
         branch: ProductBranchIdentity,
         lifecycle: ProductBranchIncarnation,
         cell: &mut Option<ProductBranchReferenceCell>,
         cancellation: &crate::publication::RuntimeWorldCancellationToken,
     ) -> Result<(), ProductBranchSourceInstallFailure> {
-        let result = self.install_from_source_borrowed(
+        self.install_from_source_kind(
             source,
             branch,
             lifecycle,
             cell,
             cancellation,
             crate::branch::BranchCreationSourceKind::Current,
-        );
-        result.map_err(|denial| ProductBranchSourceInstallFailure {
-            reservation: self,
-            denial,
-        })
+        )
     }
 
     pub(crate) fn install_from_retained_source(
-        mut self,
+        self,
         source: &ProductBranchObservation,
         branch: ProductBranchIdentity,
         lifecycle: ProductBranchIncarnation,
         cell: &mut Option<ProductBranchReferenceCell>,
         cancellation: &crate::publication::RuntimeWorldCancellationToken,
     ) -> Result<(), ProductBranchSourceInstallFailure> {
-        let result = self.install_from_source_borrowed(
+        self.install_from_source_kind(
             source,
             branch,
             lifecycle,
             cell,
             cancellation,
             crate::branch::BranchCreationSourceKind::Retained,
-        );
-        result.map_err(|denial| ProductBranchSourceInstallFailure {
-            reservation: self,
-            denial,
-        })
+        )
+    }
+
+    fn install_from_source_kind(
+        mut self,
+        source: &ProductBranchObservation,
+        branch: ProductBranchIdentity,
+        lifecycle: ProductBranchIncarnation,
+        cell: &mut Option<ProductBranchReferenceCell>,
+        cancellation: &crate::publication::RuntimeWorldCancellationToken,
+        source_kind: crate::branch::BranchCreationSourceKind,
+    ) -> Result<(), ProductBranchSourceInstallFailure> {
+        self.install_from_source_borrowed(source, branch, lifecycle, cell, cancellation, source_kind)
+            .map_err(|denial| ProductBranchSourceInstallFailure { reservation: self, denial })
     }
 
     fn install_from_source_borrowed(
@@ -240,6 +257,7 @@ impl ProductBranchRegistryReservation {
             // the source's mutable head, but its exact occurrence must live.
             if source_cell.atomic_snapshot().lifecycle_incarnation()
                 != source.lifecycle_incarnation()
+                || source_cell.is_retired_or_retiring()
             {
                 return Err(ProductBranchSourceInstallDenial::SourceRetired);
             }

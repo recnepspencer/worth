@@ -9,9 +9,10 @@ use crate::facade::lineage::{
     admit_persisted_name, encode_durable_persistent_name_log, rebuild_name_index_from_durable_log,
     LineageEventKind, LineagePostureClaim, LineageRecordTarget, PersistentNameBirthRequest,
     PersistentNameBranchIndex, PersistentNameDiscriminatorReference, PersistentNameDurabilityError,
-    PersistentNameHolder, PersistentNameIdentity, PersistentNameMintingAuthority,
-    PersistentNameReferenceBasis, PersistentNameReferenceRole, PersistentNameSubjectKind,
+    PersistentNameHolder, PersistentNameIdentity, PersistentNameReferenceBasis,
+    PersistentNameReferenceRole, PersistentNameSubjectKind,
 };
+use crate::lineage::authority::PersistentNameMintingAuthority;
 use crate::identity::data::EntityId;
 
 use super::name_durable_world::durable_naming_history;

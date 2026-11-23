@@ -23,7 +23,7 @@ pub(super) struct LineageAllocation {
 
 /// Why a commit's allocating lineage events do not fit their exact shape.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(super) enum LineageAllocationRefusal {
+pub(crate) enum LineageAllocationRefusal {
     /// A `Create` must have no sources and exactly one target.
     MalformedCreate { event_id: u64 },
     /// A `Restore` must have one retired source and one different target.
@@ -115,14 +115,14 @@ pub(super) fn maximum_allocated_lineage<'event>(
 }
 
 /// One commit's lineage events and the entities its patch created.
-pub(super) struct CommitAllocationView<'commit> {
-    pub(super) commit: &'commit RelationalCommitReceipt,
-    pub(super) events: &'commit [LineageEventRecord],
-    pub(super) created_entities: Vec<EntityId>,
+pub(crate) struct CommitAllocationView<'commit> {
+    pub(crate) commit: &'commit RelationalCommitReceipt,
+    pub(crate) events: &'commit [LineageEventRecord],
+    pub(crate) created_entities: Vec<EntityId>,
 }
 
 impl<'commit> CommitAllocationView<'commit> {
-    pub(super) fn of_envelope(envelope: &'commit CanonicalCommitEnvelope) -> Self {
+    pub(crate) fn of_envelope(envelope: &'commit CanonicalCommitEnvelope) -> Self {
         let created_entities = envelope
             .patch
             .authoritative_record_patches
@@ -149,7 +149,7 @@ impl<'commit> CommitAllocationView<'commit> {
 /// and `Restore` alike and never depends on patch order.
 ///
 /// Complexity: O(events + created entities log created entities).
-pub(super) fn entity_allocation_bindings(
+pub(crate) fn entity_allocation_bindings(
     view: &CommitAllocationView<'_>,
 ) -> Result<Vec<(LineageId, EntityId)>, LineageAllocationRefusal> {
     let mut entity_lineages = Vec::new();

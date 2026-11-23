@@ -43,6 +43,14 @@ impl ModelSchema for ParentSchema<8> {
     const MODE: u8 = 8;
     type Model = ParentRecords<true>;
 }
+impl ModelSchema for ParentSchema<10> {
+    const MODE: u8 = 10;
+    type Model = ParentRecords<false>;
+}
+impl ModelSchema for ParentSchema<11> {
+    const MODE: u8 = 11;
+    type Model = ParentRecords<false>;
+}
 impl ModelSchema for ParentSchema<9> {
     const MODE: u8 = 9;
     type Model = ParentRecords<false>;

@@ -196,84 +196,154 @@ fn positioned_sources_wait_for_a_real_producer_between_positions() {
 }
 
 #[test]
-fn positioned_conflicts_and_late_source_changes_keep_atomic_refusal() {
-    for late_source_change in [false, true] {
-        let host = host(None, None);
-        let scope = request_scope();
-        let principal = authenticate_operator(host.installed_schema(), &scope);
-        let request = host.request(&principal, &scope);
-        let mut edit = request
-            .edit_envelope()
-            .idempotency(format!("positioned-support:{late_source_change}"))
-            .runtime_stages(&host)
-            .ordered_authored()
-            .unwrap();
-        if late_source_change {
-            edit.push_stage::<ModelTree, _>(fixture::cap::Intent {
-                key: "envelope-cap".into(),
-                value: 8,
-                key_derived_target: false,
-            })
-            .unwrap();
-            edit.push_stage::<ProducedTree, _>(dependent::Intent { add: 7 })
-                .unwrap();
-        } else {
-            edit.push_stage::<ModelTree, _>(fixture::model::Intent {
-                key: "a".into(),
-                value: 2,
-                key_derived_target: false,
-            })
-            .unwrap();
-        }
-        edit.push_stage::<ModelTree, _>(fixture::model::Intent {
-            key: "a".into(),
-            value: 3,
-            key_derived_target: false,
-        })
+fn positioned_conflicts_keep_atomic_refusal() {
+    let host = host(None, None);
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let mut edit = request
+        .edit_envelope()
+        .idempotency("positioned-support:false".to_owned())
+        .runtime_stages(&host)
+        .ordered_authored()
         .unwrap();
-        let before = super::super::super::courts::native_head(&host);
-        let target = request
-            .query(query::model::Read("a".into()))
-            .execute()
+    edit.push_stage::<ModelTree, _>(fixture::model::Intent {
+        key: "a".into(),
+        value: 2,
+        key_derived_target: false,
+    })
+    .unwrap();
+    edit.push_stage::<ModelTree, _>(fixture::model::Intent {
+        key: "a".into(),
+        value: 3,
+        key_derived_target: false,
+    })
+    .unwrap();
+    let before = super::super::super::courts::native_head(&host);
+    let target = request
+        .query(query::model::Read("a".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .native_id;
+    let (outcome, writes) = observe_maintenance_work(24, || {
+        edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation)
             .unwrap()
-            .rows()[0]
-            .native_id;
-        let (outcome, writes) = observe_maintenance_work(24, || {
-            edit.execute_performed(ExecutionAllocationPolicy::SystemAllocation)
-                .unwrap()
-        });
-        let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome else {
-            panic!("{outcome:?}")
-        };
-        if late_source_change {
-            assert_eq!(
-                cause.invariant_execution_failure().unwrap().kind(),
-                WorthQueryInvariantExecutionDenialKind::CoupledReadSupportChanged
-            );
-        } else {
-            assert_eq!(
-                cause.coupled_producer_denial().unwrap().kind(),
-                WorthQueryOutputDemandDenialKind::ConflictingIntent {
-                    target: worth_relational::facade::transactions::RecordRef::Entity(target),
-                    earlier: 0,
-                    later: 1,
-                }
-            );
+    });
+    let Outcome::Uncommitted(WorthQueryApplicationUncommitted::Denied(cause)) = outcome else {
+        panic!("{outcome:?}")
+    };
+    assert_eq!(
+        cause.coupled_producer_denial().unwrap().kind(),
+        WorthQueryOutputDemandDenialKind::ConflictingIntent {
+            target: worth_relational::facade::transactions::RecordRef::Entity(target),
+            earlier: 0,
+            later: 1,
         }
-        assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
-        assert_eq!(super::super::super::courts::native_head(&host), before);
-        assert_eq!(
-            request
-                .query(query::model::Read("a".into()))
-                .execute()
-                .unwrap()
-                .rows()[0]
-                .value,
-            1
-        );
-        assert!(request
-            .query(query::first_output::Read("first:a".into()))
-            .execute()
-            .is_err());
+    );
+    assert_eq!(writes.published_rows.len() + writes.omitted_publications, 0);
+    assert_eq!(super::super::super::courts::native_head(&host), before);
+    assert_eq!(late_source_world(&host), (1, None));
+}
+
+/// Model `a` and `first:a` (`None` while underived).
+fn late_source_world(host: &Host) -> (u64, Option<u64>) {
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let first = request
+        .query(query::first_output::Read("first:a".into()))
+        .execute()
+        .ok()
+        .and_then(|rows| rows.rows().first().map(|row| row.value));
+    let model = request
+        .query(query::model::Read("a".into()))
+        .execute()
+        .unwrap()
+        .rows()[0]
+        .value;
+    (model, first)
+}
+
+/// The stages cap, dependent, `a = 3` as one positioned edit or as one
+/// commit per stage: the dependent's result and its ordinal in its edit.
+fn late_source_stages(host: &Host, label: &str, one_commit_per_stage: bool) -> (u64, usize) {
+    let scope = request_scope();
+    let principal = authenticate_operator(host.installed_schema(), &scope);
+    let request = host.request(&principal, &scope);
+    let cap = || fixture::cap::Intent {
+        key: "envelope-cap".into(),
+        value: 8,
+        key_derived_target: false,
+    };
+    let late = || fixture::model::Intent {
+        key: "a".into(),
+        value: 3,
+        key_derived_target: false,
+    };
+    let edit = |key: String| {
+        request
+            .edit_envelope()
+            .idempotency(key)
+            .runtime_stages(host)
+            .ordered_authored()
+            .unwrap()
+    };
+    macro_rules! commit {
+        ($edit:expr) => {{
+            let outcome = $edit
+                .execute_performed(ExecutionAllocationPolicy::SystemAllocation)
+                .unwrap();
+            let Outcome::Committed(receipt) = outcome else {
+                panic!("{outcome:?}")
+            };
+            receipt
+        }};
     }
+    if one_commit_per_stage {
+        let mut stage = edit(format!("{label}:0"));
+        stage.push_stage::<ModelTree, _>(cap()).unwrap();
+        commit!(stage);
+        let mut stage = edit(format!("{label}:1"));
+        let dependent = stage
+            .push_stage::<ProducedTree, _>(dependent::Intent { add: 7 })
+            .unwrap();
+        let result = commit!(stage).result(&dependent).unwrap().clone();
+        let mut stage = edit(format!("{label}:2"));
+        stage.push_stage::<ModelTree, _>(late()).unwrap();
+        commit!(stage);
+        return (result.value, result.ordinal);
+    }
+    let mut whole = edit(label.to_owned());
+    whole.push_stage::<ModelTree, _>(cap()).unwrap();
+    let dependent = whole
+        .push_stage::<ProducedTree, _>(dependent::Intent { add: 7 })
+        .unwrap();
+    whole.push_stage::<ModelTree, _>(late()).unwrap();
+    let result = commit!(whole).result(&dependent).unwrap().clone();
+    (result.value, result.ordinal)
+}
+
+/// A later stage changes model `a` after the positioned dependent read it.
+/// Qualified use reopens what read the old `a`, and the edit commits exactly
+/// the world one commit per stage commits: the dependent keeps its positioned
+/// result (17 = 1 * 10 + 7 at its position) and `first:a` derives from the
+/// final `a` (30 = 3 * 10).
+#[test]
+fn positioned_late_source_changes_commit_the_sequential_world() {
+    let positioned = host(None, None);
+    assert_eq!(
+        late_source_stages(&positioned, "positioned-support:true", false),
+        (17, 1)
+    );
+    let sequential = host(None, None);
+    assert_eq!(
+        late_source_stages(&sequential, "sequential-support", true),
+        (17, 0)
+    );
+    assert_eq!(late_source_world(&positioned), (3, Some(30)));
+    assert_eq!(
+        late_source_world(&positioned),
+        late_source_world(&sequential)
+    );
 }

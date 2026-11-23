@@ -89,6 +89,57 @@ impl CheckpointAdmittedCommit {
         require_encoded(&successor.truth_version(), field("truth")?.0, request)?;
         require_encoded(&successor.posture(), field("posture")?.0, request)
     }
+
+    pub(crate) fn require_pruned_publication_axes(
+        &self,
+        expected_branch: &crate::history::data::BranchId,
+        expected_predecessor_commit: crate::history::data::CommitId,
+        successor: &crate::branch::RelationalBranchBasisDescriptor,
+        request: &ExecutionRequest<'_, '_>,
+    ) -> Result<(), Refusal> {
+        use crate::durability::canonical_commit_artifact::borrowed_payload::BorrowedPayload;
+        use worth_foundational::facade::{
+            NativeCheckpointBranchReference as Reference, NativeCheckpointBranchTarget as Target,
+        };
+        let row = self
+            .0
+            .image
+            .row(self.0.index.commit.commit_id)
+            .ok_or(Refusal::InvalidProjectedMeaning)?;
+        let axes = BorrowedPayload(self.0.image.group(&row.groups[1]));
+        let field = |name| {
+            axes.field(name, request)
+                .map_err(super::root_positions::projected_stop)
+        };
+        let prior_bytes = field("predecessor")?
+            .field("reference", request)
+            .map_err(super::root_positions::projected_stop)?
+            .0;
+        crate::durability::artifact_payload_emission::request::account_work(
+            request,
+            prior_bytes.len() as u64,
+        )
+        .map_err(super::refusal::native_stop)?;
+        let prior: Reference<'_> =
+            rmp_serde::from_slice(prior_bytes).map_err(|_| Refusal::InvalidProjectedMeaning)?;
+        if prior.observation().branch() != expected_branch.0.as_str() {
+            return Err(Refusal::InvalidProjectedMeaning);
+        }
+        let Target::Canonical { commit, .. } = prior.observation().target() else {
+            return Err(Refusal::InvalidProjectedMeaning);
+        };
+        if *commit != expected_predecessor_commit.0 {
+            return Err(Refusal::InvalidProjectedMeaning);
+        }
+        require_encoded(successor.branch_id(), field("branch")?.0, request)?;
+        require_encoded(
+            &successor.reference().generation(),
+            field("generation")?.0,
+            request,
+        )?;
+        require_encoded(&successor.truth_version(), field("truth")?.0, request)?;
+        require_encoded(&successor.posture(), field("posture")?.0, request)
+    }
     pub(super) fn prepare(
         directory: &Arc<RelationalCheckpointDirectory>,
         entry: &RelationalCommitIndexEntry,

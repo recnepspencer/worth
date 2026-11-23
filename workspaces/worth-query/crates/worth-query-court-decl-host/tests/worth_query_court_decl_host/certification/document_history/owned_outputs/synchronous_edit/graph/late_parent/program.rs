@@ -68,7 +68,10 @@ impl WorthQueryApplicationDependentOutputConnection<Schema> for Discover {
     fn demands_from_discovery(
         row: &query::Row,
     ) -> Result<Vec<Self::Demand>, WorthQueryRequiredOutputConnectionDenial> {
-        assert_eq!((row.key.as_str(), row.value), ("first:a", 7));
+        // The discovery sees the derivation it follows: first:a from m = 5
+        // (2 + 5), or, once qualified use reopens it, from m = 9 (2 + 9).
+        assert_eq!(row.key.as_str(), "first:a");
+        assert!(matches!(row.value, 7 | 11), "{row:?}");
         Ok(vec![decision_write::Demand("b".into())])
     }
 }

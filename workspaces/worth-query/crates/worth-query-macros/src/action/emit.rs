@@ -16,9 +16,13 @@ pub(super) fn action(input: &DeriveInput, action: &ActionDeclaration) -> TokenSt
     let delivery = delivery(input, action);
     // An authored body reads input members; other handlers keep the default.
     let capture = action.body.then(|| quote!(, capture_input: true));
+    let validate = action
+        .validate
+        .as_ref()
+        .map(|validate| quote!(, validate: #validate));
     quote! {
         #decl::worth_query_structured_value_binding!(#vis #input_binding for #intent {
-            identity: #input_identity #capture
+            identity: #input_identity #capture #validate
         });
         #operation
         #binding
@@ -109,7 +113,10 @@ fn scope_value(input: &DeriveInput, action: &ActionDeclaration) -> Option<TokenS
     };
     let (frag, intent) = (fragment(), &input.ident);
     let read = quote_spanned!(value.span()=> ::core::clone::Clone::clone(&input.#member));
+    // The read is spanned to the field so a non-`Clone` type is refused there;
+    // a `Copy` field must not then report `clone_on_copy` in the application.
     Some(quote! {
+        #[allow(clippy::clone_on_copy)]
         impl #intent {
             #[doc(hidden)]
             fn worth_query_scope(input: &Self) -> <#selection as #frag::RecordSelection>::Value {

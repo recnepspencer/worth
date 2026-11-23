@@ -1,27 +1,21 @@
 use worth_query_decl::facade::{
     application_operation::{
-        ApplicationCapabilityMutationBinding, ApplicationMutationBinding,
-        ApplicationMutationFieldScope, ApplicationMutationIntent, NoApplicationMutationOutputs,
-        NoApplicationMutationSource,
+        ApplicationCapabilityAdmission, ApplicationCapabilityMutationBinding,
+        NoApplicationMutationOutputs,
     },
-    application_schema::ApplicationPrincipalBindingRef,
+    worth_query_mutation_binding,
 };
 
 use crate::{
     estate::{EstateAction, EstateCaseId, LegalAuthorityId},
     model::BankPrincipalId,
-    proposals::BankIdempotencyKey,
     schema::{
-        BankPrincipalBinding, BankPrincipalIdBinding, BankSchema, EstateCaseIdentityField,
-        ExternalPrincipalMapping, Principal, RecognizeEstateExecutorCapability,
-        RecognizeEstateExecutorOperation,
+        BankBindingContext, BankSchema, EstateActionInputBinding, EstateCaseIdentityField,
+        RecognizeEstateExecutorCapability, RecognizeEstateExecutorOperation,
     },
 };
 
-use super::{
-    EstateMutationDenial, EstateMutationDenialBinding, EstateMutationResult,
-    EstateMutationResultBinding,
-};
+use super::{EstateMutationDenialBinding, EstateMutationResultBinding};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct RecognizeEstateExecutor {
@@ -44,85 +38,36 @@ impl RecognizeEstateExecutor {
             estate,
         }
     }
-}
 
-pub struct RecognizeEstateExecutorMutationBinding;
-
-impl ApplicationMutationBinding<BankSchema> for RecognizeEstateExecutorMutationBinding {
-    fn workflow_execution_requirements(
-    ) -> worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements
-    {
-        worth_query_decl::facade::application_operation::ApplicationWorkflowExecutionRequirements::not_applicable()
-    }
-
-    type Input = EstateAction;
-    type InputBinding = super::super::EstateActionInputBinding;
-    type Result = EstateMutationResult;
-    type ResultBinding = EstateMutationResultBinding;
-    type IdempotencyKey = BankIdempotencyKey;
-    type Operation = RecognizeEstateExecutorOperation;
-    type Decision = EstateAction;
-    type Denial = EstateMutationDenial;
-    type DenialBinding = EstateMutationDenialBinding;
-    type Output = NoApplicationMutationOutputs;
-    type ScopeBinding = ApplicationMutationFieldScope<EstateCaseIdentityField>;
-    type PrincipalBinding = BankPrincipalBinding;
-    type Mapping = ExternalPrincipalMapping;
-    type Principal = Principal;
-    type PrincipalIdentity = BankPrincipalId;
-    type PrincipalIdentityBinding = BankPrincipalIdBinding;
-    type SourceExpectation = NoApplicationMutationSource;
-
-    const IDENTITY: &'static str = "bank.estate.recognize-executor.mutation-binding.v1";
-    const HANDLER_IDENTITY: &'static str = "bank.estate.recognize-executor.handler.v1";
-    const IDEMPOTENCY_IDENTITY: &'static str = "bank.application-mutation-client-key.v1";
-    const REQUIRES_APPLICATION_PROGRAM: bool = true;
-
-    fn scope_field() -> EstateCaseIdentityField {
-        EstateCaseIdentityField::at("EstateCaseIdentityField")
-    }
-
-    fn principal_binding() -> ApplicationPrincipalBindingRef<
-        BankSchema,
-        BankPrincipalBinding,
-        ExternalPrincipalMapping,
-        Principal,
-        BankPrincipalId,
-        BankPrincipalIdBinding,
-    > {
-        BankPrincipalBinding::reference()
-    }
-}
-
-impl ApplicationCapabilityMutationBinding<BankSchema> for RecognizeEstateExecutorMutationBinding {
-    type Capability = RecognizeEstateExecutorCapability;
-}
-
-impl ApplicationMutationIntent<BankSchema> for RecognizeEstateExecutor {
-    type Binding = RecognizeEstateExecutorMutationBinding;
-
-    fn input(&self) -> &EstateAction {
+    const fn shared_action(&self) -> &EstateAction {
         &self.action
     }
 
-    fn scope_binding(
-        &self,
-    ) -> <Self::Binding as ApplicationMutationBinding<BankSchema>>::ScopeBinding {
-        ApplicationMutationFieldScope::new(
-            EstateCaseIdentityField::at("EstateCaseIdentityField"),
-            self.estate,
-        )
+    const fn scope_estate(&self) -> EstateCaseId {
+        self.estate
     }
 }
 
-impl
-    worth_query_decl::facade::application_operation::ApplicationMutationAdmissionBinding<BankSchema>
-    for RecognizeEstateExecutorMutationBinding
-{
-    type Admission =
-        worth_query_decl::facade::application_operation::ApplicationCapabilityAdmission<
-            RecognizeEstateExecutorCapability,
-        >;
+worth_query_mutation_binding!(
+    pub RecognizeEstateExecutorMutationBinding for EstateAction, schema BankSchema, context BankBindingContext,
+    intent RecognizeEstateExecutor => RecognizeEstateExecutor::shared_action,
+    identity "bank.estate.recognize-executor.mutation-binding.v1",
+    input EstateActionInputBinding,
+    operation RecognizeEstateExecutorOperation,
+    result EstateMutationResultBinding,
+    decision EstateAction,
+    denial EstateMutationDenialBinding,
+    handler identity "bank.estate.recognize-executor.handler.v1",
+    admission ApplicationCapabilityAdmission<RecognizeEstateExecutorCapability>,
+    program required,
+    outputs NoApplicationMutationOutputs,
+    scope EstateCaseIdentityField,
+    field EstateCaseIdentityField::at("EstateCaseIdentityField"),
+    value RecognizeEstateExecutor::scope_estate,
+);
+
+impl ApplicationCapabilityMutationBinding<BankSchema> for RecognizeEstateExecutorMutationBinding {
+    type Capability = RecognizeEstateExecutorCapability;
 }
 
 impl TryFrom<EstateAction> for RecognizeEstateExecutor {

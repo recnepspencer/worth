@@ -1,7 +1,9 @@
 mod compilation;
 mod compiled_contract;
 mod managed_index_reads;
-pub use managed_index_reads::WorthQueryOperationManagedIndexReadView;
+pub use managed_index_reads::{
+    WorthQueryOperationManagedIndexReadView, WorthQuerySharedOwnerManagedIndexRead,
+};
 mod emissions;
 pub(in crate::application_operation) mod graph_reads;
 mod graph_touches;

@@ -158,11 +158,6 @@ pub(super) fn map_world_denial(
     denial: RuntimeWorldServiceDenial<RuntimeWorldBranchAdmissionDenial>,
 ) -> WorthQueryProductBranchAdmissionDenial {
     match denial {
-        RuntimeWorldServiceDenial::Denied(
-            RuntimeWorldBranchAdmissionDenial::DurableBranchPublicationRequired,
-        ) => WorthQueryProductBranchAdmissionDenial::Refused(
-            AdmissionRefusal::DurableBranchPublicationRequired,
-        ),
         RuntimeWorldServiceDenial::OwnerUnavailable(_)
         | RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchAdmissionDenial::OwnerUnavailable) => {
             WorthQueryProductBranchAdmissionDenial::Refused(AdmissionRefusal::OwnerUnavailable)

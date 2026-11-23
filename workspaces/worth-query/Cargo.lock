@@ -1679,6 +1679,7 @@ dependencies = [
  "worth-query-admission",
  "worth-query-declaration",
  "worth-query-execution",
+ "worth-query-execution-naming",
  "worth-query-installation",
  "worth-query-testkit-execution-primary-graph-application-attempt",
  "worth-query-testkit-execution-primary-graph-application-attempt-2",
@@ -1941,6 +1942,7 @@ dependencies = [
  "worth-query-execution-foundation",
  "worth-query-execution-layout",
  "worth-query-execution-lineage",
+ "worth-query-execution-naming",
  "worth-query-execution-obligations",
  "worth-query-execution-query",
  "worth-query-execution-runtime",
@@ -2061,6 +2063,7 @@ dependencies = [
  "worth-query-execution-diagnostics",
  "worth-query-execution-foundation",
  "worth-query-execution-layout",
+ "worth-query-execution-naming",
  "worth-query-execution-obligations",
  "worth-query-execution-runtime",
  "worth-query-installation",
@@ -2071,6 +2074,16 @@ dependencies = [
  "worth-runtime-world",
  "worth-signal",
  "worth-testkit-relational",
+]
+
+[[package]]
+name = "worth-query-execution-naming"
+version = "0.1.0"
+dependencies = [
+ "worth-execution",
+ "worth-query-declaration",
+ "worth-query-installation",
+ "worth-relational",
 ]
 
 [[package]]
@@ -2111,6 +2124,7 @@ dependencies = [
  "worth-query-execution-foundation",
  "worth-query-execution-layout",
  "worth-query-execution-lineage",
+ "worth-query-execution-naming",
  "worth-query-execution-obligations",
  "worth-query-execution-runtime",
  "worth-query-installation",

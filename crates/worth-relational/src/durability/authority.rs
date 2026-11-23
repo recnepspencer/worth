@@ -31,7 +31,7 @@ mod checkpointing;
 #[doc(hidden)]
 pub use checkpoint_split_doors_for_test::CapturedRelationalCheckpointBasisForTest;
 mod diagnostics;
-mod lineage_allocation;
+pub(crate) mod lineage_allocation;
 #[cfg(test)]
 mod lineage_allocation_fixtures;
 #[cfg(test)]

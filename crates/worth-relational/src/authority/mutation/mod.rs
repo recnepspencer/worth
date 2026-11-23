@@ -24,7 +24,8 @@ pub(crate) use succession_record::{restamp_succession_entity, succession_record}
 mod workspace;
 
 pub(crate) use canonical_deltas::{
-    CanonicalRecordAspectDelta, EvaluatedAspectBinding, FoundationalPatchFragment,
+    CanonicalAspectDeltaEvidence, CanonicalRecordAspectDelta, EvaluatedAspectBinding,
+    FoundationalPatchFragment,
 };
 pub(crate) use effect::{AdjacencyDelta, AdjacencyDeltaKind, MutationEffect};
 pub(crate) use execution::{

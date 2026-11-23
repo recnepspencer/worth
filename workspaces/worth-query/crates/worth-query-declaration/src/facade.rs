@@ -3,9 +3,15 @@
 /// Application schema declaration: marker identity traits and typed
 /// references for entities, aspects, fields, relations, operations, effects,
 /// abilities, and policies, and the builder that assembles and validates an
-/// `ApplicationSchemaDeclaration`.
+/// `ApplicationSchemaDeclaration`, with the native scalar carriers a record
+/// column, action input or query parameter holds (`CanonicalDate` and its
+/// siblings), each bound by `worth_query_native_scalar_bindings!`.
 pub mod application_schema {
     pub use crate::application_schema::*;
+    pub use worth_foundational::facade::{
+        CanonicalDate, CanonicalF32, CanonicalF64, CanonicalTime, CanonicalTimestamp,
+        CanonicalTimestampTz, InlineBytes, InlineBytesLengthDenial, InternedString,
+    };
     pub use worth_foundational::CanonicalDigestId;
 }
 

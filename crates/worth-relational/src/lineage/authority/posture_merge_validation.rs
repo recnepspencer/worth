@@ -5,8 +5,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::identity::data::VersionId;
 use crate::lineage::data::{
-    LineageCommitPostureInput, LineageMergeKeeper, LineageNameDenial, LineagePostureKind,
-    LineageRecordTarget, PersistentNameBirthRequest, PersistentNameIdentity,
+    InstalledPersistentNameSchemeRegistry, LineageBasisView, LineageMergeKeeper, LineageNameDenial,
+    LineagePostureKind, LineageRecordTarget, PersistentNameBirthRequest, PersistentNameIdentity,
 };
 use crate::runtime::WorkingState;
 
@@ -20,7 +20,8 @@ use super::staged_effects::{existed_at_basis, is_live_after_commit, is_retired_i
 pub(super) fn validate_merge_claim(
     staged: &WorkingState,
     version_id: VersionId,
-    input: &LineageCommitPostureInput,
+    scheme_registry: &InstalledPersistentNameSchemeRegistry,
+    basis: &dyn LineageBasisView,
     created_targets: &BTreeSet<LineageRecordTarget>,
     parents: &[(LineageRecordTarget, PersistentNameIdentity)],
     target: LineageRecordTarget,
@@ -92,7 +93,7 @@ pub(super) fn validate_merge_claim(
         let lineage_id = require_live_holder_and_lineage(
             LineagePostureKind::Merge,
             staged,
-            input,
+            basis,
             parent_target,
             parent_name,
         )?;
@@ -128,7 +129,12 @@ pub(super) fn validate_merge_claim(
                     "Merge(MintNew) target is already claimed by another posture in this commit",
                 ));
             }
-            validate_birth_holder_and_subject(LineagePostureKind::Merge, target, birth, input)?;
+            validate_birth_holder_and_subject(
+                LineagePostureKind::Merge,
+                target,
+                birth,
+                scheme_registry,
+            )?;
             let mut sorted_parent_names: Vec<PersistentNameIdentity> =
                 seen_parent_names.into_iter().collect();
             sorted_parent_names.sort_unstable();

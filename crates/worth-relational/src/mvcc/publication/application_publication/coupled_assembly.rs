@@ -21,6 +21,8 @@ mod authored_writes;
 mod completion;
 mod continuation;
 mod managed_source;
+mod managed_source_alignment;
+pub use managed_source_alignment::ManagedIndexParentReadFootprint;
 pub use continuation::RelationalCoupledProducerContinuation;
 mod contribution;
 mod source_effects;
@@ -41,6 +43,8 @@ mod stage;
 pub use producer_posture::RelationalCoupledProducerPosture;
 mod scoped_preparation;
 mod succession;
+mod touches;
+pub use touches::{RelationalCoupledAppendTouches, RelationalCoupledChainOverlay};
 mod writer_custody;
 pub(crate) use completion::CoupledAppliedCandidate;
 pub use completion::RelationalCoupledAuthoredPublication;
@@ -181,6 +185,36 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         source: crate::identity::data::EntityId,
         partition: &[u8; 32],
     ) -> Result<Option<RelationalDeclaredCoupledOwner<'_>>, TransactionCommitError> {
+        self.parent_owner(execution, family, source, partition, false)
+    }
+
+    /// The parent owner a successor round of the route's existing part reads
+    /// (§1.5): the same canonical entry, which that part already claimed, so
+    /// the route is expected to be seen. Any other route reads `read_parent_owner`.
+    pub fn read_successor_parent_owner(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        family: &str,
+        source: crate::identity::data::EntityId,
+        partition: &[u8; 32],
+    ) -> Result<Option<RelationalDeclaredCoupledOwner<'_>>, TransactionCommitError> {
+        if self
+            .prepared_route_index(execution, family, source, partition)?
+            .is_none()
+        {
+            return self.read_parent_owner(execution, family, source, partition);
+        }
+        self.parent_owner(execution, family, source, partition, true)
+    }
+
+    fn parent_owner(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        family: &str,
+        source: crate::identity::data::EntityId,
+        partition: &[u8; 32],
+        successor: bool,
+    ) -> Result<Option<RelationalDeclaredCoupledOwner<'_>>, TransactionCommitError> {
         let original = self.catalog_source(execution, source)?;
         let owner = self
             .binding
@@ -199,6 +233,7 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         }
         if let RelationalDeclaredCoupledOwner::Surviving(previous)
         | RelationalDeclaredCoupledOwner::RequiredSurviving(previous) = &owner
+            && !successor
         {
             execution
                 .run_native_with_checkpoint(|context| {

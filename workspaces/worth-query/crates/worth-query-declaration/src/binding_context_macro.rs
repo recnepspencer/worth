@@ -10,11 +10,17 @@
 /// "..",`, `denial Binding,` and the complete principal group `principal ..,
 /// mapping .., principal_entity .., principal_identity .., identity_binding
 /// ..,`. Scope is `field F, value V,` or `principal_field F,`.
+///
+/// `intent Intent => input_of,` directly after the context binds a distinct
+/// intent type to a binding whose input is shared by several intents: the
+/// intent's `input()` is `input_of(&intent)` and its scope `value V` reads the
+/// intent. Without it the input is its own intent.
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __worth_query_contextual_mutation_binding {
     (
         $vis:vis $Binding:ident for $Input:ty, schema $Schema:ty, context $Context:ty,
+        $(intent $Intent:ty => $intent_input:path,)?
         identity $identity:expr,
         input $InputBinding:path,
         operation $Operation:path,
@@ -70,7 +76,9 @@ macro_rules! __worth_query_contextual_mutation_binding {
                 @principal_reference [$($PrincipalBinding)?] $Context, $Schema),
 
         );
-        $crate::__worth_query_binding_context!(@mutation_intent $Binding, $Input, $Schema; $($scope)*);
+        $crate::__worth_query_binding_context!(
+            @mutation_intent $Binding, $Input, $Schema, [$($Intent => $intent_input)?]; $($scope)*
+        );
     };
 }
 
@@ -152,14 +160,14 @@ macro_rules! __worth_query_binding_context {
     };
     (@query_limit field $field:expr, value $value:path, limits results $results:expr) => { $results };
     (@query_limit principal_field $field:expr, limits results $results:expr) => { $results };
-    (@mutation_intent $Binding:ident, $Input:ty, $Schema:ty;
+    (@mutation_intent $Binding:ident, $Input:ty, $Schema:ty, [$($intent:tt)*];
         field $field:expr, value $value:path $(,)?
     ) => {
-        impl $crate::facade::application_operation::ApplicationMutationIntent<$Schema> for $Input {
+        impl $crate::facade::application_operation::ApplicationMutationIntent<$Schema>
+            for $crate::__worth_query_binding_context!(@intent_type [$($intent)*] $Input)
+        {
             type Binding = $Binding;
-            fn input(&self) -> &Self {
-                self
-            }
+            $crate::__worth_query_binding_context!(@intent_input [$($intent)*] $Input);
             fn scope_binding(
                 &self,
             ) -> <$Binding as $crate::facade::application_operation::ApplicationMutationBinding<$Schema>>::ScopeBinding {
@@ -170,17 +178,31 @@ macro_rules! __worth_query_binding_context {
             }
         }
     };
-    (@mutation_intent $Binding:ident, $Input:ty, $Schema:ty; principal_field $field:expr $(,)?) => {
-        impl $crate::facade::application_operation::ApplicationMutationIntent<$Schema> for $Input {
+    (@mutation_intent $Binding:ident, $Input:ty, $Schema:ty, [$($intent:tt)*];
+        principal_field $field:expr $(,)?
+    ) => {
+        impl $crate::facade::application_operation::ApplicationMutationIntent<$Schema>
+            for $crate::__worth_query_binding_context!(@intent_type [$($intent)*] $Input)
+        {
             type Binding = $Binding;
-            fn input(&self) -> &Self {
-                self
-            }
+            $crate::__worth_query_binding_context!(@intent_input [$($intent)*] $Input);
             fn scope_binding(
                 &self,
             ) -> <$Binding as $crate::facade::application_operation::ApplicationMutationBinding<$Schema>>::ScopeBinding {
                 $crate::facade::application_operation::ApplicationMutationPrincipalScope::new($field)
             }
+        }
+    };
+    (@intent_type [] $Input:ty) => { $Input };
+    (@intent_type [$Intent:ty => $intent_input:path] $Input:ty) => { $Intent };
+    (@intent_input [] $Input:ty) => {
+        fn input(&self) -> &Self {
+            self
+        }
+    };
+    (@intent_input [$Intent:ty => $intent_input:path] $Input:ty) => {
+        fn input(&self) -> &$Input {
+            ($intent_input)(self)
         }
     };
     (@query_intent $Binding:ident, $Input:ty, $Schema:ty, $Query:path, $parameters:expr;

@@ -141,9 +141,21 @@ fn valid_event_shape(event: &crate::lineage::data::LineageEventRecord) -> bool {
         .iter()
         .copied()
         .collect::<std::collections::BTreeSet<_>>();
+    let relation_binding_ok = match event.relation_id() {
+        None => true,
+        Some(_) => {
+            event.subject() == crate::lineage::data::LineageSubject::Relation
+                && matches!(
+                    event.kind(),
+                    LineageEventKind::Create | LineageEventKind::Restore
+                )
+                && targets.len() == 1
+        }
+    };
     source_set.len() == sources.len()
         && target_set.len() == targets.len()
         && source_set.is_disjoint(&target_set)
+        && relation_binding_ok
         && match event.kind() {
             LineageEventKind::Create => sources.is_empty() && targets.len() == 1,
             LineageEventKind::Replace => sources.len() == 1 && targets.len() == 1,
@@ -178,6 +190,7 @@ mod tests {
             subject: LineageSubject::Entity,
             name_birth: None,
             kept_name: None,
+            relation_id: None,
         }
     }
 

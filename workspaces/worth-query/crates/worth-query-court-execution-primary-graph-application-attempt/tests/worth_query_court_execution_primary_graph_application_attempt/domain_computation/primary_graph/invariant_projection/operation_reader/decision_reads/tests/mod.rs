@@ -138,3 +138,31 @@ fn conflicting_handler_adjacencies_keep_the_strongest_allowance() {
         [expected.unwrap()]
     );
 }
+
+#[test]
+fn a_persistent_name_read_the_projection_cannot_track_seals_nothing() {
+    use worth_query_execution::facade::application_naming::PersistentNameReadVeto;
+    for veto in [
+        PersistentNameReadVeto::ReadFailed,
+        PersistentNameReadVeto::UntrackedDependency,
+    ] {
+        let mut reads = DecisionReads::default();
+        reads.record(adjacency(1), DecisionReadOutcome::Observed);
+        assert!(!reads.refusal_proofs().conservative);
+        reads.veto_persistent_name(veto);
+        reads.veto_persistent_name(PersistentNameReadVeto::ReadFailed);
+        assert!(
+            reads.refusal_proofs().conservative,
+            "a refusal over the vetoed read waits on every append"
+        );
+        assert_eq!(
+            reads
+                .into_expected_for_test(&worth_execution::ExecutionRequest::serial(
+                    &worth_query_testkit_execution_primary_graph_application_attempt_2::test_request_policy::serial_request(),
+                ))
+                .err(),
+            Some(FailedDecisionRead::PersistentName(veto)),
+            "a swallowed or untrackable name read never seals; the first veto is kept"
+        );
+    }
+}

@@ -51,6 +51,8 @@ impl DurableBranchRootSchemaImage {
             derived_relations: registry.derived_parts(),
             projected_member_domains: registry.projected_domain_parts(),
             content_formats: registry.content_formats.snapshot(),
+            persistent_name_schemes: registry.persistent_name_scheme_snapshots(),
+            kind_name_schemes: registry.kind_name_scheme_snapshots(),
             _memory: memory,
             retained_aspect_contracts: authority
                 .retained_aspect_contracts()
@@ -76,6 +78,8 @@ impl PartialEq for DurableBranchRootSchemaImage {
             && left.derived_relations == right.derived_relations
             && left.projected_member_domains == right.projected_member_domains
             && left.content_formats == right.content_formats
+            && left.persistent_name_schemes == right.persistent_name_schemes
+            && left.kind_name_schemes == right.kind_name_schemes
     }
 }
 impl Eq for DurableBranchRootSchemaImage {}

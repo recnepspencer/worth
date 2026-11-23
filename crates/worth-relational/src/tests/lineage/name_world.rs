@@ -7,11 +7,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use crate::facade::history::CommitId;
 use crate::facade::identity::{EntityId, KindId, LineageId, PartitionId, VersionId};
 use crate::facade::lineage::{
-    InstalledPersistentNameSchemeRegistry, LineageCommitPostureInput, LineageEventKind,
+    InstalledPersistentNameSchemeRegistry, LineageEventKind,
     LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget, LineageSplitChild,
     LineageSubject, PersistentNameBirthParts, PersistentNameBirthRequest,
     PersistentNameCommittedBatch, PersistentNameHolder, PersistentNameIdentity, PersistentNameKey,
 };
+use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::{
     AspectFieldPatch, EntityMutationIntent, EntitySpec, MutationIntent, RecordRef,
     ReplaceEntityIntent,

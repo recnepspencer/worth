@@ -41,6 +41,41 @@ impl<Schema> ApplicationSchemaDeclarationBuilder<Schema> {
         )
     }
 
+    /// Declares the managed Parent readable at a peer scope: any `Member` that
+    /// shares an `Owner` with the operation's own scope through `relation`.
+    /// A read at any other scope, or for another principal, stays refused as
+    /// `ForeignAssociation` before any provider call. The governing relation is
+    /// declared as this operation's decision read too: reaching the peer reads
+    /// it, so its edits invalidate the decision.
+    pub fn operation_shared_owner_managed_index_read<Binding, Operation, Input, Relation, Owner, Member>(
+        self,
+        operation: ApplicationOperationRef<Schema, Operation, Input>,
+        relation: ApplicationRelationRef<Schema, Relation, Owner, Member>,
+    ) -> Self
+    where
+        Schema: super::ApplicationSchema,
+        Binding: crate::application_query::ApplicationQueryBinding<Schema>,
+        Relation: OperationReads<Operation>,
+    {
+        let relation_read = ApplicationOperationDecisionReadTarget::Relation {
+            relation: relation.name().to_string(),
+            from: relation.from().to_string(),
+            to: relation.to().to_string(),
+        };
+        self.decision_read(operation.name(), relation_read).decision_read(
+            operation.name(),
+            ApplicationOperationDecisionReadTarget::SharedOwnerManagedIndex {
+                parent: crate::application_query::ApplicationQueryBindingReference::of::<
+                    Schema,
+                    Binding,
+                >(),
+                relation: relation.name().to_string(),
+                owner: relation.from().to_string(),
+                member: relation.to().to_string(),
+            },
+        )
+    }
+
     /// Optionally limits decision-read work. Omit this declaration for no operation work ceiling.
     /// Scope, authorization, source facts, cancellation and allocation admission still apply.
     pub fn operation_projection_work_budget<Operation, Input>(

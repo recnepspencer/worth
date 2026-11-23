@@ -233,14 +233,12 @@ fn lineage_graph_replace_commit_publishes_replace_decision_log_entry() {
 
 #[test]
 fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_corrupt_claims() {
-    use std::collections::BTreeMap;
-
     use crate::facade::identity::VersionId;
     use crate::facade::lineage::{
-        LineageCommitPostureInput, LineageMergeKeeper, LineageNameDenial, LineagePostureClaim,
-        LineagePostureKind, LineageRecordTarget, LineageSplitChild, LineageSubject,
-        PersistentNameHolder,
+        LineageMergeKeeper, LineageNameDenial, LineagePostureClaim, LineagePostureKind,
+        LineageRecordTarget, LineageSplitChild, LineageSubject,
     };
+    use crate::lineage::data::LineageCommitPostureInput;
     use crate::facade::transactions::RecordRef;
 
     use super::posture_fixtures::{
@@ -288,20 +286,44 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
         name_of(s2_lin),
     );
     assert_ne!(s1_name, s2_name);
-    let live_holders = BTreeMap::from([
-        (f1_name, PersistentNameHolder::Entity(f1)),
-        (f2_name, PersistentNameHolder::Entity(f2)),
-        (s1_name, PersistentNameHolder::Relation(s1)),
-        (s2_name, PersistentNameHolder::Relation(s2)),
-    ]);
-    let live_lineages = BTreeMap::from([
-        (PersistentNameHolder::Entity(f1), f1_lin),
-        (PersistentNameHolder::Entity(f2), f2_lin),
-        (PersistentNameHolder::Relation(s1), s1_lin),
-        (PersistentNameHolder::Relation(s2), s2_lin),
-    ]);
+
+    // Publish commit 1 into Relational's LineageSubsystem so commit 2 derives
+    // live holders and relation lineages directly from Relational authority.
+    let (c1_artifact, c1_nodes, c1_rels) = c1.into_parts();
+    runtime.lineage_authority().install_published_lineage(
+        crate::runtime::ValidatedLineageEventBatch::from_reserved(
+            c1_artifact.event_batch().events().to_vec(),
+        ),
+        crate::facade::history::CommitId(1),
+        c1_nodes,
+        c1_rels,
+    );
+    assert_eq!(runtime.relation_lineage(s1), Some(s1_lin));
+    assert_eq!(runtime.relation_lineage(s2), Some(s2_lin));
 
     let before = prep.lineage_identity.frontiers();
+    // Spoof/omission proof: empty caller live_holders cannot bypass DuplicateBirth.
+    let dup_e = super::posture_fixtures::push_entity(&mut staged, VersionId(2));
+    let spoof = authority
+        .ensure_lineage_for_commit_with_postures(
+            execution,
+            &mut staged,
+            &receipt_at(2, 2),
+            &[],
+            &[RecordRef::Entity(dup_e)],
+            &LineageCommitPostureInput {
+                scheme_registry: registry.clone(),
+                postures: vec![LineagePostureClaim::Create {
+                    target: LineageRecordTarget::Entity(dup_e),
+                    birth: super::posture_fixtures::face_birth("occ.rt.1", "authored", vec![], "f1", dup_e),
+                }],
+                ..Default::default()
+            },
+        )
+        .err()
+        .expect("omitted caller live_holders must not bypass DuplicateBirth");
+    assert!(matches!(spoof.lineage_name_denial_ref(), Some(LineageNameDenial::DuplicateBirth { .. })));
+    assert_eq!(prep.lineage_identity.frontiers(), before);
     let err = authority
         .ensure_lineage_for_commit_with_postures(
             execution,
@@ -311,8 +333,6 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
             &[],
             &LineageCommitPostureInput {
                 scheme_registry: registry.clone(),
-                live_holders: live_holders.clone(),
-                live_lineages: live_lineages.clone(),
                 postures: vec![LineagePostureClaim::Retire {
                     target: LineageRecordTarget::Entity(f1),
                     name: f1_name,
@@ -324,10 +344,7 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
         .expect("unretired Retire must refuse");
     assert!(matches!(
         err.lineage_name_denial_ref(),
-        Some(LineageNameDenial::LineagePostureMismatch {
-            posture: LineagePostureKind::Retire,
-            ..
-        })
+        Some(LineageNameDenial::LineagePostureMismatch { posture: LineagePostureKind::Retire, .. })
     ));
     assert_eq!(prep.lineage_identity.frontiers(), before);
 
@@ -336,21 +353,14 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
     let s1_a = push_relation(&mut staged, VersionId(2), f1, f1);
     let s1_b = push_relation(&mut staged, VersionId(2), f1, f1);
     let c2_changed = [
-        RecordRef::Entity(f2),
-        RecordRef::Relation(s1),
-        RecordRef::Relation(s1_a),
-        RecordRef::Relation(s1_b),
+        RecordRef::Entity(f2), RecordRef::Relation(s1),
+        RecordRef::Relation(s1_a), RecordRef::Relation(s1_b),
     ];
     let c2_input = LineageCommitPostureInput {
         scheme_registry: registry,
-        live_holders,
-        live_lineages,
         postures: vec![
             LineagePostureClaim::Merge {
-                parents: vec![
-                    (LineageRecordTarget::Entity(f1), f1_name),
-                    (LineageRecordTarget::Entity(f2), f2_name),
-                ],
+                parents: vec![(LineageRecordTarget::Entity(f1), f1_name), (LineageRecordTarget::Entity(f2), f2_name)],
                 target: LineageRecordTarget::Entity(f1),
                 keeper: LineageMergeKeeper::KeepParent(f1_name),
             },
@@ -358,28 +368,15 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
                 parent_target: LineageRecordTarget::Relation(s1),
                 parent_name: s1_name,
                 children: vec![
-                    LineageSplitChild {
-                        target: LineageRecordTarget::Relation(s1_a),
-                        birth: seam_birth("occ.rt.2", "seam_piece", vec![s1_name], "a", s1_a),
-                    },
-                    LineageSplitChild {
-                        target: LineageRecordTarget::Relation(s1_b),
-                        birth: seam_birth("occ.rt.2", "seam_piece", vec![s1_name], "b", s1_b),
-                    },
+                    LineageSplitChild { target: LineageRecordTarget::Relation(s1_a), birth: seam_birth("occ.rt.2", "seam_piece", vec![s1_name], "a", s1_a) },
+                    LineageSplitChild { target: LineageRecordTarget::Relation(s1_b), birth: seam_birth("occ.rt.2", "seam_piece", vec![s1_name], "b", s1_b) },
                 ],
             },
         ],
         ..Default::default()
     };
     let c2 = authority
-        .ensure_lineage_for_commit_with_postures(
-            execution,
-            &mut staged,
-            &receipt_at(2, 2),
-            &[],
-            &c2_changed,
-            &c2_input,
-        )
+        .ensure_lineage_for_commit_with_postures(execution, &mut staged, &receipt_at(2, 2), &[], &c2_changed, &c2_input)
         .expect("runtime Merge + relation Split succeeds");
     let c2_ev = c2.artifact().event_batch().events();
     let has = |k, s| c2_ev.iter().any(|e| e.kind() == k && e.subject() == s);

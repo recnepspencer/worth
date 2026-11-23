@@ -5,7 +5,10 @@ impl WorthQuerySealedOperationContractCompilation {
     pub(in crate::application_operation) fn into_parts(
         self,
     ) -> (
-        Vec<worth_query_declaration::facade::application_query::ApplicationQueryBindingReference>,
+        (
+            Vec<worth_query_declaration::facade::application_query::ApplicationQueryBindingReference>,
+            Vec<crate::application_operation::WorthQuerySharedOwnerManagedIndexRead>,
+        ),
         Option<ApplicationOperationBodyProgram>,
         WorthQueryInstalledApplicationOperationAuthorization,
         Vec<WorthQueryInstalledAbilityRequirement>,
@@ -25,7 +28,10 @@ impl WorthQuerySealedOperationContractCompilation {
         bool,
     ){
         (
-            self.managed_index_reads,
+            (
+                self.managed_index_reads,
+                self.shared_owner_managed_index_reads,
+            ),
             self.body,
             self.authorization,
             self.ability_requirements,

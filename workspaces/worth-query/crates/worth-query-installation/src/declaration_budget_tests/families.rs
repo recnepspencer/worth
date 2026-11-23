@@ -63,4 +63,5 @@ declaration_families! {
     ProjectedMemberDomain => "projected-member-domain",
     ScalarAspectField => "scalar-aspect-field",
     ApplicationNameScheme => "application-name-scheme",
+    ApplicationGroupNameScheme => "application-group-name-scheme",
 }

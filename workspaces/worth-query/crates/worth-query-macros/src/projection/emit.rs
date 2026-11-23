@@ -1,6 +1,6 @@
 //! Slot markers, selectors, the result shape and the projection, written as
 //! the public items a hand-written projection declares.
-use super::grammar::{ProjectionDeclaration, Slot, SlotIdentity};
+use super::grammar::{Cardinality, ProjectionDeclaration, Slot, SlotIdentity, SlotKind, Traversal};
 use crate::case::snake_case;
 use crate::facade_paths::{declaration, fragment, host};
 use proc_macro2::TokenStream;
@@ -26,12 +26,15 @@ pub(super) fn projection(input: &DeriveInput, projection: &ProjectionDeclaration
         };
         quote!(#decl::worth_query_portable_type!(#module::#marker => #identity);)
     });
-    let selectors = projection
-        .slots
-        .iter()
-        .map(|slot| selector(input, projection, &module, slot));
-    let shape = result_shape(input, projection);
-    let project = project(input, projection);
+    let selectors = projection.slots.iter().map(|slot| match &slot.kind {
+        SlotKind::Field { .. } => field_selector(input, projection, &module, slot),
+        SlotKind::Relation(_) => relation_selector(input, projection, &module, slot),
+    });
+    let (builder, shape) = (
+        result_shape_builder(input, projection),
+        result_shape(input, projection),
+    );
+    let (project_row, project) = (project_row(input, projection), project(input, projection));
     let doc = format!("Result slot markers of `{row}`, one per projected field.");
     quote! {
         #[doc = #doc]
@@ -41,29 +44,32 @@ pub(super) fn projection(input: &DeriveInput, projection: &ProjectionDeclaration
         #(#identities)*
         impl #row {
             #(#selectors)*
+            #builder
             #shape
+            #project_row
         }
         #project
     }
 }
 
-/// `fn field<Q>()`: the query-bound selector of one slot.
-fn selector(
+/// `fn selector<Q>()`: the query-bound selector of one field slot.
+fn field_selector(
     input: &DeriveInput,
     projection: &ProjectionDeclaration,
     module: &syn::Ident,
     slot: &Slot,
 ) -> TokenStream {
     let (query, vis, schema) = (declaration(), &input.vis, &projection.schema);
-    let Slot {
-        member,
-        output,
-        marker,
+    let SlotKind::Field {
         selection,
         column,
-        ..
-    } = slot;
-    let reference = if slot.optional {
+        optional,
+    } = &slot.kind
+    else {
+        unreachable!("field selectors select fields")
+    };
+    let (selector, output, marker) = (&slot.selector, &slot.output, &slot.marker);
+    let reference = if *optional {
         quote!(#query::application_query::ApplicationQueryOptionalResultFieldRef)
     } else {
         quote!(#query::application_query::ApplicationQueryResultFieldRef)
@@ -71,8 +77,55 @@ fn selector(
     let doc = format!("The `{}` slot of query `Q`.", output.value());
     quote_spanned! {selection.span()=>
         #[doc = #doc]
-        #vis fn #member<Q>() -> #reference<Q, #module::#marker, #schema, #selection> {
+        #vis fn #selector<Q>() -> #reference<Q, #module::#marker, #schema, #selection> {
             #reference::new(#output, <#selection>::at(#column))
+        }
+    }
+}
+
+/// `fn selector<Q>()`: the query-bound selector of one traversed relation.
+/// A forward traversal leaves the root along a relation it declares; a
+/// reverse one arrives at the root from the relation's declaring entity.
+fn relation_selector(
+    input: &DeriveInput,
+    projection: &ProjectionDeclaration,
+    module: &syn::Ident,
+    slot: &Slot,
+) -> TokenStream {
+    let SlotKind::Relation(traversal) = &slot.kind else {
+        unreachable!("relation selectors select relations")
+    };
+    let (decl, frag, vis) = (declaration(), fragment(), &input.vis);
+    let (schema, relation) = (&projection.schema, &traversal.relation);
+    let (selector, output, marker) = (&slot.selector, &slot.output, &slot.marker);
+    let to = quote!(<#relation as #frag::Relation>::To);
+    let (from, direction, toward) = match &traversal.reverse_from {
+        None => (&projection.root, quote!(ForwardResultTraversal), "forward"),
+        Some(from) => (from, quote!(ReverseResultTraversal), "reverse"),
+    };
+    let (count, many) = match traversal.cardinality {
+        Cardinality::One => (quote!(ExactlyOneResult), "one"),
+        Cardinality::Optional => (quote!(OptionalOneResult), "optional"),
+        Cardinality::Many => (quote!(ManyResults), "many"),
+    };
+    let constructor = format_ident!("{toward}_{many}");
+    let query = quote!(#decl::application_query);
+    let reference = quote!(#query::ApplicationQueryResultRelationRef);
+    let doc = format!("The `{}` relation slot of query `Q`.", output.value());
+    quote_spanned! {relation.span()=>
+        #[doc = #doc]
+        #vis fn #selector<Q>() -> #reference<
+            Q, #module::#marker, #schema, #relation, #from, #to, #query::#direction, #query::#count,
+        > {
+            #reference::#constructor(
+                #output,
+                #decl::application_schema::ApplicationRelationRef::from_schema_identifiers(
+                    <#relation as #frag::Relation>::NAME,
+                    <#from as #frag::Entity>::NAME,
+                    <#to as #frag::Entity>::NAME,
+                    #frag::relation_integrity::<#relation>(),
+                ),
+            )
         }
     }
 }
@@ -87,19 +140,53 @@ fn query_bounds(projection: &ProjectionDeclaration) -> TokenStream {
     }
 }
 
-/// `fn result_shape<Q>()`: every slot, rooted at the declared entity.
-fn result_shape(input: &DeriveInput, projection: &ProjectionDeclaration) -> TokenStream {
+/// `fn result_shape_builder<Q, B>()`: every slot, rooted at the declared
+/// entity and identified by `B`; a relation slot nests its child's builder.
+fn result_shape_builder(input: &DeriveInput, projection: &ProjectionDeclaration) -> TokenStream {
     let (decl, frag, vis) = (declaration(), fragment(), &input.vis);
     let (schema, root) = (&projection.schema, &projection.root);
-    let bounds = query_bounds(projection);
-    let fields = projection.slots.iter().map(|slot| {
-        let member = &slot.member;
-        if slot.optional {
-            quote!(.optional_field(Self::#member::<Q>()))
-        } else {
-            quote!(.field(Self::#member::<Q>()))
+    let binding = quote!(#decl::application_schema::ApplicationStructuredValueBinding);
+    let members = projection.slots.iter().map(|slot| {
+        let selector = &slot.selector;
+        match &slot.kind {
+            SlotKind::Field { optional: true, .. } => {
+                quote!(.optional_field(Self::#selector::<Q>()))
+            }
+            SlotKind::Field { .. } => quote!(.field(Self::#selector::<Q>())),
+            SlotKind::Relation(Traversal { child, nested, .. }) => quote_spanned! {child.span()=>
+                .relation(
+                    Self::#selector::<Q>(),
+                    <#child>::result_shape_builder::<Q, #nested>(),
+                )
+            },
         }
     });
+    quote! {
+        /// The unbuilt result shape of query `Q` identified by binding `B`,
+        /// which a parent projection nests under one of its relation slots.
+        #vis fn result_shape_builder<Q, B>() -> #decl::application_query::ApplicationQueryResultShapeBuilder<
+            #schema, Q, #root, <B as #binding>::Value, B,
+        >
+        where
+            Q: #decl::application_query::ApplicationQueryMarkerIdentity<#schema>,
+            B: #binding,
+        {
+            #decl::application_query::ApplicationQueryResultShapeBuilder::new(
+                #decl::application_schema::ApplicationEntityRef::from_schema_identifier(
+                    <#root as #frag::Entity>::NAME,
+                ),
+            )
+            #(#members)*
+        }
+    }
+}
+
+/// `fn result_shape<Q>()`: every slot, rooted at the declared root entity.
+fn result_shape(input: &DeriveInput, projection: &ProjectionDeclaration) -> TokenStream {
+    let (decl, vis) = (declaration(), &input.vis);
+    let (schema, root) = (&projection.schema, &projection.root);
+    let bounds = query_bounds(projection);
+    let marker = quote!(#decl::application_query::ApplicationQueryMarkerIdentity<#schema>);
     quote! {
         /// The result shape of query `Q`, rooted at the declared root entity.
         #vis fn result_shape<Q>() -> #decl::application_query::TypedApplicationQueryResultShape<
@@ -107,36 +194,67 @@ fn result_shape(input: &DeriveInput, projection: &ProjectionDeclaration) -> Toke
             Q,
             #root,
             Self,
-            <Q as #decl::application_query::ApplicationQueryMarkerIdentity<#schema>>::ResultBinding,
+            <Q as #marker>::ResultBinding,
         >
         where
             #bounds
         {
-            #decl::application_query::ApplicationQueryResultShapeBuilder::new(
-                #decl::application_schema::ApplicationEntityRef::from_schema_identifier(
-                    <#root as #frag::Entity>::NAME,
-                ),
-            )
-            #(#fields)*
-            .build()
+            Self::result_shape_builder::<Q, <Q as #marker>::ResultBinding>().build()
         }
     }
 }
 
-/// The projection reads each slot into its field; a field whose type differs
-/// from its selection's value fails to compile at that field's type.
-fn project(input: &DeriveInput, projection: &ProjectionDeclaration) -> TokenStream {
-    let (graph, row, schema) = (host(), &input.ident, &projection.schema);
-    let bounds = query_bounds(projection);
+/// `fn project_row<Q>()` reads each slot into its field; a field whose type
+/// differs from its selection's value fails to compile at that field's type.
+fn project_row(input: &DeriveInput, projection: &ProjectionDeclaration) -> TokenStream {
+    let (decl, graph, vis, schema) = (declaration(), host(), &input.vis, &projection.schema);
+    let denial = quote!(#graph::primary_graph::WorthQueryApplicationProjectionDenial);
     let reads = projection.slots.iter().map(|slot| {
-        let member = &slot.member;
-        let read = if slot.optional {
-            quote_spanned!(slot.value.span()=> row.optional_field(Self::#member::<Q>())?)
-        } else {
-            quote_spanned!(slot.value.span()=> row.field(Self::#member::<Q>())?)
+        let (member, selector, span) = (&slot.member, &slot.selector, slot.value.span());
+        let read = match &slot.kind {
+            SlotKind::Field { optional: true, .. } => {
+                quote_spanned!(span=> row.optional_field(Self::#selector::<Q>())?)
+            }
+            SlotKind::Field { .. } => quote_spanned!(span=> row.field(Self::#selector::<Q>())?),
+            SlotKind::Relation(Traversal {
+                child, cardinality, ..
+            }) => {
+                let child = quote_spanned!(span=> <#child>::project_row::<Q>);
+                match cardinality {
+                    Cardinality::One => quote!(#child(&row.one(Self::#selector::<Q>())?)?),
+                    Cardinality::Optional => quote! {
+                        row.optional(Self::#selector::<Q>())?
+                            .map(|related| #child(&related))
+                            .transpose()?
+                    },
+                    Cardinality::Many => quote! {
+                        row.many(Self::#selector::<Q>())?
+                            .iter()
+                            .map(|related| #child(&related))
+                            .collect::<::core::result::Result<_, #denial>>()?
+                    },
+                }
+            }
         };
         quote!(#member: #read)
     });
+    quote! {
+        /// Reads one row of query `Q`, at the root or under a parent's relation.
+        #vis fn project_row<Q>(
+            row: &#graph::primary_graph::WorthQueryApplicationProjectionRow<'_, #schema, Q>,
+        ) -> ::core::result::Result<Self, #denial>
+        where
+            Q: #decl::application_query::ApplicationQueryMarkerIdentity<#schema>,
+        {
+            ::core::result::Result::Ok(Self { #(#reads,)* })
+        }
+    }
+}
+
+/// The projection of every query whose result binding carries this row.
+fn project(input: &DeriveInput, projection: &ProjectionDeclaration) -> TokenStream {
+    let (graph, row, schema) = (host(), &input.ident, &projection.schema);
+    let bounds = query_bounds(projection);
     quote! {
         impl<Q> #graph::primary_graph::WorthQueryApplicationProjection<#schema, Q> for #row
         where
@@ -148,7 +266,7 @@ fn project(input: &DeriveInput, projection: &ProjectionDeclaration) -> TokenStre
                 Self,
                 #graph::primary_graph::WorthQueryApplicationProjectionDenial,
             > {
-                ::core::result::Result::Ok(Self { #(#reads,)* })
+                Self::project_row(row)
             }
         }
     }

@@ -1,9 +1,12 @@
 //! A declared generated Item and both memberships come from one genuine producer.
-use super::super::{bounds, schema::*};
+use super::super::{bounds, protected::access::grants::GrantResource, query, schema::*};
 use super::source;
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
+pub mod computation;
+mod computing_handler;
 mod handler;
+pub use computing_handler::ComputingHandler;
 pub use handler::Handler;
 
 #[derive(Clone, Debug, serde::Serialize)]
@@ -24,7 +27,7 @@ worth_query_structured_value_binding!(pub InputBinding for Generate { identity: 
 worth_query_structured_value_binding!(pub ResultBinding for Generated { identity: "maintained-generated.operation-result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-generated.operation-denial.v1" });
 worth_query_operation!(pub GenerateItem for Catalog, input InputBinding);
-worth_query_operation_reads!(GenerateItem => [Directory, Item]);
+worth_query_operation_reads!(GenerateItem => [Directory, Item, GrantResource]);
 worth_query_operation_creates!(GenerateItem => [Item]);
 worth_query_operation_links!(GenerateItem => [Contains]);
 
@@ -108,6 +111,16 @@ pub(super) fn declare(
         .operation_read_entity(op, Item::reference())
         .operation_read_field(op, DirectoryIdentity::at("DirectoryIdentity"))
         .operation_read_field(op, DirectoryNote::at("DirectoryNote"))
+        .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
+        .operation_read_field(op, ItemName::at("ItemName"))
+        .operation_read_field(op, ItemEnabled::at("ItemEnabled"))
+        // compiled-example: begin
+        .operation_managed_index_read::<query::PrefixBinding, _, _>(op)
+        .operation_shared_owner_managed_index_read::<query::PrefixBinding, _, _, _, _, _>(
+            op,
+            GrantResource::reference(),
+        )
+        // compiled-example: end
         .operation_create(op, Item::reference())
         .operation_link(op, Contains::reference())
         .operation_write(op, ItemIdentity::at("ItemIdentity"))

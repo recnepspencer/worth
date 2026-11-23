@@ -21,6 +21,19 @@ pub(super) fn validate_decision_read_target_identifiers(
             ])?;
             validate_field_identifier(&p.scope_field)
         }
+        ApplicationOperationDecisionReadTarget::SharedOwnerManagedIndex {
+            parent,
+            relation,
+            owner,
+            member,
+        } => {
+            validate_decision_read_target_identifiers(
+                &ApplicationOperationDecisionReadTarget::ManagedIndex {
+                    parent: parent.clone(),
+                },
+            )?;
+            validate_identifiers([relation, owner, member])
+        }
         ApplicationOperationDecisionReadTarget::Entity { entity } => {
             validate_simple_identifier(entity)
         }

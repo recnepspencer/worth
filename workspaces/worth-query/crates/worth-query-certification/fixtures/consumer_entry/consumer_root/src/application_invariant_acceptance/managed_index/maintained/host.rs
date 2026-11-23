@@ -194,6 +194,7 @@ fn try_install_root_with_sources(
                 .field(DirectoryNote::at("DirectoryNote"), String::new()),
             )?;
             protected::populate(graph)?;
+            super::peer_scope::seed(graph)?;
             Ok(())
         },
         super::super::super::resources::RuntimeTime(clock),

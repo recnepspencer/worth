@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::history::data::BranchId;
+use crate::identity::data::{LineageId, RelationId};
 use crate::lineage::data::LineageEventRecord;
 
 use super::digest_basis::{
@@ -19,6 +20,8 @@ pub(crate) struct PublishedLineageArtifact {
     lineage_decision_log: Vec<LineageDecisionRecord>,
     digest_basis: LineageDigestBasis,
     counters: LineageArtifactCounters,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    relation_lineages: Vec<(RelationId, LineageId)>,
 }
 
 impl PublishedLineageArtifact {
@@ -37,7 +40,20 @@ impl PublishedLineageArtifact {
             lineage_decision_log,
             digest_basis,
             counters,
+            relation_lineages: Vec::new(),
         }
+    }
+
+    pub(super) fn with_relation_lineages(
+        mut self,
+        relation_lineages: Vec<(RelationId, LineageId)>,
+    ) -> Self {
+        self.relation_lineages = relation_lineages;
+        self
+    }
+
+    pub(crate) fn relation_lineages(&self) -> &[(RelationId, LineageId)] {
+        &self.relation_lineages
     }
 
     pub(crate) fn branch_id(&self) -> &BranchId {

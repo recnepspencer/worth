@@ -1,4 +1,5 @@
 mod artifacts;
+mod event_serde;
 mod events;
 mod graph;
 mod invariants;
@@ -24,7 +25,8 @@ pub use graph::{
 pub use invariants::LineageInvariant;
 pub use metrics::LineageFinalizationCounters;
 pub use name_resolution::{
-    PersistentNameKey, PersistentNameResolution, PersistentNameResolutionDenial,
+    PersistentNameKey, PersistentNameOfRecord, PersistentNameResolution,
+    PersistentNameResolutionDenial, PersistentNameResolutionFootprint,
     PersistentNameResolutionMetrics, PersistentNameResolutionOutcome, PersistentNameSelection,
     PersistentNameTarget,
 };
@@ -35,10 +37,14 @@ pub use naming::{
     PersistentNameSubjectKind,
 };
 pub use naming_denial::{DiscriminatorBasisDenialReason, LineageNameDenial, LineagePostureKind};
+pub(crate) use postures::LineageBasisView;
 pub use postures::{
-    LineageCommitPostureInput, LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget,
-    LineageSplitChild,
+    CommitNamingPlan, LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget,
+    LineageSplitChild, PendingBirthTarget, PendingCommitBirth, PendingMergeClaim,
+    PendingMergeKeeper, PendingMergeTarget, PendingSplitChild, PendingSplitClaim,
 };
+#[cfg(test)]
+pub use postures::LineageCommitPostureInput;
 pub use resolution::{
     HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,
     HistoricalLineageResolutionMetrics, HistoricalResolutionBoundednessBasis,

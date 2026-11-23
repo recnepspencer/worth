@@ -13,8 +13,16 @@ impl WorldCheckpointImage {
         if let Some(owner) = self.owner {
             insert(&mut branches, owner.position, owner.digest, request)?;
         }
-        for branch in self.branches.keys() {
+        for branch in self.branches.values() {
             insert(&mut branches, branch.position, branch.digest, request)?;
+        }
+        for retired in self.retired_branches.values() {
+            insert(
+                &mut branches,
+                retired.position(),
+                *retired.digest(),
+                request,
+            )?;
         }
         validate(&branches, &coverage.branches, request)?;
         let mut custody = ExecutionOrderedMap::default();
@@ -37,6 +45,14 @@ impl WorldCheckpointImage {
         }
         for planned in self.planned_legs.values() {
             insert(&mut custody, planned.position(), *planned.digest(), request)?;
+        }
+        for retired in self.history_retirements.values() {
+            insert(
+                &mut custody,
+                retired.position(),
+                *retired.digest(),
+                request,
+            )?;
         }
         validate(&custody, &coverage.custody, request)?;
         if self.occurrences.len() as u64 != coverage.occurrences.position {

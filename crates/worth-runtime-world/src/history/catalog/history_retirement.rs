@@ -17,6 +17,8 @@ use crate::identity::CompositeCommitIdentity;
 use super::support::{effective_parent, lock_state, remove_installed, validate_owner};
 use super::{lock_index, CompositeHistoryCatalog, CompositeHistoryCatalogDenial};
 use super::{CompositeHistoryCatalogEntry, CompositeHistoryCatalogState};
+mod durable;
+pub(crate) use durable::PendingDurableHistoryRetirement;
 mod interior;
 use interior::EligibleInterior;
 

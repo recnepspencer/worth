@@ -1,24 +1,31 @@
 //! Cross-crate agreement court between `worth-query-declaration`'s
-//! `ApplicationNameDiscriminatorEncoder` and `worth-relational`'s
-//! `PersistentNameMintingAuthority` canonical discriminator scanner.
+//! `ApplicationNameDiscriminatorEncoder` and `worth-relational`'s commit-time
+//! canonical discriminator scanner, using real Relational-admitted
+//! `WorthQueryName` handles.
 
-use std::collections::{BTreeMap, BTreeSet};
-
+use worth_execution::ExecutionRequest;
 use worth_query_declaration::facade::application_naming::{
     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder,
     ApplicationNameDiscriminatorValue, NestedDiscriminator, WorthQueryName,
 };
-use worth_query_declaration::persistent_name_admission_authority::admit_minted_digest;
-use worth_relational::facade::identity::{EntityId, PartitionId};
+use worth_query_execution_naming::facade::{
+    ExecutionNameBirthPlanBuilder, ExecutionNamingCommitAuthority, ExecutionPendingEntityBirth,
+};
+use worth_relational::facade::identity::{KindId, PartitionId};
 use worth_relational::facade::lineage::{
-    DiscriminatorBasisDenialReason, InstalledPersistentNameScheme,
-    InstalledPersistentNameSchemeRegistry, LineageNameDenial, PersistentNameBirthRequest,
-    PersistentNameDiscriminatorReference, PersistentNameHolder, PersistentNameIdentity,
-    PersistentNameMintingAuthority, PersistentNameReferenceBasis, PersistentNameSubjectKind,
+    CommitNamingPlan, DiscriminatorBasisDenialReason, LineageNameDenial, PendingBirthTarget,
+    PendingCommitBirth, PersistentNameDiscriminatorReference, PersistentNameReferenceBasis,
+};
+use worth_relational::facade::symbols::ClientKey;
+use worth_relational::facade::transactions::{
+    AspectFieldPatch, CreateIntent, CreatedEntityRef, EntitySpec, MutationIntent,
 };
 
-struct Face;
-struct Edge;
+use crate::naming_execution_fixture::{
+    begin_staged_tx, create_face_intent, execution_lease_for_workers, face_ref, fresh_cad_runtime,
+    lowered_cad_catalog, release_commit_snapshot, CadNamingSchema, Edge, Face, EDGE_KIND_ID,
+    EDGE_SCHEME_ID, FACE_SCHEME_ID,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 enum InnerSplit {
@@ -38,63 +45,87 @@ worth_query_declaration::worth_query_name_discriminator! {
     }
 }
 
-fn face_registry() -> InstalledPersistentNameSchemeRegistry {
-    let mut registry = InstalledPersistentNameSchemeRegistry::new();
-    registry
-        .register(InstalledPersistentNameScheme::from_ordered_roles(
-            "worth.cad.face.v1",
-            PersistentNameSubjectKind::Entity,
-            ["authored", "cut_piece"],
-            true,
-            true,
-        ))
-        .expect("register face scheme");
-    registry
+fn edge_ref(key: &str) -> CreatedEntityRef {
+    CreatedEntityRef {
+        partition_id: PartitionId::main(),
+        kind_id: EDGE_KIND_ID,
+        client_key: ClientKey::raw(key),
+    }
 }
 
-fn entity_holder(slot: u64) -> PersistentNameHolder {
-    PersistentNameHolder::Entity(EntityId::new(PartitionId::main(), slot, 1))
-}
-
-fn mint_basis_identity(
-    registry: &InstalledPersistentNameSchemeRegistry,
-    occ: &str,
-    slot: u64,
-) -> (PersistentNameIdentity, PersistentNameHolder) {
-    let holder = entity_holder(slot);
-    let records = PersistentNameMintingAuthority::mint_commit_births(
-        registry,
-        &BTreeMap::new(),
-        &BTreeSet::new(),
-        &[PersistentNameBirthRequest {
-            scheme_id: "worth.cad.face.v1".to_owned(),
-            occurrence_key: occ.to_owned(),
-            role_path: "authored".to_owned(),
-            parent_identities: Vec::new(),
-            referenced_names: Vec::new(),
-            canonical_discriminator: Vec::new(),
-            holder: holder.clone(),
-        }],
-    )
-    .expect("basis birth succeeds");
-    (records[0].identity(), holder)
+fn create_edge_intent(key: &str) -> MutationIntent {
+    MutationIntent::Create(CreateIntent::Entity(EntitySpec {
+        partition_id: PartitionId::main(),
+        kind_id: KindId(EDGE_KIND_ID.0),
+        client_key: ClientKey::raw(key),
+        fields: AspectFieldPatch::default(),
+    }))
 }
 
 #[test]
 fn naming_encoder_and_relational_scanner_agree_across_nested_pairs_options_and_tampering() {
-    let registry = face_registry();
-    let (cutter_id, cutter_holder) = mint_basis_identity(&registry, "occ.cutter", 1);
-    let (edge_id, edge_holder) = mint_basis_identity(&registry, "occ.edge", 2);
-    let (outer_ref_id, outer_ref_holder) = mint_basis_identity(&registry, "occ.outer", 3);
+    let catalog = lowered_cad_catalog();
+    let runtime = fresh_cad_runtime();
+    let lease = execution_lease_for_workers(2);
+    let execution = ExecutionRequest::leased(&lease);
 
-    let mut live_holders = BTreeMap::new();
-    live_holders.insert(cutter_id, cutter_holder);
-    live_holders.insert(edge_id, edge_holder);
-    live_holders.insert(outer_ref_id, outer_ref_holder);
-
-    let cutter_name: WorthQueryName<Face> = admit_minted_digest(*cutter_id.as_bytes());
-    let edge_name: WorthQueryName<Edge> = admit_minted_digest(*edge_id.as_bytes());
-    let outer_name: WorthQueryName<Face> = admit_minted_digest(*outer_ref_id.as_bytes());
+    // Seed real committed basis faces & edge so all WorthQueryName handles are genuinely admitted.
+    let cutter_ref = face_ref("cutter");
+    let edge_r = edge_ref("edge");
+    let outer_ref = face_ref("outer");
+    let tx_seed = begin_staged_tx(
+        &runtime,
+        "seed",
+        vec![
+            create_face_intent("cutter"),
+            create_edge_intent("edge"),
+            create_face_intent("outer"),
+        ],
+    );
+    let mut b_seed = ExecutionNameBirthPlanBuilder::new(&catalog, std::iter::empty());
+    b_seed
+        .add_entity_birth(ExecutionPendingEntityBirth::new(
+            cutter_ref.clone(),
+            FACE_SCHEME_ID,
+            "occ.cutter",
+            "authored",
+        ))
+        .unwrap()
+        .add_entity_birth(ExecutionPendingEntityBirth::new(
+            edge_r.clone(),
+            EDGE_SCHEME_ID,
+            "occ.edge",
+            "authored",
+        ))
+        .unwrap()
+        .add_entity_birth(ExecutionPendingEntityBirth::new(
+            outer_ref.clone(),
+            FACE_SCHEME_ID,
+            "occ.outer",
+            "authored",
+        ))
+        .unwrap();
+    let seeded = ExecutionNamingCommitAuthority::commit_with_naming_plan(
+        &runtime,
+        &execution,
+        tx_seed,
+        b_seed.build(),
+    )
+    .expect("basis seed succeeds");
+    let (seed_res, seed_names) = seeded.into_parts();
+    let (cutter_e, cutter_name) = seed_names
+        .created_entity_name::<CadNamingSchema, Face>(&seed_res, &cutter_ref)
+        .unwrap();
+    let (edge_e, edge_name) = seed_names
+        .created_entity_name::<CadNamingSchema, Edge>(&seed_res, &edge_r)
+        .unwrap();
+    let (outer_e, outer_name) = seed_names
+        .created_entity_name::<CadNamingSchema, Face>(&seed_res, &outer_ref)
+        .unwrap();
+    let cutter_id = seed_names.entity_relational_identity(cutter_e).unwrap();
+    let edge_id = seed_names.entity_relational_identity(edge_e).unwrap();
+    let outer_ref_id = seed_names.entity_relational_identity(outer_e).unwrap();
+    release_commit_snapshot(&runtime, &seed_res);
 
     let inner = InnerSplit::ByCutter {
         cutter: cutter_name,
@@ -130,29 +161,33 @@ fn naming_encoder_and_relational_scanner_agree_across_nested_pairs_options_and_t
             })
             .collect();
 
-    // 1. Exact agreement: real encoder output + matching declared references mints cleanly.
-    let minted = PersistentNameMintingAuthority::mint_commit_births(
-        &registry,
-        &live_holders,
-        &BTreeSet::new(),
-        &[PersistentNameBirthRequest {
-            scheme_id: "worth.cad.face.v1".to_owned(),
+    // 1. Exact agreement: real encoder output + matching declared references commits cleanly.
+    let ok_ref = face_ref("nested-ok");
+    let mut tx_ok = begin_staged_tx(&runtime, "nested-ok", vec![create_face_intent("nested-ok")]);
+    tx_ok.attach_naming_plan(CommitNamingPlan {
+        pending_births: vec![PendingCommitBirth {
+            target: PendingBirthTarget::CreatedEntity(ok_ref.clone()),
+            scheme_id: FACE_SCHEME_ID.to_owned(),
             occurrence_key: "occ.split.1".to_owned(),
             role_path: "cut_piece".to_owned(),
             parent_identities: vec![cutter_id],
             referenced_names: declared_refs.clone(),
             canonical_discriminator: encoded_bytes.clone(),
-            holder: entity_holder(10),
         }],
-    )
-    .expect("real encoder output with declared references must mint cleanly");
-    assert_eq!(minted.len(), 1);
+        ..Default::default()
+    });
+    let ok_res = runtime
+        .commit_branch_transaction(&execution, tx_ok)
+        .expect("real encoder output with declared references must commit cleanly");
+    let ok_births = ok_res.committed_name_births();
+    assert_eq!(ok_births.len(), 1);
     assert_eq!(
-        minted[0].parts().canonical_discriminator(),
+        ok_births[0].1.parts().canonical_discriminator(),
         encoded_bytes.as_slice()
     );
+    release_commit_snapshot(&runtime, &ok_res);
 
-    // 2. Omitting ANY embedded reference (including inside NestedDiscriminator) refuses with exact digest.
+    // 2. Omitting ANY embedded reference refuses with exact digest.
     for (omit_idx, omitted_id) in [cutter_id, edge_id, outer_ref_id].into_iter().enumerate() {
         let partial: Vec<_> = declared_refs
             .iter()
@@ -160,30 +195,32 @@ fn naming_encoder_and_relational_scanner_agree_across_nested_pairs_options_and_t
             .filter(|&(idx, _)| idx != omit_idx)
             .map(|(_, entry)| entry.clone())
             .collect();
-        let denial = PersistentNameMintingAuthority::mint_commit_births(
-            &registry,
-            &live_holders,
-            &BTreeSet::new(),
-            &[PersistentNameBirthRequest {
-                scheme_id: "worth.cad.face.v1".to_owned(),
+        let key = format!("omit-{omit_idx}");
+        let mut tx = begin_staged_tx(&runtime, &key, vec![create_face_intent(&key)]);
+        tx.attach_naming_plan(CommitNamingPlan {
+            pending_births: vec![PendingCommitBirth {
+                target: PendingBirthTarget::CreatedEntity(face_ref(&key)),
+                scheme_id: FACE_SCHEME_ID.to_owned(),
                 occurrence_key: format!("occ.omit.{omit_idx}"),
                 role_path: "cut_piece".to_owned(),
                 parent_identities: vec![cutter_id],
                 referenced_names: partial,
                 canonical_discriminator: encoded_bytes.clone(),
-                holder: entity_holder(20 + omit_idx as u64),
             }],
-        )
-        .expect_err("omitting any embedded name reference must refuse");
+            ..Default::default()
+        });
+        let denial = runtime
+            .commit_branch_transaction(&execution, tx)
+            .expect_err("omitting any embedded name reference must refuse");
         assert_eq!(
-            denial,
-            LineageNameDenial::InvalidDiscriminatorBasis {
-                scheme_id: "worth.cad.face.v1".to_owned(),
+            denial.lineage_name_denial_ref(),
+            Some(&LineageNameDenial::InvalidDiscriminatorBasis {
+                scheme_id: FACE_SCHEME_ID.to_owned(),
                 role_path: "cut_piece".to_owned(),
                 reason: DiscriminatorBasisDenialReason::UndeclaredEncodedNameReference {
                     raw_digest: *omitted_id.as_bytes(),
                 },
-            }
+            })
         );
     }
 
@@ -194,10 +231,8 @@ fn naming_encoder_and_relational_scanner_agree_across_nested_pairs_options_and_t
         .position(|w| w == b".v1\0")
         .expect("v1 header present");
     v2_swapped[v1_pos + 2] = b'2';
-
     let mut trailing_byte = encoded_bytes.clone();
     trailing_byte.push(0x00);
-
     let truncated = encoded_bytes[..encoded_bytes.len() - 1].to_vec();
 
     for (label, tampered) in [
@@ -205,32 +240,34 @@ fn naming_encoder_and_relational_scanner_agree_across_nested_pairs_options_and_t
         ("trailing", trailing_byte),
         ("truncated", truncated),
     ] {
-        let denial = PersistentNameMintingAuthority::mint_commit_births(
-            &registry,
-            &live_holders,
-            &BTreeSet::new(),
-            &[PersistentNameBirthRequest {
-                scheme_id: "worth.cad.face.v1".to_owned(),
+        let key = format!("tamper-{label}");
+        let mut tx = begin_staged_tx(&runtime, &key, vec![create_face_intent(&key)]);
+        tx.attach_naming_plan(CommitNamingPlan {
+            pending_births: vec![PendingCommitBirth {
+                target: PendingBirthTarget::CreatedEntity(face_ref(&key)),
+                scheme_id: FACE_SCHEME_ID.to_owned(),
                 occurrence_key: format!("occ.tamper.{label}"),
                 role_path: "cut_piece".to_owned(),
                 parent_identities: vec![cutter_id],
                 referenced_names: Vec::new(),
                 canonical_discriminator: tampered,
-                holder: entity_holder(30),
             }],
-        )
-        .expect_err("tampered discriminator must refuse");
+            ..Default::default()
+        });
+        let denial = runtime
+            .commit_branch_transaction(&execution, tx)
+            .expect_err("tampered discriminator must refuse");
         assert_eq!(
-            denial,
-            LineageNameDenial::InvalidDiscriminatorBasis {
-                scheme_id: "worth.cad.face.v1".to_owned(),
+            denial.lineage_name_denial_ref(),
+            Some(&LineageNameDenial::InvalidDiscriminatorBasis {
+                scheme_id: FACE_SCHEME_ID.to_owned(),
                 role_path: "cut_piece".to_owned(),
                 reason: DiscriminatorBasisDenialReason::MalformedDiscriminator,
-            }
+            })
         );
     }
 
-    // 4. Deep Option nesting (Option^70<u32>) produced by the real encoder parses cleanly.
+    // 4. Deep Option nesting (Option^70<u32>) produced by the real encoder commits cleanly.
     type Opt10<T> =
         Option<Option<Option<Option<Option<Option<Option<Option<Option<Option<T>>>>>>>>>>;
     type Opt70<T> = Opt10<Opt10<Opt10<Opt10<Opt10<Opt10<Opt10<T>>>>>>>;
@@ -242,22 +279,25 @@ fn naming_encoder_and_relational_scanner_agree_across_nested_pairs_options_and_t
     deep_enc.field("depth70", &deep_val);
     let (deep_bytes, deep_refs) = deep_enc.finish_with_references();
     assert!(deep_refs.is_empty());
-    let deep_minted = PersistentNameMintingAuthority::mint_commit_births(
-        &registry,
-        &live_holders,
-        &BTreeSet::new(),
-        &[PersistentNameBirthRequest {
-            scheme_id: "worth.cad.face.v1".to_owned(),
+    let mut tx_deep = begin_staged_tx(&runtime, "deep70", vec![create_face_intent("deep70")]);
+    tx_deep.attach_naming_plan(CommitNamingPlan {
+        pending_births: vec![PendingCommitBirth {
+            target: PendingBirthTarget::CreatedEntity(face_ref("deep70")),
+            scheme_id: FACE_SCHEME_ID.to_owned(),
             occurrence_key: "occ.deep70".to_owned(),
             role_path: "cut_piece".to_owned(),
             parent_identities: vec![cutter_id],
             referenced_names: Vec::new(),
             canonical_discriminator: deep_bytes,
-            holder: entity_holder(40),
         }],
-    )
-    .expect("real encoder Option^70<u32> must mint cleanly");
-    assert_eq!(deep_minted.len(), 1);
+        ..Default::default()
+    });
+    let deep_res = runtime
+        .commit_branch_transaction(&execution, tx_deep)
+        .expect("real encoder Option^70<u32> must commit cleanly");
+    assert_eq!(deep_res.committed_name_births().len(), 1);
+    release_commit_snapshot(&runtime, &deep_res);
+
     let _check_trait: fn(&u32, &mut ApplicationNameDiscriminatorEncoder) =
         <u32 as ApplicationNameDiscriminatorValue>::encode_discriminator_value;
     let _check_inner: fn(&InnerSplit) -> Vec<u8> = InnerSplit::canonical_bytes;

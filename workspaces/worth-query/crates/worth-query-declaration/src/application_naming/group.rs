@@ -105,6 +105,20 @@ pub struct ErasedApplicationGroupNameScheme {
 }
 
 impl ErasedApplicationGroupNameScheme {
+    pub fn from_untrusted_parts(
+        name_scheme: ErasedApplicationNameScheme,
+        continuity_rule: ApplicationGroupContinuityRule,
+        anchor_role: Option<String>,
+        boundary_role: Option<String>,
+    ) -> Self {
+        Self {
+            name_scheme,
+            continuity_rule,
+            anchor_role,
+            boundary_role,
+        }
+    }
+
     pub fn name_scheme(&self) -> &ErasedApplicationNameScheme {
         &self.name_scheme
     }
@@ -268,4 +282,20 @@ impl<S, G> ApplicationGroupNameSchemeBuilder<S, G> {
             _marker: PhantomData,
         })
     }
+}
+
+pub(crate) fn validate_erased_group_scheme_identifiers(
+    definition: &ErasedApplicationGroupNameScheme,
+) -> Result<(), crate::application_schema::ApplicationSchemaDeclarationDenial> {
+    super::validate_erased_scheme_identifiers(definition.name_scheme())?;
+    let scheme_id = definition.name_scheme().scheme_id();
+    for role in [definition.anchor_role(), definition.boundary_role()]
+        .into_iter()
+        .flatten()
+    {
+        super::validate_role_name(scheme_id, role).map_err(|_| {
+            crate::application_schema::ApplicationSchemaDeclarationDenial::InvalidIdentifier
+        })?;
+    }
+    Ok(())
 }
