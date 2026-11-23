@@ -102,6 +102,19 @@ pub(super) fn register_provider_attempt<'run, Schema, Operation, Input, Scope>(
     {
         return abort_registration(staged, DenialStage::DecisionReadSet);
     }
+    let mut effects = effects;
+    if let Err(denial) = effects.lower_persistent_names(|naming| {
+        context.provider(&inspection).lower_operation_names(
+            &staged.execution_request(),
+            affinity.product_publication(),
+            naming,
+        )
+    }) {
+        let _ = staged.abort();
+        return Err(WorthQueryProviderProgressionOutcome::Denied(
+            super::super::WorthQueryApplicationCommitDenial::persistent_name_output(denial),
+        ));
+    }
     let allocation_control = crate::domain_computation::primary_graph::request_allocation_control::RequestAllocationControl::new(context.admission(&inspection).publication_request(), allocation_policy);
     let control = crate::domain_computation::primary_graph::application_attempt::retained_decision_facts::StorageControl::new(allocation_control.policy(), Some(context.admission(&inspection).publication_request()));
     // The completed handler payload precedes fresh authorization's overlay.

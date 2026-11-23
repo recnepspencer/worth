@@ -266,6 +266,42 @@ impl TrackedWorld {
         from: NamedFace,
         to: NamedFace,
     ) -> (NamedSeam, CommitResult) {
+        let (created, committed, names) = self.commit_seam(execution, key, from, to);
+        let (id, name) = names
+            .created_relation_name::<Seam>(&committed, &created)
+            .expect("seam name admitted");
+        let identity = names
+            .relation_relational_identity(id)
+            .expect("seam identity");
+        (NamedSeam { id, name, identity }, committed)
+    }
+
+    /// Mints `key`'s seam again once its name retired. The new relation
+    /// carries the restored name, not a birth, so only its id is returned.
+    pub fn remint_seam(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        key: &str,
+        from: NamedFace,
+        to: NamedFace,
+    ) -> RelationId {
+        let (created, committed, _) = self.commit_seam(execution, key, from, to);
+        committed
+            .created_relation(&created)
+            .expect("re-minted seam record")
+    }
+
+    fn commit_seam(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        key: &str,
+        from: NamedFace,
+        to: NamedFace,
+    ) -> (
+        worth_relational::facade::transactions::CreatedRelationRef,
+        CommitResult,
+        AdmittedCommitNames,
+    ) {
         let (source, target) = (
             EntityReference::Existing(from.id),
             EntityReference::Existing(to.id),
@@ -286,13 +322,7 @@ impl TrackedWorld {
         )
         .expect("seam birth");
         let (committed, names) = self.commit(execution, tx, plan);
-        let (id, name) = names
-            .created_relation_name::<Seam>(&committed, &created)
-            .expect("seam name admitted");
-        let identity = names
-            .relation_relational_identity(id)
-            .expect("seam identity");
-        (NamedSeam { id, name, identity }, committed)
+        (created, committed, names)
     }
 
     pub fn retire_seam(

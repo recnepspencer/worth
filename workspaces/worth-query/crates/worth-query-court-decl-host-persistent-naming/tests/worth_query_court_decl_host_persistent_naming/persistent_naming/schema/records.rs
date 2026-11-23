@@ -78,7 +78,7 @@ pub struct Member;
 impl Entity for Member {
     const NAME: &'static str = "Member";
     type Aspects = (MemberFacts,);
-    type Relations = (Child,);
+    type Relations = (Child, Seam);
 }
 impl Member {
     pub fn reference() -> ApplicationEntityRef<Schema, Self> {
@@ -225,6 +225,17 @@ impl Relation for Child {
     type To = Member;
 }
 impl Child {
+    pub fn reference() -> ApplicationRelationRef<Schema, Self, Member, Member> {
+        relation(Storage, Member, Self)
+    }
+}
+/// A persistently named relation between members (Slice 5C output naming).
+pub struct Seam;
+impl Relation for Seam {
+    const NAME: &'static str = "Seam";
+    type To = Member;
+}
+impl Seam {
     pub fn reference() -> ApplicationRelationRef<Schema, Self, Member, Member> {
         relation(Storage, Member, Self)
     }

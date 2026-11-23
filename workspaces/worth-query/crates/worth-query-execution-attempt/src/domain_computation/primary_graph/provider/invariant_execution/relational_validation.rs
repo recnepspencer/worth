@@ -9,6 +9,7 @@ impl WorthQueryPrimaryGraphProvider {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         batch: worth_relational::facade::transactions::WorkerIntentBatch,
+        naming_plan: Option<worth_relational::facade::lineage::CommitNamingPlan>,
         appendix: Option<super::publication_appendix::SelectedPublicationAppendix>,
         content: &worth_relational::facade::content::RelationalContentAttachments,
         branch: &worth_relational::facade::history::BranchId,
@@ -85,6 +86,9 @@ impl WorthQueryPrimaryGraphProvider {
                         control.relational().clone(),
                     )
                     .map_err(map_transaction_admission_failure)?;
+                if let Some(plan) = naming_plan {
+                    transaction.attach_naming_plan(plan);
+                }
                 transaction
                     .attach_content(execution, content)
                     .map_err(|cause| {
@@ -151,6 +155,9 @@ impl WorthQueryPrimaryGraphProvider {
                             control.relational().clone(),
                         )
                         .map_err(map_transaction_admission_failure)?;
+                    if let Some(plan) = naming_plan {
+                        transaction.attach_naming_plan(plan);
+                    }
                     transaction
                         .attach_content(execution, content)
                         .map_err(|cause| {

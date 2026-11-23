@@ -40,6 +40,9 @@ pub struct WorthQueryApplicationEffectProgram<Schema, Operation, Input, Scope> {
         crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture,
     pub(crate) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    /// Declared persistent-name births and postures over this program's
+    /// outputs; empty for every unnamed program.
+    pub(crate) persistent_names: worth_query_execution_lineage::facade::persistent_naming::AuthoredOperationNaming,
     pub(crate) retain_output_demand_observation: bool,
     pub(crate) retain_client_observation: bool,
     pub(crate) producer_required_invariants:
@@ -97,6 +100,7 @@ pub struct WorthQueryApplicationEffectProgramBuilder<Schema, Operation, Input, S
         Option<crate::domain_computation::primary_graph::WorthQueryAdmittedApplicationConditionalDefinition>,
     pub(crate) output_correspondence:
         super::output_correspondence::WorthQueryApplicationOutputCorrespondenceCandidate,
+    pub(crate) persistent_names: worth_query_execution_lineage::facade::persistent_naming::AuthoredOperationNaming,
     pub(crate) creation_partition: Option<WorthQueryApplicationCreationPartition>,
     pub(crate) content_attachments: worth_relational::facade::content::RelationalContentAttachments,
     pub(crate) content_denial: Option<crate::domain_computation::primary_graph::WorthQueryValueDecodeDenial>,

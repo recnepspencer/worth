@@ -20,6 +20,7 @@ mod edit;
 mod history;
 mod interleaving;
 mod navigation;
+mod outputs;
 mod probe;
 mod query;
 mod refusals;
@@ -59,6 +60,8 @@ impl ApplicationProgramDefinition<Schema> for Program {
             .action::<probe::Binding, Completion>()
             .finish_action()
             .action::<refusals::Binding, Completion>()
+            .finish_action()
+            .action::<outputs::sculpt::Binding, Completion>()
             .finish_action()
             .finish()]
     }

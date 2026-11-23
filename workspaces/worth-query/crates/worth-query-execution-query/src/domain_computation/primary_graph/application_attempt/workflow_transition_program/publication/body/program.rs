@@ -58,6 +58,7 @@ where
         conditional_definition,
         effect_posture,
         output_correspondence,
+        persistent_names,
         retain_output_demand_observation,
         retain_client_observation,
         producer_required_invariants,
@@ -67,6 +68,7 @@ where
     // Native approval has no application outputs/emissions/conditional definition.
     // Refuse an unimplemented future profile rather than erase its carried state.
     if !authored_stages.is_empty() || !synchronous_outputs.is_empty() || !content_attachments.is_empty() || conditional_definition.is_some() || !output_correspondence.is_empty()
+        || !persistent_names.is_empty()
         || !producer_required_invariants.is_empty()
         || effect_posture != crate::domain_computation::provider_session::WorthQueryApplicationEffectPosture::Platform {
         return Err(WorkflowApprovalBodyDenial::UnsupportedProfile);

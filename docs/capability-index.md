@@ -98,8 +98,14 @@ and tail replay—refusing `MissingBirth`, `DuplicateBirth`, and
 `InvalidDiscriminatorBasis` fail-closed with zero committed effects. Installing
 a schema installs its declared schemes against the lowered kinds; seed a named
 record with `WorthQueryApplicationEntitySeed::persistent_name(role)` (relation
-seeds likewise). Installed operations creating schemed records still refuse
-`MissingBirth` until the declaration names their authored occurrence.
+seeds likewise). An installed operation names its own outputs through its
+candidate writer: `name_created_entity` / `name_created_relation` declare a
+birth from an authored occurrence and role
+(`host::application_naming::WorthQueryOutputBirth`, optionally discriminated),
+and `retire_*_name`, `split_*_name` and `merge_*_names`
+(`WorthQueryOutputMergeKeeper`) declare what its deletions do to held names;
+re-minting a retired name in the same operation is `Preserve` continuity
+([operation output names](build-an-application.md#operation-output-names)).
 `HistoryDocument` `undo_step` / `redo_to` / `checkout` keep held names on the
 checked-out node with no naming ceremony: Native appends `Retire` / `Restore`
 for every named record the selection retires or restores
