@@ -7,9 +7,11 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         &self,
         handle: &SnapshotHandle,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<Option<VisibilityProjectionView>, crate::execution::RelationalExecutionDenialCause>
-    {
-        crate::execution::check_request(execution)?;
+    ) -> Result<
+        Option<VisibilityProjectionView>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
+        crate::execution::request_custody::check_request(execution)?;
         Ok(self.project_snapshot(handle))
     }
 }

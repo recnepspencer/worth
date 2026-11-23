@@ -1,14 +1,32 @@
 pub(crate) mod captured_decode;
 mod checkpoint_delta;
 mod decode_budget;
+mod frozen_checkpoint;
 mod funding;
+pub(crate) use frozen_checkpoint::FrozenIndexCheckpoint;
+#[path = "../runtime/state/subsystems/indexing/cold_checkpoint.rs"]
+pub(crate) mod cold_checkpoint;
 mod generation_decode_quote;
+pub(crate) mod original_capture;
+mod projection_verification;
 
 pub(crate) use checkpoint_delta::{CompleteIndexCheckpointView, DerivedIndexCheckpointArtifacts};
 
 use crate::history::data::CanonicalCommitEnvelope;
 use crate::indexes::data::DerivedIndexArtifacts;
+use crate::runtime::state::subsystems::indexing::checkpoint_image::admission::{
+    require_generation_affinity, validate_checkpoint_generation,
+};
 use crate::runtime::RelationalRuntime;
+
+pub(crate) fn checkpoint_index_projections(
+    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
+    runtime: &RelationalRuntime,
+) -> crate::indexes::authority::CheckpointIndexProjections {
+    crate::indexes::authority::CheckpointIndexProjections::from_context(
+        runtime.checkpoint_projection_context(lane),
+    )
+}
 
 pub(crate) fn restore_checkpoint_derived_index_artifacts(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
@@ -61,105 +79,11 @@ pub(crate) fn restore_checkpoint_derived_index_artifacts(
     Ok(())
 }
 
-pub(crate) fn validate_checkpoint_generation(
-    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
-    generation: &crate::indexes::data::DerivedIndexGeneration,
-    definition: Option<&crate::indexes::data::DerivedIndexDefinition>,
-    history: &crate::runtime::HistorySubsystem,
-    generation_frontier: u64,
-) -> Result<(), crate::durability::data::DurabilityError> {
-    require_generation_affinity(generation)?;
-    require_generation_below_frontier(generation.generation_id, generation_frontier)?;
-    let definition =
-        definition.ok_or_else(|| corrupt("checkpoint index generation has no definition"))?;
-    use crate::indexes::data::{DerivedIndexEntries as Entries, DerivedIndexKind as Kind};
-    let matching_kind = match (&definition.kind, &generation.entries) {
-        (Kind::EntityField { .. }, Entries::EntityField(_))
-        | (Kind::RelationField { .. }, Entries::RelationField(_))
-        | (Kind::RelatedEntityOrdering { .. }, Entries::RelatedEntityOrdering(_))
-        | (Kind::RelationJoin(_), Entries::RelationJoin(_)) => true,
-        (
-            Kind::EntityField { .. },
-            Entries::RelationField(_)
-            | Entries::RelatedEntityOrdering(_)
-            | Entries::RelationJoin(_),
-        )
-        | (
-            Kind::RelationField { .. },
-            Entries::EntityField(_) | Entries::RelatedEntityOrdering(_) | Entries::RelationJoin(_),
-        )
-        | (
-            Kind::RelatedEntityOrdering { .. },
-            Entries::EntityField(_) | Entries::RelationField(_) | Entries::RelationJoin(_),
-        )
-        | (
-            Kind::RelationJoin(_),
-            Entries::EntityField(_) | Entries::RelationField(_) | Entries::RelatedEntityOrdering(_),
-        ) => false,
-    };
-    if !matching_kind {
-        return Err(corrupt(
-            "checkpoint index generation kind mismatches definition",
-        ));
-    }
-    if let Entries::RelationJoin(index) = &generation.entries
-        && !index.consistent_legs(lane)
-    {
-        return Err(corrupt(
-            "checkpoint join leg state is missing or inconsistent",
-        ));
-    }
-    let source = history
-        .commit_artifact(generation.source_commit_id)
-        .ok_or_else(|| corrupt("checkpoint index source commit is unavailable"))?;
-    if source.version_id() != generation.applicability.version_id
-        || source.schema_version() != generation.applicability.schema_version
-    {
-        return Err(corrupt(
-            "checkpoint index generation basis mismatches commit",
-        ));
-    }
-    if definition.branch_scoped {
-        history
-            .validate_recovered_scoped_index_basis(
-                &generation.source_branch_id,
-                generation.source_commit_id,
-                generation.applicability.version_id,
-                generation.applicability.schema_version,
-            )
-            .map_err(|detail| corrupt(&detail))?;
-    }
-    Ok(())
-}
-
-fn require_generation_below_frontier(
-    generation: crate::indexes::data::DerivedIndexGenerationId,
-    frontier: u64,
-) -> Result<(), crate::durability::data::DurabilityError> {
-    if generation.0 == 0 || generation.0 >= frontier {
-        return Err(corrupt(
-            "checkpoint index generation exceeds its eager identity frontier",
-        ));
-    }
-    Ok(())
-}
-
 fn corrupt(detail: &str) -> crate::durability::data::DurabilityError {
     crate::durability::data::DurabilityError::new(
         crate::durability::data::RecoveryFailureClass::CorruptCheckpoint,
         detail,
     )
-}
-
-fn require_generation_affinity(
-    generation: &crate::indexes::data::DerivedIndexGeneration,
-) -> Result<(), crate::durability::data::DurabilityError> {
-    if generation.source_branch_id != generation.applicability.branch_id {
-        return Err(corrupt(
-            "derived index generation branch affinity mismatches source",
-        ));
-    }
-    Ok(())
 }
 
 pub(crate) struct AdmittedEnvelopeIndexArtifacts<'a>(&'a DerivedIndexArtifacts);

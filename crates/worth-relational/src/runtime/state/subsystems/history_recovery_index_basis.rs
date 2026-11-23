@@ -1,7 +1,7 @@
 //! Join a retained scoped cache to already readmitted native history authority.
 use worth_foundational::FoundationalBranchTarget;
 
-use crate::branch::RelationalBranchTarget;
+use crate::branch::target::RelationalBranchTarget;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::VersionId;
 use crate::schema::data::SchemaVersionId;

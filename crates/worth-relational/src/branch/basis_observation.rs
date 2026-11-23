@@ -105,7 +105,7 @@ impl RelationalRuntime {
         ),
         RelationalBranchBasisDenial,
     > {
-        require_local_branch_identity(self, identity)?;
+        require_local_branch_identity(self.runtime_instance_id(), &self.history, identity)?;
         let (descriptor, root, publication_cell, retention_binding) = {
             let cell = self
                 .history

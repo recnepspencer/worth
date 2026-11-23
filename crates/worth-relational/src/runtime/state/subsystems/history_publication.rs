@@ -1,12 +1,13 @@
+//! The branch ledger consumes prepared artifact accelerators after canonical position binding.
 #[path = "history_publication/sequence.rs"]
 mod sequence;
 pub(crate) use sequence::PreparedCommitSequence;
 use std::sync::Arc;
 
-use crate::branch::RelationalBranchReferenceCell;
-use crate::branch::RelationalBranchRoot;
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::root::RelationalBranchRoot;
+use crate::history::commit::RelationalCommitArtifact;
 use crate::history::data::{BranchId, CanonicalCommitEnvelope, CommitId, RelationalCommitReceipt};
-use crate::history::RelationalCommitArtifact;
 
 use super::HistorySubsystem;
 
@@ -76,51 +77,26 @@ impl PreparedRecoveredVersionedArtifactPublication {
         Ok(Self { prepared })
     }
 
-    fn into_prepared(self) -> PreparedVersionedArtifactPublication {
-        self.prepared
+    pub(crate) fn into_installation(
+        self,
+    ) -> (
+        RelationalBranchReferenceCell,
+        Arc<RelationalBranchRoot>,
+        PreparedVersionedArtifactAccelerators,
+    ) {
+        let (cell, root, _, accelerators) = self.prepared.into_canonical_and_accelerators();
+        (cell, root, accelerators)
     }
 }
 
-impl HistorySubsystem {
-    pub(crate) fn install_prepared_recovered_versioned_artifact(
-        &self,
-        prepared: PreparedRecoveredVersionedArtifactPublication,
-        positioned: &crate::history::data::PositionedCanonicalCommit,
-    ) -> Result<(), String> {
-        let prepared = prepared.into_prepared();
-        let (mut next_cell, root, _, accelerators) = prepared.into_canonical_and_accelerators();
-        next_cell.install_root(Arc::clone(&root));
-        let branch_id = accelerators.branch_id.clone();
-        let current_cell = self.branch_cell(&branch_id).ok_or_else(|| {
-            format!(
-                "prepared recovery branch `{}` is not registered",
-                branch_id.0
-            )
-        })?;
-        let previous_root = current_cell.root().ok_or_else(|| {
-            format!(
-                "prepared recovery branch `{}` has no retained head",
-                branch_id.0
-            )
-        })?;
-        let head_retirement = self
-            .reserve_branch_head_retirement(
-                current_cell.identity(),
-                &previous_root,
-                current_cell.head_retention(),
-            )
-            .map_err(|denial| format!("recovery head replacement denied: {denial:?}"))?;
-        let next_root = root;
-        self.install_prepared_versioned_accelerators(accelerators, positioned.position());
-        // Recovery truth still installs a complete reconstructed owner cell.
-        current_cell.replace_state(next_cell.state_snapshot());
-        head_retirement.transfer_head(&next_root).replace_head();
-        Ok(())
+impl PreparedVersionedArtifactAccelerators {
+    pub(crate) fn branch_id(&self) -> &BranchId {
+        &self.branch_id
     }
 
-    pub(crate) fn install_prepared_versioned_accelerators(
-        &self,
-        prepared: PreparedVersionedArtifactAccelerators,
+    pub(crate) fn install(
+        self,
+        history: &HistorySubsystem,
         patch_position: crate::publication::patch::data::PatchStreamPosition,
     ) {
         let PreparedVersionedArtifactAccelerators {
@@ -132,12 +108,12 @@ impl HistorySubsystem {
             new_authoritative_bytes,
             recovery_readmission,
             sequence,
-        } = prepared;
+        } = self;
         // Preparation already accounted `canonical.payload_storage_bytes()`.
         // Add only the real original Memory frame admitted at position binding.
         let new_authoritative_bytes = new_authoritative_bytes
             .checked_add(artifact.envelope_residency().original_frame_storage_bytes());
-        self.with_ledger_mut(|ledger| {
+        history.with_ledger_mut(|ledger| {
             ledger.install_published_commit(
                 commit_id,
                 commit_reference,
@@ -147,6 +123,6 @@ impl HistorySubsystem {
                 sequence,
             );
         });
-        self.record_root_publication(&branch_id, &root, new_authoritative_bytes);
+        history.record_root_publication(&branch_id, &root, new_authoritative_bytes);
     }
 }

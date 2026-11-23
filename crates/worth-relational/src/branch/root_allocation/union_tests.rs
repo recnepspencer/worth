@@ -1,6 +1,7 @@
 //! Owner walks over immutable radix/Cold inputs, without runtime construction.
 use super::*;
-use crate::branch::{RelationalPersistentRegionSet, RelationalRootRegionObservation};
+use crate::branch::root_region::RelationalRootRegionObservation;
+use crate::branch::root_regions::RelationalPersistentRegionSet;
 use crate::durability::medium::{
     RelationalDurableColdSource, RelationalDurableMemberCustody, RelationalDurableMemberLocator,
 };
@@ -150,7 +151,7 @@ fn cold_region_union_refuses_without_demanding_any_payload() {
             &crate::storage::substrate::maintenance::ReconstructionLane::oracle(),
             1,
             1,
-            crate::branch::RelationalRootRegionCheckpoint {
+            crate::branch::root_checkpoint::RelationalRootRegionCheckpoint {
                 partition_id: PartitionId(7),
                 cell,
                 kind_authority: None,

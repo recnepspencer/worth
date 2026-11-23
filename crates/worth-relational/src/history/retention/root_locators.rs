@@ -4,7 +4,7 @@ use std::collections::BTreeSet;
 
 use dashmap::{mapref::entry::Entry, DashMap};
 
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::CommitId;
 use crate::identity::data::VersionId;
 use crate::schema::data::SchemaVersionId;

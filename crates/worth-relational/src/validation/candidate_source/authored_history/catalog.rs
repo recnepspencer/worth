@@ -1,45 +1,25 @@
 //! Actual immutable Source roster; slots have meaning only with this owner.
-use crate::history::{
-    RelationalAuthoredManagedSourceSelector, RelationalAuthoredWriteDenial as Denial,
-};
+use super::catalog_funding::CustomInvariantCompilationFunding;
+use crate::history::access::relevant_writes::RelationalAuthoredManagedSourceSelector;
+use crate::history::access::relevant_writes::RelationalAuthoredWriteDenial as Denial;
 use crate::identity::data::EntityId;
-use crate::validation::candidate_source::{ManagedIndexSourceProgram, SourcePreparationGroup};
+use crate::validation::candidate_source::program::ManagedIndexSourceProgram;
 use std::sync::Arc;
 
 #[derive(Debug, Default)]
 pub(crate) struct SourceHistoryCatalog {
     programs: Vec<ManagedIndexSourceProgram>,
-    _funding: Option<Arc<crate::validation::CustomInvariantCompilationFunding>>,
+    _funding: Option<Arc<CustomInvariantCompilationFunding>>,
 }
 impl SourceHistoryCatalog {
-    pub(crate) fn compile(
-        groups: &[SourcePreparationGroup],
-        capacity: usize,
-        funding: Option<Arc<crate::validation::CustomInvariantCompilationFunding>>,
-        control: crate::schema::SchemaCompilationControl<'_, '_>,
-    ) -> Result<Self, crate::validation::CustomInvariantCompilationDenial> {
-        use crate::validation::CustomInvariantCompilationDenial as Denial;
-        let mut programs = Vec::with_capacity(capacity);
-        for group in groups {
-            for program in group.programs() {
-                control.checkpoint().map_err(Denial::Execution)?;
-                let mut found = false;
-                for prior in &programs {
-                    control.checkpoint().map_err(Denial::Execution)?;
-                    if prior == program {
-                        found = true;
-                        break;
-                    }
-                }
-                if !found {
-                    programs.push(program.clone());
-                }
-            }
-        }
-        Ok(Self {
+    pub(crate) fn from_programs(
+        programs: Vec<ManagedIndexSourceProgram>,
+        funding: Option<Arc<CustomInvariantCompilationFunding>>,
+    ) -> Self {
+        Self {
             programs,
             _funding: funding,
-        })
+        }
     }
     pub(crate) fn len(&self) -> usize {
         self.programs.len()

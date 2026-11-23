@@ -1,14 +1,16 @@
 //! Authored and physical Source impact, separate from semantic maintenance effects.
 pub(crate) mod catalog;
+pub(crate) mod catalog_funding;
 use crate::history::data::{BranchId, CommitId};
 use crate::identity::data::{EntityId, KindId, RelationId, VersionId};
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use catalog::SourceHistoryCatalog;
 use std::sync::Arc;
 use worth_execution::{ChargedBytes, ExecutionOrderedMap};
 mod admission;
 mod collection;
 pub(crate) mod material;
+pub(crate) mod material_capture;
 mod record_use;
 pub(crate) use record_use::AuthoredSourceRecordUse;
 
@@ -65,5 +67,4 @@ pub(crate) struct PreparedSourceImpactHistory {
     pub(crate) _memory: Option<worth_execution::ExecutionMemoryReservation>,
 }
 
-mod preparation;
-pub(super) use preparation::prepare;
+pub(super) mod preparation;

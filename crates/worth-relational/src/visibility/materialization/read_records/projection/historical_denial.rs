@@ -1,21 +1,23 @@
 //! Exhaustive historical retention denial conversion.
 pub(super) fn historical_projection_denial(
     denial: crate::visibility::snapshot_states::HistoricalVisibilityDenial,
-) -> crate::branch::RelationalBranchBasisDenial {
+) -> crate::branch::basis_denial::RelationalBranchBasisDenial {
     use crate::visibility::snapshot_states::HistoricalVisibilityDenial as Denial;
     match denial {
         Denial::RetentionCapacityExhausted => {
-            crate::branch::RelationalBranchBasisDenial::RetentionCapacityExhausted
+            crate::branch::basis_denial::RelationalBranchBasisDenial::RetentionCapacityExhausted
         }
         Denial::RetentionIdentityExhausted => {
-            crate::branch::RelationalBranchBasisDenial::RetentionIdentityExhausted
+            crate::branch::basis_denial::RelationalBranchBasisDenial::RetentionIdentityExhausted
         }
-        Denial::RetentionUnavailable => crate::branch::RelationalBranchBasisDenial::OwnerFailure,
+        Denial::RetentionUnavailable => {
+            crate::branch::basis_denial::RelationalBranchBasisDenial::OwnerFailure
+        }
         Denial::UnknownVersion
         | Denial::AuthoringBranchUnavailable
         | Denial::MvccIntervalUnavailable
         | Denial::CertificationReconstructionRequired => {
-            crate::branch::RelationalBranchBasisDenial::UnavailableRetainedTarget
+            crate::branch::basis_denial::RelationalBranchBasisDenial::UnavailableRetainedTarget
         }
     }
 }

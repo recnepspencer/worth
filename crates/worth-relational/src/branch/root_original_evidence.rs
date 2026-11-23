@@ -178,7 +178,9 @@ impl Write for OriginalPayloadWriter<'_, '_, '_> {
     }
 }
 fn allocation_failed() -> Denial {
-    Denial::Request(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
+    Denial::Request(
+        crate::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
+    )
 }
 fn backing_failure(cause: worth_execution::ExecutionAllocationDenial) -> Denial {
     match cause.classify() {

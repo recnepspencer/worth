@@ -78,9 +78,7 @@ pub use crate::visibility::retention::{
 };
 pub(crate) use initial_schema_installation::custom_invariant_inventory_digest_for_compilation;
 pub use initial_schema_installation::RecoveredCheckpointProgramActivationUpdate;
-pub(crate) use initial_schema_installation::{
-    codec_field_changes, codec_field_changes_in_context, CodecFieldComparisonStop, CodecFieldLocus,
-};
+pub(crate) use initial_schema_installation::{codec_field_changes, CodecFieldLocus};
 pub use initial_schema_installation::{
     custom_invariant_inventory_digest, FreshRelationalInitialSchemaInstallation,
     RelationalInitialSchemaInstallation, RelationalInitialSchemaInstallationDenial,
@@ -101,22 +99,21 @@ pub use state::{
 };
 
 pub(crate) use crate::storage::overlay::WorkingState;
-pub use construction::RelationalRuntimeForkDenial;
+pub(crate) mod fork_denial;
 pub(crate) use construction::RuntimeExtensions;
+pub use fork_denial::RelationalRuntimeForkDenial;
 pub use state::RelationalRuntime;
 pub(crate) use state::RelationalRuntimeState;
 pub(crate) use state::{
     authored_write_commit_denial, readmit_positioned_canonical_commit,
-    AdmittedRelationalRuntimeOperation, AuthoredWriteGeneration, BranchHeadVersionIndexAuthority,
+    AdmittedRelationalRuntimeOperation, BranchHeadVersionIndexAuthority,
     BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
-    CanonicalPositionAdmission, CanonicalPublicationRecordError, CapturedIndexDefinitionCatalog,
-    CommitStrategiesSubsystem, DurabilitySubsystem, FrozenCheckpointIndexes, HistorySubsystem,
-    IndexCatalogCoverage, IndexDefinitionCatalog, IndexSelectionState, IndexingState,
-    IndexingSubsystem, LineageIdentityAllocator, LineageState, LineageSubsystem,
-    MirrorResidencyDemandBinding, OriginalCheckpointIndexes, PartitionEdition,
-    PatchPositionReservationAdmission, PendingRecordAllocations, PendingSymbolMeanings,
-    PerformedCheckpointSelection, PreparedCanonicalPublicationRoute, PreparedCommitSequence,
-    PreparedGenerationBatch, PreparedIndexBasisSelection,
+    CanonicalPublicationRecordError, CapturedIndexDefinitionCatalog, CommitStrategiesSubsystem,
+    DurabilitySubsystem, HistorySubsystem, IndexCatalogCoverage, IndexingState,
+    LineageIdentityAllocator, LineageState, LineageSubsystem, MirrorResidencyDemandBinding,
+    OriginalCheckpointIndexes, PartitionEdition, PatchPositionReservationAdmission,
+    PendingRecordAllocations, PendingSymbolMeanings, PerformedCheckpointSelection,
+    PreparedCanonicalPublicationRoute, PreparedCommitSequence,
     PreparedRecoveredVersionedArtifactPublication, PreparedSymbolPublication,
     PreparedVersionedArtifactAccelerators, PreparedVersionedArtifactPublication,
     PublicationSubsystem, PublishedSnapshotCapacityOwner, PublishedSnapshotCloseout,
@@ -130,8 +127,8 @@ pub(crate) use state::{
     RelationalRuntimeConfigurationBinding, RelationalRuntimeConfigurationSnapshot,
     RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding, ResidentLineageEventPage,
     ResidentLineageNode, ResidentMirrorTarget, ResidentPartitionEdition, ResidentPartitionEntry,
-    RetainedCanonicalPosition, RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem,
-    RuntimeSymbolTable, SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
+    RuntimeInstrumentation, RuntimeServices, RuntimeSubsystem, RuntimeSymbolTable,
+    SchemaContractRuntimeSubsystem, SnapshotHandleBinding, StorageSubsystem,
     SymbolReservationDenial, ValidatedLineageEventBatch, VisibilityResidency, VisibilitySubsystem,
 };
 pub(crate) use state::{
@@ -165,4 +162,5 @@ pub use cold_symbol_placement::RelationalColdSymbolPlacementForTest;
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
 
-pub(crate) use crate::visibility::materialization::read_records::CheckpointProjectionContext;
+#[cfg(test)]
+pub(crate) use state::{AuthoredWriteGeneration, RetainedCanonicalPosition};

@@ -1,7 +1,7 @@
 //! Resolve presence-changing authored field coordinates from paired exact roots.
 use super::VisibilityProjectionView;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::execution::request_stage::{checkpoint, optional_stage};
-use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::{EntityId, KindId};
 use crate::schema::data::LoweredAspectContractBinding;
 use worth_foundational::facade::{AspectBinding, AspectKey, AspectShape, FieldKey};

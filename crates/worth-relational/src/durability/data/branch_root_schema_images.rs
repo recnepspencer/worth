@@ -1,13 +1,11 @@
-use serde::{Deserialize, Serialize};
-use worth_foundational::facade::{AspectBinding, AspectContract, PortableAspectContract};
+use serde::Deserialize;
+use worth_foundational::facade::{AspectContract, PortableAspectContract};
 
-use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use crate::identity::data::KindId;
 use crate::merge::data::{AspectMergePolicyDeclaration, IdentityBasisDeclaration};
 use crate::schema::data::{
-    DeclaredAspectContractBinding, DescriptorSemanticsVersion, EntityKindRegistration,
-    KindAspectContractDeclarations, RelationIntegrityDeclarations, RelationKindRegistration,
-    RelationalSchemaRegistry, SchemaId, SchemaVersionId,
+    DescriptorSemanticsVersion, KindAspectContractDeclarations, RelationIntegrityDeclarations,
+    RelationalSchemaRegistry,
 };
 
 const ROOT_SCHEMA_IMAGE_VERSION: u16 = 1;
@@ -19,7 +17,11 @@ mod capture_tests;
 mod digest;
 mod encoding;
 mod owner;
-mod registrations;
+pub(crate) mod registrations;
+pub(crate) use registrations::DurableEntitySchemaRegistration;
+use registrations::{
+    DurableDeclaredAspectBinding, DurableKindAspectDeclarations, DurableRelationSchemaRegistration,
+};
 
 #[derive(Debug, Clone)]
 pub(crate) struct DurableBranchRootSchemaImage(std::sync::Arc<SchemaImageData>);
@@ -46,40 +48,6 @@ struct SchemaImageData {
     persistent_name_schemes: Vec<crate::schema::data::SchemaAuthorityNamingSchemeSnapshot>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     kind_name_schemes: Vec<crate::schema::data::SchemaAuthorityKindNamingBindingSnapshot>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct DurableEntitySchemaRegistration {
-    kind_id: KindId,
-    kind_name: String,
-    schema_id: SchemaId,
-    schema_version_id: SchemaVersionId,
-    declarations: DurableKindAspectDeclarations,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-struct DurableRelationSchemaRegistration {
-    kind_id: KindId,
-    kind_name: String,
-    schema_id: SchemaId,
-    schema_version_id: SchemaVersionId,
-    cross_context_policy: CrossContextPolicy,
-    cascade_delete_policy: CascadeDeletePolicy,
-    declarations: DurableKindAspectDeclarations,
-    relation_integrity: RelationIntegrityDeclarations,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-struct DurableKindAspectDeclarations {
-    aspects: Vec<DurableDeclaredAspectBinding>,
-    identity_declarations: Vec<IdentityBasisDeclaration>,
-    merge_policy_declarations: Vec<AspectMergePolicyDeclaration>,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-struct DurableDeclaredAspectBinding {
-    binding: AspectBinding,
-    contract: PortableAspectContract,
 }
 
 impl DurableBranchRootSchemaImage {

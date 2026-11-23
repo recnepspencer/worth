@@ -1,4 +1,5 @@
 //! Explicit reconstruction can project an actually held recovered basis.
+use super::super::live_access::IndexAuthority;
 use super::*;
 use crate::history::retention::RelationalRetentionOwnerRelationship;
 use crate::identity::data::VersionId;

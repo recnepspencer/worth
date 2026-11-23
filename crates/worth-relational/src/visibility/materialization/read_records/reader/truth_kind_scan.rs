@@ -47,12 +47,12 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         maximum_work_units: usize,
     ) -> Result<
         Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.storage_access().current_edition();
         let state = edition
             .demand_all(execution, &self.runtime.services.symbols)
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_work::scan_with_memory(
             execution,
             |context, memory| {

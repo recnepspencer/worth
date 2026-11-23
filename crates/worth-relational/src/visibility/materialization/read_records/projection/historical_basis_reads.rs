@@ -54,7 +54,7 @@ impl crate::storage::overlay::CurrentPartitionAccess for HistoricalProjectionSto
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         match self {
             Self::Retained(root) => root.demand_head_partition(execution, id),
-            Self::EmptyGenesis => crate::execution::check_request(execution)
+            Self::EmptyGenesis => crate::execution::request_custody::check_request(execution)
                 .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request),
         }
     }
@@ -96,7 +96,8 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.collect_entity_records(Some(kind), charge, memory)
     }
     #[cfg(test)]
@@ -104,7 +105,8 @@ impl<'view> HistoricalProjectionReader<'view> {
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.collect_entity_records(None, charge, memory)
     }
     fn collect_entity_records(
@@ -112,7 +114,8 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         let mut records = Vec::new();
         let (partitions, partition_bytes) =
             super::super::read_work::record_memory::partition_ids(&self.storage(), memory)?;
@@ -136,7 +139,8 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.entity_records_in_selected_partition(partition, Some(kind), charge, memory)
     }
     fn entity_records_in_selected_partition(
@@ -145,7 +149,8 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         self.view.reader().paid_entities_in_partition(
             &self.storage(),
             self.registry(),
@@ -177,7 +182,10 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.collect_relation_records(Some(kind), charge, memory)
     }
     #[cfg(test)]
@@ -185,7 +193,10 @@ impl<'view> HistoricalProjectionReader<'view> {
         &self,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.collect_relation_records(None, charge, memory)
     }
     fn collect_relation_records(
@@ -193,7 +204,10 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         let mut records = Vec::new();
         let (partitions, partition_bytes) =
             super::super::read_work::record_memory::partition_ids(&self.storage(), memory)?;
@@ -213,7 +227,10 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: KindId,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.relation_records_in_selected_partition(partition, Some(kind), charge, memory)
     }
     fn relation_records_in_selected_partition(
@@ -222,7 +239,10 @@ impl<'view> HistoricalProjectionReader<'view> {
         kind: Option<KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.view.reader().paid_relations_in_partition(
             &self.storage(),
             self.registry(),

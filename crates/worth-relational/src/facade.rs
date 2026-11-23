@@ -208,7 +208,7 @@ pub mod merge {
 
 pub mod runtime {
     pub use super::runtime_validation_exports::*;
-    pub use crate::execution::RelationalWorkAccountRecorderForTest;
+    pub use crate::execution::request_work::observation::RelationalWorkAccountRecorderForTest;
     pub use crate::presentation::facade::runtime::{
         ImmutableReadContract, RelationalBoundaryContract, RelationalRuntimeApi,
     };

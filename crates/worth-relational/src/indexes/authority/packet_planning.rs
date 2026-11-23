@@ -1,32 +1,28 @@
+use crate::authority::commit::preparation::packets::index::IndexReductionKey;
 use crate::authority::commit::preparation::packets::index::{
     IndexFragmentIdentity, IndexPreparationHeader, IndexPreparationPacket,
-};
-use crate::authority::commit::preparation::planning::strategy::{
-    strategy_for_parallel_packets, PreparationStrategy,
 };
 use crate::authority::commit::preparation::proofs::kinds::PreparationProofKind;
 use crate::authority::commit::preparation::proofs::locality::{
     PreparationLocalityProof, PreparationPartitionScope, PreparationReadSetApproximation,
     PreparationRecordDomain, PreparationWriteExclusionClass,
 };
-use crate::authority::commit::preparation::reduction::keys::IndexReductionKey;
 use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexId, DerivedIndexKind};
-use crate::runtime::RelationalRuntime;
-use crate::validation::data::InvariantGroupSet;
-use worth_execution::ExecutionResourceLease;
+use crate::runtime::state::subsystems::indexing::IndexingSubsystem;
+use crate::validation::data::groups::InvariantGroupSet;
 
 mod checked;
 pub(super) use checked::plan_index_packets_checked;
 
 pub(super) fn planned_index_definitions(
-    runtime: &RelationalRuntime,
+    indexes: &IndexingSubsystem,
     index_ids: &[DerivedIndexId],
 ) -> (Vec<DerivedIndexDefinition>, Vec<DerivedIndexId>) {
     let mut definitions = Vec::new();
     let mut missing_indexes = Vec::new();
 
     for index_id in index_ids {
-        if let Some(definition) = runtime.indexes.definition(*index_id) {
+        if let Some(definition) = indexes.definition(*index_id) {
             definitions.push(definition.as_ref().clone());
         } else {
             missing_indexes.push(*index_id);
@@ -34,14 +30,6 @@ pub(super) fn planned_index_definitions(
     }
 
     (definitions, missing_indexes)
-}
-
-pub(super) fn choose_index_preparation_strategy(
-    _runtime: &RelationalRuntime,
-    lease: Option<&ExecutionResourceLease>,
-    packet_count: usize,
-) -> PreparationStrategy {
-    strategy_for_parallel_packets(lease, packet_count)
 }
 
 pub(super) fn plan_index_packets(
@@ -74,7 +62,8 @@ fn packet_for_definition(
             reduction_key: IndexReductionKey::new(definition.index_id, packet_index),
             proof_kind: PreparationProofKind::ReadOnlyShared,
             locality: PreparationLocalityProof {
-                observation_scope: crate::validation::engine::InvariantObservationKind::Committed,
+                observation_scope:
+                    crate::validation::data::observation_kind::InvariantObservationKind::Committed,
                 record_domain,
                 partition_scope: PreparationPartitionScope::AllObserved,
                 invariant_group_scope: InvariantGroupSet::empty(),

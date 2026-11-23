@@ -2,9 +2,10 @@
 mod encoding;
 use crate::durability::canonical_commit_artifact::borrowed_payload::PayloadCheckpoint;
 use crate::durability::data::RelationalRecoveryStop as Stop;
+use crate::runtime::state::subsystems::indexing::checkpoint_image::IndexArray;
 use worth_execution::{
-    ExecutionAllocationPolicy, ExecutionArray, ExecutionArrayBuilder, ExecutionMemoryReservation,
-    ExecutionRequest, WorkCeilingDenial,
+    ExecutionAllocationPolicy, ExecutionArrayBuilder, ExecutionMemoryReservation, ExecutionRequest,
+    WorkCeilingDenial,
 };
 
 type Reserve<'a> =
@@ -59,17 +60,6 @@ impl PayloadCheckpoint for IndexCheckpointWork<'_> {
     }
 }
 
-/// Fixed SDK storage and the reservation that admitted its exact layout.
-pub(crate) struct IndexArray<T> {
-    values: ExecutionArray<T>,
-    _funding: Option<ExecutionMemoryReservation>,
-}
-impl<T> std::ops::Deref for IndexArray<T> {
-    type Target = [T];
-    fn deref(&self) -> &[T] {
-        &self.values
-    }
-}
 pub(super) struct IndexArrayBuilder<'a, T> {
     values: ExecutionArrayBuilder<T>,
     funding: Option<ExecutionMemoryReservation>,

@@ -3,7 +3,7 @@ use super::work::MaintenanceWork;
 use crate::identity::data::{EntityId, RelationId};
 use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
 use crate::storage::data::RecordLifecycleState;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::BTreeSet;
 
 pub(super) struct ChangedRecords {
@@ -66,7 +66,9 @@ impl ChangedRecords {
         let mut entities = BTreeSet::new();
         let mut relations = BTreeSet::new();
         root.try_visit_partitions(|event| {
-            let crate::branch::RelationalPartitionVisit::Partition(partition_id) = event else {
+            let crate::branch::root_regions::RelationalPartitionVisit::Partition(partition_id) =
+                event
+            else {
                 return work.prepare(1, 0);
             };
             work.prepare(33, 0)?;

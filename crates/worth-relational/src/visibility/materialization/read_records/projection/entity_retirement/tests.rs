@@ -1,10 +1,10 @@
 use super::*;
-use crate::facade::config::CascadeDeletePolicy;
+use crate::config::data::CascadeDeletePolicy;
 use crate::tests::support::*;
 
 #[test]
 fn exact_snapshot_retirement_is_metadata_only_and_does_not_change_live_projection() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_declared_aspect_schema(CascadeDeletePolicy::CascadeDeleteRelations);

@@ -1,5 +1,6 @@
 mod adjacency_demand;
 mod adjacency_revision;
+mod adjacency_revision_read;
 mod adjacency_support;
 pub use adjacency_support::RelationalAdjacencySupportDenial;
 mod admitted_snapshot;
@@ -41,7 +42,7 @@ mod schema_custody;
 mod streamed_basis_reads;
 pub(crate) mod view;
 
-pub use adjacency_revision::{
+pub use adjacency_revision_read::{
     AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, RelationalAdjacencyDirection,
 };
 pub use borrowed_adjacency::RelationalAdjacencyVisit;
@@ -60,6 +61,9 @@ pub use projection_records::{
 };
 pub(crate) use query_locus_projection::{
     authoritative_state_query_locus_comparison_key, authoritative_state_query_locus_value,
+};
+#[cfg(test)]
+pub(crate) use query_locus_projection::{
     entity_query_locus_comparison_key, entity_query_locus_value,
     relation_query_locus_comparison_key, relation_query_locus_value,
 };

@@ -101,7 +101,7 @@ impl RelationalBranchRoot {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         id: PartitionId,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         if let Some(region) = self.regions.get(id) {
             region.partition.demand_head_cached(execution, 1 << 30)?;
@@ -112,7 +112,7 @@ impl RelationalBranchRoot {
     pub(crate) fn peek_head_region_with_symbols(
         &self,
         id: PartitionId,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> crate::storage::residency::PartitionHeadProbe<'_> {
         use crate::storage::residency::PartitionHeadProbe as Probe;
         match self.regions.get(id) {
@@ -127,7 +127,7 @@ impl RelationalBranchRoot {
     pub(crate) fn peek_full_region_with_symbols(
         &self,
         id: PartitionId,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> crate::storage::residency::PartitionProbe<'_> {
         use crate::storage::residency::PartitionProbe as Probe;
         match self.regions.get(id) {
@@ -142,7 +142,7 @@ impl RelationalBranchRoot {
     pub(crate) fn probe_head_region_with_symbols(
         &self,
         id: PartitionId,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> crate::storage::residency::PartitionHeadProbe<'_> {
         use crate::storage::residency::PartitionHeadProbe as Probe;
         match self.probe_head_region(id) {
@@ -165,7 +165,7 @@ impl RelationalBranchRoot {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         id: PartitionId,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         if let Some(lease) = self.demand_region_head(execution, id)? {
             lease.admit_symbols(execution, symbols)?;
@@ -175,14 +175,14 @@ impl RelationalBranchRoot {
     pub(crate) fn demand_all_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         self.demand_regions_full(execution, symbols, self.partition_ids_iter())
     }
     pub(crate) fn demand_regions_head(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
         partitions: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
         for partition in partitions {
@@ -206,7 +206,7 @@ impl RelationalBranchRoot {
     pub(crate) fn probe_full_region_with_symbols(
         &self,
         id: PartitionId,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> crate::storage::residency::PartitionProbe<'_> {
         use crate::storage::residency::PartitionProbe as Probe;
         match self.probe_full_region(id) {
@@ -238,10 +238,10 @@ impl RelationalBranchRoot {
     pub(crate) fn demand_regions_full(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
         partitions: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), crate::storage::residency::RelationalResidencyDemandFailure> {
-        crate::execution::check_request(execution)
+        crate::execution::request_custody::check_request(execution)
             .map_err(crate::storage::residency::RelationalResidencyDemandFailure::Request)?;
         for partition in partitions {
             if let Some(region) = self.regions.get(partition) {
@@ -301,7 +301,7 @@ impl RelationalBranchRoot {
 
     pub(crate) fn try_visit_partitions<E>(
         &self,
-        visit: impl FnMut(crate::branch::RelationalPartitionVisit) -> Result<(), E>,
+        visit: impl FnMut(crate::branch::root_regions::RelationalPartitionVisit) -> Result<(), E>,
     ) -> Result<(), E> {
         self.regions.try_visit_partitions(visit)
     }

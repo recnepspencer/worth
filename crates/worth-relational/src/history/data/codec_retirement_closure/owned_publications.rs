@@ -46,7 +46,7 @@ impl OwnedCodecRetirementClosure {
                 continue;
             }
             if origin.members.iter().all(|member| {
-                member.posture == crate::mvcc::RequiredOutputRolePosture::Retire
+                member.posture == crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire
                     || self.entities.binary_search(&member.id).is_ok()
             }) {
                 complete.push(std::sync::Arc::clone(origin));
@@ -62,10 +62,10 @@ impl OwnedCodecRetirementClosure {
             KindId,
             &str,
             &[u8; 32],
-            crate::mvcc::RequiredOutputRolePosture,
-            crate::mvcc::RequiredOutputRolePosture,
+            crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture,
+            crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture,
         ),
-    > {
+    >{
         self.origins.iter().map(|(id, kind, origin)| {
             let member = &origin.members[origin
                 .members
@@ -78,8 +78,8 @@ impl OwnedCodecRetirementClosure {
                 member.birth_dependency.bytes(),
                 member.posture,
                 origin.publication.predecessor().map_or(
-                    crate::mvcc::RequiredOutputRolePosture::Create,
-                    |_| crate::mvcc::RequiredOutputRolePosture::Preserve,
+                    crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Create,
+                    |_| crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Preserve,
                 ),
             )
         })

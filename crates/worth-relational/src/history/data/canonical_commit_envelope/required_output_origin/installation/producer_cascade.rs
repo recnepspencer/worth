@@ -1,14 +1,14 @@
 //! Native derives succession roots from actual deleted predecessor membership.
 use super::{route_completion::RouteCompletion, *};
-use crate::{
-    history::data::{codec_retirement_closure::source_scope_closure, SelectedOutputPublication},
-    identity::data::EntityId,
-    mvcc::{RequiredOutputRolePosture as Posture, RequiredOutputRoleTarget},
-    publication::{
-        data::AuthoredRetirementRefusal as Cause, patch::data::RecordStructuralChange as Change,
-    },
-    transactions::data::{EntityReference, RecordRef},
-};
+use crate::history::data::codec_retirement_closure::source_scope_closure;
+use crate::history::data::SelectedOutputPublication;
+use crate::identity::data::EntityId;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
+use crate::publication::data::AuthoredRetirementRefusal as Cause;
+use crate::publication::patch::data::RecordStructuralChange as Change;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 mod roster;
 
@@ -70,7 +70,9 @@ pub(super) fn prepare(
     )?;
     let mut latest = source_scope_closure::from_current(
         Arc::clone(runtime.runtime.current_ownership.as_ref().ok_or_else(|| {
-            crate::mvcc::origin_denial("producer cascade requires current Native ownership")
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                "producer cascade requires current Native ownership",
+            )
         })?),
         Some(installed),
         context,

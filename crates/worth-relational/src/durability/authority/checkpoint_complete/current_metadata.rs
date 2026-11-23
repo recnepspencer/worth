@@ -4,9 +4,8 @@ use super::{
     Denial,
 };
 use crate::{
-    branch::CheckpointBranchMetadata,
-    durability::data::DurableRecordIdentityState,
-    runtime::{FrozenCheckpointIndexes, RelationalRuntime},
+    branch::CheckpointBranchMetadata, durability::data::DurableRecordIdentityState,
+    runtime::RelationalRuntime,
 };
 use worth_execution::ExecutionRequest;
 
@@ -14,7 +13,7 @@ pub(super) struct FrozenCurrentCheckpointMetadata {
     pub(super) branches: CheckpointBranchMetadata,
     pub(super) components: CapturedCompleteComponents,
     pub(super) identity: DurableRecordIdentityState,
-    pub(super) indexes: FrozenCheckpointIndexes,
+    pub(super) indexes: crate::durability::derived_index_artifacts::FrozenIndexCheckpoint,
     pub(super) symbol_frontier: u32,
     pub(super) main_cell: usize,
 }

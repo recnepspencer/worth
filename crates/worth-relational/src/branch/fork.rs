@@ -13,7 +13,7 @@ use crate::history::data::{BranchCreateError, CommitId};
 
 use super::identity::RelationalBranchIdentity;
 use super::reference::{RelationalBranchCellDenial, RelationalBranchReferenceObservation};
-use super::RelationalBranchVersion;
+use crate::branch::version::RelationalBranchVersion;
 
 #[path = "fork_association.rs"]
 mod association;
@@ -22,6 +22,8 @@ mod port_operations;
 #[path = "fork_publication.rs"]
 mod publication;
 pub use association::RelationalAssociatedFork;
+#[path = "fork_live_source_admission.rs"]
+mod live_source_admission;
 #[path = "fork_runtime_adapters.rs"]
 mod runtime_adapters;
 #[path = "fork_source_validation.rs"]
@@ -29,7 +31,7 @@ mod source_validation;
 #[path = "fork_target_installation.rs"]
 mod target_installation;
 #[path = "fork_target_preparation.rs"]
-mod target_preparation;
+pub(super) mod target_preparation;
 
 /// Typed denials for the fork transition.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,7 +52,7 @@ pub enum RelationalForkDenial {
     /// Original-request or structural refusal before derived fork selection is installed.
     IndexPreparation(Box<crate::indexes::data::DerivedIndexMaintenanceDenial>),
     RootIdentityExhausted,
-    ManagedSource(crate::mvcc::CompanionPreflightStop),
+    ManagedSource(crate::mvcc::publication::companion::preflight_stop::CompanionPreflightStop),
     InvalidTarget(BranchCreateError),
     Cell(RelationalBranchCellDenial),
     RetentionCapacityExhausted,
@@ -71,7 +73,9 @@ pub enum RelationalForkDenial {
     AllocationAccountingOverflow,
 }
 
-impl super::RelationalBranchTransitionDenial for RelationalForkDenial {
+impl crate::branch::transition::durable_step::RelationalBranchTransitionDenial
+    for RelationalForkDenial
+{
     fn durable_publication_refused(
         refusal: crate::durability::medium::RelationalDurablePublicationRefusal,
     ) -> Self {
@@ -134,4 +138,3 @@ impl RelationalForkOutcome {
 }
 
 use source_validation::ValidatedForkSource;
-pub(in crate::branch) use target_preparation::PreparedForkTarget;

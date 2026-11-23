@@ -1,4 +1,5 @@
 mod application_effect;
+mod source_history;
 use super::super::phase_backing::CommitPhaseBacking;
 mod current_ownership;
 mod owned_record_custody;
@@ -231,10 +232,7 @@ pub(super) fn prepare_publication_phase(
         let canonical_commit_envelope = crate::execution::transaction_stage(
             execution,
             runtime.commit_work_budget.as_ref(),
-            || {
-                canonical_commit_envelope
-                    .freeze_with_managed_source_history(source_interpretation, *execution)
-            },
+            || source_history::freeze(canonical_commit_envelope, source_interpretation, *execution),
         )?;
         let clone_mode = working_state.clone_mode();
         let committed_partitions = working_state.into_partition_commits().1;

@@ -11,7 +11,8 @@ impl ProjectionRecordReader<'_> {
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         if matches!(visibility, KindScanVisibility::Live) {
             return self.paid_current_entities(
                 state.get_current_partition(partition_id),
@@ -102,7 +103,10 @@ impl ProjectionRecordReader<'_> {
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         if matches!(visibility, KindScanVisibility::Live) {
             return self.paid_current_relations(
                 state.get_current_partition(partition_id),
@@ -197,7 +201,8 @@ impl VisibilityReadContext<'_> {
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,
@@ -213,7 +218,10 @@ impl VisibilityReadContext<'_> {
         visibility: KindScanVisibility,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         ProjectionRecordReader::new(
             self.runtime.current_version_id(),
             &self.runtime.services.instrumentation,

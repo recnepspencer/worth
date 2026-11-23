@@ -1,5 +1,6 @@
 //! Exact-root selection carry; each read admits its own required generation.
-use super::{request_payment, IndexAuthority};
+use super::super::live_access::IndexAuthority;
+use super::request_payment;
 use crate::indexes::data::{
     DerivedIndexMaintenanceBudget, DerivedIndexMaintenanceDenial,
     DerivedIndexMaintenanceDenialKind as Denial, DerivedIndexMaintenanceWork,
@@ -95,8 +96,9 @@ impl IndexAuthority<'_> {
             work.prepare(
                 1,
                 (branch.0.len()
-                    + std::mem::size_of::<crate::runtime::PreparedIndexBasisSelection>())
-                    as u64,
+                    + std::mem::size_of::<
+                        crate::runtime::state::subsystems::indexing::PreparedIndexBasisSelection,
+                    >()) as u64,
             )?;
             let basis = self.runtime.indexes.prepare_basis_selection(
                 branch,

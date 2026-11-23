@@ -317,3 +317,5 @@ impl RelationalRuntime {
         rebuild_runtime_from_plan(execution, admitted).map(|(restored, _, _, _)| restored)
     }
 }
+
+pub(super) mod versioned_artifact;

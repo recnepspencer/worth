@@ -1,6 +1,6 @@
 pub(crate) use publication::BoundAuthoredCoupling;
 pub(crate) use publication::CoupledSource;
-mod observation;
+pub(crate) mod observation;
 pub use crate::history::data::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) mod publication;
 pub use publication::RelationalPublicationReadDependencyDenial;
@@ -29,8 +29,6 @@ pub use crate::runtime::{
     RelationalOperationInterruption,
 };
 pub use observation::RelationalBranchObservation;
-pub(crate) use observation::RelationalObservationRetirement;
-pub(crate) use observation::RelationalRetainedObservationShares;
 pub(crate) use publication::PreparedCanonicalBranchMovement;
 pub use publication::RelationalInstalledApplicationPublicationAuthority;
 pub(crate) use publication::{
@@ -55,26 +53,27 @@ pub use publication::{
     RelationalPublicationProjectionPosture, ReservedCompanionBranchCell,
     RetiredPublicationCompanionRegistration, StaleRelationalBranchObservation,
 };
-pub(crate) use publication::{
-    ManagedSourceHistoryOwner, ManagedSourceRootImage, PreparedManagedIndexSourceFork,
-    PreparedRelationalCandidateAdmissionStop, PreparedRelationalPublication,
-    PreparedRelationalPublicationAccelerators, PublicationPreparationDenial,
-};
 pub use publication::{
-    ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate, RelationalAuthoredCoupledOwners,
-    RelationalAuthoredCoupledProducerAssembly, RelationalAuthoredCoupledTransaction,
-    RelationalAuthoredRestoration, RelationalAuthoredRetirement, RelationalCoupledAppendTouches,
-    RelationalCoupledAssemblyFailure, RelationalCoupledAuthoredPublication,
-    RelationalCoupledAuthoredSourceEffects, RelationalCoupledChainOverlay,
-    RelationalCoupledContribution, RelationalCoupledProducerContinuation,
-    RelationalCoupledProducerPosture, RelationalDeclaredCoupledOwner,
-    RelationalHistoricalOutputSelection, RelationalPerformedOutputPublications,
-    RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
+    ManagedIndexParentReadFootprint, RelationalAuthoredCoupledCandidate,
+    RelationalAuthoredCoupledOwners, RelationalAuthoredCoupledProducerAssembly,
+    RelationalAuthoredCoupledTransaction, RelationalAuthoredRestoration,
+    RelationalAuthoredRetirement, RelationalCoupledAppendTouches, RelationalCoupledAssemblyFailure,
+    RelationalCoupledAuthoredPublication, RelationalCoupledAuthoredSourceEffects,
+    RelationalCoupledChainOverlay, RelationalCoupledContribution,
+    RelationalCoupledProducerContinuation, RelationalCoupledProducerPosture,
+    RelationalDeclaredCoupledOwner, RelationalHistoricalOutputSelection,
+    RelationalPerformedOutputPublications, RelationalPredecessorBasisDenial,
+    RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
     RelationalPreparedOutputPublications, RelationalRequiredOutputInput,
     RelationalRequiredOutputPublication, RelationalRequiredOutputRouteAbsence,
     RelationalRestoredProducerPrior, RequiredOutputProducingImplementation,
     RequiredOutputPublication, RequiredOutputPublicationMeaning, RequiredOutputRolePosture,
     RequiredOutputRoleTarget,
+};
+pub(crate) use publication::{
+    ManagedSourceRootImage, PreparedManagedIndexSourceFork,
+    PreparedRelationalCandidateAdmissionStop, PreparedRelationalPublication,
+    PreparedRelationalPublicationAccelerators, PublicationPreparationDenial,
 };
 pub use retained_entity_selection::{
     RelationalRetainedEntitySelection, RelationalRetainedEntitySelectionDenial,

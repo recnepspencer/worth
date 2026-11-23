@@ -4,7 +4,7 @@
 //! A consumer that projects Relational truth into its own model reads it
 //! through this module. Nothing here names a consumer concept.
 
-mod commit_selection;
+pub(crate) mod commit_selection;
 mod consistency;
 mod consistency_expectations;
 #[cfg(test)]
@@ -14,12 +14,14 @@ mod lineage_at_observation;
 mod names_at_observation;
 mod observation_read;
 mod partition_projection;
-mod read_custody;
+pub(crate) mod read_custody;
 mod receipt;
 mod receipt_minting;
 mod receipt_witness;
-mod retained_observation;
+mod retain_observation;
+pub(crate) mod retained_observation;
 mod runtime_handle;
+mod select_commit;
 pub use read_custody::RelationalReadCustodyHolders;
 
 pub use commit_selection::{

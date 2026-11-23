@@ -30,6 +30,7 @@ pub(crate) mod checkpoint_history;
 pub(crate) mod checkpoints;
 pub mod data;
 pub(crate) mod derived_index_artifacts;
+pub(crate) mod history_source_readmission;
 pub(crate) mod log;
 pub(crate) mod medium;
 pub(crate) mod migration;

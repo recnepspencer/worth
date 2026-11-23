@@ -5,12 +5,15 @@ use crate::indexes::data::DerivedIndexDefinition;
 /// Detached restored-definition inventory for bulk exact semantic matching.
 /// Numeric IDs come from the owner, never from the caller's expected shape.
 pub struct DerivedIndexDefinitionLookup {
-    by_name: BTreeMap<String, Vec<crate::indexes::RetainedDerivedIndexDefinition>>,
+    by_name:
+        BTreeMap<String, Vec<crate::indexes::retained_definition::RetainedDerivedIndexDefinition>>,
     definition_count: usize,
 }
 
 impl DerivedIndexDefinitionLookup {
-    pub(super) fn new(definitions: Vec<crate::indexes::RetainedDerivedIndexDefinition>) -> Self {
+    pub(super) fn new(
+        definitions: Vec<crate::indexes::retained_definition::RetainedDerivedIndexDefinition>,
+    ) -> Self {
         let definition_count = definitions.len();
         let mut by_name = BTreeMap::new();
         for definition in definitions {
@@ -70,26 +73,18 @@ mod tests {
             branch_scoped,
         };
         let lookup = DerivedIndexDefinitionLookup::new(vec![
-            crate::indexes::RetainedDerivedIndexDefinition::from_owned(installed(
-                11,
-                wrong_kind.clone(),
-                false,
-            )),
-            crate::indexes::RetainedDerivedIndexDefinition::from_owned(installed(
-                12,
-                kind.clone(),
-                true,
-            )),
-            crate::indexes::RetainedDerivedIndexDefinition::from_owned(installed(
-                13,
-                kind.clone(),
-                false,
-            )),
-            crate::indexes::RetainedDerivedIndexDefinition::from_owned(installed(
-                14,
-                kind.clone(),
-                false,
-            )),
+            crate::indexes::retained_definition::RetainedDerivedIndexDefinition::from_owned(
+                installed(11, wrong_kind.clone(), false),
+            ),
+            crate::indexes::retained_definition::RetainedDerivedIndexDefinition::from_owned(
+                installed(12, kind.clone(), true),
+            ),
+            crate::indexes::retained_definition::RetainedDerivedIndexDefinition::from_owned(
+                installed(13, kind.clone(), false),
+            ),
+            crate::indexes::retained_definition::RetainedDerivedIndexDefinition::from_owned(
+                installed(14, kind.clone(), false),
+            ),
         ]);
         assert_eq!(lookup.definition_count(), 4);
         assert_eq!(lookup.candidate_count_for_name("same-name"), 4);

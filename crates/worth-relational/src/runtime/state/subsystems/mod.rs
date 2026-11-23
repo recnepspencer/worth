@@ -1,12 +1,8 @@
-pub(crate) use history::{
-    OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial, OriginalEmptySchemaInstallation,
-    OriginalEmptySchemaObservation, RetainedBranchTransition,
-};
 pub(crate) use record_identity::MutationRecordAllocations;
 mod commit_strategies;
-mod durability;
-mod history;
-mod indexing;
+pub(crate) mod durability;
+pub(crate) mod history;
+pub(crate) mod indexing;
 pub(crate) mod lineage;
 pub(crate) mod lineage_identity;
 mod publication;
@@ -31,28 +27,31 @@ pub(crate) use durability::{
     DurabilitySubsystem, RelationalCheckpointManifestPublication,
     RelationalCheckpointManifestSelection,
 };
+pub(crate) use history::canonical_publication_routes::{
+    authored_write_commit_denial, readmit_positioned_canonical_commit, BranchTransitionPublication,
+    BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
+    CanonicalPublicationRecordError, OriginalBranchSchemaInputs, OriginalBranchSchemaInputsDenial,
+    OriginalEmptySchemaInstallation, OriginalEmptySchemaObservation,
+    PatchPositionReservationAdmission, PerformedCheckpointSelection,
+    PreparedCanonicalPublicationRoute, RelationalCanonicalPublicationRoutes,
+    RelationalPerformedSourceWalk, RetainedBranchTransition,
+};
 pub use history::canonical_publication_routes::{
     RelationalCanonicalPositionAdmissionDenial, RelationalPatchPositionReservationCounters,
 };
 pub use history::history_costs::RelationalBranchSharingCostCounters;
+pub(crate) use history::history_preparation_binding::RelationalPreparationHistory;
+pub(crate) use history::history_source_retirement::RelationalSourceHistoryBinding;
 pub use history::RelationalPhase4ReferenceCostCounters;
-pub(crate) use history::{authored_write_commit_denial, AuthoredWriteGeneration};
 pub(crate) use history::{
-    readmit_positioned_canonical_commit, BranchHeadVersionIndexAuthority,
-    BranchTransitionPublication, BranchTransitionRecordError, CanonicalCheckpointAdmissionError,
-    CanonicalPositionAdmission, CanonicalPublicationRecordError, HistorySubsystem,
-    PatchPositionReservationAdmission, PerformedCheckpointSelection,
-    PreparedCanonicalPublicationRoute, PreparedCommitSequence,
+    BranchHeadVersionIndexAuthority, HistorySubsystem, PreparedCommitSequence,
     PreparedRecoveredVersionedArtifactPublication, PreparedVersionedArtifactAccelerators,
-    PreparedVersionedArtifactPublication, RelationalCanonicalPublicationRoutes,
-    RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPerformedSourceWalk,
-    RelationalPreparationHistory, RelationalSourceHistoryBinding, RetainedCanonicalPosition,
+    PreparedVersionedArtifactPublication, RelationalForkMaterializationCost,
+    RelationalForkOwnerBinding,
 };
 pub(crate) use indexing::{
-    CapturedIndexDefinitionCatalog, FrozenCheckpointIndexes, IndexCatalogCoverage,
-    IndexDefinitionCatalog, IndexDefinitionReadBinding, IndexSelectionState, IndexingState,
-    IndexingSubsystem, OriginalCheckpointIndexes, PreparedGenerationBatch,
-    PreparedIndexBasisSelection,
+    CapturedIndexDefinitionCatalog, IndexCatalogCoverage, IndexDefinitionReadBinding,
+    IndexingState, OriginalCheckpointIndexes,
 };
 pub use indexing::{
     PreparedRelationalIndexDefinitions, RelationalIndexDefinitionPreparation,
@@ -92,3 +91,8 @@ pub use record_identity::{
 
 pub use services::RelationalSymbolTableForTest;
 pub(crate) use storage::TryPartitionMutationDenied;
+
+#[cfg(test)]
+pub(crate) use history::canonical_publication_routes::{
+    AuthoredWriteGeneration, RetainedCanonicalPosition,
+};

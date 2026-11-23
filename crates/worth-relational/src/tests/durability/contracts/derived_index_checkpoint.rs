@@ -193,8 +193,11 @@ fn cold_checkpoint_mutable_index_snapshot_demand_and_install_preserves_carried_s
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .unwrap();
-    let mut snapshot = runtime.indexes.snapshot();
-    snapshot.demand_checkpoint_image(execution).unwrap();
+    let (mut snapshot, original) = runtime.indexes.snapshot_with_original();
+    original
+        .expect("pending image belongs to the selected index state")
+        .readmit_into_snapshot(execution, &mut snapshot)
+        .unwrap();
     let reads_after_demand = source.1.load(std::sync::atomic::Ordering::Relaxed);
     assert!(
         reads_after_demand > reads_before,

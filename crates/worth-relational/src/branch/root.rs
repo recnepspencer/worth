@@ -3,7 +3,7 @@ type OncePublicationBases =
     std::sync::OnceLock<std::sync::Weak<dyn crate::history::retention::PublicationBasisAccess>>;
 
 use super::target::RelationalBranchRootDescriptor;
-use super::RelationalPersistentRegionSet;
+use crate::branch::root_regions::RelationalPersistentRegionSet;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId};
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::{PartitionAccess, PartitionState};
@@ -74,7 +74,7 @@ pub(crate) use visibility::RelationalBranchVisibilityCommitment;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum RelationalBranchRootCaptureDenial {
-    Execution(crate::execution::RelationalExecutionDenialCause),
+    Execution(crate::execution::denial_cause::RelationalExecutionDenialCause),
     PublishedPartitionMissing(PartitionId),
     DuplicateRegion(PartitionId),
     InvalidAdjacencyProjection(PartitionId),
@@ -84,7 +84,7 @@ pub(crate) enum RelationalBranchRootCaptureDenial {
     StorageUnavailable(crate::storage::data::RelationalStorageUnavailable),
     SlotCountOverflow,
     AllocationLayoutOverflow,
-    Request(crate::execution::RelationalExecutionDenialCause),
+    Request(crate::execution::denial_cause::RelationalExecutionDenialCause),
     CanonicalEnvelopeMismatch,
     CanonicalPayloadBacking(worth_execution::ExecutionAllocationDenial),
     UnadmittedContent,
@@ -213,7 +213,7 @@ impl RelationalBranchRoot {
         envelope: Arc<CanonicalCommitEnvelope>,
         content: &crate::content::publication::ContentPublication,
         registry: &crate::schema::data::RelationalSchemaRegistry,
-        symbols: &crate::runtime::RuntimeSymbolTable,
+        symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
         execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
         capture_preparation::prepare(

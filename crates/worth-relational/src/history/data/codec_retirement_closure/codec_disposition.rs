@@ -5,9 +5,10 @@ use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::history::data::{
     canonical_commit_envelope::*, CanonicalCommitEnvelope, RequiredOutputRoutePosition,
 };
-use crate::transactions::data::{
-    EntityMutationIntent, MutationIntent, RecordRef, RelationMutationIntent,
-};
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;
+use crate::transactions::data::primitives::RecordRef;
 use std::sync::Arc;
 use worth_execution::{ExecutionResourceLease, MapKernelContext};
 mod activation;
@@ -20,7 +21,7 @@ pub(super) fn validate(
     envelope: &Arc<CanonicalCommitEnvelope>,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     charge(
         context,
@@ -65,7 +66,7 @@ fn validate_group(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<Arc<CanonicalRequiredOutputOrigin>, Stop> {
     let transition = envelope
         .schema_transition
@@ -134,10 +135,16 @@ fn validate_group(
     let _metadata = metadata::reserve(&event.kinds, context, lease)?;
     let (before, after) =
         metadata::readmit_kinds(event, &source.schema_authority, &envelope.schema_authority)?;
-    let changes = crate::runtime::codec_field_changes_in_context(&before, &after, context, lease)
-        .map_err(|stop| match stop {
-        crate::runtime::CodecFieldComparisonStop::Request(cause) => request(cause),
-        crate::runtime::CodecFieldComparisonStop::Contract(detail) => Stop::Payload(detail),
+    let changes = crate::schema::codec_field_comparison::codec_field_changes_in_context(
+        &before, &after, context, lease,
+    )
+    .map_err(|stop| match stop {
+        crate::schema::codec_field_comparison::CodecFieldComparisonStop::Request(cause) => {
+            request(cause)
+        }
+        crate::schema::codec_field_comparison::CodecFieldComparisonStop::Contract(detail) => {
+            Stop::Payload(detail)
+        }
     })?;
     if changes.is_empty() {
         return Err("codec disposition has no actual changed field meaning".into());
@@ -178,7 +185,7 @@ fn validate_group(
             lease,
             schema,
         )?;
-        if member.posture == crate::mvcc::RequiredOutputRolePosture::Retire {
+        if member.posture == crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture::Retire {
             continue;
         }
         let present = payload.as_ref().and_then(|payload| payload.state.as_ref());
@@ -256,10 +263,10 @@ fn validate_group(
 pub(super) fn validate_birth(
     runtime: &crate::history::data::codec_retirement_closure::history_request::RuntimeHistoryRequest<'_, '_, '_>,
     birth: &OwnedValidatedOutputOrigins,
-    meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+    meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<(), Stop> {
     let origin = birth.materialization_origin_for_route(meaning, context)?;
     let prior = super::route_selection::select_at(

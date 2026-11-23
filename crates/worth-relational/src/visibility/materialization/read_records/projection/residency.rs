@@ -1,6 +1,6 @@
 //! Projection operation demands preserve the selected root and runtime dictionary.
 use super::VisibilityProjectionView;
-use crate::execution::RelationalExecutionDenialCause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
 use crate::identity::data::PartitionId;
 impl VisibilityProjectionView {
     pub(in crate::visibility::materialization::read_records) fn admitted_head_region(
@@ -17,7 +17,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partitions: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         if let Some(resident) = &self.resident {
             resident.demand_regions_head(execution, partitions)?;
         } else if let Some(root) = self.selected_root() {
@@ -34,7 +34,7 @@ impl VisibilityProjectionView {
             if let Some(root) = self.selected_root() {
                 self.demand_regions_head(execution, root.partition_ids_iter())?;
             } else {
-                crate::execution::check_request(execution)?;
+                crate::execution::request_custody::check_request(execution)?;
             }
             Ok(())
         } else {
@@ -57,7 +57,7 @@ impl VisibilityProjectionView {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         if let Some(resident) = &self.resident {
             resident.demand_regions_full(execution, resident.root().partition_ids_iter())?;
         } else if let Some(root) = self.selected_root() {
@@ -70,7 +70,7 @@ impl VisibilityProjectionView {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         partitions: impl IntoIterator<Item = PartitionId>,
     ) -> Result<(), RelationalExecutionDenialCause> {
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         if let Some(resident) = &self.resident {
             resident.demand_regions_full(execution, partitions)?;
         } else if let Some(root) = self.selected_root() {

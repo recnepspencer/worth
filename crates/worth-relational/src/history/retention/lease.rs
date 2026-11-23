@@ -2,8 +2,9 @@ use std::sync::Arc;
 mod retirement;
 pub(crate) use retirement::RelationalExternalLeaseRetirement;
 
-use crate::branch::{RelationalBranchBasisDescriptor, RelationalBranchIdentity};
-use crate::mvcc::RelationalBranchObservation;
+use crate::branch::basis::RelationalBranchBasisDescriptor;
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::mvcc::observation::RelationalBranchObservation;
 
 use super::{RelationalBasisRetentionReason, RelationalExternalRetentionTerminalAccounting};
 
@@ -25,8 +26,8 @@ impl RelationalBranchRetentionLease {
     /// until explicit unbudgeted reclaim. Independent aliases keep their veto.
     pub fn into_observation_retirement(
         self,
-    ) -> crate::change_source::RelationalRetainedObservationRetirement {
-        crate::change_source::RelationalRetainedObservationRetirement::from_retention_lease(self)
+    ) -> crate::change_source::retained_observation::RelationalRetainedObservationRetirement {
+        crate::change_source::retained_observation::RelationalRetainedObservationRetirement::from_retention_lease(self)
     }
     pub(crate) fn new(
         observation: RelationalBranchObservation,
@@ -89,7 +90,7 @@ impl RelationalBranchRetentionLease {
             .unwrap_or(super::RelationalRetentionOwnerRelationship::OwnerUnavailable)
     }
 
-    pub(crate) fn admitted_basis(&self) -> crate::branch::AdmittedRelationalBranchBasis {
+    pub(crate) fn admitted_basis(&self) -> crate::branch::basis::AdmittedRelationalBranchBasis {
         self.observation
             .as_ref()
             .expect(/* Proof: The private lease constructor installs observation and obligation together; consuming release takes each once, and Drop checks the disarmed state. */ "live retention lease carries its observation")
@@ -111,19 +112,19 @@ impl Drop for RelationalBranchRetentionLease {
 /// A denied release that preserves the still-live external obligation.
 #[derive(Debug)]
 pub struct RelationalBranchRetentionReleaseDenial {
-    denial: crate::branch::RelationalBranchBasisDenial,
+    denial: crate::branch::basis_denial::RelationalBranchBasisDenial,
     lease: RelationalBranchRetentionLease,
 }
 
 impl RelationalBranchRetentionReleaseDenial {
     pub(crate) fn new(
-        denial: crate::branch::RelationalBranchBasisDenial,
+        denial: crate::branch::basis_denial::RelationalBranchBasisDenial,
         lease: RelationalBranchRetentionLease,
     ) -> Self {
         Self { denial, lease }
     }
 
-    pub fn denial(&self) -> &crate::branch::RelationalBranchBasisDenial {
+    pub fn denial(&self) -> &crate::branch::basis_denial::RelationalBranchBasisDenial {
         &self.denial
     }
 

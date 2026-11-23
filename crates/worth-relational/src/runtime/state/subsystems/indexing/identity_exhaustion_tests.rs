@@ -2,16 +2,17 @@ use super::*;
 
 #[test]
 fn exhausted_definition_frontier_refuses_without_inserting() {
-    let owner = IndexingSubsystem::new(&());
+    let owner = IndexingSubsystem::default();
     let definition = DerivedIndexDefinition {
         index_id: DerivedIndexId(0),
         name: "frontier".into(),
         branch_scoped: false,
         kind: crate::indexes::data::DerivedIndexKind::EntityField {
-            field_locator: crate::transactions::data::planned_single_field_locator(
-                crate::tests::support::aspect_key("account"),
-                crate::tests::support::field_key("name"),
-            ),
+            field_locator:
+                crate::transactions::data::aspect_field_patch::planned_single_field_locator(
+                    worth_foundational::facade::AspectKey::new("account").unwrap(),
+                    worth_foundational::facade::FieldKey::new("name").unwrap(),
+                ),
         },
     };
     let first = owner.register_definition(definition.clone()).unwrap();
@@ -38,7 +39,7 @@ fn exhausted_definition_frontier_refuses_without_inserting() {
 
 #[test]
 fn exhausted_generation_frontier_cannot_wrap_or_issue_again() {
-    let owner = IndexingSubsystem::new(&());
+    let owner = IndexingSubsystem::default();
     owner.state.write().next_generation_id = u64::MAX - 1;
     assert_eq!(owner.next_generation_id(), Some(u64::MAX - 1));
     assert_eq!(owner.next_generation_id(), None);

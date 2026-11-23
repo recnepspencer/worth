@@ -158,7 +158,7 @@ impl RelationalCommitEnvelopeResidency {
             .canonical_read
             .read_member(&directory.source, execution, member, limit)
             .map_err(|cause| {
-                crate::durability::checkpoint_history::capture::owned_stop(
+                crate::durability::medium::owned_read_stop::owned_stop(
                     cause,
                     RelationalStorageSubject::Envelope(entry.position),
                 )
@@ -166,10 +166,8 @@ impl RelationalCommitEnvelopeResidency {
         // Only this consumer read a canonical body; generic selected reads
         // also carry derived-index members and cannot certify this event.
         directory.source.observe_canonical_member_read(member);
-        if crate::durability::log::native_checkpoint_codec::member_frame::locator_for_request(
-            execution,
-            bytes.bytes(),
-        )? != member
+        if crate::storage::data::member_frame::locator_for_request(execution, bytes.bytes())?
+            != member
         {
             return Err(RelationalStorageUnavailable {
                 subject: RelationalStorageSubject::Envelope(entry.position),

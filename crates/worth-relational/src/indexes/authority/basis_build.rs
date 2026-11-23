@@ -1,12 +1,12 @@
+use super::build_diagnostics::record_index_preparation_strategy_counters;
+use super::live_access::IndexAuthority;
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::indexes::data::{DerivedIndexBuildOutcome, DerivedIndexBuildRequest};
 
 use super::{
-    choose_index_preparation_strategy, execute_index_inputs, execute_index_packets,
-    failed_build_outcome, index_execution_denial, plan_index_packets, plan_index_packets_checked,
-    planned_index_definitions, publish_index_generations,
-    record_index_preparation_strategy_counters, IndexAuthority, IndexGenerationPublicationBasis,
-    IndexProjectionSource,
+    execute_index_inputs, execute_index_packets, failed_build_outcome, index_execution_denial,
+    plan_index_packets, plan_index_packets_checked, planned_index_definitions,
+    publish_index_generations, IndexGenerationPublicationBasis, IndexProjectionSource,
 };
 
 impl IndexAuthority<'_> {
@@ -82,7 +82,7 @@ impl IndexAuthority<'_> {
             lease
         {
             match plan_index_packets_checked(
-                    self.runtime,
+                &self.runtime.indexes,
                     &request.index_ids,
                     lease,
                     work_budget.as_ref().expect(/* Proof: The leased preparation branch creates its work account before this callback; the unleased branch does not invoke this callback. */ "leased index work account"),
@@ -105,7 +105,7 @@ impl IndexAuthority<'_> {
                 }
         } else {
             let (definitions, missing) =
-                planned_index_definitions(self.runtime, &request.index_ids);
+                planned_index_definitions(&self.runtime.indexes, &request.index_ids);
             let present: Vec<_> = definitions
                 .iter()
                 .map(|definition| definition.index_id)
@@ -114,7 +114,7 @@ impl IndexAuthority<'_> {
         };
         failed_indexes.extend(missing_indexes);
         let strategy =
-            choose_index_preparation_strategy(self.runtime, lease, present_indexes.len());
+            crate::authority::commit::preparation::planning::strategy::strategy_for_parallel_packets(lease, present_indexes.len());
         record_index_preparation_strategy_counters(self.runtime, present_indexes.len(), &strategy);
         let Some(schema_version) = projection.schema_version() else {
             failed_indexes.extend(present_indexes.iter().copied());
@@ -169,7 +169,7 @@ impl IndexAuthority<'_> {
             schema_version,
         );
         generations = publish_index_generations(
-            self.runtime,
+            &self.runtime.indexes,
             &publication_basis,
             results,
             &mut failed_indexes,

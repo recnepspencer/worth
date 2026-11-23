@@ -2,19 +2,20 @@
 mod foreign_member;
 mod roster;
 use super::{charge, CodecRetirementClosureStop as Stop};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::CommitId;
+use crate::history::data::SelectedOutputPublication;
+use crate::identity::data::EntityId;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
+use crate::mvcc::RelationalInstalledApplicationPublicationAuthority;
+use crate::publication::data::AuthoredRetirementRefusal as Cause;
+use crate::publication::data::PublicationError;
+use crate::runtime::RelationalRuntime;
 use crate::storage::overlay::PartitionAccess;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::{CommitId, SelectedOutputPublication},
-    identity::data::EntityId,
-    mvcc::{
-        RelationalInstalledApplicationPublicationAuthority, RequiredOutputRolePosture as Posture,
-        RequiredOutputRoleTarget,
-    },
-    publication::data::{AuthoredRetirementRefusal as Cause, PublicationError},
-    runtime::RelationalRuntime,
-    transactions::data::{EntityReference, RecordRef, TransactionCommitError},
-};
+use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use crate::transactions::data::primitives::EntityReference;
+use crate::transactions::data::primitives::RecordRef;
 use roster::require_roster;
 use worth_execution::{ExecutionRequest, ExecutionWorkCeiling, MapKernelContext};
 
@@ -26,10 +27,10 @@ pub(super) fn reject(cause: Cause, id: EntityId) -> TransactionCommitError {
 }
 pub(super) fn stopped(stop: Stop) -> TransactionCommitError {
     match stop {
-        Stop::Payload(detail) => crate::mvcc::origin_denial(detail),
+        Stop::Payload(detail) => crate::transactions::data::outcomes::transaction_commit_error::origin_denial(detail),
         Stop::Request(cause) => {
-            TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-                kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause),
+            TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+                kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause),
                 partition_identity: None,
             })
         }

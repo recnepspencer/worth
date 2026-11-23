@@ -1,5 +1,6 @@
 //! Only the real materialization custody can supply a restoration origin.
 use super::*;
+use crate::branch::materialization::RelationalMaterializationRecord;
 use crate::branch::RelationalMaterializationCustody;
 use crate::history::data::CommitId;
 
@@ -34,7 +35,7 @@ impl NativeSourceRestorationOrigin {
             && self.selected.identity() == self.source.basis().identity()
             && !self.selected.materialization_is_complete()
             && self.source.basis().materialization_is_complete()
-            && Arc::ptr_eq(&self.records, &self.source.records)
+            && self.source.matches_records(&self.records)
             && owner
                 .materialization
                 .as_ref()

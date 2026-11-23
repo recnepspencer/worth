@@ -31,7 +31,14 @@ impl ManagedIndexSourceObservation {
             }
             Ok(())
         })?;
-        crate::history::source_impact(runtime, execution, self, occurrence)
+        let selector = self.authored_history_selector(runtime, execution)?;
+        crate::history::access::relevant_writes::source_impact(
+            runtime.runtime_instance_id(),
+            execution,
+            &self.affinity,
+            selector,
+            occurrence,
+        )
     }
     /// Select metadata for this actual program/scope, not a reconstructed key.
     /// Retained observation custody grants no Source READ or correction permission.
@@ -48,21 +55,14 @@ impl ManagedIndexSourceObservation {
     }
 }
 
-/// Actual cell identity only: no physical basis, image, interpretation or READ.
-pub(crate) struct ManagedSourceHistoryOwner(
-    std::sync::Arc<super::affinity::ManagedSourceCellAffinity>,
-);
-impl ManagedSourceHistoryOwner {
-    pub(crate) fn admits(&self, observation: &ManagedIndexSourceObservation) -> bool {
-        std::sync::Arc::ptr_eq(&self.0, &observation.affinity)
-    }
-}
 impl super::ManagedSourceRootImage {
-    pub(crate) fn history_owner(&self) -> Option<ManagedSourceHistoryOwner> {
+    pub(crate) fn history_owner(
+        &self,
+    ) -> Option<std::sync::Arc<super::affinity::ManagedSourceCellAffinity>> {
         self.image
             .payload
             .is::<super::ManagedIndexBranchImage>()
-            .then(|| ManagedSourceHistoryOwner(std::sync::Arc::clone(&self.affinity)))
+            .then(|| std::sync::Arc::clone(&self.affinity))
     }
     /// The directory receiver creates only funded weak metadata, not a strong
     /// temporary that could be destroyed after concurrent cache eviction.

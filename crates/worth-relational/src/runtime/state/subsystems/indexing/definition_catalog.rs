@@ -27,34 +27,20 @@ fn incarnation() -> u64 {
     .expect("index catalog incarnation exhausted")
 }
 
-/// Private provenance, never serialized or accepted from a selector. The
-/// discriminator only separates actual whole-catalog installations; coverage
-/// additionally requires the real definition and selected canonical interval.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) struct IndexCatalogCoverage {
-    incarnation: u64,
-    epoch: u64,
-}
-impl IndexCatalogCoverage {
-    pub(crate) fn extends(self, prior: Self) -> bool {
-        self.incarnation == prior.incarnation && self.epoch >= prior.epoch
-    }
-}
-impl worth_execution::ChargedBytes for IndexCatalogCoverage {
-    fn additional_charged_bytes(&self) -> u64 {
-        0
-    }
-}
-
 #[derive(Clone, Debug)]
 pub(crate) struct IndexDefinitionCatalog {
     pub(super) globals: im::OrdSet<DerivedIndexId>,
     pub(super) installed: im::OrdSet<DerivedIndexId>,
-    pub(super) definitions:
-        BTreeMap<DerivedIndexId, crate::indexes::RetainedDerivedIndexDefinition>,
+    pub(super) definitions: BTreeMap<
+        DerivedIndexId,
+        crate::indexes::retained_definition::RetainedDerivedIndexDefinition,
+    >,
     pub(super) field_definitions: BTreeMap<
         AspectKey,
-        BTreeMap<FieldKey, Vec<crate::indexes::RetainedDerivedIndexDefinition>>,
+        BTreeMap<
+            FieldKey,
+            Vec<crate::indexes::retained_definition::RetainedDerivedIndexDefinition>,
+        >,
     >,
     entity_field_indexes: usize,
     introductions: BTreeMap<DerivedIndexId, u64>,
@@ -122,10 +108,11 @@ impl IndexDefinitionCatalog {
                 self.field_definitions.remove(&aspect);
             }
         }
-        let definition = crate::indexes::RetainedDerivedIndexDefinition::funded(
-            definition,
-            self.backing.clone(),
-        );
+        let definition =
+            crate::indexes::retained_definition::RetainedDerivedIndexDefinition::funded(
+                definition,
+                self.backing.clone(),
+            );
         if let Some((aspect, field)) = field_index_locator(&definition.kind) {
             self.field_definitions
                 .entry(aspect)
@@ -153,7 +140,7 @@ impl IndexDefinitionCatalog {
     pub(crate) fn definition(
         &self,
         index: DerivedIndexId,
-    ) -> Option<crate::indexes::RetainedDerivedIndexDefinition> {
+    ) -> Option<crate::indexes::retained_definition::RetainedDerivedIndexDefinition> {
         self.definitions.get(&index).cloned()
     }
     pub(crate) fn has_entity_field_indexes(&self) -> bool {
@@ -180,7 +167,7 @@ impl IndexDefinitionCatalog {
         &self,
         aspect: &AspectKey,
         field: &FieldKey,
-        read: impl FnOnce(&[crate::indexes::RetainedDerivedIndexDefinition]) -> R,
+        read: impl FnOnce(&[crate::indexes::retained_definition::RetainedDerivedIndexDefinition]) -> R,
     ) -> R {
         read(
             self.field_definitions
@@ -192,9 +179,12 @@ impl IndexDefinitionCatalog {
 
     pub(crate) fn introduction(
         &self,
-        requested: &crate::history::RelationalAuthoredEntityIndexDefinition,
+        requested: &crate::history::access::relevant_writes::RelationalAuthoredEntityIndexDefinition,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
-    ) -> Result<Option<IndexCatalogCoverage>, crate::history::RelationalAuthoredWriteDenial> {
+    ) -> Result<
+        Option<IndexCatalogCoverage>,
+        crate::history::access::relevant_writes::RelationalAuthoredWriteDenial,
+    > {
         // Two borrowed BTree descents, followed by full definition comparison.
         super::admitted_definition::navigation(context, self.definitions.len(), 8)?;
         let Some(actual) = self.definitions.get(&requested.index_id) else {
@@ -222,56 +212,5 @@ impl IndexDefinitionCatalog {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn schema_meanings_with_one_version_keep_distinct_kind_routes() {
-        use crate::identity::data::KindId;
-        use crate::indexes::data::{DerivedIndexDefinition, DerivedIndexKind};
-        use crate::tests::support::{aspect_field_locator, aspect_key, field_key};
-        let old = crate::tests::support::declared_aspect_schema_registry(
-            crate::facade::config::CascadeDeletePolicy::CascadeDeleteRelations,
-        );
-        let mut added = old.entity_kinds.get(&KindId(1)).unwrap().clone();
-        added.kind_id = KindId(91);
-        added.kind_name = "new-index-covered-kind".into();
-        added
-            .aspect_contract_declarations
-            .identity_declarations
-            .clear();
-        let new = old.clone().register_entity_kind(added).unwrap();
-        assert_eq!(
-            old.primary_schema_version_id(),
-            new.primary_schema_version_id()
-        );
-        let indexes = IndexingSubsystem::default();
-        let definition = indexes
-            .register_definition(DerivedIndexDefinition {
-                index_id: DerivedIndexId(0),
-                name: "schema-qualified-routing".into(),
-                branch_scoped: true,
-                kind: DerivedIndexKind::EntityField {
-                    field_locator: aspect_field_locator(aspect_key("name"), field_key("name")),
-                },
-            })
-            .unwrap();
-        indexes.install_routing(
-            old.authority_digest_bytes(),
-            &crate::schema::lower_aspect_plans(&old),
-        );
-        indexes.install_routing(
-            new.authority_digest_bytes(),
-            &crate::schema::lower_aspect_plans(&new),
-        );
-        let catalog = indexes.definition_read_binding().snapshot();
-        let old_routes = catalog.routing(old.authority_digest_bytes()).unwrap();
-        let new_routes = catalog.routing(new.authority_digest_bytes()).unwrap();
-        assert!(old_routes.entities(KindId(91)).is_empty());
-        assert_eq!(new_routes.entities(KindId(91)), &[definition.index_id]);
-        assert_eq!(
-            old_routes.entities(KindId(1)),
-            new_routes.entities(KindId(1))
-        );
-    }
-}
+#[path = "definition_catalog_schema_tests.rs"]
+mod tests;

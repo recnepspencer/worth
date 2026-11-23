@@ -9,7 +9,8 @@ impl ProjectionRecordReader<'_> {
         kind: Option<crate::identity::data::KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<EntityReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Vec<EntityReadRecord>, crate::execution::denial_cause::RelationalExecutionDenialCause>
+    {
         let Some(head) = head else {
             return Ok(Vec::new());
         };
@@ -59,7 +60,10 @@ impl ProjectionRecordReader<'_> {
         kind: Option<crate::identity::data::KindId>,
         charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         let Some(head) = head else {
             return Ok(Vec::new());
         };

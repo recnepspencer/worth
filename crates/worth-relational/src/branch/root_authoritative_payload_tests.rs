@@ -15,7 +15,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
         content::*, mvcc::RelationalTransactionIntent, schema::data::*, transactions::data::*,
     };
     use worth_foundational::facade::*;
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = worth_execution::ExecutionRequest::serial(&host);
     let format = CanonicalDigestId::new([3; 32]);
     let contract = AspectContract::struct_aspect(
@@ -131,7 +131,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
         &execution,
         &RelationalContentAttachments::default(),
         partitions,
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+        crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence::prepare(
             &execution,
             Arc::new(envelope),
         )
@@ -154,7 +154,7 @@ fn content_old_retained_contract_cannot_hide_a_reference_after_current_binding_i
 
 #[test]
 fn strategy_artifacts_are_bound_into_the_committed_root() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = crate::commit_strategies::facade::intent_strategy_runtime();
@@ -177,7 +177,7 @@ fn strategy_artifacts_are_bound_into_the_committed_root() {
 
 #[test]
 fn merge_execution_authority_is_bound_into_the_committed_root() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = runtime_with_test_schema();
@@ -228,7 +228,7 @@ fn merge_execution_authority_is_bound_into_the_committed_root() {
 
 #[test]
 fn schema_transition_descriptors_are_each_bound_into_the_committed_root() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let mut runtime = runtime_with_test_schema();
@@ -329,7 +329,7 @@ fn assert_axis_mutation_rejected(
     let denial = root
         .relink_canonical_envelope(
             execution,
-            crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+            crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence::prepare(
                 execution,
                 Arc::new(mutant),
             )

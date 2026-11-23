@@ -15,7 +15,7 @@ pub(crate) fn read_view_from_snapshot_state(
     handle: &crate::snapshots::data::SnapshotHandle,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<RelationalReadView, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<RelationalReadView, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     debug_assert_eq!(
         /* Proof: The handle binding and state key originate from one admitted snapshot observation. The private cache lookup requires that exact key before this read view is constructed; neither field has a facade mutation door. */
         state.basis.branch_id(),
@@ -66,7 +66,7 @@ fn materialize_exact(
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
 ) -> Result<
     (Vec<EntityReadRecord>, Vec<RelationReadRecord>),
-    crate::execution::RelationalExecutionDenialCause,
+    crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     let reader = runtime.read_truth();
     let registry = root.schema_authority().registry();
@@ -116,7 +116,7 @@ fn materialize_historical(
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
 ) -> Result<
     (Vec<EntityReadRecord>, Vec<RelationReadRecord>),
-    crate::execution::RelationalExecutionDenialCause,
+    crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     let empty = std::collections::BTreeMap::new();
     let access: &dyn PartitionAccess = root.map_or(&empty, |root| root.as_ref());
@@ -173,22 +173,30 @@ fn materialize_pins(
     mut quote_entity: impl FnMut(
         crate::identity::data::PartitionId,
         usize,
-    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<
+        u64,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    >,
     mut quote_relation: impl FnMut(
         crate::identity::data::PartitionId,
         usize,
-    ) -> Result<u64, crate::execution::RelationalExecutionDenialCause>,
+    ) -> Result<
+        u64,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    >,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
 ) -> Result<
     (Vec<EntityReadRecord>, Vec<RelationReadRecord>),
-    crate::execution::RelationalExecutionDenialCause,
+    crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     let vectors = record_memory::vector_bytes::<EntityReadRecord>(state.pinned_entity_count)?
         .checked_add(record_memory::vector_bytes::<RelationReadRecord>(
             state.pinned_relation_count,
         )?)
-        .ok_or(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)?;
+        .ok_or(
+            crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
+        )?;
     record_memory::claim(memory, vectors)?;
     let mut entities = Vec::with_capacity(state.pinned_entity_count);
     let mut relations = Vec::with_capacity(state.pinned_relation_count);

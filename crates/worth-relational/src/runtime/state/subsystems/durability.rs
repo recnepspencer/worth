@@ -10,7 +10,7 @@ use crate::history::data::{CommitId, PositionedCanonicalCommit};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 use crate::runtime::RelationalRuntimeConfig;
 
-mod checkpoint_selection;
+pub(crate) mod checkpoint_selection;
 mod source_retirement;
 mod state;
 pub(crate) use checkpoint_selection::{

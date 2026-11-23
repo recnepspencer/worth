@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use crate::identity::data::PartitionId;
-use crate::validation::data::InvariantGroupSet;
-use crate::validation::engine::InvariantObservationKind;
+use crate::validation::data::groups::InvariantGroupSet;
+use crate::validation::data::observation_kind::InvariantObservationKind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum PreparationRecordDomain {

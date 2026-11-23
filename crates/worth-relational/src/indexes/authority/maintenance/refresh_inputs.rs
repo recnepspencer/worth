@@ -1,8 +1,10 @@
 //! Select only dependent maintainers and carry the actual predecessor selection.
 use super::*;
 pub(super) struct RootMaintenanceInputs {
-    pub(super) basis: Option<crate::runtime::PreparedIndexBasisSelection>,
-    pub(super) inherited: Option<crate::runtime::PreparedIndexBasisSelection>,
+    pub(super) basis:
+        Option<crate::runtime::state::subsystems::indexing::PreparedIndexBasisSelection>,
+    pub(super) inherited:
+        Option<crate::runtime::state::subsystems::indexing::PreparedIndexBasisSelection>,
     pub(super) patch_changes: Option<changes::ChangedRecords>,
     pub(super) requested: std::collections::BTreeSet<DerivedIndexId>,
 }

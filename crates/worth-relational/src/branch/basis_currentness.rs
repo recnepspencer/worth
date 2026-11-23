@@ -1,9 +1,9 @@
 use super::basis_axis_validation::require_current_descriptor_axes;
 use super::basis_identity_validation::require_local_branch_identity;
-use super::{
-    AdmittedRelationalBranchBasis, RelationalBranchBasisDenial, RelationalBranchLifecyclePosture,
-    RelationalBranchRoot,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::basis_denial::RelationalBranchBasisDenial;
+use crate::branch::lifecycle::RelationalBranchLifecyclePosture;
+use crate::branch::root::RelationalBranchRoot;
 use crate::runtime::RelationalRuntime;
 
 impl RelationalRuntime {
@@ -24,7 +24,7 @@ impl RelationalRuntime {
                 actual_runtime_instance_id: descriptor.runtime_instance_id(),
             });
         }
-        require_local_branch_identity(self, basis.identity())?;
+        require_local_branch_identity(self.runtime_instance_id(), &self.history, basis.identity())?;
         let branch_cell = self
             .history
             .branch_cell(basis.identity().branch_id())
@@ -62,7 +62,7 @@ impl RelationalRuntime {
         )?;
         if !basis.is_current() {
             return Err(RelationalBranchBasisDenial::MixedAxis(
-                super::RelationalBranchBasisMismatchAxis::TruthVersion,
+                crate::branch::basis_denial::RelationalBranchBasisMismatchAxis::TruthVersion,
             ));
         }
         Ok(())

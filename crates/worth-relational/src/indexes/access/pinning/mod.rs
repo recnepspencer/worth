@@ -4,7 +4,10 @@ use super::{DerivedIndexDefinitionLookup, PreparedEntityFieldLookup};
 use crate::runtime::RelationalRuntime;
 #[path = "../admitted_generation.rs"]
 mod admitted_generation;
+mod bounded_field_input;
 mod definition_inventory;
+pub(super) use bounded_field_input::sealed;
+pub use bounded_field_input::BoundedEntityFieldLookupRead;
 mod field_preparation;
 mod generation_observation;
 mod generation_reads;
@@ -47,7 +50,7 @@ fn record_index_execution_shape(
 ) {
     let target_count = execution.complexity.target_count.max(1);
     let scope_units = execution.complexity.touched_partitions.max(1);
-    runtime.performance_access().count_query_packet_shape(
+    runtime.services.instrumentation.count_query_packet_shape(
         execution.complexity.packet_count.max(1),
         target_count,
         target_count,
@@ -62,7 +65,7 @@ fn record_index_execution_counters(
     execution: &crate::query::data::query_outcome::QueryExecutionOutcome,
 ) {
     record_index_execution_shape(runtime, execution);
-    runtime.performance_access().count_query_emissions(
+    runtime.services.instrumentation.count_query_emissions(
         execution.result.entities.len(),
         execution.result.relations.len(),
     );

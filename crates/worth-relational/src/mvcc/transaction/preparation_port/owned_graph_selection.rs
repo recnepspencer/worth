@@ -55,8 +55,7 @@ impl RelationalPreparationPort {
         let funding = execution
             .reserve_retained_memory((count as u64).saturating_mul(128))
             .map_err(Error::Request)?;
-        let meaning = crate::history::data::CanonicalOwnedGraphSelection::from_prepared(&graph)
-            .map_err(Error::Preparation)?;
+        let meaning = graph.canonical_meaning().map_err(Error::Preparation)?;
         Ok(RelationalOwnedGraphSelection {
             transaction,
             retained: PreparedOwnedGraphSelection {

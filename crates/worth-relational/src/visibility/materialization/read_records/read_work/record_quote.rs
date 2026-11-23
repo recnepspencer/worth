@@ -4,7 +4,7 @@
 //! checkpoint pays that fixed reference work. Settlement uses the same measure.
 use super::super::reader::KindScanVisibility;
 use super::super::visibility::{visible_metadata, visible_relation_metadata};
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::PartitionState;
 

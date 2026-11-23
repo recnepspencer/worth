@@ -1,9 +1,9 @@
 use super::*;
 pub(super) fn origin_request(
-    cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
+    cause: impl Into<crate::execution::denial_cause::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    TransactionCommitError::execution(crate::transactions::data::CommitExecutionDenial {
-        kind: crate::transactions::data::CommitExecutionDenialKind::Cause(cause.into()),
+    TransactionCommitError::execution(crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenial {
+        kind: crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind::Cause(cause.into()),
         partition_identity: None,
     })
 }
@@ -45,7 +45,7 @@ pub(super) fn origin_retention_bytes(
         })
         .and_then(|bytes| u64::try_from(bytes).ok())
         .ok_or_else(|| {
-            origin_request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+            origin_request(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
         })?;
     Ok(bytes)
 }

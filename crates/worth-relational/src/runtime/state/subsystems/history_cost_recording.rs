@@ -1,4 +1,4 @@
-use crate::branch::RelationalBranchRoot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::BranchId;
 
 use super::{HistorySubsystem, RelationalBranchSharingCostCounters};
@@ -20,37 +20,38 @@ impl HistorySubsystem {
         let Some(cell) = self.branch_cell(branch_id) else {
             return;
         };
-        cell.publication_cell().record_sharing_cost_checked(|costs| {
-            costs.copied_commit_envelopes = costs
-                .copied_commit_envelopes
-                .saturating_add(cost.copied_commit_envelopes);
-            costs.publication_touched_region_count = costs
-                .publication_touched_region_count
-                .saturating_add(cost.touched_regions);
-            costs.publication_reused_region_count = costs
-                .publication_reused_region_count
-                .saturating_add(cost.reused_regions);
-            costs.publication_persistent_index_path_nodes = costs
-                .publication_persistent_index_path_nodes
-                .saturating_add(cost.persistent_index_path_nodes);
-            costs.publication_content_values_hashed = costs
-                .publication_content_values_hashed
-                .saturating_add(cost.content_values_hashed);
-            let new_authoritative_bytes = new_authoritative_bytes?;
-            let next_copied = costs
-                .copied_truth_bytes
-                .checked_add(cost.copied_truth_bytes)?;
-            let next_new = costs
-                .publication_new_authoritative_bytes
-                .checked_add(new_authoritative_bytes)?;
-            let next_root_new = costs
-                .publication_new_root_authoritative_bytes
-                .checked_add(cost.new_authoritative_bytes)?;
-            costs.copied_truth_bytes = next_copied;
-            costs.publication_new_authoritative_bytes = next_new;
-            costs.publication_new_root_authoritative_bytes = next_root_new;
-            Some(())
-        });
+        cell.publication_cell()
+            .record_sharing_cost_checked(|costs| {
+                costs.copied_commit_envelopes = costs
+                    .copied_commit_envelopes
+                    .saturating_add(cost.copied_commit_envelopes);
+                costs.publication_touched_region_count = costs
+                    .publication_touched_region_count
+                    .saturating_add(cost.touched_regions);
+                costs.publication_reused_region_count = costs
+                    .publication_reused_region_count
+                    .saturating_add(cost.reused_regions);
+                costs.publication_persistent_index_path_nodes = costs
+                    .publication_persistent_index_path_nodes
+                    .saturating_add(cost.persistent_index_path_nodes);
+                costs.publication_content_values_hashed = costs
+                    .publication_content_values_hashed
+                    .saturating_add(cost.content_values_hashed);
+                let new_authoritative_bytes = new_authoritative_bytes?;
+                let next_copied = costs
+                    .copied_truth_bytes
+                    .checked_add(cost.copied_truth_bytes)?;
+                let next_new = costs
+                    .publication_new_authoritative_bytes
+                    .checked_add(new_authoritative_bytes)?;
+                let next_root_new = costs
+                    .publication_new_root_authoritative_bytes
+                    .checked_add(cost.new_authoritative_bytes)?;
+                costs.copied_truth_bytes = next_copied;
+                costs.publication_new_authoritative_bytes = next_new;
+                costs.publication_new_root_authoritative_bytes = next_root_new;
+                Some(())
+            });
     }
 
     pub(crate) fn sharing_costs_for_branch(

@@ -1,15 +1,12 @@
 //! Full projections require an explicit reconstruction scope, never a budget fallback.
-use super::{
-    changes::ChangedRecords, cold_projection, owner::IndexMaintenanceOwner,
-    publication::PreparedRefresh, root_view::IndexRootView, work::MaintenanceWork,
-};
+use super::super::live_access::IndexAuthority;
+use super::root_view::IndexRootView;
 use super::{request_payment, root_view};
-use crate::indexes::authority::IndexGenerationPublicationBasis;
 use crate::indexes::data::DerivedIndexMaintenanceDenialKind as Denial;
 use crate::indexes::data::*;
 use crate::storage::substrate::maintenance::ReconstructionLane;
 
-impl super::IndexAuthority<'_> {
+impl IndexAuthority<'_> {
     /// Explicit bounded recovery against an admitted immutable root, including a fork.
     /// Ordinary refresh refuses the same missing state without invoking this door.
     pub fn reconstruct_for_basis(
@@ -39,7 +36,7 @@ impl super::IndexAuthority<'_> {
                 )?;
                 self.maintenance()
                     .prepare_recovery(lane, execution, &request, &after, work)?
-                    .publish_admitted(self.runtime, work)
+                    .publish_admitted(&self.runtime.indexes, work)
             })
         })?;
         Ok(crate::indexes::data::DerivedIndexMaintenanceOutcome {
@@ -49,55 +46,7 @@ impl super::IndexAuthority<'_> {
     }
 }
 
-impl IndexMaintenanceOwner<'_> {
-    pub(super) fn prepare_recovery(
-        &self,
-        lane: &ReconstructionLane<'_>,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        request: &DerivedIndexBuildRequest,
-        after: &IndexRootView,
-        work: &mut MaintenanceWork,
-    ) -> Result<PreparedRefresh, Denial> {
-        let records = ChangedRecords::cold(lane, after, execution, work)?;
-        let mut entries = Vec::new();
-        let mut selected = std::collections::BTreeSet::new();
-        for index in &request.index_ids {
-            work.ordered::<crate::indexes::data::DerivedIndexId, ()>(selected.len(), 1, 0)?;
-            selected.insert(*index);
-        }
-        let catalog = self.catalog();
-        for index in selected {
-            work.lookup(catalog.definition_count(), 1)?;
-            let definition = catalog
-                .definition(index)
-                .ok_or(Denial::IndexUnavailable(index))?;
-            let rows =
-                cold_projection::project(lane, execution, &definition, after, &records, work)?;
-            work.grow_vec(&mut entries)?;
-            entries.push((index, rows));
-        }
-        let basis = self.indexes.prepare_reconstruction_basis(
-            lane,
-            after.root(),
-            &request.branch_id,
-            &mut |units, bytes| work.prepare(units, bytes),
-            self.prepared_catalog(),
-        )?;
-        Ok(PreparedRefresh {
-            publication: IndexGenerationPublicationBasis::new(
-                request,
-                request.branch_id.clone(),
-                after.version_id(),
-                after.root().schema_authority().schema_version(),
-            ),
-            entries,
-            reused: Vec::new(),
-            basis: Some(basis),
-        })
-    }
-}
-
-impl super::IndexAuthority<'_> {
+impl IndexAuthority<'_> {
     /// Explicit bounded reconstruction for a committed version that is no
     /// longer a live branch head. Retention selects its actual immutable root;
     /// the root's envelope must match the requested commit and branch.
@@ -164,7 +113,7 @@ impl super::IndexAuthority<'_> {
                 let prepared = self
                     .maintenance()
                     .prepare_recovery(lane, execution, &request, &after, work)?;
-                prepared.publish_admitted(self.runtime, work)
+                prepared.publish_admitted(&self.runtime.indexes, work)
             })
         })?;
         Ok(DerivedIndexMaintenanceOutcome {

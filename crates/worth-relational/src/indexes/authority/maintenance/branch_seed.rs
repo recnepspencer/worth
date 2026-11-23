@@ -7,9 +7,9 @@ impl super::owner::IndexMaintenanceOwner<'_> {
         &self,
         index_id: DerivedIndexId,
         request: &DerivedIndexBuildRequest,
-        authoring: Option<&crate::facade::history::BranchId>,
-        version: crate::facade::identity::VersionId,
-        schema_version: crate::facade::schema::SchemaVersionId,
+        authoring: Option<&crate::history::data::coordinates::BranchId>,
+        version: crate::identity::data::VersionId,
+        schema_version: crate::schema::data::SchemaVersionId,
         work: &mut super::work::MaintenanceWork,
     ) -> Result<
         Option<std::sync::Arc<DerivedIndexGeneration>>,

@@ -1,7 +1,8 @@
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 
-use crate::branch::{RelationalBranchIdentity, RelationalBranchRoot};
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::branch::root::RelationalBranchRoot;
 use std::collections::btree_map::Entry;
 
 use super::owner::{

@@ -6,13 +6,13 @@ use crate::branch::authority::admit_relational_fork_source;
 use crate::branch::fork_source_basis::{
     AdmittedRelationalForkSourceBasis, RelationalForkSourceDescriptor,
 };
+use crate::branch::transition::BranchTransitionRecordError;
 use crate::branch::{
     AdmittedRelationalBranchBasis, RelationalBranchLifecyclePosture,
     RelationalBranchTransitionDurableStep, RelationalBranchTransitionStop, RelationalForkPort,
     RelationalForkTargetReservation,
 };
 use crate::history::data::BranchId;
-use crate::runtime::BranchTransitionRecordError;
 
 type ForkStop = RelationalBranchTransitionStop<RelationalForkDenial>;
 use super::publication::with_basis;
@@ -158,7 +158,7 @@ impl RelationalForkPort {
         let association = association.with_decoded_memory(memory);
         let step = LiveBranchTransitionStep::associated(medium, execution, association);
         self.fork_reserved_with_hooks(execution, &step, reservation, source, || {}, || {}, true)
-            .map(super::RelationalAssociatedFork::from_installation)
+            .map(super::publication::ForkInstallationOutcome::into_association)
             .map_err(Into::into)
     }
 

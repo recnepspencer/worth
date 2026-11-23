@@ -4,7 +4,7 @@ use super::{SnapshotState, SnapshotStateBasis};
 #[derive(Debug)]
 pub(crate) struct SnapshotStateRetirement {
     _state: SnapshotState,
-    exact: Option<crate::mvcc::RelationalObservationRetirement>,
+    exact: Option<crate::mvcc::observation::RelationalObservationRetirement>,
     historical: Option<crate::history::retention::RelationalHistoricalObservationRetirement>,
 }
 

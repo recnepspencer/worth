@@ -53,7 +53,10 @@ pub(super) fn select(
                 } => {
                     if let [field] = path.fields() {
                         for index in routes.field(
-                            matches!(record, crate::transactions::data::RecordRef::Entity(_)),
+                            matches!(
+                                record,
+                                crate::transactions::data::primitives::RecordRef::Entity(_)
+                            ),
                             *kind,
                             aspect,
                             field,

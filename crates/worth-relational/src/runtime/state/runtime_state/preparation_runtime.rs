@@ -25,7 +25,7 @@ pub(crate) struct RelationalPreparationOwnerBinding {
     lineage_identity: crate::runtime::LineageIdentityAllocator,
     lineage_naming_basis: crate::runtime::state::subsystems::LineageNamingBasisBinding,
     diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
-    index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
+    index_definitions: super::indexing::RuntimeIndexDefinitionReadBinding,
     mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
     durability_admission:
         crate::durability::published_medium::RelationalDurablePreparationAdmission,
@@ -51,7 +51,7 @@ pub(crate) struct RelationalPreparationRuntime {
     pub(crate) execution_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
     pub(crate) home_target: Option<Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
     pub(crate) diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
-    pub(crate) index_definitions: crate::runtime::state::IndexDefinitionReadBinding,
+    pub(crate) index_definitions: super::indexing::RuntimeIndexDefinitionReadBinding,
     pub(crate) mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
     pub(crate) durability_admission:
         crate::durability::published_medium::RelationalDurablePreparationAdmission,
@@ -73,7 +73,7 @@ impl RelationalPreparationOwnerBinding {
         Self {
             checkpoint_selection: runtime.durability.checkpoint_selection().clone(),
             configuration: runtime.configuration_binding(),
-            history: runtime.history.preparation_binding(),
+            history: crate::runtime::state::subsystems::history::history_preparation_binding::bind_preparation(&runtime.history),
             record_identity: runtime.record_identity.clone(),
             services: runtime.services.preparation_binding(),
             lifecycle: runtime.owner_binding(),

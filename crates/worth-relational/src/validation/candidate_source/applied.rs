@@ -98,7 +98,7 @@ impl AppliedMutationDraft {
         } else {
             stage::prepare(execution, |budget| {
                 let (history, mut discovered) =
-                    super::authored_history::prepare(&context, budget, authored)?;
+                    super::authored_history::preparation::prepare(&context, budget, authored)?;
                 install_history(self, history)?;
                 prepare(&context, budget, &groups, &mut discovered)
             })

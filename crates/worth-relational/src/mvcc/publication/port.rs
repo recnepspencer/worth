@@ -1,3 +1,4 @@
+use crate::runtime::state::subsystems::history::history_canonical_routes::canonical_publication_reservation_counters;
 use std::sync::Arc;
 
 use super::{
@@ -163,8 +164,8 @@ impl crate::runtime::RelationalRuntime {
             self.owner_binding(),
             self.publication_binding(),
             self.history.branch_head_version_index(),
-            self.history.preparation_binding(),
-            self.indexes.definition_read_binding(),
+            crate::runtime::state::subsystems::history::history_preparation_binding::bind_preparation(&self.history),
+            self.indexes.catalog_binding(),
             self.durability.medium(),
         )
     }
@@ -172,7 +173,7 @@ impl crate::runtime::RelationalRuntime {
     pub fn patch_position_reservation_counters(
         &self,
     ) -> crate::runtime::RelationalPatchPositionReservationCounters {
-        self.history.canonical_publication_reservation_counters()
+        canonical_publication_reservation_counters(&self.history)
     }
 }
 

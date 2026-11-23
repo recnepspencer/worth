@@ -3,7 +3,7 @@ use super::super::{
     RelationalBranchRetentionBinding, RelationalRetentionRequestAcquisitionDenial as Denial,
 };
 use super::*;
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use worth_execution::{
     ExecutionMemoryReservation, ExecutionOrderedMap, ExecutionOrderedMapDenial, ExecutionRequest,
 };

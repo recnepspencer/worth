@@ -44,10 +44,11 @@ impl CanonicalCommitEnvelope {
     pub(crate) fn authoritative_payload_observation_for_request(
         &self,
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(u64, [u8; 32]), crate::durability::data::RelationalRecoveryStop> {
-        use crate::durability::data::{
-            DurabilityError, RecoveryFailureClass, RelationalRecoveryStop as Stop,
-        };
+    ) -> Result<(u64, [u8; 32]), crate::durability::data::recovery_stop::RelationalRecoveryStop>
+    {
+        use crate::durability::data::recovery_errors::DurabilityError;
+        use crate::durability::data::recovery_errors::RecoveryFailureClass;
+        use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
         use worth_execution::{MapKernelStop, WorkCeilingDenial};
         request
             .consult()

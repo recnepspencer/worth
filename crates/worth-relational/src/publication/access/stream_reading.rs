@@ -10,7 +10,7 @@ pub(crate) fn read_patch_stream(
     runtime: &RelationalRuntime,
     request: PatchStreamRequest,
 ) -> Result<PatchStreamBatch, PatchStreamReadError> {
-    crate::execution::check_request(execution).map_err(read_refused)?;
+    crate::execution::request_custody::check_request(execution).map_err(read_refused)?;
     if request.max_commits == 0 {
         return Err(PatchStreamReadError {
             class: PatchStreamReadErrorClass::InvalidBatchSize,
@@ -48,7 +48,7 @@ pub(crate) fn read_patch_stream(
             &envelope.patch,
         ));
     }
-    crate::execution::check_request(execution).map_err(read_refused)?;
+    crate::execution::request_custody::check_request(execution).map_err(read_refused)?;
     Ok(PatchStreamBatch {
         resumed_after: request.after_position,
         next_position: patches.last().map(|patch| patch.position),
@@ -58,7 +58,9 @@ pub(crate) fn read_patch_stream(
     })
 }
 
-fn read_refused(cause: crate::execution::RelationalExecutionDenialCause) -> PatchStreamReadError {
+fn read_refused(
+    cause: crate::execution::denial_cause::RelationalExecutionDenialCause,
+) -> PatchStreamReadError {
     PatchStreamReadError {
         class: PatchStreamReadErrorClass::ReadRequest(cause),
         detail: format!("canonical patch read refused: {cause:?}"),

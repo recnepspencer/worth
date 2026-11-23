@@ -2,7 +2,8 @@ use std::{collections::BTreeMap, mem::size_of, sync::Arc};
 
 use worth_execution::MapKernelFailure;
 
-use crate::execution::{PacketBudgetDenial, PacketKernelContext};
+use crate::execution::packet_memory::PacketKernelContext;
+use crate::execution::read_only_packets::PacketBudgetDenial;
 use crate::indexes::data::{DerivedIndexEntryMap, DerivedIndexRows};
 
 pub(super) type IndexKernelStop = MapKernelFailure<PacketBudgetDenial>;
@@ -64,7 +65,7 @@ pub(in crate::indexes) fn checked_finish<K: Ord + Clone, R: Clone>(
 }
 
 pub(super) fn read_request(
-    cause: crate::execution::RelationalExecutionDenialCause,
+    cause: crate::execution::denial_cause::RelationalExecutionDenialCause,
 ) -> IndexKernelStop {
     MapKernelFailure::Domain(PacketBudgetDenial::ReadRequest(cause))
 }

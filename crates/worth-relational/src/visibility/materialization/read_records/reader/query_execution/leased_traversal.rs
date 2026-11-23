@@ -14,7 +14,7 @@ use crate::query::data::{
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::PartitionAccess;
 use crate::storage::partition::{adjacency_queries, AdjacencyDirection};
-use crate::visibility::materialization::read_records::ProjectionRecordSource;
+use crate::visibility::materialization::read_records::projection::ProjectionRecordSource;
 
 type PacketFailure = MapKernelFailure<QueryReadPacketDenial>;
 type FrontierEntry = (EntityId, u32, EntityId, Option<RelationId>);

@@ -3,7 +3,7 @@ use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
 use crate::snapshots::data::SnapshotHandle;
 
-use super::VisibilityReadContext;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
 /// The canonical position of the exact immutable root selected by a snapshot.
 #[derive(Debug, Clone, PartialEq, Eq)]

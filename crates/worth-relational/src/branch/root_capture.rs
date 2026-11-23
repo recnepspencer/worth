@@ -98,7 +98,7 @@ pub(super) fn build_incremental_regions(
     root_id: u64,
     published_delta: &RelationalPublishedPartitionDelta,
     previous: &RelationalBranchRoot,
-    symbols: &crate::runtime::RuntimeSymbolTable,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     schema: &Arc<super::RelationalBranchRootSchemaAuthority>,
     change: Option<&Arc<crate::branch::maintenance::CommitChange>>,
 ) -> Result<

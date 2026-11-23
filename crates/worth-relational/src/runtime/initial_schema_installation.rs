@@ -17,9 +17,7 @@ mod recovered_codec_transition;
 pub use inventory_digest::custom_invariant_inventory_digest;
 pub(crate) use inventory_digest::custom_invariant_inventory_digest_for_compilation;
 pub use recovered_codec_transition::RecoveredCheckpointProgramActivationUpdate;
-pub(crate) use recovered_codec_transition::{
-    codec_field_changes, codec_field_changes_in_context, CodecFieldComparisonStop, CodecFieldLocus,
-};
+pub(crate) use recovered_codec_transition::{codec_field_changes, CodecFieldLocus};
 
 /// Move-only authority to extend an uncommitted runtime's initial schema.
 #[derive(Debug)]
@@ -264,9 +262,9 @@ impl RelationalInitialSchemaInstallation<'_> {
         })?;
         // All fallible schema and invariant validation completes before the
         // first owner mutation. This keeps the initial installation atomic.
-        self.runtime
-            .history
-            .transition_empty_branches_to_initial_schema(&merged, |before, after| {
+        crate::runtime::state::subsystems::history::history_branch_cells::initial_schema::transition_empty_branches_to_initial_schema(
+            &self.runtime.history,
+            &merged, |before, after| {
                 match publication {
                     None => Ok(InitialSchemaCutover::Receiver),
                     Some((_initialization, request)) => {

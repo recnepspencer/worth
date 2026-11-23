@@ -6,7 +6,6 @@ pub(crate) mod result_memory;
 pub(crate) use denial::{allocation_commit_error, kernel_failure};
 pub(crate) mod ordered_scan;
 pub use denial_cause::RelationalExecutionDenialCause;
-pub(crate) use ordered_scan::admit_ordered_scan;
 pub(crate) mod packet_memory;
 pub(crate) mod read_only_packets;
 mod tracked_packets;
@@ -34,8 +33,6 @@ pub(crate) use unleased_read_only_packets::execute_unleased_read_only_packets;
 
 pub(crate) mod request_custody;
 pub(crate) use request_custody::check_request;
-
-pub use request_work::observation::RelationalWorkAccountRecorderForTest;
 
 #[cfg(test)]
 #[path = "../tests/support/runtime.rs"]

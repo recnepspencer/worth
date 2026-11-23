@@ -1,4 +1,4 @@
-use crate::branch::AdmittedRelationalBranchBasis;
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::{
     BranchId, MergeBaseSelectionRule, RelationalMergeBranchBasis, RelationalMergeBranchBasisDenial,
     ResolvedMergeBase,

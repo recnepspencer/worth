@@ -1,5 +1,6 @@
 //! Full image meaning and admission survive shared DATA aliases.
 use super::*;
+use crate::config::data::{CascadeDeletePolicy, CrossContextPolicy};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};

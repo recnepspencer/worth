@@ -1,7 +1,7 @@
 //! Unit-only layout evidence; constructs no runtime, proof or authority.
 use super::*;
 
-pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
+pub(crate) fn collect(census: &mut crate::inline_type_sizes::census::Census) {
     {
         let mut owner = census.owner::<CanonicalAuthoredRestoration>("crates/worth-relational/src/history/data/canonical_commit_envelope/required_output_origin/authored_restoration.rs", "CanonicalAuthoredRestoration", 128 * 1024);
         owner.field::<CommitId>("retirement");

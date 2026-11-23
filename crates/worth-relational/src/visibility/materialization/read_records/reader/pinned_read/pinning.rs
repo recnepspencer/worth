@@ -99,7 +99,7 @@ impl VisibilityReadContext<'_> {
         request
             .check_live()
             .map_err(|stop| denied(Denial::Request(stop.into())))?;
-        if !view.is_from_runtime(self.runtime) {
+        if !view.is_from_runtime(self.runtime.runtime_instance_id()) {
             return Err(denied(Denial::SnapshotUnavailable));
         }
         let basis = view

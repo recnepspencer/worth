@@ -1,22 +1,30 @@
 //! Full derived-selection validation at checkpoint import, never ordinary maintenance.
 use super::super::projected_field_values::*;
-use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
+use crate::durability::data::recovery_errors::DurabilityError;
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 use crate::indexes::data::IndexBasisCheckpoint;
-use crate::runtime::{IndexingState, RelationalRuntime, VisibilityProjectionView};
+use crate::runtime::state::subsystems::indexing::IndexingState;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
 use std::collections::BTreeMap;
 
-mod cold_images;
 #[derive(Debug)]
 pub(crate) struct CheckpointIndexProjections {
-    context: crate::runtime::CheckpointProjectionContext,
+    context:
+        crate::visibility::materialization::read_records::projection::CheckpointProjectionContext,
 }
 
-pub(crate) fn checkpoint_index_projections(
-    lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
-    runtime: &RelationalRuntime,
-) -> CheckpointIndexProjections {
-    CheckpointIndexProjections {
-        context: crate::runtime::CheckpointProjectionContext::capture(lane, runtime),
+impl CheckpointIndexProjections {
+    pub(crate) fn from_context(
+        context: crate::visibility::materialization::read_records::projection::CheckpointProjectionContext,
+    ) -> Self {
+        Self { context }
+    }
+
+    pub(crate) fn context(
+        &self,
+    ) -> &crate::visibility::materialization::read_records::projection::CheckpointProjectionContext
+    {
+        &self.context
     }
 }
 
@@ -27,7 +35,7 @@ pub(crate) fn verify_checkpoint_index_bases(
     projections: &CheckpointIndexProjections,
     roots: &BTreeMap<
         crate::history::data::CommitId,
-        std::sync::Arc<crate::branch::RelationalBranchRoot>,
+        std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
     >,
 ) -> Result<(), RelationalRecoveryStop> {
     crate::storage::substrate::maintenance::ReconstructionLane::enter_reconstruction(|lane| {
@@ -44,7 +52,7 @@ pub(crate) fn verify_checkpoint_index_bases(
         Ok(())
     })
 }
-fn verify_basis(
+pub(crate) fn verify_basis(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     indexes: &IndexingState,
@@ -55,7 +63,7 @@ fn verify_basis(
         worth_execution::ExecutionAllocationPolicy::Execution(lease) => Some(lease),
         worth_execution::ExecutionAllocationPolicy::SystemAllocation => None,
     };
-    let work = crate::execution::RequestWorkBudget::new();
+    let work = crate::execution::request_work::RequestWorkBudget::new();
     let root = projection
         .selected_root()
         .ok_or_else(|| corrupt("index checkpoint root is unavailable"))?;
@@ -118,5 +126,5 @@ fn verify_basis(
     Ok(())
 }
 fn corrupt(detail: &str) -> DurabilityError {
-    DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
+    DurabilityError::corrupt_checkpoint(detail)
 }

@@ -10,7 +10,7 @@ impl RelationalBranchRoot {
         lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
         issuer: &RelationalBranchRootIdentityIssuer,
         previous: &Arc<Self>,
-        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        original: Arc<crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence>,
         descriptor: RelationalBranchRootDescriptor,
         schema: Arc<super::super::RelationalBranchRootSchemaAuthority>,
         positions: RequiredOutputPublicationPositions,
@@ -46,7 +46,7 @@ impl RelationalBranchRoot {
 fn bind_original(
     lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
     prepared: ReadmittedRegionSet,
-    original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+    original: Arc<crate::branch::root::commit_evidence::RelationalOriginalRootCommitEvidence>,
     descriptor: RelationalBranchRootDescriptor,
     schema: Arc<super::super::RelationalBranchRootSchemaAuthority>,
     positions: RequiredOutputPublicationPositions,
@@ -69,7 +69,7 @@ fn bind_original(
         correctness_index,
         execution,
     )?;
-    crate::execution::check_request(execution)
+    crate::execution::request_custody::check_request(execution)
         .map_err(RelationalBranchRootCaptureDenial::Request)?;
     let storage_version = envelope.commit.version_id.0;
     let incoming = envelope.content.records().clone();

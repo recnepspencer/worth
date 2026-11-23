@@ -22,7 +22,10 @@ impl VisibilityReadContext<'_> {
         entity_id: crate::identity::data::EntityId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         let edition = self.runtime.acquire_partition_edition();
         super::super::read_work::with_full_residency(
             execution,
@@ -66,7 +69,7 @@ impl VisibilityReadContext<'_> {
         maximum_work_units: usize,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.acquire_partition_edition();
         super::super::read_work::with_full_residency(
@@ -112,7 +115,10 @@ impl VisibilityReadContext<'_> {
         entity_id: crate::identity::data::EntityId,
         kind_id: crate::identity::data::KindId,
         version_id: crate::identity::data::VersionId,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         let edition = self.runtime.acquire_partition_edition();
         super::super::read_work::with_full_residency(
             execution,
@@ -156,7 +162,7 @@ impl VisibilityReadContext<'_> {
         maximum_work_units: usize,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.acquire_partition_edition();
         super::super::read_work::with_full_residency(
@@ -205,7 +211,7 @@ impl VisibilityReadContext<'_> {
         direction: AdjacencyDirection,
         spend: &mut dyn FnMut(u64, usize, usize) -> Result<(), E>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-        request: &dyn Fn(crate::execution::RelationalExecutionDenialCause) -> E,
+        request: &dyn Fn(crate::execution::denial_cause::RelationalExecutionDenialCause) -> E,
     ) -> Result<BoundedAdjacencyTruthRead, E> {
         let basis =
             AdjacencyKindBasis::of_current_version(version_id == self.runtime.current_version_id());

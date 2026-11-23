@@ -1,5 +1,5 @@
 mod compiled_artifacts;
-mod instrumentation;
+pub(crate) mod instrumentation;
 mod sequence;
 pub(crate) mod symbol_table;
 #[cfg(test)]

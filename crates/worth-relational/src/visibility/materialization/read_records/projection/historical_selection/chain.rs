@@ -12,7 +12,7 @@ impl VisibilityReadContext<'_> {
         selections: &[(&RelationalBranchObservation, &RelationalBranchObservation)],
     ) -> Result<RelationalHistoricalSelectionRead, RelationalHistoricalSelectionReadDenial> {
         use RelationalHistoricalSelectionReadDenial as Denial;
-        crate::execution::check_request(execution).map_err(Denial::Execution)?;
+        crate::execution::request_custody::check_request(execution).map_err(Denial::Execution)?;
         let count = selections.len();
         if count == 0 {
             return Err(Denial::NotGraphSelection { commit: None });

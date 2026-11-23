@@ -1,8 +1,7 @@
 //! Source material follows the real pinned Native root, including pending World custody.
-use super::VisibilityReadContext;
-use crate::validation::candidate_source::{
-    ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
-};
+use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Denial;
+use crate::validation::candidate_source::program::ManagedIndexSourceProgram;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use crate::{identity::data::EntityId, snapshots::data::SnapshotHandle};
 
 impl VisibilityReadContext<'_> {
@@ -81,9 +80,9 @@ impl VisibilityReadContext<'_> {
         let projection = self
             .project_snapshot_in_request(handle, execution)
             .map_err(|cause| {
-                Denial::Source(crate::derived_relation::DerivedRelationReadDenial::Request(
-                    cause,
-                ))
+                Denial::Source(
+                    crate::derived_relation::read_denial::DerivedRelationReadDenial::Request(cause),
+                )
             })?
             .ok_or(Denial::RootUnavailable)?;
         let basis =
@@ -120,7 +119,10 @@ impl VisibilityReadContext<'_> {
         Denial,
     > {
         let (selected, memory) = self.managed_source_position(execution, handle)?;
-        if !loan.projection.is_from_runtime(self.runtime) {
+        if !loan
+            .projection
+            .is_from_runtime(self.runtime.runtime_instance_id())
+        {
             return Err(Denial::ForeignSource);
         }
         let publication = self.runtime.publication_binding();
@@ -167,29 +169,32 @@ impl VisibilityReadContext<'_> {
         Denial,
     > {
         execution.consult().map_err(|cause| {
-            Denial::Source(crate::derived_relation::DerivedRelationReadDenial::Request(
-                cause.into(),
-            ))
+            Denial::Source(
+                crate::derived_relation::read_denial::DerivedRelationReadDenial::Request(
+                    cause.into(),
+                ),
+            )
         })?;
         let mut result = None;
         let mut memory = None;
         let handoff = execution.run_native_with_checkpoint(|context| {
             result = Some(self.positioned_snapshot_admitted(handle, |units, bytes| {
-                crate::execution::request_stage::checkpoint(context, units)
-                    .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+                crate::execution::request_stage::checkpoint(context, units).map_err(
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::from,
+                )?;
                 if bytes != 0 {
-                    memory = execution
-                        .reserve_retained_memory(bytes)
-                        .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+                    memory = execution.reserve_retained_memory(bytes).map_err(
+                        crate::execution::denial_cause::RelationalExecutionDenialCause::from,
+                    )?;
                 }
-                Ok::<_, crate::execution::RelationalExecutionDenialCause>(())
+                Ok::<_, crate::execution::denial_cause::RelationalExecutionDenialCause>(())
             }));
         });
         use super::positioned_snapshot::RelationalSnapshotPositionAdmissionStop as PositionStop;
         let request_stop = |cause| {
-            Denial::Source(crate::derived_relation::DerivedRelationReadDenial::Request(
-                cause,
-            ))
+            Denial::Source(
+                crate::derived_relation::read_denial::DerivedRelationReadDenial::Request(cause),
+            )
         };
         let selected = match (handoff, result) {
             (Ok(_), Some(Ok(selected))) => selected,
@@ -203,7 +208,7 @@ impl VisibilityReadContext<'_> {
             (Err(cause), _) => return Err(request_stop(cause.into())),
             (Ok(_), Some(Err(PositionStop::AccountingOverflow))) => {
                 return Err(request_stop(
-                    crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
                 ))
             }
             (Ok(_), Some(Err(PositionStop::Position(_)))) => return Err(Denial::RootUnavailable),

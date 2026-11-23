@@ -4,7 +4,7 @@ use worth_foundational::facade::{AspectFieldLocator, AspectValue};
 
 use super::*;
 use crate::storage::data::AuthoritativeFieldComparisonKey;
-use crate::visibility::materialization::read_records::entity_query_locus_comparison_key;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::entity_query_locus_comparison_key;
 
 #[derive(Debug)]
 pub struct BoundedFrontierFieldEqualityTruthRead {
@@ -31,7 +31,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         maximum_work_units: usize,
     ) -> Result<
         Result<BoundedFrontierFieldEqualityTruthRead, FrontierFieldEqualityTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.storage_access().current_edition();
         let partitions = entity_ids
@@ -40,7 +40,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             .collect::<BTreeSet<_>>();
         let state = edition
             .demand_selected(execution, &self.runtime.services.symbols, partitions)
-            .map_err(crate::execution::RelationalExecutionDenialCause::from)?;
+            .map_err(crate::execution::denial_cause::RelationalExecutionDenialCause::from)?;
         crate::visibility::materialization::read_records::read_request::checked(execution, || {
             let expected = AuthoritativeFieldComparisonKey::from_aspect_value(expected);
             let mut matching_entity_ids = BTreeSet::new();

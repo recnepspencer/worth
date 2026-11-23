@@ -1,6 +1,7 @@
 use crate::history::data::BranchId;
 
-use super::{RelationalBranchReferenceObservation, RelationalBranchVersion};
+use crate::branch::reference::observation::RelationalBranchReferenceObservation;
+use crate::branch::version::RelationalBranchVersion;
 
 /// Read-only owner observation of one mutable branch-reference cell.
 ///
@@ -13,7 +14,7 @@ pub struct RelationalBranchReferenceState {
     branch_id: BranchId,
     observation: RelationalBranchReferenceObservation,
     truth_version: RelationalBranchVersion,
-    lifecycle: super::RelationalBranchLifecyclePosture,
+    lifecycle: crate::branch::lifecycle::RelationalBranchLifecyclePosture,
     fork_provenance: Option<RelationalBranchReferenceObservation>,
     fork_source_branch_id: Option<BranchId>,
 }
@@ -24,7 +25,7 @@ impl RelationalBranchReferenceState {
         branch_id: BranchId,
         observation: RelationalBranchReferenceObservation,
         truth_version: RelationalBranchVersion,
-        lifecycle: super::RelationalBranchLifecyclePosture,
+        lifecycle: crate::branch::lifecycle::RelationalBranchLifecyclePosture,
         fork_provenance: Option<RelationalBranchReferenceObservation>,
         fork_source_branch_id: Option<BranchId>,
     ) -> Self {
@@ -55,7 +56,9 @@ impl RelationalBranchReferenceState {
         self.truth_version
     }
 
-    pub const fn lifecycle_posture(&self) -> super::RelationalBranchLifecyclePosture {
+    pub const fn lifecycle_posture(
+        &self,
+    ) -> crate::branch::lifecycle::RelationalBranchLifecyclePosture {
         self.lifecycle
     }
 

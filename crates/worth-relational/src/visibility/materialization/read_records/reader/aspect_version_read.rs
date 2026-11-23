@@ -1,5 +1,6 @@
 //! One checked aspect-version enumeration for either request backing.
-use super::{query_execution::QueryReadExecutionStop, RelationalRuntime};
+use super::query_execution::QueryReadExecutionStop;
+use crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable;
 use crate::storage::substrate::AspectVersions;
 use worth_execution::{
     ChargedBytes, ExecutionRequest, ExecutionScan, MapKernelFailure, ScanOutcome,
@@ -20,7 +21,7 @@ impl ChargedBytes for ReadVersions {
 /// One work unit per symbolic version visited; relation ordering additionally
 /// admits n * ceil(log2(n)) comparison units before its existing sort.
 pub(super) fn read_versions(
-    runtime: &RelationalRuntime,
+    symbols: &RuntimeSymbolTable,
     execution: &ExecutionRequest<'_, '_>,
     symbolic: &AspectVersions,
     sort: bool,
@@ -31,9 +32,7 @@ pub(super) fn read_versions(
             let identity = PartitionIdentity::new(1);
             let scan = ExecutionScan::try_from_ordered(vec![identity], vec![(identity, ())])
                 .map_err(QueryReadExecutionStop::PreparationAdmission)?;
-            let declared = runtime
-                .services
-                .symbols
+            let declared = symbols
                 .with_read(|symbols| {
                     symbolic.iter().try_fold(
                         (symbolic.len() as u64)
@@ -54,7 +53,7 @@ pub(super) fn read_versions(
                 context.checkpoint(0).map_err(MapKernelFailure::Stop)?;
                 let mut versions = Vec::new();
                 let mut payload_bytes = 0_u64;
-                runtime.services.symbols.with_read(|symbols| {
+                symbols.with_read(|symbols| {
                     for (symbol, version) in symbolic {
                         context.checkpoint(1).map_err(MapKernelFailure::Stop)?;
                         let Some(text) = symbols.resolve(*symbol) else {

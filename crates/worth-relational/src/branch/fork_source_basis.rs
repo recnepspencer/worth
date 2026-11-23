@@ -6,7 +6,7 @@ use crate::history::data::BranchId;
 
 use super::authority::{RelationalForkSourceAuthority, RelationalForkSourceAuthorityMarker};
 use super::target::RelationalBranchTarget;
-use super::RelationalBranchVersion;
+use crate::branch::version::RelationalBranchVersion;
 
 /// Serializable description of an exact live source observation. It carries
 /// no owner authority and cannot be used to fork by itself.

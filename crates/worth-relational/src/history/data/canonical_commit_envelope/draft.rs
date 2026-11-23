@@ -12,7 +12,8 @@ use crate::schema::data::{
     DescriptorSemanticsVersion, SchemaAuthoritySnapshot, SchemaContinuationDescriptor,
     SchemaReconciliationDescriptor, SchemaTransitionArtifact, SchemaVersionId,
 };
-use crate::transactions::data::{MergedCommitPlan, PublishedMergeExecutionAuthority};
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 
 pub(crate) struct CanonicalCommitEnvelopeDraft {
     body: CanonicalCommitEnvelopeBody,
@@ -103,13 +104,18 @@ impl CanonicalCommitEnvelopeDraft {
     pub(crate) fn complete_lineage(
         &mut self,
         lineage: crate::lineage::data::LineageFinalizationArtifact,
-    ) -> Result<(), crate::transactions::data::TransactionCommitError> {
+    ) -> Result<
+        (),
+        crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,
+    > {
         if lineage.branch_id() != &self.body.branch_context
             || self.body.lineage.has_authority_content()
         {
-            return Err(crate::mvcc::origin_denial(
-                "deferred publication lineage differs from its draft",
-            ));
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "deferred publication lineage differs from its draft",
+                ),
+            );
         }
         self.body.lineage = lineage.publish();
         Ok(())
@@ -117,11 +123,11 @@ impl CanonicalCommitEnvelopeDraft {
 
     pub(crate) fn seal(
         self,
-        semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
+        semantic_result: std::sync::Arc<crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult>,
     ) -> Result<
         CanonicalCommitEnvelope,
-        crate::transactions::data::RelationalCommitSemanticResultRefusal,
-    > {
+        crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResultRefusal,
+    >{
         let envelope = CanonicalCommitEnvelope {
             original_inputs: Default::default(),
             live_managed_source_history: Default::default(),

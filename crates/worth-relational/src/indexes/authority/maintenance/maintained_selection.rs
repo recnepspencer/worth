@@ -6,7 +6,7 @@ use super::{
 };
 use crate::branch::maintenance::{CommitChange, Maintained, MaintenanceConsistency};
 use crate::indexes::data::*;
-use crate::runtime::IndexSelectionState;
+use crate::runtime::state::subsystems::indexing::IndexSelectionState;
 use crate::storage::substrate::maintenance::{
     ChangeWork, MaintenanceRoute, ReconstructionLane, ReconstructionWork,
 };

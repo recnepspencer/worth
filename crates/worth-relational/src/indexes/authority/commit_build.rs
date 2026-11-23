@@ -1,3 +1,6 @@
+use super::build_diagnostics::record_index_preparation_strategy_counters;
+use super::build_projection::IndexBuildProjection;
+use super::live_access::IndexAuthority;
 use super::*;
 
 impl<'runtime> IndexAuthority<'runtime> {
@@ -42,7 +45,7 @@ impl<'runtime> IndexAuthority<'runtime> {
             lease
         {
             match plan_index_packets_checked(
-                    self.runtime,
+                &self.runtime.indexes,
                     &request.index_ids,
                     lease,
                     work_budget.as_ref().expect(/* Proof: The leased preparation branch creates its work account before this callback; the unleased branch does not invoke this callback. */ "leased index work account"),
@@ -65,7 +68,7 @@ impl<'runtime> IndexAuthority<'runtime> {
                 }
         } else {
             let (definitions, missing) =
-                planned_index_definitions(self.runtime, &request.index_ids);
+                planned_index_definitions(&self.runtime.indexes, &request.index_ids);
             let present: Vec<_> = definitions
                 .iter()
                 .map(|definition| definition.index_id)
@@ -75,7 +78,7 @@ impl<'runtime> IndexAuthority<'runtime> {
         failed_indexes.extend(missing_indexes);
 
         let strategy =
-            choose_index_preparation_strategy(self.runtime, lease, present_indexes.len());
+            crate::authority::commit::preparation::planning::strategy::strategy_for_parallel_packets(lease, present_indexes.len());
         record_index_preparation_strategy_counters(self.runtime, present_indexes.len(), &strategy);
 
         let mut selected_projection =
@@ -162,7 +165,7 @@ impl<'runtime> IndexAuthority<'runtime> {
             schema_version,
         );
         generations = publish_index_generations(
-            self.runtime,
+            &self.runtime.indexes,
             &publication_basis,
             results,
             &mut failed_indexes,

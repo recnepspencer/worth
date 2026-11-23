@@ -53,16 +53,17 @@ impl IndexRoutingCache {
             // All callbacks, admission and copying happen before acquiring the cache guard.
             let memory = if let Some(execution) = execution {
                 let entries = count.checked_add(1).ok_or(Denial::WorkBudgetExceeded)?;
-                let bytes = crate::branch::retained_compilation_tree_bytes::<
-                    [u8; 32],
-                    Arc<InstalledIndexRouting>,
-                >(entries)
-                .map_err(|_| Denial::WorkBudgetExceeded)?
-                .checked_add(
-                    (std::mem::size_of::<RoutingSnapshot>() + 2 * std::mem::size_of::<usize>())
-                        as u64,
-                )
-                .ok_or(Denial::WorkBudgetExceeded)?;
+                let bytes =
+                    crate::branch::root::schema::standard_tree_quote::retained_tree_bytes::<
+                        [u8; 32],
+                        Arc<InstalledIndexRouting>,
+                    >(entries)
+                    .map_err(|_| Denial::WorkBudgetExceeded)?
+                    .checked_add(
+                        (std::mem::size_of::<RoutingSnapshot>() + 2 * std::mem::size_of::<usize>())
+                            as u64,
+                    )
+                    .ok_or(Denial::WorkBudgetExceeded)?;
                 let memory = execution
                     .reserve_retained_memory(bytes)
                     .map_err(|cause| Denial::Execution(cause.into()))?;

@@ -10,8 +10,8 @@ use crate::query::data::{PlannedQueryPacket, QueryFragmentCounters, QueryWorkerF
 
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::overlay::PartitionAccess;
-use crate::transactions::data::RecordRef;
-use crate::visibility::materialization::read_records::ProjectionRecordSource;
+use crate::transactions::data::primitives::RecordRef;
+use crate::visibility::materialization::read_records::projection::ProjectionRecordSource;
 
 pub(in crate::visibility::materialization::read_records::reader) fn execute_leased_explicit_fragment(
     reader: &RelationalPinnedRead,

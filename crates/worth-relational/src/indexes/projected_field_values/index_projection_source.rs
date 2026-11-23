@@ -1,9 +1,9 @@
-use crate::branch::RelationalBranchRootSchemaAuthority;
+use crate::branch::root::schema::RelationalBranchRootSchemaAuthority;
 use crate::identity::data::{EntityId, KindId, RelationId};
-use crate::runtime::VisibilityProjectionView;
 use crate::schema::data::{AspectContractPlanCatalog, LoweredAspectContractPlan, SchemaVersionId};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::visibility::materialization::read_records::ProjectionRecordSource;
+use crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView;
+use crate::visibility::materialization::read_records::projection::ProjectionRecordSource;
 
 /// Schema-qualified storage projection used to derive or certify an index.
 ///
@@ -81,7 +81,10 @@ impl<'view> IndexProjectionSource<'view> {
         entity: EntityId,
         kind: KindId,
         outgoing: bool,
-    ) -> Result<Vec<RelationReadRecord>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<
+        Vec<RelationReadRecord>,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
+    > {
         self.projection
             .bounded_index_relations_for_frontier(
                 execution,
@@ -91,7 +94,7 @@ impl<'view> IndexProjectionSource<'view> {
                 None,
             )?
             .map(|read| read.into_records())
-            .map_err(|_| crate::execution::RelationalExecutionDenialCause::ResultCapacityExceeded)
+            .map_err(|_| crate::execution::denial_cause::RelationalExecutionDenialCause::ResultCapacityExceeded)
     }
 
     pub(in crate::indexes) fn for_each_relation(
@@ -100,8 +103,11 @@ impl<'view> IndexProjectionSource<'view> {
         kind_id: KindId,
         mut visit: impl FnMut(
             &RelationReadRecord,
-        ) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
-    ) -> Result<(), crate::execution::RelationalExecutionDenialCause> {
+        ) -> Result<
+            (),
+            crate::execution::denial_cause::RelationalExecutionDenialCause,
+        >,
+    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
         for record in self
             .projection
             .authoritative_relation_records(execution, kind_id)?
@@ -146,7 +152,7 @@ impl<'view> IndexProjectionSource<'view> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         entity_id: EntityId,
         inspect: impl FnOnce(&EntityReadRecord) -> T,
-    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Option<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok(self
             .projection
             .authoritative_entity_record(execution, entity_id)?
@@ -171,7 +177,7 @@ impl<'view> IndexProjectionSource<'view> {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         relation_id: RelationId,
         inspect: impl FnOnce(&RelationReadRecord) -> T,
-    ) -> Result<Option<T>, crate::execution::RelationalExecutionDenialCause> {
+    ) -> Result<Option<T>, crate::execution::denial_cause::RelationalExecutionDenialCause> {
         Ok(self
             .projection
             .authoritative_relation_record(execution, relation_id)?

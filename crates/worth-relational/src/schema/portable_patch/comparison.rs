@@ -1,5 +1,9 @@
 //! Compare a restored relation while its original scope owns every temporary.
-use super::*;
+use super::endpoints::append;
+use super::quote::readmission_bytes;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+use crate::identity::data::EntityId;
+use crate::schema::data::LoweredAspectContractPlan;
 use worth_execution::{ExecutionMemoryReservation, ExecutionResourceLease, MapKernelContext};
 use worth_foundational::facade::PortableRecordAspectPatch;
 
@@ -34,26 +38,28 @@ pub(crate) fn append_portable_in_scope(
     .map_err(|_| Cause::ChargedBytesOverflow)?;
     let memory = ExecutionMemoryReservation::reserve_in_scope(lease, bytes)
         .map_err(crate::execution::denial::lease_denial)?;
-    let candidate = FieldCandidate {
-        operations: original.operations().to_vec(),
-        funding: Some(memory),
-    };
-    let mut candidate = append(candidate, Some(plan), source, target, |memory, bytes| {
-        resize(context, lease, memory, bytes)
-    })?;
-    let portable = PortableRecordAspectPatch::new(std::mem::take(&mut candidate.operations));
-    let bytes = super::super::field_authoring_candidate::readmission_bytes(
-        candidate
-            .funding
+    let mut operations = original.operations().to_vec();
+    let mut funding = Some(memory);
+    append(
+        &mut operations,
+        &mut funding,
+        Some(plan),
+        source,
+        target,
+        |memory, bytes| resize(context, lease, memory, bytes),
+    )?;
+    let portable = PortableRecordAspectPatch::new(operations);
+    let bytes = readmission_bytes(
+        funding
             .as_ref()
             .map_or(0, ExecutionMemoryReservation::bytes),
         &portable,
         Some(plan),
     )?;
-    resize(context, lease, &mut candidate.funding, bytes)?;
+    resize(context, lease, &mut funding, bytes)?;
     Ok(ScopedEndpointComparison {
         portable,
-        _memory: candidate.funding,
+        _memory: funding,
     })
 }
 fn resize(

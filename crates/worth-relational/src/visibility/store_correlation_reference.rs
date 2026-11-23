@@ -1,6 +1,6 @@
 use crate::history::data::{BranchId, CommitId};
 use crate::snapshots::data::{SnapshotHandle, SnapshotId};
-use crate::transactions::data::TransactionId;
+use crate::transactions::data::primitives::TransactionId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum RelationalStoreCorrelationReferenceKind {

@@ -1,11 +1,10 @@
 //! Latest complete native publication or governed codec disposition on a route.
 use super::{charge, request, require_linear_history, CodecRetirementClosureStop as Stop};
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::{CommitId, RequiredOutputRoutePosition},
-    mvcc::RequiredOutputPublicationMeaning,
-    runtime::RelationalRuntime,
-};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::history::data::CommitId;
+use crate::history::data::RequiredOutputRoutePosition;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
+use crate::runtime::RelationalRuntime;
 use worth_execution::{ExecutionRequest, ExecutionResourceLease, MapKernelContext};
 
 pub(crate) fn readmit_required_output_route(
@@ -47,7 +46,7 @@ pub(super) fn select_at(
     meaning: &RequiredOutputPublicationMeaning,
     context: &mut MapKernelContext<'_, '_>,
     lease: Option<&ExecutionResourceLease<'_>>,
-    schema: &crate::branch::RelationalBranchRootSchemaAuthority,
+    schema: &crate::branch::root::schema::RelationalBranchRootSchemaAuthority,
 ) -> Result<Option<RequiredOutputRoutePosition>, Stop> {
     let bound = runtime.runtime.history.catalog_len();
     for _ in 0..bound {

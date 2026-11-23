@@ -1,14 +1,16 @@
 //! Authored lifecycle/field commands and actual physical incidence, including no-ops.
 use super::{admission, AuthoredSourceIncidence, AuthoredSourceRecordUse as Use};
-use crate::authority::commit::phases::applied_mutation::AppliedMutationDraft;
+use crate::authority::mutation::MutationEffect;
 use crate::authority::mutation::{AdjacencyDelta, AdjacencyDeltaKind};
-use crate::derived_relation::DerivedRelationReadDenial;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
+use crate::history::data::CanonicalRecordAllocation;
 use crate::identity::data::{KindId, RelationId};
-use crate::transactions::data::{
-    EntityMutationIntent as Entity, MergedCommitPlan, MutationIntent, RecordRef,
-    RelationMutationIntent as Relation,
-};
-use crate::validation::candidate_source::ManagedIndexSourcePreparationDenial as Denial;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent as Entity;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::RelationMutationIntent as Relation;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::RecordRef;
+use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Denial;
 use crate::validation::custom_rule::CustomPreparationBudget;
 use crate::validation::engine::state_view::InvariantStateView;
 use worth_execution::{ExecutionOrderedMap, ExecutionRequest};
@@ -25,18 +27,13 @@ impl AuthoredSourceInputs {
     pub(super) fn collect(
         execution: ExecutionRequest<'_, '_>,
         budget: &CustomPreparationBudget,
-        draft: &AppliedMutationDraft,
+        allocations: &[CanonicalRecordAllocation],
+        effect: &MutationEffect,
         plan: &MergedCommitPlan,
         before: &InvariantStateView<'_>,
         after: &InvariantStateView<'_>,
     ) -> Result<Option<Self>, Denial> {
-        let mut result = Self::allocations(
-            execution,
-            budget,
-            draft.identities.records.canonical(),
-            before,
-            after,
-        )?;
+        let mut result = Self::allocations(execution, budget, allocations, before, after)?;
         for intent in &plan.merged_intents {
             admission::work(budget, 1)?;
             match intent {
@@ -85,7 +82,7 @@ impl AuthoredSourceInputs {
                 | MutationIntent::Relation(_) => {}
             }
         }
-        if !result.physical(execution, budget, draft, before, after)? {
+        if !result.physical(execution, budget, effect, before, after)? {
             return Ok(None);
         }
         Ok(Some(result))
@@ -136,7 +133,7 @@ impl AuthoredSourceInputs {
     ) -> Result<Vec<AdjacencyDelta>, Denial> {
         let count = self.incidence.len().checked_mul(2).ok_or_else(|| {
             admission::storage(
-                crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
             )
         })?;
         // Scratch-only authored incidence interpreted by the existing pullback;
@@ -146,18 +143,20 @@ impl AuthoredSourceInputs {
                 .checked_mul(size_of::<AdjacencyDelta>() as u64)
                 .ok_or_else(|| {
                     admission::storage(
-                        crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                        crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
                     )
                 })?,
         ) {
             return Err(DerivedRelationReadDenial::Definition(
-                crate::derived_relation::DerivedRelationDenial::WorkBudgetExceeded,
+                crate::derived_relation::definition::DerivedRelationDenial::WorkBudgetExceeded,
             )
             .into());
         }
         let mut deltas = Vec::new();
         deltas.try_reserve_exact(count).map_err(|_| {
-            admission::storage(crate::execution::RelationalExecutionDenialCause::AllocationFailed)
+            admission::storage(
+                crate::execution::denial_cause::RelationalExecutionDenialCause::AllocationFailed,
+            )
         })?;
         for (_, value) in self.incidence.iter() {
             admission::work(budget, 2)?;

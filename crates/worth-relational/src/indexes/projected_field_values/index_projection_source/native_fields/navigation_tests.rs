@@ -1,9 +1,10 @@
 //! Native borrowed field walks use inline navigation and retain original request stops.
 use super::*;
 use crate::config::data::CascadeDeletePolicy;
-use crate::execution::{
-    execute_read_only_packets, PacketBudgetDenial, PacketMemory, ReadOnlyPacket,
-};
+use crate::execution::packet_memory::PacketMemory;
+use crate::execution::read_only_packets::execute_read_only_packets;
+use crate::execution::read_only_packets::PacketBudgetDenial;
+use crate::execution::read_only_packets::ReadOnlyPacket;
 use crate::identity::data::PartitionId;
 use crate::storage::overlay::PartitionAccess;
 use crate::tests::support::*;
@@ -189,7 +190,7 @@ fn native_field_navigation_boundary(relations: bool) {
         stopped,
         Err(
             crate::visibility::materialization::read_records::read_stop::ReadStop::Request(
-                crate::execution::RelationalExecutionDenialCause::Cancelled
+                crate::execution::denial_cause::RelationalExecutionDenialCause::Cancelled
             )
         )
     ));

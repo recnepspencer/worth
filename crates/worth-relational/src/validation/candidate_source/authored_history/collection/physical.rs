@@ -6,13 +6,13 @@ impl AuthoredSourceInputs {
         &mut self,
         execution: ExecutionRequest<'_, '_>,
         budget: &CustomPreparationBudget,
-        draft: &AppliedMutationDraft,
+        effect: &MutationEffect,
         before: &InvariantStateView<'_>,
         after: &InvariantStateView<'_>,
     ) -> Result<bool, Denial> {
         // effect_publication emits one canonical delta for each changed record
         // fragment. Use that actual structural classification, not a command guess.
-        for delta in &draft.outcome.effect.publication.canonical_deltas {
+        for delta in &effect.publication.canonical_deltas {
             admission::work(budget, 1)?;
             let usage = match delta.structural_change {
                 Change::Updated => Use::FIELDS,
@@ -26,7 +26,7 @@ impl AuthoredSourceInputs {
                 RecordRef::Relation(id) => self.relation(execution, budget, id, before, after)?,
             }
         }
-        for delta in &draft.outcome.effect.adjacency.deltas {
+        for delta in &effect.adjacency.deltas {
             admission::work(budget, 1)?;
             self.relation(execution, budget, delta.relation_id, before, after)?;
         }

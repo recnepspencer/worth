@@ -4,7 +4,7 @@ use crate::indexes::projected_field_values::IndexProjectionSource;
 use worth_foundational::facade::AspectShape;
 
 pub(super) fn prefix(
-    projection: &crate::runtime::VisibilityProjectionView,
+    projection: &crate::visibility::materialization::read_records::projection::VisibilityProjectionView,
     request: &BoundedRelatedEntityPrefixLookupRequest<'_>,
     prepared: &PreparedRelatedLookup<'_>,
     meter: &mut MapKernelContext<'_, '_>,
@@ -78,8 +78,8 @@ pub(super) fn prefix(
     Ok(())
 }
 pub(super) fn row(
-    read: &RelationalPinnedRead,
-    projection: &crate::runtime::VisibilityProjectionView,
+    read: &PinnedIndexLookup<'_>,
+    projection: &crate::visibility::materialization::read_records::projection::VisibilityProjectionView,
     request: &BoundedRelatedEntityPrefixLookupRequest<'_>,
     prepared: &PreparedRelatedLookup<'_>,
     entry: &RelatedEntityOrderingEntry,
@@ -96,10 +96,8 @@ pub(super) fn row(
     if entry.ordering_values().len() != prepared.contract.ordering().len() {
         return Err(corrupt());
     }
-    let definition = &prepared.generation;
-
     let selected = read
-        .selected_index(definition.index_id)
+        .selected_index(prepared.generation.index_id)
         .ok_or(Denial::InvalidPrefix)?;
     let DerivedIndexKind::RelatedEntityOrdering {
         relation_kind,
@@ -119,10 +117,10 @@ pub(super) fn row(
     let relation = projection
         .read_exact_relation_metadata(execution, entry.relation_id())
         .map_err(|denial| match denial {
-            crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+            crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
                 Denial::ExactBasisRequired
             }
-            crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+            crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::Execution(cause) => {
                 Denial::Read(cause)
             }
         })?
@@ -147,10 +145,10 @@ pub(super) fn row(
     let actual_child = projection
         .read_exact_entity_state(execution, child, |metadata, _| metadata)
         .map_err(|denial| match denial {
-            crate::runtime::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
+            crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::ExactBasisRequired => {
                 Denial::ExactBasisRequired
             }
-            crate::runtime::RelationalBorrowedRecordReadDenial::Execution(cause) => {
+            crate::visibility::materialization::read_records::projection::RelationalBorrowedRecordReadDenial::Execution(cause) => {
                 Denial::Read(cause)
             }
         })?

@@ -1,11 +1,11 @@
 //! Original revisions across an actual committed graph selection; never write authority.
 use super::super::reader::VisibilityReadContext;
 use super::{RelationalBorrowedRecordReadDenial, VisibilityProjectionView};
-use crate::{
-    execution::RelationalExecutionDenialCause as Cause,
-    history::data::{CanonicalCommitAuthorityKind, CanonicalCommitEnvelope, CommitId},
-    mvcc::RelationalBranchObservation,
-};
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+use crate::history::data::CanonicalCommitAuthorityKind;
+use crate::history::data::CanonicalCommitEnvelope;
+use crate::history::data::CommitId;
+use crate::mvcc::observation::RelationalBranchObservation;
 use std::sync::Arc;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest};
 mod antecedent;
@@ -52,7 +52,7 @@ impl VisibilityReadContext<'_> {
         restored: &RelationalBranchObservation,
     ) -> Result<RelationalHistoricalSelectionRead, RelationalHistoricalSelectionReadDenial> {
         use RelationalHistoricalSelectionReadDenial as Denial;
-        crate::execution::check_request(execution).map_err(Denial::Execution)?;
+        crate::execution::request_custody::check_request(execution).map_err(Denial::Execution)?;
         for source in [selected, restored] {
             if source.identity().runtime_instance_id() != self.runtime().runtime_instance_id() {
                 return Err(Denial::ForeignOwner);

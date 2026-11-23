@@ -8,11 +8,11 @@ use super::leased_map::{QueryPacketBudget, QueryPacketMemory, QueryReadPacketDen
 use crate::identity::data::{KindId, PartitionId};
 use crate::query::data::{PlannedQueryPacket, QueryFragmentCounters, QueryWorkerFragment};
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
-use crate::visibility::materialization::read_records::ProjectionRecordSource;
-use crate::visibility::materialization::read_records::{
-    entity_query_locus_comparison_key, entity_query_locus_value,
-    relation_query_locus_comparison_key, relation_query_locus_value,
-};
+use crate::visibility::materialization::read_records::projection::query_locus_projection::entity_query_locus_comparison_key;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::entity_query_locus_value;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::relation_query_locus_comparison_key;
+use crate::visibility::materialization::read_records::projection::query_locus_projection::relation_query_locus_value;
+use crate::visibility::materialization::read_records::projection::ProjectionRecordSource;
 
 type PacketFailure = MapKernelFailure<QueryReadPacketDenial>;
 

@@ -1,6 +1,6 @@
 //! Discover only the bounded adjacency footprint before observable read work.
 use super::VisibilityProjectionView;
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::{EntityId, KindId, RelationId};
 use crate::storage::data::RecordLifecycleState as Lifecycle;
 use crate::storage::partition::{AdjacencyDirection, AdjacencyIds, AdjacencyKindBasis};
@@ -21,7 +21,7 @@ impl VisibilityProjectionView {
         entities: impl Clone + IntoIterator<Item = EntityId>,
         demand: AdjacencyDemand,
     ) -> Result<(), Cause> {
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
@@ -118,7 +118,7 @@ impl VisibilityProjectionView {
             |_, memory| {
                 let mut consumed = 0_usize;
                 for anchor in entities.clone() {
-                    crate::execution::check_request(execution)?;
+                    crate::execution::request_custody::check_request(execution)?;
                     if demand.frontier {
                         if demand.exhausted(consumed) {
                             return Ok(());
@@ -132,7 +132,7 @@ impl VisibilityProjectionView {
                         Ok::<_, Cause>(())
                     })?;
                     for id in iterator.copied() {
-                        crate::execution::check_request(execution)?;
+                        crate::execution::request_custody::check_request(execution)?;
                         if demand.exhausted(consumed) {
                             break;
                         }

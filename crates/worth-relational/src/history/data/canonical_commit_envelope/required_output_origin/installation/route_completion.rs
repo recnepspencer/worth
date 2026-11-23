@@ -1,9 +1,10 @@
 //! Capture one authenticated route; both ordinary and grouped publication use this path.
 use super::*;
-use crate::mvcc::{RequiredOutputPublicationMeaning, RequiredOutputRoleTarget};
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
 pub(super) struct RouteCompletion<'a> {
     pub(super) inputs: crate::mvcc::RequiredOutputInputs,
-    pub(super) contribution_records: Option<&'a [crate::transactions::data::RecordRef]>,
+    pub(super) contribution_records: Option<&'a [crate::transactions::data::primitives::RecordRef]>,
     pub(super) source_input: Option<
         &'a crate::runtime::RelationalPinnedRead<
             crate::runtime::RelationalAppliedCandidateReadIdentity,
@@ -61,9 +62,11 @@ impl CanonicalCommitEnvelopeBody {
             context,
         )?;
         if roles.is_empty() {
-            return Err(crate::mvcc::origin_denial(
-                "empty producer publication membership",
-            ));
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "empty producer publication membership",
+                ),
+            );
         }
         context
             .checkpoint(
@@ -73,7 +76,7 @@ impl CanonicalCommitEnvelopeBody {
                     }))
                     .ok_or_else(|| {
                         origin_request(
-                            crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
+                            crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
                         )
                     })?,
             )
@@ -87,7 +90,7 @@ impl CanonicalCommitEnvelopeBody {
                         + role.entity_name.len()
                         + previous
                             .and_then(|prior| match &role.target {
-                                crate::transactions::data::EntityReference::Existing(id) => prior
+                                crate::transactions::data::primitives::EntityReference::Existing(id) => prior
                                     .members
                                     .binary_search_by_key(id, |member| member.id)
                                     .ok()
@@ -106,7 +109,7 @@ impl CanonicalCommitEnvelopeBody {
             })
             .ok_or_else(|| {
                 origin_request(
-                    crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                    crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
                 )
             })?;
         let bytes = origin_retention_bytes(
@@ -120,13 +123,13 @@ impl CanonicalCommitEnvelopeBody {
                 .checked_add(previous.map_or(0, |prior| prior.relations.len()))
                 .ok_or_else(|| {
                     origin_request(
-                        crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                        crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
                     )
                 })?,
         )?
         .checked_add(extra)
         .ok_or_else(|| {
-            origin_request(crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow)
+            origin_request(crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow)
         })?;
         context.checkpoint(bytes).map_err(origin_request)?;
         let memory = worth_execution::ExecutionMemoryReservation::reserve_in_scope(lease, bytes)
@@ -176,7 +179,7 @@ impl CanonicalCommitEnvelopeBody {
         )?;
         // Recorded in the canonical frame, like the envelope's branch cell (D11).
         let recorded_basis = basis.descriptor().in_canonical_frame().map_err(|denial| {
-            crate::mvcc::origin_denial(format!(
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(format!(
                 "output basis cannot be recorded in the canonical frame: {denial:?}"
             ))
         })?;
@@ -242,9 +245,11 @@ impl CanonicalCommitEnvelopeBody {
                 .as_ref()
                 .is_some_and(|origin| !origin.relations.is_empty())
         {
-            return Err(crate::mvcc::origin_denial(
-                "authored retirement must actually retire every owned relation",
-            ));
+            return Err(
+                crate::transactions::data::outcomes::transaction_commit_error::origin_denial(
+                    "authored retirement must actually retire every owned relation",
+                ),
+            );
         }
         Ok(positions)
     }

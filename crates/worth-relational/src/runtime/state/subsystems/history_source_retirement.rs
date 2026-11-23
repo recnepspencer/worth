@@ -1,25 +1,23 @@
 //! Read-only retirement binding to the same original history owners.
 use super::{HistorySubsystem, RelationalCanonicalPublicationRoutes};
-use crate::branch::{
-    RelationalBranchReferenceRegistry, RelationalBranchRoot, RelationalSourceRootSlot,
-};
+use crate::branch::registry::RelationalBranchReferenceRegistry;
+use crate::branch::registry::RelationalSourceRootSlot;
+use crate::branch::root::RelationalBranchRoot;
 use crate::history::retention::RelationalBranchRetentionOwner;
 use std::sync::Arc;
 
 pub(crate) struct RelationalSourceHistoryBinding {
     branches: RelationalBranchReferenceRegistry,
     retention: RelationalBranchRetentionOwner,
-    pub(super) catalog: Arc<RelationalCanonicalPublicationRoutes>,
+    catalog: Arc<RelationalCanonicalPublicationRoutes>,
     ledger: super::RuntimeOwnedState<super::HistoryLedger>,
 }
-impl HistorySubsystem {
-    pub(crate) fn source_retirement_binding(&self) -> RelationalSourceHistoryBinding {
-        RelationalSourceHistoryBinding {
-            branches: self.branch_cells.clone(),
-            retention: self.retention_owner.clone(),
-            catalog: self.canonical_publication_routes.clone(),
-            ledger: self.ledger.share(),
-        }
+pub(crate) fn bind_source_retirement(history: &HistorySubsystem) -> RelationalSourceHistoryBinding {
+    RelationalSourceHistoryBinding {
+        branches: history.branch_cells.clone(),
+        retention: history.retention_owner.clone(),
+        catalog: history.canonical_publication_routes.clone(),
+        ledger: history.ledger.share(),
     }
 }
 impl RelationalSourceHistoryBinding {
@@ -34,7 +32,7 @@ impl RelationalSourceHistoryBinding {
     ) -> Result<
         Option<(
             crate::history::data::CommitId,
-            Arc<crate::history::RelationalCommitEnvelopeResidency>,
+            Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
         )>,
         (),
     > {
@@ -46,20 +44,15 @@ impl RelationalSourceHistoryBinding {
     ) -> Result<
         Option<(
             crate::history::data::CommitId,
-            Arc<crate::history::RelationalCommitEnvelopeResidency>,
+            Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
         )>,
         (),
     > {
-        use std::ops::Bound::{Excluded, Unbounded};
-        let ledger = self.ledger.try_read().ok_or(())?;
-        let next = match after {
-            None => ledger.commit_envelopes.first_key_value(),
-            Some(key) => ledger
-                .commit_envelopes
-                .range((Excluded(key), Unbounded))
-                .next(),
-        };
-        Ok(next.map(|(&id, cell)| (id, cell.clone())))
+        Ok(self
+            .ledger
+            .try_read()
+            .ok_or(())?
+            .next_retained_envelope(after))
     }
     pub(crate) fn live_root(&self, index: usize) -> Result<RelationalSourceRootSlot, ()> {
         self.branches.source_retirement_root(index)
@@ -75,8 +68,10 @@ impl RelationalSourceHistoryBinding {
     }
     pub(crate) fn retained_close_holders(
         &self,
-    ) -> crate::runtime::state::RelationalReadCustodyHolders {
-        crate::runtime::state::RelationalReadCustodyHolders::detached(self.retention.counters())
+    ) -> crate::change_source::read_custody::RelationalReadCustodyHolders {
+        crate::change_source::read_custody::RelationalReadCustodyHolders::detached(
+            self.retention.counters(),
+        )
     }
     pub(crate) fn external_custody_retained(&self) -> bool {
         self.retention.has_detached_obligations()

@@ -3,9 +3,9 @@ use crate::commit_strategies::{
     FrozenCommitStrategyExecutorRegistry, FrozenCommitStrategyRegistry,
 };
 use crate::runtime::{
-    CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, IndexingSubsystem,
-    LineageSubsystem, PublicationSubsystem, RecordIdentitySubsystem, RuntimeServices,
-    RuntimeSubsystem, SchemaContractRuntimeSubsystem, StorageSubsystem, VisibilitySubsystem,
+    CommitStrategiesSubsystem, DurabilitySubsystem, HistorySubsystem, LineageSubsystem,
+    PublicationSubsystem, RecordIdentitySubsystem, RuntimeServices, RuntimeSubsystem,
+    SchemaContractRuntimeSubsystem, StorageSubsystem, VisibilitySubsystem,
 };
 use crate::validation::data::CustomInvariantRegistration;
 use crate::validation::FrozenCustomInvariantRegistry;
@@ -15,16 +15,7 @@ use super::state::{
 };
 use super::{RelationalRuntime, RelationalRuntimeConstructionDenial as Denial};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum RelationalRuntimeForkDenial {
-    PublicationInFlight,
-    PerformedPublicationRequiresSettlement {
-        commit_id: crate::history::data::CommitId,
-    },
-    IdentityCapacityExhausted,
-    CanonicalInventoryInvalid,
-    BranchIdentityRebind(crate::branch::RelationalBranchObservationConstructionDenial),
-}
+use super::fork_denial::RelationalRuntimeForkDenial;
 
 #[derive(Debug, Default)]
 pub(crate) struct RuntimeExtensions {
@@ -223,7 +214,10 @@ impl RelationalRuntime {
             &config.schema.registry,
             crate::schema::data::runtime_descriptor_semantics_policy().current_write_version(),
         );
-        history.retain_original_empty_birth(initial_root.retained_schema_authority());
+        crate::runtime::state::subsystems::history::history_canonical_routes::retain_original_empty_birth(
+            &history,
+            initial_root.retained_schema_authority(),
+        );
         // The new registry contains exactly one fresh cell, bound to this
         // runtime, with a nonzero retention budget and no escaped handles.
         history
@@ -237,7 +231,7 @@ impl RelationalRuntime {
         Ok(Self::from_state(crate::runtime::RelationalRuntimeState {
             commit_strategies,
             history,
-            indexes: <IndexingSubsystem as RuntimeSubsystem>::new(&()),
+            indexes: Default::default(),
             lineage: LineageSubsystem::new(),
             durability,
             record_identity: <RecordIdentitySubsystem as RuntimeSubsystem>::new(&()),
@@ -270,7 +264,7 @@ impl RelationalRuntime {
             visibility: RuntimeSubsystem::fork(&self.visibility),
             publication: RuntimeSubsystem::fork(&self.publication),
             history,
-            indexes: RuntimeSubsystem::fork(&self.indexes),
+            indexes: self.indexes.fork(),
             lineage: self.lineage.fork(),
             durability: RuntimeSubsystem::fork(&self.durability),
             record_identity: RuntimeSubsystem::fork(&self.record_identity),

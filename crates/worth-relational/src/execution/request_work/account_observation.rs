@@ -9,7 +9,7 @@ impl Drop for Restore {
         CHARGES.with(|slot| *slot.borrow_mut() = self.0.take());
     }
 }
-pub(super) fn observe<R>(body: impl FnOnce() -> R) -> (R, Vec<u64>) {
+pub(crate) fn observe<R>(body: impl FnOnce() -> R) -> (R, Vec<u64>) {
     let previous = CHARGES.with(|slot| slot.replace(Some(Vec::new())));
     let _restore = Restore(previous);
     let outcome = body();

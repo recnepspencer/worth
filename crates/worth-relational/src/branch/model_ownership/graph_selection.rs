@@ -10,6 +10,7 @@ use crate::{
     validation::data::StructuralRelationRecord,
 };
 use std::collections::{BTreeMap, BTreeSet};
+mod canonical;
 mod transfers;
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 

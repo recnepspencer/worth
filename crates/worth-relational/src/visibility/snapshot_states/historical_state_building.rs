@@ -19,7 +19,7 @@ pub(crate) fn build_historical_visibility_state(
     read_policy: SnapshotReadPolicy,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<SnapshotState, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<SnapshotState, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     debug_assert!(
         /* Proof: Historical basis admission rejects a requested version beyond its selected source before constructing this private basis; both versions remain immutable afterwards. */
         basis.source_version().as_u64() >= basis.version_id().as_u64()
@@ -45,7 +45,7 @@ fn build_from_retained_state(
     state: &impl PartitionAccess,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<SnapshotState, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<SnapshotState, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     let version_id = basis.version_id();
     let registry = basis
         .root()
@@ -97,7 +97,7 @@ fn retained_historical_relations(
     version_id: crate::identity::data::VersionId,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<DenseSlotBitSet, crate::execution::RelationalExecutionDenialCause> {
+) -> Result<DenseSlotBitSet, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     let reader = runtime.read_truth();
     let mut retained = DenseSlotBitSet::with_capacity(visible.represented_slot_capacity());
     let (slots, held) = record_memory::slots(visible, memory)?;

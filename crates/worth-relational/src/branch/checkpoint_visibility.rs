@@ -1,8 +1,8 @@
 //! Descriptive visibility for a verified original; no root or basis is issued.
-use super::{
-    RelationalBranchRootCaptureDenial, RelationalBranchRootDescriptor,
-    RelationalBranchVisibilityCommitment, RelationalRootCorrectnessIndex,
-};
+use crate::branch::root::RelationalBranchRootCaptureDenial;
+use crate::branch::root::RelationalBranchVisibilityCommitment;
+use crate::branch::root::RelationalRootCorrectnessIndex;
+use crate::branch::target::RelationalBranchRootDescriptor;
 use crate::history::data::CanonicalCommitEnvelope;
 use worth_execution::ExecutionRequest;
 

@@ -281,13 +281,10 @@ fn resident_pin_custody_and_cache_clear_preserve_owned_mirror_residency() {
             .durability_recovery()
             .recover(execution, plan)
             .unwrap();
-        let basis = crate::visibility::snapshot_states::VisibilitySnapshotBasis::capture_current(
-            &runtime,
-            &fork_branch,
-            historical_version,
-        )
-        .unwrap()
-        .expect("the recovered fork retains the exact old root");
+        let basis = runtime
+            .capture_current_visibility_basis(&fork_branch, historical_version)
+            .unwrap()
+            .expect("the recovered fork retains the exact old root");
         basis
             .root()
             .demand_all_full(execution, &runtime.services.symbols)

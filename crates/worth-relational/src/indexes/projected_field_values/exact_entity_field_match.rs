@@ -1,4 +1,4 @@
-use crate::execution::RelationalExecutionDenialCause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
 use crate::identity::data::{EntityId, KindId};
 use crate::storage::data::RecordLifecycleState;
 use crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis;
@@ -37,7 +37,7 @@ pub(in crate::indexes) fn exact_entity_field_matches(
         return Ok(None);
     }
     let matches =
-        crate::visibility::materialization::read_records::authoritative_state_query_locus_value(
+        crate::visibility::materialization::read_records::projection::query_locus_projection::authoritative_state_query_locus_value(
             slot.extra().authoritative_aspect_state(),
             locator,
         )

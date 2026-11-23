@@ -16,12 +16,15 @@ use crate::schema::data::{
     DescriptorSemanticsVersion, SchemaAuthoritySnapshot, SchemaContinuationDescriptor,
     SchemaReconciliationDescriptor, SchemaTransitionArtifact, SchemaVersionId,
 };
-use crate::transactions::data::{MergedCommitPlan, PublishedMergeExecutionAuthority};
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::outcomes::plan_artifacts::PublishedMergeExecutionAuthority;
 
 #[derive(Deserialize)]
 pub(crate) struct CanonicalEnvelopeWire<Symbols> {
     index_definition_delta: super::CanonicalIndexDefinitionDelta,
-    semantic_result: std::sync::Arc<crate::transactions::data::RelationalCommitSemanticResult>,
+    semantic_result: std::sync::Arc<
+        crate::transactions::data::outcomes::commit_semantic_result::RelationalCommitSemanticResult,
+    >,
     caller_association: Option<super::super::RelationalCallerAssociation>,
     content: crate::content::publication::ContentPublication,
     required_output_codec_retirements:
@@ -45,7 +48,8 @@ pub(crate) struct CanonicalEnvelopeWire<Symbols> {
     authored_index_writes: super::CanonicalAuthoredIndexWrites,
     commit: RelationalCommitReceipt,
     branch_context: BranchId,
-    branch_cell_checkpoint: Option<crate::branch::RelationalBranchCellCheckpoint>,
+    branch_cell_checkpoint:
+        Option<crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
     authority_kind: CanonicalCommitAuthorityKind,
     strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
     merge_execution_authority: Option<PublishedMergeExecutionAuthority>,
@@ -149,14 +153,14 @@ impl CanonicalEnvelopeWire<crate::symbols::data::SymbolSnapshotWire<'_>> {
             count = count.and_then(|count| count.checked_add(1));
         });
         let count = count.ok_or(Denial::Request(
-            crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+            crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
         ))?;
         let bytes = count
             .checked_add(self.symbol_texts.entries.len())
             .and_then(|count| count.checked_mul(size_of::<Symbol>()))
             .and_then(|bytes| u64::try_from(bytes).ok())
             .ok_or(Denial::Request(
-                crate::execution::RelationalExecutionDenialCause::ChargedBytesOverflow,
+                crate::execution::denial_cause::RelationalExecutionDenialCause::ChargedBytesOverflow,
             ))?;
         let funding = execution
             .reserve_retained_memory(bytes)

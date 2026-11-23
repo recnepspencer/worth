@@ -1,5 +1,5 @@
 //! SDK-funded opaque Arc custody, shared by context and historical metadata.
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use std::{
     alloc::Layout,
     any::Any,

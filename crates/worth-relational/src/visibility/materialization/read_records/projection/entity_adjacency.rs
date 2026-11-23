@@ -28,7 +28,7 @@ impl VisibilityProjectionView {
         kind_id: KindId,
     ) -> Result<
         Vec<crate::storage::data::RelationReadRecord>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.demand_adjacency(
             execution,
@@ -74,7 +74,7 @@ impl VisibilityProjectionView {
         maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.bounded_entity_relations_of_kind(
             execution,
@@ -93,7 +93,7 @@ impl VisibilityProjectionView {
         maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.bounded_entity_relations_of_kind(
             execution,
@@ -112,10 +112,15 @@ impl VisibilityProjectionView {
         entity_id: EntityId,
         kind_id: KindId,
         maximum_work_units: Option<usize>,
-        mut admit_work: impl FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+        mut admit_work: impl FnMut(
+            u64,
+        ) -> Result<
+            (),
+            crate::execution::denial_cause::RelationalExecutionDenialCause,
+        >,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.admitted_entity_relations_of_kind(
             execution,
@@ -135,10 +140,15 @@ impl VisibilityProjectionView {
         entity_id: EntityId,
         kind_id: KindId,
         maximum_work_units: Option<usize>,
-        mut admit_work: impl FnMut(u64) -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+        mut admit_work: impl FnMut(
+            u64,
+        ) -> Result<
+            (),
+            crate::execution::denial_cause::RelationalExecutionDenialCause,
+        >,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.admitted_entity_relations_of_kind(
             execution,
@@ -159,11 +169,13 @@ impl VisibilityProjectionView {
         maximum_work_units: Option<usize>,
         admit_work: &mut dyn FnMut(
             u64,
-        )
-            -> Result<(), crate::execution::RelationalExecutionDenialCause>,
+        ) -> Result<
+            (),
+            crate::execution::denial_cause::RelationalExecutionDenialCause,
+        >,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.demand_adjacency(
             execution,
@@ -177,7 +189,7 @@ impl VisibilityProjectionView {
             },
         )?;
         use super::super::native_scan_stop::NativeScanStop;
-        crate::execution::check_request(execution)?;
+        crate::execution::request_custody::check_request(execution)?;
         super::super::read_work::scan_with_memory(
             execution,
             |_context, memory| {
@@ -192,7 +204,7 @@ impl VisibilityProjectionView {
                                 AdjacencyTruthReadLimitExceeded::new(examined, reserved),
                             ));
                         }
-                        crate::execution::check_request(execution)
+                        crate::execution::request_custody::check_request(execution)
                             .map_err(NativeScanStop::Request)?;
                         admit_work(units).map_err(NativeScanStop::Request)
                     },
@@ -213,7 +225,7 @@ impl VisibilityProjectionView {
         maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedAdjacencyTruthRead, AdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.demand_adjacency(
             execution,
@@ -259,7 +271,7 @@ impl VisibilityProjectionView {
         direction: AdjacencyDirection,
         spend: &mut dyn FnMut(u64, usize, usize) -> Result<(), E>,
         memory: &mut worth_execution::ExecutionResultMemory<'_>,
-        request: &dyn Fn(crate::execution::RelationalExecutionDenialCause) -> E,
+        request: &dyn Fn(crate::execution::denial_cause::RelationalExecutionDenialCause) -> E,
     ) -> Result<BoundedAdjacencyTruthRead, E> {
         let Some(root) = self.basis.root() else {
             return Ok(BoundedAdjacencyTruthRead::new(Vec::new(), 0));

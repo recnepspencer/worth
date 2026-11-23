@@ -1,13 +1,13 @@
 //! Reconstructive selection for an ordinary author's exact retired output roster.
 use super::{charge, require_linear_history, CodecRetirementClosureStop as Stop};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
-use crate::{
-    branch::AdmittedRelationalBranchBasis,
-    history::data::{CanonicalRequiredOutputOrigin, SelectedOutputPublication},
-    mvcc::{RequiredOutputRolePosture as Posture, RequiredOutputRoleTarget},
-    runtime::RelationalRuntime,
-    transactions::data::EntityReference,
-};
+use crate::history::data::CanonicalRequiredOutputOrigin;
+use crate::history::data::SelectedOutputPublication;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRoleTarget;
+use crate::runtime::RelationalRuntime;
+use crate::transactions::data::primitives::EntityReference;
 use std::sync::Arc;
 use worth_execution::{
     ExecutionRequest, ExecutionResourceLease, ExecutionWorkCeiling, MapKernelContext,
@@ -83,13 +83,12 @@ fn select(
         require_linear_history(&envelope)?;
         let validated = envelope.as_view();
         for (ordinal, origin) in envelope.output_origins().enumerate() {
-            let comparisons =
-                roles
-                    .len()
-                    .checked_mul(origin.members.len())
-                    .ok_or(Stop::Request(
-                        crate::execution::RelationalExecutionDenialCause::WorkCounterOverflow,
-                    ))?;
+            let comparisons = roles
+                .len()
+                .checked_mul(origin.members.len())
+                .ok_or(Stop::Request(
+                crate::execution::denial_cause::RelationalExecutionDenialCause::WorkCounterOverflow,
+            ))?;
             charge(context, comparisons)?;
             if roles.iter().any(|role| {
                 origin
@@ -177,10 +176,9 @@ fn has_owned_birth(
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<bool, Stop> {
-    use crate::{
-        publication::patch::data::RecordStructuralChange, storage::overlay::PartitionAccess,
-        transactions::data::RecordRef,
-    };
+    use crate::publication::patch::data::RecordStructuralChange;
+    use crate::storage::overlay::PartitionAccess;
+    use crate::transactions::data::primitives::RecordRef;
     if basis.descriptor().runtime_instance_id() != runtime.runtime.runtime_instance_id()
         || !basis.is_current()
     {

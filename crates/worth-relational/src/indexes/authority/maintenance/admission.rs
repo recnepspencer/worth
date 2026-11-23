@@ -1,5 +1,6 @@
+use super::super::live_access::IndexAuthority;
 use super::work::{MaintenanceAdmissionRefusal, MaintenanceWork};
-use super::IndexAuthority;
+
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::indexes::data::{
     DerivedIndexBuildRequest, DerivedIndexMaintenanceAdmissionStop, DerivedIndexMaintenanceBudget,
@@ -22,7 +23,7 @@ impl IndexAuthority<'_> {
         let (prepared, counts) = super::request_payment::run(execution, budget, |work| {
             work.restrict_to_field_indexes();
             let prepared = self.prepare_basis_refresh(&request, basis, before, work, execution)?;
-            prepared.publish_admitted(self.runtime, work)
+            prepared.publish_admitted(&self.runtime.indexes, work)
         })?;
         Ok(DerivedIndexMaintenanceOutcome {
             generations: prepared.value,
@@ -61,7 +62,7 @@ impl IndexAuthority<'_> {
             work.prepare(0, 0).map_err(|kind| work.deny(kind))?;
             Ok(DerivedIndexMaintenanceOutcome {
                 generations: prepared
-                    .publish_admitted(self.runtime, &mut work)
+                    .publish_admitted(&self.runtime.indexes, &mut work)
                     .map_err(|kind| work.deny(kind))?,
                 work: work.counts(),
             })

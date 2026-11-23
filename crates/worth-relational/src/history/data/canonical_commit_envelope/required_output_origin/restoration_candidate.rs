@@ -145,9 +145,15 @@ pub(crate) fn validate(
                     .schema_authority()
                     .relation_aspect_plan(spec.kind_id)
                     .ok_or_else(refused)?;
-                let candidate = crate::authority::mutation::intents::relation_endpoint_candidate::append_portable_in_scope(
-                    &spec.aspect_patch, plan, source, target, lease, context,
-                ).map_err(origin_request)?;
+                let candidate = crate::schema::portable_patch::append_portable_in_scope(
+                    &spec.aspect_patch,
+                    plan,
+                    source,
+                    target,
+                    lease,
+                    context,
+                )
+                .map_err(origin_request)?;
                 candidate.compare(|patch| {
                     validate_payload(
                         plan,

@@ -1,5 +1,6 @@
 //! Recover missing catalog coverage without replacing admitted predecessor selections.
-use super::{request_payment, work::MaintenanceWork, IndexAuthority};
+use super::super::live_access::IndexAuthority;
+use super::{request_payment, work::MaintenanceWork};
 use crate::indexes::data::{
     DerivedIndexBuildRequest, DerivedIndexId, DerivedIndexMaintenanceBudget,
     DerivedIndexMaintenanceDenial, DerivedIndexMaintenanceDenialKind as Denial,
@@ -68,7 +69,7 @@ impl IndexAuthority<'_> {
 
 fn retain_missing(
     ids: &mut Vec<DerivedIndexId>,
-    selected: &crate::runtime::PreparedIndexBasisSelection,
+    selected: &crate::runtime::state::subsystems::indexing::PreparedIndexBasisSelection,
     work: &mut MaintenanceWork<'_, '_, '_>,
 ) -> Result<(), Denial> {
     let count = ids.len();

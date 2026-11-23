@@ -20,7 +20,7 @@ impl VisibilityProjectionView {
         maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.bounded_relations_for_frontier(
             execution,
@@ -40,7 +40,7 @@ impl VisibilityProjectionView {
         maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.bounded_relations_for_frontier(
             execution,
@@ -63,7 +63,7 @@ impl VisibilityProjectionView {
         maximum_work_units: Option<usize>,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.bounded_relations_for_frontier(
             execution,
@@ -89,7 +89,7 @@ impl VisibilityProjectionView {
         include_audit: bool,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         self.demand_adjacency(
             execution,

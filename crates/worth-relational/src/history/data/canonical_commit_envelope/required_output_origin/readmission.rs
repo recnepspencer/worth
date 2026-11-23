@@ -14,7 +14,7 @@ pub(super) fn coverage_commit_stop(
         Failure::Request(cause) => origin_request(cause),
         Failure::Unsupported(reason) => {
             let mut error = crate::publication::data::PublicationError::new(
-                crate::publication::bundle::PublicationStage::BundleAssembly,
+                crate::publication::bundle::publication_status::PublicationStage::BundleAssembly,
                 reason.entity_detail(
                     "output has unsupported or unclassified present cells",
                     envelope,
@@ -23,12 +23,14 @@ pub(super) fn coverage_commit_stop(
                     Some(member_ordinal),
                 ),
             );
-            error.context = error
-                .context
-                .with_records(vec![crate::transactions::data::RecordRef::Entity(id)]);
+            error.context = error.context.with_records(vec![
+                crate::transactions::data::primitives::RecordRef::Entity(id),
+            ]);
             TransactionCommitError::publication(error)
         }
-        Failure::Corrupt(detail) => crate::mvcc::origin_denial(detail),
+        Failure::Corrupt(detail) => {
+            crate::transactions::data::outcomes::transaction_commit_error::origin_denial(detail)
+        }
     }
 }
 
@@ -110,7 +112,7 @@ impl CanonicalCommitEnvelopeBody {
                 .zip(&origin.outputs)
                 .any(|(member, id)| member.id != *id)
             || origin.members.iter().any(|member| {
-                use crate::mvcc::RequiredOutputRolePosture as Posture;
+                use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputRolePosture as Posture;
                 member.role.is_empty()
                     || member.entity_name.is_empty()
                     || member.birth_producer.is_empty()
@@ -154,10 +156,10 @@ impl CanonicalCommitEnvelopeBody {
 impl<'a> ValidatedOutputOrigins<'a> {
     pub(crate) fn materialization_origin_for_record(
         &self,
-        record: &crate::transactions::data::RecordRef,
+        record: &crate::transactions::data::primitives::RecordRef,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<&'a std::sync::Arc<CanonicalRequiredOutputOrigin>, Stop> {
-        use crate::transactions::data::RecordRef;
+        use crate::transactions::data::primitives::RecordRef;
         let origin = match record {
             RecordRef::Entity(id) => self.output_origin_for_entity(*id, context)?,
             RecordRef::Relation(id) => self.output_origin_for_relation(*id, context)?,
@@ -168,7 +170,7 @@ impl<'a> ValidatedOutputOrigins<'a> {
 
     pub(crate) fn materialization_origin_for_route(
         &self,
-        meaning: &crate::mvcc::RequiredOutputPublicationMeaning,
+        meaning: &crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
         context: &mut worth_execution::MapKernelContext<'_, '_>,
     ) -> Result<&'a std::sync::Arc<CanonicalRequiredOutputOrigin>, Stop> {
         let origin = self.output_origin_for_route(meaning, context)?;

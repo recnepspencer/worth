@@ -2,7 +2,8 @@ use std::cmp::{Ordering, Reverse};
 use std::collections::BinaryHeap;
 
 mod checked;
-pub(crate) use checked::{canonical_merge_streams_checked, canonical_merge_values_checked};
+mod checked_engine;
+pub(crate) use checked_engine::{canonical_merge_streams_checked, canonical_merge_values_checked};
 
 #[derive(Debug)]
 pub(crate) struct OrderedReductionStream<K, T> {

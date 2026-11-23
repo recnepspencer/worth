@@ -229,6 +229,10 @@ pub struct DurabilityError {
 }
 
 impl DurabilityError {
+    pub(crate) fn corrupt_checkpoint(detail: impl Into<String>) -> Self {
+        Self::new(RecoveryFailureClass::CorruptCheckpoint, detail)
+    }
+
     pub fn new(class: RecoveryFailureClass, detail: impl Into<String>) -> Self {
         let suggested_fix = match class {
             RecoveryFailureClass::CheckpointSizeOverflow

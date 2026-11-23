@@ -2,7 +2,7 @@ use super::*;
 
 #[test]
 fn cross_branch_immutable_target_substitution_denies_distinctly() {
-    let host_request = crate::test_execution_policy::serial_request();
+    let host_request = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     let runtime = crate::tests::support::runtime_with_test_schema();

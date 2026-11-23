@@ -210,9 +210,14 @@ impl ManagedIndexSourceProjection<'_> {
             SourceProjectionBacking::Applied {
                 loan, execution, ..
             } => PreparedBody::Applied {
-                read: loan
-                    .projection
-                    .derived_source(execution, path, root.into(), shape, None)?,
+                read: PinnedDerivedRelationRead::acquire_projected(
+                    &loan.projection,
+                    execution,
+                    path,
+                    root.into(),
+                    shape,
+                    None,
+                )?,
                 affinity: Arc::clone(&loan.affinity),
             },
             SourceProjectionBacking::Invariant { relations, .. } => {
@@ -221,9 +226,14 @@ impl ManagedIndexSourceProjection<'_> {
             SourceProjectionBacking::Selected {
                 loan, execution, ..
             } => PreparedBody::Selected {
-                read: loan
-                    .projection
-                    .derived_source(execution, path, root.into(), shape, None)?,
+                read: PinnedDerivedRelationRead::acquire_projected(
+                    &loan.projection,
+                    execution,
+                    path,
+                    root.into(),
+                    shape,
+                    None,
+                )?,
                 entry: Arc::clone(&loan.expected),
                 root: Arc::clone(
                     loan.projection

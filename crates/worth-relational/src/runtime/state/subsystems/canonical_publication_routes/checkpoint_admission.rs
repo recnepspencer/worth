@@ -87,11 +87,12 @@ impl RelationalCanonicalPublicationRoutes {
     /// selection does.
     pub(crate) fn enter_fork(
         &self,
-    ) -> Result<RwLockWriteGuard<'_, ()>, crate::runtime::RelationalRuntimeForkDenial> {
+    ) -> Result<RwLockWriteGuard<'_, ()>, crate::runtime::fork_denial::RelationalRuntimeForkDenial>
+    {
         let guard = match self.lifecycle.try_write() {
             Ok(guard) => Ok(guard),
             Err(TryLockError::WouldBlock) => {
-                Err(crate::runtime::RelationalRuntimeForkDenial::PublicationInFlight)
+                Err(crate::runtime::fork_denial::RelationalRuntimeForkDenial::PublicationInFlight)
             }
             Err(TryLockError::Poisoned(poisoned)) => Ok(poisoned.into_inner()),
         }?;

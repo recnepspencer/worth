@@ -24,7 +24,7 @@ fn full_query_result_vector_admits_replacement_peak_before_growth() {
     );
     for under in [true, false] {
         let ceiling = peak - u64::from(under);
-        let lease = crate::tests::support::test_execution_authority()
+        let lease = crate::execution::test_authority::test_execution_authority()
             .request_lease(LeaseRequest {
                 policy: ExecutionRequestPolicy::new(
                     ExecutionPosture::Serial,
@@ -54,7 +54,7 @@ fn full_query_result_vector_admits_replacement_peak_before_growth() {
                 result,
                 Err(MapKernelFailure::Domain(
                     QueryReadPacketDenial::ReadRequest(
-                        crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+                        crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted {
                             ancestor: 0,
                             ..
                         }

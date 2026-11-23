@@ -27,7 +27,7 @@ pub(super) fn retained(
     add(
         &mut bytes,
         tree::<
-            crate::derived_relation::DerivedRelationIdentity,
+            crate::derived_relation::definition::DerivedRelationIdentity,
             Arc<crate::derived_relation::definition::RegisteredDerivedRelation>,
         >(registry.derived_relations.len())?,
     )?;

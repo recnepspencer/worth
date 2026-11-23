@@ -1,9 +1,7 @@
 //! Exercise real expired-entry pruning and registration replacement between stages.
 use super::*;
-use crate::change_source::{
-    RelationalRetainedObservationRetirement,
-    RelationalRetainedObservationRetirementProgress as Progress,
-};
+use crate::change_source::retained_observation::retirement::RelationalRetainedObservationRetirement;
+use crate::change_source::retained_observation::retirement::RelationalRetainedObservationRetirementProgress as Progress;
 use crate::runtime::RelationalRuntime;
 
 pub(crate) fn assert_original_registry_busy(

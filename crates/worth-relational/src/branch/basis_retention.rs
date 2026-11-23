@@ -1,4 +1,5 @@
-use super::{AdmittedRelationalBranchBasis, RelationalBranchBasisDenial};
+use crate::branch::basis::AdmittedRelationalBranchBasis;
+use crate::branch::basis_denial::RelationalBranchBasisDenial;
 use crate::history::retention::{
     RelationalBranchRetentionLease, RelationalBranchRetentionReleaseDenial,
     RelationalBranchRetentionReleaseReceipt,
@@ -8,7 +9,7 @@ use crate::runtime::RelationalRuntime;
 impl RelationalRuntime {
     pub fn readmit_retained_branch_basis(
         &self,
-        descriptor: &crate::branch::RelationalBranchBasisDescriptor,
+        descriptor: &crate::branch::basis::RelationalBranchBasisDescriptor,
         lease: &RelationalBranchRetentionLease,
     ) -> Result<AdmittedRelationalBranchBasis, RelationalBranchBasisDenial> {
         let result = self.readmit_retained_branch_basis_inner(descriptor, lease);
@@ -20,7 +21,7 @@ impl RelationalRuntime {
 
     fn readmit_retained_branch_basis_inner(
         &self,
-        descriptor: &crate::branch::RelationalBranchBasisDescriptor,
+        descriptor: &crate::branch::basis::RelationalBranchBasisDescriptor,
         lease: &RelationalBranchRetentionLease,
     ) -> Result<AdmittedRelationalBranchBasis, RelationalBranchBasisDenial> {
         let descriptor =

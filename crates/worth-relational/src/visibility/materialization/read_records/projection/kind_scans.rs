@@ -21,7 +21,7 @@ impl VisibilityProjectionView {
         maximum_work_units: usize,
     ) -> Result<
         Result<BoundedEntityKindTruthRead, EntityKindTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         if !self.is_exact_basis() {
             self.demand_selected_scan(execution)?;
@@ -67,7 +67,7 @@ impl VisibilityProjectionView {
         maximum_work_units: usize,
     ) -> Result<
         Result<BoundedRelationKindTruthRead, RelationKindTruthReadDenial>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         if !self.is_exact_basis() {
             self.demand_selected_scan(execution)?;

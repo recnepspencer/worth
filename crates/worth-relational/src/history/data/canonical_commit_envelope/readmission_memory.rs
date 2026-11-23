@@ -9,7 +9,7 @@ pub(crate) struct CanonicalEnvelopeReadmissionMemory {
     pub(crate) association: Option<worth_execution::ExecutionMemoryReservation>,
     pub(crate) merge: Option<crate::merge::data::readmission_memory::MergeReadmissionMemory>,
     pub(crate) codec_declarations: Option<CodecDeclarationsReadmissionMemory>,
-    pub(crate) validation: Option<crate::transactions::data::ValidationReadmissionMemory>,
+    pub(crate) validation: Option<crate::transactions::data::outcomes::commit_semantic_result::validation::ValidationReadmissionMemory>,
     pub(crate) schema: Option<crate::schema::data::SchemaTransitionReadmissionMemory>,
     pub(crate) strategy: Option<StrategyReadmissionMemory>,
     pub(crate) cascades: Option<std::sync::Arc<worth_execution::ExecutionMemoryReservation>>,

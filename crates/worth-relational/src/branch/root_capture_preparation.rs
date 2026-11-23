@@ -41,7 +41,7 @@ pub(super) fn prepare(
     envelope: Arc<CanonicalCommitEnvelope>,
     content: &crate::content::publication::ContentPublication,
     registry: &crate::schema::data::RelationalSchemaRegistry,
-    symbols: &crate::runtime::RuntimeSymbolTable,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
 ) -> Result<PreparedRelationalBranchRootCapture, RelationalBranchRootCaptureDenial> {
     crate::execution::phase_observation::run(
@@ -155,7 +155,7 @@ fn prepare_regions(
     partitions: &impl PartitionAccess,
     published_delta: &RelationalPublishedPartitionDelta,
     previous: Option<&Arc<RelationalBranchRoot>>,
-    symbols: &crate::runtime::RuntimeSymbolTable,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     schema: &Arc<RelationalBranchRootSchemaAuthority>,
     change: &Arc<crate::branch::maintenance::CommitChange>,
 ) -> Result<PreparedRootRegions, RelationalBranchRootCaptureDenial> {

@@ -69,7 +69,7 @@ fn owned_artifact(source: &Artifact, request: &ExecutionRequest<'_, '_>) -> Arti
 
 fn source_artifact() -> Artifact {
     // Ordinary source production precedes the bounded readmission operation.
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let request = ExecutionRequest::serial(&host);
     let runtime = crate::tests::support::runtime_with_test_schema();
     let result = crate::tests::support::create_entity_outcome(
@@ -123,7 +123,7 @@ fn embedded_checkpoint_preserves_ignored_unknown_nested_fields_without_retaining
         #[serde(rename = "future \" \\ λ")]
         future: &'a T,
     }
-    let producer = crate::test_execution_policy::serial_request();
+    let producer = crate::execution::test_policy::serial_request();
     let produce = ExecutionRequest::serial(&producer);
     let runtime = crate::tests::support::runtime_with_test_schema();
     let result =

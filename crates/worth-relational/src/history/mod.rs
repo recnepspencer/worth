@@ -27,7 +27,7 @@ pub use access::{
 pub use authority::{HistoryAuthority, OutputOriginHeaderCorruptionForTest};
 pub(crate) use commit::{
     OriginalCanonicalInputs, RelationalCommitArtifact, RelationalCommitAuthoritativeAllocationKind,
-    RelationalCommitCatalog, RelationalCommitCatalogEnvelopeAppendDenial,
+    RelationalCommitCatalog,
 };
 pub use commit::{
     RelationalCommitArtifactDenial, RelationalCommitCatalogAppendDenial,
@@ -37,7 +37,6 @@ pub use commit::{
 };
 
 pub(crate) use access::relevant_writes::posting_key::AuthoredWritePostingKey;
-pub(crate) use access::relevant_writes::source_impact;
 pub(crate) use commit::{
     RelationalCommitEnvelopeResidency, RelationalCommitIndexEntry, RetainedCanonicalIndex,
     RetiredCanonicalPlacement,

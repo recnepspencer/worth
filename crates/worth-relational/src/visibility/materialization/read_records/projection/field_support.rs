@@ -1,7 +1,7 @@
 //! Paired immutable-root support. This does not normalize revision currentness.
 use super::VisibilityProjectionView;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::execution::request_stage::{checkpoint, optional_stage};
-use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::identity::data::EntityId;
 use worth_foundational::facade::{AspectFieldLocator, LocatorAuthority};
 

@@ -67,16 +67,15 @@ fn the_checked_native_worker_exhausts_before_custom_preparation_and_the_funded_t
     let funded =
         super::super::fixture::request(8 * 1024 * 1024, 4_000_000, CancellationToken::new(), None);
     let view = InvariantRuntimeView::from_runtime(&fixture.runtime);
-    let (stage, charges) = crate::execution::RelationalWorkAccountRecorderForTest::new()
-        .record_for_test(|| {
-            crate::validation::engine::stage_execution::execute_stage(
-                &view,
-                ExecutionRequest::leased(&funded),
-                &request(),
-                Some(&funded),
-                InvariantStage::Native,
-            )
-        });
+    let (stage, charges) = crate::execution::request_work::account_observation::observe(|| {
+        crate::validation::engine::stage_execution::execute_stage(
+            &view,
+            ExecutionRequest::leased(&funded),
+            &request(),
+            Some(&funded),
+            InvariantStage::Native,
+        )
+    });
     let stage = stage.unwrap().unwrap();
     assert!(stage
         .envelopes
@@ -100,8 +99,8 @@ fn the_checked_native_worker_exhausts_before_custom_preparation_and_the_funded_t
         CancellationToken::new(),
         None,
     );
-    let (failure, stopped_charges) = crate::execution::RelationalWorkAccountRecorderForTest::new()
-        .record_for_test(|| {
+    let (failure, stopped_charges) =
+        crate::execution::request_work::account_observation::observe(|| {
             InvariantEngine::new(&fixture.runtime)
                 .execute(&ExecutionRequest::leased(&constrained), request())
         });

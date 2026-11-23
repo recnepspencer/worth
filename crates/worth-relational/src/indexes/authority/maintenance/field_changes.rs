@@ -4,7 +4,7 @@ use crate::history::data::RelationalDescriptiveTouch as Touch;
 use crate::indexes::data::{
     DerivedIndexId, DerivedIndexMaintenanceDenialKind as Denial, InstalledIndexRouting,
 };
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) struct FieldChanges(BTreeMap<RecordRef, BTreeSet<DerivedIndexId>>);

@@ -1,7 +1,8 @@
 //! Original Source-stage work and original-request storage, with owned stops.
-use crate::derived_relation::{DerivedRelationDenial, DerivedRelationReadDenial};
-use crate::execution::RelationalExecutionDenialCause as Cause;
-use crate::validation::candidate_source::ManagedIndexSourcePreparationDenial as Denial;
+use crate::derived_relation::definition::DerivedRelationDenial;
+use crate::derived_relation::read_denial::DerivedRelationReadDenial;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
+use crate::validation::candidate_source::denial::ManagedIndexSourcePreparationDenial as Denial;
 use crate::validation::custom_rule::CustomPreparationBudget;
 use worth_execution::{ExecutionOrderedMapDenial, ExecutionRequest};
 

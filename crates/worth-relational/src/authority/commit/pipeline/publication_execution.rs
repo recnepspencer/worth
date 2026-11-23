@@ -197,7 +197,7 @@ pub(crate) fn publish_commit_execution(
     let (positioned_commit, changed_records) = finalized.into_parts();
     drop(source_interpretation);
     if let Some(prepared_indexes) = prepared_indexes {
-        prepared_indexes.publish(runtime);
+        prepared_indexes.publish();
     }
     let patch_position = positioned_commit.position();
     let canonical_commit_envelope = std::sync::Arc::clone(positioned_commit.canonical_arc());
@@ -264,7 +264,7 @@ pub(crate) struct PreparedCommitPublicationExecution {
     aspect_evaluation_traces: Vec<crate::transactions::data::AspectEvaluationTrace>,
     aspect_emission_traces:
         Vec<super::artifact_execution::preparation::PreparedAspectEmissionTrace>,
-    prepared_indexes: Option<crate::indexes::PreparedCandidateIndexPublication>,
+    prepared_indexes: Option<crate::indexes::authority::PreparedCandidateIndexPublication>,
 }
 
 pub(crate) struct PreparedCommitPublicationCompletion {
@@ -284,7 +284,7 @@ pub(crate) struct PreparedCommitPublicationCompletion {
     aspect_emission_traces:
         Vec<super::artifact_execution::preparation::PreparedAspectEmissionTrace>,
     published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
-    prepared_indexes: Option<crate::indexes::PreparedCandidateIndexPublication>,
+    prepared_indexes: Option<crate::indexes::authority::PreparedCandidateIndexPublication>,
 }
 
 impl PublishedCommitExecution {
@@ -305,7 +305,9 @@ impl PreparedCommitPublicationCompletion {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<(), crate::mvcc::RelationalPublicationOutcome> {
         if let Some(indexes) = &mut self.prepared_indexes {
-            indexes.admit_catalog(execution)?;
+            indexes.admit_catalog(execution).map_err(
+                crate::mvcc::publication::outcome::RelationalPublicationOutcome::RequestStopped,
+            )?;
         }
         Ok(())
     }

@@ -8,8 +8,8 @@ use worth_execution::{
 
 use crate::branch::{RelationalBranchRootSchemaAuthority, RelationalRootRegionCheckpoint};
 use crate::durability::data::{
-    DurabilityError, RecoveryFailureClass, RelationalCheckpointDirectory,
-    RelationalCheckpointRegion, RelationalRecoveryStop,
+    DurabilityError, RelationalCheckpointDirectory, RelationalCheckpointRegion,
+    RelationalRecoveryStop,
 };
 use crate::durability::medium::RelationalDurableMemberLocator;
 use crate::identity::data::PartitionId;
@@ -268,7 +268,7 @@ impl ReadmittedRegionDirectory {
 }
 
 pub(crate) fn corrupt(detail: impl Into<String>) -> DurabilityError {
-    DurabilityError::new(RecoveryFailureClass::CorruptCheckpoint, detail)
+    DurabilityError::corrupt_checkpoint(detail)
 }
 
 impl From<crate::runtime::state::subsystems::services::symbol_table::ColdSymbolDirectoryDenial>

@@ -8,7 +8,9 @@ use super::query_preparation::QueryPreparationBudget;
 use super::*;
 use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
+
+pub(super) const TARGET_TRAVERSAL_SEEDS_PER_PACKET: usize = 4;
 
 type PreparationResult = Result<Vec<PacketizedQueryWork>, MapKernelFailure<()>>;
 

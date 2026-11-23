@@ -45,7 +45,7 @@ impl IndexingSubsystem {
     pub(crate) fn prepare_reconstruction_basis(
         &self,
         _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,
-        root: &Arc<crate::branch::RelationalBranchRoot>,
+        root: &Arc<crate::branch::root::RelationalBranchRoot>,
         branch: &BranchId,
         prepare: &mut dyn FnMut(u64, u64) -> Result<(), Denial>,
         catalog: Option<&super::super::IndexDefinitionCatalog>,

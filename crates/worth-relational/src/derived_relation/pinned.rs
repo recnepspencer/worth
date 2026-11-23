@@ -6,7 +6,6 @@ use super::{DerivedRelationReadDenial as Denial, DerivedRelationReads as Reads};
 use crate::execution::RelationalExecutionDenialCause as Cause;
 use crate::graph_member::NativeMemberKey;
 use crate::identity::data::{EntityId, KindId};
-use crate::runtime::RelationalPinnedRead;
 use crate::storage::data::RecordLifecycleState;
 use crate::validation::data::StructuralRelationRecord;
 use crate::visibility::materialization::read_records::{
@@ -16,6 +15,7 @@ use crate::visibility::materialization::read_records::{
 use worth_execution::{ExecutionMemoryReservation, ExecutionRequest, MapKernelContext};
 
 mod acquisition;
+pub(crate) use acquisition::read_projected_source;
 mod scope;
 pub use scope::{PinnedDerivedRelationDenial, PinnedDerivedRelationScope};
 

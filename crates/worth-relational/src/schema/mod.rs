@@ -24,3 +24,8 @@ pub(crate) use continuity::validate_schema_continuity_body;
 pub(crate) mod compilation_control;
 pub(crate) use compilation_control::SchemaCompilationControl;
 mod snapshot_compilation;
+
+pub(crate) mod portable_patch;
+
+#[path = "../runtime/initial_schema_installation/recovered_codec_transition/physical_field_basis.rs"]
+pub(crate) mod codec_field_comparison;

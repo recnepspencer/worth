@@ -7,15 +7,16 @@ impl GenerationCatalog {
         request: &ExecutionRequest<'_, '_>,
     ) -> Result<
         ExecutionArray<Arc<DerivedIndexGeneration>>,
-        crate::durability::data::RelationalNativeCheckpointCaptureDenial,
-    > {
-        use crate::durability::checkpoint_history::capture::{
-            array_capture_stop, capture_stop, map_stop,
+        crate::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial,
+    >{
+        use crate::durability::data::native_checkpoint_capture_denial::RelationalNativeCheckpointCaptureDenial as Denial;
+        use crate::durability::data::native_checkpoint_capture_denial::{
+            array_capture_stop, capture_stop,
         };
-        use crate::durability::data::RelationalNativeCheckpointCaptureDenial as Denial;
+        use crate::durability::data::recovery_stop::map_stop;
         let mut ordered = worth_execution::ExecutionOrderedMap::default();
         for generation in self.entries.values() {
-            crate::execution::check_request(request).map_err(Denial::Request)?;
+            crate::execution::request_custody::check_request(request).map_err(Denial::Request)?;
             ordered
                 .insert_cloned_native_for_request(
                     &(generation.index_id, generation.generation_id),

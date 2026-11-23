@@ -67,3 +67,27 @@ impl RelationalRuntime {
         snapshot
     }
 }
+
+#[cfg(test)]
+impl crate::runtime::RelationalRuntime {
+    pub(crate) fn set_retention_capacity_for_test(
+        &mut self,
+        max_live_root_obligations: usize,
+        max_retired_branch_roots: usize,
+    ) {
+        self.unshared_state_mut()
+            .expect("retention capacity test support requires the only handle to this runtime")
+            .history
+            .reset_retention_owner_with_test_limits(
+                max_live_root_obligations,
+                max_retired_branch_roots,
+            );
+    }
+}
+
+#[cfg(test)]
+impl crate::runtime::RelationalRuntime {
+    pub(crate) fn fill_retired_branch_name_capacity_for_test(&self) {
+        self.history.fill_retired_branch_name_capacity_for_test();
+    }
+}

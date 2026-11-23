@@ -1,5 +1,7 @@
 #[path = "history_branch_cells/initial_schema.rs"]
-mod initial_schema;
+pub(crate) mod initial_schema;
+#[path = "history_branch_cells/initial_schema_cells.rs"]
+mod initial_schema_cells;
 #[path = "history_branch_cells/source_empty_schema.rs"]
 mod source_empty_schema;
 use std::collections::BTreeMap;
@@ -8,10 +10,10 @@ use std::sync::Arc;
 
 use worth_foundational::FoundationalBranchTarget;
 
-use crate::branch::{
-    RelationalBranchCellCheckpoint, RelationalBranchCellDenial, RelationalBranchReferenceCell,
-    RelationalBranchRoot,
-};
+use crate::branch::reference::RelationalBranchCellCheckpoint;
+use crate::branch::reference::RelationalBranchCellDenial;
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::root::RelationalBranchRoot;
 use crate::history::data::{BranchId, CommitId};
 
 use super::{history_recovery_validation, HistorySubsystem};
@@ -24,8 +26,8 @@ impl HistorySubsystem {
         request: &worth_execution::ExecutionRequest<'_, '_>,
         runtime_name: &str,
     ) -> Result<
-        crate::branch::CheckpointBranchMetadata,
-        crate::branch::CheckpointBranchMetadataCaptureDenial,
+        crate::branch::registry::CheckpointBranchMetadata,
+        crate::branch::registry::CheckpointBranchMetadataCaptureDenial,
     > {
         self.record_branch_population_scan();
         self.branch_cells
@@ -58,8 +60,8 @@ impl HistorySubsystem {
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         checkpoint: RelationalBranchCellCheckpoint,
         expected_branch_id: &BranchId,
-        recovered_root: Option<Arc<crate::branch::RelationalBranchRoot>>,
-        recovered_provenance_root: Option<Arc<crate::branch::RelationalBranchRoot>>,
+        recovered_root: Option<Arc<crate::branch::root::RelationalBranchRoot>>,
+        recovered_provenance_root: Option<Arc<crate::branch::root::RelationalBranchRoot>>,
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
         symbols: &crate::symbols::data::StringInterner,
     ) -> Result<(), super::history_catalog_recovery::RelationalHistoryRecoveryDenial> {

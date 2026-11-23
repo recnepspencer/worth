@@ -1,9 +1,12 @@
 //! One canonical-prefix admission with ordinary or managed-impact coordinates.
+use super::super::live_cursor::RelationalAuthoredWriteCursor;
 use super::*;
+use crate::change_source::RelationalSelectedCommit;
 use crate::history::{
     AuthoredWritePostingKey as PostingKey, RelationalAuthoredManagedSourceSelector,
     RelationalAuthoredWriteSelector as Selector,
 };
+use crate::runtime::RelationalRuntime;
 use crate::validation::candidate_source::authored_history::{
     catalog::SourceHistoryCatalog, ManagedSourceImpactKey,
 };

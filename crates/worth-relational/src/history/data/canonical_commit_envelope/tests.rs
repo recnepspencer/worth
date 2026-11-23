@@ -15,10 +15,13 @@ use crate::publication::patch::data::{
     PublishedAuthoritativeRecordPatch, RecordStructuralChange,
 };
 use crate::schema::data::{DescriptorSemanticsVersion, RelationalSchemaRegistry, SchemaVersionId};
-use crate::transactions::data::{
-    AspectFieldPatch, EntityMutationIntent, MergedCommitPlan, MutationIntent, RecordRef,
-    TransactionId, UpdateEntityFieldsIntent,
-};
+use crate::transactions::data::aspect_field_patch::AspectFieldPatch;
+use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
+use crate::transactions::data::intents::mutation_intent::MutationIntent;
+use crate::transactions::data::intents::mutation_intent::UpdateEntityFieldsIntent;
+use crate::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
+use crate::transactions::data::primitives::RecordRef;
+use crate::transactions::data::primitives::TransactionId;
 
 fn envelope_with_patch_and_update(
     patch_target: RecordRef,
@@ -85,7 +88,7 @@ fn envelope_with_patch_and_update(
     );
     // Pure predicate/inspection input: keep an actual original semantic image,
     // then edit only this test body. No publication or readmission is claimed.
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let execution = &worth_execution::ExecutionRequest::serial(&host);
     let runtime = crate::tests::support::runtime_with_test_schema();
     let produced = crate::tests::support::create_entity_outcome(

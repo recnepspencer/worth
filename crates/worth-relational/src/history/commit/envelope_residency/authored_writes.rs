@@ -1,6 +1,6 @@
 //! The commit cell owns its discardable authored-history accelerator, even cold.
 use super::RelationalCommitEnvelopeResidency;
-use crate::runtime::AuthoredWriteGeneration;
+use crate::history::access::relevant_writes::generation::AuthoredWriteGeneration;
 
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn authored_write_generation(&self) -> Option<AuthoredWriteGeneration> {

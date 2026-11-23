@@ -1,4 +1,4 @@
-use crate::execution::RelationalExecutionDenialCause as Cause;
+use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
 use crate::storage::data::EntityReadRecord;
 use crate::tests::support::*;
 use crate::visibility::materialization::read_records::{read_footprint, read_work};
@@ -6,7 +6,7 @@ use worth_execution::{CancellationToken, ExecutionRequest, SerialMemoryBudget, S
 
 #[test]
 fn finite_native_row_refuses_before_cloning_and_accepts_its_owned_quote() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let runtime = runtime_with_test_schema();
     let entity = create_entity(&ExecutionRequest::serial(&host), &runtime, "native-row");
     let version = runtime.current_version_id();
@@ -19,7 +19,7 @@ fn finite_native_row_refuses_before_cloning_and_accepts_its_owned_quote() {
         &state,
         &runtime.config.schema.registry,
         entity,
-        super::super::KindScanVisibility::for_version(&runtime, version),
+        crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::for_version(&runtime, version),
     )
     .unwrap();
     assert!(heap > 0, "the native schema names have an owned clone");
@@ -68,7 +68,7 @@ fn finite_native_row_refuses_before_cloning_and_accepts_its_owned_quote() {
 
 #[test]
 fn native_clone_settles_source_spare_payload_on_the_original_ticket() {
-    let host = crate::test_execution_policy::serial_request();
+    let host = crate::execution::test_policy::serial_request();
     let runtime = runtime_with_test_schema();
     let execution = ExecutionRequest::serial(&host);
     let entity = create_entity(&execution, &runtime, "spare-native-row");

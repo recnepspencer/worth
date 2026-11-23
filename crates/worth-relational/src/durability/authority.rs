@@ -255,3 +255,5 @@ impl RelationalRuntime {
         DurabilityRecoveryAuthority::new(self)
     }
 }
+
+pub(crate) use recovery::versioned_artifact::install_recovered_versioned_artifact;

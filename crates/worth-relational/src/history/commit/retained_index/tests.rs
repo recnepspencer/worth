@@ -16,7 +16,7 @@ fn input() -> RelationalCommitIndexEntry {
             parents,
         },
         position: crate::publication::patch::data::PatchStreamPosition(2),
-        root: crate::branch::RelationalBranchRootDescriptor::new([3; 32], [4; 32]),
+        root: crate::branch::target::RelationalBranchRootDescriptor::new([3; 32], [4; 32]),
         payload_digest: [5; 32],
         schema_version: crate::schema::data::SchemaVersionId(7),
     }
@@ -49,7 +49,9 @@ fn retained_index_clone_keeps_exact_metadata_after_original_drop() {
         std::mem::size_of::<RelationalCommitIndexEntry>(),
         std::mem::size_of::<Backing>(),
         std::mem::size_of::<RetainedCanonicalIndex>(),
-        std::mem::size_of::<crate::history::RelationalCommitEnvelopeResidency>()
+        std::mem::size_of::<
+            crate::history::commit::envelope_residency::RelationalCommitEnvelopeResidency,
+        >()
     );
     assert!(input.commit.parents.capacity() > 1024);
     assert!(input.commit.branch_id.0.capacity() > 4096);
@@ -88,7 +90,7 @@ fn retained_index_copy_refuses_exact_bill_before_copy_or_cancellation() {
     let request = ExecutionRequest::serial(&target);
     let cause = RetainedCanonicalIndex::copy_original(&input, &request).unwrap_err();
     let (requested, admitted) = match cause {
-        crate::execution::RelationalExecutionDenialCause::PolicyMemoryExhausted {
+        crate::execution::denial_cause::RelationalExecutionDenialCause::PolicyMemoryExhausted {
             requested,
             admitted,
             ancestor: 0,

@@ -60,8 +60,8 @@ pub(super) fn assemble_snapshot_state_with_memory(
     entity_partitions: Vec<(PartitionId, DenseSlotBitSet)>,
     relation_partitions: Vec<SelectedRelationSlots>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
-) -> Result<SnapshotState, crate::execution::RelationalExecutionDenialCause> {
-    use crate::execution::RelationalExecutionDenialCause as Cause;
+) -> Result<SnapshotState, crate::execution::denial_cause::RelationalExecutionDenialCause> {
+    use crate::execution::denial_cause::RelationalExecutionDenialCause as Cause;
     use crate::visibility::materialization::read_records::read_work::record_memory;
     let mut entities = entity_partitions.iter().map(|(id, _)| *id).peekable();
     let mut relations = relation_partitions

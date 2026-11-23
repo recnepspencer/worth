@@ -145,7 +145,7 @@ impl RelationalPreparationHistory {
         envelope: Arc<crate::history::RelationalCommitEnvelopeResidency>,
         root: Arc<RelationalBranchRoot>,
     ) -> Result<
-        super::PreparedCanonicalPublicationRoute,
+        super::canonical_publication_routes::PreparedCanonicalPublicationRoute,
         crate::transactions::data::TransactionCommitError,
     > {
         let resident = envelope.get().ok_or_else(|| {
@@ -265,4 +265,19 @@ impl RelationalPreparationHistory {
             cell.publication_cell().record_sharing_cost(update);
         }
     }
+}
+
+pub(crate) fn bind_preparation(history: &super::HistorySubsystem) -> RelationalPreparationHistory {
+    let ledger = history.ledger.read();
+    RelationalPreparationHistory::new(
+        history.branch_cells.clone(),
+        Arc::clone(&history.commit_identity_allocator),
+        Arc::clone(&history.version_identity_allocator),
+        ledger.next_commit_id,
+        ledger.next_version_id,
+        Arc::clone(&history.canonical_publication_routes),
+        history.root_identity_issuer.clone(),
+        #[cfg(test)]
+        Arc::clone(&history.root_capture_sabotage),
+    )
 }

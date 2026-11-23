@@ -52,7 +52,7 @@ fn commit(
         .unwrap();
     let execution = ExecutionRequest::leased(&lease);
     let run = || {
-        crate::execution::RelationalWorkAccountRecorderForTest::new().record_for_test(|| match entry {
+        crate::execution::request_work::account_observation::observe(|| match entry {
             Entry::Strategy => {
                 if cancel_before_entry {
                     cancellation.cancel();

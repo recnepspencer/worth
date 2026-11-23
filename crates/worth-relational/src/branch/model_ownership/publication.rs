@@ -83,5 +83,5 @@ pub(crate) fn validate_candidate_ownership(
 fn request(
     cause: impl Into<crate::execution::RelationalExecutionDenialCause>,
 ) -> TransactionCommitError {
-    crate::publication::ownership::request(cause.into())
+    crate::publication::ownership::read_request::request(cause.into())
 }

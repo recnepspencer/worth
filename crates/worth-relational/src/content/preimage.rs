@@ -17,8 +17,7 @@ impl crate::branch::basis::AdmittedRelationalBranchBasis {
         expected: worth_foundational::facade::ContentRefId,
     ) -> Result<RelationalContentFrame, Denial> {
         use crate::storage::overlay::PartitionAccess;
-        let selected =
-            crate::branch::root_selection::SelectedRelationalBranchState::from_admitted_basis(self);
+        let selected = self.inner.root.as_ref();
         selected
             .demand_full_partition(execution, row.partition_id)
             .map_err(|cause| match cause {
@@ -39,7 +38,7 @@ impl crate::branch::basis::AdmittedRelationalBranchBasis {
         control::run(execution, |control| {
             control.checkpoint(128)?;
             let observation = observe_record(
-                &selected,
+                selected,
                 &RecordRef::Entity(row),
                 self.observation().version_id(),
             )

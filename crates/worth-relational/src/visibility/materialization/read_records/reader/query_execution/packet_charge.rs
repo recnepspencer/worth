@@ -5,7 +5,7 @@ use worth_execution::ChargedBytes;
 use super::super::query_packetization::PacketizedQueryWork;
 use crate::identity::data::{EntityId, KindId};
 use crate::storage::data::AuthoritativeFieldComparisonKey;
-use crate::transactions::data::RecordRef;
+use crate::transactions::data::primitives::RecordRef;
 
 impl ChargedBytes for PacketizedQueryWork {
     fn additional_charged_bytes(&self) -> u64 {

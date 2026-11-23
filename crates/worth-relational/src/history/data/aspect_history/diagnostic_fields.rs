@@ -1,7 +1,6 @@
 use crate::diagnostics::data::{RelationalDiagnosticFields, RelationalDiagnosticValue};
-use crate::visibility::materialization::read_records::{
-    ProjectionAspectFilter, ProjectionAspectFilterMode,
-};
+use crate::visibility::materialization::read_records::projection::contracts::projection_aspect_filter::ProjectionAspectFilter;
+use crate::visibility::materialization::read_records::projection::contracts::projection_aspect_filter::ProjectionAspectFilterMode;
 
 use super::{
     AspectHistoryCommitSpan, AspectHistoryLineageEventSpan, AspectHistoryResolutionTrace,

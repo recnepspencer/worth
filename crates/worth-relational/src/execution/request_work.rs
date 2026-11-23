@@ -122,8 +122,8 @@ pub(crate) fn run_with_remaining_request_work<R>(
 #[cfg(test)]
 mod tests;
 
-mod account_observation;
-pub(super) mod observation;
+pub(crate) mod account_observation;
+pub(crate) mod observation;
 
 /// A complete non-packet transaction stage uses the SAME original account.
 /// Packet dispatches keep their own settlement and must not enter this wrapper.

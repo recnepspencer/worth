@@ -9,6 +9,7 @@
 
 mod committed_evidence;
 pub(crate) mod durable_step;
+pub(crate) mod original_inputs;
 mod positioned;
 mod record;
 pub(crate) mod sequence;
@@ -23,6 +24,7 @@ pub(crate) use durable_step::{
 pub use positioned::PositionedBranchTransition;
 pub use record::RelationalBranchTransition;
 pub use sequence::RelationalBranchTransitionSequence;
+pub(crate) use stop::BranchTransitionRecordError;
 pub use stop::RelationalBranchTransitionStop;
 
 pub(crate) mod durable_publication;

@@ -1,6 +1,6 @@
 //! Selected-field currency and request construction use the original native payer.
+use super::super::live_access::IndexAuthority;
 
-use super::IndexAuthority;
 use crate::branch::AdmittedRelationalBranchBasis;
 use crate::indexes::data::{
     DerivedIndexBuildRequest, DerivedIndexId, DerivedIndexKind, DerivedIndexMaintenanceBudget,
@@ -90,7 +90,7 @@ impl IndexAuthority<'_> {
                 index_ids: vec![index],
             };
             let prepared = self.prepare_basis_refresh(&request, basis, None, work, execution)?;
-            let generations = prepared.publish_admitted(self.runtime, work)?;
+            let generations = prepared.publish_admitted(&self.runtime.indexes, work)?;
             if generations.len() != 1 {
                 return Err(Denial::IndexUnavailable(index));
             }

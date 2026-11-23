@@ -1,44 +1,47 @@
-use super::{RelationalBranchBasisDenial, RelationalBranchIdentity};
-use crate::runtime::RelationalRuntime;
+use crate::branch::basis_denial::RelationalBranchBasisDenial;
+use crate::branch::identity::RelationalBranchIdentity;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 
 pub(crate) fn require_local_branch_identity(
-    runtime: &RelationalRuntime,
+    runtime_instance_id: u64,
+    history: &HistorySubsystem,
     identity: &RelationalBranchIdentity,
 ) -> Result<(), RelationalBranchBasisDenial> {
-    if identity.runtime_instance_id() != runtime.runtime_instance_id() {
+    if identity.runtime_instance_id() != runtime_instance_id {
         return Err(RelationalBranchBasisDenial::ForeignRuntime {
-            expected_runtime_instance_id: runtime.runtime_instance_id(),
+            expected_runtime_instance_id: runtime_instance_id,
             actual_runtime_instance_id: identity.runtime_instance_id(),
         });
     }
-    let current = runtime
-        .history
+    let current = history
         .branch_cell(identity.branch_id())
         .ok_or_else(|| RelationalBranchBasisDenial::UnknownBranch(identity.branch_id().clone()))?;
     if current.identity() != identity {
         return Err(RelationalBranchBasisDenial::MixedAxis(
-            super::RelationalBranchBasisMismatchAxis::Branch,
+            crate::branch::basis_denial::RelationalBranchBasisMismatchAxis::Branch,
         ));
     }
     Ok(())
 }
 
 pub(crate) fn identity_denial(
-    denial: super::RelationalBranchIdentityDenial,
+    denial: crate::branch::identity::RelationalBranchIdentityDenial,
 ) -> RelationalBranchBasisDenial {
     match denial {
-        super::RelationalBranchIdentityDenial::ForeignRuntime {
+        crate::branch::identity::RelationalBranchIdentityDenial::ForeignRuntime {
             expected_runtime_instance_id,
             actual_runtime_instance_id,
         } => RelationalBranchBasisDenial::ForeignRuntime {
             expected_runtime_instance_id,
             actual_runtime_instance_id,
         },
-        super::RelationalBranchIdentityDenial::UnknownBranch(branch) => {
+        crate::branch::identity::RelationalBranchIdentityDenial::UnknownBranch(branch) => {
             RelationalBranchBasisDenial::UnknownBranch(branch)
         }
-        super::RelationalBranchIdentityDenial::IdentityMismatch => {
-            RelationalBranchBasisDenial::MixedAxis(super::RelationalBranchBasisMismatchAxis::Branch)
+        crate::branch::identity::RelationalBranchIdentityDenial::IdentityMismatch => {
+            RelationalBranchBasisDenial::MixedAxis(
+                crate::branch::basis_denial::RelationalBranchBasisMismatchAxis::Branch,
+            )
         }
     }
 }

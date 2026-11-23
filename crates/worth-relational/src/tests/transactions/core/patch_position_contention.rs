@@ -1,3 +1,4 @@
+use crate::runtime::state::subsystems::history::history_canonical_routes::pending_canonical_publication_route_count;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -47,7 +48,7 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
         .expect("the deferred branch is registered");
     let loser_scope = RelationalMvccCostScope::capture(&runtime, vec![loser_identity]);
     let commits_before = runtime.history().immutable_commit_count();
-    let pending_routes_before = runtime.history.pending_canonical_publication_route_count();
+    let pending_routes_before = pending_canonical_publication_route_count(&runtime.history);
     let loser_reference_before = runtime
         .branch_reference_state(&BranchId("loser".to_owned()))
         .expect("the deferred branch has an observable reference");
@@ -228,7 +229,7 @@ fn a_held_patch_position_reservation_defers_an_unrelated_branch_without_residue(
         "the settled winner leaves no record and the loser never installed one"
     );
     assert_eq!(
-        runtime.history.pending_canonical_publication_route_count(),
+        pending_canonical_publication_route_count(&runtime.history),
         pending_routes_before,
         "no route survives the contended attempt"
     );

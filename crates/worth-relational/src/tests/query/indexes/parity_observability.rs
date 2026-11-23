@@ -330,11 +330,13 @@ fn derived_index_contract_runtime_drop_releases_index_scratch_hints() {
 
         let counters = runtime.performance_access().counters();
         assert!(counters.query_index_scratch_reuse_count > 0);
-        assert!(crate::indexes::index_query_scratch_hint_exists(runtime_id));
+        assert!(crate::indexes::access::index_query_scratch_hint_exists(
+            runtime_id
+        ));
     }
 
     assert!(
-        !crate::indexes::index_query_scratch_hint_exists(runtime_id),
+        !crate::indexes::access::index_query_scratch_hint_exists(runtime_id),
         "runtime drop should release its own scratch hint even if other tests create hints concurrently"
     );
 }

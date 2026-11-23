@@ -29,7 +29,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         maximum_work_units: usize,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.acquire_partition_edition();
         super::super::read_work::with_full_residency(
@@ -63,7 +63,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         maximum_work_units: usize,
     ) -> Result<
         Result<BoundedFrontierAdjacencyTruthRead, FrontierAdjacencyTruthReadLimitExceeded>,
-        crate::execution::RelationalExecutionDenialCause,
+        crate::execution::denial_cause::RelationalExecutionDenialCause,
     > {
         let edition = self.runtime.acquire_partition_edition();
         super::super::read_work::with_full_residency(

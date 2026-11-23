@@ -50,3 +50,5 @@ pub(crate) mod home_write_denial;
 
 pub(crate) mod step_stop;
 pub(crate) use step_stop::RelationalDurableStepStop;
+
+pub(crate) mod owned_read_stop;

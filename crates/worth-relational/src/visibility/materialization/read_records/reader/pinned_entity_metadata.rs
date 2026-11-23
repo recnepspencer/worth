@@ -1,10 +1,10 @@
 //! Head-only entity metadata from already accepted native custody; never loads.
-use super::VisibilityReadContext;
 use crate::identity::data::{EntityId, KindId, PartitionId, VersionId};
 use crate::snapshots::data::SnapshotHandle;
 use crate::storage::residency::{Head, RelationalResidencyLease};
 use crate::symbols::data::StringInterner;
-use crate::visibility::materialization::read_records::RelationalEntityRetirement;
+use crate::visibility::materialization::read_records::projection::RelationalEntityRetirement;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use worth_foundational::facade::AspectKey;
 
 /// A selected region or its aspect-name dictionary has no resident witness.

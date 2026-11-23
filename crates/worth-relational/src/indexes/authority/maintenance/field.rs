@@ -205,7 +205,7 @@ fn refresh_entities(
             routing,
             positions,
             exact,
-            crate::transactions::data::RecordRef::Entity(*id),
+            crate::transactions::data::primitives::RecordRef::Entity(*id),
             true,
             old_kind
                 .into_iter()
@@ -253,7 +253,7 @@ fn refresh_relations(
             routing,
             positions,
             exact,
-            crate::transactions::data::RecordRef::Relation(*id),
+            crate::transactions::data::primitives::RecordRef::Relation(*id),
             false,
             old_kind
                 .into_iter()

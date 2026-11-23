@@ -27,7 +27,9 @@ impl CanonicalPositionAdmission {
             canonical,
         })
     }
-    pub(super) fn retained(retention: &super::RetainedCanonicalPosition) -> Option<Self> {
+    pub(super) fn retained(
+        retention: &crate::runtime::state::subsystems::history::canonical_publication_routes::retained_position::RetainedCanonicalPosition,
+    ) -> Option<Self> {
         let (position, canonical) = retention.upgrade_parts()?;
         Some(Self {
             position,
@@ -64,7 +66,7 @@ pub(crate) fn readmit_positioned_canonical_commit(
         &canonical,
     )
     .map_err(RelationalCanonicalPositionAdmissionDenial::SemanticResult)?;
-    crate::history::RelationalCommitCatalog::validate_detached_envelope(&canonical)
+    crate::history::commit::RelationalCommitCatalog::validate_detached_envelope(&canonical)
         .map_err(RelationalCanonicalPositionAdmissionDenial::CommitArtifact)?;
     Ok(PositionedCanonicalCommit::admit(
         CanonicalPositionAdmission {

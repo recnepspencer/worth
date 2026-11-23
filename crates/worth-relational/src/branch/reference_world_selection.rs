@@ -1,18 +1,19 @@
 //! Reconstruction restores an actual original cell, never a relabelled basis.
 use super::*;
-use crate::durability::data::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::recovery_errors::DurabilityError;
+use crate::durability::data::recovery_errors::RecoveryFailureClass;
 
 impl RelationalBranchReferenceCell {
     pub(crate) fn select_recovered_world_source(
         &self,
         runtime: &crate::runtime::RelationalRuntime,
-        original: &super::super::RelationalBranchBasisDescriptor,
-        root: Arc<super::super::RelationalBranchRoot>,
-    ) -> Result<Arc<super::super::RelationalBranchRoot>, DurabilityError> {
+        original: &crate::branch::basis::RelationalBranchBasisDescriptor,
+        root: Arc<crate::branch::root::RelationalBranchRoot>,
+    ) -> Result<Arc<crate::branch::root::RelationalBranchRoot>, DurabilityError> {
         let corrupt = |message| DurabilityError::new(RecoveryFailureClass::ReplayFailure, message);
         if original.runtime_instance_id() != self.identity.runtime_instance_id()
             || original.branch_id() != self.identity.branch_id()
-            || original.posture() != super::super::RelationalBranchBasisPosture::Live
+            || original.posture() != crate::branch::basis::RelationalBranchBasisPosture::Live
         {
             return Err(corrupt(
                 "World recovery source belongs to another branch or posture",
@@ -34,7 +35,7 @@ impl RelationalBranchReferenceCell {
             .reserve_head_retirement_capacity(&self.identity, &previous, &self.head_retention)
             .map_err(|_| corrupt("World recovery head retirement could not be reserved"))?;
         let mut prepared = self.state_snapshot();
-        if prepared.lifecycle != super::super::RelationalBranchLifecyclePosture::Live {
+        if prepared.lifecycle != crate::branch::lifecycle::RelationalBranchLifecyclePosture::Live {
             return Err(corrupt(
                 "World recovery cannot restore an inactive Native branch",
             ));

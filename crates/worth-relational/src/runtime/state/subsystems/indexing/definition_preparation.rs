@@ -3,7 +3,7 @@ use super::*;
 use worth_execution::{ExecutionRequest, WorkCeilingDenial};
 
 mod backing;
-pub(super) use crate::indexes::IndexDefinitionBacking;
+pub(super) use crate::indexes::retained_definition::IndexDefinitionBacking;
 
 #[derive(Debug)]
 pub enum RelationalIndexDefinitionPreparationDenial {

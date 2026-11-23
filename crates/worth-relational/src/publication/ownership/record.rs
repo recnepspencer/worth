@@ -1,8 +1,8 @@
 //! The single payload grammar of the Native-private current ownership records.
+use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
 use crate::{
     history::data::{CanonicalRequiredOutputOrigin, CanonicalRequiredOutputRelation, CommitId},
     identity::data::EntityId,
-    mvcc::RequiredOutputPublicationMeaning,
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;

@@ -9,7 +9,7 @@ pub use replay_retention_denial::RelationalReplayRetentionDenial;
 pub(crate) mod branch_creation;
 mod caller_association;
 mod canonical_commit_allocation;
-mod canonical_commit_envelope;
+pub(crate) mod canonical_commit_envelope;
 pub use caller_association::{RelationalCallerAssociation, RelationalCallerAssociationRefusal};
 pub(crate) use canonical_commit_envelope::{
     validate_authored_restoration_candidate, OutputOriginHistory,

@@ -162,27 +162,6 @@ impl worth_execution::ChargedBytes for GuardAdmission {
     }
 }
 
-/// Metadata classification uses the actual schema and retained record generation,
-/// including records just deleted by this unpublished candidate.
-pub(crate) fn is_metadata_record(
-    registry: &RelationalSchemaRegistry,
-    state: &dyn crate::storage::overlay::CurrentPartitionAccess,
-    record: &crate::transactions::data::RecordRef,
-) -> bool {
-    use crate::transactions::data::RecordRef;
-    let kind = match record {
-        RecordRef::Entity(id) => state
-            .get_current_partition(id.partition_id)
-            .and_then(|partition| partition.entity_arena().get(id))
-            .and_then(|row| row.kind_id()),
-        RecordRef::Relation(id) => state
-            .get_current_partition(id.partition_id)
-            .and_then(|partition| partition.relation_arena().get(id))
-            .and_then(|row| row.kind_id()),
-    };
-    kind.is_some_and(|kind| registry.native_private_kinds.contains(&kind))
-}
-
 /// A private relation create is refused before ordinary duplicate-pair admission.
 /// Otherwise an existing metadata link could disguise a single-writer violation
 /// as an unrelated business-relation identity conflict.
