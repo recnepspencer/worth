@@ -13,6 +13,10 @@ use crate::identity::data::{
 };
 use crate::indexes::data::{DerivedIndexArtifacts, DerivedIndexDefinition};
 use crate::lineage::data::LineageCheckpointArtifact;
+use crate::storage::data::record_identity_image::{
+    DurableRecordGenerationHighWater, DurableRecordIdentityState, DurableRecordSlotFrontier,
+    DurableReusableRecordSlot,
+};
 use crate::storage::data::{RecordLifecycleState, RelationalFieldRevision};
 use crate::symbols::data::{Symbol, SymbolTableSnapshot};
 
@@ -164,53 +168,6 @@ impl DurableBranchRootImage {
     // Earlier descriptors are refused before readmission, never reinterpreted.
     pub(crate) const CURRENT_FORMAT_VERSION: u16 = 6;
 }
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) enum DurableRecordGenerationClass {
-    Entity,
-    Relation,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct DurableRecordGenerationHighWater {
-    pub(crate) class: DurableRecordGenerationClass,
-    pub(crate) partition_id: PartitionId,
-    pub(crate) slot: u64,
-    pub(crate) generation: u32,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct DurableReusableRecordSlot {
-    pub(crate) class: DurableRecordGenerationClass,
-    pub(crate) partition_id: PartitionId,
-    pub(crate) slot: u64,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub(crate) struct DurableRecordSlotFrontier {
-    pub(crate) class: DurableRecordGenerationClass,
-    pub(crate) partition_id: PartitionId,
-    pub(crate) next_slot: u64,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) enum DurableRecordReservationOrigin {
-    AppendFrontier,
-    Reclaimed { prior_generation: u32 },
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub(crate) struct DurablePendingRecordReservation {
-    pub(crate) class: DurableRecordGenerationClass,
-    pub(crate) partition_id: PartitionId,
-    pub(crate) slot: u64,
-    pub(crate) generation: u32,
-    pub(crate) origin: DurableRecordReservationOrigin,
-}
-
-pub(crate) use super::record_identity_image::DurableRecordIdentityState;
 
 pub(crate) fn branch_root_partition_image_digest(
     _lane: &crate::storage::substrate::maintenance::ReconstructionLane<'_>,

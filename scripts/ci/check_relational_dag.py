@@ -288,8 +288,6 @@ def ordinary_storage_totals(projection, directions):
     counts = {}
     for direction, references in directions.items():
         caller, callee = direction.split(' -> ')
-        if projection != 'cfg_test' and 'durability' in (caller, callee):
-            continue
         if caller != 'storage' and not (projection == 'inherent_impl' and callee == 'storage'):
             continue
         count = sum(value for (path, _), value in references.items()

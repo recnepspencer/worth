@@ -1,5 +1,5 @@
 //! Read-only selection questions sent only through the already attached medium.
-use super::RelationalDurableMemberLocator;
+use crate::durability::medium::RelationalDurableMemberLocator;
 use std::sync::Arc;
 use worth_execution::ExecutionImmutableBytes;
 
@@ -105,18 +105,4 @@ pub enum RelationalCheckpointAcknowledgementProgress {
     PlacingData,
     RetiringSources,
     Complete,
-}
-
-#[derive(Debug)]
-pub enum RelationalCheckpointAcknowledgementDenial {
-    CaptureNotBound,
-    ForeignSource,
-    StaleCapture,
-    SelectionNotKnown,
-    Storage(crate::storage::data::RelationalStorageUnavailableCause),
-    Stopped(worth_execution::MapKernelStop),
-    Busy,
-    Recovery(crate::durability::data::RelationalRecoveryStop),
-    OwnedRead(super::RelationalDurableOwnedReadRefusal),
-    Retirement(super::RelationalDurableMemberRetirementRefusal),
 }

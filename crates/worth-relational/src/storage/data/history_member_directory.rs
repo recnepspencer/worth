@@ -1,5 +1,7 @@
 //! Immutable direct dependencies of layered history members, without payloads.
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 use crate::durability::medium::RelationalDurableMemberLocator;
+use crate::execution::denial_cause::RelationalExecutionDenialCause;
 use crate::storage::data::RelationalStorageUnavailableCause as Cause;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -147,17 +149,17 @@ impl RelationalHistoryMemberDirectory {
     /// Full independent members have no external history dependency edges.
     pub(crate) fn empty_for_request(
         request: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<std::sync::Arc<Self>, super::RelationalRecoveryStop> {
-        use crate::execution::RelationalExecutionDenialCause as Cause;
+    ) -> Result<std::sync::Arc<Self>, RelationalRecoveryStop> {
         let layout = std::alloc::Layout::new::<(usize, usize)>()
             .extend(std::alloc::Layout::new::<Self>())
-            .map_err(|_| Cause::ChargedBytesOverflow)?
+            .map_err(|_| RelationalExecutionDenialCause::ChargedBytesOverflow)?
             .0
             .pad_to_align();
-        let bytes = u64::try_from(layout.size()).map_err(|_| Cause::ChargedBytesOverflow)?;
+        let bytes = u64::try_from(layout.size())
+            .map_err(|_| RelationalExecutionDenialCause::ChargedBytesOverflow)?;
         let memory = request
             .reserve_retained_memory(bytes)
-            .map_err(|cause| super::RelationalRecoveryStop::Request(cause.into()))?;
+            .map_err(|cause| RelationalRecoveryStop::Request(cause.into()))?;
         Ok(std::sync::Arc::new(Self {
             entries: BTreeMap::new(),
             _memory: memory,

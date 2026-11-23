@@ -1,7 +1,6 @@
 //! Publication and recovery against the runtime's original durable medium.
 use super::medium::{
-    home_write_denial::RelationalHomeProgramWriteDenial, source_retirement,
-    CheckpointSelectionObservation, DurablePublicationFate, OpaqueCapturedCheckpointSubject,
+    home_write_denial::RelationalHomeProgramWriteDenial, source_retirement, DurablePublicationFate,
     RelationalDurabilityUnresolved, RelationalDurabilityUnresolvedSubject,
     RelationalDurableColdSource, RelationalDurableOwnedReadRefusal,
     RelationalDurablePublicationRefusal, RelationalDurableReadBounds,
@@ -10,6 +9,11 @@ use super::medium::{
     RelationalMediumRetirementProgress,
 };
 mod binding;
+mod checkpoint_selection;
+pub use checkpoint_selection::{
+    CheckpointSelectionIdentity, CheckpointSelectionObservation, OpaqueCapturedCheckpointSubject,
+    RelationalCheckpointAcknowledgementProgress,
+};
 mod commit_publication;
 mod preparation_admission;
 mod recovery_source;
