@@ -5,6 +5,7 @@
 //! that could change its comparison; a fact Native cannot key that way is
 //! conservative and every write marks it. Keys only select which derivations
 //! are compared exactly: a key never accepts a change.
+use super::WorthQueryApplicationFactKey as Key;
 use super::WorthQueryApplicationObservedFact as Fact;
 use worth_foundational::facade::AspectKey;
 use worth_relational::facade::identity::KindId;
@@ -106,10 +107,11 @@ pub fn fact_record(
     }
 }
 
-/// Whether a successor round's own-output view serves `fact` (§1.5): a field
-/// or aspect-presence read of one record, which it reads at the chain head's
-/// pre-pin when the chain wrote that record (#277). Every other single-record
-/// fact (entity, source revisions) is read at the current image.
+/// Whether a successor round's own-output view serves `fact` (§1.5): a
+/// field, aspect-presence or presence read of one record, which it reads at
+/// the chain head's pre-pin when the chain wrote that record (#277). Every
+/// other single-record fact (source revisions, a retired output) is read at
+/// the current image. `head_served_record` states the same rule for keys.
 pub fn overlay_served(fact: &Fact) -> bool {
     matches!(
         fact,
@@ -117,7 +119,23 @@ pub fn overlay_served(fact: &Fact) -> bool {
             | Fact::AbsentField { .. }
             | Fact::OptionalAspectAbsent { .. }
             | Fact::AspectPresence { .. }
+            | Fact::Entity { .. }
     )
+}
+
+/// The one record `key` reads, when a successor round's own-output view
+/// serves that key at the chain head's pre-pin for a record its chain wrote:
+/// a field, an aspect's presence, or the record's own presence (#277). The
+/// read set's completion and a carried computation read both ask here, so a
+/// covered record is never seen with its fields at the head and its presence
+/// at the current image.
+pub fn head_served_record(key: &Key) -> Option<worth_relational::facade::identity::EntityId> {
+    match key {
+        Key::Field { entity_id, .. }
+        | Key::AspectPresence { entity_id, .. }
+        | Key::Entity { entity_id, .. } => Some(*entity_id),
+        _ => None,
+    }
 }
 
 /// Whether the own-output view serves `fact` as a relation list (#277): the

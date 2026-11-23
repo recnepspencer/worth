@@ -176,17 +176,13 @@ impl<Schema, Operation>
         if let Some(pin) = self.reader.native.applied_pin() {
             // A successor round's own-output view serves the carried read
             // exactly as the read set's completion re-observes it (PR C §1.5,
-            // #277): a field or aspect-presence read of a record its chain
-            // wrote at the chain head, a relation or adjacency read served.
+            // #277): a field, aspect-presence or presence read of a record its
+            // chain wrote at the chain head, a relation or adjacency read served.
             use crate::domain_computation::primary_graph::application_attempt::observe_admitted_applied_fact as observe;
             let own = self.reader.native.own_outputs();
-            let pin = match key {
-                WorthQueryApplicationFactKey::Field { entity_id, .. }
-                | WorthQueryApplicationFactKey::AspectPresence { entity_id, .. } => {
-                    own.and_then(|own| own.head_for(*entity_id)).unwrap_or(pin)
-                }
-                _ => pin,
-            };
+            let pin = crate::domain_computation::primary_graph::application_attempt::fact::touch_key::head_served_record(key)
+                .and_then(|record| own?.head_for(record))
+                .unwrap_or(pin);
             let observed = observe(execution, self.reader.layout, key, pin)?;
             let observed = match own {
                 Some(own) => own.serve_fact(execution, observed, || {

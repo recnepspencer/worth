@@ -3,6 +3,8 @@
 mod members;
 #[macro_use]
 mod dependency;
+#[macro_use]
+mod children;
 macro_rules! producer_capture_contract {
     () => {
         None
@@ -35,6 +37,16 @@ macro_rules! producer_operation {
     (DecisionInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputInitial, $entity, $key, $value, $of); };
     (SelfRelationInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SelfRelationInitial, $entity, $key, $value, $of); };
     (SelfRelationPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read SelfRelationPreserve, $entity, $key, $value, $of); };
+    (ChildDropInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@child_drop ChildDropInitial, $entity, $key, $value, $of); };
+    (ChildDropPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@child_drop ChildDropPreserve, $entity, $key, $value, $of); };
+    // The member read, plus the output's children: created, linked, unlinked and deleted.
+    (@child_drop $operation:ident, $entity:ident, $key:ident, $value:ident, $of:ident) => {
+        worth_query_operation!(pub $operation for Schema, input InputBinding; access {
+            read_entities: [SourceEntity, $entity, Member, ChildOutput]; read_fields: [source_key(), source_value(), $key::at(stringify!($key)), $value::at(stringify!($value)), MemberKey::at("MemberKey"), MemberValue::at("MemberValue"), ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
+            read_relations: [$of, ChildOfFirst]; writes: [$key::at(stringify!($key)), $value::at(stringify!($value)), ChildKey::at("ChildKey"), ChildValue::at("ChildValue")];
+            creates: [$entity, ChildOutput]; deletes: [ChildOutput]; links: [$of, ChildOfFirst]; unlinks: [ChildOfFirst];
+        });
+    };
     (DecisionInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read DecisionInputPreserve, $entity, $key, $value, $of); };
     (ParityInputInitial, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputInitial, $entity, $key, $value, $of); };
     (ParityInputPreserve, $entity:ident, $key:ident, $value:ident, $of:ident) => { producer_operation!(@member_read ParityInputPreserve, $entity, $key, $value, $of); };
@@ -184,7 +196,7 @@ macro_rules! phase {
             ordinary_carrier_contract!($operation);
             impl ApplicationMutationOutputContract<Schema> for Outputs {
                 const ROLES: &'static [ApplicationMutationOutputRoleDescriptor] = producer_role_descriptors!($operation);
-                const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = &[];
+                const ROLE_FAMILIES: &'static [ApplicationMutationOutputRoleFamilyDescriptor] = producer_role_families!($operation);
             }
             pub struct Decision { source: WorthQueryInvariantMutationTarget<Schema, SourceEntity>, output: Option<WorthQueryInvariantMutationTarget<Schema, $entity>>, member_value: u64, member_target: Option<WorthQueryInvariantMutationTarget<Schema, Member>>, input_member: member_input_type!($operation) }
             pub struct Binding;

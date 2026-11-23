@@ -1,6 +1,6 @@
 //! A successor round's applied completion read through its own-output view
-//! (PR C §1.5, #277): field and aspect-presence reads of a covered record are
-//! read at the chain head's pre-pin; relation and adjacency reads are served
+//! (PR C §1.5, #277): field, aspect-presence and presence reads of a covered
+//! record are read at the chain head's pre-pin; relation and adjacency reads are served
 //! (`OwnOutputOverlay::serve_fact`). A covered entity absent at the head,
 //! read directly or reached through a link the chain did not make, marks the
 //! view incoherent.
@@ -20,7 +20,7 @@ impl WorthQueryApplicationSnapshotLease {
         key: &Key,
     ) -> Option<Result<Fact, Denial>> {
         use super::super::read_set::fact_observation::observe_applied_fact;
-        let entity = single_record(key);
+        let entity = super::super::fact::touch_key::head_served_record(key);
         let pin = self.applied_projection_of(entity)?;
         let mut observed = observe_applied_fact(execution, &self.layout, key, pin);
         let Some(own) = &self.own_outputs else {
@@ -36,15 +36,16 @@ impl WorthQueryApplicationSnapshotLease {
         if let (Err(denial), Some(entity)) = (&observed, entity)
             && denial.kind() == Kind::MissingAuthoritativeFact
             && own.covers(entity)
-            && self.absent_at_head(execution, key, entity, pin)
+            && self.absent_at_head(execution, key, entity, pin, denial)
         {
             own.mark_incoherent(entity);
         }
         Some(observed)
     }
 
-    /// Whether `entity` is absent at the head pre-pin, judged by the entity
-    /// read the field or aspect key names.
+    /// Whether `entity` is absent at the head pre-pin: judged by `denial`
+    /// when the key is the presence read itself, otherwise by the entity read
+    /// the field or aspect key names.
     fn absent_at_head(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -53,10 +54,12 @@ impl WorthQueryApplicationSnapshotLease {
         pin: &worth_relational::facade::runtime::RelationalPinnedRead<
             worth_relational::facade::runtime::RelationalAppliedCandidateReadIdentity,
         >,
+        denial: &Denial,
     ) -> bool {
-        let (Key::Field { entity: name, .. } | Key::AspectPresence { entity: name, .. }) = key
-        else {
-            return false;
+        let name = match key {
+            Key::Entity { .. } => return denial.relational_execution_cause().is_none(),
+            Key::Field { entity: name, .. } | Key::AspectPresence { entity: name, .. } => name,
+            _ => return false,
         };
         let presence = Key::Entity {
             entity: name.clone(),
@@ -72,14 +75,5 @@ impl WorthQueryApplicationSnapshotLease {
             denial.kind() == Kind::MissingAuthoritativeFact
                 && denial.relational_execution_cause().is_none()
         })
-    }
-}
-
-/// The one record a field or aspect-presence key reads; the own-output view
-/// serves it at the chain head's pre-pin when the chain wrote it.
-fn single_record(key: &Key) -> Option<EntityId> {
-    match key {
-        Key::Field { entity_id, .. } | Key::AspectPresence { entity_id, .. } => Some(*entity_id),
-        _ => None,
     }
 }

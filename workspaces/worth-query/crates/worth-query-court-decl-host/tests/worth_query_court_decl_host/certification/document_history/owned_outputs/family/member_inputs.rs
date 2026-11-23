@@ -11,6 +11,12 @@ macro_rules! member_input_type {
     (FirstPreserve) => {
         member_inputs::Capture
     };
+    (ChildDropInitial) => {
+        Vec<WorthQueryInvariantMutationTarget<Schema, ChildOutput>>
+    };
+    (ChildDropPreserve) => {
+        Vec<WorthQueryInvariantMutationTarget<Schema, ChildOutput>>
+    };
     ($operation:ident) => {
         ()
     };
@@ -29,6 +35,8 @@ macro_rules! member_input_operation {
 macro_rules! capture_member_input {
     (FirstInitial, $reader:ident, $source:ident, $prior:ident) => { capture_member_input!(@capture $reader, $source, $prior) };
     (FirstPreserve, $reader:ident, $source:ident, $prior:ident) => { capture_member_input!(@capture $reader, $source, $prior) };
+    (ChildDropInitial, $reader:ident, $source:ident, $prior:ident) => { child_drop_capture!($reader, $prior) };
+    (ChildDropPreserve, $reader:ident, $source:ident, $prior:ident) => { child_drop_capture!($reader, $prior) };
     (@capture $reader:ident, $source:ident, $prior:ident) => {{
         let links = $reader.relations_to(member_retarget::records::InputOwner::reference(), &$source).map_err(HandlerExecutionDenial::new)?;
         assert!(links.len() <= 1, "this fixture admits one selected input");
@@ -53,6 +61,8 @@ macro_rules! capture_member_input {
 macro_rules! publish_member_input {
     (FirstInitial, $writer:ident, $decision:ident, $output:ident, $input:ident) => { publish_member_input!(@publish $writer, $decision, $output, $input) };
     (FirstPreserve, $writer:ident, $decision:ident, $output:ident, $input:ident) => { publish_member_input!(@publish $writer, $decision, $output, $input) };
+    (ChildDropInitial, $writer:ident, $decision:ident, $output:ident, $input:ident) => { child_drop_publish!($writer, $decision, $output, $input) };
+    (ChildDropPreserve, $writer:ident, $decision:ident, $output:ident, $input:ident) => { child_drop_publish!($writer, $decision, $output, $input) };
     (@publish $writer:ident, $decision:ident, $output:ident, $input:ident) => {
         for target in &$decision.input_member.previous {
             let member = $writer.projected_entity(target)?;

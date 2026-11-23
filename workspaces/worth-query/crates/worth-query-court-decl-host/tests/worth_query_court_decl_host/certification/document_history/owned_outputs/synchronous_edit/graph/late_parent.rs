@@ -7,6 +7,7 @@ mod staged;
 mod alias;
 mod cross_write;
 mod outgoing;
+mod own_output_drop;
 mod own_output_gap;
 mod own_output_aspect;
 mod prerequisite;

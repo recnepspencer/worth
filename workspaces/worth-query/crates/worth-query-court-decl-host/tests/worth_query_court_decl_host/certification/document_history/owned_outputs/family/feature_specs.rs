@@ -22,6 +22,7 @@ pub(in super::super) fn feature_specs(
         super::c3b::guarded_first::feature(),
         super::c3b::decision_write_n::feature(),
         super::c3b::self_relation::feature(),
+        super::c3b::child_drop::feature(),
         super::c3b::aspect_probe::feature(),
         self_write::feature(),
         cross_reader::feature(),
