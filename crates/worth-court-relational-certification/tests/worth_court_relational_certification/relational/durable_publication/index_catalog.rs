@@ -8,6 +8,7 @@ use worth_relational::facade::{
 };
 mod initial_population;
 mod recovery;
+mod wire;
 use initial_population::populate;
 
 fn definition(name: &str) -> DerivedIndexDefinition {
@@ -303,6 +304,7 @@ fn required_catalog_delta_survives_all_projections_and_rejects_missing_or_older_
         old[8..10].copy_from_slice(&version.to_le_bytes());
         assert!(Artifact::readmit(&old, execution).is_err());
     }
+    wire::assert_malformed_deltas(execution, &artifact);
     for version in [13, 14, 15, 16, 17] {
         let mut old = checkpoint.bytes().to_vec();
         old[..b"WORTH-REL-CHK23\n".len()]

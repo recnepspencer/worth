@@ -12,8 +12,8 @@ use crate::{
 };
 
 use super::{
-    mandatory_review_projection::EstateMandatoryReviewResult, mandatory_review_selectors::*,
-    mandatory_review_shape::mandatory_review_shape,
+    mandatory_review_projection::EstateMandatoryReviewResult,
+    mandatory_review_rows::{EstateRow, ReviewRow, ReviewerRow},
 };
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -76,7 +76,13 @@ pub fn estate_mandatory_review_definition() -> ApplicationQueryDefinitionBuilder
     ApplicationQueryDefinitionBuilder::declare(EstateMandatoryReviewQuery::reference())
         .root(EstateCase::reference())
         .scope(EstateCase::reference())
-        .result_shape(mandatory_review_shape())
+        .result_shape(
+            EstateRow::result_shape_builder::<
+                EstateMandatoryReviewQuery,
+                EstateMandatoryReviewQueryResultBinding,
+            >()
+            .build(),
+        )
         .cardinality(ApplicationQueryCardinality::ExactlyOne)
         .disclosure(disclosure_contract())
         .basis_support(ApplicationQueryBasisSupport::current_and_pinned())
@@ -90,16 +96,17 @@ fn disclosure_contract() -> ApplicationQueryDisclosureContract {
             RestrictedBankField::AuditTrail,
         )
     };
+    type Q = EstateMandatoryReviewQuery;
     let influence = ApplicationQueryInfluenceContract::forbid_all();
     ApplicationQueryDisclosureContract::governed_by(
         "estate-mandatory-review",
         ViewEstateMandatoryReviewCapability::reference(),
     )
-    .disclose_field_by(estate_identity(), field(), influence.clone())
-    .disclose_relation_by(estate_reviews(), field(), influence.clone())
-    .disclose_field_by(review_identity(), field(), influence.clone())
-    .disclose_field_by(review_kind(), field(), influence.clone())
-    .disclose_field_by(review_status(), field(), influence.clone())
-    .disclose_relation_by(review_principal(), field(), influence.clone())
-    .disclose_field_by(review_principal_identity(), field(), influence)
+    .disclose_field_by(EstateRow::estate::<Q>(), field(), influence.clone())
+    .disclose_relation_by(EstateRow::reviews::<Q>(), field(), influence.clone())
+    .disclose_field_by(ReviewRow::review::<Q>(), field(), influence.clone())
+    .disclose_field_by(ReviewRow::kind::<Q>(), field(), influence.clone())
+    .disclose_field_by(ReviewRow::status::<Q>(), field(), influence.clone())
+    .disclose_relation_by(ReviewRow::reviewer::<Q>(), field(), influence.clone())
+    .disclose_field_by(ReviewerRow::reviewer::<Q>(), field(), influence)
 }

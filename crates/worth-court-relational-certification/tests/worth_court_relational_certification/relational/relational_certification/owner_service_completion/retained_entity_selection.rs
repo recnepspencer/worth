@@ -3,6 +3,7 @@ mod custody;
 mod eligibility;
 mod occurrences;
 mod persistence;
+mod provenance;
 pub(crate) use occurrences::{fixture, perform};
 mod refusals;
 use worth_execution::{ExecutionAllocationPolicy, ExecutionRequest};

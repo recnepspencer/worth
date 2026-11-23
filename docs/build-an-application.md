@@ -897,7 +897,12 @@ Bindings that share a principal mapping, idempotency key and denial name one
 Context,` after the schema in `worth_query_mutation_binding!` or
 `worth_query_query_binding!`. Omitted principal, `idempotency` and `denial`
 clauses resolve to the context; a clause written on the binding wins. Both
-spellings install the same canonical schema.
+spellings install the same canonical schema. When one input serves several
+operations (an action enum, for example), bind each operation's own intent
+type to the shared input: `pub OpenBinding for Action, schema S, context C,
+intent OpenCase => OpenCase::action, ..` makes `OpenCase` the
+`ApplicationMutationIntent` whose `input()` lends the shared `Action` and
+whose scope `value` reads `OpenCase`.
 
 `decl::application_identity::ApplicationIdentityNamespace` derives one root's
 identities (`root.input`, `root.binding`, `root.request`, `root.result`,
@@ -946,12 +951,25 @@ or `WorthQueryAction` depends on `worth-query-decl`, and one deriving
   field, `result_shape::<Query>()` and `WorthQueryApplicationProjection` for
   every query whose result binding carries the row. Each field names its
   selection with `field = Alias`; a field whose type differs from the column's
-  does not compile.
+  does not compile. A field may instead traverse a relation:
+  `relation = R, nested = Binding` leaves the root along `R`, and
+  `reverse_from = Entity` arrives at the root from `R`'s declaring entity. The
+  field type selects the cardinality (`T` one, `Option<T>` at most one,
+  `Vec<T>` many), where `T` is itself a derived projection rooted at the
+  related entity; `Binding` identifies its nested shape. Every derived row
+  also has `result_shape_builder::<Query, Binding>()` and
+  `project_row::<Query>(row)`, so a row can feed a domain result type that
+  converts from it. `selector = name` renames a slot's generated selector
+  function when the row already has a method of the field's name.
 - `WorthQueryAction` on an input declares its input binding, operation (with
   forwarded `access(..)` and inline capabilities such as `reads(Task)`),
   contextual mutation binding and optional source-completion `delivery`, with
   identities from `namespace`. Exactly one field carries `scope = Alias`, or
-  the struct declares `principal_scope = Alias`.
+  the struct declares `principal_scope = Alias`. `validate = path::to::check`
+  forwards a `fn(&Input) -> Result<(), &'static str>` as the input binding's
+  `validate:`: an invalid input is refused at capture
+  (`WorthQueryOperationInputCaptureDenial::Encoding(Validation(..))`) with its
+  key returned, before any effect.
 
 <!-- illustrative -->
 ```rust,ignore
@@ -977,11 +995,15 @@ pub struct TaskRow {
 #[worth_query(schema = Schema, context = BoardContext, namespace = RENAME,
     input = RenameInput, operation = RenameTask, binding = RenameBinding, delivery = Renamed,
     result = BodyResultBinding, decision = WorthQueryOperationBodyDecision<Schema, Task>,
-    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task))]
+    body, program, access(read_fields: [TaskKey::at("TaskKey")];), reads(Task),
+    validate = titled)]
 pub struct Rename {
     #[worth_query(scope = TaskKey)]
     pub task: u64,
     pub title: String,
+}
+fn titled(rename: &Rename) -> Result<(), &'static str> {
+    (!rename.title.trim().is_empty()).then_some(()).ok_or("a task needs a title")
 }
 ```
 
@@ -991,8 +1013,13 @@ installs a derived board beside hand-written members under
 searches with a case-insensitive `where_filter`, filters an
 `Option<CanonicalDate>` column and commits derived and written actions through
 `WorthQuerySourceCustody`; its parity courts compare derived and hand-written
-declarations, wire-identity overrides included. A `CanonicalDate` input
-member is captured through `serde::Serialize`; it is not a `WorthValue`.
+declarations, wire-identity overrides included. `CanonicalDate` and the other
+native scalar carriers (`CanonicalTime`, `CanonicalTimestamp`,
+`CanonicalTimestampTz`, `CanonicalF32`, `CanonicalF64`, `InlineBytes`,
+`InternedString`) are named from `decl::application_schema` (in Host,
+`host::declaration::application_schema`), so an application needs no
+`worth-foundational` dependency. A `CanonicalDate` input member is captured
+through `serde::Serialize`; it is not a `WorthValue`.
 
 Declare operation access once with `worth_query_operation!(... for Schema:
 SchemaBinding, input Input; access { ... })`. Both Rust capabilities and schema
@@ -3673,7 +3700,9 @@ or phase is retained; matching a variant lends or returns the exact owner. Match
 `Pending`'s cause rather than retrying blindly:
 `Close(NativeObligationRetained)` means native recovery still owns the
 command. Report `Declined` evidence and drop it; do not keep the native carrier
-across frames.
+across frames. `WorthQueryTerminalSourceEvidence<S, I>` is `Debug` whenever the
+binding's `Denial` and `Result` are, so a generic helper reports it with that one
+bound (`where WorthQueryTerminalSourceEvidence<S, I>: Debug`).
 
 <!-- illustrative -->
 ```rust,ignore
@@ -7866,6 +7895,10 @@ reservations, 256 custody records). Each `with_*` override replaces one budget
 group verbatim, and `install()` validates through
 `WorthQueryProductWorldResources::install`, returning the same
 `RuntimeWorldBudgetDenial` an explicit installation would.
+`with_execution_policy`, `with_query_profile` and `with_signal_budget` replace
+the preset's serial unlimited-work execution policy, default query profile and
+development conditional budget verbatim, so an application with finite work
+and memory ceilings keeps them under the preset.
 
 Set optional published-snapshot, active-snapshot and prepared-candidate policies
 in `PublicationConfig`; `Some(amount)` selects a finite policy. Retain snapshots

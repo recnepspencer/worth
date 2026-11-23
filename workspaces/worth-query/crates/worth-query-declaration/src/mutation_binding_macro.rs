@@ -3,6 +3,9 @@
 /// Every clause may be written out, or `context Context,` after the schema
 /// supplies the principal group, idempotency and denial from one
 /// `ApplicationBindingContext`; see `__worth_query_contextual_mutation_binding`.
+/// With a context, `intent Intent => input_of,` binds a distinct intent type
+/// to an input several intents share (for example one action enum serving
+/// several operations).
 /// Identity positions accept any `&'static str` constant expression,
 /// including `worth_query_identity!`.
 #[macro_export]

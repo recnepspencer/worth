@@ -27,7 +27,7 @@ pub fn open_bank_application_home(
     let request = bank_application_home_with_index(location, seed, index.clone())
         .map_err(BankHomeOpenRefused::Preparation)?;
     let home = worth_query_host::facade::application_contribution::with_bootstrap_advancement(
-        super::super::product_world_resources::bank_bootstrap_policy(),
+        super::super::application_limits::BANK_EXECUTION_POLICY,
         |phase| request.open_in_advancement(&phase),
     )
     .map_err(BankHomeOpenRefused::Advancement)?

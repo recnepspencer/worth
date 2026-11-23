@@ -236,3 +236,53 @@ fn restored_projection_reads_the_checkpoint_without_authoring_initial_state() {
     assert_eq!(before.generations, after.generations);
     assert_eq!(before.live_records, after.live_records);
 }
+
+#[test]
+fn checkpoint_inspection_compares_query_header_count_and_output_metadata_bytes() {
+    let runtime = crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::installation::install::<OptionalSchema>(false);
+    crate::domain_computation::primary_graph::output_lineage::ownership_oracle::optional_aspects::journey::demand(&runtime, true).unwrap();
+    let checkpoint = runtime
+        .with_host_advancement(|phase| {
+            runtime
+                .capture_application_checkpoint(
+                    &phase,
+                    WorthQueryCheckpointCapturePolicy::SystemAllocation,
+                )
+                .unwrap()
+        })
+        .unwrap();
+    runtime
+        .with_host_advancement(|phase| {
+            let before = runtime
+                .inspect_application_checkpoint(&phase, checkpoint.bytes())
+                .unwrap();
+            // Independent current wire attacks live at the SDK owner, never in a
+            // consuming application's copy of the format.
+            let body = &checkpoint.bytes()[8 + 32..];
+            let native_len =
+                usize::try_from(u64::from_be_bytes(body[14..22].try_into().unwrap())).unwrap();
+            let image_len =
+                usize::try_from(u64::from_be_bytes(body[22..30].try_into().unwrap())).unwrap();
+            let world_len =
+                usize::try_from(u64::from_be_bytes(body[30..38].try_into().unwrap())).unwrap();
+            let outputs_start = 46 + native_len + image_len + world_len;
+            assert!(
+                body.len() > outputs_start,
+                "fixture has real output metadata"
+            );
+            // Mutate query_header (bootstrap_commit_id), accepted_count low byte
+            // (stays representable in usize on 32-bit targets), and query_outputs.
+            for offset in [6, 45, outputs_start] {
+                let after = checkpoint
+                    .rewrite_authenticated_checkpoint_body_for_test(|body| body[offset] ^= 1);
+                let decoded = runtime
+                    .inspect_application_checkpoint(&phase, after.bytes())
+                    .unwrap();
+                assert_ne!(
+                    before.model, decoded.model,
+                    "ignored Query metadata at body offset {offset}"
+                );
+            }
+        })
+        .unwrap();
+}

@@ -19,18 +19,16 @@ use worth_query_host::facade::{
     application_installation::{
         in_memory_rostered_program_in_advancement,
         in_memory_rostered_program_with_authorization_time_source_in_advancement,
-        WorthQueryApplicationLimits, WorthQueryApplicationProgramRoster,
+        WorthQueryApplicationProgramRoster,
     },
     domain::{
         WorthQueryApplicationWorkflowResourceCeiling,
         WorthQueryApplicationWorkflowSpecInstallation, WorthQueryInstalledApplicationSchema,
     },
     primary_graph::{
-        SignalConditionalEvaluationBudget, WorthQueryPrimaryGraphApplicationRuntime,
-        WorthQueryPrimaryGraphBootstrap, WorthQueryPrimaryGraphInstallationDenial,
-        WorthQueryRuntimeTimeSource,
+        WorthQueryPrimaryGraphApplicationRuntime, WorthQueryPrimaryGraphBootstrap,
+        WorthQueryPrimaryGraphInstallationDenial, WorthQueryRuntimeTimeSource,
     },
-    runtime::WorthQueryApplicationQueryResourceProfile,
 };
 
 use super::{BankGraphSeed, BankIdentityRuntime, InstalledBankPrincipalBinding};
@@ -79,21 +77,16 @@ pub(super) fn prepare_installation(
     let declaration =
         worth_query_host::facade::declaration::application_schema::fragment::declare(BankSchema)
             .map_err(|denial| BankIdentityRuntimeBuildError::SchemaDeclaration(Box::new(denial)))?;
-    let resources = super::product_world_resources::bank_product_world_resources();
+    let execution = super::application_limits::BANK_EXECUTION_POLICY;
     #[cfg(test)]
-    let resources = match world.as_ref().and_then(|seed| seed.execution_policy) {
-        Some(policy) => resources.with_execution_policy(policy),
-        None => resources,
-    };
-    let limits = application_limits(resources);
-    // Initial source publication is one bootstrap, rather than an ordinary
-    // per-operation advancement. It retains its own finite original grant.
-    let bootstrap_policy = super::product_world_resources::bank_bootstrap_policy();
-    #[cfg(test)]
-    let bootstrap_policy = world
+    let execution = world
         .as_ref()
         .and_then(|seed| seed.execution_policy)
-        .unwrap_or(bootstrap_policy);
+        .unwrap_or(execution);
+    let limits = super::application_limits::bank_application_limits(execution);
+    // Initial source publication is one bootstrap, rather than an ordinary
+    // per-operation advancement. It retains its own finite original grant.
+    let bootstrap_policy = execution;
     let mut invariant_projection = None;
     let initialize =
         |_phase: &worth_query_host::facade::application_contribution::WorthQueryBootstrapAdvancementPhase<'_>,
@@ -234,24 +227,6 @@ fn payment_workflow_resources() -> WorthQueryApplicationWorkflowResourceCeiling 
         256 * 1_024,
     )
     .expect("approved-payment workflow resources are nonzero")
-}
-
-#[cfg(test)]
-pub(crate) fn bank_application_limits() -> WorthQueryApplicationLimits {
-    application_limits(super::product_world_resources::bank_product_world_resources())
-}
-
-pub(super) fn application_limits(
-    resources: worth_query_host::facade::runtime::WorthQueryProductWorldResources,
-) -> WorthQueryApplicationLimits {
-    let queries = WorthQueryApplicationQueryResourceProfile::new(
-        std::num::NonZeroUsize::new(64).expect("native graph concurrency is nonzero"),
-    );
-    WorthQueryApplicationLimits::new(
-        resources,
-        queries,
-        SignalConditionalEvaluationBudget::development(),
-    )
 }
 
 pub(super) fn bind_principals(

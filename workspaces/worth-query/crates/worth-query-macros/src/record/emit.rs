@@ -25,6 +25,9 @@ pub(super) fn record(input: &DeriveInput, record: &RecordDeclaration) -> TokenSt
             const NAME: &'static str = #aspect_name;
             type Row = #row;
         }
+        // Column reads are spanned to their fields so a non-`Clone` column is
+        // refused there; a `Copy` column must not report `clone_on_copy`.
+        #[allow(clippy::clone_on_copy)]
         impl #frag::Record<#row> for #bindings {
             fn record() -> impl #frag::Shape<#row, Self> {
                 #shape.build(|#(#members,)* _: &mut <Self as #frag::BindingSet>::Work<'_>| {
