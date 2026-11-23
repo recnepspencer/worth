@@ -39,6 +39,7 @@ mod predecessor_publication;
 pub(crate) mod prepared_merge_execution;
 mod publication_authority;
 mod publication_body;
+mod publication_capture;
 mod publication_settlement;
 mod published_lineage;
 mod schema_transition_admission;

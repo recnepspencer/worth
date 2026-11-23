@@ -19,9 +19,7 @@ impl BoundaryValidatedCommitExecution {
 
 pub(super) fn validate_commit_boundary(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    _runtime: &crate::runtime::RelationalPreparationRuntime,
     prepared: CommitPhaseBacking<PreparedCommitExecution>,
-    _control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<
     CommitPhaseBacking<BoundaryValidatedCommitExecution>,
     crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,

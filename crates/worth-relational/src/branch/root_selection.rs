@@ -26,6 +26,21 @@ impl SelectedRelationalBranchState {
         crate::branch::symbol_read::SymbolAdmittedRootRead::new(self.state().root(), symbols)
     }
 
+    pub(crate) fn from_owner_basis(
+        runtime_instance_id: u64,
+        basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
+    ) -> Result<Self, crate::transactions::data::outcomes::commit_preparation::CommitPreparationError>
+    {
+        if basis.identity().runtime_instance_id() != runtime_instance_id {
+            return Err(crate::transactions::data::outcomes::commit_preparation::CommitPreparationError::selected_branch_root_reference_mismatch(
+                basis.identity().branch_id().clone(),
+                basis.observation().commit_id().map(|id| id.0),
+                basis.observation().version_id(),
+            ));
+        }
+        Ok(Self::from_admitted_basis(basis))
+    }
+
     pub(crate) fn from_admitted_basis(
         basis: &crate::branch::basis::AdmittedRelationalBranchBasis,
     ) -> Self {

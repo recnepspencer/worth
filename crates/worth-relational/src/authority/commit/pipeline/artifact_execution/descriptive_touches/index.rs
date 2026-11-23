@@ -1,7 +1,6 @@
 use super::*;
 
 pub(super) fn append_index(
-    _runtime: &crate::runtime::RelationalPreparationRuntime,
     selected: &crate::branch::root_selection::SelectedRelationalBranchState,
     working: &crate::storage::overlay::WorkingState,
     delta: &CanonicalRecordAspectDelta,

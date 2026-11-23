@@ -238,7 +238,7 @@ pub(super) fn prepare_publication_phase(
             });
         let prepared_history =
             root_admission::run(execution, runtime.commit_work_budget.as_ref(), || {
-                runtime.mvcc_publication_authority().prepare_commit(
+                runtime.prepare_commit_publication(
                     execution,
                     commit_id,
                     commit_reference.clone(),

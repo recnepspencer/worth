@@ -858,7 +858,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 "branch/root_capture_denial.rs" = "contracts"
 
 # Certified Stage 2.4A r2 restores these concrete owners relative to the Stage 2.4B base.
-"branch/basis_admission_tests/cross_branch_substitution.rs" = "branch"
 "branch/basis_admission_tests.rs" = "branch"
 "branch/basis_currentness.rs" = "branch"
 "branch/basis_registry/retirement_tests.rs" = "branch"
@@ -905,3 +904,6 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # These receiver entry points bind the installed runtime to Publication's settlement.
 "runtime/publication_settlement.rs" = "runtime"
+
+# Preparation Runtime binds exact contracts before Publication assembles the candidate.
+"runtime/publication_capture.rs" = "runtime"

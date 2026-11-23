@@ -56,7 +56,8 @@ impl TouchBudget<'_, '_, '_, '_, '_> {
 }
 
 pub(super) fn prepare(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    work_budget: Option<&crate::execution::RequestWorkBudget>,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::root_selection::SelectedRelationalBranchState,
     working: &crate::storage::overlay::WorkingState,
@@ -74,7 +75,7 @@ pub(super) fn prepare(
         Some(lease) => {
             let maximum = crate::execution::prepare_borrowed_artifact(
                 lease,
-                runtime.commit_work_budget.as_ref(),
+                work_budget,
                 0,
                 |checked| {
                     Ok((
@@ -93,7 +94,7 @@ pub(super) fn prepare(
                 extent::memory_bound(catalog, selected, working, deltas, maximum, &mode, lease)?;
             let build = |checked: &mut PacketPreparationBudget<'_, '_, '_, '_>| {
                 build(
-                    runtime,
+                    symbols,
                     catalog,
                     selected,
                     working,
@@ -107,21 +108,21 @@ pub(super) fn prepare(
             match bound {
                 Some(bound) => crate::execution::prepare_borrowed_artifact(
                     lease,
-                    runtime.commit_work_budget.as_ref(),
+                    work_budget,
                     bound,
                     build,
                 ),
                 None => crate::execution::prepare_tracked_artifact(
                     execution,
                     lease,
-                    runtime.commit_work_budget.as_ref(),
+                    work_budget,
                     build,
                 ),
             }
             .map_err(|stop| TransactionCommitError::execution(stop.into()))
         }
         None => build(
-            runtime,
+            symbols,
             catalog,
             selected,
             working,
@@ -155,7 +156,7 @@ pub(super) fn prepare(
 }
 
 fn build(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    symbols: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::root_selection::SelectedRelationalBranchState,
     working: &crate::storage::overlay::WorkingState,
@@ -175,15 +176,7 @@ fn build(
         .try_reserve_exact(maximum)
         .map_err(|_| MapKernelFailure::ResultCapacityExceeded)?;
     for delta in deltas {
-        append_delta(
-            runtime,
-            catalog,
-            selected,
-            working,
-            delta,
-            &mut touches,
-            budget,
-        )?;
+        append_delta(catalog, selected, working, delta, &mut touches, budget)?;
     }
     for delta in adjacency {
         budget.checkpoint(3)?;
@@ -210,7 +203,7 @@ fn build(
     }
     if matches!(mode, TouchPreparationMode::NativeMerge)
         && !merge::append(
-            runtime,
+            symbols,
             catalog,
             selected,
             working,
@@ -281,7 +274,6 @@ fn maximum_touch_count(
 }
 
 fn append_delta(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
     catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::root_selection::SelectedRelationalBranchState,
     working: &crate::storage::overlay::WorkingState,
@@ -352,8 +344,7 @@ fn append_delta(
                         .filter(|definition| definition.index_id.0 < catalog.next_index_id)
                     {
                         append_index(
-                            runtime, selected, working, delta, binding, field, definition, touches,
-                            budget,
+                            selected, working, delta, binding, field, definition, touches, budget,
                         )?;
                     }
                     Ok::<(), Failure>(())

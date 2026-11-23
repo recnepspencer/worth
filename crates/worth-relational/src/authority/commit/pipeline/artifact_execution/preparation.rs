@@ -132,7 +132,8 @@ pub(super) fn prepare_publication_artifacts(
     )
     .map_err(crate::content::publication::commit_denial)?;
     let descriptive_touches = super::descriptive_touches::prepare(
-        runtime,
+        runtime.commit_work_budget.as_ref(),
+        &runtime.services.symbols,
         &catalog,
         selected_branch_state,
         working_state,

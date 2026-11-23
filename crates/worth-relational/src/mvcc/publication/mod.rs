@@ -42,7 +42,7 @@ pub use current_read::RelationalPublicationReadDependencyDenial;
 mod movement;
 pub(crate) mod outcome;
 pub(crate) mod port;
-mod validation;
+pub(crate) mod validation;
 
 pub(crate) use authority::{
     PreparedRelationalPublication, PreparedRelationalPublicationAccelerators,

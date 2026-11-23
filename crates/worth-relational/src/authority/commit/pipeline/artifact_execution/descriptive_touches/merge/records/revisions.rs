@@ -7,13 +7,13 @@ use std::mem::size_of;
 use worth_foundational::facade::{AspectKey, CanonicalFieldPath, FieldKey};
 
 pub(super) fn append_aspect(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    symbol_table: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     symbol: Symbol,
     record: &RecordRef,
     touches: &mut Vec<Touch>,
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<bool, Failure> {
-    let Some(aspect) = resolve_aspect(runtime, symbol, budget)? else {
+    let Some(aspect) = resolve_aspect(symbol_table, symbol, budget)? else {
         return Ok(false);
     };
     budget.claim(aspect.owned_allocation_capacity_bytes() as u64)?;
@@ -42,7 +42,7 @@ pub(super) struct FieldDifference<'a> {
 }
 
 pub(super) fn append_field(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    symbol_table: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     difference: FieldDifference<'_>,
     touches: &mut Vec<Touch>,
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
@@ -65,10 +65,10 @@ pub(super) fn append_field(
     }) else {
         return Ok(false);
     };
-    let Some(aspect) = resolve_aspect(runtime, symbols.0, budget)? else {
+    let Some(aspect) = resolve_aspect(symbol_table, symbols.0, budget)? else {
         return Ok(false);
     };
-    let Some(field) = resolve_field(runtime, symbols.1, budget)? else {
+    let Some(field) = resolve_field(symbol_table, symbols.1, budget)? else {
         return Ok(false);
     };
     let Some(kind) = (if new_revision.is_some() {
@@ -137,12 +137,12 @@ pub(super) fn append_field(
 }
 
 fn resolve_aspect(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    symbol_table: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     symbol: Symbol,
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<Option<AspectKey>, Failure> {
     budget.checkpoint(1)?;
-    runtime.services.symbols.with_read(|symbols| {
+    symbol_table.with_read(|symbols| {
         let Some(name) = symbols.resolve(symbol) else {
             return Ok(None);
         };
@@ -153,12 +153,12 @@ fn resolve_aspect(
 }
 
 fn resolve_field(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    symbol_table: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     symbol: Symbol,
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<Option<FieldKey>, Failure> {
     budget.checkpoint(1)?;
-    runtime.services.symbols.with_read(|symbols| {
+    symbol_table.with_read(|symbols| {
         let Some(name) = symbols.resolve(symbol) else {
             return Ok(None);
         };

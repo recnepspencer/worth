@@ -79,9 +79,7 @@ impl SnapshotValidatedCommitExecution {
 
 pub(super) fn validate_snapshot_publication(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    _runtime: &crate::runtime::RelationalPreparationRuntime,
     history_bound: CommitPhaseBacking<HistoryBoundCommitExecution>,
-    _control: &crate::validation::engine::InvariantPreparationControl<'_, '_>,
 ) -> Result<
     CommitPhaseBacking<SnapshotValidatedCommitExecution>,
     crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError,

@@ -41,7 +41,7 @@ pub(super) fn validate(
 ) -> Result<CommitPhaseBacking<ValidatedCandidate>, TransactionCommitError> {
     let HistoryPreparedCandidate {
         recovered_runtime,
-        scope_control,
+        scope_control: _scope_control,
         history_bound,
         runtime_instance_id,
         publication_binding,
@@ -61,12 +61,7 @@ pub(super) fn validate(
     } = history.into_inner();
     let runtime =
         recovered_runtime.with_candidate_symbols(history_bound.value().candidate_symbols());
-    let validated = snapshot_validation::validate_snapshot_publication(
-        request,
-        &runtime,
-        history_bound,
-        &scope_control,
-    )?;
+    let validated = snapshot_validation::validate_snapshot_publication(request, history_bound)?;
     CommitPhaseBacking::new(
         request,
         ValidatedCandidate {

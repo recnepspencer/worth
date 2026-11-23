@@ -4,9 +4,7 @@ use crate::diagnostics::data::{
     DeterminismExpectation, DiagnosticsArtifactKind, DiagnosticsScope,
     RelationalDiagnosticArtifact, RelationalDiagnosticsEntry,
 };
-use crate::mvcc::publication::authority::{
-    RelationalPreparationPublicationAuthority, RelationalPublicationAuthority,
-};
+use crate::mvcc::publication::authority::RelationalPublicationAuthority;
 use crate::publication::authority::diagnostic_emission::emit_filtered_artifact;
 use crate::publication::{PublicationAuthority, PublicationPreparationAuthority};
 
@@ -42,15 +40,11 @@ impl crate::runtime::RelationalPreparationRuntime {
 
 impl RelationalRuntime {
     pub(crate) fn mvcc_publication_authority(&self) -> RelationalPublicationAuthority<'_> {
-        RelationalPublicationAuthority { runtime: self }
-    }
-}
-
-impl crate::runtime::RelationalPreparationRuntime {
-    pub(crate) fn mvcc_publication_authority(
-        &self,
-    ) -> RelationalPreparationPublicationAuthority<'_> {
-        RelationalPreparationPublicationAuthority { runtime: self }
+        RelationalPublicationAuthority {
+            history: &self.history,
+            symbols: &self.services.symbols,
+            schema: &self.config.schema.registry,
+        }
     }
 }
 

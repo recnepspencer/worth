@@ -24,6 +24,8 @@ pub(crate) struct PublicationRequest<'a> {
 pub(crate) struct ValidatedPublication {
     pub(crate) branch_id: BranchId,
     pub(crate) next_cell: RelationalBranchReferenceCell,
+    pub(super) sequence_successors:
+        crate::runtime::state::subsystems::history::PreparedCommitSequence,
 }
 
 fn validate_publication_identity(request: &PublicationRequest<'_>) -> Result<(), String> {
@@ -131,5 +133,7 @@ fn advance_publication_head(
     Ok(ValidatedPublication {
         branch_id: branch_id.clone(),
         next_cell: cell,
+        sequence_successors:
+            crate::runtime::state::subsystems::history::PreparedCommitSequence::new(commit)?,
     })
 }

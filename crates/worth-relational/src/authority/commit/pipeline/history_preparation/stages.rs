@@ -10,14 +10,12 @@ use worth_execution::ExecutionRequest;
 #[inline(never)]
 pub(super) fn validate_boundary(
     request: &ExecutionRequest<'_, '_>,
-    runtime: &RelationalPreparationRuntime,
     source: CommitPhaseBacking<PreparedCommitExecution>,
-    control: &InvariantPreparationControl<'_, '_>,
 ) -> Result<
     CommitPhaseBacking<boundary_validation::BoundaryValidatedCommitExecution>,
     TransactionCommitError,
 > {
-    boundary_validation::validate_commit_boundary(request, runtime, source, control)
+    boundary_validation::validate_commit_boundary(request, source)
 }
 
 #[inline(never)]

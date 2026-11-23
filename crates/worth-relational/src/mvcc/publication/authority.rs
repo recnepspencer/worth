@@ -1,7 +1,5 @@
 mod recovered_preparation;
-mod runtime;
 use super::PublicationPreparationDenial;
-use runtime::PublicationPreparationRuntime;
 use std::sync::Arc;
 
 use crate::branch::basis::AdmittedRelationalBranchBasis;
@@ -11,16 +9,14 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId, RelationalCommitRe
 use crate::runtime::RelationalRuntime;
 
 use super::validation::{
-    validate_prepared_publication, validate_publication, PublicationRequest, PublicationSequence,
-    ValidatedPublication,
+    validate_publication, PublicationRequest, PublicationSequence, ValidatedPublication,
 };
 
 pub(crate) struct RelationalPublicationAuthority<'runtime> {
-    pub(crate) runtime: &'runtime RelationalRuntime,
-}
-
-pub(crate) struct RelationalPreparationPublicationAuthority<'runtime> {
-    pub(crate) runtime: &'runtime crate::runtime::RelationalPreparationRuntime,
+    pub(crate) history: &'runtime crate::runtime::state::subsystems::history::HistorySubsystem,
+    pub(crate) symbols:
+        &'runtime crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
+    pub(crate) schema: &'runtime crate::schema::data::RelationalSchemaRegistry,
 }
 
 pub(crate) struct PreparedRelationalPublication {
@@ -102,48 +98,37 @@ impl PreparedRecoveredRelationalPublication {
 impl PreparedRelationalPublicationAccelerators {
     pub(crate) fn install(
         self,
-        runtime: &RelationalRuntime,
+        history: &crate::runtime::state::subsystems::history::HistorySubsystem,
         position: crate::publication::patch::data::PatchStreamPosition,
     ) {
-        self.publication.install(&runtime.history, position);
+        self.publication.install(history, position);
     }
 }
 
+/// Complete initial-input and catalog custody after the selected root has been captured.
 #[allow(clippy::too_many_arguments)]
-fn prepare_versioned_publication(
-    runtime: &impl PublicationPreparationRuntime,
+pub(crate) fn assemble_versioned_publication(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
-    commit_id: CommitId,
     commit_reference: RelationalCommitReceipt,
     validated: ValidatedPublication,
-    selected_branch_state: &SelectedRelationalBranchState,
-    published_partition_delta: crate::storage::RelationalPublishedPartitionDelta,
+    prepared_root: crate::branch::root::PreparedRelationalBranchRootCapture,
     envelope: Arc<CanonicalCommitEnvelope>,
-    schema_registry: &crate::schema::data::RelationalSchemaRegistry,
-    sequence: PublicationSequence,
+    runtime_instance_id: u64,
+    original_inputs: Option<VersionedPublicationOriginalInputs>,
     output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
-    original_artifact: Option<&RelationalCommitArtifact>,
-    recovered_content: Option<&crate::content::publication::ContentPublication>,
+    recovered_original_artifact: Option<&RelationalCommitArtifact>,
 ) -> Result<
     crate::runtime::state::subsystems::history::PreparedVersionedArtifactPublication,
     PublicationPreparationDenial,
 > {
-    let sequence_successors =
-        crate::runtime::state::subsystems::history::PreparedCommitSequence::new(&commit_reference)?;
-    let prepared_root = runtime.prepare_publication_root(
-        execution,
-        selected_branch_state,
-        &published_partition_delta,
-        &envelope,
-        recovered_content.unwrap_or(&envelope.content),
-        schema_registry,
-    )?;
+    let commit_id = commit_reference.commit_id;
+    let recovery_readmission = original_inputs.is_none();
     let prepared_root = match output_positions {
         Some(positions) => prepared_root.bind_output_publication_positions(positions),
         None => prepared_root,
     };
     let target = crate::branch::target::RelationalBranchTarget::from_commit_receipt(
-        runtime.publication_runtime_instance_id(),
+        runtime_instance_id,
         &commit_reference,
         prepared_root
             .root()
@@ -156,14 +141,11 @@ fn prepare_versioned_publication(
         .replace_truth_target(worth_foundational::FoundationalBranchTarget::basis(target))
         .map_err(|denial| format!("prepared target binding denied: {denial:?}"))?;
     let root = prepared_root.into_root();
-    let original_inputs = if matches!(sequence, PublicationSequence::Truth) {
+    let original_inputs = if let Some(inputs) = original_inputs {
         let original = crate::history::commit::OriginalCanonicalInputs {
             result_schema: root.retained_schema_authority(),
-            prestate_schema: selected_branch_state
-                .state()
-                .root()
-                .retained_schema_authority(),
-            mutation: runtime.publication_mutation_config(),
+            prestate_schema: inputs.prestate_schema,
+            mutation: inputs.mutation,
         };
         let recorded =
             crate::durability::source_initial_inputs::recorded::RecordedCanonicalInputs::capture(
@@ -205,9 +187,9 @@ fn prepare_versioned_publication(
     if let Some(original) = original_inputs {
         artifact.set_original_inputs(original);
     }
-    if matches!(sequence, PublicationSequence::RecoveryTruth)
+    if recovery_readmission
         && let Some(previous) =
-            original_artifact.filter(|artifact| artifact.original_inputs().is_some())
+            recovered_original_artifact.filter(|artifact| artifact.original_inputs().is_some())
     {
         artifact
             .preserve_original_inputs(previous)
@@ -240,52 +222,22 @@ fn prepare_versioned_publication(
             root,
             artifact,
             new_authoritative_bytes,
-            recovery_readmission: matches!(sequence, PublicationSequence::RecoveryTruth),
-            sequence: sequence_successors,
+            recovery_readmission,
+            sequence: validated.sequence_successors,
         },
     )
 }
 
-impl RelationalPreparationPublicationAuthority<'_> {
-    pub(crate) fn prepare_commit(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        commit_id: CommitId,
-        commit_reference: RelationalCommitReceipt,
-        binding: &AdmittedRelationalBranchBasis,
-        selected_branch_state: &SelectedRelationalBranchState,
-        published_partition_delta: crate::storage::RelationalPublishedPartitionDelta,
-        envelope: Arc<CanonicalCommitEnvelope>,
-        schema_registry: &crate::schema::data::RelationalSchemaRegistry,
-        output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
-    ) -> Result<PreparedRelationalPublication, PublicationPreparationDenial> {
-        let validated = validate_prepared_publication(
-            &self.runtime.history,
-            self.runtime.runtime_instance_id(),
-            PublicationRequest {
-                commit_id,
-                commit_reference: &commit_reference,
-                binding,
-                envelope: &envelope,
-                sequence: PublicationSequence::Truth,
-            },
-        )?;
-        let publication = prepare_versioned_publication(
-            self.runtime,
-            execution,
-            commit_id,
-            commit_reference,
-            validated,
-            selected_branch_state,
-            published_partition_delta,
-            envelope,
-            schema_registry,
-            PublicationSequence::Truth,
-            output_positions,
-            None,
-            None,
-        )?;
-        Ok(PreparedRelationalPublication { publication })
+pub(crate) struct VersionedPublicationOriginalInputs {
+    pub(crate) prestate_schema: Arc<crate::branch::root::RelationalBranchRootSchemaAuthority>,
+    pub(crate) mutation: crate::config::data::MutationConfig,
+}
+
+impl PreparedRelationalPublication {
+    pub(crate) fn from_versioned(
+        publication: crate::runtime::state::subsystems::history::PreparedVersionedArtifactPublication,
+    ) -> Self {
+        Self { publication }
     }
 }
 
@@ -299,7 +251,7 @@ impl<'runtime> RelationalPublicationAuthority<'runtime> {
         envelope: &CanonicalCommitEnvelope,
     ) -> Result<(), String> {
         validate_publication(
-            &self.runtime.history,
+            self.history,
             PublicationRequest {
                 commit_id,
                 commit_reference,

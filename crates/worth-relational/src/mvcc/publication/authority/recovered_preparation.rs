@@ -11,15 +11,16 @@ impl RelationalPublicationAuthority<'_> {
         published_partition_delta: crate::storage::RelationalPublishedPartitionDelta,
         envelope: Arc<CanonicalCommitEnvelope>,
     ) -> Result<PreparedRecoveredRelationalPublication, PublicationPreparationDenial> {
-        let selected_branch_state = self
-            .runtime
-            .selected_branch_state(binding)
-            .map_err(|error| error.detail())?;
+        let selected_branch_state = SelectedRelationalBranchState::from_owner_basis(
+            self.history.runtime_instance_id,
+            binding,
+        )
+        .map_err(|error| error.detail())?;
         let schema_registry = selected_branch_state
             .root()
             .map(|root| root.schema_authority().registry().clone())
-            .unwrap_or_else(|| self.runtime.config.schema.registry.clone());
-        let original_artifact = self.runtime.history.commit_artifact(commit_id);
+            .unwrap_or_else(|| self.schema.clone());
+        let original_artifact = self.history.commit_artifact(commit_id);
         let content = envelope
             .content
             .readmit_unchanged_root(execution, &binding.inner.root)
@@ -29,7 +30,7 @@ impl RelationalPublicationAuthority<'_> {
                 )
             })?;
         let validated = validate_publication(
-            &self.runtime.history,
+            self.history,
             PublicationRequest {
                 commit_id,
                 commit_reference: &commit_reference,
@@ -38,20 +39,27 @@ impl RelationalPublicationAuthority<'_> {
                 sequence: PublicationSequence::RecoveryTruth,
             },
         )?;
-        let prepared = prepare_versioned_publication(
-            self.runtime,
+        let root = self.history.prepare_branch_root_capture(
             execution,
-            commit_id,
+            selected_branch_state.state(),
+            &published_partition_delta,
+            selected_branch_state.root(),
+            Arc::clone(&envelope),
+            &content,
+            &schema_registry,
+            self.symbols,
+            None,
+        )?;
+        let prepared = assemble_versioned_publication(
+            execution,
             commit_reference,
             validated,
-            &selected_branch_state,
-            published_partition_delta,
+            root,
             envelope,
-            &schema_registry,
-            PublicationSequence::RecoveryTruth,
+            self.history.runtime_instance_id,
+            None,
             None,
             original_artifact.as_deref(),
-            Some(&content),
         )?;
         Ok(PreparedRecoveredRelationalPublication {
             publication:

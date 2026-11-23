@@ -43,7 +43,7 @@ pub(super) fn finalize_published_commit(
     } = input;
     publish_storage(runtime, mirror_publication, phase_timing);
     let started = std::time::Instant::now();
-    prepared_history.install(runtime, patch_position);
+    prepared_history.install(&runtime.history, patch_position);
     phase_timing.history_publish_micros = phase_timing
         .history_publish_micros
         .saturating_add(started.elapsed().as_micros() as u64);

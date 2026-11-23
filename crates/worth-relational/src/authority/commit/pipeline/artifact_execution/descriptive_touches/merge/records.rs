@@ -13,7 +13,7 @@ use super::super::{Failure, TouchBudget};
 use super::push;
 
 pub(super) fn entity(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    symbol_table: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::root_selection::SelectedRelationalBranchState,
     working: &crate::storage::overlay::WorkingState,
@@ -25,7 +25,7 @@ pub(super) fn entity(
     budget: &mut TouchBudget<'_, '_, '_, '_, '_>,
 ) -> Result<bool, Failure> {
     record(
-        runtime,
+        symbol_table,
         catalog,
         selected,
         working,
@@ -40,7 +40,7 @@ pub(super) fn entity(
 }
 
 pub(super) fn relation(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    symbol_table: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::root_selection::SelectedRelationalBranchState,
     working: &crate::storage::overlay::WorkingState,
@@ -123,7 +123,7 @@ pub(super) fn relation(
         }
     }
     record(
-        runtime,
+        symbol_table,
         catalog,
         selected,
         working,
@@ -138,7 +138,7 @@ pub(super) fn relation(
 }
 
 fn record<K: RecordKind>(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    symbol_table: &crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     catalog: &crate::runtime::state::subsystems::indexing::CapturedIndexDefinitionCatalog,
     selected: &crate::branch::root_selection::SelectedRelationalBranchState,
     working: &crate::storage::overlay::WorkingState,
@@ -230,7 +230,7 @@ fn record<K: RecordKind>(
     for (&symbol, old_revision) in old_versions {
         if Some(old_revision) != new_versions.get(&symbol)
             && !append_aspect(
-                runtime,
+                symbol_table,
                 symbol,
                 if new_versions.contains_key(&symbol) {
                     new_ref.as_ref().unwrap_or(record)
@@ -246,7 +246,7 @@ fn record<K: RecordKind>(
     }
     for &symbol in new_versions.keys() {
         if !old_versions.contains_key(&symbol)
-            && !append_aspect(runtime, symbol, record, touches, budget)?
+            && !append_aspect(symbol_table, symbol, record, touches, budget)?
         {
             return Ok(false);
         }
@@ -254,7 +254,7 @@ fn record<K: RecordKind>(
     for (&symbols, old_revision) in old_fields {
         if Some(old_revision) != new_fields.get(&symbols)
             && !append_field(
-                runtime,
+                symbol_table,
                 FieldDifference {
                     catalog,
                     selected,
@@ -276,7 +276,7 @@ fn record<K: RecordKind>(
     for (&symbols, new_revision) in new_fields {
         if !old_fields.contains_key(&symbols)
             && !append_field(
-                runtime,
+                symbol_table,
                 FieldDifference {
                     catalog,
                     selected,
