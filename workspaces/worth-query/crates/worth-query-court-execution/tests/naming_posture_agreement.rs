@@ -11,7 +11,7 @@ use worth_query_declaration::facade::application_operation::{
     ErasedLineageOutputPosture, ErasedMergeKeeper, WorthQueryLineageOutputPosture,
     WorthQueryLineagePostureDenial, WorthQueryMergeKeeper,
 };
-use worth_query_declaration::persistent_name_admission_authority::admit_minted_digest;
+use worth_query_execution_naming::facade::admit_minted_birth_record;
 use worth_relational::facade::identity::{PartitionId, RelationId};
 use worth_relational::facade::lineage::{
     InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry,
@@ -95,7 +95,8 @@ fn declaration_split_and_merge_postures_erase_and_mint_with_relational_authority
     .unwrap()[0]
         .clone();
     let cutter_id = face_rec.identity();
-    let cutter_name: WorthQueryName<Face> = admit_minted_digest(*cutter_id.as_bytes());
+    let cutter_name: WorthQueryName<Face> =
+        admit_minted_birth_record(&face_rec, PersistentNameSubjectKind::Entity).unwrap();
 
     let seam1_disc = SeamSplitDiscriminator::AtFace {
         cutter: cutter_name,
@@ -159,8 +160,10 @@ fn declaration_split_and_merge_postures_erase_and_mint_with_relational_authority
     live_holders.insert(seam1_id, rel_holder(1));
     live_holders.insert(seam2_id, rel_holder(2));
 
-    let seam1_name: WorthQueryName<Seam> = admit_minted_digest(*seam1_id.as_bytes());
-    let seam2_name: WorthQueryName<Seam> = admit_minted_digest(*seam2_id.as_bytes());
+    let seam1_name: WorthQueryName<Seam> =
+        admit_minted_birth_record(&seams[0], PersistentNameSubjectKind::Relation).unwrap();
+    let seam2_name: WorthQueryName<Seam> =
+        admit_minted_birth_record(&seams[1], PersistentNameSubjectKind::Relation).unwrap();
 
     // 2. Lower a typed Split posture on seam 1 and mint its successor through Relational.
     let split_posture = WorthQueryLineageOutputPosture::Split {
@@ -208,7 +211,8 @@ fn declaration_split_and_merge_postures_erase_and_mint_with_relational_authority
     live_holders.insert(split_child_id, rel_holder(3));
 
     // 3. Lower a typed Merge(MintNew) posture across (split_child, seam2) and mint via Relational.
-    let split_child_name: WorthQueryName<Seam> = admit_minted_digest(*split_child_id.as_bytes());
+    let split_child_name: WorthQueryName<Seam> =
+        admit_minted_birth_record(&split_child[0], PersistentNameSubjectKind::Relation).unwrap();
     let merge_posture = WorthQueryLineageOutputPosture::Merge {
         parents: vec![split_child_name, seam2_name],
         keeper: WorthQueryMergeKeeper::MintNew {

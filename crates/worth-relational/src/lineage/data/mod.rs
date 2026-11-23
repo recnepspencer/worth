@@ -36,8 +36,8 @@ pub use naming::{
 };
 pub use naming_denial::{DiscriminatorBasisDenialReason, LineageNameDenial, LineagePostureKind};
 pub use postures::{
-    LineageCommitPostureInput, LineageMergeKeeper, LineagePostureClaim, LineageRecordTarget,
-    LineageSplitChild,
+    CommitNamingPlan, LineageCommitPostureInput, LineageMergeKeeper, LineagePostureClaim,
+    LineageRecordTarget, LineageSplitChild, PendingBirthTarget, PendingCommitBirth,
 };
 pub use resolution::{
     HistoricalLineageResolution, HistoricalLineageResolutionDigestBasis,

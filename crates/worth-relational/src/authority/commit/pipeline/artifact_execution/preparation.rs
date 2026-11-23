@@ -36,6 +36,10 @@ pub(in crate::authority::commit::pipeline) struct PublicationFinalizeArtifacts {
     canonical_commit_envelope: crate::history::data::CanonicalCommitEnvelopeDraft,
     adjacency_deltas: Vec<crate::authority::mutation::AdjacencyDelta>,
     lineage_nodes: Vec<crate::lineage::data::LineageNode>,
+    relation_lineages: Vec<(
+        crate::identity::data::RelationId,
+        crate::identity::data::LineageId,
+    )>,
     deferred_diagnostic_artifacts: Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
     target_schema_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
 }
@@ -51,6 +55,9 @@ pub(super) struct PublicationPreparationInput<'a> {
     pub(super) merge_parent_branches: &'a [crate::history::data::BranchId],
     pub(super) merge_base_commits: &'a [crate::history::data::CommitId],
     pub(super) merged_plan: RelationalSemanticPlan<'a>,
+    pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
+    pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
+    pub(super) naming_plan: Option<&'a crate::lineage::data::CommitNamingPlan>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_artifacts:
         Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
@@ -78,6 +85,9 @@ pub(super) fn prepare_publication_artifacts(
         merge_parent_branches,
         merge_base_commits,
         merged_plan,
+        created_entities,
+        created_relations,
+        naming_plan,
         record_allocations,
         strategy_artifacts,
         merge_execution_authority,
@@ -163,6 +173,9 @@ pub(super) fn prepare_publication_artifacts(
             merge_parent_branches,
             merge_base_commits,
             merged_plan,
+            created_entities,
+            created_relations,
+            naming_plan,
             record_allocations,
             strategy_artifacts,
             merge_execution_authority,
@@ -246,6 +259,7 @@ fn finish_publication_preparation(
                 canonical_commit_envelope: authority.canonical_commit_envelope,
                 adjacency_deltas,
                 lineage_nodes: authority.lineage_nodes,
+                relation_lineages: authority.relation_lineages,
                 deferred_diagnostic_artifacts,
                 target_schema_registry,
             },
@@ -295,6 +309,10 @@ impl PublicationFinalizeArtifacts {
         crate::history::data::CanonicalCommitEnvelopeDraft,
         Vec<crate::authority::mutation::AdjacencyDelta>,
         Vec<crate::lineage::data::LineageNode>,
+        Vec<(
+            crate::identity::data::RelationId,
+            crate::identity::data::LineageId,
+        )>,
         Vec<crate::diagnostics::data::RelationalDiagnosticArtifact>,
         Option<crate::branch::RetainedRelationalSchemaRegistry>,
     ) {
@@ -304,6 +322,7 @@ impl PublicationFinalizeArtifacts {
             self.canonical_commit_envelope,
             self.adjacency_deltas,
             self.lineage_nodes,
+            self.relation_lineages,
             self.deferred_diagnostic_artifacts,
             self.target_schema_registry,
         )

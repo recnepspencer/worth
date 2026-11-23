@@ -7,8 +7,9 @@ use crate::transactions::data::RecordRef;
 
 use super::events::LineageSubject;
 use super::naming::{
-    InstalledPersistentNameSchemeRegistry, PersistentNameBirthRequest, PersistentNameHolder,
-    PersistentNameIdentity, PersistentNameSubjectKind,
+    InstalledPersistentNameSchemeRegistry, PersistentNameBirthRequest,
+    PersistentNameDiscriminatorReference, PersistentNameHolder, PersistentNameIdentity,
+    PersistentNameSubjectKind,
 };
 
 /// Exact entity or relation record targeted by a Phase 2 lineage posture claim.
@@ -101,8 +102,48 @@ pub enum LineagePostureClaim {
     },
 }
 
-/// Basis state and declared posture claims supplied to Relational commit
-/// finalization for many-to-many entity and relation lineage.
+/// Unresolved creation target inside a [`CommitNamingPlan`], bound by
+/// Relational to the exact `EntityId` or `RelationId` allocated during commit
+/// execution.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PendingBirthTarget {
+    CreatedEntity(crate::transactions::data::CreatedEntityRef),
+    CreatedRelation(crate::transactions::data::CreatedRelationRef),
+}
+
+/// One pending persistent-name birth attached to a transaction before
+/// Relational allocates the created entity or relation record identity.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PendingCommitBirth {
+    pub target: PendingBirthTarget,
+    pub scheme_id: String,
+    pub occurrence_key: String,
+    pub role_path: String,
+    pub parent_identities: Vec<PersistentNameIdentity>,
+    pub referenced_names: Vec<PersistentNameDiscriminatorReference>,
+    pub canonical_discriminator: Vec<u8>,
+}
+
+/// Commit-time persistent naming and lineage posture plan attached to a
+/// [`crate::mvcc::BranchBoundRelationalTransaction`].
+///
+/// Intentionally carries NO `live_holders`, `live_lineages`, or
+/// `retired_lineages` maps: Relational derives live and retired lineage sets
+/// exclusively from its own authoritative `LineageSubsystem` at commit
+/// finalization so callers can never spoof or omit a live holder.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CommitNamingPlan {
+    pub scheme_registry: InstalledPersistentNameSchemeRegistry,
+    pub pending_births: Vec<PendingCommitBirth>,
+    pub postures: Vec<LineagePostureClaim>,
+}
+
+/// Internal commit finalization posture input.
+///
+/// Production commit finalization through `LineagePreparationAuthority`
+/// unconditionally overrides `live_holders`, `live_lineages`, and
+/// `retired_lineages` with Relational's own authoritative `LineageSubsystem`
+/// state for the commit's branch.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct LineageCommitPostureInput {
     pub scheme_registry: InstalledPersistentNameSchemeRegistry,

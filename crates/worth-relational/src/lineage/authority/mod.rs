@@ -15,7 +15,7 @@ mod staged_effects;
 #[cfg(test)]
 mod name_minting_tests;
 
-pub use name_minting::{PersistentNameMintingAuthority, PERSISTENT_NAME_DOMAIN_TAG};
+pub use name_minting::PersistentNameMintingAuthority;
 pub(crate) use name_readmission::{
     verify_persisted_birth_digest, BirthReadmissionRefusal, PersistedBirthClaim,
     PersistedNameBytes, VerifiedBirthDigest,

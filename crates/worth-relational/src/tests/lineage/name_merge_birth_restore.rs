@@ -8,10 +8,11 @@ use std::collections::BTreeMap;
 use crate::facade::history::CommitId;
 use crate::facade::identity::VersionId;
 use crate::facade::lineage::{
-    LineageCommitPostureInput, LineageDecisionKind, LineageEventKind, LineageMergeKeeper,
-    LineagePostureClaim, LineageRecordTarget, LineageSubject, PersistentNameBranchIndex,
-    PersistentNameCommittedBatch, PersistentNameHolder, PersistentNameKey,
+    LineageDecisionKind, LineageEventKind, LineageMergeKeeper, LineagePostureClaim,
+    LineageRecordTarget, LineageSubject, PersistentNameBranchIndex, PersistentNameCommittedBatch,
+    PersistentNameHolder, PersistentNameKey,
 };
+use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
 use crate::lineage::authority::finalize_postures_in_working_state;
 use crate::runtime::LineageIdentityAllocator;

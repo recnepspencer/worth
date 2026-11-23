@@ -35,8 +35,9 @@ struct AssignedPostureEvent {
 
 impl<'runtime> LineagePreparationAuthority<'runtime> {
     /// Validates every declared entity and relation posture against staged
-    /// effects, mints persistent names, and then atomically reserves lineage
-    /// IDs and emits canonical many-to-many `LineageEventRecord`s.
+    /// effects, mints persistent names against Relational's own authoritative
+    /// branch lineage state (ignoring any caller-supplied live/retired maps),
+    /// and atomically reserves lineage IDs and emits canonical events.
     pub(crate) fn ensure_lineage_for_commit_with_postures(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -46,13 +47,24 @@ impl<'runtime> LineagePreparationAuthority<'runtime> {
         changed_records: &[RecordRef],
         input: &LineageCommitPostureInput,
     ) -> Result<PreparedLineageFinalization, TransactionCommitError> {
+        let authoritative = self
+            .runtime
+            .lineage_naming_basis
+            .authoritative_basis(&commit.branch_id);
+        let authoritative_input = LineageCommitPostureInput {
+            scheme_registry: input.scheme_registry.clone(),
+            live_holders: authoritative.live_holders,
+            live_lineages: authoritative.live_lineages,
+            retired_lineages: authoritative.retired_lineages,
+            postures: input.postures.clone(),
+        };
         let prepared = finalize_postures_with_installer(
             &self.runtime.lineage_identity,
             staged,
             commit,
             merged_plan,
             changed_records,
-            input,
+            &authoritative_input,
             |staged, entity_id, lineage_id| {
                 install_lineage_id(execution, staged, entity_id, lineage_id)
             },

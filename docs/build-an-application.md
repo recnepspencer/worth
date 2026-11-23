@@ -277,6 +277,39 @@ Selections use the ordinary fields and `View` reads/writes; optional additions
 leave creation by the model complete. The executable counterpart is the
 [extension court](../workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/native_fragments/extensions.rs).
 
+### Persistent naming schemes
+
+Applications that need stable, allocation-independent names across rebuilds,
+reorders, splits, and merges declare persistent naming schemes directly on their
+schema using `worth_query_decl::facade::application_naming`:
+
+- **Entity and relation schemes** use `ApplicationNameSchemeBuilder::<Schema, Subject>::new(scheme_id)`
+  (or `::for_relation(scheme_id, relation_witness)`), declaring an ordered acyclic
+  `role_order(&[...])`, optional `role_depends_on(role, earlier_role)` edges,
+  `.require_authored_occurrence()`, and `.split_discriminator::<D>()` for split-capable
+  kinds.
+- **Canonical discriminators** implement `ApplicationNameDiscriminator` via
+  `worth_query_decl::facade::worth_query_name_discriminator!`, encoding typed
+  discriminator variants and any embedded `WorthQueryName<K>` references without
+  raw floats or host-order maps.
+- **Group schemes** use `ApplicationGroupNameSchemeBuilder::<Schema, Group>::new(scheme_id, subject_name, rule)`
+  binding one closed `ApplicationGroupContinuityRule` (`Anchor`, `Boundary`, or
+  `ProducerRole`) to declared member roles, attached with
+  `ApplicationSchemaDeclarationBuilder::application_group_name_scheme::<Group>(scheme)`.
+- **Commit-time birth minting** lowers installed schemes into deterministic
+  birth plans and mints fixed 32-byte, non-forgeable `WorthQueryName<K>` handles
+  exclusively at commit finalization from canonical birth provenance
+  `(scheme_id, occurrence_key, role_path, sorted_parent_identities, canonical_discriminator)`,
+  independent of allocator slots, worker counts, and independent occurrence ordering.
+  Live-holder collisions (`DuplicateBirth`) and invalid or undeclared discriminator
+  references (`InvalidDiscriminatorBasis`) refuse fail-closed with zero committed effects.
+
+The runnable Slice 1B counterparts are the
+[end-to-end birth-wiring court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_execution_birth_wiring.rs),
+[reorder and collision court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_reorder_and_collision.rs),
+[bounded-depth split court](../workspaces/worth-query/crates/worth-query-court-execution/tests/naming_bounded_depth.rs), and
+[group-scheme installation court](../workspaces/worth-query/crates/worth-query-court-installation/tests/worth_query_court_installation/installation/naming_groups.rs).
+
 ### 2.1 Declare operation access once
 
 For a native handler on a concrete application schema, put its complete access set in

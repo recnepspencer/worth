@@ -76,6 +76,7 @@ pub(super) fn finalize_publication_phase(
         prepared_history,
         validated_lineage_events,
         lineage_nodes,
+        relation_lineages,
         artifacts,
         changed_records,
         version_id,
@@ -102,6 +103,7 @@ pub(super) fn finalize_publication_phase(
         validated_lineage_events,
         commit_id,
         lineage_nodes,
+        relation_lineages,
     );
     commit_log.begin_phase(CommitPhase::Publication);
     let phase_started = std::time::Instant::now();

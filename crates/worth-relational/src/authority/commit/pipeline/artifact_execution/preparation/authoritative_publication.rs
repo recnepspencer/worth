@@ -17,6 +17,9 @@ pub(super) struct PublicationAuthorityInput<'a> {
     pub(super) merge_parent_branches: &'a [crate::history::data::BranchId],
     pub(super) merge_base_commits: &'a [crate::history::data::CommitId],
     pub(super) merged_plan: RelationalSemanticPlan<'a>,
+    pub(super) created_entities: &'a crate::transactions::data::CommitCreatedEntityBindings,
+    pub(super) created_relations: &'a crate::transactions::data::CommitCreatedRelationBindings,
+    pub(super) naming_plan: Option<&'a crate::lineage::data::CommitNamingPlan>,
     pub(super) record_allocations: &'a [crate::history::data::CanonicalRecordAllocation],
     pub(super) strategy_artifacts:
         Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
@@ -33,6 +36,10 @@ pub(super) struct PreparedPublicationAuthority {
     pub(super) canonical_commit_envelope: crate::history::data::CanonicalCommitEnvelopeDraft,
     pub(super) lineage_event_count: usize,
     pub(super) lineage_nodes: Vec<crate::lineage::data::LineageNode>,
+    pub(super) relation_lineages: Vec<(
+        crate::identity::data::RelationId,
+        crate::identity::data::LineageId,
+    )>,
 }
 
 pub(super) fn prepare_authoritative_publication(
@@ -73,6 +80,9 @@ pub(super) fn prepare_authoritative_publication(
                     input.commit_reference,
                     &input.merged_plan.commands().merged_intents,
                     input.changed_records,
+                    input.created_entities,
+                    input.created_relations,
+                    input.naming_plan,
                 )?
         };
         let lineage_event_count = prepared_lineage
@@ -80,7 +90,7 @@ pub(super) fn prepare_authoritative_publication(
             .event_batch()
             .counters()
             .event_batch_width;
-        let (lineage_artifact, lineage_nodes) = prepared_lineage.into_parts();
+        let (lineage_artifact, lineage_nodes, relation_lineages) = prepared_lineage.into_parts();
         let mut canonical_commit_envelope = canonical_commit_envelope(
             runtime,
             input.working_state.content.clone(),
@@ -107,6 +117,7 @@ pub(super) fn prepare_authoritative_publication(
             canonical_commit_envelope,
             lineage_event_count,
             lineage_nodes,
+            relation_lineages,
         }
     };
     CommitPhaseBacking::new(execution, result)

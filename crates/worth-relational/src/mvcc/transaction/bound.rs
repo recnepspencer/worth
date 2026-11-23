@@ -47,6 +47,7 @@ pub struct BranchBoundRelationalTransaction {
     pub(crate) retention:
         std::sync::Arc<crate::history::retention::RelationalTransactionRetentionObligation>,
     pub(crate) control: crate::mvcc::RelationalOperationControl,
+    pub(crate) naming_plan: Option<std::sync::Arc<crate::lineage::data::CommitNamingPlan>>,
 }
 
 /// Where `schema_authority` came from. Only recovery replay of a recorded
@@ -84,6 +85,13 @@ impl BranchBoundRelationalTransaction {
 
     pub fn footprint(&self) -> &RelationalTransactionFootprint {
         &self.footprint
+    }
+
+    /// Attaches a commit-time persistent naming and lineage posture plan to be
+    /// validated and minted by Relational's commit finalization authority
+    /// against Relational's own branch lineage state.
+    pub fn attach_naming_plan(&mut self, plan: crate::lineage::data::CommitNamingPlan) {
+        self.naming_plan = Some(std::sync::Arc::new(plan));
     }
 
     /// Stages one owned input batch under an explicit physical allocation policy.

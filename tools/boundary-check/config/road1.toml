@@ -652,6 +652,7 @@ internal_packages = [
   "worth-query-execution-layout",
   "worth-query-execution-obligations",
   "worth-query-execution-runtime",
+  "worth-query-execution-naming",
   "worth-query-execution-lineage",
   "worth-query-execution-attempt",
   "worth-query-execution-query",
@@ -863,6 +864,29 @@ exclude_paths = [
 forbidden_identifiers = ["native_input_capture", "NativeImmutableInput", "encode_native_input", "from_native_owned"]
 forbidden_identifier_fragments = []
 guidance = "Only the exact Execution frozen-input capture owner may construct Declaration native-backed encoded input; neither consumer audience may expose a variable-borrow backend"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates"
+exclude_paths = [
+  "workspaces/worth-query/crates/worth-query-declaration/src/lib.rs",
+  "workspaces/worth-query/crates/worth-query-declaration/src/lifecycle_effect_derivation_authority.rs",
+  "workspaces/worth-query/crates/worth-query-execution-attempt/src/domain_computation",
+  "workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/primary_graph/application_attempt/effect_program/model/emission.rs",
+]
+forbidden_identifiers = ["lifecycle_effect_derivation_authority"]
+forbidden_identifier_fragments = []
+guidance = "Only the exact Execution lifecycle-effect derivation owners may invoke declaration's erased lifecycle_effect_derivation_authority"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates"
+exclude_paths = [
+  "workspaces/worth-query/crates/worth-query-declaration/src/lib.rs",
+  "workspaces/worth-query/crates/worth-query-declaration/src/persistent_name_admission_authority.rs",
+  "workspaces/worth-query/crates/worth-query-execution-naming/src/admission",
+]
+forbidden_identifiers = ["persistent_name_admission_authority", "admit_minted_digest"]
+forbidden_identifier_fragments = []
+guidance = "Milestone 11 (D2726): only worth-query-execution-naming's admission boundary may elevate Relational-minted persistent name digests into WorthQueryName<K>"
 
 # Shared court-fixture orchestration; exact sites remain shrink/growth checked.
 

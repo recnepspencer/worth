@@ -233,14 +233,12 @@ fn lineage_graph_replace_commit_publishes_replace_decision_log_entry() {
 
 #[test]
 fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_corrupt_claims() {
-    use std::collections::BTreeMap;
-
     use crate::facade::identity::VersionId;
     use crate::facade::lineage::{
-        LineageCommitPostureInput, LineageMergeKeeper, LineageNameDenial, LineagePostureClaim,
-        LineagePostureKind, LineageRecordTarget, LineageSplitChild, LineageSubject,
-        PersistentNameHolder,
+        LineageMergeKeeper, LineageNameDenial, LineagePostureClaim, LineagePostureKind,
+        LineageRecordTarget, LineageSplitChild, LineageSubject,
     };
+    use crate::lineage::data::LineageCommitPostureInput;
     use crate::facade::transactions::RecordRef;
 
     use super::posture_fixtures::{
@@ -288,18 +286,20 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
         name_of(s2_lin),
     );
     assert_ne!(s1_name, s2_name);
-    let live_holders = BTreeMap::from([
-        (f1_name, PersistentNameHolder::Entity(f1)),
-        (f2_name, PersistentNameHolder::Entity(f2)),
-        (s1_name, PersistentNameHolder::Relation(s1)),
-        (s2_name, PersistentNameHolder::Relation(s2)),
-    ]);
-    let live_lineages = BTreeMap::from([
-        (PersistentNameHolder::Entity(f1), f1_lin),
-        (PersistentNameHolder::Entity(f2), f2_lin),
-        (PersistentNameHolder::Relation(s1), s1_lin),
-        (PersistentNameHolder::Relation(s2), s2_lin),
-    ]);
+
+    // Publish commit 1 into Relational's LineageSubsystem so commit 2 derives
+    // live holders and relation lineages directly from Relational authority.
+    let (c1_artifact, c1_nodes, c1_rels) = c1.into_parts();
+    runtime.lineage_authority().install_published_lineage(
+        crate::runtime::ValidatedLineageEventBatch::from_reserved(
+            c1_artifact.event_batch().events().to_vec(),
+        ),
+        crate::facade::history::CommitId(1),
+        c1_nodes,
+        c1_rels,
+    );
+    assert_eq!(runtime.relation_lineage(s1), Some(s1_lin));
+    assert_eq!(runtime.relation_lineage(s2), Some(s2_lin));
 
     let before = prep.lineage_identity.frontiers();
     let err = authority
@@ -311,8 +311,6 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
             &[],
             &LineageCommitPostureInput {
                 scheme_registry: registry.clone(),
-                live_holders: live_holders.clone(),
-                live_lineages: live_lineages.clone(),
                 postures: vec![LineagePostureClaim::Retire {
                     target: LineageRecordTarget::Entity(f1),
                     name: f1_name,
@@ -343,8 +341,6 @@ fn lineage_postures_finalize_through_runtime_preparation_authority_and_refuse_co
     ];
     let c2_input = LineageCommitPostureInput {
         scheme_registry: registry,
-        live_holders,
-        live_lineages,
         postures: vec![
             LineagePostureClaim::Merge {
                 parents: vec![

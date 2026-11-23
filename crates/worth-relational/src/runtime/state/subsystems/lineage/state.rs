@@ -2,15 +2,21 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
 use crate::history::data::{BranchId, CommitId};
-use crate::identity::data::{EntityId, LineageId};
-use crate::lineage::data::{LineageEventRecord, LineageNode};
+use crate::identity::data::{EntityId, LineageId, RelationId};
+use crate::lineage::data::{
+    LineageEventRecord, LineageNode, PersistentNameHolder, PersistentNameIdentity,
+};
 
+use super::naming_basis::{AuthoritativeBranchNamingState, AuthoritativeLineageBasis};
 use super::resolution_indexes::LineageResolutionIndexes;
 
 /// The lineage subsystem's authoritative contents.
 #[derive(Debug)]
 pub(crate) struct LineageState {
     pub(crate) nodes: BTreeMap<crate::identity::data::LineageId, LineageNode>,
+    relation_lineages: BTreeMap<RelationId, LineageId>,
+    relation_lineage_holders: BTreeMap<LineageId, RelationId>,
+    branch_naming_states: BTreeMap<BranchId, AuthoritativeBranchNamingState>,
     published_events: Vec<PublishedLineageEvent>,
     published_event_positions: BTreeMap<u64, usize>,
     resolution_indexes: LineageResolutionIndexes,
@@ -39,11 +45,47 @@ impl LineageState {
     pub(super) fn empty() -> Self {
         Self {
             nodes: BTreeMap::new(),
+            relation_lineages: BTreeMap::new(),
+            relation_lineage_holders: BTreeMap::new(),
+            branch_naming_states: BTreeMap::new(),
             published_events: Vec::new(),
             published_event_positions: BTreeMap::new(),
             resolution_indexes: LineageResolutionIndexes::default(),
             identity_allocator: crate::runtime::state::subsystems::LineageIdentityAllocator::new(),
         }
+    }
+
+    pub(crate) fn record_relation_lineage(
+        &mut self,
+        relation_id: RelationId,
+        lineage_id: LineageId,
+    ) {
+        self.relation_lineages.insert(relation_id, lineage_id);
+        self.relation_lineage_holders.insert(lineage_id, relation_id);
+    }
+
+    pub(crate) fn relation_lineage(&self, relation_id: RelationId) -> Option<LineageId> {
+        self.relation_lineages.get(&relation_id).copied()
+    }
+
+    pub(crate) fn authoritative_branch_naming_basis(
+        &self,
+        branch_id: &BranchId,
+    ) -> AuthoritativeLineageBasis {
+        self.branch_naming_states
+            .get(branch_id)
+            .map(AuthoritativeBranchNamingState::snapshot)
+            .unwrap_or_default()
+    }
+
+    pub(crate) fn branch_live_persistent_names(
+        &self,
+        branch_id: &BranchId,
+    ) -> BTreeMap<PersistentNameIdentity, PersistentNameHolder> {
+        self.branch_naming_states
+            .get(branch_id)
+            .map(|state| state.live_holders().clone())
+            .unwrap_or_default()
     }
 
     fn record_event(&mut self, event: LineageEventRecord, publication_commit_id: CommitId) {
@@ -64,6 +106,10 @@ impl LineageState {
             "validated lineage event id must remain unique until installation"
         );
         self.resolution_indexes.append_event(event_position, &event);
+        self.branch_naming_states
+            .entry(event.branch_id().clone())
+            .or_default()
+            .apply_event(&event, &self.nodes, &self.relation_lineage_holders);
         self.published_events.push(PublishedLineageEvent {
             event,
             publication_commit_id,
@@ -259,6 +305,18 @@ impl LineageState {
             .iter()
             .map(|published| published.event.as_ref());
         self.resolution_indexes.rebuild(lane, nodes, events);
+        let mut branch_naming_states = BTreeMap::<BranchId, AuthoritativeBranchNamingState>::new();
+        for published in &self.published_events {
+            branch_naming_states
+                .entry(published.event.branch_id().clone())
+                .or_default()
+                .apply_event(
+                    &published.event,
+                    &self.nodes,
+                    &self.relation_lineage_holders,
+                );
+        }
+        self.branch_naming_states = branch_naming_states;
     }
 
     pub(crate) fn replace_events(
@@ -280,6 +338,7 @@ impl LineageState {
         &mut self,
     ) -> impl Iterator<Item = (LineageEventRecord, CommitId)> + use<> {
         self.published_event_positions.clear();
+        self.branch_naming_states.clear();
         std::mem::take(&mut self.published_events)
             .into_iter()
             .map(|published| {
@@ -302,6 +361,9 @@ impl Clone for LineageState {
     fn clone(&self) -> Self {
         Self {
             nodes: self.nodes.clone(),
+            relation_lineages: self.relation_lineages.clone(),
+            relation_lineage_holders: self.relation_lineage_holders.clone(),
+            branch_naming_states: self.branch_naming_states.clone(),
             published_events: self.published_events.clone(),
             published_event_positions: self.published_event_positions.clone(),
             resolution_indexes: self.resolution_indexes.clone(),

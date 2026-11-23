@@ -345,9 +345,7 @@ pub(super) fn validate_member_identifiers(
                     validate_authorization_path(path)?;
                 }
             }
-            ApplicationSchemaMember::Unit { unit } => {
-                validate_simple_identifier(unit)?;
-            }
+            ApplicationSchemaMember::Unit { unit } => validate_simple_identifier(unit)?,
             ApplicationSchemaMember::Effect {
                 effect,
                 payload_type,
@@ -358,6 +356,9 @@ pub(super) fn validate_member_identifiers(
             ApplicationSchemaMember::ApplicationNameScheme { definition } => {
                 crate::application_naming::validate_erased_scheme_identifiers(definition)?;
             }
+            ApplicationSchemaMember::ApplicationGroupNameScheme { definition } => {
+                crate::application_naming::validate_erased_group_scheme_identifiers(definition)?;
+            }
         }
     }
     Ok(())
@@ -366,11 +367,10 @@ pub(super) fn validate_member_identifiers(
 fn validate_portable_type_identity(
     identity: &crate::portable_identity::WorthQueryPortableTypeIdentity,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
-    if identity.is_valid() {
-        Ok(())
-    } else {
-        Err(ApplicationSchemaDeclarationDenial::InvalidIdentifier)
-    }
+    identity
+        .is_valid()
+        .then_some(())
+        .ok_or(ApplicationSchemaDeclarationDenial::InvalidIdentifier)
 }
 
 pub(super) fn validate_portable_type_identifier(

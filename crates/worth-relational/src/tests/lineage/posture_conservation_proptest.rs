@@ -4,9 +4,10 @@ use proptest::prelude::*;
 
 use crate::facade::identity::{EntityId, LineageId, RelationId, VersionId};
 use crate::facade::lineage::{
-    LineageCommitPostureInput, LineageEventKind, LineagePostureClaim, LineageRecordTarget,
+    LineageEventKind, LineagePostureClaim, LineageRecordTarget,
     LineageSubject, PersistentNameHolder, PersistentNameIdentity,
 };
+use crate::lineage::data::LineageCommitPostureInput;
 use crate::facade::transactions::RecordRef;
 use crate::lineage::authority::finalize_postures_in_working_state;
 use crate::runtime::LineageIdentityAllocator;

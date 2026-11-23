@@ -86,6 +86,14 @@ The [exclusive class aspect contract](native-representations.md#exclusive-class-
 covers tuple-declared cases, atomic sibling clearing and checked presence reads.
 The [source-subgraph contract and court](source-subgraphs.md) cover partial member
 edit, pinned previous state, recorded undo and a generated-member witness.
+For allocation-independent, stable persistent identities across rebuilds, splits,
+merges, and reorders, declare [persistent naming schemes](build-an-application.md#persistent-naming-schemes)
+on the application schema with `decl::application_naming::{ApplicationNameSchemeBuilder, ApplicationGroupNameSchemeBuilder, ApplicationGroupContinuityRule, WorthQueryName}`
+and `decl::worth_query_name_discriminator!`. Installed entity, relation, and group
+schemes lower into commit-time birth minting that produces fixed 32-byte,
+non-forgeable `WorthQueryName<K>` handles invariant across fresh builds, dummy
+pre-allocations, and worker counts, refusing `DuplicateBirth` and
+`InvalidDiscriminatorBasis` fail-closed with zero committed effects.
 
 For a new installed feature, use the
 [complete feature definition](build-an-application.md#complete-feature-definitions)

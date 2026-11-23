@@ -8,12 +8,12 @@ use worth_query_declaration::facade::application_naming::{
     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder,
     ApplicationNameDiscriminatorValue, NestedDiscriminator, WorthQueryName,
 };
-use worth_query_declaration::persistent_name_admission_authority::admit_minted_digest;
+use worth_query_execution_naming::facade::admit_minted_birth_record;
 use worth_relational::facade::identity::{EntityId, PartitionId};
 use worth_relational::facade::lineage::{
     DiscriminatorBasisDenialReason, InstalledPersistentNameScheme,
-    InstalledPersistentNameSchemeRegistry, LineageNameDenial, PersistentNameBirthRequest,
-    PersistentNameDiscriminatorReference, PersistentNameHolder, PersistentNameIdentity,
+    InstalledPersistentNameSchemeRegistry, LineageNameDenial, PersistentNameBirthRecord,
+    PersistentNameBirthRequest, PersistentNameDiscriminatorReference, PersistentNameHolder,
     PersistentNameMintingAuthority, PersistentNameReferenceBasis, PersistentNameSubjectKind,
 };
 
@@ -60,7 +60,7 @@ fn mint_basis_identity(
     registry: &InstalledPersistentNameSchemeRegistry,
     occ: &str,
     slot: u64,
-) -> (PersistentNameIdentity, PersistentNameHolder) {
+) -> (PersistentNameBirthRecord, PersistentNameHolder) {
     let holder = entity_holder(slot);
     let records = PersistentNameMintingAuthority::mint_commit_births(
         registry,
@@ -77,24 +77,32 @@ fn mint_basis_identity(
         }],
     )
     .expect("basis birth succeeds");
-    (records[0].identity(), holder)
+    (records.into_iter().next().unwrap(), holder)
 }
 
 #[test]
 fn naming_encoder_and_relational_scanner_agree_across_nested_pairs_options_and_tampering() {
     let registry = face_registry();
-    let (cutter_id, cutter_holder) = mint_basis_identity(&registry, "occ.cutter", 1);
-    let (edge_id, edge_holder) = mint_basis_identity(&registry, "occ.edge", 2);
-    let (outer_ref_id, outer_ref_holder) = mint_basis_identity(&registry, "occ.outer", 3);
+    let (cutter_rec, cutter_holder) = mint_basis_identity(&registry, "occ.cutter", 1);
+    let (edge_rec, edge_holder) = mint_basis_identity(&registry, "occ.edge", 2);
+    let (outer_rec, outer_ref_holder) = mint_basis_identity(&registry, "occ.outer", 3);
+    let (cutter_id, edge_id, outer_ref_id) = (
+        cutter_rec.identity(),
+        edge_rec.identity(),
+        outer_rec.identity(),
+    );
 
     let mut live_holders = BTreeMap::new();
     live_holders.insert(cutter_id, cutter_holder);
     live_holders.insert(edge_id, edge_holder);
     live_holders.insert(outer_ref_id, outer_ref_holder);
 
-    let cutter_name: WorthQueryName<Face> = admit_minted_digest(*cutter_id.as_bytes());
-    let edge_name: WorthQueryName<Edge> = admit_minted_digest(*edge_id.as_bytes());
-    let outer_name: WorthQueryName<Face> = admit_minted_digest(*outer_ref_id.as_bytes());
+    let cutter_name: WorthQueryName<Face> =
+        admit_minted_birth_record(&cutter_rec, PersistentNameSubjectKind::Entity).unwrap();
+    let edge_name: WorthQueryName<Edge> =
+        admit_minted_birth_record(&edge_rec, PersistentNameSubjectKind::Entity).unwrap();
+    let outer_name: WorthQueryName<Face> =
+        admit_minted_birth_record(&outer_rec, PersistentNameSubjectKind::Entity).unwrap();
 
     let inner = InnerSplit::ByCutter {
         cutter: cutter_name,

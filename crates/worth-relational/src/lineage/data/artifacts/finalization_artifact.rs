@@ -113,7 +113,7 @@ impl PreparedLineageFinalization {
         &self.artifact
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub(crate) fn relation_lineages(&self) -> &BTreeMap<RelationId, LineageId> {
         &self.new_relation_lineages
     }
@@ -128,7 +128,12 @@ impl PreparedLineageFinalization {
     ) -> (
         LineageFinalizationArtifact,
         Vec<crate::lineage::data::LineageNode>,
+        Vec<(RelationId, LineageId)>,
     ) {
-        (self.artifact, self.new_nodes)
+        (
+            self.artifact,
+            self.new_nodes,
+            self.new_relation_lineages.into_iter().collect(),
+        )
     }
 }

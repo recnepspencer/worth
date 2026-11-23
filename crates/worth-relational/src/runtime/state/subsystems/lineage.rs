@@ -1,17 +1,21 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::history::data::{BranchId, CommitId};
-use crate::identity::data::{EntityId, LineageId};
-use crate::lineage::data::{LineageEventRecord, LineageNode};
+use crate::identity::data::{EntityId, LineageId, RelationId};
+use crate::lineage::data::{
+    LineageEventRecord, LineageNode, PersistentNameHolder, PersistentNameIdentity,
+};
 use crate::runtime::state::subsystems::{RuntimeOwnedState, RuntimeSubsystem};
 
 mod event_page;
 mod event_residency;
+mod naming_basis;
 mod node_page;
 mod page_admission;
 mod source_close;
 mod source_retirement;
 pub(crate) use event_residency::ResidentLineageEventPage;
+pub(crate) use naming_basis::LineageNamingBasisBinding;
 mod node_residency;
 mod resolution_indexes;
 mod state;
@@ -171,6 +175,27 @@ impl LineageSubsystem {
 
     pub(crate) fn record_node(&self, node: LineageNode) {
         self.state.write().record_node(node);
+    }
+
+    pub(crate) fn record_relation_lineage(&self, relation_id: RelationId, lineage_id: LineageId) {
+        self.state
+            .write()
+            .record_relation_lineage(relation_id, lineage_id);
+    }
+
+    pub(crate) fn relation_lineage(&self, relation_id: RelationId) -> Option<LineageId> {
+        self.state.read().relation_lineage(relation_id)
+    }
+
+    pub(crate) fn naming_basis_binding(&self) -> LineageNamingBasisBinding {
+        LineageNamingBasisBinding::new(self.state.share())
+    }
+
+    pub(crate) fn branch_live_persistent_names(
+        &self,
+        branch_id: &BranchId,
+    ) -> BTreeMap<PersistentNameIdentity, PersistentNameHolder> {
+        self.state.read().branch_live_persistent_names(branch_id)
     }
 
     pub(crate) fn nodes_snapshot(&self) -> Vec<LineageNode> {

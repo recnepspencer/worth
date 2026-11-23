@@ -335,7 +335,8 @@ pub mod facade {
     };
     pub use crate::installed_operation::WorthQueryInstalledOperationAuthority;
     pub use crate::naming::{
-        install_name_schemes, InstalledNameRoleLayout, InstalledNameSchemeCatalog,
+        install_group_name_schemes, install_name_schemes, install_schema_name_schemes,
+        InstalledGroupNameSchemeLayout, InstalledNameRoleLayout, InstalledNameSchemeCatalog,
         InstalledNameSchemeLayout,
     };
     pub use crate::package::{
@@ -372,9 +373,11 @@ pub mod facade {
         WorthQueryInstallationContributionCategory, WorthQueryInstallationOperatingRequirement,
     };
     pub use worth_query_declaration::facade::application_naming::{
+        ApplicationGroupContinuityRule, ApplicationGroupMemberRole, ApplicationGroupNameScheme,
+        ApplicationGroupNameSchemeBuilder, ApplicationGroupSchemeDenial,
         ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder,
         ApplicationNameDiscriminatorValue, ApplicationNameRoleDependency, ApplicationNameScheme,
         ApplicationNameSchemeBuilder, ApplicationNameSchemeDenial, ApplicationNameSubjectKind,
-        ErasedApplicationNameScheme, WorthQueryName,
+        ErasedApplicationGroupNameScheme, ErasedApplicationNameScheme, WorthQueryName,
     };
 }

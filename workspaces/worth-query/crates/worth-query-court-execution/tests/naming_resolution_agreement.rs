@@ -10,7 +10,7 @@ use worth_query_declaration::facade::application_naming::{
     ApplicationNameDiscriminator, NameResolutionDenial, NameSelection, NameSelectionDenial,
     ResolvedName, WorthQueryName,
 };
-use worth_query_declaration::persistent_name_admission_authority::admit_minted_digest;
+use worth_query_execution_naming::facade::{admit_minted_birth_record, admit_resolved_name_key};
 use worth_relational::facade::aggregate_identity::{
     AggregateContinuityRule, AggregateGroupMembers, AggregateGroupNamingAuthority,
     AggregateGroupScheme, AggregateGroupSchemeId, AggregateIdentity, AggregateMemberRole,
@@ -108,8 +108,8 @@ fn lower(
 }
 
 fn names<K>(keys: Vec<PersistentNameKey>) -> Vec<WorthQueryName<K>> {
-    keys.iter()
-        .map(|key| admit_minted_digest(*key.digest()))
+    keys.into_iter()
+        .map(|key| admit_resolved_name_key(key, key.subject_kind()).unwrap())
         .collect()
 }
 
@@ -231,7 +231,8 @@ fn declaration_resolution_vocabulary_agrees_with_relational_name_index() {
         discriminator.as_bytes(),
         faces[2].parts().canonical_discriminator()
     );
-    let face: WorthQueryName<Face> = admit_minted_digest(*faces[0].identity().as_bytes());
+    let face: WorthQueryName<Face> =
+        admit_minted_birth_record(&faces[0], PersistentNameSubjectKind::Entity).unwrap();
     assert_eq!(
         face.erased().as_bytes(),
         PersistentNameKey::Entity(faces[0].identity()).digest()
@@ -256,8 +257,16 @@ fn declaration_resolution_vocabulary_agrees_with_relational_name_index() {
         lift::<Space>(index.resolve(held, CommitId(basis), &lower(selection, &minted)))
     };
     let mut fragments: Vec<WorthQueryName<Space>> = vec![
-        admit_minted_digest(*one.bytes()),
-        admit_minted_digest(*two.bytes()),
+        admit_resolved_name_key(
+            PersistentNameKey::Group(one),
+            PersistentNameSubjectKind::Group,
+        )
+        .unwrap(),
+        admit_resolved_name_key(
+            PersistentNameKey::Group(two),
+            PersistentNameSubjectKind::Group,
+        )
+        .unwrap(),
     ];
     fragments.sort();
     assert_eq!(
@@ -271,15 +280,25 @@ fn declaration_resolution_vocabulary_agrees_with_relational_name_index() {
     };
     let plural: Vec<WorthQueryName<Space>> = targets
         .iter()
-        .map(|t| admit_minted_digest(*t.key().digest()))
+        .map(|t| admit_resolved_name_key(t.key(), t.key().subject_kind()).unwrap())
         .collect();
     assert_eq!(
         plural, fragments,
         "plural answers keep canonical name order"
     );
     let carriers = NameSelection::bounded_by_carriers([
-        admit_minted_digest::<Face>(*sorted[3].as_bytes()).erased(),
-        admit_minted_digest::<Face>(*sorted[2].as_bytes()).erased(),
+        admit_resolved_name_key::<Face>(
+            PersistentNameKey::Entity(sorted[3]),
+            PersistentNameSubjectKind::Entity,
+        )
+        .unwrap()
+        .erased(),
+        admit_resolved_name_key::<Face>(
+            PersistentNameKey::Entity(sorted[2]),
+            PersistentNameSubjectKind::Entity,
+        )
+        .unwrap()
+        .erased(),
     ])
     .expect("two carriers form a nonempty filter");
     assert_eq!(
