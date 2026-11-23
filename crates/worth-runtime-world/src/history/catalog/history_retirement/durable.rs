@@ -32,6 +32,17 @@ impl PendingDurableHistoryRetirement {
         &self.commits[self.cursor..]
     }
 
+    pub(crate) fn next_resume_commit(&self) -> Option<CompositeCommitIdentity> {
+        match self.mode {
+            DurableRetirementMode::Interior => None,
+            DurableRetirementMode::RetiredBranch => self
+                .commits
+                .get(self.cursor)
+                .cloned()
+                .or_else(|| self.held.clone()),
+        }
+    }
+
     /// Apply and remove the next `count` durably acknowledged commits from live
     /// history. Because `state.retiring` fences all protection and child
     /// reservation paths, every acknowledged commit must still satisfy its
@@ -227,6 +238,7 @@ impl CompositeHistoryCatalog {
         let mut next = Some(from.clone());
         while let Some(commit) = next.take() {
             if state.retiring.contains(&commit) {
+                held = Some(commit);
                 break;
             }
             let Some(entry) = installed(&state, &commit) else {

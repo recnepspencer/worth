@@ -12,6 +12,8 @@ use worth_foundational::facade::{
 use worth_relational::facade::durability::RecoveredRelationalRuntimeAuthority;
 mod creation;
 mod horizon;
+#[cfg(test)]
+pub(crate) use horizon::require_retained_native_predecessor;
 mod unpublished;
 mod unresolved_creation;
 
@@ -92,6 +94,10 @@ where
                 } => {
                     horizon.root_incarnation = Some(head.incarnation);
                     horizon.bridges.insert(key.0, components.bridge.clone());
+                    horizon.native_branches.insert(
+                        key.0,
+                        components.relational.descriptor().branch_id().clone(),
+                    );
                     let native_basis = authority
                         .admit_recorded_component(execution, native, &components.relational)
                         .map_err(|cause| Denial::NativeComponent(Box::new(cause)))?;
@@ -129,6 +135,10 @@ where
                 }
                 WorldRecord::BranchCreated(created) => {
                     horizon.bridges.insert(key.0, created.components.bridge.clone());
+                    horizon.native_branches.insert(
+                        key.0,
+                        created.components.relational.descriptor().branch_id().clone(),
+                    );
                     horizon
                         .creation_boundaries
                         .insert(key.0, created.intent.source.commit);

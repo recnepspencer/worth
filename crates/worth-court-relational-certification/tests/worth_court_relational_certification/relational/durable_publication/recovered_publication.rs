@@ -181,3 +181,86 @@ fn recovered_publication_requires_actual_settlement_and_this_recoverys_exact_ima
         "actual repair and refused admission never republish"
     );
 }
+
+#[test]
+fn validate_recorded_publication_predecessor_accepts_exact_and_rejects_mismatched_predecessor() {
+    let host = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
+    let execution = &ExecutionRequest::serial(&host);
+    let (_source, medium, predecessor, successor, association, _) = source_journey(execution);
+    let (runtime, authority) = recover(execution, &medium);
+    let owner = runtime.durability_authority();
+    let subject = owner
+        .discover_associated_effects(execution, &association)
+        .unwrap()
+        .pop()
+        .unwrap();
+    let effect = owner
+        .readmit_associated_effect(execution, &subject)
+        .unwrap();
+    authority
+        .validate_recorded_publication_predecessor(
+            execution,
+            &runtime,
+            &effect,
+            &predecessor,
+            &successor,
+        )
+        .expect("exact predecessor axes must pass descriptive validation");
+
+    let mut wrong_truth = serde_json::to_value(&predecessor).unwrap();
+    let prev_truth = wrong_truth["descriptor"]["truth_version"].as_u64().unwrap();
+    wrong_truth["descriptor"]["truth_version"] = serde_json::json!(prev_truth + 1);
+    let wrong_truth: Recorded = serde_json::from_value(wrong_truth).unwrap();
+    assert!(matches!(
+        authority.validate_recorded_publication_predecessor(
+            execution,
+            &runtime,
+            &effect,
+            &wrong_truth,
+            &successor,
+        ),
+        Err(Cause::SubjectMismatch)
+    ));
+
+    let mut wrong_branch = serde_json::to_value(&predecessor).unwrap();
+    wrong_branch["descriptor"]["branch_id"] = serde_json::json!("forged-branch");
+    let wrong_branch: Recorded = serde_json::from_value(wrong_branch).unwrap();
+    assert!(matches!(
+        authority.validate_recorded_publication_predecessor(
+            execution,
+            &runtime,
+            &effect,
+            &wrong_branch,
+            &successor,
+        ),
+        Err(Cause::SubjectMismatch)
+    ));
+    // Pruned-predecessor validation rejects wrong branch and non-matching parent commit.
+    assert!(matches!(
+        authority.validate_recorded_publication_pruned_predecessor(
+            execution,
+            &runtime,
+            &effect,
+            &worth_relational::facade::history::BranchId("forged-branch".to_owned()),
+            worth_relational::facade::history::CommitId(999),
+            &successor,
+        ),
+        Err(Cause::SubjectMismatch)
+    ));
+    assert!(matches!(
+        authority.validate_recorded_publication_pruned_predecessor(
+            execution,
+            &runtime,
+            &effect,
+            predecessor.descriptor().branch_id(),
+            worth_relational::facade::history::CommitId(999),
+            &successor,
+        ),
+        Err(Cause::SubjectMismatch)
+    ));
+
+    // Descriptive validation must not have acquired any new read custody pins.
+    drop(effect);
+    let runtime = runtime.prepare_close().expect("no pins acquired by descriptive validation");
+    drop(runtime);
+}

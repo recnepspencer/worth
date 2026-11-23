@@ -36,20 +36,67 @@ fn walk(
 ) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
     let mut index = 0;
     while let Some(from) = resume.get(index) {
-        let release = runtime
+        let result = runtime
             .owner
             .recovery_port()
-            .release_retired_branch_history(from)
-            .map_err(|_| WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable)?;
-        match release.held_commit() {
-            Some(held) => {
-                resume[index] = held.clone();
-                index += 1;
-            }
-            None => {
-                resume.remove(index);
-            }
+            .release_retired_branch_history(from);
+        apply_release_result(resume, &mut index, result)?;
+    }
+    Ok(())
+}
+
+fn apply_release_result(
+    resume: &mut Vec<CompositeCommitIdentity>,
+    index: &mut usize,
+    result: Result<
+        worth_runtime_world::facade::RetiredBranchHistoryRelease,
+        worth_runtime_world::facade::HistoryReclamationDenial,
+    >,
+) -> Result<(), WorthQueryProductBranchOwnerCleanupDenial> {
+    let release = match result {
+        Ok(release) => release,
+        Err(worth_runtime_world::facade::HistoryReclamationDenial::PartialPublication {
+            resume_from,
+            ..
+        }) => {
+            apply_partial_resume(resume, *index, resume_from);
+            return Err(WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable);
+        }
+        Err(_) => {
+            return Err(WorthQueryProductBranchOwnerCleanupDenial::WorldHistoryUnavailable);
+        }
+    };
+    match release.held_commit() {
+        Some(held) => {
+            resume[*index] = held.clone();
+            *index += 1;
+        }
+        None => {
+            resume.remove(*index);
         }
     }
     Ok(())
+}
+
+fn apply_partial_resume<T>(resume: &mut Vec<T>, index: usize, resume_from: Option<T>) {
+    match resume_from {
+        Some(next) => resume[index] = next,
+        None => {
+            resume.remove(index);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn partial_publication_advances_resume_cursor_and_retry_reclaims_suffix() {
+        let mut resume = vec![4u64, 9u64];
+        apply_partial_resume(&mut resume, 0, Some(2));
+        assert_eq!(resume, vec![2, 9]);
+        apply_partial_resume(&mut resume, 0, None);
+        assert_eq!(resume, vec![9]);
+    }
 }

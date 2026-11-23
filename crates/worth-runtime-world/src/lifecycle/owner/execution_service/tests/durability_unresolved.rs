@@ -192,17 +192,17 @@ impl worth_relational::facade::durability::RelationalDurableColdSource for Journ
 }
 
 #[derive(Debug, Clone, Copy)]
-enum ScriptedHistoryAnswer { Commit, Busy, Unresolved }
+pub(super) enum ScriptedHistoryAnswer { Commit, Busy, Unresolved }
 
 #[derive(Debug)]
-struct ScriptedHistoryMedium {
+pub(super) struct ScriptedHistoryMedium {
     binding: crate::durability::WorldDurableHomeBinding,
-    answers: Mutex<std::collections::VecDeque<ScriptedHistoryAnswer>>,
+    pub(super) answers: Mutex<std::collections::VecDeque<ScriptedHistoryAnswer>>,
     next_position: Mutex<u64>,
 }
 
 impl ScriptedHistoryMedium {
-    fn new(answers: Vec<ScriptedHistoryAnswer>) -> Arc<Self> {
+    pub(super) fn new(answers: Vec<ScriptedHistoryAnswer>) -> Arc<Self> {
         use worth_foundational::facade::{
             DurableWorldOwnerIdentity, HomeIdentity, HomeIncarnation, WorldOwnerSlotIdentity,
         };
@@ -252,7 +252,7 @@ impl crate::durability::RuntimeWorldDurableMedium for ScriptedHistoryMedium {
     }
 }
 
-fn setup_history_chain(
+pub(super) fn setup_history_chain(
     extra_commits: usize,
 ) -> (
     reference_test_fixture::RealReferenceFixture,
@@ -314,7 +314,7 @@ fn second_frame_busy_and_indeterminate_history_retirement_account_prefix_and_fen
     let err = owner.drive_durable_history_retirement_with_chunk_size(&binding, pending, 2).unwrap_err();
     assert!(matches!(
         err,
-        HistoryReclamationDenial::PartialPublication { ref reclaimed, indeterminate: false }
+        HistoryReclamationDenial::PartialPublication { ref reclaimed, resume_from: None, indeterminate: false }
             if reclaimed == &[chain[1].identity().clone(), chain[2].identity().clone()]
     ));
     assert!(owner.state.history.lookup(chain[1].identity()).is_none() && owner.state.history.lookup(chain[2].identity()).is_none());
@@ -333,7 +333,7 @@ fn second_frame_busy_and_indeterminate_history_retirement_account_prefix_and_fen
     let err2 = owner2.drive_durable_history_retirement_with_chunk_size(&binding2, pending2, 2).unwrap_err();
     assert!(matches!(
         err2,
-        HistoryReclamationDenial::PartialPublication { ref reclaimed, indeterminate: true }
+        HistoryReclamationDenial::PartialPublication { ref reclaimed, resume_from: None, indeterminate: true }
             if reclaimed == &[chain2[1].identity().clone(), chain2[2].identity().clone()]
     ));
     assert!(owner2.state.history.lookup(chain2[1].identity()).is_none());
@@ -341,7 +341,15 @@ fn second_frame_busy_and_indeterminate_history_retirement_account_prefix_and_fen
         owner2.state.history.protect_explicit_commit(chain2[3].as_ref()),
         Err(CompositeHistoryCatalogDenial::UnknownProtectionTarget(_))
     ));
-    drop(owner2.state.history.protect_explicit_commit(chain2[5].as_ref()).expect("frame 3 unfenced"));
+    // Retrying on the SAME already-blocked binding must NOT fence the never-submitted suffix [5, 6].
+    let same_binding_retry = owner2.state.history.begin_durable_retire_unprotected_history(chain2.last().unwrap().identity()).unwrap();
+    assert_eq!(same_binding_retry.remaining(), &[chain2[5].identity().clone(), chain2[6].identity().clone()]);
+    assert!(matches!(
+        owner2.drive_durable_history_retirement_with_chunk_size(&binding2, same_binding_retry, 2),
+        Err(HistoryReclamationDenial::OwnerUnavailable(_))
+    ));
+    drop(owner2.state.history.protect_explicit_commit(chain2[5].as_ref()).expect("same-binding retry left frame 3 unfenced"));
+    drop(owner2.state.history.protect_explicit_commit(chain2[6].as_ref()).expect("same-binding retry left frame 3 tail unfenced"));
     let retry2 = owner2.state.history.begin_durable_retire_unprotected_history(chain2.last().unwrap().identity()).unwrap();
     assert_eq!(retry2.remaining(), &[chain2[5].identity().clone(), chain2[6].identity().clone()]);
     let fresh = Arc::new(WorldDurableMediumBinding::new(ScriptedHistoryMedium::new(vec![ScriptedHistoryAnswer::Commit]), &exec).unwrap());

@@ -68,9 +68,12 @@ impl HorizonContext {
                     )
                     .map_err(|cause| Denial::NativeFork(Box::new(cause)))?
             }
-            None => authority
-                .admit_recorded_component(execution, native, &created.components.relational)
-                .map_err(|cause| Denial::NativeComponent(Box::new(cause)))?,
+            None => {
+                require_retained_native_predecessor(&created.components.relational, before_native)?;
+                authority
+                    .admit_recorded_component(execution, native, &created.components.relational)
+                    .map_err(|cause| Denial::NativeComponent(Box::new(cause)))?
+            }
         };
         let native_index = custody.roots.len();
         custody.roots.push(Some(recovered_native));
@@ -160,6 +163,28 @@ impl HorizonContext {
             created.components.signal.point().clone(),
         ))
     }
+}
+
+#[cfg(test)]
+pub(crate) fn require_retained_native_predecessor(
+    claimed: &RecordedRelationalComponentReference,
+    before_native: &RecordedRelationalComponentReference,
+) -> Result<(), Denial> {
+    if claimed != before_native {
+        return Err(Denial::CreationEvidenceMismatch);
+    }
+    Ok(())
+}
+
+#[cfg(not(test))]
+fn require_retained_native_predecessor(
+    claimed: &RecordedRelationalComponentReference,
+    before_native: &RecordedRelationalComponentReference,
+) -> Result<(), Denial> {
+    if claimed != before_native {
+        return Err(Denial::CreationEvidenceMismatch);
+    }
+    Ok(())
 }
 
 fn validate_created_signal_fork(

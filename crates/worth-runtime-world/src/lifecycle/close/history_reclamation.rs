@@ -68,8 +68,9 @@ where
             ) {
                 Ok(subject) => subject,
                 Err(_) => {
+                    let resume_from = pending.next_resume_commit();
                     pending.release_remaining_proven_no_effect();
-                    return Err(frame_failure_denial(reclaimed, false));
+                    return Err(frame_failure_denial(reclaimed, resume_from, false));
                 }
             };
             loop {
@@ -80,13 +81,15 @@ where
                         break;
                     }
                     Err(Stop::Pending) => std::thread::yield_now(),
-                    Err(Stop::Refused(_) | Stop::Busy) => {
+                    Err(Stop::Refused(_) | Stop::Busy | Stop::BlockedByPriorBarrier { .. }) => {
+                        let resume_from = pending.next_resume_commit();
                         pending.release_remaining_proven_no_effect();
-                        return Err(frame_failure_denial(reclaimed, false));
+                        return Err(frame_failure_denial(reclaimed, resume_from, false));
                     }
                     Err(Stop::Unresolved | Stop::EvidenceRequired) => {
+                        let resume_from = pending.next_resume_commit();
                         pending.fence_indeterminate_and_release_suffix(chunk_len);
-                        return Err(frame_failure_denial(reclaimed, true));
+                        return Err(frame_failure_denial(reclaimed, resume_from, true));
                     }
                 }
             }
@@ -141,6 +144,7 @@ where
 
 fn frame_failure_denial(
     reclaimed: Vec<CompositeCommitIdentity>,
+    resume_from: Option<CompositeCommitIdentity>,
     indeterminate: bool,
 ) -> HistoryReclamationDenial {
     if reclaimed.is_empty() {
@@ -150,6 +154,7 @@ fn frame_failure_denial(
     } else {
         HistoryReclamationDenial::PartialPublication {
             reclaimed,
+            resume_from,
             indeterminate,
         }
     }

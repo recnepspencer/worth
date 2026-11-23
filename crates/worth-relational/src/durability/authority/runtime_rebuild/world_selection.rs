@@ -102,10 +102,15 @@ impl WorldSelectionReplay {
         // `HistoryRetired` journal may already have been pruned from Native's
         // checkpoint while Track H released originals or horizon commits remain.
         for row in self.admitted.source().originals() {
-            let recorded = match self.recorded_source(row.source(), runtime, plan, roots, request) {
-                Ok(recorded) => recorded,
-                Err(Stop::Durability(_)) if row.source_disposed() => continue,
-                Err(cause) => return Err(cause),
+            let recorded = if row.source_disposed() {
+                let Some(recorded) =
+                    self.recorded_source_optional(row.source(), runtime, plan, roots, request)?
+                else {
+                    continue;
+                };
+                recorded
+            } else {
+                self.recorded_source(row.source(), runtime, plan, roots, request)?
             };
             let Some((root, _)) = roots.exact_image(request, runtime, &recorded)? else {
                 if row.source_disposed() {

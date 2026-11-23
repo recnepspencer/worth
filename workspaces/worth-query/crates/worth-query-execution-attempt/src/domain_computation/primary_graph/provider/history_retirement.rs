@@ -36,26 +36,94 @@ impl WorthQueryPrimaryGraphProvider {
         runtime: &RelationalRuntime,
         committed: &worth_relational::facade::transactions::CommitResult,
     ) {
-        let retired = self
-            .world_history
-            .get()
-            .and_then(|world| world.retire_changed_history().ok())
-            .unwrap_or_default();
-        if !retired.is_empty() {
-            let commits = self
-                .completed_commit_evidence
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .retire(&retired);
-            let mut bases = self
-                .receipt_basis_retention
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            for commit in commits {
-                bases.release_ordinary(commit);
-            }
-        }
+        let retired = acknowledged_retired_commits(
+            self.world_history
+                .get()
+                .map(|world| world.retire_changed_history()),
+        );
+        self.apply_retired_world_commits(&retired);
         runtime.run_branch_root_reclamation_pass();
         let _ = runtime.run_index_generation_reclamation_after_publication(committed);
+    }
+
+    pub(crate) fn apply_retired_world_commits(
+        &self,
+        retired: &[worth_runtime_world::facade::CompositeCommitIdentity],
+    ) {
+        if retired.is_empty() {
+            return;
+        }
+        let commits = self
+            .completed_commit_evidence
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .retire(retired);
+        let mut bases = self
+            .receipt_basis_retention
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        for commit in commits {
+            bases.release_ordinary(commit);
+        }
+    }
+}
+
+fn acknowledged_retired_commits(
+    result: Option<
+        Result<
+            Vec<worth_runtime_world::facade::CompositeCommitIdentity>,
+            worth_runtime_world::facade::HistoryReclamationDenial,
+        >,
+    >,
+) -> Vec<worth_runtime_world::facade::CompositeCommitIdentity> {
+    acknowledged_from_retirement_result(result, |denial| match denial {
+        worth_runtime_world::facade::HistoryReclamationDenial::PartialPublication {
+            reclaimed,
+            ..
+        } => Some(reclaimed),
+        _ => None,
+    })
+}
+
+fn acknowledged_from_retirement_result<T, E>(
+    result: Option<Result<Vec<T>, E>>,
+    partial: impl FnOnce(E) -> Option<Vec<T>>,
+) -> Vec<T> {
+    match result {
+        Some(Ok(retired)) => retired,
+        Some(Err(denial)) => partial(denial).unwrap_or_default(),
+        None => Vec::new(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use worth_runtime_world::facade::HistoryReclamationDenial;
+
+    #[test]
+    fn ordinary_provider_consumes_acknowledged_prefix_on_partial_publication() {
+        assert_eq!(
+            acknowledged_from_retirement_result(Some(Ok(vec![1u64])), |_: ()| None),
+            vec![1]
+        );
+        assert_eq!(
+            acknowledged_from_retirement_result(Some(Err(Some(vec![1u64, 2u64]))), |p| p),
+            vec![1, 2]
+        );
+        assert!(acknowledged_from_retirement_result::<u64, Option<Vec<u64>>>(
+            Some(Err(None)),
+            |p| p,
+        )
+        .is_empty());
+        assert!(acknowledged_retired_commits(Some(Err(
+            HistoryReclamationDenial::PartialPublication {
+                reclaimed: Vec::new(),
+                resume_from: None,
+                indeterminate: true,
+            },
+        )))
+        .is_empty());
+        assert!(acknowledged_retired_commits(None).is_empty());
     }
 }

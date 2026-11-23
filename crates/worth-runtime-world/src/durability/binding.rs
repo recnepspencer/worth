@@ -33,6 +33,11 @@ pub(crate) enum WorldDurablePublicationStop {
     Refused(WorldPublicationRefusal),
     Unresolved,
     EvidenceRequired,
+    /// A prior subject already left this journal behind a recovery barrier, so
+    /// the incoming subject was never submitted to the medium.
+    BlockedByPriorBarrier {
+        evidence_required: bool,
+    },
     Busy,
 }
 #[derive(Debug, Default)]
@@ -175,13 +180,20 @@ impl WorldDurableMediumBinding {
             }
             let flight = gates.journal(subject.journal());
             if let Some(barrier) = flight.barrier {
-                return Err(match barrier {
-                    PublicationBarrier::PhysicalIndeterminate => {
-                        WorldDurablePublicationStop::Unresolved
-                    }
-                    PublicationBarrier::EvidenceRequired => {
-                        WorldDurablePublicationStop::EvidenceRequired
-                    }
+                let evidence_required = matches!(barrier, PublicationBarrier::EvidenceRequired);
+                let same_subject = flight
+                    .subject
+                    .as_ref()
+                    .is_some_and(|original| original.same_subject(subject));
+                if !same_subject {
+                    return Err(WorldDurablePublicationStop::BlockedByPriorBarrier {
+                        evidence_required,
+                    });
+                }
+                return Err(if evidence_required {
+                    WorldDurablePublicationStop::EvidenceRequired
+                } else {
+                    WorldDurablePublicationStop::Unresolved
                 });
             }
             if flight.in_caller {

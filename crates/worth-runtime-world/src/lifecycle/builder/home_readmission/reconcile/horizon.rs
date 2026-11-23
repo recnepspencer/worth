@@ -21,12 +21,18 @@ use worth_runtime_bridge::facade::RecordedRuntimeWorldBaseline;
 use worth_signal::facade::durability::SignalRecordedSourcePoint;
 
 mod created;
+#[cfg(test)]
+pub(crate) use created::require_retained_native_predecessor;
 
 #[derive(Default)]
 pub(super) struct HorizonContext {
     pub(super) root_incarnation: Option<DurableProductBranchIncarnation>,
     pub(super) bridges:
         BTreeMap<DurableProductBranchIncarnation, RecordedRuntimeWorldBaseline>,
+    pub(super) native_branches:
+        BTreeMap<DurableProductBranchIncarnation, worth_relational::facade::history::BranchId>,
+    pub(super) disposed_native_commits:
+        BTreeMap<DurableCompositeCommitIdentity, (worth_relational::facade::history::BranchId, u64)>,
     pub(super) creation_boundaries:
         BTreeMap<DurableProductBranchIncarnation, DurableCompositeCommitIdentity>,
     /// Maps each commit (surviving or disposed) to its nearest surviving
@@ -64,15 +70,24 @@ impl HorizonContext {
             } => {
                 self.root_incarnation = Some(head.incarnation);
                 self.bridges.insert(key.0, components.bridge.clone());
+                self.native_branches.insert(
+                    key.0,
+                    components.relational.descriptor().branch_id().clone(),
+                );
                 super::insert(descriptors, &head.commit, &components.relational, execution)?;
                 super::insert(points, key, components.signal.point(), execution)?;
             }
             WorldRecord::BranchCreated(created) => {
                 self.bridges.insert(key.0, created.components.bridge.clone());
+                self.native_branches.insert(
+                    key.0,
+                    created.components.relational.descriptor().branch_id().clone(),
+                );
                 self.creation_boundaries
                     .insert(key.0, created.intent.source.commit);
-                if let Some((ancestor, dist)) =
-                    self.ancestors.get(&created.intent.source.commit).cloned()
+                if created.intent.destination.commit != created.intent.source.commit
+                    && let Some((ancestor, dist)) =
+                        self.ancestors.get(&created.intent.source.commit).cloned()
                 {
                     self.ancestors.insert(
                         created.intent.destination.commit,
@@ -96,15 +111,28 @@ impl HorizonContext {
                     self.ancestors
                         .insert(open.commit, (ancestor, dist.saturating_add(1)));
                 }
-                if occurrence.relational().is_some() {
+                if let Some(recorded) = occurrence.relational() {
+                    if let Some(branch_id) = self.native_branches.get(&key.0).cloned() {
+                        self.disposed_native_commits
+                            .insert(open.commit, (branch_id, recorded.commit));
+                    }
                     if let Some(effect) = effects.take(&open.association.attempt())
                         && let Ok(after) =
                             authority.recorded_publication_successor(execution, native, &effect)
                     {
                         super::insert(descriptors, &open.commit, &after, execution)?;
                     }
-                } else if let Some(before) = descriptors.get(&open.expected.commit).cloned() {
-                    super::insert(descriptors, &open.commit, &before, execution)?;
+                } else {
+                    if let Some(before) = descriptors.get(&open.expected.commit).cloned() {
+                        super::insert(descriptors, &open.commit, &before, execution)?;
+                    }
+                    if let Some(prev) = self
+                        .disposed_native_commits
+                        .get(&open.expected.commit)
+                        .cloned()
+                    {
+                        self.disposed_native_commits.insert(open.commit, prev);
+                    }
                 }
                 let point = match occurrence.owners().signal() {
                     Some(actual) => actual.point().clone(),
@@ -186,6 +214,32 @@ impl HorizonContext {
                 let after = authority
                     .recorded_publication_successor(execution, native, &effect)
                     .map_err(Denial::NativeSuccessor)?;
+                if let Some(before_native) = descriptors.get(&open.expected.commit) {
+                    authority
+                        .validate_recorded_publication_predecessor(
+                            execution,
+                            native,
+                            &effect,
+                            before_native,
+                            &after,
+                        )
+                        .map_err(|_| Denial::OccurrenceEvidenceMismatch)?;
+                } else if let Some((expected_branch, expected_commit)) =
+                    self.disposed_native_commits.get(&open.expected.commit)
+                {
+                    authority
+                        .validate_recorded_publication_pruned_predecessor(
+                            execution,
+                            native,
+                            &effect,
+                            expected_branch,
+                            worth_relational::facade::history::CommitId(*expected_commit),
+                            &after,
+                        )
+                        .map_err(|_| Denial::OccurrenceEvidenceMismatch)?;
+                } else {
+                    return Err(Denial::MissingPredecessor);
+                }
                 (Some(commit_identity), after)
             }
             None => {

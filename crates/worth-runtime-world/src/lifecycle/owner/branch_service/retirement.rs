@@ -139,7 +139,7 @@ where
             match binding.publish(&subject, &execution) {
                 Ok(_committed) => break,
                 Err(Stop::Pending) => std::thread::yield_now(),
-                Err(Stop::Refused(_) | Stop::Busy) => {
+                Err(Stop::Refused(_) | Stop::Busy | Stop::BlockedByPriorBarrier { .. }) => {
                     permit.proven_no_effect();
                     return Err(RuntimeWorldBranchRetirementDenial::OwnerUnavailable);
                 }

@@ -105,10 +105,13 @@ pub enum HistoryReclamationDenial {
     OwnerUnavailable(crate::lifecycle::RuntimeWorldOwnerUnavailable),
     /// At least one durable `HistoryRetired` frame committed and was applied
     /// before a later frame failed. `reclaimed` lists the committed prefix;
-    /// `indeterminate` is true only when the failing frame's journal fate is
-    /// unresolved and remains fenced until reopen.
+    /// `resume_from` gives the exact next unremoved commit when a retired-branch
+    /// walk already removed its starting head; `indeterminate` is true only when
+    /// the failing frame's journal fate is unresolved and remains fenced until
+    /// reopen.
     PartialPublication {
         reclaimed: Vec<CompositeCommitIdentity>,
+        resume_from: Option<CompositeCommitIdentity>,
         indeterminate: bool,
     },
     Catalog(CompositeHistoryCatalogDenial),
