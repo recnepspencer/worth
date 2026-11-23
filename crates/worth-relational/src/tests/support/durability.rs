@@ -225,6 +225,7 @@ impl ColdSource for OwnedTestDurableMedium {
         .map_err(map_owned_denial)
     }
     fn read_commit_owned(&self, request: &Req<'_, '_>, original: &(dyn Any + Send + Sync), position: PatchStreamPosition, limit: u64) -> Result<ImmBytes, ReadRefusal> {
+        self.check_and_record_commit_read(position).map_err(ReadRefusal::Storage)?;
         downcast_snapshot(original)?.canonical(request, position.0, limit).map_err(map_owned_denial)
     }
     fn read_transition_owned(&self, request: &Req<'_, '_>, original: &(dyn Any + Send + Sync), sequence: Seq, limit: u64) -> Result<ImmBytes, ReadRefusal> {
@@ -252,6 +253,7 @@ impl ColdSource for OwnedTestDurableMedium {
         bounded_bytes(self.lock().members.get(locator.sha256, locator.length), limit)
     }
     fn read_commit(&self, position: PatchStreamPosition, limit: u64) -> Result<Vec<u8>, StorageCause> {
+        self.check_and_record_commit_read(position)?;
         bounded_bytes(self.lock().commits.entries.get(&position.0).map(AsRef::as_ref), limit)
     }
 }

@@ -1,9 +1,8 @@
 use std::any::Any;
-use std::collections::{BTreeSet, VecDeque};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::sync::atomic::AtomicBool;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use sha2::{Digest, Sha256};
 use worth_testkit_relational::durable_medium::{
     bytes::{ByteJournal, MemberBytes},
     OwnedNativeReadSnapshot, OwnedSnapshotDenial,
@@ -92,8 +91,13 @@ pub(super) struct OwnedMediumContents {
     pub(super) scripted_transitions: VecDeque<ScriptedPublication>,
     pub(super) offered_commits: Vec<OfferedCommitMeta>,
     pub(super) offered_transitions: Vec<OfferedTransitionMeta>,
+    pub(super) retain_transition_wires: bool,
+    pub(super) retained_transition_wires: Vec<TransArt>,
     pub(super) forbidden_members: BTreeSet<[u8; 32]>,
     pub(super) member_reads: Vec<[u8; 32]>,
+    pub(super) canonical_member_positions: BTreeMap<[u8; 32], PatchStreamPosition>,
+    pub(super) commit_read_failures: BTreeMap<PatchStreamPosition, StorageCause>,
+    pub(super) commit_reads: Vec<PatchStreamPosition>,
 }
 
 /// Explicitly owned in-crate durable medium reusing `worth-testkit-relational`'s
@@ -101,8 +105,10 @@ pub(super) struct OwnedMediumContents {
 #[derive(Debug, Default)]
 pub(crate) struct OwnedTestDurableMedium {
     contents: Mutex<OwnedMediumContents>,
-    observe_member_reads: AtomicBool,
-    has_forbidden_members: AtomicBool,
+    pub(super) observe_member_reads: AtomicBool,
+    pub(super) has_forbidden_members: AtomicBool,
+    pub(super) observe_commit_reads: AtomicBool,
+    pub(super) has_commit_read_failures: AtomicBool,
 }
 
 #[derive(Debug)]
@@ -172,52 +178,6 @@ impl OwnedTestDurableMedium {
     pub(crate) fn artifact_bytes(&self, position: PatchStreamPosition) -> Option<Box<[u8]>> {
         self.lock().commits.entries.get(&position.0).cloned()
     }
-    pub(crate) fn artifact_sha256(&self, position: PatchStreamPosition) -> [u8; 32] {
-        let bytes = self
-            .artifact_bytes(position)
-            .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
-        Sha256::digest(&bytes).into()
-    }
-    /// Remove the journal entry at `position` and make its protected checkpoint
-    /// member unavailable so any unintended body read refuses as `MissingMember`.
-    pub(crate) fn drop_artifact_and_member(&self, position: PatchStreamPosition) -> [u8; 32] {
-        let mut contents = self.lock();
-        let bytes = contents
-            .commits
-            .entries
-            .remove(&position.0)
-            .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
-        let sha256: [u8; 32] = Sha256::digest(&bytes).into();
-        assert!(
-            contents.members.get(sha256, bytes.len() as u64).is_some(),
-            "checkpoint must hold the protected member for dropped position {position:?}"
-        );
-        contents.forbidden_members.insert(sha256);
-        self.has_forbidden_members.store(true, Ordering::Release);
-        sha256
-    }
-    pub(crate) fn start_recording_member_reads(&self) {
-        self.lock().member_reads.clear();
-        self.observe_member_reads.store(true, Ordering::Release);
-    }
-    pub(crate) fn member_read_digests(&self) -> Vec<[u8; 32]> {
-        self.lock().member_reads.clone()
-    }
-    pub(super) fn check_and_record_member_read(&self, sha256: [u8; 32]) -> Result<(), StorageCause> {
-        let recording = self.observe_member_reads.load(Ordering::Acquire);
-        let forbidding = self.has_forbidden_members.load(Ordering::Acquire);
-        if !recording && !forbidding {
-            return Ok(());
-        }
-        let mut contents = self.lock();
-        if recording {
-            contents.member_reads.push(sha256);
-        }
-        if forbidding && contents.forbidden_members.contains(&sha256) {
-            return Err(StorageCause::MissingMember);
-        }
-        Ok(())
-    }
     pub(crate) fn script_next_publication(&self, answer: ScriptedPublication) {
         self.lock().scripted.push_back(answer);
     }
@@ -255,6 +215,9 @@ impl OwnedTestDurableMedium {
             follows: artifact.follows(),
             payload_digest: artifact.payload_digest(),
         });
+        if contents.retain_transition_wires {
+            contents.retained_transition_wires.push(artifact.clone());
+        }
         if let Some(scripted) = contents.scripted_transitions.pop_front() {
             return apply_scripted(
                 scripted,

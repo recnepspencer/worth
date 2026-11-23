@@ -4,6 +4,7 @@
 // LANES: success, failure, recovery
 
 mod branch_transition_races;
+mod cold_merge_history_matrix;
 mod durable_before_live;
 mod lifecycle_lock_order;
 mod recovery_refusals;

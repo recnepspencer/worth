@@ -5,6 +5,9 @@ use crate::branch::RelationalBranchTransitionSequence;
 use crate::durability::data::{RelationalCheckpointMember, RelationalNativeCheckpoint};
 use crate::durability::medium::RelationalDurableCheckpointSource;
 use crate::publication::patch::data::PatchStreamPosition;
+use crate::storage::data::RelationalStorageUnavailableCause as StorageCause;
+use sha2::{Digest, Sha256};
+use std::sync::atomic::Ordering;
 
 impl OwnedTestDurableMedium {
     pub(crate) fn flip_checkpoint_byte(&self, offset: usize) {
@@ -150,5 +153,139 @@ impl OwnedTestDurableMedium {
             .entries
             .remove(&sequence.0)
             .unwrap_or_else(|| panic!("medium holds no transition at {sequence:?}"));
+    }
+
+    pub(crate) fn retain_offered_transition_wires(&self) {
+        self.lock().retain_transition_wires = true;
+    }
+
+    pub(crate) fn start_recording_commit_reads(&self, position: PatchStreamPosition) {
+        let mut contents = self.lock();
+        let sha256: [u8; 32] = Sha256::digest(
+            contents
+                .commits
+                .entries
+                .get(&position.0)
+                .unwrap_or_else(|| panic!("medium holds no commit at {position:?}")),
+        )
+        .into();
+        contents.canonical_member_positions.insert(sha256, position);
+        contents.commit_reads.clear();
+        self.observe_commit_reads.store(true, Ordering::Release);
+    }
+
+    pub(crate) fn set_commit_read_failure(
+        &self,
+        position: PatchStreamPosition,
+        cause: StorageCause,
+    ) {
+        let mut contents = self.lock();
+        let sha256: [u8; 32] = Sha256::digest(
+            contents
+                .commits
+                .entries
+                .get(&position.0)
+                .unwrap_or_else(|| panic!("medium holds no commit at {position:?}")),
+        )
+        .into();
+        contents.canonical_member_positions.insert(sha256, position);
+        contents.commit_read_failures.insert(position, cause);
+        self.has_commit_read_failures.store(true, Ordering::Release);
+    }
+
+    pub(crate) fn clear_commit_read_failures(&self) {
+        self.lock().commit_read_failures.clear();
+        self.has_commit_read_failures
+            .store(false, Ordering::Release);
+    }
+
+    pub(crate) fn commit_read_count(&self, position: PatchStreamPosition) -> usize {
+        self.lock()
+            .commit_reads
+            .iter()
+            .filter(|read| **read == position)
+            .count()
+    }
+
+    pub(crate) fn artifact_sha256(&self, position: PatchStreamPosition) -> [u8; 32] {
+        let bytes = self
+            .artifact_bytes(position)
+            .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
+        Sha256::digest(&bytes).into()
+    }
+
+    /// Remove the journal entry at `position` and make its protected checkpoint
+    /// member unavailable so any unintended body read refuses as `MissingMember`.
+    pub(crate) fn drop_artifact_and_member(&self, position: PatchStreamPosition) -> [u8; 32] {
+        let mut contents = self.lock();
+        let bytes = contents
+            .commits
+            .entries
+            .remove(&position.0)
+            .unwrap_or_else(|| panic!("medium holds no artifact at {position:?}"));
+        let sha256: [u8; 32] = Sha256::digest(&bytes).into();
+        assert!(
+            contents.members.get(sha256, bytes.len() as u64).is_some(),
+            "checkpoint must hold the protected member for dropped position {position:?}"
+        );
+        contents.forbidden_members.insert(sha256);
+        self.has_forbidden_members.store(true, Ordering::Release);
+        sha256
+    }
+
+    pub(crate) fn start_recording_member_reads(&self) {
+        self.lock().member_reads.clear();
+        self.observe_member_reads.store(true, Ordering::Release);
+    }
+
+    pub(crate) fn member_read_digests(&self) -> Vec<[u8; 32]> {
+        self.lock().member_reads.clone()
+    }
+
+    pub(super) fn check_and_record_member_read(&self, sha256: [u8; 32]) -> Result<(), StorageCause> {
+        let recording = self.observe_member_reads.load(Ordering::Acquire);
+        let forbidding = self.has_forbidden_members.load(Ordering::Acquire);
+        let recording_commits = self.observe_commit_reads.load(Ordering::Acquire);
+        let failing_commits = self.has_commit_read_failures.load(Ordering::Acquire);
+        if !recording && !forbidding && !recording_commits && !failing_commits {
+            return Ok(());
+        }
+        let mut contents = self.lock();
+        if recording {
+            contents.member_reads.push(sha256);
+        }
+        if forbidding && contents.forbidden_members.contains(&sha256) {
+            return Err(StorageCause::MissingMember);
+        }
+        if (recording_commits || failing_commits)
+            && let Some(&position) = contents.canonical_member_positions.get(&sha256)
+        {
+            if recording_commits {
+                contents.commit_reads.push(position);
+            }
+            if failing_commits && let Some(&cause) = contents.commit_read_failures.get(&position) {
+                return Err(cause);
+            }
+        }
+        Ok(())
+    }
+
+    pub(super) fn check_and_record_commit_read(
+        &self,
+        position: PatchStreamPosition,
+    ) -> Result<(), StorageCause> {
+        let recording = self.observe_commit_reads.load(Ordering::Acquire);
+        let failing = self.has_commit_read_failures.load(Ordering::Acquire);
+        if !recording && !failing {
+            return Ok(());
+        }
+        let mut contents = self.lock();
+        if recording {
+            contents.commit_reads.push(position);
+        }
+        if failing && let Some(&cause) = contents.commit_read_failures.get(&position) {
+            return Err(cause);
+        }
+        Ok(())
     }
 }
