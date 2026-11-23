@@ -14,6 +14,8 @@ impl RelationalCanonicalPublicationRoutes {
     ) -> Option<R> {
         let _admission = self.enter_checkpoint_selection().ok()?;
         self.reject_unsettled().ok()?;
+        #[cfg(test)]
+        self.lifecycle_order.pause_exclusive();
         Some(reclaim())
     }
 
@@ -93,6 +95,8 @@ impl RelationalCanonicalPublicationRoutes {
             }
             Err(TryLockError::Poisoned(poisoned)) => Ok(poisoned.into_inner()),
         }?;
+        #[cfg(test)]
+        self.lifecycle_order.pause_exclusive();
         Ok(guard)
     }
 

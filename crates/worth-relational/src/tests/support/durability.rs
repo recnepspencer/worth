@@ -35,9 +35,13 @@ use crate::storage::data::RelationalStorageUnavailableCause as StorageCause;
 mod canonical_commit_frame;
 #[path = "durability/owned_medium.rs"]
 mod owned_medium;
+#[path = "durability/owned_medium_tamper.rs"]
+mod owned_medium_tamper;
 pub(crate) use canonical_commit_frame::reseal_canonical_commit_frame;
 use owned_medium::{bounded_bytes, downcast_snapshot, map_owned_denial, OwnedMediumAttachment};
-pub(crate) use owned_medium::{OwnedTestDurableMedium, ScriptedPublication};
+pub(crate) use owned_medium::{
+    OwnedTestDurableMedium, ScriptedPublication, TestRecoverySourceRefusal,
+};
 
 pub(crate) fn expect_durability_failure(
     stop: crate::durability::data::RelationalRecoveryStop,
@@ -159,11 +163,7 @@ impl DurableMedium for OwnedMediumAttachment {
         self.0.publish_commit(artifact)
     }
     fn publish_transition(&self, artifact: &TransArt) -> Fate<String> {
-        if self.0.lock().transitions.publish(artifact.sequence().0, artifact.as_bytes()) {
-            Fate::Committed
-        } else {
-            Fate::ProvenNoEffect { detail: "not next or identical original transition".into() }
-        }
+        self.0.publish_transition(artifact)
     }
 }
 
