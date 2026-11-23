@@ -49,6 +49,36 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         scope: crate::identity::data::EntityId,
         footprint: &ManagedIndexParentReadFootprint,
     ) -> Result<bool, Denial> {
+        self.managed_source_unchanged(execution, program, pin, scope, footprint, None)
+    }
+
+    /// As `managed_source_unchanged_at`, judging only `records`: the records
+    /// one applied member changed (`RelationalCoupledAppendTouches::records`).
+    /// A read proved unchanged before that member appended is still the
+    /// candidate's image of it exactly when this holds. A record the member
+    /// shares with an earlier writer is judged by its whole change.
+    /// Cost: O(member records + changed records + deltas + program size).
+    pub fn managed_source_unchanged_by(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        program: &ManagedIndexSourceProgram,
+        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        scope: crate::identity::data::EntityId,
+        footprint: &ManagedIndexParentReadFootprint,
+        records: &[RecordRef],
+    ) -> Result<bool, Denial> {
+        self.managed_source_unchanged(execution, program, pin, scope, footprint, Some(records))
+    }
+
+    fn managed_source_unchanged(
+        &self,
+        execution: &ExecutionRequest<'_, '_>,
+        program: &ManagedIndexSourceProgram,
+        pin: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        scope: crate::identity::data::EntityId,
+        footprint: &ManagedIndexParentReadFootprint,
+        only: Option<&[RecordRef]>,
+    ) -> Result<bool, Denial> {
         let current = self.read.borrow();
         let Some(current) = current.as_ref() else {
             return Err(Denial::ForeignSource);
@@ -68,23 +98,33 @@ impl RelationalAuthoredCoupledCandidate<'_> {
         let relevance = SourceRelevance::of(registry, program, scope, footprint, effect, &key_of);
         let (unchanged, _) = execution
             .run_native_with_checkpoint(|context| {
+                let only = match only {
+                    Some(records) => {
+                        checkpoint(context, records.len() as u64 + 1)?;
+                        Some(records.iter().collect::<BTreeSet<_>>())
+                    }
+                    None => None,
+                };
+                let judged =
+                    |record: &RecordRef| only.as_ref().is_none_or(|only| only.contains(record));
                 for delta in &effect.adjacency.deltas {
                     checkpoint(context, 1)?;
-                    if relevance.adjacency(delta) {
+                    if judged(&RecordRef::Relation(delta.relation_id)) && relevance.adjacency(delta)
+                    {
                         return Ok(false);
                     }
                 }
                 let mut described = BTreeSet::new();
                 for delta in &effect.publication.canonical_deltas {
                     checkpoint(context, 1)?;
-                    if relevance.delta(delta) {
+                    if judged(&delta.target) && relevance.delta(delta) {
                         return Ok(false);
                     }
                     described.insert(&delta.target);
                 }
                 for record in &effect.publication.changed_records {
                     checkpoint(context, 1)?;
-                    if described.contains(record) {
+                    if described.contains(record) || !judged(record) {
                         continue;
                     }
                     let kind = match record {

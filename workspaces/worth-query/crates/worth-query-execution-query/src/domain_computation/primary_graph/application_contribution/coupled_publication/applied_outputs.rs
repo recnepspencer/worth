@@ -46,4 +46,12 @@ impl<S: ApplicationSchema> AppliedOutputParticipants for CoupledApplicationAssem
         }
         Ok(())
     }
+    fn retain_source_alignment(
+        &self,
+        alignment: std::sync::Arc<
+            crate::domain_computation::primary_graph::application_attempt::AppliedSourceAlignment,
+        >,
+    ) {
+        self.retain_alignment(alignment);
+    }
 }

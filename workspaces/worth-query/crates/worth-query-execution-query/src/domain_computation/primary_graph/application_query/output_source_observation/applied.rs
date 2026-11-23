@@ -4,6 +4,7 @@ use crate::domain_computation::primary_graph::{
     WorthQueryEntityResolutionDenialKind as Resolution,
     WorthQueryEntityResolutionRefusalKind as Refusal,
 };
+use crate::domain_computation::primary_graph::invariant_projection::read_basis::OwnOutputOverlay;
 use worth_relational::facade::runtime::{
     RelationalAppliedCandidateReadIdentity, RelationalPinnedRead,
 };
@@ -21,12 +22,18 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         self.applied_source_publication = Some(AppliedSourcePublicationLoan { source, selected });
         self
     }
+    /// Admit `intent` at the applied candidate. The scope key resolves on the
+    /// candidate (over a successor round's own-output view `own` when it has
+    /// one); the committed basis issues the scope only while it names that
+    /// same live record, so a scope the envelope renamed, retired or replaced
+    /// is never read as it was at C.
     pub fn with_applied_plan<B, R, E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         intent: B::Input,
         before: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own: Option<&OwnOutputOverlay>,
         native: &mut ApplicationQueryNativeAccess<'_>,
         consume: impl for<'plan> FnOnce(
             SourceReadPlan<'plan, S, B>,
@@ -41,17 +48,19 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         E: From<SourceQueryObservationStop>,
     {
         let result = self.with_applied_plan_in_control::<B, R, E>(
-            execution, intent, before, candidate, native, consume,
+            execution, intent, before, candidate, own, native, consume,
         );
         self.confirm_control(execution, native, result)
             .map_err(|cause| E::from(self.record_control_refusal(cause)))?
     }
+    #[allow(clippy::too_many_arguments)]
     fn with_applied_plan_in_control<B, R, E>(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         intent: B::Input,
         before: &RelationalPinnedRead,
         candidate: &RelationalPinnedRead<RelationalAppliedCandidateReadIdentity>,
+        own: Option<&OwnOutputOverlay>,
         native: &mut ApplicationQueryNativeAccess<'_>,
         consume: impl for<'plan> FnOnce(
             SourceReadPlan<'plan, S, B>,
@@ -99,26 +108,22 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
         let (field, value) = intent
             .into_scope()
             .into_field_parts(principal.principal().principal_identity());
-        let absent = match selected.resolve_query_scope_selector_issued_with_native_access(
+        let committed = match selected.resolve_query_scope_selector_issued_with_native_access(
             execution,
             field,
             &value,
             self.request,
             native,
         ) {
-            Ok(scope) => {
-                return self.with_resolved_plan::<B, R, E>(
-                    execution,
-                    &installed,
-                    permission::SourceQueryParameters::Live(parameters),
-                    &principal,
-                    &scope,
-                    SourceScopePosture::Current,
-                    native,
-                    consume,
-                )
+            Ok(scope) => Ok(scope),
+            Err(cause)
+                if matches!(
+                    cause.kind(),
+                    Resolution::Refused(Refusal::UnknownEntity | Refusal::AmbiguousEntity)
+                ) =>
+            {
+                Err(cause)
             }
-            Err(cause) if cause.kind() == Resolution::Refused(Refusal::UnknownEntity) => cause,
             Err(cause) => return Err(Stop::Scope(cause).into()),
         };
         let graph = self
@@ -126,9 +131,26 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
             .runtime
             .primary_graph()
             .ok_or(Stop::ForeignClosure)?;
+        // The candidate is the authority for which record the key names.
         let scope = graph
             .retain_entity_resolution_context()
-            .resolve_applied_field::<S, _>(execution, before, candidate, field, value);
+            .resolve_applied_field::<S, _>(execution, before, candidate, own, field, value);
+        let absent = match (committed, &scope) {
+            (Ok(issued), Ok(scope)) if issued.scope().entity_id() == scope.entity_id() => {
+                return self.with_resolved_plan::<B, R, E>(
+                    execution,
+                    &installed,
+                    permission::SourceQueryParameters::Live(parameters),
+                    &principal,
+                    &issued,
+                    SourceScopePosture::Current,
+                    native,
+                    consume,
+                )
+            }
+            (Ok(_), _) => None,
+            (Err(absent), _) => Some(absent),
+        };
         if let Some(lapse) = principal.request_lapse() {
             return Err(
                 Stop::Admission(WorthQueryApplicationQueryAdmissionDenial::new(
@@ -140,27 +162,15 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
                 .into(),
             );
         }
+        // A scope that was absent at C keeps that refusal; one the envelope
+        // retired or made ambiguous refuses as the candidate resolves it.
         let scope = scope.map_err(|cause| {
-            Stop::Scope(if matches!(cause.kind(), Resolution::Refused(_)) {
-                absent.clone()
-            } else {
-                cause
+            Stop::Scope(match &absent {
+                Some(absent) if matches!(cause.kind(), Resolution::Refused(_)) => absent.clone(),
+                _ => cause,
             })
         })?;
-        let (product, basis) = self
-            .application
-            .retain_selected_query_basis_admitted(self.shared)
-            .map_err(Stop::Basis)?;
-        let limits = self
-            .application
-            .resolve_application_query_limits(installed.limits());
-        let controls = WorthQueryApplicationQueryControls::selected_read_one_shot(
-            product,
-            basis,
-            limits.maximum_results(),
-            self.request,
-        )
-        .map_err(|cause| Stop::Read(WorthQueryAdmittedOneShotStop::Admission(cause)))?;
+        let controls = self.applied_source_controls(&installed)?;
         let access = WorthQueryApplicationQueryAccessContext::new(principal.principal(), &scope);
         let plan = self
             .application
@@ -175,6 +185,7 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
                 before,
                 candidate,
                 self.request,
+                self.read_control(),
                 native,
             )
             .map_err(|cause| {
@@ -182,21 +193,56 @@ impl<S: ApplicationSchema> SourceQueryReaderAccess<'_, S> {
                     WorthQueryOperationAuthorizationDenialKind as Authority,
                     WorthQueryOperationAuthorizationRefusalKind as Refused,
                 };
-                if matches!(
-                    cause.kind(),
-                    WorthQueryApplicationQueryAdmissionDenialKind::Authorization(
-                        Authority::Refused(
-                            Refused::PermissionDenied
-                                | Refused::ScopeMismatch
-                                | Refused::RelationalObservationRejected
-                        )
-                    )
-                ) {
-                    Stop::Scope(absent)
-                } else {
-                    Stop::Admission(cause)
+                match absent {
+                    Some(absent)
+                        if matches!(
+                            cause.kind(),
+                            WorthQueryApplicationQueryAdmissionDenialKind::Authorization(
+                                Authority::Refused(
+                                    Refused::PermissionDenied
+                                        | Refused::ScopeMismatch
+                                        | Refused::RelationalObservationRejected
+                                )
+                            )
+                        ) =>
+                    {
+                        Stop::Scope(absent)
+                    }
+                    _ => Stop::Admission(cause),
                 }
             })?;
         consume(plan, native)
+    }
+
+    /// The one-shot controls of an applied Source admission, built exactly as
+    /// the committed admission builds them (`with_resolved_plan`).
+    pub(super) fn applied_source_controls<B: ApplicationQueryBinding<S>>(
+        &self,
+        installed: &worth_query_installation::facade::WorthQueryInstalledApplicationQueryBinding<
+            S,
+            B,
+        >,
+    ) -> Result<WorthQueryApplicationQueryControls<'_, S>, SourceQueryObservationStop> {
+        use SourceQueryObservationStop as Stop;
+        let selected = self.shared.selected();
+        let (product, basis) = self
+            .application
+            .retain_selected_query_basis_admitted(self.shared)
+            .map_err(Stop::Basis)?;
+        let limits = self
+            .application
+            .resolve_application_query_limits(installed.limits());
+        let query_maximum =
+            NonZeroUsize::new(installed.query().read_graph().maximum_result_count())
+                .unwrap_or(NonZeroUsize::MAX);
+        Ok(WorthQueryApplicationQueryControls::selected_read_one_shot(
+            product,
+            basis,
+            limits.maximum_results().min(query_maximum),
+            self.request,
+        )
+        .map_err(|cause| Stop::Read(WorthQueryAdmittedOneShotStop::Admission(cause)))?
+        .with_selection_origin(selected.selection_origin())
+        .with_original_settled_producer(selected.original_settled_producer().cloned()))
     }
 }

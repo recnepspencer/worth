@@ -100,7 +100,7 @@ pub fn provider(cause: &ProviderExecutionDenial) -> Cause<'_> {
             SelectionDenial::ForeignSelection => Cause::Refused(Refusal::ForeignSelection),
         },
         ProviderExecutionDenial::ForeignAssociation => Cause::Refused(Refusal::ForeignAssociation),
-
+        ProviderExecutionDenial::PriorEffectRead => Cause::Refused(Refusal::PriorEffectRead),
     }
 }
 fn native_source(

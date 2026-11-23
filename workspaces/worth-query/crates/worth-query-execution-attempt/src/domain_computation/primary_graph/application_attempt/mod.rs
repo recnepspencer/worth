@@ -1,3 +1,4 @@
+pub use fact::AppliedSourceAlignment;
 pub use fact::IndexedSelectionReobserveDenial;
 pub use fact::ManagedSourceRead;
 pub use fact::ManagedSourceReadKey;

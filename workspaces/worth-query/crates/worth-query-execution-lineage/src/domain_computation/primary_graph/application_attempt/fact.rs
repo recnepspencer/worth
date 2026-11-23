@@ -11,6 +11,7 @@ pub mod image;
 pub mod indexed_entity_selection;
 pub use indexed_entity_selection::applied::observe as observe_applied_indexed_entity_selection;
 pub mod locator_identity;
+pub mod applied_source_alignment;
 pub mod managed_source_read;
 pub mod movement;
 pub mod retirement_equality;
@@ -20,6 +21,7 @@ pub mod touch_key;
 
 pub mod source_merge;
 pub mod source_publication_read;
+pub use applied_source_alignment::AppliedSourceAlignment;
 pub use managed_source_read::ManagedSourceRead;
 
 pub mod workflow_definition_predecessor;

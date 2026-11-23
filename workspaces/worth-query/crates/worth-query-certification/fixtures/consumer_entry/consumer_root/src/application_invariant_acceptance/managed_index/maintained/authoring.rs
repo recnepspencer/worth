@@ -1,4 +1,5 @@
 //! Installed catalog operations issue the records and memberships used by the court.
+use super::protected::access::grants::{BoxGrant, GrantIdentity, GrantResource};
 use super::{bounds, ordered_decision::Entries, schema::*};
 use worth_query_decl::facade::{application_operation::*, application_schema::*, *};
 use worth_query_host::facade::primary_graph::*;
@@ -12,6 +13,13 @@ pub(super) use population::populate;
 pub enum Edit {
     Directory {
         identity: String,
+    },
+    /// A new Directory under the watch grant: a peer of `catalog`.
+    GrantedDirectory {
+        identity: String,
+    },
+    RetireDirectory {
+        directory: String,
     },
     Item {
         directory: String,
@@ -51,15 +59,16 @@ pub enum Denial {
 pub struct Decision {
     directory: WorthQueryInvariantMutationTarget<Catalog, Directory>,
     item: Option<WorthQueryInvariantMutationTarget<Catalog, Item>>,
+    grant: Option<WorthQueryInvariantMutationTarget<Catalog, BoxGrant>>,
 }
 worth_query_structured_value_binding!(pub InputBinding for Edit { identity: "maintained-catalog.authoring.input.v1" });
 worth_query_structured_value_binding!(pub ResultBinding for Changed { identity: "maintained-catalog.authoring.result.v1" });
 worth_query_structured_value_binding!(pub DenialBinding for Denial { identity: "maintained-catalog.authoring.denial.v1" });
 worth_query_operation!(pub AuthorCatalog for Catalog, input InputBinding);
-worth_query_operation_reads!(AuthorCatalog => [Directory,Item,Contains]);
+worth_query_operation_reads!(AuthorCatalog => [Directory,Item,Contains,BoxGrant]);
 worth_query_operation_creates!(AuthorCatalog => [Directory, Item]);
-worth_query_operation_links!(AuthorCatalog => [Contains, Entries]);
-worth_query_operation_deletes!(AuthorCatalog => [Item]);
+worth_query_operation_links!(AuthorCatalog => [Contains, Entries, GrantResource]);
+worth_query_operation_deletes!(AuthorCatalog => [Item, Directory]);
 
 fn scope(_: &Edit) -> String {
     "catalog".into()
@@ -91,6 +100,10 @@ pub(super) fn declare(
         .operation_read_field(op, ItemIdentity::at("ItemIdentity"))
         .operation_read_field(op, ItemEnabled::at("ItemEnabled"))
         .operation_read_relation(op, Contains::reference())
+        .operation_read_entity(op, BoxGrant::reference())
+        .operation_read_field(op, GrantIdentity::at("GrantIdentity"))
+        .operation_link(op, GrantResource::reference())
+        .operation_delete(op, Directory::reference())
         .operation_create(op, Directory::reference())
         .operation_create(op, Item::reference())
         .operation_link(op, Contains::reference())

@@ -188,6 +188,22 @@ impl Fact {
             {
                 observation.supports_final_candidate(execution, runtime, before, complete)
             }
+            // A coupled decision's aligned read: current at C, no later
+            // append changed its Source or Parent reads, and its permission
+            // support is the same after the reader as at completion.
+            Self::ManagedIndexSource { observation }
+                if observation.applied_alignment().is_some() =>
+            {
+                let alignment = observation.applied_alignment().expect("guarded alignment");
+                Ok(self.remains_equal_in_image(runtime, execution, before, None)?
+                    && alignment.unchanged_between(
+                        after_own.candidate_identity(),
+                        complete.candidate_identity(),
+                    )
+                    && observation
+                        .authorization()
+                        .permission_equal_between(execution, &a, &b)?)
+            }
             Self::SourcePublication { observation }
                 if observation.applied_candidate().is_some() =>
             {

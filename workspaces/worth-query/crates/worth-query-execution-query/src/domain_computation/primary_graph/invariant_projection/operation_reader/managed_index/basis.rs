@@ -33,7 +33,9 @@ impl<'r> DecisionReadBasis<'r> {
         let basis = match *native {
             NativeProjectionRead::Committed(runtime) => Self::Committed(runtime),
             NativeProjectionRead::Applied {
-                before, candidate, ..
+                before,
+                candidate,
+                own_outputs,
             } => {
                 // The candidate must be built on exactly the borrowed basis.
                 if candidate
@@ -46,8 +48,10 @@ impl<'r> DecisionReadBasis<'r> {
                 }
                 Self::Applied(AppliedManagedIndexRead {
                     assembly: access.applied_managed_sources.ok_or_else(unavailable)?,
+                    participants: access.applied_participants.ok_or_else(unavailable)?,
                     before,
                     candidate,
+                    own: own_outputs,
                 })
             }
         };

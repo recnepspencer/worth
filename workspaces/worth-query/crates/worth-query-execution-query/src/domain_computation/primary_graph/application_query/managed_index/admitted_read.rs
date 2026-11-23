@@ -227,17 +227,21 @@ where
             return Err(Denial::ForeignAssociation);
         }
         let association = admit_parent::<S, B>(execution, access, &plan, native, &allocation)?;
-        if let Some(applied) = applied
-            && !applied.is_aligned(
+        // An aligned applied read keeps the committed index probe; its claim
+        // is the read's candidate support. Anything else reads the candidate.
+        let alignment = match applied {
+            None => None,
+            Some(applied) => match applied.aligned(
                 execution, access.application, &association, plan.scope.entity_id(),
                 plan.query.read_graph(),
                 &worth_query_declaration::facade::application_query::ApplicationQueryBindingReference::of::<S, B>(),
-            )?
-        {
-            return super::applied_read::read_decision::<S, B>(
-                execution, access, plan, applied, association, &allocation, native,
-            );
-        }
+            )? {
+                Some(alignment) => Some(alignment),
+                None => return super::applied_read::read_decision::<S, B>(
+                    execution, access, plan, applied, association, &allocation, native,
+                ),
+            },
+        };
         let completed = read::<S, B>(execution, access, plan, association, native, &allocation)?;
         let dependency = completed
             .read
@@ -246,7 +250,13 @@ where
             .invocation_managed_source()
             .map_err(|_| Denial::ForeignAssociation)?
             .ok_or(Denial::ForeignAssociation)?;
-        let dependency = DecisionSource::Committed(Arc::clone(dependency));
+        let dependency = DecisionSource::Committed(match alignment {
+            Some(alignment) => {
+                allocation.claim_arc::<crate::domain_computation::primary_graph::application_attempt::ManagedSourceRead>(execution)?;
+                Arc::new(dependency.as_ref().clone().with_applied_alignment(alignment))
+            }
+            None => Arc::clone(dependency),
+        });
         Ok((completed.read.into_rows(), dependency))
     };
     let result = match applied {
@@ -257,6 +267,7 @@ where
                 intent,
                 applied.before,
                 applied.candidate,
+                applied.own,
                 native,
                 consume,
             )

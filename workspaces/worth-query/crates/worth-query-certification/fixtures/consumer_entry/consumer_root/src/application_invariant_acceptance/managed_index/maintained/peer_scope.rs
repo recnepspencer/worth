@@ -29,6 +29,8 @@ pub enum ProbeRefusal {
     Refused(WorthQueryManagedIndexRefusal),
     /// The original request's cancellation, inside the read.
     Cancelled,
+    /// The probed scope key names no live record at the read's basis.
+    UnknownScope,
     /// Any other refusal.
     Undeclared,
     Other,
@@ -172,6 +174,14 @@ pub fn refusal(cause: WorthQueryManagedIndexDenialCause<'_>) -> ProbeRefusal {
             ) =>
         {
             ProbeRefusal::Cancelled
+        }
+        WorthQueryManagedIndexDenialCause::Scope(scope)
+            if scope.kind()
+                == WorthQueryEntityResolutionDenialKind::Refused(
+                    WorthQueryEntityResolutionRefusalKind::UnknownEntity,
+                ) =>
+        {
+            ProbeRefusal::UnknownScope
         }
         _ => ProbeRefusal::Other,
     }

@@ -8766,6 +8766,17 @@ the admitted before-basis index. Otherwise it probes a temporary managed index
 from the exact applied candidate. A newly created scope can contribute its own
 rows and inherit rows from its ordered-events predecessor. A declared peer
 read sees Source writes already applied by earlier stages of the envelope.
+The scope key resolves on the applied candidate: a scope an earlier stage
+retired refuses as an unknown scope, and a key an earlier stage gave to a new
+record names that record.
+
+A read that reused the before-basis index keeps candidate support. When a
+later member of the same envelope writes a kind, field or relation the
+Parent's Source or its other reads use, the reader derives again where it can;
+otherwise the edit refuses (`CoupledReadSupportChanged`) and publishes
+nothing. A derived-again round whose probe would read a record its own
+earlier round wrote refuses the probe (`PriorEffectRead`) and the round stops
+with that cause.
 
 The temporary index is local to the read. Only successful commit publication
 can advance the published index. Parent and Source READ permissions still run

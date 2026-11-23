@@ -44,6 +44,7 @@ where
     B: ApplicationQueryBinding<S>,
     ResultValue<S, B>: WorthQueryApplicationProjection<S, B::Query>,
 {
+    super::own_outputs::require_scope(applied.own, plan.scope.entity_id())?;
     let lease = select_parent::<S, B>(
         execution,
         access,
@@ -117,6 +118,8 @@ where
         allocation,
         control,
     )?;
+    // A successor round never sees a row its own chain's effect produced.
+    super::own_outputs::require_facts(execution, applied.own, &facts)?;
     let authorization = Arc::clone(support.authorization());
     plan.graph_work
         .complete_query_read(
