@@ -1,5 +1,6 @@
-//! One Original root owner carries its envelope, encoded payload and original funding.
-use super::super::{reserve_arc_memory, RelationalBranchRootCaptureDenial as Denial};
+//! Share an original canonical envelope with its exact encoded payload and funding.
+use crate::branch::retained_allocation::reserve_arc_memory;
+use crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial as Denial;
 use crate::history::data::CanonicalCommitEnvelope;
 use sha2::{Digest, Sha256};
 use std::{

@@ -1,15 +1,13 @@
-use crate::runtime::state::subsystems::history::history_canonical_routes::{
-    mark_publication_settled, publication_requires_settlement,
-};
+use crate::runtime::state::subsystems::history::history_canonical_routes::mark_publication_settled;
 use std::sync::Arc;
 
 use crate::authority::commit::pipeline::publish_commit_execution;
-use crate::history::data::{CommitId, RelationalCommitReceipt};
-use crate::publication::data::PublicationSettlementRepairError;
-use crate::runtime::{
-    PendingRelationalPublicationSettlement, PerformedRelationalSettlement, RelationalRuntime,
+use crate::history::data::RelationalCommitReceipt;
+use crate::runtime::state::runtime_state::publication_settlement_registry::record::{
+    PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
     RelationalSettlementClaim,
 };
+use crate::runtime::RelationalRuntime;
 use crate::transactions::data::outcomes::commit_result::CommitResult;
 
 /// Terminal answer produced by the one executor of a pending settlement.
@@ -199,51 +197,5 @@ impl RelationalRuntime {
                 }
             }
         }
-    }
-
-    /// Resolve a settled commit identity that no longer has a pending record.
-    ///
-    /// Return the original receipt from settled performed custody or the actual
-    /// recovery-admitted checkpoint catalog. This does not promote recovered
-    /// meaning to a live performed effect or execute derived work again.
-    pub(crate) fn settled_receipt_without_record(
-        &self,
-        commit_id: CommitId,
-    ) -> Result<RelationalCommitReceipt, PublicationSettlementRepairError> {
-        if publication_requires_settlement(&self.history, commit_id) {
-            return Err(PublicationSettlementRepairError::RecoveryUnavailable { commit_id });
-        }
-        if let Some(artifact) = self.history.commit_artifact(commit_id) {
-            let cell = artifact.envelope_residency();
-            if let Some((entry, source)) = cell.source_placement()
-                && let Some(admitted) = self
-                    .durability
-                    .checkpoint_selection()
-                    .admitted_commit(&entry)
-                    .map_err(|_| PublicationSettlementRepairError::RecoveryUnavailable {
-                        commit_id,
-                    })?
-            {
-                if !self
-                    .durability
-                    .checkpoint_selection()
-                    .matches_admitted_source(&admitted, &source)
-                    || !matches!(
-                        self.history.associated_effect_settlement(&entry, &cell),
-                        Some(crate::durability::authority::RelationalAssociatedEffectSettlement::CheckpointReadmitted)
-                    )
-                {
-                    return Err(PublicationSettlementRepairError::RecoveryUnavailable {
-                        commit_id,
-                    });
-                }
-                return Ok(admitted.index().commit.clone());
-            }
-        }
-        let positioned = self
-            .history
-            .positioned_canonical_commit(commit_id)
-            .ok_or(PublicationSettlementRepairError::RecoveryUnavailable { commit_id })?;
-        Ok(positioned.envelope().commit.clone())
     }
 }

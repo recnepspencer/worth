@@ -183,7 +183,7 @@ fn settlement_releases_a_journal_flight_but_preserves_memory_history_and_positio
         let body = performed.canonical_arc().clone();
         let weak = Arc::downgrade(&body);
         let original =
-            crate::branch::RelationalOriginalRootCommitEvidence::prepare(&execution, body).unwrap();
+            crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(&execution, body).unwrap();
         let cell = RelationalCommitEnvelopeResidency::resident(original);
         let reads = source.reads.load(Ordering::Relaxed);
         cell.bind_performed(
@@ -277,7 +277,10 @@ fn unpositioned_memory_envelopes_and_cold_digests_refuse_explicitly() {
     conflicting.body_mut_for_test().commit.version_id = crate::identity::data::VersionId(u64::MAX);
     assert_eq!(artifact.matches_envelope(&conflicting), Ok(false));
     let original =
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(&execution, envelope).unwrap();
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
+            &execution, envelope,
+        )
+        .unwrap();
     let cell = RelationalCommitEnvelopeResidency::resident(original);
     let Err(crate::durability::data::recovery_stop::RelationalRecoveryStop::Durability(failure)) =
         cell.demand_positioned(&execution, 1 << 30)

@@ -3,6 +3,7 @@ use super::*;
 use crate::branch::basis_axis_validation::{
     require_current_descriptor_axes, require_root_matches_reference,
 };
+use crate::branch::basis_descriptor::RelationalLiveBranchBasisDescriptorAxes;
 use crate::branch::canonical_runtime_frame::CANONICAL_RUNTIME_INSTANCE_ID;
 use crate::branch::lifecycle::RelationalBranchLifecyclePosture;
 use crate::branch::reference::RelationalBranchCellCheckpoint;

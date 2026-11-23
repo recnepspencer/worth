@@ -6,6 +6,7 @@ mod performed_settlement;
 mod post_commit_consumer;
 mod post_commit_consumption;
 mod post_commit_diagnostics;
+mod settled_receipt;
 mod settlement_port;
 
 use crate::diagnostics::data::RelationalDiagnosticsProfile;

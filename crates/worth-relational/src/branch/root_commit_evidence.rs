@@ -1,11 +1,9 @@
 //! A root carries either its original frame or selected checkpoint evidence.
 use super::RelationalBranchRootSchemaAuthority;
 use crate::durability::checkpoint_admission::CheckpointAdmittedCommit;
+pub(crate) use crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence;
 use crate::history::data::{CanonicalCommitEnvelope, RelationalCommitReceipt};
 use std::sync::Arc;
-#[path = "root_original_evidence.rs"]
-mod original;
-pub(crate) use original::RelationalOriginalRootCommitEvidence;
 
 #[derive(Debug, Clone)]
 pub(crate) enum RelationalRootCommitEvidence {

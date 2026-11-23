@@ -11,7 +11,8 @@ use crate::history::data::{CanonicalCommitEnvelope, CommitId, RelationalCommitRe
 use crate::runtime::RelationalRuntime;
 
 use super::validation::{
-    validate_publication, PublicationRequest, PublicationSequence, ValidatedPublication,
+    validate_prepared_publication, validate_publication, PublicationRequest, PublicationSequence,
+    ValidatedPublication,
 };
 
 pub(crate) struct RelationalPublicationAuthority<'runtime> {
@@ -114,7 +115,7 @@ fn prepare_versioned_publication(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     commit_id: CommitId,
     commit_reference: RelationalCommitReceipt,
-    binding: &AdmittedRelationalBranchBasis,
+    validated: ValidatedPublication,
     selected_branch_state: &SelectedRelationalBranchState,
     published_partition_delta: crate::storage::RelationalPublishedPartitionDelta,
     envelope: Arc<CanonicalCommitEnvelope>,
@@ -127,13 +128,6 @@ fn prepare_versioned_publication(
     crate::runtime::state::subsystems::history::PreparedVersionedArtifactPublication,
     PublicationPreparationDenial,
 > {
-    let validated = runtime.validate_publication_request(PublicationRequest {
-        commit_id,
-        commit_reference: &commit_reference,
-        binding,
-        envelope: envelope.as_ref(),
-        sequence,
-    })?;
     let sequence_successors =
         crate::runtime::state::subsystems::history::PreparedCommitSequence::new(&commit_reference)?;
     let prepared_root = runtime.prepare_publication_root(
@@ -265,12 +259,23 @@ impl RelationalPreparationPublicationAuthority<'_> {
         schema_registry: &crate::schema::data::RelationalSchemaRegistry,
         output_positions: Option<crate::history::data::RequiredOutputPublicationPositions>,
     ) -> Result<PreparedRelationalPublication, PublicationPreparationDenial> {
+        let validated = validate_prepared_publication(
+            &self.runtime.history,
+            self.runtime.runtime_instance_id(),
+            PublicationRequest {
+                commit_id,
+                commit_reference: &commit_reference,
+                binding,
+                envelope: &envelope,
+                sequence: PublicationSequence::Truth,
+            },
+        )?;
         let publication = prepare_versioned_publication(
             self.runtime,
             execution,
             commit_id,
             commit_reference,
-            binding,
+            validated,
             selected_branch_state,
             published_partition_delta,
             envelope,
@@ -294,7 +299,7 @@ impl<'runtime> RelationalPublicationAuthority<'runtime> {
         envelope: &CanonicalCommitEnvelope,
     ) -> Result<(), String> {
         validate_publication(
-            self.runtime,
+            &self.runtime.history,
             PublicationRequest {
                 commit_id,
                 commit_reference,

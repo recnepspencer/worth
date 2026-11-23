@@ -2,7 +2,8 @@ use crate::publication::close_custody::RelationalPublicationCompanionCustody;
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock, RwLockReadGuard, Weak};
 
-use crate::runtime::{RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding};
+use crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding;
+use crate::runtime::RelationalRuntimeOwnerBinding;
 
 use super::RelationalPublicationCompanion;
 
@@ -61,6 +62,29 @@ impl CompanionRegistry {
         Self {
             state: RwLock::new(next),
         }
+    }
+
+    pub(super) fn begin_required(&self) -> Result<u64, PublicationCompanionRegistrationStop> {
+        let mut state = registry_guard::acquire(
+            self.state.try_write(),
+            PublicationCompanionRegistrationStop::PublicationPending,
+        )?;
+        #[cfg(test)]
+        guard_fault::after_acquisition(guard_fault::Door::Begin);
+        let generation = match &*state {
+            CompanionRegistrationState::Standalone => 1,
+            CompanionRegistrationState::RequiredRebind { generation }
+            | CompanionRegistrationState::RequiredActive { generation, .. } => generation
+                .checked_add(1)
+                .ok_or(PublicationCompanionRegistrationStop::IdentityExhausted)?,
+        };
+        let retired = std::mem::replace(
+            &mut *state,
+            CompanionRegistrationState::RequiredRebind { generation },
+        );
+        drop(state);
+        drop(retired);
+        Ok(generation)
     }
 
     pub(crate) fn enter(
@@ -180,26 +204,7 @@ impl PublicationCompanionRegistrationPort {
             .owner
             .admit()
             .ok_or(PublicationCompanionRegistrationStop::OwnerUnavailable)?;
-        let registry = self.publication.companion_registry();
-        let mut state = registry_guard::acquire(
-            registry.state.try_write(),
-            PublicationCompanionRegistrationStop::PublicationPending,
-        )?;
-        #[cfg(test)]
-        guard_fault::after_acquisition(guard_fault::Door::Begin);
-        let generation = match &*state {
-            CompanionRegistrationState::Standalone => 1,
-            CompanionRegistrationState::RequiredRebind { generation }
-            | CompanionRegistrationState::RequiredActive { generation, .. } => generation
-                .checked_add(1)
-                .ok_or(PublicationCompanionRegistrationStop::IdentityExhausted)?,
-        };
-        let retired = std::mem::replace(
-            &mut *state,
-            CompanionRegistrationState::RequiredRebind { generation },
-        );
-        drop(state);
-        drop(retired);
+        let generation = self.publication.companion_registry().begin_required()?;
         Ok(PendingCompanionRegistration {
             port: self.clone(),
             generation,

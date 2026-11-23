@@ -38,3 +38,4 @@ mod commit_strategies;
 mod commit_result_publication;
 mod pinned_read_custody;
 mod pinned_read_publication;
+mod public_cache_publication;

@@ -12,7 +12,7 @@ pub(crate) struct CanonicalCodecRetirementKind {
 pub(crate) struct CanonicalRequiredOutputCodecRetirement {
     pub(crate) publication: CommitId,
     pub(crate) meaning: crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning,
-    pub(crate) source: crate::branch::RelationalBranchBasisDescriptor,
+    pub(crate) source: crate::branch::basis_descriptor::RelationalBranchBasisDescriptor,
     pub(crate) retiring: RelationalCommitReceipt,
     pub(crate) kinds: std::sync::Arc<Vec<CanonicalCodecRetirementKind>>,
     pub(crate) activation:

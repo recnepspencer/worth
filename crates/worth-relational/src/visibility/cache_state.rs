@@ -4,7 +4,8 @@ pub(crate) use historical_materialization::{
 };
 
 use crate::capabilities::VisibilityPolicySource;
-use crate::runtime::{RelationalRuntime, VisibilityResidency};
+use crate::runtime::state::subsystems::visibility::cache::VisibilityResidency;
+use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::{SnapshotId, SnapshotReadPolicy};
 use crate::visibility::snapshot_states::{
     HistoricalVisibilityBasis, HistoricalVisibilityDenial, SnapshotState, VisibilitySnapshotBasis,

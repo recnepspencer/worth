@@ -3,7 +3,8 @@ use crate::branch::reference::RelationalBranchReferenceCell;
 use crate::branch::target::RelationalBranchTarget;
 use crate::history::data::BranchId;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, RelationalCommitReceipt};
-use crate::runtime::RelationalRuntime;
+use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
+use crate::runtime::state::subsystems::history::HistorySubsystem;
 use worth_foundational::FoundationalBranchTarget;
 
 #[derive(Debug, Clone, Copy)]
@@ -67,75 +68,64 @@ fn validate_publication_identity(request: &PublicationRequest<'_>) -> Result<(),
 }
 
 pub(crate) fn validate_publication(
-    runtime: &RelationalRuntime,
+    history: &HistorySubsystem,
     request: PublicationRequest<'_>,
 ) -> Result<ValidatedPublication, String> {
     let branch_id = request.binding.identity().branch_id();
     validate_publication_identity(&request)?;
     let catalog_admission = match request.sequence {
-        PublicationSequence::Truth => runtime
-            .history
-            .validate_new_catalog_envelope(request.envelope),
-        PublicationSequence::RecoveryTruth => {
-            runtime.history.validate_catalog_envelope(request.envelope)
-        }
+        PublicationSequence::Truth => history.validate_new_catalog_envelope(request.envelope),
+        PublicationSequence::RecoveryTruth => history.validate_catalog_envelope(request.envelope),
     };
     catalog_admission
         .map_err(|denial| format!("publication catalog admission denied: {denial:?}"))?;
-    let cell = runtime
-        .history
-        .branch_cell(branch_id)
-        .map(|cell| cell.clone_for_head_replacement())
-        .ok_or_else(|| {
-            format!(
-                "publication cannot mint a missing branch cell `{}`",
-                branch_id.0
-            )
-        })?;
-    let roots = RelationalBranchTarget::roots_for_commit(request.commit_reference);
-    let target = RelationalBranchTarget::from_commit_receipt(
-        runtime.history.runtime_instance_id,
+    advance_publication_head(
+        branch_id,
+        history
+            .branch_cell(branch_id)
+            .map(|cell| cell.clone_for_head_replacement()),
+        history.runtime_instance_id,
         request.commit_reference,
-        roots,
-    );
-    cell.advance_truth(FoundationalBranchTarget::basis(target))
-        .map_err(|denial| format!("publication branch advance denied: {denial:?}"))?;
-    Ok(ValidatedPublication {
-        branch_id: branch_id.clone(),
-        next_cell: cell,
-    })
+    )
 }
 
 pub(crate) fn validate_prepared_publication(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    history: &RelationalPreparationHistory,
+    runtime_instance_id: u64,
     request: PublicationRequest<'_>,
 ) -> Result<ValidatedPublication, String> {
     let branch_id = request.binding.identity().branch_id();
     validate_publication_identity(&request)?;
     match request.sequence {
-        PublicationSequence::Truth => runtime
-            .history
-            .validate_new_publication_envelope(request.envelope),
-        PublicationSequence::RecoveryTruth => runtime
-            .history
-            .validate_recovery_publication_envelope(request.envelope),
+        PublicationSequence::Truth => history.validate_new_publication_envelope(request.envelope),
+        PublicationSequence::RecoveryTruth => {
+            history.validate_recovery_publication_envelope(request.envelope)
+        }
     }?;
-    let cell = runtime
-        .history
-        .branch_cell(branch_id)
-        .map(|cell| cell.clone_for_head_replacement())
-        .ok_or_else(|| {
-            format!(
-                "publication cannot mint a missing branch cell `{}`",
-                branch_id.0
-            )
-        })?;
-    let roots = RelationalBranchTarget::roots_for_commit(request.commit_reference);
-    let target = RelationalBranchTarget::from_commit_receipt(
-        runtime.runtime_instance_id(),
+    advance_publication_head(
+        branch_id,
+        history
+            .branch_cell(branch_id)
+            .map(|cell| cell.clone_for_head_replacement()),
+        runtime_instance_id,
         request.commit_reference,
-        roots,
-    );
+    )
+}
+
+fn advance_publication_head(
+    branch_id: &BranchId,
+    cell: Option<RelationalBranchReferenceCell>,
+    runtime_instance_id: u64,
+    commit: &RelationalCommitReceipt,
+) -> Result<ValidatedPublication, String> {
+    let cell = cell.ok_or_else(|| {
+        format!(
+            "publication cannot mint a missing branch cell `{}`",
+            branch_id.0
+        )
+    })?;
+    let roots = RelationalBranchTarget::roots_for_commit(commit);
+    let target = RelationalBranchTarget::from_commit_receipt(runtime_instance_id, commit, roots);
     cell.advance_truth(FoundationalBranchTarget::basis(target))
         .map_err(|denial| format!("publication branch advance denied: {denial:?}"))?;
     Ok(ValidatedPublication {

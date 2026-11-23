@@ -82,7 +82,9 @@ impl RelationalCommitArtifact {
     }
 
     pub(crate) fn from_preencoded(
-        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        original: Arc<
+            crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence,
+        >,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
         let envelope = original.envelope();
         retained_entity_selection::validate(envelope)?;
@@ -111,7 +113,9 @@ impl RelationalCommitArtifact {
     }
 
     pub(crate) fn from_preencoded_with_descriptor(
-        original: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        original: Arc<
+            crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence,
+        >,
         roots: RelationalCommitRootDescriptor,
     ) -> Result<Self, RelationalCommitArtifactDenial> {
         let envelope = original.envelope();

@@ -28,7 +28,8 @@ pub(crate) struct RelationalCommitEnvelopeResidency {
 #[derive(Debug)]
 enum EnvelopeBacking {
     Memory {
-        canonical: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        canonical:
+            Arc<crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence>,
         original: Option<worth_execution::ExecutionImmutableBytes>,
     },
     SelectedCheckpoint {
@@ -70,7 +71,9 @@ impl EnvelopeState {
 }
 impl RelationalCommitEnvelopeResidency {
     pub(crate) fn resident(
-        canonical: Arc<crate::branch::RelationalOriginalRootCommitEvidence>,
+        canonical: Arc<
+            crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence,
+        >,
     ) -> Self {
         let payload_digest = canonical.payload_digest();
         let canonical_payload_bytes = canonical.payload().len() as u64;
@@ -157,7 +160,8 @@ impl RelationalCommitEnvelopeResidency {
     }
     pub(crate) fn original_owner(
         &self,
-    ) -> Option<Arc<crate::branch::RelationalOriginalRootCommitEvidence>> {
+    ) -> Option<Arc<crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence>>
+    {
         let state = self.state.lock().unwrap_or_else(|error| error.into_inner());
         match &state.backing {
             EnvelopeBacking::Memory { canonical, .. } => Some(Arc::clone(canonical)),

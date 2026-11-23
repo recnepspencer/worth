@@ -14,12 +14,17 @@ pub(crate) mod basis_counters;
 mod basis_currentness;
 mod basis_currentness_runtime;
 pub(crate) mod basis_denial;
+#[path = "envelope/basis_descriptor.rs"]
+pub(crate) mod basis_descriptor;
 mod basis_descriptor_resolution;
 mod basis_identity_validation;
 mod basis_observation;
 mod basis_readmission;
 pub(crate) mod basis_registry;
 pub(crate) mod home_program_step;
+#[path = "envelope/retained_allocation.rs"]
+pub(crate) mod retained_allocation;
+pub(crate) mod root_capture_denial;
 #[cfg(test)]
 pub(crate) use basis_registry::{
     assert_original_registry_busy, assert_pruned_original_registration,

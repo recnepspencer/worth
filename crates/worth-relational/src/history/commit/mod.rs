@@ -1,6 +1,7 @@
 mod artifact;
 mod catalog;
 mod identity;
+pub(crate) mod original_payload;
 mod parentage;
 pub(crate) mod payload_commitment;
 

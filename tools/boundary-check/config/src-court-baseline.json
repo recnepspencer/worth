@@ -224,7 +224,7 @@
 {"source":"crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/cache_retirement.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/cache_retirement/retained_affinity.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/mvcc/publication/companion/cell/managed_source/correspondence/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
-{"source":"crates/worth-relational/src/mvcc/publication/companion/cell/public_cache/tests.rs","module":"file","roots":["ExecutionRequest","RelationalRuntime","SerialRequest"]},
+{"source":"crates/worth-relational/src/mvcc/publication/companion/cell/public_cache/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/mvcc/publication/companion/registration/poison_recovery.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/mvcc/publication/companion/registration/retirement/tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
 {"source":"crates/worth-relational/src/mvcc/transaction/overlay_normalization/no_raw_keys.rs","module":"file","roots":["ExecutionRequest"]},

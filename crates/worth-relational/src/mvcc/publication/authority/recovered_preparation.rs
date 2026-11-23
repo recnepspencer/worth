@@ -28,12 +28,22 @@ impl RelationalPublicationAuthority<'_> {
                     crate::branch::root::RelationalBranchRootCaptureDenial::Content(cause),
                 )
             })?;
+        let validated = validate_publication(
+            &self.runtime.history,
+            PublicationRequest {
+                commit_id,
+                commit_reference: &commit_reference,
+                binding,
+                envelope: &envelope,
+                sequence: PublicationSequence::RecoveryTruth,
+            },
+        )?;
         let prepared = prepare_versioned_publication(
             self.runtime,
             execution,
             commit_id,
             commit_reference,
-            binding,
+            validated,
             &selected_branch_state,
             published_partition_delta,
             envelope,

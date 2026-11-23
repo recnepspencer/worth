@@ -5,7 +5,8 @@ use super::{
     PublicationCompanionRegistrationPort, PublicationCompanionRegistrationStop as Stop,
 };
 use crate::branch::identity::RelationalBranchIdentity;
-use crate::runtime::{PositionedRelationalSnapshot, RelationalRuntime};
+use crate::runtime::RelationalRuntime;
+use crate::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
 use std::sync::Arc;
 
 impl PublicationCompanionRegistration {

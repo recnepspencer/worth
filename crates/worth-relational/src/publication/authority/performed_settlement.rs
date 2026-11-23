@@ -62,7 +62,11 @@ impl RelationalRuntime {
                     runtime_instance_id: self.runtime_instance_id(),
                 });
             }
-            return self.settled_receipt_without_record(commit_id);
+            return super::settled_receipt::settled_receipt_without_record(
+                &self.history,
+                self.durability.checkpoint_selection(),
+                commit_id,
+            );
         };
         if record.runtime_instance_id() != self.runtime_instance_id() {
             return Err(PublicationSettlementRepairError::ForeignRuntime {

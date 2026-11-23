@@ -1,6 +1,7 @@
 //! Complete producer publication membership, independent of member data patches.
 use super::{CanonicalCommitEnvelope, CanonicalCommitEnvelopeBody};
-use crate::branch::{AdmittedRelationalBranchBasis, RelationalBranchBasisDescriptor};
+use crate::branch::basis_descriptor::RelationalBranchBasisDescriptor;
+use crate::branch::AdmittedRelationalBranchBasis;
 use crate::history::data::CommitId;
 use crate::identity::data::{EntityId, KindId, VersionId};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;

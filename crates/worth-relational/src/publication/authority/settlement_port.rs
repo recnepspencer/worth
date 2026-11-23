@@ -4,10 +4,8 @@ use std::sync::Weak;
 
 use crate::history::data::{CommitId, RelationalCommitReceipt};
 use crate::publication::data::PublicationSettlementRepairError;
-use crate::runtime::{
-    RelationalRuntime, RelationalRuntimeOwnerBinding, RelationalRuntimePublicationBinding,
-    RelationalRuntimeState,
-};
+use crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding;
+use crate::runtime::{RelationalRuntime, RelationalRuntimeOwnerBinding, RelationalRuntimeState};
 use crate::transactions::data::outcomes::commit_result::CommitResult;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 

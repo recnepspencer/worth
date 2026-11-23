@@ -2,11 +2,6 @@
 use super::*;
 
 pub(super) trait PublicationPreparationRuntime {
-    fn validate_publication_request(
-        &self,
-        request: PublicationRequest<'_>,
-    ) -> Result<ValidatedPublication, String>;
-
     fn prepare_publication_root(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -25,13 +20,6 @@ pub(super) trait PublicationPreparationRuntime {
 }
 
 impl PublicationPreparationRuntime for RelationalRuntime {
-    fn validate_publication_request(
-        &self,
-        request: PublicationRequest<'_>,
-    ) -> Result<ValidatedPublication, String> {
-        validate_publication(self, request)
-    }
-
     fn prepare_publication_root(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
@@ -74,13 +62,6 @@ impl PublicationPreparationRuntime for RelationalRuntime {
 }
 
 impl PublicationPreparationRuntime for crate::runtime::RelationalPreparationRuntime {
-    fn validate_publication_request(
-        &self,
-        request: PublicationRequest<'_>,
-    ) -> Result<ValidatedPublication, String> {
-        crate::mvcc::publication::validation::validate_prepared_publication(self, request)
-    }
-
     fn prepare_publication_root(
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,

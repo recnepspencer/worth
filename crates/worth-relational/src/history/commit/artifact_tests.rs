@@ -32,7 +32,7 @@ fn recovery_relinks_an_already_sealed_payload_without_reencoding_or_weakening_ro
         .cloned()
         .expect("committed root carries its canonical envelope");
     let preencoded = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
             execution,
             Arc::clone(&envelope),
         )
@@ -90,7 +90,7 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
         .expect("the performed commit owns one canonical envelope")
         .copy_original_for_test(execution);
     let baseline_artifact = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
             execution,
             Arc::new(envelope.copy_original_for_test(execution)),
         )
@@ -146,8 +146,11 @@ fn canonical_artifact_accounting_excludes_nested_diagnostic_perturbation() {
             .canonicalized(),
         );
     let artifact = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(execution, Arc::new(envelope))
-            .unwrap(),
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            Arc::new(envelope),
+        )
+        .unwrap(),
     )
     .expect("the owner seals the canonical payload allocation");
 
@@ -204,7 +207,7 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
         .copy_original_for_test(execution);
     envelope.body_mut_for_test().derived_index_artifacts = DerivedIndexArtifacts::default();
     let baseline = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
             execution,
             Arc::new(envelope.copy_original_for_test(execution)),
         )
@@ -232,8 +235,11 @@ fn populated_derived_index_artifacts_only_change_the_optional_cache_lane() {
             entries: DerivedIndexEntries::EntityField(Default::default()),
         }]);
     let perturbed = RelationalCommitArtifact::from_preencoded(
-        crate::branch::RelationalOriginalRootCommitEvidence::prepare(execution, Arc::new(envelope))
-            .unwrap(),
+        crate::history::commit::original_payload::RelationalOriginalRootCommitEvidence::prepare(
+            execution,
+            Arc::new(envelope),
+        )
+        .unwrap(),
     )
     .expect("derived artifacts remain outside canonical authority encoding");
 
