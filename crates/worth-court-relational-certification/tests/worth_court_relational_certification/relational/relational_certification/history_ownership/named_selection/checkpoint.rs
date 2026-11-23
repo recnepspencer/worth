@@ -4,6 +4,29 @@
 //! and serve the same names afterward.
 use super::*;
 
+const PINNED: &str = "pinned-at-delete";
+
+/// The lineage `record_history_at_observation` starts from for `entity`.
+fn history_start(
+    execution: &ExecutionRequest<'_, '_>,
+    runtime: &RelationalRuntime,
+    basis: &AdmittedRelationalBranchBasis,
+    entity: EntityId,
+) -> Option<worth_relational::facade::identity::LineageId> {
+    runtime
+        .record_history_at_observation(execution, &basis.observation(), entity)
+        .unwrap()
+        .map(|history| history.start)
+}
+
+/// The sibling branch forked at the deletion, as `runtime` serves it.
+fn pinned_branch(runtime: &RelationalRuntime) -> AdmittedRelationalBranchBasis {
+    let identity = runtime
+        .branch_identity(&BranchId(PINNED.into()))
+        .expect("the pinned sibling survives every restore form");
+    runtime.observe_branch(&identity).unwrap().1
+}
+
 struct Restored {
     runtime: RelationalRuntime,
     named: EntityId,
@@ -34,7 +57,26 @@ fn restored(execution: &ExecutionRequest<'_, '_>) -> Restored {
         PersistentNameOfRecord::Unnamed
     );
     delete(execution, &runtime, &[named, plain]);
+    // Pin the deletion twice: a held observation and a sibling branch.
+    let deleted = head(&runtime);
+    let (_, source) = runtime
+        .observe_fork_source(runtime.main_branch_identity().branch_id())
+        .unwrap();
+    runtime
+        .fork_branch(execution, BranchId(PINNED.into()), source)
+        .unwrap();
+    let pinned_before = history_start(execution, &runtime, &deleted, named);
+    assert_eq!(
+        pinned_before,
+        Some(l1),
+        "the deleted member's history starts at its birth"
+    );
     select(execution, &runtime, model, &born).expect("the deletion is undone");
+    assert_eq!(
+        history_start(execution, &runtime, &deleted, named),
+        Some(l1),
+        "a later restore never changes the pinned answer"
+    );
     let after = head(&runtime);
     let PersistentNameOfRecord::Live {
         name: restored,
@@ -71,6 +113,7 @@ fn served(
     PersistentNameOfRecord,
     String,
     [EntityId; 2],
+    Option<worth_relational::facade::identity::LineageId>,
 ) {
     let after = head(runtime);
     let node = |lineage| {
@@ -86,6 +129,7 @@ fn served(
         name_of(execution, runtime, &after, world.plain),
         resolve(execution, runtime, &after, world.name),
         [node(world.lineages.0), node(world.lineages.1)],
+        history_start(execution, runtime, &pinned_branch(runtime), world.named),
     )
 }
 
@@ -96,6 +140,11 @@ fn a_selection_restore_survives_capture_validation_and_both_restore_forms() {
     let world = restored(execution);
     let original = served(execution, &world.runtime, &world);
     assert_eq!(original.3, [world.named, world.named]);
+    assert_eq!(
+        original.4,
+        Some(world.lineages.0),
+        "the sibling forked at the deletion resolves L1"
+    );
     assert!(original.2.starts_with("Ok(Exact("), "{}", original.2);
     let _ = &world.born;
 

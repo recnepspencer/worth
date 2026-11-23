@@ -69,7 +69,7 @@ pub(super) fn selection_postures(
         return Ok(Vec::new());
     };
     let transition = SelectionTransition::of(selection);
-    if let Some(refusal) = caller_plan_refusal(validated, &transition) {
+    if let Some(refusal) = caller_plan_refusal(validated, &transition, selection.model()) {
         return Err(TransactionCommitError::lineage_name_denial(refusal));
     }
     plan(staged, basis, schema, &transition, validated)
@@ -79,6 +79,7 @@ pub(super) fn selection_postures(
 fn caller_plan_refusal(
     validated: &ValidatedPostureBatch,
     transition: &SelectionTransition,
+    model: EntityId,
 ) -> Option<LineageNameDenial> {
     if validated.postures.is_empty() && validated.minted_births.is_empty() {
         return None;
@@ -90,7 +91,8 @@ fn caller_plan_refusal(
         .chain(&transition.retired)
         .chain(&transition.restored)
         .next()
-        .copied()?;
+        .copied()
+        .unwrap_or(LineageRecordTarget::Entity(model));
     Some(mismatch(
         LineagePostureKind::Restore,
         target,

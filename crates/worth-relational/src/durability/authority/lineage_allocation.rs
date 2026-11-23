@@ -30,7 +30,8 @@ pub(crate) enum LineageAllocationRefusal {
     MalformedRestore { event_id: u64 },
     /// An allocating event names a commit other than its envelope's.
     ForeignCommit { event_id: u64 },
-    /// An explicit entity binding on a relation allocation.
+    /// An explicit entity binding outside an entity `Create` or `Restore`,
+    /// on an entity the commit did not rematerialize, or named twice.
     MalformedEntityBinding { event_id: u64 },
     /// Entity allocations and created entities are not one-to-one.
     EntityAllocationCountMismatch {
@@ -52,7 +53,7 @@ impl LineageAllocationRefusal {
                 "commit {commit_id} allocating lineage event {event_id} names another commit"
             ),
             Self::MalformedEntityBinding { event_id } => format!(
-                "commit {commit_id} relation lineage event {event_id} names an entity"
+                "commit {commit_id} lineage event {event_id} names an entity it may not bind"
             ),
             Self::EntityAllocationCountMismatch {
                 allocations,
@@ -119,29 +120,34 @@ pub(super) fn maximum_allocated_lineage<'event>(
         .max()
 }
 
-/// One commit's lineage events and the entities its patch created.
+/// One commit's lineage events and the entities its patch created or
+/// rematerialized at their original identity.
 pub(crate) struct CommitAllocationView<'commit> {
     pub(crate) commit: &'commit RelationalCommitReceipt,
     pub(crate) events: &'commit [LineageEventRecord],
     pub(crate) created_entities: Vec<EntityId>,
+    pub(crate) rematerialized_entities: Vec<EntityId>,
 }
 
 impl<'commit> CommitAllocationView<'commit> {
     pub(crate) fn of_envelope(envelope: &'commit CanonicalCommitEnvelope) -> Self {
-        let created_entities = envelope
-            .patch
-            .authoritative_record_patches
-            .iter()
-            .filter(|patch| patch.structural_change == RecordStructuralChange::Created)
-            .filter_map(|patch| match patch.target {
-                RecordRef::Entity(entity_id) => Some(entity_id),
-                RecordRef::Relation(_) => None,
-            })
-            .collect();
+        let entities = |change: RecordStructuralChange| {
+            envelope
+                .patch
+                .authoritative_record_patches
+                .iter()
+                .filter(move |patch| patch.structural_change == change)
+                .filter_map(|patch| match patch.target {
+                    RecordRef::Entity(entity_id) => Some(entity_id),
+                    RecordRef::Relation(_) => None,
+                })
+                .collect()
+        };
         Self {
             commit: &envelope.commit,
             events: envelope.lineage_events(),
-            created_entities,
+            created_entities: entities(RecordStructuralChange::Created),
+            rematerialized_entities: entities(RecordStructuralChange::Rematerialized),
         }
     }
 }
@@ -160,8 +166,8 @@ impl<'commit> CommitAllocationView<'commit> {
 pub(crate) fn entity_allocation_bindings(
     view: &CommitAllocationView<'_>,
 ) -> Result<Vec<(LineageId, EntityId)>, LineageAllocationRefusal> {
+    let bound = explicit_entity_bindings(view)?;
     let mut entity_lineages = Vec::new();
-    let mut bound = Vec::new();
     for event in view.events {
         let Some(allocation) = allocated_lineage(event)? else {
             continue;
@@ -171,31 +177,13 @@ pub(crate) fn entity_allocation_bindings(
                 event_id: event.event_id(),
             });
         }
-        match (allocation.subject, event.entity_id()) {
-            (LineageSubject::Entity, Some(entity_id)) => {
-                bound.push((allocation.lineage, entity_id))
-            }
-            (LineageSubject::Entity, None) => entity_lineages.push(allocation.lineage),
-            (LineageSubject::Relation, Some(_)) => {
-                return Err(LineageAllocationRefusal::MalformedEntityBinding {
-                    event_id: event.event_id(),
-                })
-            }
-            (LineageSubject::Relation, None) => {}
+        if allocation.subject == LineageSubject::Entity && event.entity_id().is_none() {
+            entity_lineages.push(allocation.lineage);
         }
     }
     let mut created_entities = view.created_entities.clone();
     created_entities.sort_unstable();
     if entity_lineages.len() != created_entities.len() {
-        return Err(LineageAllocationRefusal::EntityAllocationCountMismatch {
-            allocations: entity_lineages.len(),
-            created_entities: created_entities.len(),
-        });
-    }
-    if bound
-        .iter()
-        .any(|(_, entity)| created_entities.binary_search(entity).is_ok())
-    {
         return Err(LineageAllocationRefusal::EntityAllocationCountMismatch {
             allocations: entity_lineages.len() + bound.len(),
             created_entities: created_entities.len(),
@@ -204,4 +192,38 @@ pub(crate) fn entity_allocation_bindings(
     let mut bindings: Vec<_> = entity_lineages.into_iter().zip(created_entities).collect();
     bindings.extend(bound);
     Ok(bindings)
+}
+
+/// The commit's explicit entity bindings, each anchored to an entity its
+/// patch rematerialized: only an entity-subject `Create` or `Restore` may
+/// name one, never an entity the commit created, and never twice.
+///
+/// Complexity: O(events log E) for E patched entities.
+pub(crate) fn explicit_entity_bindings(
+    view: &CommitAllocationView<'_>,
+) -> Result<Vec<(LineageId, EntityId)>, LineageAllocationRefusal> {
+    let mut rematerialized = view.rematerialized_entities.clone();
+    rematerialized.sort_unstable();
+    let mut bound = Vec::new();
+    let mut seen = std::collections::BTreeSet::new();
+    for event in view.events {
+        let Some(entity_id) = event.entity_id() else {
+            continue;
+        };
+        let malformed = LineageAllocationRefusal::MalformedEntityBinding {
+            event_id: event.event_id(),
+        };
+        let Some(allocation) = allocated_lineage(event)? else {
+            return Err(malformed);
+        };
+        if allocation.subject != LineageSubject::Entity
+            || rematerialized.binary_search(&entity_id).is_err()
+            || view.created_entities.contains(&entity_id)
+            || !seen.insert(entity_id)
+        {
+            return Err(malformed);
+        }
+        bound.push((allocation.lineage, entity_id));
+    }
+    Ok(bound)
 }

@@ -289,13 +289,13 @@ fn relations_retire_and_restore_by_their_own_branch_lineage() {
 fn any_caller_posture_beside_a_selection_refuses() {
     let (_, ids) = staged_with(1);
     let mut batch = empty_batch();
-    assert!(super::caller_plan_refusal(&batch, &transition(&ids, &[], &[])).is_none());
+    assert!(super::caller_plan_refusal(&batch, &transition(&ids, &[], &[]), ids[0]).is_none());
     batch.postures.push(ValidatedPosture::Preserve);
     batch
         .claimed_basis_targets
         .insert(LineageRecordTarget::Entity(ids[0]));
     assert!(matches!(
-        super::caller_plan_refusal(&batch, &transition(&ids, &[], &[])),
+        super::caller_plan_refusal(&batch, &transition(&ids, &[], &[]), ids[0]),
         Some(LineageNameDenial::LineagePostureMismatch { .. })
     ));
 }

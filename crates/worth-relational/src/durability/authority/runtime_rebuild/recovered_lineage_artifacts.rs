@@ -95,6 +95,19 @@ fn validate_envelope_lineage(
             }
         }
     }
+    // An explicit entity binding must anchor to an entity this commit
+    // rematerialized, on an entity `Create`/`Restore`, at most once.
+    let view = crate::durability::authority::lineage_allocation::CommitAllocationView::of_envelope(
+        envelope,
+    );
+    crate::durability::authority::lineage_allocation::explicit_entity_bindings(&view).map_err(
+        |refusal| {
+            DurabilityError::new(
+                failure_class.clone(),
+                refusal.describe(envelope.commit.commit_id.0),
+            )
+        },
+    )?;
     let observed = crate::lineage::data::LineageFinalizationArtifact::new(
         envelope.branch_context.clone(),
         crate::lineage::data::FinalizedLineageEventBatch::new(envelope.lineage_events().to_vec()),

@@ -40,18 +40,20 @@ pub(super) struct CommitLineage {
     pub(super) receipt: RelationalCommitReceipt,
     pub(super) events: Vec<LineageEventRecord>,
     pub(super) created_entities: Vec<EntityId>,
+    pub(super) rematerialized_entities: Vec<EntityId>,
 }
 
 impl CommitLineage {
-    fn new(commit: u64, created_entities: Vec<EntityId>) -> Self {
+    pub(super) fn new(commit: u64, created_entities: Vec<EntityId>) -> Self {
         Self {
             receipt: receipt(commit),
             events: Vec::new(),
             created_entities,
+            rematerialized_entities: Vec::new(),
         }
     }
 
-    fn push(
+    pub(super) fn push(
         &mut self,
         kind: LineageEventKind,
         subject: LineageSubject,
@@ -79,6 +81,7 @@ impl CommitLineage {
             commit: &self.receipt,
             events: &self.events,
             created_entities: self.created_entities.clone(),
+            rematerialized_entities: self.rematerialized_entities.clone(),
         }
     }
 

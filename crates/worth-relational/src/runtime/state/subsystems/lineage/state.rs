@@ -196,11 +196,11 @@ impl LineageState {
         )
     }
 
-    pub(crate) fn indexed_lineage_for_entity(
+    pub(crate) fn indexed_lineages_for_entity(
         &self,
         entity_id: EntityId,
-    ) -> (Option<LineageId>, usize) {
-        self.resolution_indexes.lineage_for_entity(entity_id)
+    ) -> (Vec<LineageId>, usize) {
+        self.resolution_indexes.lineages_for_entity(entity_id)
     }
 
     pub(crate) fn indexed_lineages_are_exclusive_to_branch(

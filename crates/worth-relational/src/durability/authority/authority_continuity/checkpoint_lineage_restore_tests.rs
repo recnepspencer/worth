@@ -88,3 +88,31 @@ fn malformed_restore_shapes_refuse_before_binding() {
         );
     }
 }
+
+#[test]
+fn a_selection_restore_binds_its_named_node_and_a_forged_binding_refuses() {
+    use crate::lineage::data::LineageEventKind;
+    let selection = |named: u64| {
+        let mut commit = CommitLineage::new(4, Vec::new());
+        commit.rematerialized_entities = vec![entity(6), entity(7)];
+        commit.push(
+            LineageEventKind::Restore,
+            LineageSubject::Entity,
+            &[5],
+            &[6],
+        );
+        commit.allocating(6).entity_id = Some(entity(named));
+        commit
+    };
+    let mut nodes = restore_history_nodes();
+    nodes.insert(LineageId(6), entity(6));
+    let validate_with = |commit: CommitLineage| {
+        let mut history = restore_history().to_vec();
+        history.push(commit);
+        validate_entity_allocation_nodes(&nodes, history.iter().map(CommitLineage::view))
+    };
+    validate_with(selection(6)).expect("the restored entity binds its canonical node");
+    let forged = validate_with(selection(8)).expect_err("a forged binding refuses");
+    assert_eq!(forged.class, RecoveryFailureClass::CorruptCheckpoint);
+    assert!(forged.detail.contains("may not bind"), "{}", forged.detail);
+}
