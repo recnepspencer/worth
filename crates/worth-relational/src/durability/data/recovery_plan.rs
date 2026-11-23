@@ -32,12 +32,7 @@ pub struct RecoveryAuthorityContinuityCheck {
     pub first_mismatch: Option<RecoveryAuthorityContinuityMismatch>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum RecoveryVerificationMode {
-    NormalRecoveryVerification,
-    AuditRecoveryVerification,
-    CorruptionDiagnosisReplay,
-}
+pub use super::recovery_verification::RecoveryVerificationMode;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum RecoveryVerificationPlan {

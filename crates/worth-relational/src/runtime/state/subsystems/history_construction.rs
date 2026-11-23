@@ -100,7 +100,7 @@ impl HistorySubsystem {
 
 #[cfg(test)]
 mod tests {
-    use crate::runtime::RelationalRuntimeForkDenial;
+    use crate::runtime::fork_denial::RelationalRuntimeForkDenial;
     use crate::tests::support::{create_entity, runtime_with_test_schema};
 
     #[test]

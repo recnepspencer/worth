@@ -1,7 +1,7 @@
 //! Pure exact-owner assertions, borrowing the existing codec unit host's context.
 use super::*;
 use crate::mvcc::publication::application_publication::output_meaning::RequiredOutputPublicationMeaning;
-use crate::mvcc::RequiredOutputProducingImplementation;
+use crate::mvcc::publication::application_publication::producing_implementation::RequiredOutputProducingImplementation;
 pub(crate) fn assert_exact_owner_refusals(
     original: Arc<CanonicalCommitEnvelope>,
     basis: &crate::branch::basis::RelationalBranchBasisDescriptor,

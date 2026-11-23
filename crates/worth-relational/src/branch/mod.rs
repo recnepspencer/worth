@@ -91,6 +91,7 @@ pub(crate) use root::{
     RetainedRelationalSchemaRegistry,
 };
 pub(crate) use root_regions::RelationalPartitionVisit;
+pub(crate) mod result_snapshot_outcome;
 mod root_runtime_access;
 pub(crate) mod root_selection;
 mod root_selection_admission;

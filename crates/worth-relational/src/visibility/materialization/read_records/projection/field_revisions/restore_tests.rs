@@ -1,6 +1,6 @@
 use worth_foundational::facade::{AspectFieldLocator, CanonicalFieldPath, LocatorAuthority};
 
-use crate::facade::durability::RecoveryVerificationMode;
+use crate::durability::data::recovery_verification::RecoveryVerificationMode;
 use crate::history::data::coordinates::BranchId;
 use crate::identity::data::EntityId;
 use crate::identity::data::KindId;

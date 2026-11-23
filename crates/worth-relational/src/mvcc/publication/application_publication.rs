@@ -41,7 +41,7 @@ mod predecessor_observation;
 pub use predecessor_basis::{
     RelationalPredecessorBasisDenial, RelationalPredecessorBasisOrigin, RelationalPredecessorInput,
 };
-mod producing_implementation;
+pub(crate) mod producing_implementation;
 pub(crate) mod route_absence;
 mod scope_ownership;
 pub use completion::RequiredOutputPublication;

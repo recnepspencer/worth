@@ -74,6 +74,9 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"durability/data/recovery_verification.rs" = "contracts"
+"branch/result_snapshot_outcome.rs" = "contracts"
+"visibility/snapshot_release.rs" = "contracts"
 "validation/candidate_source/availability.rs" = "contracts"
 "validation/candidate_source/image" = "branch"
 "validation/candidate_source/image/eviction/tests.rs" = "mutation"
@@ -742,6 +745,9 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"durability/data/recovery_verification.rs" = "contracts"
+"branch/result_snapshot_outcome.rs" = "contracts"
+"visibility/snapshot_release.rs" = "contracts"
 "validation/candidate_source/availability.rs" = "contracts"
 "validation/candidate_source/image" = "branch"
 "branch/model_ownership/basis.rs" = "branch"

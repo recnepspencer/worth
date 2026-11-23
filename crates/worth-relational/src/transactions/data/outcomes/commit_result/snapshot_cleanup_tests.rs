@@ -1,5 +1,5 @@
 //! Explicit original-registration cleanup preserves independent read ownership.
-use crate::facade::branch::{
+use crate::branch::result_snapshot_outcome::{
     RelationalCommitResultSnapshotRelease as Outcome,
     RelationalCommitResultSnapshotReleaseDenial as Denial,
 };
@@ -8,10 +8,8 @@ use worth_execution::ExecutionRequest;
 
 #[test]
 fn result_snapshot_cleanup_refuses_an_actual_admitted_runtime_copy() {
-    use crate::facade::branch::{
-        RelationalCommitResultSnapshotCleanupDenial as Denial,
-        RelationalCommitResultSnapshotCleanupProgress as Progress,
-    };
+    use crate::branch::result_snapshot_outcome::RelationalCommitResultSnapshotCleanupDenial as Denial;
+    use crate::facade::branch::RelationalCommitResultSnapshotCleanupProgress as Progress;
     let host = crate::execution::test_policy::serial_request();
     let execution = &ExecutionRequest::serial(&host);
     let runtime = runtime_with_test_schema();
