@@ -92,6 +92,8 @@ impl super::ManagedSourceRootImage {
             .payload
             .downcast_ref::<super::ManagedIndexBranchImage>()
             .ok_or(super::Denial::ForeignSource)?;
-        image.retained_history_receipt(execution, program, scope, budget)
+        crate::validation::candidate_source::history_material::retained_history_receipt(
+            image, execution, program, scope, budget,
+        )
     }
 }

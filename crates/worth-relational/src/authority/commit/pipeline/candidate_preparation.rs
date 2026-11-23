@@ -1,7 +1,12 @@
 //! Move the original history proof into candidate registration after early frames expire.
 use super::authority_context::AuthoritativeCommitContext;
-use super::history_preparation::prepare_bound_history;
+use super::execution_admission::AdmittedCommitState;
+use super::history_preparation::{prepare_bound_history, HistoryPreparationInputs};
+use super::merge_draft::AcceptedMergeDraft;
+use crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding;
+use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
+use worth_execution::ExecutionRequest;
 pub(crate) mod registration;
 mod stages;
 use super::phase_backing::CommitPhaseBacking;
@@ -17,11 +22,21 @@ pub(crate) struct CandidateArtifactSelection<'a> {
     pub(crate) max_patch_records: Option<usize>,
 }
 
+/// The exact selected publication and history owners for early preparation.
+pub(crate) struct CandidateHistoryInputs<'a, Draft> {
+    pub(crate) runtime_identity: u64,
+    pub(crate) publication: &'a RelationalRuntimePublicationBinding,
+    pub(crate) history: &'a RelationalPreparationHistory,
+    pub(crate) diagnostics:
+        &'a crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore,
+    pub(crate) prepare: HistoryPreparationInputs<'a, Draft>,
+}
+
 struct HistoryPreparedCandidate<'scope, 'authority> {
     scope_control: crate::validation::engine::InvariantPreparationControl<'scope, 'authority>,
     history_bound: CommitPhaseBacking<super::history_binding::HistoryBoundCommitExecution>,
     runtime_instance_id: u64,
-    publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
+    publication_binding: RelationalRuntimePublicationBinding,
     transaction_id: crate::transactions::data::primitives::TransactionId,
     branch_id: crate::history::data::BranchId,
     control: crate::runtime::operation_control::RelationalOperationControl,
@@ -88,7 +103,7 @@ pub(crate) fn prepare_consulted_authoritative_commit(
         .take()
         .map(|catalog| catalog.original_for(runtime.runtime_instance_id()))
         .transpose()?;
-    let history = prepare_history(execution, runtime, context)?;
+    let history = prepare_history(execution, runtime.candidate_history_inputs(), context)?;
     let (symbols, validated) = stages::validate(execution, history)?;
     let artifact_owners = runtime.bind_candidate_artifacts(&symbols, original.as_ref());
     let assembled = stages::assemble(execution, artifact_owners, validated)?;
@@ -103,11 +118,16 @@ pub(crate) fn prepare_consulted_authoritative_commit(
 
 // Later publication locals must not occupy the deep admission/draft call's frame.
 #[inline(never)]
-fn prepare_history<'scope, 'authority>(
+fn prepare_history<'scope, 'authority, Draft>(
     execution: &worth_execution::ExecutionRequest<'scope, 'authority>,
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    inputs: CandidateHistoryInputs<'_, Draft>,
     mut context: AuthoritativeCommitContext,
 ) -> Result<CommitPhaseBacking<HistoryPreparedCandidate<'scope, 'authority>>, TransactionCommitError>
+where
+    Draft: FnOnce(
+        &ExecutionRequest<'_, '_>,
+        &AdmittedCommitState,
+    ) -> Result<AcceptedMergeDraft, TransactionCommitError>,
 {
     let required_output_publication = context.required_output_publication.take();
     let caller_association = context.caller_association.take();
@@ -119,8 +139,8 @@ fn prepare_history<'scope, 'authority>(
         crate::runtime::operation_control::interruption_event::RelationalInterruptionBoundary::CandidatePreparation,
     );
     scope_control.check()?;
-    let runtime_instance_id = runtime.runtime_instance_id();
-    let publication_binding = runtime.publication_binding();
+    let runtime_instance_id = inputs.runtime_identity;
+    let publication_binding = inputs.publication.clone();
     let transaction_id = context.transaction_id;
     let branch_id = context.validation_input.target_branch().clone();
     let control = context.validation_input.control().clone();
@@ -140,11 +160,11 @@ fn prepare_history<'scope, 'authority>(
         retention_binding.record_interruption(interruption);
         return Err(TransactionCommitError::interrupted(interruption));
     }
-    require_parent_publication_settled(&runtime.history, &expected_root)?;
+    require_parent_publication_settled(inputs.history, &expected_root)?;
     if let Some(admission) = &required_output_publication {
         admission.validate_before_preparation(execution, context.validation_input.basis())?;
     }
-    let publication_cell = runtime
+    let publication_cell = inputs
         .history
         .branch_cell(&branch_id)
         .ok_or_else(|| {
@@ -154,8 +174,8 @@ fn prepare_history<'scope, 'authority>(
             ))
         })?
         .publication_cell();
-    let diagnostic_capture = runtime.diagnostics.begin_operation_capture();
-    let history_bound = prepare_bound_history(execution, runtime, context)?;
+    let diagnostic_capture = inputs.diagnostics.begin_operation_capture();
+    let history_bound = prepare_bound_history(execution, inputs.prepare, context)?;
     CommitPhaseBacking::new(
         execution,
         HistoryPreparedCandidate {
@@ -181,7 +201,7 @@ fn prepare_history<'scope, 'authority>(
 }
 
 fn require_parent_publication_settled(
-    history: &crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory,
+    history: &RelationalPreparationHistory,
     expected_root: &std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
 ) -> Result<(), TransactionCommitError> {
     let Some(parent) = expected_root.commit_receipt() else {

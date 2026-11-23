@@ -74,6 +74,9 @@ floor = 32000
 depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "indexes", "durability", "publication"]
 
 [paths]
+"validation/candidate_source/availability.rs" = "contracts"
+"validation/candidate_source/image" = "branch"
+"validation/candidate_source/image/eviction/tests.rs" = "mutation"
 "branch/model_ownership/basis.rs" = "branch"
 "branch/model_ownership/custody_read.rs" = "branch"
 "branch/model_ownership/graph_read.rs" = "branch"
@@ -722,7 +725,7 @@ allowed = [["root_custody", "envelope"], ["root_custody", "projection_view"], ["
 [boundaries.paths]
 root_custody = ["branch", "durability/checkpoint_admission/admitted_commit", "durability/checkpoint_admission/recorded_reference.rs", "durability/checkpoint_admission/row_custody.rs", "durability/authority/associated_effects/observed_memory_commit.rs", "publication/ownership/read", "publication/ownership/observation.rs", "authority/commit/preparation/storage_denial.rs"]
 envelope = ["branch/envelope", "durability/canonical_commit_artifact/checkpoint_body.rs", "durability/canonical_commit_artifact/body_read.rs", "durability/canonical_commit_artifact/frame_encoding.rs", "durability/canonical_commit_artifact/verified_frame.rs", "durability/canonical_commit_artifact/payload_wire", "durability/canonical_commit_artifact/decoded_quote", "history/data/canonical_commit_envelope", "history/commit", "publication/patch", "publication/ownership/record.rs", "publication/ownership/read/payload.rs", "publication/ownership/evidence.rs", "publication/ownership/read/roster", "durability/checkpoint_admission/read_image.rs", "durability/authority/associated_effects/created_row_read.rs"]
-projection_view = ["branch/projection_view", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
+projection_view = ["branch/projection_view", "validation/candidate_source/image", "visibility", "snapshots", "query", "runtime/state/subsystems/visibility"]
 
 [[boundaries]]
 owner = "mutation"
@@ -739,6 +742,8 @@ ordinary_checkpoint = ["durability/ordinary_checkpoint", "durability/checkpoints
 reconstruction = ["durability/reconstruction", "durability/recovery", "replay", "durability/authority/recovery", "durability/authority/runtime_rebuild"]
 
 [reassignments]
+"validation/candidate_source/availability.rs" = "contracts"
+"validation/candidate_source/image" = "branch"
 "branch/model_ownership/basis.rs" = "branch"
 "branch/model_ownership/custody_read.rs" = "branch"
 "branch/model_ownership/graph_read.rs" = "branch"

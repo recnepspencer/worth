@@ -211,7 +211,9 @@ fn original_custody(empty: bool, retire: bool) {
             .external_retention_terminal_accounting();
         let before = terminal.snapshot();
         let mut task = proof.consume(|original| original.into_retirement());
-        crate::history::retention::assert_recovered_cut_and_lane_busy(&mut task, &basis, execution);
+        crate::history::retention::assert_recovered_cut_and_lane_busy(&basis, || {
+            task.advance(execution)
+        });
         drop(basis);
         stop.cancel();
         assert!(matches!(task.advance(execution), Progress::Stopped(_)));
@@ -248,7 +250,10 @@ fn original_custody(empty: bool, retire: bool) {
         runtime.prepare_close().unwrap().finish();
     }
     assert!(
-        !original.medium.member_read_digests().contains(&unrelated_sha),
+        !original
+            .medium
+            .member_read_digests()
+            .contains(&unrelated_sha),
         "unrelated commit member must never be read through retirement and close"
     );
 }
@@ -280,12 +285,13 @@ fn recorded_component_checkpoint_omits_released_components_and_plain_observation
     let directory = decoded.checkpoint.directory.unwrap();
     assert_eq!(directory.manifest.roots.len(), 1);
     assert!(directory.manifest.retained_empty_components.is_empty());
-    assert!(!directory.manifest.roots.iter().any(|root| root
-        .recorded_components
-        .contains(original.before.descriptor())
-        || root
-            .recorded_components
-            .contains(original.after.descriptor())));
+    assert!(!directory.manifest.roots.iter().any(|root| {
+        root.recorded_components
+            .contains(original.before.descriptor())
+            || root
+                .recorded_components
+                .contains(original.after.descriptor())
+    }));
 
     // An ordinary observation has no external durable component obligation.
     let (_, observed) = original

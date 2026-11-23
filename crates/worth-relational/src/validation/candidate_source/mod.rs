@@ -1,4 +1,6 @@
 //! Native-owned candidate Source interpretation and its retained materialization basis.
+pub(crate) mod availability;
+pub use availability::ManagedIndexSourceAvailability;
 mod context;
 mod correspondence;
 pub(crate) mod denial;
@@ -22,6 +24,7 @@ pub(crate) mod provider_failure;
 pub use provider_failure::ManagedIndexSourceProviderFailure;
 mod publication;
 pub use publication::{ManagedIndexSourcePublication, ManagedIndexSourcePublicationRoot};
+pub(crate) mod history_material;
 pub(crate) mod image;
 pub(crate) use image::ManagedIndexSourceAssociation;
 pub use image::ManagedIndexSourceCacheRetirement;
@@ -43,7 +46,7 @@ pub use applied_read::{ManagedIndexAppliedSourcePublication, ManagedIndexApplied
 pub(crate) mod authored_history;
 pub(crate) mod routing;
 pub use preparation::{
-    ManagedIndexSourceAvailability, ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
+    ManagedIndexSourceOccurrence, ManagedIndexSourcePreparation,
     ManagedIndexSourceProjectionOccurrence, ManagedIndexSourceRows, ManagedIndexSourceScope,
     PreparedManagedIndexProjectionRead, PreparedManagedIndexSourceOccurrence,
     PreparedManagedIndexSourceRoot, PreparedManagedIndexSourceRowRead,

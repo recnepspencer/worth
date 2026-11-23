@@ -16,6 +16,7 @@ mod candidate_preparation;
 mod construction;
 mod construction_denial;
 mod historical_source_owner;
+mod validated_proposal_handoff;
 pub use construction_denial::RelationalRuntimeConstructionDenial;
 mod field_text;
 mod guided;

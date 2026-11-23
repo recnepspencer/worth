@@ -1,4 +1,5 @@
 //! Borrow the applied Native Source; seal each root under that same custody.
+use super::availability::ManagedIndexSourceAvailability;
 use super::scope_closure::PreparedManagedIndexScopeClosure;
 use super::{
     ManagedIndexSourcePreparationDenial as Denial, ManagedIndexSourceProgram,
@@ -25,11 +26,6 @@ pub use rows::{ManagedIndexSourceOccurrence, ManagedIndexSourceRows};
 pub(crate) type RootPayload = Arc<dyn Any + Send + Sync>;
 
 /// Native's physical posture, never selected by a provider or Query boolean.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ManagedIndexSourceAvailability {
-    Available,
-    Unavailable,
-}
 
 pub(crate) struct SourceViews<'a> {
     pub(crate) before: StructuralRelationView<'a>,

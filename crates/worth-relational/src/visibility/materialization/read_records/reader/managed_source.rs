@@ -43,7 +43,7 @@ impl VisibilityReadContext<'_> {
         program: &ManagedIndexSourceProgram,
         scope: EntityId,
     ) -> Result<
-        Option<crate::validation::candidate_source::ManagedIndexSourceCacheRetirement>,
+        Option<crate::validation::candidate_source::image::ManagedIndexSourceCacheRetirement>,
         Denial,
     > {
         let (selected, _memory) = self.managed_source_position(execution, handle)?;
@@ -114,7 +114,7 @@ impl VisibilityReadContext<'_> {
     ) -> Result<
         (
             crate::mvcc::ManagedIndexSourceObservation,
-            crate::validation::candidate_source::ManagedIndexSourceCacheRetirement,
+            crate::validation::candidate_source::image::ManagedIndexSourceCacheRetirement,
         ),
         Denial,
     > {

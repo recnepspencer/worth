@@ -8,7 +8,7 @@ use crate::runtime::RelationalPreparationRuntime;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::validation::engine::{InvariantExecutionResult, InvariantPreparationControl};
 
-pub(super) struct AcceptedMergeDraft {
+pub(crate) struct AcceptedMergeDraft {
     pub(super) scope: PreparedAuthorityScope,
     pub(super) invariants: InvariantExecutionResult,
 }
@@ -25,7 +25,7 @@ struct PendingMergeDraft {
     invariants: InvariantExecutionResult,
 }
 
-pub(super) fn prepare_merge_draft(
+pub(crate) fn prepare_merge_draft(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
     runtime: &RelationalPreparationRuntime,
     admitted: &AdmittedCommitState,

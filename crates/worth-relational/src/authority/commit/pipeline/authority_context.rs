@@ -67,6 +67,35 @@ pub(super) struct MergeExecutionAccounting {
     pub(super) emitted_mutation_intents: usize,
 }
 
+/// The original admitted operands consumed by one publication round.
+pub(crate) struct SelectedCommitMutation {
+    pub(crate) caller_association: Option<crate::history::data::RelationalCallerAssociation>,
+    pub(crate) required_output_publication: Option<
+        crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
+    >,
+    pub(crate) required_output_materialization:
+        Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
+    pub(crate) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
+    pub(crate) mutation_authority: crate::branch::authority::RelationalBranchMutationAuthority,
+    pub(crate) transaction_id: TransactionId,
+    pub(crate) validation_input: RelationalTransactionValidationInput,
+    pub(crate) prepared: crate::authority::commit::phases::prepare::PreparedWorkingStateScope,
+    pub(crate) proposed_mutation:
+        crate::authority::commit::phases::applied_mutation::AppliedMutationDraft,
+    pub(crate) invariants: InvariantExecutionResult,
+    pub(crate) proposal_identity:
+        crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity,
+    pub(crate) validated_against_commit: Option<crate::history::data::CommitId>,
+    pub(crate) validated_against_version: crate::identity::data::VersionId,
+    pub(crate) validated_against_branch_version: crate::branch::version::RelationalBranchVersion,
+    pub(crate) batch_count: usize,
+    pub(crate) strategy_commit_artifacts: Option<StrategyCommitArtifactBundle>,
+    pub(crate) strategy_bulk_mutation_batch:
+        Option<crate::transactions::data::primitives::ProvenanceCompleteBulkMutationBatch>,
+    pub(crate) validation_complexity_delta:
+        crate::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
+}
+
 impl AuthoritativeCommitContext {
     pub(crate) fn with_recovered_index_catalog(
         mut self,
@@ -76,10 +105,12 @@ impl AuthoritativeCommitContext {
         self
     }
 
-    pub(crate) fn from_validated_proposal(
-        candidate: crate::mvcc::ValidatedRelationalProposal,
-    ) -> Self {
-        let crate::mvcc::ValidatedProposalState {
+    pub(crate) fn from_validated_proposal(candidate: impl Into<Self>) -> Self {
+        candidate.into()
+    }
+
+    pub(crate) fn from_selected_mutation(selected: SelectedCommitMutation) -> Self {
+        let SelectedCommitMutation {
             caller_association,
             required_output_publication,
             required_output_materialization,
@@ -98,8 +129,7 @@ impl AuthoritativeCommitContext {
             strategy_bulk_mutation_batch,
             validation_complexity_delta,
             commit_work_budget,
-            ..
-        } = candidate.into_state();
+        } = selected;
         let bulk_mutation_telemetry = strategy_bulk_mutation_batch
             .as_ref()
             .map(telemetry_from_strategy_batch)

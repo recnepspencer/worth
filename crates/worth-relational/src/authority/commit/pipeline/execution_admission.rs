@@ -30,7 +30,7 @@ impl AdmittedCommitExecution {
 }
 
 /// Metadata that remains live after the exact draft leaves admission.
-pub(super) struct AdmittedCommitState {
+pub(crate) struct AdmittedCommitState {
     transaction_id: TransactionId,
     validation_input: RelationalTransactionValidationInput,
     selected_branch_state: crate::branch::root_selection::SelectedRelationalBranchState,

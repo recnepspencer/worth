@@ -305,3 +305,4 @@ mod schema_publication;
 mod applied_mutation;
 
 mod candidate_registration;
+mod history_preparation_inputs;
