@@ -9,15 +9,13 @@ use super::coverage::entity_write;
 use super::proof::allocation;
 use crate::authority::mutation::MutationApplyOutcome;
 use crate::execution::request_stage::checkpoint;
-use crate::identity::data::VersionId;
+use crate::identity::data::{EntityId, VersionId};
 use crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan;
 use crate::mvcc::validation::proposal_touches::ValidatedMutationTouch;
 use crate::runtime::state::subsystems::services::symbol_table::PendingSymbolMeanings;
 use crate::schema::data::AspectContractPlanCatalog;
 use crate::storage::overlay::WorkingState;
-use crate::transactions::data::intents::mutation_intent::{
-    CreateIntent, MutationIntent, RelationMutationIntent,
-};
+use crate::transactions::data::intents::mutation_intent::{CreateIntent, MutationIntent};
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::{RecordRef, WorkerIntentBatch};
 use crate::visibility::materialization::read_records::reader::pinned_read::{
@@ -45,6 +43,7 @@ pub(super) fn fold_records(
     inputs: FoldInputs<'_>,
     first: usize,
     round: &crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan,
+    redeleted: &BTreeSet<EntityId>,
     read: &Read,
     delta_state: &mut crate::storage::overlay::WorkingState,
 ) -> Result<(), RelationalCoupledAssemblyFailure> {
@@ -88,8 +87,15 @@ pub(super) fn fold_records(
                     }
                     // A proved relation re-create keeps the head's relation, and
                     // a proved re-delete keeps the latest round's delete.
-                    MutationIntent::Create(CreateIntent::Relation(_))
-                    | MutationIntent::Relation(RelationMutationIntent::Delete(_)) => continue,
+                    MutationIntent::Create(CreateIntent::Relation(_)) => continue,
+                    _ if intent.deleted_relation().is_some() => continue,
+                    // A proved entity re-delete keeps the chain's delete too.
+                    _ if intent
+                        .deleted_entity()
+                        .is_some_and(|id| redeleted.contains(&id)) =>
+                    {
+                        continue
+                    }
                     _ => entity_write(intent).ok_or_else(|| {
                         crate::transactions::data::outcomes::transaction_commit_error::origin_denial("a proved round wrote no entity")
                     })?,

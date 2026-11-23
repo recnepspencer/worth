@@ -9,6 +9,7 @@ use crate::identity::data::EntityId;
 use crate::identity::data::KindId;
 use crate::publication::data::CoupledProvenancePostponement as Reason;
 use crate::transactions::data::intents::mutation_intent::{CreateIntent, MutationIntent};
+use crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 use crate::transactions::data::primitives::EntityReference;
 use std::collections::BTreeSet;
@@ -26,7 +27,7 @@ pub(super) type Relink = (
 /// for any other intent. A relation with fields, a relation-aspect create or a
 /// bulk relation create is a structural effect the fold does not lower.
 fn relink(
-    bindings: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    bindings: &CommitCreatedEntityBindings,
     symbols: &crate::symbols::data::StringInterner,
     intent: &MutationIntent,
     source: EntityId,
@@ -65,7 +66,7 @@ fn relink(
 }
 
 fn endpoint(
-    bindings: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+    bindings: &CommitCreatedEntityBindings,
     reference: &EntityReference,
     source: EntityId,
     charge: &mut impl FnMut(u64) -> Result<(), TransactionCommitError>,
@@ -78,16 +79,6 @@ fn endpoint(
                 .resolve(created)
                 .ok_or_else(|| postponed(Reason::StructuralEffect, source))
         }
-    }
-}
-
-/// The relation a delete intent removes; `None` for any other intent.
-fn unrelink(intent: &MutationIntent) -> Option<crate::identity::data::RelationId> {
-    match intent {
-        MutationIntent::Relation(crate::transactions::data::intents::mutation_intent::RelationMutationIntent::Delete(
-            delete,
-        )) => Some(delete.relation_id),
-        _ => None,
     }
 }
 
@@ -104,7 +95,7 @@ pub(super) struct RelationIdentity {
 impl RelationIdentity {
     /// The relation effects of the chain's latest round, `latest`.
     pub(super) fn of_chain(
-        bindings: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+        bindings: &CommitCreatedEntityBindings,
         symbols: &crate::symbols::data::StringInterner,
         latest: &[MutationIntent],
         source: EntityId,
@@ -119,7 +110,7 @@ impl RelationIdentity {
         for intent in latest {
             if let Some(link) = relink(bindings, symbols, intent, source, charge)? {
                 identity.links.insert(link);
-            } else if let Some(relation) = unrelink(intent) {
+            } else if let Some(relation) = intent.deleted_relation() {
                 identity.unlinks.insert(relation);
             }
         }
@@ -132,7 +123,7 @@ impl RelationIdentity {
     /// `StructuralEffect`.
     pub(super) fn admit(
         &mut self,
-        bindings: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+        bindings: &CommitCreatedEntityBindings,
         symbols: &crate::symbols::data::StringInterner,
         intent: &MutationIntent,
         source: EntityId,
@@ -140,7 +131,7 @@ impl RelationIdentity {
     ) -> Result<bool, TransactionCommitError> {
         let admitted = if let Some(link) = relink(bindings, symbols, intent, source, charge)? {
             self.links.contains(&link) && self.relinked.insert(link)
-        } else if let Some(relation) = unrelink(intent) {
+        } else if let Some(relation) = intent.deleted_relation() {
             self.unlinks.contains(&relation) && self.unrelinked.insert(relation)
         } else {
             return Ok(false);
@@ -157,7 +148,7 @@ impl RelationIdentity {
     /// `UncoveredWrite`.
     pub(super) fn covers(
         &self,
-        bindings: &crate::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
+        bindings: &CommitCreatedEntityBindings,
         symbols: &crate::symbols::data::StringInterner,
         intent: &MutationIntent,
         source: EntityId,
@@ -165,7 +156,7 @@ impl RelationIdentity {
     ) -> Result<bool, TransactionCommitError> {
         let covered = if let Some(link) = relink(bindings, symbols, intent, source, charge)? {
             self.relinked.contains(&link)
-        } else if let Some(relation) = unrelink(intent) {
+        } else if let Some(relation) = intent.deleted_relation() {
             self.unrelinked.contains(&relation)
         } else {
             return Ok(false);

@@ -9,6 +9,7 @@ use worth_relational::facade::publication::{
 
 mod birth;
 mod fold;
+mod redelete;
 mod refusals;
 mod relation_overlay;
 mod review_c3a;

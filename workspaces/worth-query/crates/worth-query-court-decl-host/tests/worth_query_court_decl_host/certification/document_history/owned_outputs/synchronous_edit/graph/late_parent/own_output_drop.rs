@@ -1,9 +1,10 @@
 //! A successor round that reaches a record its own chain deleted, through a
-//! link served at the chain head (#277 steps 1 and 2). The record is covered,
+//! link served at the chain head (#277 steps 1 to 3). The record is covered,
 //! so the round reads its presence where it reads its fields: at the chain
 //! head, where it exists. The chain's delete does not by itself make the
 //! served list a prior-effect read; a link the chain did not make, at a record
-//! the chain wrote, does.
+//! the chain wrote, does. The round drops the record again, and Native folds
+//! that delete onto the chain's own.
 use super::super::super::super::program;
 use super::super::hierarchy;
 use super::*;
@@ -151,15 +152,16 @@ macro_rules! drop_world {
 /// `kid:a` is a record the chain wrote, so its presence is served where its
 /// fields are, at the chain head: it exists there. The chain's unlink and
 /// delete are recorded and served, and nothing else is at `first:a`, so the
-/// round did not read its chain's effect. It goes on to drop the child again,
-/// a write Native cannot yet fold onto the chain's own delete, so the edit
-/// stops typed and nothing publishes.
+/// round did not read its chain's effect. It goes on to unlink and delete the
+/// child again. Native proves both against the chain's own and folds them to
+/// nothing, so the edit commits what one round alone would: 9 + 10, no child.
 /// Red before step 1: untyped `MissingAuthoritativeFact`, the presence read at
 /// the current image, where the chain's delete had already removed `kid:a`.
 /// Before step 2: `PriorEffectRead`, the chain's delete counted against the
-/// list it was served.
+/// list it was served. Before step 3: `StructuralEffect`, Native had no shape
+/// for the round's delete.
 #[test]
-fn a_successor_reading_the_presence_of_the_record_its_chain_deleted_refuses_typed() {
+fn a_successor_dropping_again_the_record_its_chain_deleted_commits() {
     use worth_query_host::facade::application_entry::WorthQueryEditEnvelopeOutcome as Outcome;
     drop_world!(writer, execution, host, request, edit);
     let (outcome, events) = edit("own-output-drop-first", 8);
@@ -171,20 +173,17 @@ fn a_successor_reading_the_presence_of_the_record_its_chain_deleted_refuses_type
     assert_eq!(kid(&request, "kid:a"), Some(0));
     let head = courts::native_head(&host);
     let (outcome, events) = edit("own-output-drop", 9);
-    let detail = format!("{outcome:?}");
     assert!(
-        detail.contains(
-            "CoupledContinuationProvenancePostponed { issue: 119, reason: StructuralEffect }"
-        ),
-        "{detail}; {events:#?}"
+        matches!(outcome, Outcome::Committed(_)),
+        "the second edit commits the folded chain: {outcome:?}; {events:#?}"
     );
     assert!(
         events.iter().any(|event| event == "reopen task=0 owed=0"),
-        "the refused round is the chain's successor: {events:#?}"
+        "the chain derived a successor round: {events:#?}"
     );
-    assert_eq!(courts::native_head(&host), head);
-    assert_eq!(first(&request), Some(8 + 9));
-    assert_eq!(kid(&request, "kid:a"), Some(0));
+    assert_ne!(courts::native_head(&host), head);
+    assert_eq!(first(&request), Some(9 + 10));
+    assert_eq!(kid(&request, "kid:a"), None);
 }
 
 /// The same two edits, with `kid-linker(a)` as the child. In the second edit
