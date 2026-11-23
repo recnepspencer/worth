@@ -1,9 +1,11 @@
 //! Match original observations only while the final revision still equals restoration.
-use super::super::{RelationalAdjacencyDirection, RelationalAdjacencyVisit};
 use super::*;
 use crate::execution::request_stage::{checkpoint, optional_stage};
 use crate::identity::data::{EntityId, KindId, VersionId};
 use crate::storage::data::RelationalFieldRevision;
+use crate::visibility::materialization::read_records::projection::{
+    RelationalAdjacencyDirection, RelationalAdjacencyVisit,
+};
 use worth_foundational::facade::{AspectFieldLocator, AspectKey};
 
 impl HistoricalSelectionStage {
@@ -78,7 +80,7 @@ impl HistoricalSelectionStage {
         entity: EntityId,
     ) -> Result<bool, RelationalHistoricalSelectionReadDenial> {
         use RelationalHistoricalSelectionReadDenial as Denial;
-        if current.runtime_identity != self.restored.runtime_identity || !current.is_exact_basis() {
+        if !current.shares_runtime_with(&self.restored) || !current.is_exact_basis() {
             return Err(Denial::ForeignOwner);
         }
         if current.version_id() < self.restored.version_id()

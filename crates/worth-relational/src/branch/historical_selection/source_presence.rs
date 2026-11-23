@@ -43,7 +43,7 @@ impl RelationalHistoricalSelectionRead {
                 RelationalHistoricalSelectionReadDenial::ForeignOwner,
             ));
         }
-        if basis.descriptor().branch_id() != self.latest().restored.basis.branch_id()
+        if basis.descriptor().branch_id() != self.latest().restored.selected_branch_id()
             || basis.observation().version_id() < self.latest().restored.version_id()
         {
             return Err(RelationalHistoricalSourceReadDenial::Selection(

@@ -11,6 +11,15 @@ pub(crate) struct RuntimeInstrumentation {
         Arc<crate::history::retention::RelationalExternalRetentionTerminalAccounting>,
 }
 
+pub(crate) fn snapshot_complexity(
+    counters: &Mutex<RuntimeComplexityCounters>,
+) -> RuntimeComplexityCounters {
+    counters
+        .lock()
+        .unwrap_or_else(|error| error.into_inner())
+        .clone()
+}
+
 impl RuntimeInstrumentation {
     pub(crate) fn preparation_round(&self) -> Self {
         Self {
@@ -40,6 +49,10 @@ impl RuntimeInstrumentation {
             basis_counters: Arc::new(Mutex::new(self.basis_counters())),
             external_retention_terminals: Arc::new(Default::default()),
         }
+    }
+
+    pub(crate) fn complexity_snapshot(&self) -> RuntimeComplexityCounters {
+        snapshot_complexity(&self.complexity_counters)
     }
 
     pub(crate) fn count(&self, update: impl FnOnce(&mut RuntimeComplexityCounters)) {

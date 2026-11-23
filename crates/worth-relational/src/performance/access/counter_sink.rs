@@ -22,10 +22,9 @@ impl<'owner> ComplexityCounterSink<'owner> {
     }
 
     pub(super) fn snapshot(&self) -> RuntimeComplexityCounters {
-        self.counters
-            .lock()
-            .unwrap_or_else(|error| error.into_inner())
-            .clone()
+        crate::runtime::state::subsystems::services::instrumentation::snapshot_complexity(
+            self.counters,
+        )
     }
 }
 

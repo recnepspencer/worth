@@ -56,6 +56,8 @@ impl<'runtime> PublicationAuthority<'runtime> {
     }
 }
 
+pub(crate) use pending_settlement::SettlementPublication;
+pub(crate) use performed_settlement::RelationalSettlementBinding;
 pub use settlement_port::RelationalSettlementPort;
 
 pub(crate) use post_commit_consumer::production_post_commit_consumer;

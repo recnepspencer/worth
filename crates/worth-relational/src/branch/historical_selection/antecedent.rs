@@ -14,8 +14,14 @@ impl RelationalHistoricalSelectionRead {
     ) -> Result<bool, RelationalHistoricalSelectionReadDenial> {
         use RelationalHistoricalSelectionReadDenial as Denial;
         crate::execution::request_custody::check_request(execution).map_err(Denial::Execution)?;
-        if runtime.runtime_instance_id() != self.latest().restored.runtime_identity
-            || source.runtime_instance_id() != self.latest().restored.runtime_identity
+        if !self
+            .latest()
+            .restored
+            .is_from_runtime(runtime.runtime_instance_id())
+            || !self
+                .latest()
+                .restored
+                .is_from_runtime(source.runtime_instance_id())
         {
             return Err(Denial::ForeignOwner);
         }

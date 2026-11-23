@@ -160,11 +160,9 @@ pub(super) fn prepare_commit_publication_execution(
 
 pub(crate) fn publish_commit_execution(
     runtime: &crate::runtime::RelationalRuntime,
-    prepared: PreparedCommitPublicationCompletion,
-    published_snapshot_basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    positioned: std::sync::Arc<crate::history::data::PositionedCanonicalCommit>,
-    envelope_cell: std::sync::Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
+    publication: crate::publication::authority::SettlementPublication,
 ) -> PublishedCommitExecution {
+    let (prepared, published_snapshot_basis, positioned, envelope_cell) = publication.into_parts();
     let PreparedCommitPublicationCompletion {
         source_interpretation,
         mut admitted,

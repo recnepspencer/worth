@@ -1,3 +1,7 @@
+pub use crate::branch::historical_selection::{
+    RelationalHistoricalSelectionRead, RelationalHistoricalSelectionReadDenial,
+    RelationalHistoricalSourcePresence, RelationalHistoricalSourceReadDenial,
+};
 mod historical_output_selection;
 pub use state::CompleteRelationalCheckpointPreparation;
 pub(crate) use state::{
@@ -35,6 +39,7 @@ mod predecessor_publication;
 pub(crate) mod prepared_merge_execution;
 mod publication_authority;
 mod publication_body;
+mod publication_settlement;
 mod published_lineage;
 mod schema_transition_admission;
 pub(crate) mod state;
@@ -71,9 +76,7 @@ pub use crate::visibility::materialization::read_records::{
     RelationalAppliedCandidateReadQualification, RelationalAspectPresenceSupportDenial,
     RelationalBorrowedRecordReadDenial, RelationalEntityMetadata,
     RelationalEntityMetadataPinDenial, RelationalEntityRetirement,
-    RelationalFieldSupportComparisonDenial, RelationalHistoricalSelectionRead,
-    RelationalHistoricalSelectionReadDenial, RelationalHistoricalSourcePresence,
-    RelationalHistoricalSourceReadDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
+    RelationalFieldSupportComparisonDenial, RelationalPinnedEntityMetadata, RelationalPinnedRead,
     RelationalPinnedReadAdmissionDenial, RelationalProjectedFieldObservation,
     RelationalRelationMetadata, RelationalSnapshotPositionAdmissionStop, SnapshotPositionDenial,
     VisibilityProjectionView, VisibilityReadContext,

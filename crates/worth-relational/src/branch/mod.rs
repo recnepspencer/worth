@@ -21,6 +21,7 @@ mod basis_identity_validation;
 mod basis_observation;
 mod basis_readmission;
 pub(crate) mod basis_registry;
+pub(crate) mod historical_selection;
 pub(crate) mod home_program_step;
 #[path = "envelope/retained_allocation.rs"]
 pub(crate) mod retained_allocation;
