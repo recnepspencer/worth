@@ -74,3 +74,12 @@ impl CurrentPartitionAccess for SymbolAdmittedRootRead<'_> {
         self.root.has_read_misses()
     }
 }
+
+impl RelationalBranchRoot {
+    pub(crate) fn symbol_admitted_projection<'a>(
+        &'a self,
+        symbols: &'a RuntimeSymbolTable,
+    ) -> impl CurrentPartitionAccess + PartitionAccess + 'a {
+        SymbolAdmittedRootRead::new(self, symbols)
+    }
+}

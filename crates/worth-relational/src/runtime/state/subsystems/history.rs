@@ -53,6 +53,8 @@ mod history_memory_close;
 mod history_publication;
 #[path = "history_recovery.rs"]
 mod history_recovery;
+#[path = "history_recovery_denial.rs"]
+mod history_recovery_denial;
 #[path = "history_recovery_index_basis.rs"]
 mod history_recovery_index_basis;
 #[path = "history_recovery_lineage.rs"]

@@ -172,3 +172,5 @@ pub use cold_symbol_placement::RelationalColdSymbolPlacementForTest;
 #[cfg(test)]
 #[path = "mod_inline_type_budget.rs"]
 pub(crate) mod inline_type_budget;
+
+mod visibility_read_inputs;

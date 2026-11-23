@@ -1,4 +1,5 @@
-use crate::branch::{RelationalBranchCellCheckpoint, RelationalBranchReferenceCell};
+use crate::branch::reference::RelationalBranchReferenceCell;
+use crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint;
 use crate::history::data::{BranchId, CanonicalCommitEnvelope, CommitId};
 use worth_foundational::FoundationalBranchTarget;
 
@@ -101,7 +102,7 @@ pub(super) fn validate_recovered_branch_cell(
 pub(super) fn validate_branch_target_artifact(
     history: &HistorySubsystem,
     branch_id: &BranchId,
-    target: &FoundationalBranchTarget<crate::branch::RelationalBranchTarget>,
+    target: &FoundationalBranchTarget<crate::branch::target::RelationalBranchTarget>,
 ) -> Result<(), String> {
     let FoundationalBranchTarget::Basis(target) = target else {
         return Ok(());
@@ -141,7 +142,7 @@ pub(super) fn validate_branch_target_artifact(
 pub(super) fn require_branch_target_artifact(
     history: &HistorySubsystem,
     branch_id: &BranchId,
-    target: &FoundationalBranchTarget<crate::branch::RelationalBranchTarget>,
+    target: &FoundationalBranchTarget<crate::branch::target::RelationalBranchTarget>,
 ) -> Result<(), String> {
     let FoundationalBranchTarget::Basis(target) = target else {
         return Ok(());
@@ -159,7 +160,7 @@ pub(super) fn require_branch_target_artifact(
 pub(super) fn validate_branch_target_envelope(
     envelope: &CanonicalCommitEnvelope,
     branch_id: &BranchId,
-    target: &FoundationalBranchTarget<crate::branch::RelationalBranchTarget>,
+    target: &FoundationalBranchTarget<crate::branch::target::RelationalBranchTarget>,
 ) -> Result<(), String> {
     let FoundationalBranchTarget::Basis(target) = target else {
         return Ok(());

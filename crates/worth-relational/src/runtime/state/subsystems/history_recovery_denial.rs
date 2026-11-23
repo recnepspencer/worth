@@ -1,14 +1,15 @@
 //! Reconstruction failures preserve original control and Native content causes.
-use crate::branch::RelationalBranchRootCaptureDenial;
-use crate::durability::data::{DurabilityError, RecoveryFailureClass, RelationalRecoveryStop};
+use crate::branch::root_capture_denial::RelationalBranchRootCaptureDenial;
+use crate::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::recovery_stop::RelationalRecoveryStop;
 
 #[derive(Debug)]
 pub(crate) enum RelationalHistoryRecoveryDenial {
     Invalid(String),
     Root(RelationalBranchRootCaptureDenial),
     Source(RelationalRecoveryStop),
-    Artifact(crate::history::RelationalCommitArtifactDenial),
-    Catalog(crate::history::RelationalCommitCatalogAppendDenial),
+    Artifact(crate::history::commit::RelationalCommitArtifactDenial),
+    Catalog(crate::history::commit::RelationalCommitCatalogAppendDenial),
 }
 impl From<String> for RelationalHistoryRecoveryDenial {
     fn from(detail: String) -> Self {

@@ -121,9 +121,9 @@ impl HistorySubsystem {
         commit: crate::history::data::CommitId,
     ) -> Result<
         Arc<crate::branch::root::RelationalOriginalRootCommitEvidence>,
-        super::history_catalog_recovery::RelationalHistoryRecoveryDenial,
+        super::history_recovery_denial::RelationalHistoryRecoveryDenial,
     > {
-        use super::history_catalog_recovery::RelationalHistoryRecoveryDenial as Denial;
+        use super::history_recovery_denial::RelationalHistoryRecoveryDenial as Denial;
         let artifact = self
             .commit_artifact(commit)
             .ok_or_else(|| Denial::Invalid("root has no actual admitted catalog entry".into()))?;

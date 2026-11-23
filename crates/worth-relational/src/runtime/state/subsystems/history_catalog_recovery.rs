@@ -1,6 +1,4 @@
-#[path = "history_catalog_recovery/denial.rs"]
-mod denial;
-pub(super) use denial::RelationalHistoryRecoveryDenial;
+use super::history_recovery_denial::RelationalHistoryRecoveryDenial;
 use std::sync::Arc;
 
 use worth_foundational::FoundationalBranchTarget;

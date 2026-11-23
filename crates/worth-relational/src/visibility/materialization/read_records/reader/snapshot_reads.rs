@@ -60,7 +60,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
                     return Ok(None);
                 }
                 read_view_from_snapshot_state(
-                    self.runtime,
+                    self.runtime.snapshot_record_read_inputs(),
                     &resolved.state,
                     &resolved.handle,
                     &mut |units| context.checkpoint(units),
@@ -107,7 +107,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             execution,
             |context, memory| {
                 read_view_from_snapshot_state(
-                    self.runtime,
+                    self.runtime.snapshot_record_read_inputs(),
                     &state,
                     &state.handle,
                     &mut |units| context.checkpoint(units),
@@ -176,7 +176,7 @@ impl<'runtime> VisibilityReadContext<'runtime> {
             execution,
             |context, memory| {
                 read_view_from_snapshot_state(
-                    self.runtime,
+                    self.runtime.snapshot_record_read_inputs(),
                     &state,
                     &state.handle,
                     &mut |units| context.checkpoint(units),

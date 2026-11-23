@@ -1,7 +1,7 @@
 mod access;
 pub(crate) mod authority;
 pub mod bundle;
-mod canonical_history;
+pub(crate) mod canonical_history;
 pub mod cdc;
 pub(crate) mod close_custody;
 pub mod data;

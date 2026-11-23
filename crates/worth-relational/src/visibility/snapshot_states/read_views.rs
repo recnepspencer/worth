@@ -1,4 +1,4 @@
-use crate::runtime::RelationalRuntime;
+use super::SnapshotRecordReadInputs;
 use crate::schema::data::RelationalSchemaRegistry;
 use crate::storage::data::{EntityReadRecord, RelationReadRecord};
 use crate::storage::overlay::PartitionAccess;
@@ -10,7 +10,7 @@ use crate::visibility::snapshot_read_view::RelationalReadView;
 use super::{SnapshotState, SnapshotStateBasis};
 
 pub(crate) fn read_view_from_snapshot_state(
-    runtime: &RelationalRuntime,
+    inputs: SnapshotRecordReadInputs<'_>,
     state: &SnapshotState,
     handle: &crate::snapshots::data::SnapshotHandle,
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
@@ -37,7 +37,7 @@ pub(crate) fn read_view_from_snapshot_state(
             );
             let root = basis.root();
             materialize_exact(
-                runtime,
+                inputs,
                 state,
                 root.as_ref(),
                 root.schema_authority().registry(),
@@ -46,7 +46,7 @@ pub(crate) fn read_view_from_snapshot_state(
             )?
         }
         SnapshotStateBasis::Historical(basis) => materialize_historical(
-            runtime,
+            inputs,
             state,
             basis.root().map(|root| {
                 (
@@ -59,7 +59,7 @@ pub(crate) fn read_view_from_snapshot_state(
             memory,
         )?,
     };
-    runtime.services.instrumentation.count(|counters| {
+    inputs.instrumentation().count(|counters| {
         counters.visible_authoritative_entity_records_materialized += entities.len();
         counters.visible_authoritative_relation_records_materialized += relations.len();
     });
@@ -72,7 +72,7 @@ pub(crate) fn read_view_from_snapshot_state(
 }
 
 fn materialize_exact(
-    runtime: &RelationalRuntime,
+    inputs: SnapshotRecordReadInputs<'_>,
     state: &SnapshotState,
     storage: &impl PartitionAccess,
     registry: &RelationalSchemaRegistry,
@@ -82,22 +82,25 @@ fn materialize_exact(
     (Vec<EntityReadRecord>, Vec<RelationReadRecord>),
     crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
-    let reader = runtime.read_truth();
     materialize_pins(
         state,
         |partition_id, slot| {
-            reader.authoritative_entity_record_for_id_from_exact_state(
-                storage,
-                registry,
-                crate::identity::data::EntityId::new(partition_id, slot as u64, 0),
-            )
+            inputs
+                .reader()
+                .authoritative_entity_record_for_id_from_exact_state(
+                    storage,
+                    registry,
+                    crate::identity::data::EntityId::new(partition_id, slot as u64, 0),
+                )
         },
         |partition_id, slot| {
-            reader.authoritative_relation_record_for_id_from_exact_state(
-                storage,
-                registry,
-                crate::identity::data::RelationId::new(partition_id, slot as u64, 0),
-            )
+            inputs
+                .reader()
+                .authoritative_relation_record_for_id_from_exact_state(
+                    storage,
+                    registry,
+                    crate::identity::data::RelationId::new(partition_id, slot as u64, 0),
+                )
         },
         |partition_id, slot| {
             record_quote::entity_for_id(
@@ -121,7 +124,7 @@ fn materialize_exact(
 }
 
 fn materialize_historical(
-    runtime: &RelationalRuntime,
+    inputs: SnapshotRecordReadInputs<'_>,
     state: &SnapshotState,
     selected: Option<(&dyn PartitionAccess, &RelationalSchemaRegistry)>,
     version_id: crate::identity::data::VersionId,
@@ -132,32 +135,36 @@ fn materialize_historical(
     crate::execution::denial_cause::RelationalExecutionDenialCause,
 > {
     let empty = std::collections::BTreeMap::new();
-    let (access, registry) = selected.unwrap_or((&empty, &runtime.config.schema.registry));
-    let reader = runtime.read_truth();
+    let (access, registry) = selected.unwrap_or((&empty, inputs.fallback_schema()));
+
     materialize_pins(
         state,
         |partition_id, slot| {
-            reader.authoritative_entity_record_for_id_at_version_with_registry(
-                access,
-                registry,
-                crate::identity::data::EntityId::new(partition_id, slot as u64, 0),
-                version_id,
-            )
+            inputs
+                .reader()
+                .authoritative_entity_record_for_id_at_version_with_registry(
+                    access,
+                    registry,
+                    crate::identity::data::EntityId::new(partition_id, slot as u64, 0),
+                    version_id,
+                )
         },
         |partition_id, slot| {
-            reader.authoritative_relation_record_for_id_at_version_with_registry(
-                access,
-                registry,
-                crate::identity::data::RelationId::new(partition_id, slot as u64, 0),
-                version_id,
-            )
+            inputs
+                .reader()
+                .authoritative_relation_record_for_id_at_version_with_registry(
+                    access,
+                    registry,
+                    crate::identity::data::RelationId::new(partition_id, slot as u64, 0),
+                    version_id,
+                )
         },
         |partition_id, slot| {
             record_quote::entity_for_id(
                 access,
                 registry,
                 crate::identity::data::EntityId::new(partition_id, slot as u64, 0),
-                KindScanVisibility::for_selected_version(runtime.current_version_id(), version_id),
+                KindScanVisibility::for_selected_version(inputs.current_version(), version_id),
             )
         },
         |partition_id, slot| {
@@ -165,7 +172,7 @@ fn materialize_historical(
                 access,
                 registry,
                 crate::identity::data::RelationId::new(partition_id, slot as u64, 0),
-                KindScanVisibility::for_selected_version(runtime.current_version_id(), version_id),
+                KindScanVisibility::for_selected_version(inputs.current_version(), version_id),
             )
         },
         charge,

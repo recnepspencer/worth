@@ -209,49 +209,7 @@ pub(super) fn denied(kind: Denial, index: DerivedIndexId) -> BoundedEntityFieldL
     BoundedEntityFieldLookupDenial::new(kind, index)
 }
 
-impl crate::visibility::materialization::read_records::projection::ProjectionRecordSource
-    for PreparedEntityFieldLookup
-{
-    // Construction already admitted and retained the complete immutable source.
-    // Reading an accepted pin checks request life, without reacquiring cold truth.
-    fn demand_all_full(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
-        crate::execution::request_custody::check_request(execution)
-    }
-    fn demand_regions_full(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        _partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
-    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
-        crate::execution::request_custody::check_request(execution)
-    }
-    fn demand_regions_head(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        partitions: impl IntoIterator<Item = crate::identity::data::PartitionId>,
-    ) -> Result<(), crate::execution::denial_cause::RelationalExecutionDenialCause> {
-        self.basis
-            .demand_regions_head(execution, partitions)
-            .map_err(Into::into)
-    }
-    fn admitted_head_region(
-        &self,
-        id: crate::identity::data::PartitionId,
-    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
-        self.basis.head_region(id)
-    }
-    fn selected_root(&self) -> Option<&Arc<crate::branch::root::RelationalBranchRoot>> {
-        Some(self.basis.root())
-    }
-    fn is_exact_basis(&self) -> bool {
-        true
-    }
-    fn version_id(&self) -> crate::identity::data::VersionId {
-        self.basis.version_id()
-    }
-}
+mod record_source;
 
 impl PreparedEntityFieldLookup {
     pub(crate) fn validate_definition(

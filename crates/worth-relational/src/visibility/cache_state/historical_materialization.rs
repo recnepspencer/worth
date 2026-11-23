@@ -32,7 +32,8 @@ pub(crate) fn ensure_historical_state(
                 basis.branch_id().0.len() as u64,
             )?;
             crate::visibility::snapshot_states::build_historical_visibility_state(
-                runtime,
+                runtime.snapshot_record_read_inputs(),
+                runtime.runtime_instance_id(),
                 basis.clone(),
                 SnapshotId(0),
                 SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,
@@ -90,7 +91,8 @@ pub(crate) fn materialize_historical_visibility(
                 basis.branch_id().0.len() as u64,
             )?;
             crate::visibility::snapshot_states::build_historical_visibility_state(
-                runtime,
+                runtime.snapshot_record_read_inputs(),
+                runtime.runtime_instance_id(),
                 basis.clone(),
                 SnapshotId(0),
                 SnapshotReadPolicy::ImmutablePinnedNoLazyMutation,

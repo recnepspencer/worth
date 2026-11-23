@@ -35,17 +35,29 @@ pub(crate) trait ProjectionRecordSource {
         id: PartitionId,
     ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>>;
 
-    fn selected_root(&self) -> Option<&std::sync::Arc<crate::branch::RelationalBranchRoot>>;
-    fn selected_storage(&self) -> Option<&dyn PartitionAccess> {
-        self.selected_root()
-            .map(|root| root.as_ref() as &dyn PartitionAccess)
-    }
+    fn selected_storage(&self) -> Option<&dyn PartitionAccess>;
     fn is_exact_basis(&self) -> bool;
     fn version_id(&self) -> crate::identity::data::VersionId;
-    fn selected_schema_registry(&self) -> Option<&crate::schema::data::RelationalSchemaRegistry> {
-        self.selected_root()
-            .map(|root| root.schema_authority().registry())
-    }
+    fn selected_schema_registry(&self) -> Option<&crate::schema::data::RelationalSchemaRegistry>;
+
+    fn try_for_each_selected_partition<E>(
+        &self,
+        visit: impl FnMut(PartitionId) -> Result<(), E>,
+    ) -> Result<(), E>;
+    fn selected_entity_ids(
+        &self,
+        kind: KindId,
+        partition: Option<PartitionId>,
+    ) -> impl Iterator<Item = EntityId> + '_;
+    fn selected_relation_ids(
+        &self,
+        kind: KindId,
+        partition: Option<PartitionId>,
+    ) -> impl Iterator<Item = RelationId> + '_;
+    fn retained_head_region(
+        &self,
+        partition: PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>>;
 
     fn with_entity_record<E, T>(
         &self,
@@ -137,10 +149,7 @@ pub(crate) trait ProjectionRecordSource {
         }
         self.demand_all_full(execution).map_err(ReadStop::Request)?;
         crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
-        let Some(root) = self.selected_root() else {
-            return Ok(());
-        };
-        root.try_for_each_partition_id(|partition_id| {
+        self.try_for_each_selected_partition(|partition_id| {
             self.try_for_each_entity_record_in(
                 execution,
                 partition_id,
@@ -165,10 +174,7 @@ pub(crate) trait ProjectionRecordSource {
         }
         self.demand_all_full(execution).map_err(ReadStop::Request)?;
         crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
-        let Some(root) = self.selected_root() else {
-            return Ok(());
-        };
-        root.try_for_each_partition_id(|partition_id| {
+        self.try_for_each_selected_partition(|partition_id| {
             self.try_for_each_relation_record_in(
                 execution,
                 partition_id,
@@ -183,30 +189,29 @@ pub(crate) trait ProjectionRecordSource {
         &self,
         id: EntityId,
     ) -> Result<u64, crate::execution::denial_cause::RelationalExecutionDenialCause> {
-        let Some(root) = self.selected_root() else {
+        use super::super::reader::kind_scan_visibility::KindScanVisibility;
+        let Some(registry) = self.selected_schema_registry() else {
             return Ok(0);
         };
         if self.is_exact_basis() {
-            return root
-                .accepted_head_region_view(id.partition_id)
+            return self
+                .retained_head_region(id.partition_id)
                 .map_or(Ok(0), |head| {
                     super::super::read_work::record_quote::entity_head(
-                        root.schema_authority().registry(),
+                        registry,
                         head,
                         id.slot_index(),
                     )
                 });
         }
-        let visibility = if self.is_exact_basis() {
-            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live
-        } else {
-            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::AtVersion(self.version_id())
+        let Some(storage) = self.selected_storage() else {
+            return Ok(0);
         };
         super::super::read_work::record_quote::entity_for_id(
-            root.as_ref(),
-            root.schema_authority().registry(),
+            storage,
+            registry,
             id,
-            visibility,
+            KindScanVisibility::AtVersion(self.version_id()),
         )
     }
 
@@ -214,30 +219,29 @@ pub(crate) trait ProjectionRecordSource {
         &self,
         id: RelationId,
     ) -> Result<u64, crate::execution::denial_cause::RelationalExecutionDenialCause> {
-        let Some(root) = self.selected_root() else {
+        use super::super::reader::kind_scan_visibility::KindScanVisibility;
+        let Some(registry) = self.selected_schema_registry() else {
             return Ok(0);
         };
         if self.is_exact_basis() {
-            return root
-                .accepted_head_region_view(id.partition_id)
+            return self
+                .retained_head_region(id.partition_id)
                 .map_or(Ok(0), |head| {
                     super::super::read_work::record_quote::relation_head(
-                        root.schema_authority().registry(),
+                        registry,
                         head,
                         id.slot_index(),
                     )
                 });
         }
-        let visibility = if self.is_exact_basis() {
-            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::Live
-        } else {
-            crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility::AtVersion(self.version_id())
+        let Some(storage) = self.selected_storage() else {
+            return Ok(0);
         };
         super::super::read_work::record_quote::relation_for_id(
-            root.as_ref(),
-            root.schema_authority().registry(),
+            storage,
+            registry,
             id,
-            visibility,
+            KindScanVisibility::AtVersion(self.version_id()),
         )
     }
 

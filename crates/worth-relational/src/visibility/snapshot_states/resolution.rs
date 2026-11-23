@@ -1,4 +1,4 @@
-use crate::capabilities::{SnapshotSource, VisibilityPolicySource};
+use crate::runtime::state::subsystems::visibility::VisibilitySubsystem;
 use crate::runtime::RelationalRuntime;
 use crate::snapshots::data::{SnapshotHandle, SnapshotInspectionSummary};
 use crate::visibility::cache_state::materialize_exact_state_for_basis;
@@ -10,30 +10,46 @@ pub(crate) struct ResolvedVisibilitySnapshot {
     pub(crate) state: SnapshotState,
 }
 
-pub(crate) fn resolve_snapshot_handle(
-    runtime: &RelationalRuntime,
+#[derive(Clone, Copy)]
+pub(crate) struct SnapshotReadDirectory<'a> {
+    visibility: &'a VisibilitySubsystem,
+    runtime_identity: u64,
+}
+
+impl<'a> SnapshotReadDirectory<'a> {
+    pub(crate) fn new(visibility: &'a VisibilitySubsystem, runtime_identity: u64) -> Self {
+        Self {
+            visibility,
+            runtime_identity,
+        }
+    }
+}
+
+pub(crate) fn resolve_snapshot_handle<'a>(
+    directory: impl Into<SnapshotReadDirectory<'a>>,
     handle: &SnapshotHandle,
 ) -> Option<SnapshotHandle> {
-    if handle.runtime_instance_id != runtime.runtime_instance_id() {
+    let directory = directory.into();
+    if handle.runtime_instance_id != directory.runtime_identity {
         return None;
     }
-    if let Some((branch_id, version_id, read_policy)) =
-        runtime.active_snapshot_binding(handle.snapshot_id)
+    if let Some(binding) = directory
+        .visibility
+        .active_handle_binding(handle.snapshot_id)
     {
         return Some(SnapshotHandle {
-            runtime_instance_id: runtime.runtime_instance_id(),
-            branch_id,
+            runtime_instance_id: directory.runtime_identity,
+            branch_id: binding.branch_id.clone(),
             snapshot_id: handle.snapshot_id,
-            version_id,
-            read_policy,
+            version_id: binding.version_id,
+            read_policy: binding.read_policy,
         });
     }
-
-    let binding = runtime
+    let binding = directory
         .visibility
         .published_snapshot_binding(handle.snapshot_id)?;
     Some(SnapshotHandle {
-        runtime_instance_id: runtime.runtime_instance_id(),
+        runtime_instance_id: directory.runtime_identity,
         branch_id: binding.branch_id,
         snapshot_id: handle.snapshot_id,
         version_id: binding.version_id,
@@ -41,17 +57,21 @@ pub(crate) fn resolve_snapshot_handle(
     })
 }
 
-pub(crate) fn resolve_snapshot_basis(
-    runtime: &RelationalRuntime,
+pub(crate) fn resolve_snapshot_basis<'a>(
+    directory: impl Into<SnapshotReadDirectory<'a>>,
     handle: &SnapshotHandle,
 ) -> Option<VisibilitySnapshotBasis> {
-    if handle.runtime_instance_id != runtime.runtime_instance_id() {
+    let directory = directory.into();
+    if handle.runtime_instance_id != directory.runtime_identity {
         return None;
     }
-    if let Some(binding) = runtime.visibility.active_handle_binding(handle.snapshot_id) {
+    if let Some(binding) = directory
+        .visibility
+        .active_handle_binding(handle.snapshot_id)
+    {
         return Some(binding.basis.clone());
     }
-    runtime
+    directory
         .visibility
         .published_snapshot_binding(handle.snapshot_id)
         .map(|binding| binding.basis)
@@ -75,7 +95,11 @@ pub(crate) fn resolve_snapshot_state(
         let state = materialize_exact_state_for_basis(
             runtime,
             binding.basis,
-            !runtime.protect_active_snapshots(),
+            !runtime
+                .config
+                .visibility
+                .cache_policy
+                .protect_active_snapshots,
         )?;
         return Some(ResolvedVisibilitySnapshot {
             handle: resolved_handle,
@@ -115,12 +139,13 @@ fn resolve_published_snapshot_state(
     })
 }
 
-pub(crate) fn resolve_snapshot_inspection(
-    runtime: &RelationalRuntime,
+pub(crate) fn resolve_snapshot_inspection<'a>(
+    directory: impl Into<SnapshotReadDirectory<'a>>,
     handle: &SnapshotHandle,
 ) -> Option<SnapshotInspectionSummary> {
-    let handle = resolve_snapshot_handle(runtime, handle)?;
-    let basis = resolve_snapshot_basis(runtime, &handle)?;
+    let directory = directory.into();
+    let handle = resolve_snapshot_handle(directory, handle)?;
+    let basis = resolve_snapshot_basis(directory, &handle)?;
     let counts = basis.root().live_counts();
     Some(SnapshotInspectionSummary {
         branch_id: handle.branch_id,

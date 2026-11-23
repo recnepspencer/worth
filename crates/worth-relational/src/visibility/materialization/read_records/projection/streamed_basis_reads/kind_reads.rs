@@ -16,11 +16,10 @@ pub(super) fn entity<E>(
     mut visit: impl FnMut(&EntityReadRecord) -> Result<(), E>,
 ) -> Result<(), ReadStop<E>> {
     crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
-    let Some(root) = source.selected_root() else {
+    let Some(registry) = source.selected_schema_registry() else {
         return Ok(());
     };
-    let registry = root.schema_authority().registry();
-    for id in root.entity_ids_of_kind(kind, partition) {
+    for id in source.selected_entity_ids(kind, partition) {
         source
             .demand_regions_head(execution, [id.partition_id])
             .map_err(ReadStop::Request)?;
@@ -79,11 +78,10 @@ pub(super) fn relation<E>(
     mut visit: impl FnMut(&RelationReadRecord) -> Result<(), E>,
 ) -> Result<(), ReadStop<E>> {
     crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
-    let Some(root) = source.selected_root() else {
+    let Some(registry) = source.selected_schema_registry() else {
         return Ok(());
     };
-    let registry = root.schema_authority().registry();
-    for id in root.relation_ids_of_kind(kind, partition) {
+    for id in source.selected_relation_ids(kind, partition) {
         source
             .demand_regions_head(execution, [id.partition_id])
             .map_err(ReadStop::Request)?;

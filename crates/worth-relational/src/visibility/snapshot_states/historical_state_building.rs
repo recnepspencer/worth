@@ -3,7 +3,7 @@ use crate::visibility::materialization::read_records::read_work::record_quote;
 use crate::visibility::materialization::read_records::reader::kind_scan_visibility::KindScanVisibility;
 use std::collections::BTreeMap;
 
-use crate::runtime::RelationalRuntime;
+use super::SnapshotRecordReadInputs;
 use crate::snapshots::data::{SnapshotHandle, SnapshotId, SnapshotReadPolicy};
 use crate::storage::overlay::PartitionAccess;
 use crate::storage::partition::DenseSlotBitSet;
@@ -12,7 +12,8 @@ use super::pin_assembly::{assemble_snapshot_state_with_memory, SelectedRelationS
 use super::{HistoricalVisibilityBasis, SnapshotState, SnapshotStateBasis};
 
 pub(crate) fn build_historical_visibility_state(
-    runtime: &RelationalRuntime,
+    inputs: SnapshotRecordReadInputs<'_>,
+    runtime_instance_id: u64,
     basis: HistoricalVisibilityBasis,
     snapshot_id: SnapshotId,
     read_policy: SnapshotReadPolicy,
@@ -25,20 +26,20 @@ pub(crate) fn build_historical_visibility_state(
     );
     record_memory::claim(memory, basis.branch_id().0.len() as u64)?;
     let handle = SnapshotHandle {
-        runtime_instance_id: runtime.runtime_instance_id(),
+        runtime_instance_id,
         branch_id: basis.branch_id().clone(),
         snapshot_id,
         version_id: basis.version_id(),
         read_policy,
     };
     if let Some(root) = basis.root().cloned() {
-        return build_from_retained_state(runtime, basis, handle, root.as_ref(), charge, memory);
+        return build_from_retained_state(inputs, basis, handle, root.as_ref(), charge, memory);
     }
-    build_from_retained_state(runtime, basis, handle, &BTreeMap::new(), charge, memory)
+    build_from_retained_state(inputs, basis, handle, &BTreeMap::new(), charge, memory)
 }
 
 fn build_from_retained_state(
-    runtime: &RelationalRuntime,
+    inputs: SnapshotRecordReadInputs<'_>,
     basis: HistoricalVisibilityBasis,
     handle: SnapshotHandle,
     state: &impl PartitionAccess,
@@ -46,14 +47,16 @@ fn build_from_retained_state(
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
 ) -> Result<SnapshotState, crate::execution::denial_cause::RelationalExecutionDenialCause> {
     let version_id = basis.version_id();
-    let registry = basis
-        .root()
-        .map_or(&runtime.config.schema.registry, |root| {
-            root.schema_authority().registry()
-        });
-    let reader = runtime.read_truth();
-    let entities = reader.visible_entity_slots_from_state(state, version_id, charge, memory)?;
-    let visible = reader.visible_relation_slots_from_state(state, version_id, charge, memory)?;
+    let registry = basis.root().map_or(inputs.fallback_schema(), |root| {
+        root.schema_authority().registry()
+    });
+
+    let entities = inputs
+        .reader()
+        .visible_entity_slots_from_state(state, version_id, charge, memory)?;
+    let visible = inputs
+        .reader()
+        .visible_relation_slots_from_state(state, version_id, charge, memory)?;
     let visible_bytes = record_memory::vector_bytes::<(
         crate::identity::data::PartitionId,
         DenseSlotBitSet,
@@ -61,7 +64,7 @@ fn build_from_retained_state(
     let mut relations = Vec::new();
     for (partition_id, visible) in visible {
         let retained = retained_historical_relations(
-            runtime,
+            inputs,
             state,
             registry,
             partition_id,
@@ -88,7 +91,7 @@ fn build_from_retained_state(
 }
 
 fn retained_historical_relations(
-    runtime: &RelationalRuntime,
+    inputs: SnapshotRecordReadInputs<'_>,
     state: &impl PartitionAccess,
     registry: &crate::schema::data::RelationalSchemaRegistry,
     partition_id: crate::identity::data::PartitionId,
@@ -97,7 +100,6 @@ fn retained_historical_relations(
     charge: &mut dyn FnMut(u64) -> Result<(), worth_execution::MapKernelStop>,
     memory: &mut worth_execution::ExecutionResultMemory<'_>,
 ) -> Result<DenseSlotBitSet, crate::execution::denial_cause::RelationalExecutionDenialCause> {
-    let reader = runtime.read_truth();
     let mut retained = DenseSlotBitSet::with_capacity(visible.represented_slot_capacity());
     let (slots, held) = record_memory::slots(visible, memory)?;
     for slot in slots {
@@ -108,15 +110,17 @@ fn retained_historical_relations(
             state,
             registry,
             relation_id,
-            KindScanVisibility::for_selected_version(runtime.current_version_id(), version_id),
+            KindScanVisibility::for_selected_version(inputs.current_version(), version_id),
         )?;
         record_memory::claim(memory, clone_bytes)?;
-        let record = reader.authoritative_relation_record_for_id_at_version_with_registry(
-            state,
-            registry,
-            relation_id,
-            version_id,
-        );
+        let record = inputs
+            .reader()
+            .authoritative_relation_record_for_id_at_version_with_registry(
+                state,
+                registry,
+                relation_id,
+                version_id,
+            );
         let actual = record.as_ref().map_or(
             0,
             crate::visibility::materialization::read_records::read_footprint::relation,

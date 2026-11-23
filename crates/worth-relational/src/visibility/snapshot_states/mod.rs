@@ -6,6 +6,8 @@ mod historical_basis;
 mod historical_state_building;
 mod pin_assembly;
 mod read_views;
+mod record_read_inputs;
+pub(crate) use record_read_inputs::SnapshotRecordReadInputs;
 mod resolution;
 mod retirement;
 pub(crate) use cache_retirement::SnapshotStateRetirement;
@@ -25,3 +27,5 @@ pub(crate) use resolution::{
 pub(crate) use state::{
     SnapshotState, SnapshotStateBasis, VisibilitySnapshotBasis, VisibilitySnapshotStateKey,
 };
+
+pub(crate) use resolution::SnapshotReadDirectory;

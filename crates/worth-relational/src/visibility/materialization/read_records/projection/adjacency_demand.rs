@@ -25,7 +25,7 @@ impl VisibilityProjectionView {
         let Some(root) = self.selected_root() else {
             return Ok(());
         };
-        let root_source = crate::branch::SymbolAdmittedRootRead::new(root, &self.symbols);
+        let root_source = root.symbol_admitted_projection(&self.symbols);
         if self.is_exact_basis() {
             let source: &dyn crate::storage::overlay::CurrentPartitionAccess =
                 self.resident.as_ref().map_or(

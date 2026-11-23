@@ -232,8 +232,38 @@ impl<Snapshot> super::super::projection::ProjectionRecordSource for RelationalPi
     fn selected_storage(&self) -> Option<&dyn crate::storage::overlay::PartitionAccess> {
         Some(&self.basis)
     }
-    fn selected_root(&self) -> Option<&Arc<crate::branch::root::RelationalBranchRoot>> {
-        Some(self.basis.root())
+    fn selected_schema_registry(&self) -> Option<&crate::schema::data::RelationalSchemaRegistry> {
+        Some(self.schema())
+    }
+
+    fn try_for_each_selected_partition<E>(
+        &self,
+        visit: impl FnMut(crate::identity::data::PartitionId) -> Result<(), E>,
+    ) -> Result<(), E> {
+        self.basis.root().try_for_each_partition_id(visit)
+    }
+
+    fn selected_entity_ids(
+        &self,
+        kind: crate::identity::data::KindId,
+        partition: Option<crate::identity::data::PartitionId>,
+    ) -> impl Iterator<Item = crate::identity::data::EntityId> + '_ {
+        self.basis.root().entity_ids_of_kind(kind, partition)
+    }
+
+    fn selected_relation_ids(
+        &self,
+        kind: crate::identity::data::KindId,
+        partition: Option<crate::identity::data::PartitionId>,
+    ) -> impl Iterator<Item = crate::identity::data::RelationId> + '_ {
+        self.basis.root().relation_ids_of_kind(kind, partition)
+    }
+
+    fn retained_head_region(
+        &self,
+        partition: crate::identity::data::PartitionId,
+    ) -> Option<crate::storage::residency::RelationalRegionHeadView<'_>> {
+        self.basis.root().accepted_head_region_view(partition)
     }
     fn is_exact_basis(&self) -> bool {
         true

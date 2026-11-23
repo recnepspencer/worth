@@ -53,3 +53,5 @@ impl<'a> DurabilityCommitLog<'a> {
         }
     }
 }
+
+pub(crate) mod read_coverage;

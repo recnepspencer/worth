@@ -24,9 +24,6 @@ pub(super) fn entity<E>(
         .demand_regions_full(execution, [partition_id])
         .map_err(ReadStop::Request)?;
     crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
-    let Some(_root) = source.selected_root() else {
-        return Ok(());
-    };
     let Some(partition) = source
         .selected_storage()
         .and_then(|storage| storage.get_partition(partition_id))
@@ -127,9 +124,6 @@ pub(super) fn relation<E>(
         .demand_regions_full(execution, [partition_id])
         .map_err(ReadStop::Request)?;
     crate::execution::request_custody::check_request(execution).map_err(ReadStop::Request)?;
-    let Some(_root) = source.selected_root() else {
-        return Ok(());
-    };
     let Some(partition) = source
         .selected_storage()
         .and_then(|storage| storage.get_partition(partition_id))

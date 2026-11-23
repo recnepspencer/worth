@@ -41,7 +41,7 @@ pub(crate) mod truth_kind_scan;
 mod truth_record_access;
 pub(crate) mod truth_relation_kind_scan;
 
-use crate::capabilities::{SnapshotSource, VisibilityPolicySource};
+use crate::capabilities::VisibilityPolicySource;
 use crate::diagnostics::data::{
     DeterminismExpectation, DiagnosticCode, DiagnosticsArtifactKind, DiagnosticsScope,
     RelationalDiagnosticArtifact, RelationalDiagnosticsEntry,

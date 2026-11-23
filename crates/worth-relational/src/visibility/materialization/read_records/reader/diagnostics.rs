@@ -51,7 +51,8 @@ impl<'runtime> VisibilityReadContext<'runtime> {
         let recent_window = self.runtime.recent_visibility_window();
         let published_handle = self
             .runtime
-            .active_snapshot_binding(handle.snapshot_id)
+            .visibility
+            .active_handle_binding(handle.snapshot_id)
             .is_none();
         let protected = is_protected_for_basis(self.runtime, &basis, &residency);
         let recent_candidate = (!self.runtime.protect_active_snapshots() || published_handle)
