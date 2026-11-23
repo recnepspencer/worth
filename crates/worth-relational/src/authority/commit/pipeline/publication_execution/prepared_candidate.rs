@@ -142,7 +142,7 @@ impl PreparedCommitPublicationExecution {
 
     pub(crate) fn split(
         self,
-        published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
+        published_snapshot_slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
     ) -> (
         crate::mvcc::publication::PreparedCanonicalBranchMovement,
         PreparedCommitPublicationCompletion,

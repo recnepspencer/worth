@@ -1,3 +1,4 @@
+mod historical_output_selection;
 pub use state::CompleteRelationalCheckpointPreparation;
 pub(crate) use state::{
     LineageNamingBasisBinding, MutationRecordAllocations, MutationSymbolMeanings,
@@ -126,7 +127,6 @@ pub(crate) use state::{
     PublishedSnapshotSlotReservation, ReclaimedRecordSlot, RecordIdentitySubsystem,
     RelationalCandidateRegistrationDenial, RelationalCanonicalPublicationRoutes,
     RelationalCheckpointManifestPublication, RelationalCheckpointManifestSelection,
-    RelationalDiagnosticArtifactStore, RelationalDiagnosticOperationCapture,
     RelationalForkMaterializationCost, RelationalForkOwnerBinding, RelationalPreparationHistory,
     RelationalPreparationOwnerBinding, RelationalPreparationRuntime,
     RelationalRuntimeConfigurationBinding, RelationalRuntimeConfigurationSnapshot,

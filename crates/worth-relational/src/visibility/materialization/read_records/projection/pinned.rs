@@ -1,5 +1,5 @@
 //! Exact projection is immutable native custody, with no owner borrow.
-use super::{schema_custody::ProjectionSchemaCustody, VisibilityProjectionView};
+use super::VisibilityProjectionView;
 use crate::identity::data::VersionId;
 use crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use crate::runtime::RelationalPinnedRead;
@@ -16,7 +16,7 @@ impl VisibilityProjectionView {
             current_version,
             instrumentation: instrumentation.clone(),
             symbols: resident.symbols().clone(),
-            schema: ProjectionSchemaCustody::Published(resident.root().retained_schema_authority()),
+            empty_history_schema: None,
             resident: Some(resident.clone()),
             basis: SnapshotStateBasis::Exact(resident.basis().clone()),
         }

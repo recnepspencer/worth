@@ -31,7 +31,9 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<Option<Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>>(
             "home_target",
         );
-        owner.field::<crate::runtime::RelationalDiagnosticArtifactStore>("diagnostics");
+        owner.field::<crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore>(
+            "diagnostics",
+        );
         owner
             .field::<crate::runtime::state::RuntimeIndexDefinitionReadBinding>("index_definitions");
         owner.field::<crate::runtime::MirrorResidencyDemandBinding>("mirror_residency");
@@ -44,7 +46,10 @@ pub(crate) fn collect(census: &mut crate::inline_type_sizes::Census) {
         owner.field::<RelationalRuntimeOwnerBinding>("lifecycle");
         owner.field::<RelationalRuntimePublicationBinding>("publication_owner");
         owner.field::<Arc<PublishedSnapshotCapacityOwner>>("snapshot_capacity");
-        owner.field::<Arc<std::sync::atomic::AtomicU64>>("snapshot_ids");
+        owner
+            .field::<Arc<crate::runtime::state::subsystems::visibility::SnapshotIdentityAllocator>>(
+                "snapshot_ids",
+            );
         owner.field::<crate::runtime::LineageIdentityAllocator>("lineage_identity");
         owner.field::<crate::runtime::state::subsystems::LineageNamingBasisBinding>(
             "lineage_naming_basis",

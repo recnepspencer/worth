@@ -11,7 +11,7 @@ struct HistoryPreparedCandidate<'scope, 'authority> {
     scope_control: crate::validation::engine::InvariantPreparationControl<'scope, 'authority>,
     history_bound: CommitPhaseBacking<super::history_binding::HistoryBoundCommitExecution>,
     runtime_instance_id: u64,
-    publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
+    publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
     transaction_id: crate::transactions::data::primitives::TransactionId,
     branch_id: crate::history::data::BranchId,
     control: crate::mvcc::RelationalOperationControl,
@@ -21,14 +21,14 @@ struct HistoryPreparedCandidate<'scope, 'authority> {
         Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
     expected_basis: crate::branch::basis::RelationalBranchBasisDescriptor,
     expected_root: std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
-    publication_cell: crate::branch::RelationalBranchPublicationCell,
+    publication_cell: crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
     required_output_publication: Option<
         crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
     >,
     required_output_materialization:
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
     caller_association: Option<crate::history::data::RelationalCallerAssociation>,
-    diagnostic_capture: crate::runtime::RelationalDiagnosticOperationCapture,
+    diagnostic_capture: crate::publication::diagnostic_store::RelationalDiagnosticOperationCapture,
 }
 
 pub(crate) fn prepare_consulted_authoritative_commit(

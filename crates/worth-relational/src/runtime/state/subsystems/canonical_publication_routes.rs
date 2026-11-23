@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex, RwLock, RwLockReadGuard};
 
 #[path = "canonical_publication_routes/narrowed_cutover_control.rs"]
 mod narrowed_cutover_control;
-
+use crate::branch::reference_publication_cell::RelationalBranchPublicationCell;
 use crate::history::data::{CanonicalCommitEnvelope, CommitId, PositionedCanonicalCommit};
 use crate::identity::data::VersionId;
 use crate::publication::patch::data::PatchStreamPosition;
@@ -95,7 +95,7 @@ struct CanonicalPublicationRoute {
 
 struct CanonicalPublicationHandoff {
     root: Arc<crate::branch::root::RelationalBranchRoot>,
-    publication_cell: Option<crate::branch::RelationalBranchPublicationCell>,
+    publication_cell: Option<RelationalBranchPublicationCell>,
 }
 
 pub(crate) enum CanonicalPublicationRecordError {
@@ -303,7 +303,7 @@ impl PreparedCanonicalPublicationRoute {
 
     pub(crate) fn record_performed_with_cutover<T>(
         &self,
-        publication_cell: crate::branch::RelationalBranchPublicationCell,
+        publication_cell: RelationalBranchPublicationCell,
         admission: PatchPositionReservationAdmission<'_, '_, '_>,
         cutover_before: Option<std::time::Instant>,
         allow_effect: Option<&mut dyn FnMut() -> bool>,

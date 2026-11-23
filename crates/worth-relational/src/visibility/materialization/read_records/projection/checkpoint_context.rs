@@ -59,9 +59,6 @@ impl CheckpointProjectionContext {
         let memory = request
             .reserve_retained_memory(branch.0.len() as u64)
             .map_err(|cause| Stop::Request(cause.into()))?;
-        let schema = super::schema_custody::ProjectionSchemaCustody::Published(
-            root.retained_schema_authority(),
-        );
         // A readmitted root keeps its commit receipt even when its original
         // envelope is not resident; the receipt names the same version.
         let version = root
@@ -85,7 +82,7 @@ impl CheckpointProjectionContext {
                 current_version: self.current_version,
                 instrumentation: self.instrumentation.clone(),
                 symbols: self.symbols.clone(),
-                schema,
+                empty_history_schema: None,
                 resident: None,
                 basis,
             },

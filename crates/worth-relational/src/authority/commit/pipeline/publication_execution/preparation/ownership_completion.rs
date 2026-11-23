@@ -112,13 +112,22 @@ pub(super) fn complete(
         _ => run(),
     }?;
     let mut effect = completed.effect;
+    let fragments = std::mem::take(&mut effect.publication.patch_fragments);
     execution
         .in_scope(|lease| {
+            if fragments.is_empty() {
+                return Ok(());
+            }
             crate::authority::commit::publication::extend_patch(
-                runtime,
+                &runtime.services.instrumentation,
+                runtime.commit_work_budget.as_ref(),
                 &mut canonical.patch,
-                std::mem::take(&mut effect.publication.patch_fragments),
+                fragments,
                 lease,
+            )?;
+            crate::authority::commit::phases::publication::enforce_patch_budget(
+                runtime,
+                &canonical.patch,
             )
         })
         .map_err(|cause| TransactionCommitError::execution(cause.into()))??;

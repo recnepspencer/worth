@@ -61,7 +61,7 @@ pub struct PerformedRelationalCommit {
 /// witness must be observable without letting a partial move of the proof
 /// suppress that accounting.
 struct PerformedSettlementCapability {
-    record: Arc<crate::runtime::PendingRelationalPublicationSettlement>,
+    record: Arc<crate::runtime::state::runtime_state::publication_settlement_registry::record::PendingRelationalPublicationSettlement>,
     consumed: bool,
 }
 
@@ -99,14 +99,14 @@ impl PerformedRelationalCommit {
     pub(crate) fn record(
         positioned_commit: Arc<PositionedCanonicalCommit>,
         next_basis: AdmittedRelationalBranchBasis,
-        record: Arc<crate::runtime::PendingRelationalPublicationSettlement>,
+        record: Arc<crate::runtime::state::runtime_state::publication_settlement_registry::record::PendingRelationalPublicationSettlement>,
         late_interruption: Option<
             crate::runtime::operation_control::interruption_event::RelationalInterruptionEvent,
         >,
     ) -> Self {
         Self {
             performed: worth_proof::Performed::record(
-                &crate::branch::issue_relational_branch_publication_authority(),
+                &crate::branch::authority::issue_relational_branch_publication_authority(),
                 PerformedRelationalCommitData {
                     positioned_commit,
                     next_basis,
@@ -151,8 +151,8 @@ impl PerformedRelationalCommit {
         mut self,
     ) -> (
         Arc<PositionedCanonicalCommit>,
-        Arc<crate::runtime::PendingRelationalPublicationSettlement>,
-    ) {
+        Arc<crate::runtime::state::runtime_state::publication_settlement_registry::record::PendingRelationalPublicationSettlement>,
+    ){
         self.capability.consumed = true;
         let record = Arc::clone(&self.capability.record);
         let outcome = self.performed.into_outcome();

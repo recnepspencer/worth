@@ -9,7 +9,7 @@ use worth_execution::ExecutionRequest;
 struct CandidateContext {
     runtime: RelationalPreparationRuntime,
     registration: CandidateRegistration,
-    diagnostic: crate::runtime::RelationalDiagnosticOperationCapture,
+    diagnostic: crate::publication::diagnostic_store::RelationalDiagnosticOperationCapture,
 }
 struct PublicationInputs {
     publication: Option<

@@ -28,7 +28,6 @@ pub(crate) use decoded_quote::schema_image::{
     prepare as prepare_schema_image_decode, SchemaImageDecodeAdmission,
 };
 pub(crate) use decoded_quote::{decode_checkpoint_effect, CheckpointEffectData};
-mod commitment_writer;
 use frame_contract::MAXIMUM_ARTIFACT_BYTES;
 
 pub(crate) mod encode_denial;

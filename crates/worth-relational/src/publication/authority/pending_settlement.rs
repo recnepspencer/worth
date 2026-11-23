@@ -176,7 +176,7 @@ impl RelationalRuntime {
         record: &Arc<PendingRelationalPublicationSettlement>,
         receipt: RelationalCommitReceipt,
         committed: Arc<CommitResult>,
-        closeout: Option<crate::runtime::PublishedSnapshotCloseout>,
+        closeout: Option<crate::runtime::state::subsystems::visibility::PublishedSnapshotCloseout>,
         result_owner: RelationalSettlementResultOwner,
     ) -> RelationalSettlementCompletion {
         match result_owner {

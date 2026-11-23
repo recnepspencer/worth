@@ -14,20 +14,16 @@ impl VisibilityProjectionView {
         basis: crate::visibility::snapshot_states::SnapshotStateBasis,
         symbols: crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
     ) -> Self {
-        let schema = match basis.root() {
-            Some(root) => super::schema_custody::ProjectionSchemaCustody::Published(
-                root.retained_schema_authority(),
-            ),
-            None => super::schema_custody::ProjectionSchemaCustody::EmptyHistorical(
-                std::sync::Arc::new(runtime.config.schema.registry.clone()),
-            ),
-        };
+        let empty_history_schema = basis
+            .root()
+            .is_none()
+            .then(|| std::sync::Arc::new(runtime.config.schema.registry.clone()));
         Self {
             runtime_identity: runtime.runtime_instance_id(),
             current_version: runtime.current_version_id(),
             instrumentation: runtime.services.instrumentation.clone(),
             symbols,
-            schema,
+            empty_history_schema,
             resident: None,
             basis,
         }

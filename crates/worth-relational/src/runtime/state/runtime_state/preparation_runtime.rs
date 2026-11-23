@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::branch::{AdmittedRelationalBranchBasis, SelectedRelationalBranchState};
 use crate::performance::PerformanceAccess;
+use crate::runtime::state::subsystems::visibility::SnapshotIdentityAllocator;
 use crate::runtime::{
     PublishedSnapshotCapacityOwner, PublishedSnapshotReservationDenial,
     PublishedSnapshotSlotReservation, RecordIdentitySubsystem, RelationalPreparationHistory,
@@ -21,10 +22,10 @@ pub(crate) struct RelationalPreparationOwnerBinding {
     lifecycle: RelationalRuntimeOwnerBinding,
     publication_owner: RelationalRuntimePublicationBinding,
     snapshot_capacity: Arc<PublishedSnapshotCapacityOwner>,
-    snapshot_ids: Arc<std::sync::atomic::AtomicU64>,
+    snapshot_ids: Arc<SnapshotIdentityAllocator>,
     lineage_identity: crate::runtime::LineageIdentityAllocator,
     lineage_naming_basis: crate::runtime::state::subsystems::LineageNamingBasisBinding,
-    diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
+    diagnostics: crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore,
     index_definitions: super::indexing::RuntimeIndexDefinitionReadBinding,
     mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
     durability_admission:
@@ -50,7 +51,7 @@ pub(crate) struct RelationalPreparationRuntime {
     pub(crate) execution_contracts: Option<Arc<crate::runtime::RelationalRootExecutionContracts>>,
     pub(crate) execution_registry: Option<crate::branch::RetainedRelationalSchemaRegistry>,
     pub(crate) home_target: Option<Arc<crate::runtime::AdmittedRelationalHomeProgramTarget>>,
-    pub(crate) diagnostics: crate::runtime::RelationalDiagnosticArtifactStore,
+    pub(crate) diagnostics: crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore,
     pub(crate) index_definitions: super::indexing::RuntimeIndexDefinitionReadBinding,
     pub(crate) mirror_residency: crate::runtime::MirrorResidencyDemandBinding,
     pub(crate) durability_admission:
@@ -61,7 +62,7 @@ pub(crate) struct RelationalPreparationRuntime {
     lifecycle: RelationalRuntimeOwnerBinding,
     publication_owner: RelationalRuntimePublicationBinding,
     snapshot_capacity: Arc<PublishedSnapshotCapacityOwner>,
-    snapshot_ids: Arc<std::sync::atomic::AtomicU64>,
+    snapshot_ids: Arc<SnapshotIdentityAllocator>,
     pub(crate) lineage_identity: crate::runtime::LineageIdentityAllocator,
     pub(crate) lineage_naming_basis: crate::runtime::state::subsystems::LineageNamingBasisBinding,
 }
@@ -208,27 +209,8 @@ impl RelationalPreparationRuntime {
         self.snapshot_capacity.occupied_handles()
     }
 
-    pub(crate) fn allocate_snapshot_id(&self) -> Option<crate::snapshots::data::SnapshotId> {
-        {
-            let update_counter = &self.snapshot_ids;
-            let mut current = update_counter.load(std::sync::atomic::Ordering::Relaxed);
-            loop {
-                let Some(updated_value) = current.checked_add(1) else {
-                    break Err(current);
-                };
-                match update_counter.compare_exchange_weak(
-                    current,
-                    updated_value,
-                    std::sync::atomic::Ordering::Relaxed,
-                    std::sync::atomic::Ordering::Relaxed,
-                ) {
-                    Ok(previous) => break Ok(previous),
-                    Err(reloaded_value) => current = reloaded_value,
-                }
-            }
-        }
-        .ok()
-        .map(crate::snapshots::data::SnapshotId)
+    pub(crate) fn snapshot_id_allocator(&self) -> &SnapshotIdentityAllocator {
+        &self.snapshot_ids
     }
 
     pub(crate) fn validate_reserved_lineage_events(
@@ -307,23 +289,11 @@ impl RelationalPreparationRuntime {
             crate::diagnostics::data::DeterminismExpectation::Required,
             entries,
         );
-        let filtered = self
-            .config
-            .diagnostics
-            .profile
-            .filter_artifact(artifact.clone())
-            .unwrap_or_else(|| {
-                crate::diagnostics::data::RelationalDiagnosticArtifact::new(
-                    artifact.scope,
-                    artifact.kind,
-                    artifact.determinism,
-                    Vec::new(),
-                )
-            });
-        if !filtered.entries.is_empty() {
-            self.diagnostics.push(filtered.clone());
-        }
-        filtered
+        crate::publication::authority::diagnostic_emission::emit_filtered_artifact(
+            &self.config.diagnostics.profile,
+            &self.diagnostics,
+            artifact,
+        )
     }
 }
 

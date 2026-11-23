@@ -4,6 +4,10 @@ use super::super::{
 };
 use super::guard_fault::{self, Door};
 use super::*;
+use crate::publication::close_custody::{
+    RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+    RelationalPublicationRegistryCustody,
+};
 use crate::tests::support::*;
 
 #[derive(Debug)]
@@ -151,12 +155,10 @@ fn close_ignores_dropped_companion_client_without_weakening_rebind() {
     assert!(matches!(
         refused.reason(),
         crate::runtime::RelationalRuntimeCloseDenial::PublicationCustodyRetained(
-            crate::runtime::RelationalPublicationCustodyHolders {
-                candidates: crate::runtime::RelationalPublicationRegistryCustody::Empty,
-                settlements: crate::runtime::RelationalPublicationRegistryCustody::Empty,
-                companion: crate::runtime::RelationalPublicationCompanionCustody::Client {
-                    generation: 1
-                },
+            RelationalPublicationCustodyHolders {
+                candidates: RelationalPublicationRegistryCustody::Empty,
+                settlements: RelationalPublicationRegistryCustody::Empty,
+                companion: RelationalPublicationCompanionCustody::Client { generation: 1 },
             }
         )
     ));

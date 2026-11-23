@@ -117,10 +117,7 @@ fn publication_lease(work: u64) -> worth_execution::ExecutionResourceLease<'stat
 
 #[test]
 fn leased_publication_matches_serial_without_post_merge_clone() {
-    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
-        .build()
-        .expect("valid native runtime configuration");
-    let preparation = runtime.preparation_runtime_snapshot();
+    let instrumentation = super::RuntimeInstrumentation::default();
     let fragments = vec![
         fragment(7, RecordStructuralChange::Updated),
         fragment(3, RecordStructuralChange::Deleted),
@@ -128,23 +125,20 @@ fn leased_publication_matches_serial_without_post_merge_clone() {
         fragment(8, RecordStructuralChange::RetainedForAudit),
         fragment(7, RecordStructuralChange::Created),
     ];
-    let serial = super::assemble_patch(&preparation, fragments.clone(), None).unwrap();
+    let serial = super::assemble_patch(&instrumentation, None, fragments.clone(), None).unwrap();
     let lease = publication_lease(10_000);
-    let leased = super::assemble_patch(&preparation, fragments, Some(&lease)).unwrap();
+    let leased = super::assemble_patch(&instrumentation, None, fragments, Some(&lease)).unwrap();
     assert_eq!(leased, serial);
 }
 
 #[test]
 fn leased_publication_stops_inside_large_packet_without_publishing() {
-    let runtime = crate::facade::runtime::RelationalRuntimeApi::builder()
-        .build()
-        .expect("valid native runtime configuration");
-    let preparation = runtime.preparation_runtime_snapshot();
+    let instrumentation = super::RuntimeInstrumentation::default();
     let fragments = (0..100)
         .map(|index| fragment(index, RecordStructuralChange::Updated))
         .collect();
     let lease = publication_lease(120);
-    let result = super::assemble_patch(&preparation, fragments, Some(&lease));
+    let result = super::assemble_patch(&instrumentation, None, fragments, Some(&lease));
     assert!(matches!(
         result,
         Err(

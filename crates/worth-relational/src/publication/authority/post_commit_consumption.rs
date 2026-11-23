@@ -14,19 +14,17 @@ impl<'runtime> PublicationAuthority<'runtime> {
         merge_parent_branches: &[BranchId],
         merge_base_commits: &[CommitId],
     ) {
-        const PACKET_COUNT: usize = 1;
-        self.runtime
-            .performance_access()
-            .count_post_commit_consumer_shape(PACKET_COUNT, PACKET_COUNT, 1, 1);
-
-        self.runtime
-            .performance_access()
-            .count_post_commit_serial_strategy();
+        self.instrumentation.count(|counters| {
+            counters.post_commit_consumer_packet_count += 1;
+            counters.post_commit_consumer_item_count += 1;
+            counters.post_commit_consumer_peak_width_total += 1;
+            counters.post_commit_scope_unit_count += 1;
+            counters.post_commit_serial_strategy_count += 1;
+        });
 
         let consumption_context =
             super::post_commit_consumer::PostCommitConsumptionContext::new(commit_id, snapshot_id);
         let consumer_failure = self
-            .runtime
             .publication
             .post_commit_consumer
             .consume(&consumption_context)

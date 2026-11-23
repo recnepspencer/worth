@@ -159,9 +159,12 @@ impl DurabilityAuthority<'_> {
         if &positioned.envelope().commit != receipt {
             return Err(Refusal::SubjectMismatch);
         }
-        let digest = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::envelope_payload_digest_for_request(
-            positioned.position(), positioned.canonical_arc(), execution,
-        ).map_err(Refusal::Recovery)?;
+        let digest = crate::history::commit::payload_commitment::digest_envelope_for_request(
+            positioned.position(),
+            positioned.canonical_arc(),
+            execution,
+        )
+        .map_err(Refusal::Recovery)?;
         let semantic = RecoveredRelationalSemanticResult {
             semantic: positioned.envelope().semantic_result_arc(),
         };

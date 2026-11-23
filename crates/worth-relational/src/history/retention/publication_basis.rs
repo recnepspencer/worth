@@ -43,7 +43,8 @@ pub(crate) struct RetainedPublicationBasis {
         Option<Arc<dyn crate::publication::live_publication_inputs::AppliedPublicationInputAccess>>,
     /// The publishing branch's own cell, so issuing this input does not
     /// depend on that branch still being registered after it is deleted.
-    pub(crate) publication_cell: crate::branch::RelationalBranchPublicationCell,
+    pub(crate) publication_cell:
+        crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
     pub(crate) _hold: super::RelationalObservationRetentionObligation,
     pub(crate) _funding: Option<worth_execution::ExecutionMemoryReservation>,
 }

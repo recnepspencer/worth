@@ -1,3 +1,4 @@
+use crate::publication::close_custody::RelationalPublicationCompanionCustody;
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock, RwLockReadGuard, Weak};
 
@@ -88,18 +89,19 @@ pub(crate) struct CompanionRegistrationEpoch<'a> {
 }
 
 impl CompanionRegistrationEpoch<'_> {
-    pub(crate) fn close_custody(&self) -> crate::runtime::RelationalPublicationCompanionCustody {
-        use crate::runtime::RelationalPublicationCompanionCustody as Custody;
+    pub(crate) fn close_custody(&self) -> RelationalPublicationCompanionCustody {
         match &*self.state {
             CompanionRegistrationState::Standalone
-            | CompanionRegistrationState::RequiredRebind { .. } => Custody::Released,
+            | CompanionRegistrationState::RequiredRebind { .. } => {
+                RelationalPublicationCompanionCustody::Released
+            }
             CompanionRegistrationState::RequiredActive { generation, .. } => {
                 if self._client.is_some() {
-                    Custody::Client {
+                    RelationalPublicationCompanionCustody::Client {
                         generation: *generation,
                     }
                 } else {
-                    Custody::Released
+                    RelationalPublicationCompanionCustody::Released
                 }
             }
         }

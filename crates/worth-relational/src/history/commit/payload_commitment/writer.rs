@@ -1,12 +1,11 @@
 //! Incremental canonical commitment serialization under the invoking request.
-use crate::durability::data::{
-    DurabilityError, RecoveryFailureClass, RelationalRecoveryStop as Stop,
-};
+use crate::durability::data::recovery_errors::{DurabilityError, RecoveryFailureClass};
+use crate::durability::data::recovery_stop::RelationalRecoveryStop as Stop;
 use sha2::{Digest, Sha256};
 use std::io::{self, Write};
 use worth_execution::{ExecutionRequest, MapKernelContext, MapKernelStop, WorkCeilingDenial};
 
-pub(super) fn in_context<T>(
+pub(crate) fn in_context<T>(
     request: &ExecutionRequest<'_, '_>,
     run: impl FnOnce(&mut MapKernelContext<'_, '_>) -> Result<T, Stop>,
 ) -> Result<T, Stop> {
@@ -27,27 +26,27 @@ pub(super) fn in_context<T>(
     }
 }
 
-pub(super) struct CommitmentWriter<'context, 'scope, 'authority> {
-    pub(super) hash: Sha256,
+pub(crate) struct CommitmentWriter<'context, 'scope, 'authority> {
+    pub(crate) hash: Sha256,
     context: &'context mut MapKernelContext<'scope, 'authority>,
     stop: Option<MapKernelStop>,
 }
 impl<'c, 's, 'a> CommitmentWriter<'c, 's, 'a> {
-    pub(super) fn new(hash: Sha256, context: &'c mut MapKernelContext<'s, 'a>) -> Self {
+    pub(crate) fn new(hash: Sha256, context: &'c mut MapKernelContext<'s, 'a>) -> Self {
         Self {
             hash,
             context,
             stop: None,
         }
     }
-    pub(super) fn value(&mut self, value: &impl serde::Serialize) -> Result<(), Stop> {
+    pub(crate) fn value(&mut self, value: &impl serde::Serialize) -> Result<(), Stop> {
         let result = rmp_serde::encode::write_named(&mut *self, value);
         if let Some(cause) = self.stop.take() {
             return Err(Stop::Request(cause.into()));
         }
         result.map_err(|_| corrupt())
     }
-    pub(super) fn bytes(&mut self, bytes: &[u8]) -> Result<(), Stop> {
+    pub(crate) fn bytes(&mut self, bytes: &[u8]) -> Result<(), Stop> {
         let result = self.write_all(bytes);
         if let Some(cause) = self.stop.take() {
             return Err(Stop::Request(cause.into()));

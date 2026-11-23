@@ -56,7 +56,12 @@ pub(super) fn assemble_authoritative_publication_phase(
     let mut effect = input.effect;
     let patch_fragments = std::mem::take(&mut effect.publication.patch_fragments);
     let lease = super::super::request_lease(execution);
-    let patch = assemble_patch(runtime, patch_fragments, lease)?;
+    let patch = assemble_patch(
+        &runtime.services.instrumentation,
+        runtime.commit_work_budget.as_ref(),
+        patch_fragments,
+        lease,
+    )?;
     let patch_budget_summary = CommitPatchBudgetSummary {
         patch_record_count: patch.authoritative_record_patches.len(),
         max_patch_records_per_commit: runtime

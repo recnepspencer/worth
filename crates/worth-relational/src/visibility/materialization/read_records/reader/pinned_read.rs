@@ -12,8 +12,6 @@ use std::{collections::BTreeMap, sync::Arc};
 
 mod aggregate_reads;
 mod candidate;
-#[cfg(test)]
-mod commit_tests;
 mod derived_source;
 mod frontier_reads;
 mod index_lookups;

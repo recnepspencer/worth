@@ -4,7 +4,7 @@ pub use publication_appendix::{
     RelationalPublicationAdoptionRequest, RelationalPublicationAppendix,
     RelationalPublicationBodySelection,
 };
-mod historical_selection;
+pub(crate) mod historical_selection;
 pub(crate) use historical_selection::require_graph_coverage;
 pub use historical_selection::RelationalHistoricalOutputSelection;
 mod authored_cascade;

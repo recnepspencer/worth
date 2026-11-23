@@ -432,7 +432,9 @@ depends = ["contracts", "storage", "branch", "lineage", "mutation", "merge", "in
 "publication/bundle/publication_status" = "contracts"
 "publication/canonical_history" = "publication"
 "publication/cdc" = "runtime"
+"publication/close_custody" = "publication"
 "publication/live_publication_inputs" = "publication"
+"publication/diagnostic_store" = "publication"
 "publication/data" = "branch"
 "publication/data/authored_retirement_refusal" = "contracts"
 "publication/data/publication_error" = "contracts"
@@ -731,3 +733,22 @@ reconstruction = ["durability/reconstruction", "durability/recovery", "replay", 
 
 # Branch issues an observation and describes its selected cell.
 "branch/basis_issuance.rs" = "branch"
+
+# The canonical envelope owner hashes body leaves independently of frame verification.
+"history/commit/payload_commitment.rs" = "branch"
+"history/commit/payload_commitment/writer.rs" = "branch"
+
+# Publication owns its operation-scoped diagnostic capture and stored artifacts.
+"publication/diagnostic_store" = "publication"
+
+# Runtime supplies owner identity to the publication-owned historical selection.
+"runtime/historical_output_selection.rs" = "runtime"
+
+# Visibility issues snapshot identities from one owner-bound allocator.
+"runtime/state/subsystems/visibility/snapshot_handles/identity.rs" = "branch"
+
+# Root linkage consumes the completed envelope at the custody boundary.
+"branch/root_artifact_linkage.rs" = "branch"
+
+# Publication reports exact custody held by its candidate, settlement and companion owners.
+"publication/close_custody" = "publication"

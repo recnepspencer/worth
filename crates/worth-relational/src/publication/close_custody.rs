@@ -1,5 +1,5 @@
 //! Read-only identities of the original publication holders refusing close.
-use crate::mvcc::PublicationCompanionRegistrationStop;
+use crate::mvcc::publication::companion::registration_stop::PublicationCompanionRegistrationStop;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RelationalPublicationRegistryCustody {
@@ -9,7 +9,7 @@ pub enum RelationalPublicationRegistryCustody {
 }
 
 impl RelationalPublicationRegistryCustody {
-    pub(super) fn observed(count: usize, first_identity: Option<u64>) -> Self {
+    pub(crate) fn observed(count: usize, first_identity: Option<u64>) -> Self {
         if count == 0 {
             Self::Empty
         } else {
@@ -36,7 +36,7 @@ pub struct RelationalPublicationCustodyHolders {
 }
 
 impl RelationalPublicationCustodyHolders {
-    pub(super) fn retained(self) -> Option<Self> {
+    pub(crate) fn retained(self) -> Option<Self> {
         if self.candidates == RelationalPublicationRegistryCustody::Empty
             && self.settlements == RelationalPublicationRegistryCustody::Empty
             && self.companion == RelationalPublicationCompanionCustody::Released
@@ -48,7 +48,7 @@ impl RelationalPublicationCustodyHolders {
     }
 
     /// Preserve memory close's nonwaiting, first-established-holder semantics.
-    pub(super) fn memory_result(self) -> Result<Option<Self>, ()> {
+    pub(crate) fn memory_result(self) -> Result<Option<Self>, ()> {
         use RelationalPublicationRegistryCustody::{ContactHeld, Empty, Registered};
         match self.candidates {
             ContactHeld => Err(()),

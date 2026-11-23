@@ -1,15 +1,16 @@
 //! A genuine applied Source loan may join only its own actual publication.
-use super::*;
+use super::AppliedSourceAffinity;
+use super::Denial;
 use crate::{runtime::RelationalRuntime, snapshots::data::SnapshotHandle};
+use std::sync::Arc;
+use worth_execution::ExecutionRequest;
 
 pub struct ManagedIndexAppliedSourcePublication {
     affinity: Arc<AppliedSourceAffinity>,
 }
 impl ManagedIndexAppliedSourcePublication {
-    pub(super) fn from_loan(loan: &ManagedIndexAppliedSourceRead<'_>) -> Self {
-        Self {
-            affinity: Arc::clone(&loan.affinity),
-        }
+    pub(super) fn new(affinity: Arc<AppliedSourceAffinity>) -> Self {
+        Self { affinity }
     }
     /// Read the installed physical Source at the genuine final snapshot. No
     /// applied pin, proposal id or caller-supplied position can supply it.
@@ -19,8 +20,7 @@ impl ManagedIndexAppliedSourcePublication {
         runtime: &RelationalRuntime,
         after: &SnapshotHandle,
     ) -> Result<crate::mvcc::ManagedIndexSourceObservation, Denial> {
-        if runtime.runtime_instance_id() != self.affinity.candidate.proposal().runtime_instance_id()
-        {
+        if runtime.runtime_instance_id() != self.affinity.proposal.runtime_instance_id() {
             return Err(Denial::ForeignSource);
         }
         // A receipt retains issued affinity, not its proposal's live interpreter.
@@ -48,7 +48,7 @@ impl ManagedIndexAppliedSourcePublication {
             &self.affinity.program,
             self.affinity.scope,
         )?;
-        if !observed.matches_applied_publication(self.affinity.candidate.proposal()) {
+        if !observed.matches_applied_publication(&self.affinity.proposal) {
             return Err(Denial::ForeignSource);
         }
         Ok(observed)

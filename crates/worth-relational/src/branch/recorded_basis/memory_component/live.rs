@@ -153,7 +153,13 @@ impl RelationalRuntime {
                 {
                     return Err(Refusal::CanonicalMismatch { commit_id });
                 }
-                let digest = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::envelope_payload_digest_for_request(positioned.position(), positioned.envelope(), execution).map_err(Refusal::Source)?;
+                let digest =
+                    crate::history::commit::payload_commitment::digest_envelope_for_request(
+                        positioned.position(),
+                        positioned.envelope(),
+                        execution,
+                    )
+                    .map_err(Refusal::Source)?;
                 RecordedRelationalComponentReference::copy_original(
                     execution,
                     descriptor,

@@ -4,7 +4,7 @@ use crate::transactions::data::outcomes::transaction_commit_error::TransactionCo
 
 pub(super) struct CandidateRegistration {
     pub(super) runtime_instance_id: u64,
-    pub(super) publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
+    pub(super) publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
     pub(super) transaction_id: crate::transactions::data::primitives::TransactionId,
     pub(super) branch_id: crate::history::data::BranchId,
     pub(super) control: crate::mvcc::RelationalOperationControl,
@@ -14,7 +14,7 @@ pub(super) struct CandidateRegistration {
         Option<crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity>,
     pub(super) expected_basis: crate::branch::basis::RelationalBranchBasisDescriptor,
     pub(super) expected_root: std::sync::Arc<crate::branch::root::RelationalBranchRoot>,
-    pub(super) publication_cell: crate::branch::RelationalBranchPublicationCell,
+    pub(super) publication_cell: crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
 }
 
 impl CandidateRegistration {
@@ -48,12 +48,12 @@ impl CandidateRegistration {
         consult_stage(execution, CommitStage::CandidateRegistration)?;
         let published_snapshot_slot = runtime.reserve_published_snapshot_slot().map_err(|denial| {
             match denial {
-                crate::runtime::PublishedSnapshotReservationDenial::Capacity { maximum_handles } => {
+                crate::runtime::state::subsystems::visibility::PublishedSnapshotReservationDenial::Capacity { maximum_handles } => {
                     TransactionCommitError::publication_deferred(
                         crate::mvcc::publication::outcome::refusals::RelationalPublicationDeferred::PublishedSnapshotCapacityExhausted { maximum_handles },
                     )
                 }
-                crate::runtime::PublishedSnapshotReservationDenial::CounterOverflow => {
+                crate::runtime::state::subsystems::visibility::PublishedSnapshotReservationDenial::CounterOverflow => {
                     TransactionCommitError::publication_failed(crate::mvcc::publication::outcome::failure::RelationalPublicationFailure::new(
                         crate::mvcc::publication::outcome::failure::RelationalPublicationFailureKind::SnapshotCountOverflow,
                         "published snapshot custody counter overflow before effects",

@@ -1,6 +1,6 @@
-use super::super::reader::VisibilityReadContext;
 use crate::identity::data::{KindId, VersionId};
 use crate::snapshots::data::SnapshotHandle;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
 use super::contracts::{
     admit_declared_projection_aspects, ProjectionAspectScope, ProjectionRecordDomain,
@@ -15,7 +15,9 @@ pub struct VisibilityProjectionView {
         crate::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation,
     pub(super) symbols:
         crate::runtime::state::subsystems::services::symbol_table::RuntimeSymbolTable,
-    pub(super) schema: super::schema_custody::ProjectionSchemaCustody,
+    // Selected roots already retain their exact schema. Only empty history needs a fallback.
+    pub(super) empty_history_schema:
+        Option<std::sync::Arc<crate::schema::data::RelationalSchemaRegistry>>,
     pub(super) resident:
         Option<crate::visibility::snapshot_states::ResidentVisibilitySnapshotBasis>,
     pub(super) basis: crate::visibility::snapshot_states::SnapshotStateBasis,
@@ -49,8 +51,8 @@ impl VisibilityProjectionView {
         self.basis.root().map(|root| root.schema_authority())
     }
 
-    pub(super) fn reader(&self) -> super::super::reader::ProjectionRecordReader<'_> {
-        super::super::reader::ProjectionRecordReader::new(
+    pub(super) fn reader(&self) -> crate::visibility::materialization::read_records::reader::projection_record_reader::ProjectionRecordReader<'_>{
+        crate::visibility::materialization::read_records::reader::projection_record_reader::ProjectionRecordReader::new(
             self.current_version,
             &self.instrumentation,
         )

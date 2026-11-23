@@ -280,7 +280,7 @@ pub(crate) struct PreparedCommitPublicationCompletion {
     aspect_evaluation_traces: Vec<crate::transactions::data::aspect_traces::AspectEvaluationTrace>,
     aspect_emission_traces:
         Vec<super::artifact_execution::preparation::PreparedAspectEmissionTrace>,
-    published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
+    published_snapshot_slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
     prepared_indexes: Option<crate::indexes::authority::PreparedCandidateIndexPublication>,
 }
 

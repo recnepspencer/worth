@@ -25,7 +25,8 @@ pub(crate) struct AuthoritativeCommitContext {
     pub(super) required_output_materialization:
         Option<std::sync::Arc<crate::history::data::CanonicalRequiredOutputMaterialization>>,
     pub(super) commit_work_budget: Option<crate::execution::RequestWorkBudget>,
-    pub(super) _mutation_authority: Option<crate::branch::RelationalBranchMutationAuthority>,
+    pub(super) _mutation_authority:
+        Option<crate::branch::authority::RelationalBranchMutationAuthority>,
     pub(super) transaction_id: TransactionId,
     pub(super) validation_input: RelationalTransactionValidationInput,
     pub(super) phase_timing: CommitPhaseTiming,

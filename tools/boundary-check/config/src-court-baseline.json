@@ -914,7 +914,6 @@
 {"source":"crates/worth-relational/src/visibility/materialization/read_records/reader/aspect_versions.rs","module":"tests","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/visibility/materialization/read_records/reader/paid_record_walk.rs","module":"tests","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/visibility/materialization/read_records/reader/paid_record_walk/preclaim_tests.rs","module":"file","roots":["ExecutionRequest","SerialRequest"]},
-{"source":"crates/worth-relational/src/visibility/materialization/read_records/reader/pinned_read/commit_tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/visibility/materialization/read_records/reader/pinned_read/tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/visibility/materialization/read_records/reader/query_execution/leased_map/caller_lease_tests.rs","module":"file","roots":["ExecutionRequest"]},
 {"source":"crates/worth-relational/src/visibility/materialization/read_records/reader/query_execution/leased_map/tracked/slot/tests.rs","module":"file","roots":["ExecutionResourceLease"]},

@@ -79,6 +79,7 @@ fn field_value<'a>(
         .map_or(Observation::FieldAbsent, Observation::Present))
 }
 mod access;
+pub(super) use access::applied_rows;
 pub(crate) use access::selected_rows;
 mod content;
 pub use access::PreparedManagedIndexRelationRead;

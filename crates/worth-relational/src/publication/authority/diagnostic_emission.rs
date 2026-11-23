@@ -1,22 +1,24 @@
+use crate::diagnostics::data::RelationalDiagnosticsProfile;
 use crate::diagnostics::data::{
     DeterminismExpectation, DiagnosticsArtifactKind, DiagnosticsScope,
     RelationalDiagnosticArtifact, RelationalDiagnosticFields, RelationalDiagnosticsEntry,
 };
 use crate::publication::authority::PublicationAuthority;
-use crate::runtime::RelationalRuntime;
+use crate::publication::diagnostic_store::RelationalDiagnosticArtifactStore;
 
 pub(crate) struct DiagnosticArtifactBuilder<'runtime> {
-    runtime: &'runtime RelationalRuntime,
+    profile: &'runtime RelationalDiagnosticsProfile,
+    store: &'runtime RelationalDiagnosticArtifactStore,
     scope: DiagnosticsScope,
     kind: DiagnosticsArtifactKind,
     entries: Vec<RelationalDiagnosticsEntry>,
 }
 
-fn emit_filtered_artifact(
-    runtime: &RelationalRuntime,
+pub(crate) fn emit_filtered_artifact(
+    profile: &RelationalDiagnosticsProfile,
+    store: &RelationalDiagnosticArtifactStore,
     artifact: RelationalDiagnosticArtifact,
 ) -> RelationalDiagnosticArtifact {
-    let profile = &runtime.config.diagnostics.profile;
     let filtered = profile
         .filter_artifact(artifact.clone())
         .unwrap_or_else(|| {
@@ -28,15 +30,20 @@ fn emit_filtered_artifact(
             )
         });
     if !filtered.entries.is_empty() {
-        runtime.publication.diagnostics.push(filtered.clone());
+        store.push(filtered.clone());
     }
     filtered
 }
 
 impl<'runtime> DiagnosticArtifactBuilder<'runtime> {
-    fn new(runtime: &'runtime RelationalRuntime, scope: DiagnosticsScope) -> Self {
+    fn new(
+        profile: &'runtime RelationalDiagnosticsProfile,
+        store: &'runtime RelationalDiagnosticArtifactStore,
+        scope: DiagnosticsScope,
+    ) -> Self {
         Self {
-            runtime,
+            profile,
+            store,
             scope,
             kind: DiagnosticsArtifactKind::MinimalSummary,
             entries: Vec::new(),
@@ -93,7 +100,8 @@ impl<'runtime> DiagnosticArtifactBuilder<'runtime> {
 
     pub(crate) fn emit(self) -> RelationalDiagnosticArtifact {
         emit_filtered_artifact(
-            self.runtime,
+            self.profile,
+            self.store,
             RelationalDiagnosticArtifact::new(
                 self.scope,
                 self.kind,
@@ -104,35 +112,13 @@ impl<'runtime> DiagnosticArtifactBuilder<'runtime> {
     }
 }
 
-impl RelationalRuntime {
-    pub(crate) fn push_preparation_diagnostic_artifact(
-        &self,
-        artifact: RelationalDiagnosticArtifact,
-    ) {
-        let _ = emit_filtered_artifact(self, artifact);
-    }
-
-    pub(crate) fn push_bounded_preparation_diagnostic(
-        &self,
-        scope: DiagnosticsScope,
-        kind: DiagnosticsArtifactKind,
-        entries: Vec<RelationalDiagnosticsEntry>,
-    ) -> RelationalDiagnosticArtifact {
-        emit_filtered_artifact(
-            self,
-            RelationalDiagnosticArtifact::new(
-                scope,
-                kind,
-                DeterminismExpectation::Required,
-                entries,
-            ),
-        )
-    }
-}
-
 impl<'runtime> PublicationAuthority<'runtime> {
     pub(crate) fn push_diagnostic_artifact(&self, artifact: RelationalDiagnosticArtifact) {
-        let _ = emit_filtered_artifact(self.runtime, artifact);
+        let _ = emit_filtered_artifact(
+            self.diagnostics_profile,
+            &self.publication.diagnostics,
+            artifact,
+        );
     }
 
     pub(crate) fn push_bounded_diagnostic(
@@ -142,7 +128,8 @@ impl<'runtime> PublicationAuthority<'runtime> {
         entries: Vec<RelationalDiagnosticsEntry>,
     ) -> RelationalDiagnosticArtifact {
         emit_filtered_artifact(
-            self.runtime,
+            self.diagnostics_profile,
+            &self.publication.diagnostics,
             RelationalDiagnosticArtifact::new(
                 scope,
                 kind,
@@ -153,6 +140,10 @@ impl<'runtime> PublicationAuthority<'runtime> {
     }
 
     pub(crate) fn diagnostic(self, scope: DiagnosticsScope) -> DiagnosticArtifactBuilder<'runtime> {
-        DiagnosticArtifactBuilder::new(self.runtime, scope)
+        DiagnosticArtifactBuilder::new(
+            self.diagnostics_profile,
+            &self.publication.diagnostics,
+            scope,
+        )
     }
 }

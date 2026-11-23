@@ -2,9 +2,9 @@
 use super::cell::publication_admission::PreparedManagedForkCell;
 use super::cell::{CompanionBranchCellCore, CompanionRootImage};
 use super::{CompanionBranchCell, CompanionBranchCellSlot, CompanionPreflightStop as Stop};
+use crate::branch::fork::RelationalForkDenial;
 use crate::branch::root::RelationalBranchRoot;
 use crate::branch::root::RelationalBranchRootIdentityIssuer;
-use crate::branch::RelationalForkDenial;
 use crate::history::data::BranchId;
 use crate::validation::candidate_source::ManagedIndexBranchImage;
 use std::sync::Arc;

@@ -27,8 +27,6 @@ impl ManagedIndexSourceRebuild {
         crate::validation::candidate_source::selected_rows(
             &self.projection,
             &self.expected,
-            self.program(),
-            self.scope(),
             execution,
         )
     }

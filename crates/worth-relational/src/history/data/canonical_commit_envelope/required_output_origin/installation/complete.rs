@@ -10,7 +10,7 @@ pub(crate) fn install_required_output_origin(
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
-    admission: crate::mvcc::RequiredOutputPublicationAdmission,
+    admission: crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
     live_inputs: &mut crate::publication::live_publication_inputs::LivePublicationInputs,
 ) -> Result<crate::history::data::RequiredOutputPublicationPositions, TransactionCommitError> {
     admission
@@ -57,10 +57,10 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
     created: &CommitCreatedEntityBindings,
     created_relations: &CommitCreatedRelationBindings,
     state: &WorkingState,
-    admission: crate::mvcc::RequiredOutputPublicationAdmission,
+    admission: crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission,
     contribution_records: Option<&[crate::transactions::data::primitives::RecordRef]>,
     source_input: Option<
-        &crate::runtime::RelationalPinnedRead<
+        &crate::visibility::materialization::read_records::reader::pinned_read::RelationalPinnedRead<
             crate::runtime::RelationalAppliedCandidateReadIdentity,
         >,
     >,
@@ -69,7 +69,7 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
     validated_history: &mut OutputOriginHistory,
     context: &mut MapKernelContext<'_, '_>,
 ) -> Result<crate::history::data::RequiredOutputPublicationPositions, TransactionCommitError> {
-    let crate::mvcc::RequiredOutputPublicationAdmission {
+    let crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission {
         inputs,
         installed,
         publication,
@@ -178,7 +178,7 @@ pub(in crate::history::data::canonical_commit_envelope::required_output_origin) 
             ..
         } => {
             after_codec_retirement =
-                crate::mvcc::RequiredOutputPublicationAdmission::birth_retirement_in_context(
+                crate::mvcc::publication::application_publication::RequiredOutputPublicationAdmission::birth_retirement_in_context(
                     &installed,
                     basis,
                     meaning,

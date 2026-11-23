@@ -1,3 +1,7 @@
+use crate::publication::close_custody::{
+    RelationalPublicationCompanionCustody, RelationalPublicationCustodyHolders,
+    RelationalPublicationRegistryCustody,
+};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, Weak};
@@ -42,27 +46,25 @@ impl RelationalRuntimePublicationOwner {
     /// A retained candidate owns real reservations until its holder drops it.
     pub(super) fn try_memory_close_custody(
         &self,
-    ) -> Result<Option<super::RelationalPublicationCustodyHolders>, ()> {
+    ) -> Result<Option<RelationalPublicationCustodyHolders>, ()> {
         let candidates = match self.binding.lifecycle.candidates.try_lock() {
             Ok(value) => value,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
             Err(std::sync::TryLockError::WouldBlock) => return Err(()),
         };
-        let candidate_custody = super::RelationalPublicationRegistryCustody::observed(
+        let candidate_custody = RelationalPublicationRegistryCustody::observed(
             candidates.len(),
             candidates.keys().next().copied(),
         );
         drop(candidates);
-        super::RelationalPublicationCustodyHolders {
+        RelationalPublicationCustodyHolders {
             candidates: candidate_custody,
             settlements: self.binding.lifecycle.settlements.try_close_custody(),
             companion: self.companion_close_custody(),
         }
         .memory_result()
     }
-    pub(super) fn live_publication_custody(
-        &self,
-    ) -> Option<super::RelationalPublicationCustodyHolders> {
+    pub(super) fn live_publication_custody(&self) -> Option<RelationalPublicationCustodyHolders> {
         self.binding.reap_abandoned_candidates();
         let candidates = self
             .binding
@@ -70,12 +72,12 @@ impl RelationalRuntimePublicationOwner {
             .candidates
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        let candidate_custody = super::RelationalPublicationRegistryCustody::observed(
+        let candidate_custody = RelationalPublicationRegistryCustody::observed(
             candidates.len(),
             candidates.keys().next().copied(),
         );
         drop(candidates);
-        super::RelationalPublicationCustodyHolders {
+        RelationalPublicationCustodyHolders {
             candidates: candidate_custody,
             settlements: self.binding.lifecycle.settlements.close_custody(),
             companion: self.companion_close_custody(),
@@ -83,10 +85,10 @@ impl RelationalRuntimePublicationOwner {
         .retained()
     }
 
-    fn companion_close_custody(&self) -> super::RelationalPublicationCompanionCustody {
+    fn companion_close_custody(&self) -> RelationalPublicationCompanionCustody {
         match self.binding.lifecycle.companion.enter() {
             Ok(epoch) => epoch.close_custody(),
-            Err(stop) => super::RelationalPublicationCompanionCustody::Unavailable(stop),
+            Err(stop) => RelationalPublicationCompanionCustody::Unavailable(stop),
         }
     }
 

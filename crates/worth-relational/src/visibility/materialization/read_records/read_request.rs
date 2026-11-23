@@ -3,7 +3,7 @@ use crate::transactions::data::outcomes::transaction_commit_error::CommitExecuti
 use crate::transactions::data::outcomes::transaction_commit_error::CommitExecutionDenialKind;
 
 pub(super) fn cause(denial: worth_execution::WorkCeilingDenial) -> Cause {
-    match crate::runtime::QueryReadExecutionStop::Request(denial).execution_denial() {
+    match crate::visibility::materialization::read_records::reader::query_execution::leased_map::QueryReadExecutionStop::Request(denial).execution_denial() {
         Some(CommitExecutionDenial {
             kind: CommitExecutionDenialKind::Cause(cause),
             ..

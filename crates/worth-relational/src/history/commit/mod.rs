@@ -2,6 +2,7 @@ mod artifact;
 mod catalog;
 mod identity;
 mod parentage;
+pub(crate) mod payload_commitment;
 
 pub(crate) use artifact::RelationalCommitAuthoritativeAllocationKind;
 pub use artifact::RelationalRetainedSelectionArtifactDenial;

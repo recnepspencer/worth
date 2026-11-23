@@ -38,7 +38,6 @@ pub(crate) mod query_locus_projection;
 mod read_record_identity_ordering;
 mod record_source;
 mod residency;
-mod schema_custody;
 mod streamed_basis_reads;
 pub(crate) mod view;
 

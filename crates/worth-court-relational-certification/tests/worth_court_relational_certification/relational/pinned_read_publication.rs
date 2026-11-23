@@ -41,7 +41,7 @@ use worth_testkit_relational::{
     shared_relational_certification_test_execution_policy::serial_request,
 };
 
-fn snapshot_for_main(runtime: &RelationalRuntime) -> SnapshotHandle {
+pub(super) fn snapshot_for_main(runtime: &RelationalRuntime) -> SnapshotHandle {
     let (_, basis) = runtime
         .observe_branch(&runtime.main_branch_identity())
         .expect("main remains owner-admitted");

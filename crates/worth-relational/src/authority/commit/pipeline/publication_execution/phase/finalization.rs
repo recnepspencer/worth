@@ -16,7 +16,8 @@ pub(super) struct FinalizationInput<'a> {
         &'a mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
     pub(super) published_snapshot_basis:
         crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    pub(super) published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
+    pub(super) published_snapshot_slot:
+        crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
 }
 
 pub(super) fn finalize_published_commit(
@@ -142,7 +143,7 @@ fn publish_artifacts(
     artifacts: crate::publication::authority::artifacts::PublicationArtifacts,
     patch_position: crate::publication::patch::data::PatchStreamPosition,
     basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    slot: crate::runtime::PublishedSnapshotSlotReservation,
+    slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
     timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
 ) -> crate::snapshots::data::SnapshotId {
     let started = std::time::Instant::now();

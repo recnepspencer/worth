@@ -44,7 +44,8 @@ pub(crate) struct PerformedRelationalSettlement {
 pub(crate) struct SettledRelationalSettlement {
     pub(crate) receipt: RelationalCommitReceipt,
     pub(crate) result: Option<Arc<CommitResult>>,
-    pub(crate) closeout: Option<crate::runtime::PublishedSnapshotCloseout>,
+    pub(crate) closeout:
+        Option<crate::runtime::state::subsystems::visibility::PublishedSnapshotCloseout>,
 }
 
 enum PendingRelationalSettlementState {
@@ -218,7 +219,7 @@ impl PendingRelationalPublicationSettlement {
         &self,
         receipt: RelationalCommitReceipt,
         result: Option<Arc<CommitResult>>,
-        closeout: Option<crate::runtime::PublishedSnapshotCloseout>,
+        closeout: Option<crate::runtime::state::subsystems::visibility::PublishedSnapshotCloseout>,
     ) {
         *self.state() =
             PendingRelationalSettlementState::Settled(Box::new(SettledRelationalSettlement {

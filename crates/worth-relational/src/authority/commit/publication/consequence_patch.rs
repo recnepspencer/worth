@@ -1,16 +1,14 @@
 //! Extend one unpublished canonical patch with the publication owner's consequences.
 use super::*;
 pub(crate) fn extend_patch(
-    runtime: &crate::runtime::RelationalPreparationRuntime,
+    instrumentation: &RuntimeInstrumentation,
+    work_budget: Option<&RequestWorkBudget>,
     patch: &mut CanonicalAuthoritativePatch,
     fragments: Vec<FoundationalPatchFragment>,
     lease: Option<&ExecutionResourceLease<'_>>,
 ) -> Result<(), crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError>
 {
-    if fragments.is_empty() {
-        return Ok(());
-    }
-    let consequences = prepare_patch_fragments(runtime, fragments, lease)?;
+    let consequences = prepare_patch_fragments(instrumentation, work_budget, fragments, lease)?;
     let count = patch
         .authoritative_record_patches
         .len()
@@ -49,5 +47,5 @@ pub(crate) fn extend_patch(
     let mut records = std::mem::take(&mut patch.authoritative_record_patches);
     records.extend(consequences);
     patch.authoritative_record_patches = direct_diff_record_order(records);
-    crate::authority::commit::phases::publication::enforce_patch_budget(runtime, patch)
+    Ok(())
 }

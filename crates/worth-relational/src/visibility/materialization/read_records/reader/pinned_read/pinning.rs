@@ -1,5 +1,5 @@
 use super::*;
-use crate::visibility::materialization::read_records::reader::VisibilityReadContext;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 use crate::visibility::snapshot_states::resolve_snapshot_basis;
 
 impl VisibilityReadContext<'_> {
@@ -74,7 +74,7 @@ impl VisibilityReadContext<'_> {
     /// snapshot query-plan door. The caller's request still checks liveness.
     pub fn pin_view_read_capability(
         &self,
-        view: &crate::runtime::VisibilityProjectionView,
+        view: &crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView,
         selected_indexes: &[DerivedIndexId],
         request: &worth_execution::ExecutionRequest<'_, '_>,
     ) -> Result<RelationalPinnedRead<()>, RelationalPinnedReadAdmissionDenial> {
@@ -89,7 +89,7 @@ impl VisibilityReadContext<'_> {
 
     pub(crate) fn pin_view_read_capability_checked<E>(
         &self,
-        view: &crate::runtime::VisibilityProjectionView,
+        view: &crate::visibility::materialization::read_records::projection::view::VisibilityProjectionView,
         selected_indexes: &[DerivedIndexId],
         request: &worth_execution::ExecutionRequest<'_, '_>,
         validate: impl Fn(&crate::indexes::data::DerivedIndexDefinition) -> Result<(), E>,

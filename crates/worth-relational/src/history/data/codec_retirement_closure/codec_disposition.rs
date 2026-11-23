@@ -1,10 +1,10 @@
 //! Re-admit governed complete codec retirement before it can end a route generation.
 use super::{charge, request, CodecRetirementClosureStop as Stop};
-use crate::capabilities::AspectPlanSource;
 use crate::history::data::canonical_commit_envelope::OutputOriginHistory;
 use crate::history::data::{
     canonical_commit_envelope::*, CanonicalCommitEnvelope, RequiredOutputRoutePosition,
 };
+use crate::schema::aspect_plan_source::AspectPlanSource;
 use crate::transactions::data::intents::mutation_intent::EntityMutationIntent;
 use crate::transactions::data::intents::mutation_intent::MutationIntent;
 use crate::transactions::data::intents::mutation_intent::RelationMutationIntent;

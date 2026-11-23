@@ -1,5 +1,5 @@
-use super::super::reader::VisibilityReadContext;
 use super::VisibilityProjectionView;
+use crate::visibility::materialization::read_records::reader::context::VisibilityReadContext;
 
 impl VisibilityProjectionView {
     pub(crate) fn retain_exact_basis(

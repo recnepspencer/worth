@@ -252,7 +252,7 @@ impl FrozenOriginalInputs {
                     None => {
                         let (entry, _) = artifact.envelope_residency().source_placement()
                             .ok_or(Denial::OriginalAuthorityUnavailable)?;
-                        let digest = crate::durability::canonical_commit_artifact::RelationalCanonicalCommitArtifact::envelope_payload_digest_for_request(
+                        let digest = crate::history::commit::payload_commitment::digest_envelope_for_request(
                             entry.position, &envelope, execution,
                         ).map_err(capture_stop)?;
                         entry.commit == envelope.commit

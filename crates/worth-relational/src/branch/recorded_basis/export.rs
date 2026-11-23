@@ -92,7 +92,7 @@ pub(super) fn export_retained_component(
                     }
                     entry.payload_digest
                 }
-                None => Artifact::envelope_payload_digest_for_request(
+                None => crate::history::commit::payload_commitment::digest_envelope_for_request(
                     positioned.position(),
                     positioned.envelope(),
                     execution,

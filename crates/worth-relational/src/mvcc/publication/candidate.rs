@@ -31,7 +31,7 @@ pub struct PreparedRelationalCommitCandidate {
     runtime_instance_id: u64,
     configuration_invariant_generation: u64,
     receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
-    publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
+    publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
     transaction_id: TransactionId,
     branch_id: BranchId,
     candidate_id: u64,
@@ -48,10 +48,11 @@ pub(crate) struct CandidatePayload {
     companion_read: Option<super::companion::CompanionReadCondition>,
     expected_basis: RelationalBranchBasisDescriptor,
     expected_root: Arc<RelationalBranchRoot>,
-    publication_cell: crate::branch::RelationalBranchPublicationCell,
+    publication_cell: crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
     execution: crate::authority::commit::pipeline::PreparedCommitPublicationExecution,
     retention: crate::history::retention::RelationalCandidateRetentionObligation,
-    published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
+    published_snapshot_slot:
+        crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
     control: crate::mvcc::RelationalOperationControl,
 }
 
@@ -61,10 +62,10 @@ pub(super) struct PreparedRelationalPublicationParts {
     pub(super) companion_read: Option<super::companion::CompanionReadCondition>,
     pub(super) runtime_instance_id: u64,
     pub(super) candidate_id: u64,
-    pub(super) publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
+    pub(super) publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
     pub(super) expected: RelationalBranchBasisDescriptor,
     pub(super) expected_root: Arc<RelationalBranchRoot>,
-    pub(super) publication_cell: crate::branch::RelationalBranchPublicationCell,
+    pub(super) publication_cell: crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
     pub(super) movement: super::PreparedCanonicalBranchMovement,
     pub(super) completion: crate::authority::commit::pipeline::PreparedCommitPublicationCompletion,
     pub(super) candidate_retention:
@@ -82,15 +83,15 @@ impl PreparedRelationalCommitCandidate {
         runtime_instance_id: u64,
         configuration_invariant_generation: u64,
         receiver_epoch: crate::runtime::RelationalRuntimeConfigurationSnapshot,
-        publication_binding: crate::runtime::RelationalRuntimePublicationBinding,
+        publication_binding: crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
         transaction_id: TransactionId,
         branch_id: BranchId,
         expected_basis: RelationalBranchBasisDescriptor,
         expected_root: Arc<RelationalBranchRoot>,
-        publication_cell: crate::branch::RelationalBranchPublicationCell,
+        publication_cell: crate::branch::reference_publication_cell::RelationalBranchPublicationCell,
         execution: crate::authority::commit::pipeline::PreparedCommitPublicationExecution,
         retention: crate::history::retention::RelationalCandidateRetentionObligation,
-        published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
+        published_snapshot_slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
         control: crate::mvcc::RelationalOperationControl,
         maximum_candidates: Option<usize>,
     ) -> Result<Self, PreparedRelationalCandidateAdmissionStop> {
@@ -111,14 +112,14 @@ impl PreparedRelationalCommitCandidate {
         let candidate_id = publication_binding
             .register_candidate(maximum_candidates, &payload)
             .map_err(|denial| match denial {
-                crate::runtime::RelationalCandidateRegistrationDenial::CapacityExhausted {
+                crate::runtime::state::runtime_state::publication_lifecycle::RelationalCandidateRegistrationDenial::CapacityExhausted {
                     maximum_candidates,
                 } => PreparedRelationalCandidateAdmissionStop::Deferred(
                     super::RelationalPublicationDeferred::CandidateCapacityExhausted {
                         maximum_candidates,
                     },
                 ),
-                crate::runtime::RelationalCandidateRegistrationDenial::IdentityExhausted => {
+                crate::runtime::state::runtime_state::publication_lifecycle::RelationalCandidateRegistrationDenial::IdentityExhausted => {
                     PreparedRelationalCandidateAdmissionStop::Failed(
                         super::RelationalPublicationFailure::new(
                             super::RelationalPublicationFailureKind::CandidateIdentityExhausted,
@@ -198,7 +199,7 @@ impl PreparedRelationalCommitCandidate {
 
     pub(crate) fn belongs_to_publication_owner(
         &self,
-        binding: &crate::runtime::RelationalRuntimePublicationBinding,
+        binding: &crate::runtime::state::runtime_state::publication_lifecycle::RelationalRuntimePublicationBinding,
     ) -> bool {
         self.publication_binding.belongs_to_same_owner(binding)
     }

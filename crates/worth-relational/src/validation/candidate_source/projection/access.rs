@@ -1,5 +1,8 @@
 //! Closed acquisition postures preserve their real Native proof owners.
-use super::super::{ManagedIndexPublishedSourceRoot, ManagedIndexSourceRows};
+use super::super::{
+    applied_affinity::AppliedSourceAffinity, ManagedIndexPublishedSourceRoot,
+    ManagedIndexSourceRows,
+};
 use super::*;
 use crate::derived_relation::definition::DerivedRelationHandle;
 use crate::derived_relation::DerivedRelationData;
@@ -22,7 +25,8 @@ pub(in crate::validation::candidate_source) enum SourceProjectionBacking<'a> {
         before: bool,
     },
     Applied {
-        loan: &'a super::super::ManagedIndexAppliedSourceRead<'a>,
+        projection: &'a VisibilityProjectionView,
+        affinity: &'a Arc<AppliedSourceAffinity>,
         execution: ExecutionRequest<'a, 'a>,
         memory: RefCell<Option<ExecutionMemoryReservation>>,
         bytes: Cell<u64>,
@@ -56,7 +60,7 @@ pub struct PreparedManagedIndexRelationRead {
 enum PreparedBody {
     Applied {
         read: PinnedDerivedRelationRead,
-        affinity: Arc<super::super::applied_read::AppliedSourceAffinity>,
+        affinity: Arc<AppliedSourceAffinity>,
     },
     Invariant(PreparedDerivedRelationRead),
     Selected {
@@ -76,8 +80,10 @@ impl ManagedIndexSourceProjection<'_> {
                 ..
             } => Some((projection, execution)),
             SourceProjectionBacking::Applied {
-                loan, execution, ..
-            } => Some((&loan.projection, execution)),
+                projection,
+                execution,
+                ..
+            } => Some((projection, execution)),
             SourceProjectionBacking::Invariant { .. } => None,
         }
     }
@@ -210,17 +216,20 @@ impl ManagedIndexSourceProjection<'_> {
     ) -> Result<PreparedManagedIndexRelationRead, Denial> {
         let body = match &self.backing {
             SourceProjectionBacking::Applied {
-                loan, execution, ..
+                projection,
+                affinity,
+                execution,
+                ..
             } => PreparedBody::Applied {
                 read: PinnedDerivedRelationRead::acquire_projected(
-                    &loan.projection,
+                    projection,
                     execution,
                     path,
                     root.into(),
                     shape,
                     None,
                 )?,
-                affinity: Arc::clone(&loan.affinity),
+                affinity: Arc::clone(affinity),
             },
             SourceProjectionBacking::Invariant { relations, .. } => {
                 PreparedBody::Invariant(relations.prepare_derived_source(path, root, shape)?)
@@ -266,9 +275,11 @@ impl ManagedIndexSourceProjection<'_> {
         }
         match (&self.backing, &read.body) {
             (
-                SourceProjectionBacking::Applied { loan, .. },
+                SourceProjectionBacking::Applied {
+                    affinity: expected, ..
+                },
                 PreparedBody::Applied { read, affinity },
-            ) if Arc::ptr_eq(&loan.affinity, affinity) => Ok(read.data()),
+            ) if Arc::ptr_eq(expected, affinity) => Ok(read.data()),
             (
                 SourceProjectionBacking::Invariant { relations, .. },
                 PreparedBody::Invariant(read),
@@ -345,17 +356,19 @@ fn record_denial(
     }
 }
 
+mod applied_rows;
+pub(in crate::validation::candidate_source) use applied_rows::applied_rows;
+
 pub(crate) fn selected_rows<'a>(
     projection: &'a VisibilityProjectionView,
     expected: &'a Arc<ManagedIndexPublishedSourceRoot>,
-    program: &'a ManagedIndexSourceProgram,
-    scope: EntityId,
     execution: ExecutionRequest<'a, 'a>,
 ) -> ManagedIndexSourceRows<'a> {
+    let association = &expected.association;
     ManagedIndexSourceRows {
-        scope,
+        scope: association.scope,
         projection: ManagedIndexSourceProjection {
-            program,
+            program: &association.program,
             backing: SourceProjectionBacking::Selected {
                 projection,
                 expected,

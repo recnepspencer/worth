@@ -20,14 +20,14 @@ impl<'runtime> PublicationPreparationAuthority<'runtime> {
         PublicationArtifacts,
         crate::mvcc::publication::outcome::failure::RelationalPublicationFailure,
     > {
-        let snapshot_id = self.runtime.allocate_snapshot_id().ok_or_else(|| {
+        let snapshot_id = self.snapshot_ids.reserve_prepared().ok_or_else(|| {
             crate::mvcc::publication::outcome::failure::RelationalPublicationFailure::new(
                 crate::mvcc::publication::outcome::failure::RelationalPublicationFailureKind::SnapshotIdentityExhausted,
                 "snapshot identity space is exhausted",
             )
         })?;
         let snapshot = SnapshotHandle {
-            runtime_instance_id: self.runtime.runtime_instance_id(),
+            runtime_instance_id: self.runtime_instance_id,
             branch_id: commit_reference.branch_id.clone(),
             snapshot_id,
             version_id,
@@ -50,7 +50,7 @@ impl<'runtime> PublicationAuthority<'runtime> {
         artifacts: PublicationArtifacts,
         patch_position: crate::publication::patch::data::PatchStreamPosition,
         basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-        published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
+        published_snapshot_slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
     ) -> SnapshotId {
         let PublicationArtifacts {
             commit,
@@ -81,13 +81,16 @@ impl<'runtime> PublicationAuthority<'runtime> {
             status: PublicationStatus::Published,
         };
         let snapshot_id = bundle.snapshot.snapshot_id;
-        self.runtime.visibility.insert_published_handle(
+        self.visibility.insert_published_handle(
             snapshot_id,
-            crate::runtime::SnapshotHandleBinding::new(basis, bundle.snapshot.read_policy),
+            crate::runtime::state::subsystems::visibility::SnapshotHandleBinding::new(
+                basis,
+                bundle.snapshot.read_policy,
+            ),
         );
         published_snapshot_slot.install();
         self.push_diagnostic_artifact(bundle.diagnostics_summary.clone());
-        self.runtime.publication.replace_latest_bundle(bundle);
+        self.publication.replace_latest_bundle(bundle);
         snapshot_id
     }
 }

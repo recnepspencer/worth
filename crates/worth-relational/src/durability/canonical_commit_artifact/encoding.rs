@@ -3,6 +3,7 @@ use worth_execution::{ExecutionAllocationPolicy, ExecutionByteBuffer};
 
 #[cfg(test)]
 use super::frame::{CanonicalCommitArtifactHeader, DIGEST_OFFSET, HEADER_LEN};
+#[cfg(test)]
 use super::payload_digest::RelationalCanonicalCommitArtifactDigest as Digest;
 #[cfg(test)]
 use super::payload_wire::ArtifactPayloadRef;
@@ -19,52 +20,10 @@ impl RelationalCanonicalCommitArtifact {
     pub(crate) fn positioned_payload_digest(
         commit: &PositionedCanonicalCommit,
     ) -> Result<[u8; 32], rmp_serde::encode::Error> {
-        Self::envelope_payload_digest(commit.position(), commit.envelope())
-    }
-
-    pub(crate) fn envelope_payload_digest(
-        position: crate::publication::patch::data::PatchStreamPosition,
-        envelope: &crate::history::data::CanonicalCommitEnvelope,
-    ) -> Result<[u8; 32], rmp_serde::encode::Error> {
-        use sha2::{Digest as _, Sha256};
-        struct HashWriter(Sha256);
-        impl std::io::Write for HashWriter {
-            fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-                self.0.update(bytes);
-                Ok(bytes.len())
-            }
-            fn flush(&mut self) -> std::io::Result<()> {
-                Ok(())
-            }
-        }
-        let mut position_writer = HashWriter(Sha256::new());
-        rmp_serde::encode::write_named(&mut position_writer, &position)?;
-        let mut envelope_writer = HashWriter(Sha256::new());
-        rmp_serde::encode::write_named(
-            &mut envelope_writer,
-            &crate::history::data::AuthoritativeArtifactEnvelopeRef::new(envelope),
-        )?;
-        let mut input_writer = HashWriter(Sha256::new());
-        rmp_serde::encode::write_named(&mut input_writer, &envelope.recorded_original_inputs())?;
-        Ok(*Digest::from_leaves(
-            position.0,
-            envelope.commit.commit_id.0,
-            position_writer.0.finalize().into(),
-            envelope_writer.0.finalize().into(),
-            input_writer.0.finalize().into(),
+        crate::history::commit::payload_commitment::digest_envelope(
+            commit.position(),
+            commit.envelope(),
         )
-        .as_bytes())
-    }
-
-    pub(crate) fn matches_positioned_payload(
-        original: &PositionedCanonicalCommit,
-        candidate: &std::sync::Arc<crate::history::data::CanonicalCommitEnvelope>,
-    ) -> Result<bool, rmp_serde::encode::Error> {
-        if std::sync::Arc::ptr_eq(original.canonical_arc(), candidate) {
-            return Ok(true);
-        }
-        Ok(Self::positioned_payload_digest(original)?
-            == Self::envelope_payload_digest(original.position(), candidate)?)
     }
 
     /// Frame one admitted positioned commit. Only Relational holds a

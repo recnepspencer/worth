@@ -3,7 +3,7 @@ pub use basis::{
     RelationalBranchBasisRetirement, RelationalBranchBasisRetirementDenial,
     RelationalBranchBasisRetirementProgress, RetiredRelationalBranchBasis,
 };
-mod authority;
+pub(crate) mod authority;
 mod custody_witness;
 pub use custody_witness::{RelationalBasisCustodyReadDenial, RelationalBasisCustodyWitness};
 pub(crate) mod basis;
@@ -17,7 +17,7 @@ mod basis_identity_validation;
 pub(crate) mod basis_issuance;
 mod basis_observation;
 mod basis_readmission;
-mod basis_registry;
+pub(crate) mod basis_registry;
 pub(crate) mod home_program_step;
 pub(crate) use basis_registry::RelationalRetainedBasisSnapshotStop;
 #[cfg(test)]
@@ -29,8 +29,8 @@ mod basis_retention;
 mod canonical_runtime_frame;
 pub(crate) mod checkpoint_visibility;
 mod commit_change;
-mod coordination;
-mod fork;
+pub(crate) mod coordination;
+pub(crate) mod fork;
 mod fork_materialization;
 mod fork_port;
 mod fork_source_basis;
@@ -72,7 +72,7 @@ mod reference_state;
 pub(crate) mod registry;
 pub(crate) use registry::RelationalSourceRootSlot;
 pub(crate) mod root;
-mod root_checkpoint;
+pub(crate) mod root_checkpoint;
 mod root_partition_access;
 mod root_region;
 pub(crate) mod root_regions;

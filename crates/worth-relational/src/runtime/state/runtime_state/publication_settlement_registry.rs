@@ -1,10 +1,11 @@
+use crate::publication::close_custody::RelationalPublicationRegistryCustody;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use crate::history::data::CommitId;
 
-mod record;
+pub(crate) mod record;
 
 pub(crate) use record::{
     PendingRelationalPublicationSettlement, PerformedRelationalSettlement,
@@ -53,23 +54,23 @@ pub(crate) struct RelationalPendingSettlementReservation {
 }
 
 impl RelationalPublicationSettlementRegistry {
-    pub(super) fn close_custody(&self) -> super::RelationalPublicationRegistryCustody {
+    pub(super) fn close_custody(&self) -> RelationalPublicationRegistryCustody {
         let records = self.records();
-        super::RelationalPublicationRegistryCustody::observed(
+        RelationalPublicationRegistryCustody::observed(
             records.len(),
             records.keys().next().map(|commit| commit.0),
         )
     }
 
-    pub(super) fn try_close_custody(&self) -> super::RelationalPublicationRegistryCustody {
+    pub(super) fn try_close_custody(&self) -> RelationalPublicationRegistryCustody {
         let records = match self.records.try_lock() {
             Ok(records) => records,
             Err(std::sync::TryLockError::Poisoned(error)) => error.into_inner(),
             Err(std::sync::TryLockError::WouldBlock) => {
-                return super::RelationalPublicationRegistryCustody::ContactHeld
+                return RelationalPublicationRegistryCustody::ContactHeld
             }
         };
-        super::RelationalPublicationRegistryCustody::observed(
+        RelationalPublicationRegistryCustody::observed(
             records.len(),
             records.keys().next().map(|commit| commit.0),
         )

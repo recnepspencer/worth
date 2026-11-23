@@ -56,9 +56,12 @@ pub(super) fn prepare(
             let prepared_schema = prepare_schema(
                 issuer,
                 previous,
-                &envelope,
+                &envelope.schema_authority,
+                envelope.descriptor_semantics_version,
                 registry,
-                execution_contracts.as_ref(),
+                execution_contracts
+                    .as_ref()
+                    .map(|contracts| &contracts.schema),
             )?;
             let change = crate::branch::commit_change::build_commit_change(
                 execution,
@@ -232,18 +235,16 @@ pub(super) fn root_slot_counts(
 fn prepare_schema(
     issuer: &RelationalBranchRootIdentityIssuer,
     previous: Option<&Arc<RelationalBranchRoot>>,
-    envelope: &crate::history::data::CanonicalCommitEnvelopeBody,
+    expected: &crate::schema::data::SchemaAuthoritySnapshot,
+    semantics: crate::schema::data::DescriptorSemanticsVersion,
     registry: &crate::schema::data::RelationalSchemaRegistry,
-    execution: Option<&Arc<crate::runtime::RelationalRootExecutionContracts>>,
+    planned_authority: Option<&Arc<RelationalBranchRootSchemaAuthority>>,
 ) -> Result<PreparedRootSchema, RelationalBranchRootCaptureDenial> {
-    let schema_root =
-        crate::schema::data::schema_authority_snapshot_digest_bytes(&envelope.schema_authority);
-    if let Some(execution) = execution.filter(|execution| {
-        execution.schema.matches(&envelope.schema_authority)
-            && execution.schema.descriptor_semantics_version()
-                == envelope.descriptor_semantics_version
+    let schema_root = crate::schema::data::schema_authority_snapshot_digest_bytes(expected);
+    if let Some(authority) = planned_authority.filter(|authority| {
+        authority.matches(expected) && authority.descriptor_semantics_version() == semantics
     }) {
-        let authority = execution.schema.clone();
+        let authority = Arc::clone(authority);
         let reused =
             previous.is_some_and(|source| Arc::ptr_eq(&source.schema_authority, &authority));
         return Ok(PreparedRootSchema {
@@ -259,9 +260,8 @@ fn prepare_schema(
         });
     }
     if let Some(previous) = previous.filter(|root| {
-        root.schema_authority.matches(&envelope.schema_authority)
-            && root.schema_authority.descriptor_semantics_version()
-                == envelope.descriptor_semantics_version
+        root.schema_authority.matches(expected)
+            && root.schema_authority.descriptor_semantics_version() == semantics
     }) {
         return Ok(PreparedRootSchema {
             authority: Arc::clone(&previous.schema_authority),
@@ -273,8 +273,8 @@ fn prepare_schema(
     let authority = RelationalBranchRootSchemaAuthority::capture(
         allocation_id,
         registry,
-        &envelope.schema_authority,
-        envelope.descriptor_semantics_version,
+        expected,
+        semantics,
         previous.map(|root| root.schema_authority.as_ref()),
     )
     .ok_or(RelationalBranchRootCaptureDenial::SchemaRootMismatch {

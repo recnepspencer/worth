@@ -11,7 +11,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::history::data::{BranchId, CommitId};
 use crate::publication::patch::data::PatchStreamPosition;
-use crate::runtime::PositionedRelationalSnapshot;
+use crate::visibility::materialization::read_records::reader::positioned_snapshot::PositionedRelationalSnapshot;
 
 use super::preflight::{CompanionPreflightStop, PublicationCompanionPreflight};
 

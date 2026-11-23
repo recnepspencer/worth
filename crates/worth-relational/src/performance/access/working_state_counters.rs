@@ -54,24 +54,4 @@ impl PerformanceAccess<'_> {
             counters.bulk_mutation_provenance_record_count += provenance_record_count;
         });
     }
-
-    pub(crate) fn count_post_commit_consumer_shape(
-        &self,
-        packets: usize,
-        items: usize,
-        max_width: usize,
-        scope_units: usize,
-    ) {
-        self.counters.count(|counters| {
-            counters.post_commit_consumer_packet_count += packets;
-            counters.post_commit_consumer_item_count += items;
-            counters.post_commit_consumer_peak_width_total += max_width;
-            counters.post_commit_scope_unit_count += scope_units;
-        });
-    }
-
-    pub(crate) fn count_post_commit_serial_strategy(&self) {
-        self.counters
-            .count(|counters| counters.post_commit_serial_strategy_count += 1);
-    }
 }

@@ -69,7 +69,7 @@ pub(super) fn finalize_publication_phase(
     phase_timing: &mut CommitPhaseTiming,
     prepared: PreparedPublicationCompletion,
     published_snapshot_basis: crate::visibility::snapshot_states::VisibilitySnapshotBasis,
-    published_snapshot_slot: crate::runtime::PublishedSnapshotSlotReservation,
+    published_snapshot_slot: crate::runtime::state::subsystems::visibility::PublishedSnapshotSlotReservation,
     positioned_commit: Arc<crate::history::data::PositionedCanonicalCommit>,
     envelope_cell: Arc<crate::history::commit::RelationalCommitEnvelopeResidency>,
 ) -> FinalizedPublicationPhase {

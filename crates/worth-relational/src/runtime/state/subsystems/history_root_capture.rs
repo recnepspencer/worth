@@ -13,7 +13,9 @@ use super::HistorySubsystem;
 impl HistorySubsystem {
     pub(crate) fn readmit_checkpoint_region_directory(
         &self,
-        regions: worth_execution::ExecutionArray<crate::branch::RelationalRootRegionCheckpoint>,
+        regions: worth_execution::ExecutionArray<
+            crate::branch::root_checkpoint::RelationalRootRegionCheckpoint,
+        >,
         commit: crate::durability::checkpoint_admission::CheckpointAdmittedCommit,
         content_records: &crate::content::RelationalContentAttachments,
         request: &worth_execution::ExecutionRequest<'_, '_>,
@@ -30,7 +32,9 @@ impl HistorySubsystem {
         &self,
         execution: &worth_execution::ExecutionRequest<'_, '_>,
         content_records: &crate::content::RelationalContentAttachments,
-        regions: worth_execution::ExecutionArray<crate::branch::RelationalRootRegionCheckpoint>,
+        regions: worth_execution::ExecutionArray<
+            crate::branch::root_checkpoint::RelationalRootRegionCheckpoint,
+        >,
         original: Arc<crate::branch::root::RelationalOriginalRootCommitEvidence>,
         descriptor: crate::branch::target::RelationalBranchRootDescriptor,
         schema: Arc<crate::branch::root::schema::RelationalBranchRootSchemaAuthority>,

@@ -186,7 +186,10 @@ fn positioned_agreement_uses_original_work_budget_and_preserves_authoritative_di
     let readmitted = artifact.readmit_framed(&setup_execution).unwrap();
     let candidate = readmitted.positioned().canonical_arc();
     assert!(!std::sync::Arc::ptr_eq(original.canonical_arc(), candidate));
-    let baseline = Artifact::matches_positioned_payload(&original, candidate).unwrap();
+    let baseline = crate::history::commit::payload_commitment::matches_positioned_payload(
+        &original, candidate,
+    )
+    .unwrap();
     assert!(baseline);
     assert_eq!(
         Artifact::matches_positioned_payload_for_request(&original, candidate, &setup_execution,)
@@ -194,7 +197,7 @@ fn positioned_agreement_uses_original_work_budget_and_preserves_authoritative_di
         baseline
     );
     assert_eq!(
-        Artifact::envelope_payload_digest_for_request(
+        crate::history::commit::payload_commitment::digest_envelope_for_request(
             original.position(),
             original.envelope(),
             &setup_execution,
@@ -210,7 +213,13 @@ fn positioned_agreement_uses_original_work_budget_and_preserves_authoritative_di
         .positioned_canonical_commits_snapshot()
         .pop()
         .unwrap();
-    assert!(!Artifact::matches_positioned_payload(&other_original, candidate).unwrap());
+    assert!(
+        !crate::history::commit::payload_commitment::matches_positioned_payload(
+            &other_original,
+            candidate
+        )
+        .unwrap()
+    );
     assert!(!Artifact::matches_positioned_payload_for_request(
         &other_original,
         candidate,
@@ -255,7 +264,7 @@ fn positioned_agreement_uses_original_work_budget_and_preserves_authoritative_di
         None,
     );
     assert_eq!(
-        Artifact::envelope_payload_digest_for_request(
+        crate::history::commit::payload_commitment::digest_envelope_for_request(
             original.position(),
             original.envelope(),
             &ExecutionRequest::serial(&cold),
