@@ -40,7 +40,7 @@ impl<'runtime> LineageAccess<'runtime> {
         // An entity restored at its original identity holds one lineage per
         // restore epoch. A pinned observation resolves the newest lineage it
         // can reach, so a later restore (a greater lineage) never changes it.
-        let (candidates, needs_participation, seed_probes) = match exact_lineage {
+        let (mut candidates, needs_participation, seed_probes) = match exact_lineage {
             Some(lineage_id) => (vec![lineage_id], false, 0),
             None => {
                 let (candidates, probes) =
@@ -48,6 +48,17 @@ impl<'runtime> LineageAccess<'runtime> {
                 (candidates, true, probes)
             }
         };
+        // Cold node pages admit epochs in demand order, so the index may hold
+        // an older epoch while a newer one is still cold: the observation's
+        // own slot lineage joins the candidates before any is tried.
+        if needs_participation
+            && (candidates.is_empty() || self.runtime.lineage.has_paged_nodes())
+            && let Some(slot_lineage) = self.head_slot_lineage(execution, root, entity_id)?
+            && !candidates.contains(&slot_lineage)
+        {
+            candidates.push(slot_lineage);
+            candidates.sort_unstable_by(|left, right| right.cmp(left));
+        }
         let mut work = (seed_probes, 0_usize);
         let mut tried = BTreeSet::new();
         let mut chosen = None;

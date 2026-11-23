@@ -16,6 +16,7 @@ use worth_relational::facade::mvcc::{
 };
 use worth_testkit_relational::aspect_storage::AspectSchemaFixture;
 mod checkpoint;
+mod epochs;
 mod refusals;
 
 const MEMBER_SCHEME: &str = "worth.cert.member.v1";

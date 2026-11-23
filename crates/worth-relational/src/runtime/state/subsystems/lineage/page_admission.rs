@@ -101,6 +101,12 @@ impl LineageSubsystem {
     pub(crate) fn has_paged_events(&self) -> bool {
         self.event_residency.read().is_some()
     }
+
+    /// Whether lineage nodes are served from cold pages, so the derived
+    /// entity index holds only the epochs demanded so far.
+    pub(crate) fn has_paged_nodes(&self) -> bool {
+        self.node_residency.read().is_some()
+    }
 }
 
 impl super::LineageState {
